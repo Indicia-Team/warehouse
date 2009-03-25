@@ -1,0 +1,1220 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <html xmlns="http://www.w3.org/1999/xhtml">
+		<head>
+			<!-- template designed by Marco Von Ballmoos -->
+			<title>Docs For Class vague_date</title>
+			<link rel="stylesheet" href="../media/stylesheet.css" />
+			<meta http-equiv='Content-Type' content='text/html; charset=iso-8859-1'/>
+		</head>
+		<body>
+			<div class="page-body">			
+<h2 class="class-name">Class vague_date</h2>
+
+<a name="sec-description"></a>
+<div class="info-box">
+	<div class="info-box-title">Description</div>
+	<div class="nav-bar">
+					<span class="disabled">Description</span> |
+															<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
+						
+					</div>
+	<div class="info-box-body">
+        		<!-- ========== Info from phpDoc block ========= -->
+		<p class="notes">
+			Located in <a class="field" href="_helpers---vague_date.php.html">/helpers/vague_date.php</a> (line <span class="field">3</span>)
+		</p>
+		
+				
+		<pre></pre>
+	
+			</div>
+</div>
+
+
+
+
+	<a name="sec-method-summary"></a>
+	<div class="info-box">
+		<div class="info-box-title">Method Summary</span></div>
+		<div class="nav-bar">
+			<a href="#sec-description">Description</a> |
+												<span class="disabled">Methods</span> (<a href="#sec-methods">details</a>)
+		</div>
+		<div class="info-box-body">			
+			<div class="method-summary">
+												<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#check" title="details" class="method-name">check</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$pass</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$message</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#convert_to_season_string" title="details" class="method-name">convert_to_season_string</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_century_end" title="details" class="method-name">is_century_end</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_century_start" title="details" class="method-name">is_century_start</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_month_end" title="details" class="method-name">is_month_end</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_month_start" title="details" class="method-name">is_month_start</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_same_century" title="details" class="method-name">is_same_century</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date1</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$date2</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_same_month" title="details" class="method-name">is_same_month</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date1</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$date2</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_same_year" title="details" class="method-name">is_same_year</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date1</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$date2</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_year_end" title="details" class="method-name">is_year_end</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_year_start" title="details" class="method-name">is_year_start</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#parseSingleDate" title="details" class="method-name">parseSingleDate</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$string</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$parseFormats</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#string_to_vague_date" title="details" class="method-name">string_to_vague_date</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$string</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_centuries" title="details" class="method-name">vague_date_to_centuries</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_century" title="details" class="method-name">vague_date_to_century</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_century_from" title="details" class="method-name">vague_date_to_century_from</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_century_to" title="details" class="method-name">vague_date_to_century_to</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_day" title="details" class="method-name">vague_date_to_day</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_days" title="details" class="method-name">vague_date_to_days</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_month" title="details" class="method-name">vague_date_to_month</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_months_in_year" title="details" class="method-name">vague_date_to_months_in_year</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_month_in_year" title="details" class="method-name">vague_date_to_month_in_year</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_season" title="details" class="method-name">vague_date_to_season</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_season_in_year" title="details" class="method-name">vague_date_to_season_in_year</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_string" title="details" class="method-name">vague_date_to_string</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_unknown" title="details" class="method-name">vague_date_to_unknown</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_year" title="details" class="method-name">vague_date_to_year</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_years" title="details" class="method-name">vague_date_to_years</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_year_from" title="details" class="method-name">vague_date_to_year_from</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#vague_date_to_year_to" title="details" class="method-name">vague_date_to_year_to</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#validate" title="details" class="method-name">validate</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$type</span>)
+									</div>
+								
+																																																																																																																																																																																																																																																												</div>
+		</div>
+	</div>		
+
+	
+	<a name="sec-methods"></a>
+	<div class="info-box">
+		<div class="info-box-title">Methods</div>
+		<div class="nav-bar">
+			<a href="#sec-description">Description</a> |
+																<a href="#sec-method-summary">Methods</a> (<span class="disabled">details</span>)
+						
+		</div>
+		<div class="info-box-body">
+			<A NAME='method_detail'></A>
+<a name="methodcheck" id="check"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method check</span> (line <span class="line-number">707</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			check
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$pass</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$message</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$pass</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$message</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodconvert_to_season_string" id="convert_to_season_string"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method convert_to_season_string</span> (line <span class="line-number">674</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Retrieve the string that describes a season (spring, summer, autumn, winter)  for a start and end date.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			convert_to_season_string
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_century_end" id="is_century_end"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_century_end</span> (line <span class="line-number">657</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied date is the last day of the century</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_century_end
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_century_start" id="is_century_start"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_century_start</span> (line <span class="line-number">649</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied date is the first day of the century (starts in year nn01!)</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_century_start
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_month_end" id="is_month_end"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_month_end</span> (line <span class="line-number">608</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied date is the last day of the month</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_month_end
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_month_start" id="is_month_start"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_month_start</span> (line <span class="line-number">600</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied date is the first day of the month</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_month_start
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_same_century" id="is_same_century"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_same_century</span> (line <span class="line-number">665</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied dates are in the same century</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_same_century
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date1</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$date2</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date1</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date2</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_same_month" id="is_same_month"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_same_month</span> (line <span class="line-number">617</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied dates are in the same month</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_same_month
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date1</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$date2</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date1</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date2</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_same_year" id="is_same_year"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_same_year</span> (line <span class="line-number">641</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied dates are in the same year</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_same_year
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date1</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$date2</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date1</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date2</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_year_end" id="is_year_end"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_year_end</span> (line <span class="line-number">633</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied date is the last day of the year</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_year_end
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_year_start" id="is_year_start"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_year_start</span> (line <span class="line-number">625</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if the supplied date is the first day of the year</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_year_start
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodparseSingleDate" id="parseSingleDate"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method parseSingleDate</span> (line <span class="line-number">421</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Parses a single date from a string.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			parseSingleDate
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$string</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$parseFormats</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$string</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$parseFormats</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodstring_to_vague_date" id="string_to_vague_date"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method string_to_vague_date</span> (line <span class="line-number">144</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> public</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			string_to_vague_date
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$string</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$string</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_centuries" id="vague_date_to_centuries"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_centuries</span> (line <span class="line-number">567</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_centuries
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_century" id="vague_date_to_century"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_century</span> (line <span class="line-number">557</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_century
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_century_from" id="vague_date_to_century_from"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_century_from</span> (line <span class="line-number">579</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_century_from
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_century_to" id="vague_date_to_century_to"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_century_to</span> (line <span class="line-number">589</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_century_to
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_day" id="vague_date_to_day"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_day</span> (line <span class="line-number">439</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing a fixed date.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_day
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_days" id="vague_date_to_days"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_days</span> (line <span class="line-number">448</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing a range of days.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_days
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_month" id="vague_date_to_month"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_month</span> (line <span class="line-number">529</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing a month in an unkown year</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_month
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_months_in_year" id="vague_date_to_months_in_year"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_months_in_year</span> (line <span class="line-number">469</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing a range of months.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_months_in_year
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_month_in_year" id="vague_date_to_month_in_year"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_month_in_year</span> (line <span class="line-number">459</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing a fixed month.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_month_in_year
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_season" id="vague_date_to_season"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_season</span> (line <span class="line-number">539</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_season
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_season_in_year" id="vague_date_to_season_in_year"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_season_in_year</span> (line <span class="line-number">481</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_season_in_year
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_string" id="vague_date_to_string"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_string</span> (line <span class="line-number">114</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date in the form of array(start, end, type) to a string</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> public</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_string
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$date</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$date</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_unknown" id="vague_date_to_unknown"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_unknown</span> (line <span class="line-number">547</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_unknown
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_year" id="vague_date_to_year"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_year</span> (line <span class="line-number">489</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing a year</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_year
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_years" id="vague_date_to_years"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_years</span> (line <span class="line-number">499</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing a range of years</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_years
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_year_from" id="vague_date_to_year_from"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_year_from</span> (line <span class="line-number">509</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing any date after a given year</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_year_from
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvague_date_to_year_to" id="vague_date_to_year_to"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method vague_date_to_year_to</span> (line <span class="line-number">519</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a vague date to a string representing any date up to and including a given year</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			vague_date_to_year_to
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodvalidate" id="validate"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method validate</span> (line <span class="line-number">702</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Ensure a vague date array is well-formed.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			validate
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$start</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$end</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$type</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$start</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$end</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$type</span>			</li>
+				</ul>
+		
+			
+	</div>
+
+						
+		</div>
+	</div>
+
+
+	<p class="notes" id="credit">
+		Documentation generated on Thu, 15 Jan 2009 11:11:13 +0000 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.4.2</a>
+	</p>
+	</div></body>
+</html>

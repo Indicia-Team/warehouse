@@ -1,0 +1,26 @@
+div.viewform {
+  width: 600px;
+  border: groove 1px grey;
+}
+
+div.viewform ol {
+  margin: 0;
+  padding: 0;
+}
+
+div.viewform li {
+  list-style: none;
+  padding: 5px;
+  margin: 0;
+}
+
+div.viewform span.label {
+  display: inline-block;
+  text-align: right;
+  width: 20%;
+  margin-right: 20px;
+}
+
+div.viewform span.item {
+  padding: 0 10px 0 0;
+}

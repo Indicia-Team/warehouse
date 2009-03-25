@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <html xmlns="http://www.w3.org/1999/xhtml">
+		<head>
+			<!-- template designed by Marco Von Ballmoos -->
+			<title>Docs For Class spatial_ref</title>
+			<link rel="stylesheet" href="../media/stylesheet.css" />
+			<meta http-equiv='Content-Type' content='text/html; charset=iso-8859-1'/>
+		</head>
+		<body>
+			<div class="page-body">			
+<h2 class="class-name">Class spatial_ref</h2>
+
+<a name="sec-description"></a>
+<div class="info-box">
+	<div class="info-box-title">Description</div>
+	<div class="nav-bar">
+					<span class="disabled">Description</span> |
+															<a href="#sec-method-summary">Methods</a> (<a href="#sec-methods">details</a>)
+						
+					</div>
+	<div class="info-box-body">
+        		<!-- ========== Info from phpDoc block ========= -->
+		<p class="notes">
+			Located in <a class="field" href="_helpers---spatial_ref.php.html">/helpers/spatial_ref.php</a> (line <span class="field">3</span>)
+		</p>
+		
+				
+		<pre></pre>
+	
+			</div>
+</div>
+
+
+
+
+	<a name="sec-method-summary"></a>
+	<div class="info-box">
+		<div class="info-box-title">Method Summary</span></div>
+		<div class="nav-bar">
+			<a href="#sec-description">Description</a> |
+												<span class="disabled">Methods</span> (<a href="#sec-methods">details</a>)
+		</div>
+		<div class="info-box-body">			
+			<div class="method-summary">
+												<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#internal_wkt_to_sref" title="details" class="method-name">internal_wkt_to_sref</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$wkt</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$sref_system</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$precision</span> = <span class="var-default">null</span>])
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_valid" title="details" class="method-name">is_valid</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$sref</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$sref_system</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#is_valid_system" title="details" class="method-name">is_valid_system</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$system</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#point_to_lat_lon" title="details" class="method-name">point_to_lat_lon</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$wkt</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">string</span>
+										<a href="#sref_to_internal_wkt" title="details" class="method-name">sref_to_internal_wkt</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$sref</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$sref_system</span>)
+									</div>
+																<div class="method-definition">
+					static 						<span class="method-result">void</span>
+										<a href="#wkt_to_internal_wkt" title="details" class="method-name">wkt_to_internal_wkt</a>
+											(<span class="var-type"></span>&nbsp;<span class="var-name">$wkt</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$srid</span>)
+									</div>
+								
+																																																				</div>
+		</div>
+	</div>		
+
+	
+	<a name="sec-methods"></a>
+	<div class="info-box">
+		<div class="info-box-title">Methods</div>
+		<div class="nav-bar">
+			<a href="#sec-description">Description</a> |
+																<a href="#sec-method-summary">Methods</a> (<span class="disabled">details</span>)
+						
+		</div>
+		<div class="info-box-body">
+			<A NAME='method_detail'></A>
+<a name="methodinternal_wkt_to_sref" id="internal_wkt_to_sref"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method internal_wkt_to_sref</span> (line <span class="line-number">82</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+	<ul class="tags">
+				<li><span class="field">access:</span> public</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			internal_wkt_to_sref
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$wkt</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$sref_system</span>, [<span class="var-type"></span>&nbsp;<span class="var-name">$precision</span> = <span class="var-default">null</span>])
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$wkt</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$sref_system</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$precision</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_valid" id="is_valid"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_valid</span> (line <span class="line-number">9</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Provides a wrapper for dynamic calls to a spatial reference module's validate  method.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> public</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_valid
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$sref</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$sref_system</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$sref</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$sref_system</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodis_valid_system" id="is_valid_system"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method is_valid_system</span> (line <span class="line-number">29</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Returns true if a spatial reference system is recognisable as a notation  or EPSG code.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> public</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			is_valid_system
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$system</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$system</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodpoint_to_lat_lon" id="point_to_lat_lon"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method point_to_lat_lon</span> (line <span class="line-number">101</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Convert a point wkt into a x, y representation.</p>
+	<ul class="tags">
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			point_to_lat_lon
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$wkt</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$wkt</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodsref_to_internal_wkt" id="sref_to_internal_wkt"><!-- --></a>
+<div class="oddrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method sref_to_internal_wkt</span> (line <span class="line-number">47</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Provides a wrapper for dynamic calls to a spatial reference module's  spatial_ref_to_wkt method (produces well known text from an sref).</p>
+	<ul class="tags">
+				<li><span class="field">return:</span> Well Known Text for the point or polygon described by the sref, in  the WGS84 datum.</li>
+				<li><span class="field">access:</span> public</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">string</span>
+		<span class="method-name">
+			sref_to_internal_wkt
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$sref</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$sref_system</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$sref</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$sref_system</span>			</li>
+				</ul>
+		
+			
+	</div>
+<a name="methodwkt_to_internal_wkt" id="wkt_to_internal_wkt"><!-- --></a>
+<div class="evenrow">
+	
+	<div class="method-header">
+		<span class="method-title">static method wkt_to_internal_wkt</span> (line <span class="line-number">67</span>)
+	</div> 
+	
+	<!-- ========== Info from phpDoc block ========= -->
+<p class="short-description">Converts WKT text in a known SRID, to WKT in internally stored srid.</p>
+	<ul class="tags">
+				<li><span class="field">todo:</span> Consider moving PostGIS specific code into a driver.</li>
+				<li><span class="field">access:</span> protected</li>
+			</ul>
+	
+	<div class="method-signature">
+	    static
+		<span class="method-result">void</span>
+		<span class="method-name">
+			wkt_to_internal_wkt
+		</span>
+					(<span class="var-type"></span>&nbsp;<span class="var-name">$wkt</span>, <span class="var-type"></span>&nbsp;<span class="var-name">$srid</span>)
+			</div>
+	
+			<ul class="parameters">
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$wkt</span>			</li>
+					<li>
+				<span class="var-type"></span>
+				<span class="var-name">$srid</span>			</li>
+				</ul>
+		
+			
+	</div>
+
+						
+		</div>
+	</div>
+
+
+	<p class="notes" id="credit">
+		Documentation generated on Thu, 15 Jan 2009 11:11:12 +0000 by <a href="http://www.phpdoc.org" target="_blank">phpDocumentor 1.4.2</a>
+	</p>
+	</div></body>
+</html>

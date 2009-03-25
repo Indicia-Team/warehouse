@@ -1,0 +1,271 @@
+<?php
+
+class spatial_ref {
+
+	/**
+	 * Provides a wrapper for dynamic calls to a spatial reference module's validate
+	 * method.
+	 */
+	public static function is_valid($sref, $sref_system)
+	{
+		$system = strtolower($sref_system);
+		if (is_numeric($system)) {
+			// EPSG code
+			// first check if this $system expects Lat/Long format, rather than x,y
+			if(array_key_exists($system, kohana::config('sref_notations.lat_long_systems'))) {
+				// validate the notation by calling the lat/long validator
+				return (bool) self::is_valid_lat_long($sref);
+			} else {
+			// else check this is just a pair of numbers with a list separator
+				$locale=localeconv();
+				return (bool) preg_match(
+					'/^[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+'.
+					Kohana::lang('misc.x_y_separator').
+					'[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+$/D', $sref);
+			}
+		} else {
+			// validate the notation by calling the module which translates it for us
+			return (bool) call_user_func("$system::is_valid", $sref);
+		}
+	}
+
+	/**
+	 * Returns true if a spatial reference system is recognisable as a notation
+	 * or EPSG code.
+	 */
+	public static function is_valid_system($system)
+	{
+		$db = new Database();
+		if (is_numeric($system)) {
+			$found = $db->count_records('spatial_ref_sys', array('auth_srid' => $system));
+		} else {
+			$found = array_key_exists(strtolower($system), kohana::config('sref_notations.sref_notations'));
+		}
+		return $found>0;
+	}
+
+	/**
+	 * Provides a wrapper for dynamic calls to a spatial reference module's
+	 * spatial_ref_to_wkt method (produces well known text from an sref).
+	 *
+	 * @return string Well Known Text for the point or polygon described by the sref, in
+	 * the WGS84 datum.
+	 */
+	public static function sref_to_internal_wkt($sref, $sref_system)
+	{
+		$system = strtolower($sref_system);
+		$sref = strtoupper($sref);
+		if (is_numeric($system)) {
+			// EPSG code
+			// first check if this $system expects Lat/Long format, rather than x,y
+			if(array_key_exists($system, kohana::config('sref_notations.lat_long_systems'))) {
+				$wkt = self::lat_long_to_wkt($sref);
+			} else {
+				// else this is just a pair of numbers with a list separator
+				$coords = explode(kohana::lang('misc.x_y_separator'), $sref);
+				$wkt = 'POINT('.$coords[0].' '.$coords[1].')';
+			}
+			$srid = $system;
+		} else {
+			$wkt = call_user_func("$system::sref_to_wkt", $sref);
+			$srid = call_user_func("$system::get_srid");
+		}
+		return self::wkt_to_internal_wkt($wkt, $srid);
+	}
+
+	/**
+	 * Converts WKT text in a known SRID, to WKT in internally stored srid.
+	 *
+	 * @todo Consider moving PostGIS specific code into a driver.
+	 */
+	protected static function wkt_to_internal_wkt($wkt, $srid)
+	{
+		// WGS84 = same as internally stored values, so don't bother transforming if already there.
+		if ($srid!=kohana::config('sref_notations.internal_srid')) {
+			$db = new Database;
+			$result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('$wkt',$srid),".
+				kohana::config('sref_notations.internal_srid').")) AS wkt;")->current();
+			return $result->wkt;
+		} else
+			return $wkt;
+	}
+
+	/*
+	 * Converts a internal WKT value to any output sref - either a notation, or a transformed WKT
+	 */
+	public static function internal_wkt_to_sref($wkt, $sref_system, $precision=null)
+	{
+		$system = strtolower($sref_system);
+		if (is_numeric($system))
+			$srid = $system;
+		else
+			$srid = call_user_func("$system::get_srid");
+		$db = new Database;
+		$result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText(" .
+				"'$wkt',".kohana::config('sref_notations.internal_srid')."),$srid)) AS wkt;")->current();
+		if (is_numeric($system)) {
+			// NB the handed in precision is ignored, and the rounding is determined by the system in use
+			if(array_key_exists($system, kohana::config('sref_notations.lat_long_systems')))
+				return self::point_to_lat_long($result->wkt, $system);
+			else
+				return self::point_to_x_y($result->wkt, $system);
+		} else
+			return call_user_func("$system::wkt_to_sref", $result->wkt, $precision);
+	}
+
+	/**
+	 * Convert a point wkt into a x, y representation.
+	 * @param int $system The SRID of the system, used to determine the rounding that should be applied to the x,y values.
+	 */
+	protected static function point_to_x_y($wkt, $system)
+	{
+		$locale=localeconv();
+		if ((bool) preg_match(
+					'/^POINT\([-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+\)$/D', $wkt)) {
+			$coords = explode(' ', substr($wkt, 6, strlen($wkt)-7));
+			$roundings = kohana::config('sref_notations.roundings');
+			if (array_key_exists($system, $roundings))
+				$round = $roundings[$system];
+			else
+				$round = 0;
+			return round($coords[0],$round).Kohana::lang('misc.x_y_separator')." ".round($coords[1],$round);
+		} else {
+			throw new Exception('point_to_x_y passed invalid wkt - '.$wkt);
+		}
+	}
+
+	protected static function process_lat_long($sref)
+	{
+		//due to 3 different basic formats for each of lat and long, and then the various different positions of +-NSEW, process each individually
+		$latitude = strtok($sref, ' '.Kohana::lang('misc.x_y_separator'));
+		$longitude = strtok(' '.Kohana::lang('misc.x_y_separator'));
+		$results = array();
+		$locale=localeconv();
+		if (strtok(' '.Kohana::lang('misc.x_y_separator')) != false)
+			return false;
+		if ((bool) preg_match('/^([-+NS]?)([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
+			if (($matches[1] != '' and $matches[3] != '') or $matches[2] > 90)
+				return false;
+			$results['lat'] = $matches[2];
+			if ($matches[1] == '-' or $matches[1] == 'S' or $matches[3] == 'S')
+				$results['lat'] *= -1;
+		} else if ((bool) preg_match('/^([-+NS]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
+			if (($matches[1] != '' and $matches[4] != '') or $matches[2] > 90 or $matches[3] > 60)
+				return false;
+			$results['lat'] = $matches[2]+($matches[3]/60);
+			if ($matches[1] == '-' or $matches[1] == 'S' or $matches[4] == 'S')
+				$results['lat'] *= -1;
+		} else if ((bool) preg_match('/^([-+NS]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*)'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([NS]?)$/D', $latitude, $matches)) {
+			if (($matches[1] != '' and $matches[5] != '') or $matches[2] > 90 or $matches[3] > 60 or $matches[4] > 60)
+				return false;
+			$results['lat'] = $matches[2]+($matches[3]/60)+($matches[4]/3600);
+			if ($matches[1] == '-' or $matches[1] == 'S' or $matches[5] == 'S')
+				$results['lat'] *= -1;
+		} else return false;
+		
+		if ((bool) preg_match('/^([-+EW]?)([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([EW]?)$/D', $longitude, $matches)) {
+			if (($matches[1] != '' and $matches[3] != '') or $matches[2] > 180)
+				return false;
+			$results['long'] = $matches[2];
+			if ($matches[1] == '-' or $matches[1] == 'W' or $matches[3] == 'W')
+				$results['long'] *= -1;
+		} else if ((bool) preg_match('/^([-+EW]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([EW]?)$/D', $longitude, $matches)) {
+			if (($matches[1] != '' and $matches[4] != '') or $matches[2] > 180 or $matches[3] > 60)
+				return false;
+			$results['long'] = $matches[2]+($matches[3]/60);
+			if ($matches[1] == '-' or $matches[1] == 'W' or $matches[4] == 'W')
+				$results['long'] *= -1;
+		} else if ((bool) preg_match('/^([-+EW]?)([0-9]*)\\'.Kohana::lang('misc.d_m_s_separator').'([0-9]*)'.Kohana::lang('misc.d_m_s_separator').'([0-9]*\\'.$locale['decimal_point'].'?[0-9]+)([EW]?)$/D', $longitude, $matches)) {
+			if (($matches[1] != '' and $matches[5] != '') or $matches[2] > 180 or $matches[3] > 60 or $matches[4] > 60)
+				return false;
+			$results['long'] = $matches[2]+($matches[3]/60)+($matches[4]/3600);
+			if ($matches[1] == '-' or $matches[1] == 'W' or $matches[5] == 'W')
+				$results['long'] *= -1;
+		} else return false;
+		
+		return $results;
+	}
+
+	protected static function is_valid_lat_long($sref)
+	{
+		return ((bool)self::process_lat_long($sref));
+	}
+
+	protected static function lat_long_to_wkt($sref)
+	{
+		$results = self::process_lat_long($sref);
+		if ($results === false)
+			throw new Exception('lat_long_to_wkt passed invalid latitude/longitude - '.$sref);
+		$wkt = 'POINT('.$results['long'].' '.$results['lat'].')';
+		return $wkt;
+	}
+
+	protected static function point_to_lat_long($wkt, $system)
+	{
+		$locale=localeconv();
+		if ((bool) preg_match(
+					'/^POINT\([-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+\)$/D', $wkt)) {
+			$lat_res = '';
+			$long_res = '';
+			$coords = explode(' ', substr($wkt, 6, strlen($wkt)-7));
+			$long = abs($coords[0]);
+			$lat = abs($coords[1]);
+			$lat_long_details = kohana::config('sref_notations.lat_long_systems');
+			$lat_long_detail = $lat_long_details[$system];
+			if (array_key_exists('default_output', $lat_long_detail))
+				$default_output = $lat_long_detail['default_output'];
+			else
+				$default_output = 'D';
+			if (array_key_exists('indicator', $lat_long_detail))
+				$indicator = $lat_long_detail['indicator'];
+			else
+				$indicator = 'Prefix_NSEW';
+			$roundings = kohana::config('sref_notations.roundings');
+			if (array_key_exists($system, $roundings))
+				$round = $roundings[$system];
+			else
+				$round = 0;
+			if ($indicator == 'PlusMinus') {
+				$long_res .= ($coords[0] < 0 ? '-' : '+');
+				$lat_res .= ($coords[1] < 0 ? '-' : '+');
+			} else if ($indicator == 'Minus') {
+				$long_res .= ($coords[0] < 0 ? '-' : '');
+				$lat_res .= ($coords[1] < 0 ? '-' : '');
+			} else if ($indicator == 'Prefix_NSEW') {
+				$long_res .= ($coords[0] < 0 ? 'W' : 'E');
+				$lat_res .= ($coords[1] < 0 ? 'S' : 'N');
+			}
+			// when rounding for DMS & DM, the accuracy is reduced unless we increase the number of digits by one. 
+			// This is because rounding in base 60 gives less accuracy than in base 100. To do this we show both minutes when rounding is 1, etc.
+			if ($default_output == 'DMS') {
+				$long_deg = floor($long);
+				$long_min = ($round == 0 ? 0 : floor(($long-$long_deg)*60));
+				$long_sec = ($round < 1 ? 0 : round((3600*($long-$long_deg)-$long_min*60), $round <= 3 ? 0 : $round - 3));
+				$long_res .= $long_deg.(Kohana::lang('misc.d_m_s_separator')).$long_min.(Kohana::lang('misc.d_m_s_separator')).$long_sec;
+				$lat_deg = floor($lat);
+				$lat_min = ($round == 0 ? 0 : floor(($lat-$lat_deg)*60));
+				$lat_sec = ($round < 1 ? 0 : round((3600*($lat-$lat_deg)-$lat_min*60), $round <= 3 ? 0 : $round - 3));
+				$lat_res .= $lat_deg.(Kohana::lang('misc.d_m_s_separator')).$lat_min.(Kohana::lang('misc.d_m_s_separator')).$lat_sec;
+			} else if ($default_output == 'DM') {
+				$long_deg = floor($long);		
+				$long_min = ($round == 0 ? 0 : round(($long-$long_deg)*60, $round <= 1 ? 0 : $round - 1));
+				$long_res .= $long_deg.Kohana::lang('misc.d_m_s_separator').$long_min;
+				$lat_deg = floor($lat);		
+				$lat_min = ($round == 0 ? 0 : round(($lat-$lat_deg)*60, $round <= 1 ? 0 : $round - 1));
+				$lat_res .= $lat_deg.Kohana::lang('misc.d_m_s_separator').$lat_min;
+			}else {
+				$long_res .= round($long,$round);
+				$lat_res .= round($lat,$round);
+			}
+			if ($indicator == 'Postfix_NSEW') {
+				$long_res .= ($coords[0] < 0 ? 'W' : 'E');
+				$lat_res .= ($coords[1] < 0 ? 'S' : 'N');
+			}
+			return $lat_res.' '.$long_res;
+		} else {
+			throw new Exception('point_to_lat_long passed invalid wkt - '.$wkt);
+		}
+	}
+}
+
+?>
