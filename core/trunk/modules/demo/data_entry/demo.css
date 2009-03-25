@@ -1,0 +1,121 @@
+*
+{
+	margin: 0;
+	padding: 0;
+}
+
+body
+{
+	padding: 30px;
+	font-size: 80%;
+	font-family: Trebuchet MS, Helvetica, sans-serif;
+}
+
+p
+{
+	padding-bottom: 12px;
+}
+
+form {
+	background: #eee;
+	width: 624px;
+	padding: 12px;
+}
+
+input, select, textarea {
+	vertical-align: top;
+}
+
+label {
+	width: 200px;
+	display: inline-block;
+	line-height: 1.7em;
+	vertical-align: middle;
+}
+
+p#addOccAttr {
+	text-align: right;
+	color: #D00002;
+	cursor: pointer;
+}
+
+div#occAttr0 {
+	display: none;
+}
+
+.instruct {
+	width: 600px;
+	color: #666666;
+	font-size: 90%;
+	border: 0;
+	padding: 0;
+}
+
+.error {
+	border: solid red 1px;
+	background-color: #FFCCCC;
+}
+
+.error_message {
+	font-weight: bold;
+}
+
+.success {
+	border: dashed blue 1px;
+	background-color: #CCCCFF;
+	width: auto;
+	margin: 12px;
+	padding: 12px;
+}
+
+#actaxa_taxon_list_id, #acdeterminer_id, #survey_id {
+	width: 205px;
+}
+
+#comment {
+	width: 300px;
+}
+
+table.speciesCheckList {
+}
+
+table.speciesCheckList thead {
+	border: 1px solid #666666;
+}
+
+table.speciesCheckList tr {
+	border: 1px solid #666666;
+}
+
+table.speciesCheckList tbody td{
+	padding: 0 6px 0 6px;
+}
+
+table.invisible {
+	display: none;
+}
+
+#place_search_box {
+	border: solid grey 1px;
+	background-color: #e7e7e7;
+	padding: 1em;
+	margin-left: 1em;
+	font-size: 90%;
+}
+
+#place_search_output p {
+	padding-bottom: 0;
+}
+
+
+#place_search_output ol  {
+	list-style-type: none;
+	padding-left: 2em;
+	padding-bottom: 1em;
+}
+
+#place_close_button {
+	border: solid grey 1px;
+	background-color: #eeeeee;
+	padding: 0.5em;
+}
