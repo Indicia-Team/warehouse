@@ -20,7 +20,7 @@
 	    initial_zoom: 7,
 	    proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
 	    displayFormat: "image/png",
-	    presetLayers: [],
+	    presetLayers: ['google_physical'],
 	    openLayersOptions: 
 	    {
 	      projection: new OpenLayers.Projection("EPSG:900913"),
@@ -46,8 +46,27 @@
 	    multimap_landranger : new OpenLayers.Layer.MultiMap('OS Landranger', {sphericalMercator: true, dataSource: 904})
     };
     
-    this.construct = function(entity, options)
+    this.construct = function(options)
     {
+      var settings = {};
+      // Deep extend
+      $.extend(true, settings, this.defaults, options);
+      return this.each(function()
+      {
+	this.settings = settings;
+	// Constructs the map
+	this.map = new OpenLayers.map(this.attr('id'), this.settings.openLayersOptions);
+	
+	// Iterate over the preset layers, adding them to the map
+	$.each(this.settings['presetLayers'], function(i, item)
+	{
+	  // Check whether this is a defined layer
+	  if (this.presetLayers.hasOwnProperty(item))
+	  {
+	    this.addLayer(this.presetLayers['item']);
+	  }
+	});
+      });
     };
     
     /**
@@ -55,9 +74,23 @@
     */
     this.addLayer = function(layer)
     {
+      this.map.addLayer([layer]);
+      return this;
     };
     
-  }
-  );
+    /**
+    * Adds a control to the map. We expose this to make it chainable.
+    */
+    this.addControl = function(control)
+    {
+      this.map.addControl(control);
+      return this;
+    }
+    
+  });
+  
+  $.fn.extend({
+    indiciaMap : $.indiciaMap.construct
+  });
 }
 )(jQuery);
