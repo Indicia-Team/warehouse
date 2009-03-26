@@ -7,7 +7,7 @@
 
 (function($)
 {
-  $.extend({ indiciaMap : new function()
+  $.extend({indiciaMap : new function()
   {
     // Quite a lot of options here
     this.defaults = 
@@ -20,7 +20,7 @@
 	     initial_zoom: 7,
 	     proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
 	     displayFormat: "image/png",
-	     presetLayers: ['google_streets'],
+	     presetLayers: ['google_streets', 'google_physical'],
 	     openLayersOptions: 
 	     {
 	       projection: new OpenLayers.Projection("EPSG:900913"),
@@ -35,41 +35,43 @@
     // Potential layers to add to the map
     this.presetLayers =
     {
-      google_physical : "new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': 'true'})",
-	     google_streets : "new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true})",
-	     google_hybrid : "new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true})",
-	     google_satellite : "new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true})",
-	     openlayers_wms : "new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true})",
-	     nasa_mosaic : "new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true})",
-	     virtual_earth : "new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true})",
-	     multimap_default : "new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true})",
-	     multimap_landranger : "new OpenLayers.Layer.MultiMap('OS Landranger', {sphericalMercator: true, dataSource: 904})"
+      google_physical : function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': 'true'})},
+	     google_streets : function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true})},
+	     google_hybrid : function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true})},
+	     google_satellite : function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true})},
+	     openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true})},
+	     nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true})},
+	     virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true})},
+	     multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true})},
+	     multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('OS Landranger', {sphericalMercator: true, dataSource: 904})}
     };
     
     this.construct = function(options)
     {
       var settings = {};
       // Deep extend
-      $.extend(true, settings, this.defaults, options);
+      $.extend(true, settings, $.indiciaMap.defaults, options);
       return this.each(function()
       {
 	this.settings = settings;
 	// Constructs the map
-	this.map = new OpenLayers.Map($(this).attr('id'), this.settings.openLayersOptions);
+	this.map = new OpenLayers.Map($(this).attr('id'), this.settings['openLayersOptions']);
+	var map = this.map;
+	
+	map.setCenter(new OpenLayers.LonLat(this.settings['initial_long'],this.settings['initial_lat']),this.settings['initial_zoom']);
 	
 	// Iterate over the preset layers, adding them to the map
 	$.each(this.settings['presetLayers'], function(i, item)
 	{
-	  alert(item);
 	  // Check whether this is a defined layer
-	  if (this.presetLayers.hasOwnProperty(item))
+	  if ($.indiciaMap.presetLayers.hasOwnProperty(item))
 	  {
-	    this.addLayer(eval(this.presetLayers['item']));
+	    map.addLayer($.indiciaMap.presetLayers[item]());
 	  }
 	});
 	if (this.settings.presetLayers.size > 1)
 	{
-	  this.map.addControl(new OpenLayers.Control.LayerSwitcher());
+	  map.addControl(new OpenLayers.Control.LayerSwitcher());
 	}
       });
     };
@@ -95,12 +97,10 @@
 	this.map.addControl(control);
       });
     };
-    
   }
   });
   
   $.fn.extend({
     indiciaMap : $.indiciaMap.construct
   });
-}
-)(jQuery);
+})(jQuery);
