@@ -51,6 +51,7 @@
       var settings = {};
       // Deep extend
       $.extend(true, settings, $.indiciaMap.defaults, options);
+      alert (JSON.stringify(settings));
       return this.each(function()
       {
 	this.settings = settings;
