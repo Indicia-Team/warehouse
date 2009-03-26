@@ -11,7 +11,7 @@
 (function($){ 
 $(document).ready(function()
 {
-$('#map').indiciaMap(); 
+$('#map').indiciaMap({openLayersOptions : { maxExtent : new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)}}); 
 });
 })(jQuery);
 </script>
