@@ -51,13 +51,12 @@
       var settings = {};
       // Deep extend
       $.extend(true, settings, $.indiciaMap.defaults, options);
-      alert (JSON.stringify(settings));
       return this.each(function()
       {
 	this.settings = settings;
 	// Constructs the map
-	this.map = new OpenLayers.Map($(this).attr('id'), this.settings['openLayersOptions']);
-	var map = this.map;
+	var map = new OpenLayers.Map($(this).attr('id'), this.settings['openLayersOptions']);
+	this.map = map;
 	
 	map.setCenter(new OpenLayers.LonLat(this.settings['initial_long'],this.settings['initial_lat']),this.settings['initial_zoom']);
 	
