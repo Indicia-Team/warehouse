@@ -57,7 +57,7 @@ class Attr_Gridview_Controller extends Controller {
 		}
 		$lists = $this->model->orderby($orderclause);
 
-		// If we are logged on as a site controller, then need to restrict access to:
+		// If we are logged on as a site controller, then need to restrict access to
 		// records on websites we are site controller for. However this is actually done by
 		// the client filtering: no server side stuff is needed.
 		// Core Admins get access to everything - again through a wider client filter selection
@@ -67,6 +67,7 @@ class Attr_Gridview_Controller extends Controller {
 			$filter = $this->base_filter;
 			$lists = $lists->where($filter);
 		}
+		$gridview->filter_type = $filter_type;
 		// Are we doing client-side filtering?
 		switch ($filter_type) {
 			case 1: // Filter by Website

@@ -132,6 +132,9 @@ foreach ($actionColumns as $name => $action) {
 <br/>
 <form action="<?php echo url::site().$createpath; ?>" method="post">
 <fieldset>
+<?php if (isset($filter_type)) { ?>
+<input type="hidden" name="filter_type" value="<?php echo html::specialchars($filter_type); ?>" />
+<?php } ?>
 <?php if (isset($website_id)) { ?>
 <input type="hidden" name="website_id" value="<?php echo html::specialchars($website_id); ?>" />
 <?php } ?>

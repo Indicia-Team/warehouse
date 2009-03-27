@@ -1,6 +1,9 @@
 <p>This page allows you to specify a new custom attribute for an <?php echo $name; ?>.</p>
 <form class="cmxform" action="<?php echo url::site().$processpath; ?>" method="post">
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
+<input type="hidden" name="filter_type" id="filter_type" value="<?php echo html::specialchars($filter_type); ?>" />
+<input type="hidden" name="website_id" id="website_id" value="<?php echo html::specialchars($website_id); ?>" />
+<input type="hidden" name="survey_id" id="survey_id" value="<?php echo html::specialchars($survey_id); ?>" />
 <input type="hidden" name="disabled_input" id="disabled_input" value="<?php echo html::specialchars($disabled_input); ?>" />
 <?php echo $attribute_load ?>
 <fieldset>
@@ -52,9 +55,15 @@ function toggleOptions(data_type)
 	};
 
 };
+<?php
+	if ($disabled_input === 'NO') {
+?>
 $(document).ready(function() {
 	toggleOptions($('select#data_type').attr('value'));
 });
+<?php 
+	}
+?>
 </script>
 <select id="data_type" name="data_type" <?php echo $enabled ?> onchange="toggleOptions(this.value);">
 	<option value=''>&lt;Please Select&gt;</option>
@@ -141,9 +150,10 @@ $optionlist = array('T' => 'Text'
 	foreach ($websites as $website) {
 		$webrec = ORM::factory($webrec_entity)->where(array($webrec_key => $model->id,
 														'website_id' => $website->id,
-														'restrict_to_survey_id IS' => null))->find();
+														'restrict_to_survey_id IS' => null,
+														'deleted' => 'f'))->find();
 		echo '<li><label for="website_'.$website->id.'" class="wide" >'.$website->title.': non survey specific</label>';
-		echo form::checkbox('website_'.$website->id, TRUE, $webrec->loaded, 'class="vnarrow"' );
+		echo form::checkbox('website_'.$website->id, TRUE, $webrec->loaded, 'class="vnarrow" '.((!is_null($website_id) and is_null($survey_id) and $website_id == $website->id) ? 'checked="checked"' : '') );
 		echo "</li>";
 		$surveys = ORM::factory('survey')->where('website_id', $website->id)->orderby('title','asc')->find_all();
 		foreach ($surveys as $survey) {
@@ -151,7 +161,7 @@ $optionlist = array('T' => 'Text'
 														'website_id' => $website->id,
 														'restrict_to_survey_id' => $survey->id))->find();
 			echo '<li><label for="website_'.$website->id.'_'.$survey->id.'" class="wide" >'.$website->title.':'.$survey->title.'</label>';
-			echo form::checkbox('website_'.$website->id.'_'.$survey->id, TRUE, $webrec->loaded, 'class="vnarrow"' );
+			echo form::checkbox('website_'.$website->id.'_'.$survey->id, TRUE, $webrec->loaded, 'class="vnarrow" '.((!is_null($website_id) and !is_null($survey_id) and $website_id == $website->id and $survey_id == $survey->id) ? 'checked="checked"' : '')  );
 			echo "</li>";
 		}
 		
