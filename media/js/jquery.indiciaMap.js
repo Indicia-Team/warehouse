@@ -20,7 +20,7 @@
 	     initial_zoom: 7,
 	     proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
 	     displayFormat: "image/png",
-	     presetLayers: ['google_physical', 'google_streets', 'google_hybrid', 'google_satellite', 'openlayers_wms', 'virtual_earth', 'multimap_landranger'],
+	     presetLayers: ['google_physical', 'google_streets', 'google_hybrid', 'google_satellite', 'openlayers_wms', 'virtual_earth'],
 	     openLayersOptions: 
 	     {
 	       projection: new OpenLayers.Projection("EPSG:900913"),
@@ -29,7 +29,9 @@
 	     numZoomLevels: 18,
 	     maxResolution: 156543.0339,
 	     maxExtent: new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)
-	     }
+	     },
+	    layers: [],
+	    controls: []
     };
     
     // Potential layers to add to the map
@@ -67,7 +69,15 @@
 	    map.addLayers([layer]);
 	  }
 	});
-	if (this.settings.presetLayers.length > 1)
+	$.each(this.settings['layers'], function(i, item)
+	{
+	  map.addLayers([item]);
+	});
+	$.each(this.settings['controls'], function(i, item)
+	{
+	  map.addControl(item);
+	});
+	if ((this.settings.presetLayers.length + this.settings.layers.length) > 1)
 	{
 	  map.addControl(new OpenLayers.Control.LayerSwitcher());
 	}
@@ -75,28 +85,6 @@
 	map.setCenter(new OpenLayers.LonLat(this.settings['initial_long'],this.settings['initial_lat']),this.settings['initial_zoom']);
 	
 	this.map = map;
-      });
-    };
-    
-    /**
-    * Adds a layer to the map. We expose this here to make this chainable.
-    */
-    this.addLayer = function(layer)
-    {
-      return this.each(function()
-      {
-	this.map.addLayers([layer]);
-      });
-    };
-    
-    /**
-    * Adds a control to the map. We expose this to make it chainable.
-    */
-    this.addControl = function(control)
-    {
-      return this.each(function()
-      {
-	this.map.addControl(control);
       });
     };
   }
