@@ -20,7 +20,7 @@
 	     initial_zoom: 7,
 	     proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
 	     displayFormat: "image/png",
-	     presetLayers: ['google_streets', 'google_physical'],
+	     presetLayers: ['google_physical', 'google_streets', 'google_hybrid', 'google_satellite', 'openlayers_wms', 'virtual_earth', 'multimap_landranger'],
 	     openLayersOptions: 
 	     {
 	       projection: new OpenLayers.Projection("EPSG:900913"),
@@ -56,9 +56,6 @@
 	this.settings = settings;
 	// Constructs the map
 	var map = new OpenLayers.Map($(this).attr('id'), this.settings['openLayersOptions']);
-	this.map = map;
-	
-	map.setCenter(new OpenLayers.LonLat(this.settings['initial_long'],this.settings['initial_lat']),this.settings['initial_zoom']);
 	
 	// Iterate over the preset layers, adding them to the map
 	$.each(this.settings['presetLayers'], function(i, item)
@@ -66,13 +63,18 @@
 	  // Check whether this is a defined layer
 	  if ($.indiciaMap.presetLayers.hasOwnProperty(item))
 	  {
-	    map.addLayer($.indiciaMap.presetLayers[item]());
+	    var layer = $.indiciaMap.presetLayers[item]();
+	    map.addLayers([layer]);
 	  }
 	});
-	if (this.settings.presetLayers.size > 1)
+	if (this.settings.presetLayers.length > 1)
 	{
 	  map.addControl(new OpenLayers.Control.LayerSwitcher());
 	}
+	// Centre the map
+	map.setCenter(new OpenLayers.LonLat(this.settings['initial_long'],this.settings['initial_lat']),this.settings['initial_zoom']);
+	
+	this.map = map;
       });
     };
     
