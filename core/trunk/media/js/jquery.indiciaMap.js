@@ -56,6 +56,16 @@
       return this.each(function()
       {
 	this.settings = settings;
+	
+	// Sizes the div
+	$(this).css('height', this.settings.height).css('width', this.settings.width);
+	
+	// If we're using a proxy
+	if (var proxy = this.settings.proxy)
+	{
+	  OpenLayers.ProxyHost = proxy;
+	}
+	
 	// Constructs the map
 	var map = new OpenLayers.Map($(this).attr('id'), this.settings['openLayersOptions']);
 	

@@ -20,7 +20,7 @@
 	    input_field_name : 'entered_sref',
 	    geom_field_name : 'geom',
 	    systems_field_name : 'entered_sref_systems',
-	    systems : {WGS84 : "Lat/Long on th WGS84 Datum", OSGB : "Ordnance Survey"}
+	    systems : {4326 : "Lat/Long on th WGS84 Datum", OSGB : "Ordnance Survey British National Grid"}
 	    placeControls : true,
 	    controlPosition : 0,
 	    boundaryStyle: new OpenLayers.Util.applyDefaults({ strokeWidth: 1, strokeColor: "#ff0000", fillOpacity: 0.3,
@@ -62,6 +62,7 @@
     function placeControls(div)
     {
       var pos = div.settings.controlPosition;
+      var systems = div.settings.systems;
     }
     
     function showWktFeature(div) {
@@ -69,12 +70,13 @@
       var wkt = div.settings.wkt;
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
+      var bounds=feature.geometry.getBounds();
+      
       editlayer.destroyFeatures();
       editlayer.addFeatures([feature]);
-      var bounds=feature.geometry.getBounds();
       // extend the boundary to include a buffer, so the map does not zoom too tight.
-      dy = (bounds.top-bounds.bottom)/1.5;
-      dx = (bounds.right-bounds.left)/1.5;
+      var dy = (bounds.top-bounds.bottom)/1.5;
+      var dx = (bounds.right-bounds.left)/1.5;
       bounds.top = bounds.top + dy;
       bounds.bottom = bounds.bottom - dy;
       bounds.right = bounds.right + dx;
