@@ -39,7 +39,7 @@ $(document).ready(function() {
 	});
 });
 </script>
-<form class="cmxform"  name='editList' action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="POST">
+<form class="cmxform"  name='editList' action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="POST" enctype="multipart/form-data">
 <?php echo $metadata ?>
 <fieldset>
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
@@ -78,9 +78,16 @@ $(document).ready(function() {
 <textarea rows="3" id="synonomy" name="synonomy"><?php echo html::specialchars($synonomy); ?></textarea>
 </li>
 <li>
-<label for="image_path">Image Path</label>
-<input id="image_path" name="image_path" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->image_path) : ''); ?>"/>
-<?php echo html::error_message($model->getError('image_path')); ?>
+<?php
+if ($model->image_path != null)
+{
+echo "<img src='".$model->image_path."' alt='An image.' />";
+echo html::error_message($model->getError('image_path'));
+}
+// Image upload
+echo "<label for='image_path'>Upload Image: </label>";
+echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
+?>
 </li>
 <li>
 <label for="description">Description</label>
