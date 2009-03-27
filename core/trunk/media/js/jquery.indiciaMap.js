@@ -61,9 +61,9 @@
 	$(this).css('height', this.settings.height).css('width', this.settings.width);
 	
 	// If we're using a proxy
-	if (var proxy = this.settings.proxy)
+	if (this.settings.proxy)
 	{
-	  OpenLayers.ProxyHost = proxy;
+	  OpenLayers.ProxyHost = this.settings.proxy;
 	}
 	
 	// Constructs the map
