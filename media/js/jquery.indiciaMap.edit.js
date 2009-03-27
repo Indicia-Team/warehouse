@@ -20,7 +20,7 @@
 	    input_field_name : 'entered_sref',
 	    geom_field_name : 'geom',
 	    systems_field_name : 'entered_sref_systems',
-	    systems : {4326 : "Lat/Long on th WGS84 Datum", OSGB : "Ordnance Survey British National Grid"}
+	    systems : {4326 : "Lat/Long on th WGS84 Datum", OSGB : "Ordnance Survey British National Grid"},
 	    placeControls : true,
 	    controlPosition : 0,
 	    boundaryStyle: new OpenLayers.Util.applyDefaults({ strokeWidth: 1, strokeColor: "#ff0000", fillOpacity: 0.3,
@@ -63,6 +63,22 @@
     {
       var pos = div.settings.controlPosition;
       var systems = div.settings.systems;
+      
+      var html = "<span>";
+      html += "<input type='text' id='" + div.settings.input_field_id + "' name='" + div.settings.input_field_id + "' />\n";
+      if (systems.length == 1)
+      {
+	// Hidden field for the system
+	html += "<input type='hidden' id='" + div.settings.systems_field_id + "' name='" + div.settings.systems_field_id + "'/>\n";
+      }
+      else
+      {
+	html += "<select id='" + div.settings.systems_field_id + "' name='" + div.settings.systems_field_id + "' value='" + "' />\n";
+	$.each(systems, function(key, val) { html += "<option value='" + key + "'>" + val + "</option>\n" });
+	html += "</select>\n";
+      }
+      html += "</span>";
+      $(div).prepend(html);
     }
     
     function showWktFeature(div) {
