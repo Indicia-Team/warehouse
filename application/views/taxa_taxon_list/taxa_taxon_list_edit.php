@@ -77,13 +77,13 @@ $(document).ready(function() {
 <label for="synonomy">Synonyms<br/> (one per line)</label>
 <textarea rows="3" id="synonomy" name="synonomy"><?php echo html::specialchars($synonomy); ?></textarea>
 </li>
-<li>
 <?php
 if ($model->image_path != null)
 {
-echo "<img src='".$model->image_path."' alt='An image.' />";
+echo html::image(array('src' => 'upload/'.$model->image_path, 'width' => 100));
 echo html::error_message($model->getError('image_path'));
 }
+echo "<li>";
 // Image upload
 echo "<label for='image_path'>Upload Image: </label>";
 echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
