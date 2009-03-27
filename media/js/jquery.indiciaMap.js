@@ -83,7 +83,6 @@
 	}
 	// Centre the map
 	map.setCenter(new OpenLayers.LonLat(this.settings['initial_long'],this.settings['initial_lat']),this.settings['initial_zoom']);
-	
 	this.map = map;
       });
     };
