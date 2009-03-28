@@ -20,7 +20,7 @@
 	    input_field_name : 'entered_sref',
 	    geom_field_name : 'geom',
 	    systems_field_name : 'entered_sref_systems',
-	    systems : {4326 : "Lat/Long on th WGS84 Datum", OSGB : "Ordnance Survey British National Grid"},
+	    systems : {4326 : "Lat/Long on the WGS84 Datum", OSGB : "Ordnance Survey British National Grid"},
 	    placeControls : true,
 	    controlPosition : 0,
 	    boundaryStyle: new OpenLayers.Util.applyDefaults({ strokeWidth: 1, strokeColor: "#ff0000", fillOpacity: 0.3,
@@ -31,7 +31,7 @@
     this.construct = function(options)
     {
       var settings = {};
-      $.extend(true, settings, $.indiciaMap.defaults, $.indiciaMapEdit.defaults);
+      $.extend(true, settings, $.indiciaMapEdit.defaults, $.indiciaMap.defaults);
       return this.each(function()
       {
 	this.settings = settings;
@@ -65,20 +65,29 @@
       var systems = div.settings.systems;
       
       var html = "<span>";
-      html += "<input type='text' id='" + div.settings.input_field_id + "' name='" + div.settings.input_field_id + "' />\n";
+      html += "<label for='"+div.settings.input_field_name+"'>Spatial Reference:</label>";
+      html += "<input type='text' id='" + div.settings.input_field_name + "' name='" + div.settings.input_field_name + "' />\n";
       if (systems.length == 1)
       {
 	// Hidden field for the system
-	html += "<input type='hidden' id='" + div.settings.systems_field_id + "' name='" + div.settings.systems_field_id + "'/>\n";
+	html += "<input type='hidden' id='" + div.settings.systems_field_name + "' name='" + div.settings.systems_field_name + "'/>\n";
       }
       else
       {
-	html += "<select id='" + div.settings.systems_field_id + "' name='" + div.settings.systems_field_id + "' value='" + "' />\n";
+	html += "<label for='"+div.settings.systems_field_name+"'>Spatial Reference System:</label>";
+	html += "<select id='" + div.settings.systems_field_name + "' name='" + div.settings.systems_field_name + "' >\n";
 	$.each(systems, function(key, val) { html += "<option value='" + key + "'>" + val + "</option>\n" });
 	html += "</select>\n";
       }
       html += "</span>";
       $(div).prepend(html);
+    }
+    
+    /**
+    * Registers controls with the map - binds functions to them and places correct data in if wkt has been supplied.
+    */
+    function registerControls(div)
+    {
     }
     
     function showWktFeature(div) {
