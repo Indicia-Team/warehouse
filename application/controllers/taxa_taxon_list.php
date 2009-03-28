@@ -399,12 +399,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       // Wrap a new submission
       Kohana::log("info", "Wrapping submission for synonym ".$taxon);
       
+      $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
+      $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
       $syn = $_POST;
       $syn['taxon_id'] = null;
       $syn['taxon'] = $taxon;
       $syn['authority'] = $auth;
-      $syn['language_id'] = ORM::factory('language')->where(array(
-      'iso' => $lang))->find()->id;
+      $syn['language_id'] = $lang_id;
       $syn['id'] = '';
       $syn['preferred'] = 'f';
       $syn['taxon_meaning_id'] = $this->model->taxon_meaning_id;
