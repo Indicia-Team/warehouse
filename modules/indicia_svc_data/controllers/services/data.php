@@ -366,11 +366,12 @@ class Data_Controller extends Service_Base_Controller {
     $this->entity = $tablename;
     $this->db = new Database();
     $this->viewname = $this->get_view_name();
+    $this->view_columns = $this->db->list_fields($this->viewname);
     $mode = $this->get_output_mode();
 
     $this->db->from($this->viewname);
     $select = '*';
-    $this->db->select($select);
+    $this->db->select($select);    
     if(!in_array ($this->entity, $this->allow_full_access)) {
         if(array_key_exists ('website_id', $this->view_columns))
         {

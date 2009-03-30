@@ -12,11 +12,12 @@
 	   cssSortHeader: "headerSort",
 	   cssAsc: "headerSortUp",
 	   cssDesc: "headerSortDown",
-	   indiciaSvc: "http://localhost/indicia/index.php/services/data",
+	   indiciaSvc: "http://localhost/indicia/index.php/services",
 	   dataColumns: null,
 	   actionColumns: {},
 	   itemsPerPage: 10,
 	   multiSort: false,
+	   auth: {},
 	   parameters: {},
 	   formatPager: formatPager
       };
@@ -61,10 +62,13 @@
       * Write the correct html into the header section of the table. Also generates the paginator.
       */
       function generateHeader(div){
-	var url = div.settings.indiciaSvc;
+	var url = div.settings.indiciaSvc + "/data";
 	var headers = "";
 	var filter = "<form name='Filter' action='' method='get'>Filter for <input type='text' name='filters' class='filter' /> in <select type='text' name='columns' class='filterCol'>";
-	url += "/info_table/" + div.entity + "?mode=json&callback=?";
+	url += "/info_table/" + div.entity + "?mode=json&callback=?"; 
+	$.each(div.settings.auth, function(key, value){
+	  url += "&" + key + "=" + value;
+	});
 	$.getJSON(url, function(data){
 	  div.recordCount = data.record_count;
 	  $.each(data.columns, function(i, item){
@@ -211,7 +215,7 @@
       
       function getUrl(div){
 	var page = div.page;
-	var url = div.settings.indiciaSvc;
+	var url = div.settings.indiciaSvc + "/data";
 	var offset = (page - 1)*div.settings.itemsPerPage;
 	var sortCols = div.sort.getKeys().join(",");
 	var sortDirs = div.sort.getValues().join(",");
@@ -225,6 +229,9 @@
 	  url += "&qfield="+filterCols+"&q="+filterVals;
 	}
 	$.each(div.settings.parameters, function(key, value){
+	  url += "&" + key + "=" + value;
+	});
+	$.each(div.settings.auth, function(key, value){
 	  url += "&" + key + "=" + value;
 	});
 	return url;
