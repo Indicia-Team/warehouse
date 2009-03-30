@@ -41,7 +41,7 @@
 	
 	if (this.settings.wkt != null)
 	{
-	  showWktFeature(this);
+	  showWktFeature(this, this.settings.wkt);
 	}
 	
 	if (this.settings.placeControls)
@@ -80,7 +80,7 @@
 	html += "</select>\n";
       }
       html += "</span>";
-      $(div).prepend(html);
+      $(div).before(html);
     }
     
     /**
@@ -125,25 +125,39 @@
 								     function(data)
 								     {
 								       $(inputFld).attr('value', data.sref);
-								       editlayer.destroyFeatures();
+								       map.editLayer.destroyFeatures();
 								       $(geomFld).attr('value', data.wkt);
 								       var parser = new OpenLayers.Format.WKT();
 								       var feature = parser.read(data.wkt);
-								       map.editlayer.addFeatures([feature]);
+								       map.editLayer.addFeatures([feature]);
 								     }
 								     );
 						   }
       });
       
       // Add the click control to the map.
-      	var click = new OpenLayers.Control.Click();
-	map.addControl(click);
-	click.activate();
+      var click = new OpenLayers.Control.Click();
+      map.addControl(click);
+      click.activate();
+      
+      // Bind functions to the input field.
+      $(inputFld).change(function()
+      {
+	$.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/sref_to_wkt"+
+	"?sref=" + $(this).val() +
+	"&system=" + $(systemsFld).val() +
+	"&callback=?",
+					      function(data){
+						$(geomFld).attr('value', data.wkt);
+						showWktFeature(div, data.wkt);
+					      }
+					      );
+      });
+      
     }
     
-    function showWktFeature(div) {
+    function showWktFeature(div, wkt) {
       var editlayer = div.map.editLayer;
-      var wkt = div.settings.wkt;
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
       var bounds=feature.geometry.getBounds();
