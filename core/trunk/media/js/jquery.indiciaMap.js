@@ -12,6 +12,7 @@
     // Quite a lot of options here
     this.defaults = 
     {
+      indiciaSvc : "http://localhost/indicia",
       indiciaGeoSvc : "http://localhost:8080/geoserver",
 	     height: "600px",
 	     width: "800px",
