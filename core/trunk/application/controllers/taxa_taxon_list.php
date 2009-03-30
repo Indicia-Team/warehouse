@@ -400,6 +400,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       Kohana::log("info", "Wrapping submission for synonym ".$taxon);
       
       $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
+      // If language not found, use english as the default. Future versions may wish this to be
+      // user definable.
       $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
       $syn = $_POST;
       $syn['taxon_id'] = null;
