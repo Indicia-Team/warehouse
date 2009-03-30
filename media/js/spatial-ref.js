@@ -205,7 +205,7 @@ function find_place(pref_area, country, lang)
 	    		ref=found.places[0].centroid.latitude + ', ' + found.places[0].centroid.longitude;
 				show_found_place(ref);
 	    	} else if (found.count!=0) {
-	    		jQuery('<p>Select from the following places that were found matching your search:</p>').appendTo('#place_search_output');
+	    		jQuery('<p>Select from the following places that were found matching your search, then click on the map to specify the exact location:</p>').appendTo('#place_search_output');
 	    		var ol=jQuery('<ol>');
 		  		jQuery.each(found.places, function(i,place){
 		  			ref="'" + place.centroid.latitude + ', ' + place.centroid.longitude + "'";
