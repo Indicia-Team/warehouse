@@ -28,6 +28,6 @@ $config['localReportDir'] = 'reports';
 // during the development process each dev has to set this var
 // to the version upgrade folder (string) of the setup module
 //
-$config['devUpgradeFolder'] = false; // example: 'upgrade_0_1_to_0_2'
+$config['devUpgradeFolder'] = 'upgrade_0_1_to_0_2';
 
 ?>
