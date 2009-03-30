@@ -345,6 +345,7 @@ public function render()
       // Need to place the controls 
       $field_name = $this->editoptions['input_field_name'];
       $geom_field_name = $this->editoptions['geom_field_name'];
+      $systems = $this->editoptions['systems'];
       $r .= "<input id='$field_name' name='$field_name' value='".$this->editoptions['init_value']."' ".
       "onblur='$exit_sref();' onclick='$enter_sref();'/>";
       if (count($systems)==1)
@@ -362,10 +363,6 @@ public function render()
       $r .= '<p class="instruct">'.$this->editoptions['instruct'].'</p>';
     }
     // Render further controls in the 'above' position
-    foreach ($this->controls[0] as $foo)
-    {
-      $r .= $foo->render();
-    }
     $r .= "<div class='smallmap' id='".$this->name
     ."' style='width: ".$this->width."; height: "
     .$this->height.";'></div>\n";
