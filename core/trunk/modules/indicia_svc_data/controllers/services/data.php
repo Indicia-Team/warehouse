@@ -11,9 +11,9 @@ class Data_Controller extends Service_Base_Controller {
   // if there is an error
   protected $response;
   protected $content_type;
-  
+
   protected $website_id = null;
-  
+
   // Read/Write Access to entities: there are several options:
   // 1) Standard: Restricted read and write access dependant on website id.
   //    There is a public function with the name of the entity in this file, and the entity appears in $allow_updates.
@@ -33,7 +33,7 @@ class Data_Controller extends Service_Base_Controller {
   //    the entity appears in $allow_full_access.
   // 5) Unrestricted Read, Restricted Write:
   //    Not currently implemented.
-  // 6) No Access: 
+  // 6) No Access:
   //    There is no public function with the name of the entity in this file
   //
   // default to no updates allowed - must explicity allow updates.
@@ -50,8 +50,10 @@ class Data_Controller extends Service_Base_Controller {
   // and website_id, so that we can work out whether access to a particular record is allowed.
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
-  protected $allow_full_access = array();
-  
+  protected $allow_full_access = array(
+  									'taxa_taxon_list'
+  									);
+
   /**
   * Provides the /services/data/language service.
   * Retrieves details of a single language.
@@ -246,7 +248,7 @@ class Data_Controller extends Service_Base_Controller {
     }
     else
     {
-      $this->check_update_access($this->entity, $s);	      	
+      $this->check_update_access($this->entity, $s);
       $model = ORM::factory($this->entity);
       $model->submission = $s;
       $result = $model->submit();
@@ -378,7 +380,7 @@ class Data_Controller extends Service_Base_Controller {
       	    throw new ServiceError('No access to '.$this->viewname.' allowed.');
         }
     }
-    
+
     $return = Array
     (
     'record_count' => $this->db->get()->count(),
@@ -761,7 +763,7 @@ class Data_Controller extends Service_Base_Controller {
 			Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
       		throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
 	  }
-      
+
       if(array_key_exists('id', $s['fields']))
       	if (is_numeric($s['fields']['id']['value']))
 	      	// there is an numeric id field so modifying an existing record
@@ -772,7 +774,7 @@ class Data_Controller extends Service_Base_Controller {
 	      	}
 	  return true;
   }
-  
+
   /**
   * Before a submission is accepted, this method ensures that the POST data contains the
   * correct digest token so we know the request was from the website.
@@ -817,7 +819,7 @@ class Data_Controller extends Service_Base_Controller {
 
 	protected function check_record_access($entity, $id, $website_id)
 	{
-		// if $id is null, then we have a new record, so no need to check if we have access to the record	
+		// if $id is null, then we have a new record, so no need to check if we have access to the record
 		if (is_null($id))
 			return true;
 		$table = inflector::plural($entity);
@@ -831,7 +833,7 @@ class Data_Controller extends Service_Base_Controller {
     	$db->from($viewname);
     	$select = 'id';
     	$db->select($select)->where(array('id' => $id));
-    	
+
     	if(!array_key_exists ($this->entity, $this->allow_full_access)) {
             if(array_key_exists ('website_id', $this->view_columns))
             {
@@ -844,7 +846,7 @@ class Data_Controller extends Service_Base_Controller {
 		$number_rec = $db->find_all()->count();
 		return ($number_rec > 0 ? true : false);
 	}
-	
+
   /**
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
   */
