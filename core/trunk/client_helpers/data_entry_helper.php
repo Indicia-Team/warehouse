@@ -867,7 +867,8 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
  * @param string $pref_area Text to suffix to location searches, to help keep them in the target region. E.g. Dorset.
  * @param string $country Text Focus for to location searches, to enforce that they are only returned in the target country.
  * Set to '' for worldwide searches. Defaults to United Kingdom.
- *
+ * @param string $lang Language code for the preferred output. RFC 4646 code, e.g. en-GB, fr-FR etc.
+ *  *
  * @return HTML for the location search box.
  */
  public static function geoplanet_search($id='place_search', $link_text='find on map', $pref_area='gb',
