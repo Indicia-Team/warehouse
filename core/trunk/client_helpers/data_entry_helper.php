@@ -871,11 +871,11 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
  * @return HTML for the location search box.
  */
  public static function geoplanet_search($id='place_search', $link_text='find on map', $pref_area='gb',
-					  $country='United Kingdom')
+					  $country='United Kingdom', $lang="en-EN")
 					  {
 					    self::add_resource('jquery');
-					    $r = '<input name="'.$id.'" id="'.$id.'" onkeypress="return check_find_enter(event, \''.$pref_area.'\', \''.$country.'\')"/>' .
-					    '<input type="button" id="find_place_button" style="margin-top: -2px;" value="find" onclick="find_place(\''.$pref_area.'\', \''.$country.'\');"/>' .
+					    $r = "<input name=\"$id\" id=\"$id\" onkeypress=\"return check_find_enter(event, '$pref_area', '$country', '$lang')\"/>" .
+					    "<input type=\"button\" id=\"find_place_button\" style=\"margin-top: -2px;\" value=\"find\" onclick=\"find_place('$pref_area', '$country', '$lang');\"/>" .
 					    '<div id="place_search_box" style="display: none"><div id="place_search_output"></div>' .
 					    '<a href="#" id="place_close_button" onclick="jQuery(\'#place_search_box\').hide(\'fast\');">Close</a></div>';
 					    return $r;

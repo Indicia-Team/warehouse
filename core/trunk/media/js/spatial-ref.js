@@ -179,7 +179,7 @@ function init_map(base_url, wkt, field_name, geom_name, virtual_earth, google, g
 
 // Method called to find a place using the GeoPlanet API.
 // Pref_area is the text to suffix to location searches to help keep them within the target region, e.g. gb or Dorset.
-function find_place(pref_area, country)
+function find_place(pref_area, country, lang)
 {
 	jQuery('#place_search_box').hide();
 	jQuery('#place_search_output').empty();
@@ -188,14 +188,15 @@ function find_place(pref_area, country)
 	if (searchtext != '') {
 		var request = 'http://where.yahooapis.com/v1/places.q("' +
 				searchtext + ' ' + pref_area + '", "' + country + '");count=10';
-	    jQuery.getJSON(request + "?format=json&appid="+geoplanet_api_key+"&callback=?", function(data){
+	    jQuery.getJSON(request + "?format=json&lang="+lang+"&appid="+geoplanet_api_key+"&callback=?", function(data){
 	    	// an array to store the responses in the required country, because GeoPlanet will not limit to a country
 	    	var found = { places: [], count: 0 };
 	    	jQuery.each(data.places.place, function(i,place) {
 	    		// Ingore places outside the chosen country, plus ignore places that were hit because they
 	    		// are similar to the country name we are searching in.
 				if (place.country.toUpperCase()==country.toUpperCase()
-					&& country.toUpperCase().toUpperCase() != place.name.substr(0, country.length).toUpperCase()) {
+					&& (place.name.toUpperCase().indexOf(country.toUpperCase())==-1
+						|| place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
 					found.places.push(place);
 					found.count++;
 				}
@@ -227,7 +228,7 @@ function find_place(pref_area, country)
 
 // Called from onkeypress on the find place text box. Disables the enter key from form submission, and
 // redirects it to the find_place method (same as clicking the adjacent button).
-function check_find_enter(e, pref_area, country)
+function check_find_enter(e, pref_area, country, lang)
 {
 	var key;
 	if(window.event)
@@ -235,7 +236,7 @@ function check_find_enter(e, pref_area, country)
 	else
 		key = e.which; //firefox
 	if (key == 13)
-		find_place(pref_area, country);
+		find_place(pref_area, country, lang);
 	return (key != 13);
 }
 
