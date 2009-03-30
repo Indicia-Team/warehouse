@@ -371,7 +371,7 @@ class Data_Controller extends Service_Base_Controller {
     $this->db->from($this->viewname);
     $select = '*';
     $this->db->select($select);
-    if(!array_key_exists ($this->entity, $this->allow_full_access)) {
+    if(!in_array ($this->entity, $this->allow_full_access)) {
         if(array_key_exists ('website_id', $this->view_columns))
         {
 		    $this->db->in('website_id', array(null, $this->website_id));
@@ -507,7 +507,7 @@ class Data_Controller extends Service_Base_Controller {
     $select = implode(', ', array_keys($this->db->list_fields($this->viewname)));
     $this->db->select($select);
     // Make sure that we're only showing items appropriate to the logged-in website
-    if(!array_key_exists ($this->entity, $this->allow_full_access)) {
+    if(!in_array ($this->entity, $this->allow_full_access)) {
         if(array_key_exists ('website_id', $this->view_columns))
         {
 		    $this->db->in('website_id', array(null, $this->website_id));
@@ -834,7 +834,7 @@ class Data_Controller extends Service_Base_Controller {
     	$select = 'id';
     	$db->select($select)->where(array('id' => $id));
 
-    	if(!array_key_exists ($this->entity, $this->allow_full_access)) {
+    	if(!in_array ($this->entity, $this->allow_full_access)) {
             if(array_key_exists ('website_id', $this->view_columns))
             {
                 $db->in('website_id', array(null, $this->website_id));
