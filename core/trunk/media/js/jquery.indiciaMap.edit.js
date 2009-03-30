@@ -95,44 +95,42 @@
       
       OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
 	defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
-	  
 	  initialize: function(options) 
 	  { 
 	    this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
 	    OpenLayers.Control.prototype.initialize.apply(this, arguments);
 	    this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
 	  },
-						   trigger: function(e) 
-						   {
-						     var lonlat = map.getLonLatFromViewPortPx(e.xy);
-						     // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-						     var precision = map.getScale()/200;
-						     // now round to find appropriate square size
-						     if (precision<30) {
-						       precision=8;
-						     } else if (precision<300) {
-						       precision=6;
-						     } else if (precision<3000) {
-						       precision=4;
-						     } else {
-						       precision=2;
-						     }
-						     $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/wkt_to_sref"+
-						     "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
-						     "&system=" + $(systemsFld).val() +
-						     "&precision=" + precision +
-						     "&callback=?",
-								     function(data)
-								     {
-								       $(inputFld).attr('value', data.sref);
-								       map.editLayer.destroyFeatures();
-								       $(geomFld).attr('value', data.wkt);
-								       var parser = new OpenLayers.Format.WKT();
-								       var feature = parser.read(data.wkt);
-								       map.editLayer.addFeatures([feature]);
-								     }
-								     );
-						   }
+	  trigger: function(e) 
+	  {
+	    var lonlat = map.getLonLatFromViewPortPx(e.xy);
+	    // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+	    var precision = map.getScale()/200;
+	    // now round to find appropriate square size
+	    if (precision<30) {
+	      precision=8;
+	    } else if (precision<300) {
+	      precision=6;
+	    } else if (precision<3000) {
+	      precision=4;
+	    } else {
+	      precision=2;
+	    }
+	    $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/wkt_to_sref"+
+	    "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
+	    "&system=" + $(systemsFld).val() +
+	    "&precision=" + precision +
+	    "&callback=?", function(data)
+	    {
+	      $(inputFld).attr('value', data.sref);
+	      map.editLayer.destroyFeatures();
+	      $(geomFld).attr('value', data.wkt);
+	      var parser = new OpenLayers.Format.WKT();
+	      var feature = parser.read(data.wkt);
+	      map.editLayer.addFeatures([feature]);
+	    }
+	    );
+	  }
       });
       
       // Add the click control to the map.
@@ -146,12 +144,11 @@
 	$.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/sref_to_wkt"+
 	"?sref=" + $(this).val() +
 	"&system=" + $(systemsFld).val() +
-	"&callback=?",
-					      function(data){
-						$(geomFld).attr('value', data.wkt);
-						showWktFeature(div, data.wkt);
-					      }
-					      );
+	"&callback=?", function(data){
+	  $(geomFld).attr('value', data.wkt);
+	  showWktFeature(div, data.wkt);
+	}
+	);
       });
       
     }
