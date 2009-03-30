@@ -68,7 +68,7 @@
 	}
 	
 	// Constructs the map
-	var map = new OpenLayers.Map($(this).attr('id'), this.settings['openLayersOptions']);
+	var map = new OpenLayers.Map($(this)[0], this.settings['openLayersOptions']);
 	
 	// Iterate over the preset layers, adding them to the map
 	$.each(this.settings['presetLayers'], function(i, item)
