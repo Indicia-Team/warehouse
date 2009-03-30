@@ -315,13 +315,13 @@ class Data_Controller extends Service_Base_Controller {
 	break;
       default:
 	// Code to load from a view
-	if (kohana::file_exists('views',"services/data/$entity/$mode"))
+	if (file_exists('views',"services/data/$entity/$mode"))
 	{
 	  $this->response = $this->view_encode($records, View::factory("services/data/$entity/$mode"));
 	}
 	else
 	{
-	  throw new ServiceError("$entity data cannot be output using mode $mode.");
+	  throw new ServiceError("$this->entity data cannot be output using mode $mode.");
 	}
     }
   }
