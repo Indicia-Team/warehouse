@@ -49,6 +49,8 @@
 	  placeControls(this);
 	}
 	
+	registerControls(this);
+	
       });
     };
     
@@ -115,9 +117,9 @@
 						     } else {
 						       precision=2;
 						     }
-						     jQuery.getJSON(div.settings.indiciaGeoSvc + "/index.php/services/spatial/wkt_to_sref"+
+						     $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/wkt_to_sref"+
 						     "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
-						     "&system=" + $(systemsFld).value() +
+						     "&system=" + $(systemsFld).val() +
 						     "&precision=" + precision +
 						     "&callback=?",
 								     function(data)
@@ -132,6 +134,11 @@
 								     );
 						   }
       });
+      
+      // Add the click control to the map.
+      	var click = new OpenLayers.Control.Click();
+	map.addControl(click);
+	click.activate();
     }
     
     function showWktFeature(div) {
