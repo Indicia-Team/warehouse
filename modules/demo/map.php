@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="style.css" type="text/css" />
     <script src="../../media/js/OpenLayers.js"></script>
     <script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
+    <?php include 'data_entry/data_entry_config.php'; ?>
 	<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=<?php echo $config['google_api_key'] ?>"
       type="text/javascript"></script>
     <script type="text/javascript">
