@@ -88,6 +88,15 @@
     */
     function registerControls(div)
     {
+      var inputFld = div.settings.input_field_name;
+      var geomFld = div.settings.geom_field_name;
+      var systemsFld = div.settings.systems_field_name;
+      
+      if (div.settings.wkt != null)
+      {
+	// Enter the WKT
+	
+      }
     }
     
     function showWktFeature(div) {
