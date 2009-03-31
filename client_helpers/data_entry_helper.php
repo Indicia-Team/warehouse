@@ -817,7 +817,7 @@ if (array_key_exists('errors', $response)) {
   * @param bool $locate Include location finder
   * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
   */
-  public static function map($div, $layers = array('google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'openlayers_wms', 'virtual_earth'), $edit = false, $locate = false, $defaultJs = true)
+  public static function map($div, $layers = array('google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'openlayers_wms', 'virtual_earth'), $edit = false, $locate = false, $wkt = null, $defaultJs = true)
   {
     global $javascript;
     self::add_resource('indiciaMap');
@@ -848,7 +848,8 @@ if (array_key_exists('errors', $response)) {
       $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
       if ($edit)
       {
-	$javascript .= ".indiciaMapEdit()";
+	$foo = $wkt ? "{ wkt : $wkt }" : '';
+	$javascript .= ".indiciaMapEdit($foo)";
 	if ($locate)
 	{
 	  $api = parent::$geoplanet_api_key;
@@ -871,6 +872,7 @@ if (array_key_exists('errors', $response)) {
 * @param array $systems Associative array of the available spatial reference systems, in form code -> description.
 * @param array $opts Associative array of additional options. Possible options are init_value, width, height, instruct, inc_virtual_earth, inc_google, init_lat, init_long, init_zoom, init_layer.
 * @param string $init_wkt Well Known Text for the initial polygon to display, used when redisplaying an edited record.
+* @deprecated Use map() with $edit = true instead.
 */
 public static function map_picker($field_name, $geom_field_name, $systems, $opts = Array(), $init_wkt = '') {
   global $javascript;
@@ -937,6 +939,7 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
   * @param string $lang Language code for the preferred output. RFC 4646 code, e.g. en-GB, fr-FR etc.
   *  *
   * @return HTML for the location search box.
+  * @deprecated Use map() with $locate = true instead.
   */
   public static function geoplanet_search($id='place_search', $link_text='find on map', $pref_area='gb',
 			      $country='United Kingdom', $lang="en-EN")
