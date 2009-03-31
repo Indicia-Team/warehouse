@@ -73,7 +73,7 @@
 	var map = new OpenLayers.Map($(this)[0], this.settings.openLayersOptions);
 	
 	// Iterate over the preset layers, adding them to the map
-	$.each(this.settings.presetLayers., function(i, item)
+	$.each(this.settings.presetLayers, function(i, item)
 	{
 	  // Check whether this is a defined layer
 	  if ($.indiciaMap.presetLayers.hasOwnProperty(item))
@@ -86,11 +86,11 @@
 	// Convert indicia WMS/WFS layers into js objects
 	$.each(this.settings.indiciaWMSLayers, function(key, value)
 	{
-	  this.settings.layers[] = new OpenLayers.Layer.WMS(key, this.settings.indiciaGeoSvc + '/wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true});
+	  this.settings.layers.push(new OpenLayers.Layer.WMS(key, this.settings.indiciaGeoSvc + '/wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
 	});
 	$.each(this.settings.indiciaWFSLayers, function(key, value)
 	{
-	  this.settings.layers[] = new OpenLayers.Layer.WFS(key, this.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true });
+	  this.settings.layers.push(new OpenLayers.Layer.WFS(key, this.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
 	});
 	
 	$.each(this.settings.layers, function(i, item)
