@@ -7,12 +7,20 @@ class data_entry_helper extends helper_config {
   public static $RESOURCES = array
   (
   'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('../../../media/js/jquery.js')),
+  'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array('../../../media/js/OpenLayers.js')),
+  'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array('../../../media/js/jquery.indiciaMap.js')),
+  'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array('../../../media/js/jquery.indiciaMap.edit.js')),
+  'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array('../../../media/js/jquery.indiciaMap.edit.locationFinder.js')),
   'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array('../../../media/css/jquery.autocomplete.css'), 'javascript' => array('../../../media/js/jquery.autocomplete.js')),
   'ui_core' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array('../../../media/js/ui.core.js')),
   'datepicker' => array('deps' => array('ui_core'), 'stylesheets' => array('../../../media/css/ui.datepicker.css'), 'javascript' => array('../../../media/js/ui.datepicker.js')),
   'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('../../../media/js/json2.js')),
   'treeview' => array('deps' => array('jquery'), 'stylesheets' => array('../../../media/css/jquery.treeview.css'), 'javascript' => array('../../../media/js/jquery.treeview.js', '../../../media/js/jquery.treeview.async.js',
-  '../../../media/js/jquery.treeview.edit.js'))
+  '../../../media/js/jquery.treeview.edit.js')),
+  'googlemaps' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://maps.google.com/maps?file=api&v=2&key=")),
+  'multimap' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://developer.multimap.com/API/maps/1.2/")),
+  'virtualearth' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
+  
   );
 
   private static function add_resource($resource)
@@ -791,6 +799,59 @@ public static function autocomplete($id, $entity, $nameField, $valueField = null
 }
 else
   echo $response;
+}
+
+/**
+* Generates a map control, with optional data entry fields and location finder powered by the 
+* Yahoo! geoservices API.
+*
+* @param string $div Id of a div to add the map into
+* @param array $layers Array of preset layers to include
+* @param bool $edit Include editable controls
+* @param bool $locate Include location finder
+* @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
+*/
+public static function map($div, $layers, $edit = false, $locate = false, $defaultJs = true)
+{
+  global $javascript;
+  self::add_resource('indiciaMap');
+  if ($edit) self::add_resource('indiciaMapEdit');
+  if ($locate) self::add_resource('locationFinder');
+  
+  foreach ($layers as $layer)
+  {
+    $a = explode('_', $layer);
+    $a = strtolower($a[0]);
+    switch($a)
+    {
+      case 'google':
+	self::add_resource('googlemaps');
+	break;
+      case 'multimap':
+	self::add_resource('multimap');
+	break;
+      case 'virtual':
+	self::add_resource('virtualearth');
+	break;
+    }
+  }
+  
+  if ($defaultJs)
+  {
+    $jsLayers = "[ '".implode('\', \'', $layers)."' ]";
+    $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
+    if ($edit)
+    {
+      $javascript .= ".indiciaMapEdit()";
+      if ($locate)
+      {
+	$javascript .= ".locationFinder()";
+      }
+    }
+    $javascript .= ";";
+  }
+  $r = "<div id='$div'></div>";
+  echo $r;
 }
 
 /**
