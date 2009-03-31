@@ -54,6 +54,29 @@
       });
     };
     
+   this.showWktFeature = function(div, wkt) {
+      var editlayer = div.map.editLayer;
+      var parser = new OpenLayers.Format.WKT();
+      var feature = parser.read(wkt);
+      var bounds=feature.geometry.getBounds();
+      
+      editlayer.destroyFeatures();
+      editlayer.addFeatures([feature]);
+      // extend the boundary to include a buffer, so the map does not zoom too tight.
+      var dy = (bounds.top-bounds.bottom)/1.5;
+      var dx = (bounds.right-bounds.left)/1.5;
+      bounds.top = bounds.top + dy;
+      bounds.bottom = bounds.bottom - dy;
+      bounds.right = bounds.right + dx;
+      bounds.left = bounds.left - dx;
+      // Set the default view to show something triple the size of the grid square
+      div.map.zoomToExtent(bounds);
+      // if showing a point, don't zoom in too far
+      if (dy==0 && dx==0) {
+	div.map.zoomTo(11);
+      }
+    }
+    
     // Private functions
     
     /**
@@ -150,30 +173,6 @@
 	}
 	);
       });
-      
-    }
-    
-    function showWktFeature(div, wkt) {
-      var editlayer = div.map.editLayer;
-      var parser = new OpenLayers.Format.WKT();
-      var feature = parser.read(wkt);
-      var bounds=feature.geometry.getBounds();
-      
-      editlayer.destroyFeatures();
-      editlayer.addFeatures([feature]);
-      // extend the boundary to include a buffer, so the map does not zoom too tight.
-      var dy = (bounds.top-bounds.bottom)/1.5;
-      var dx = (bounds.right-bounds.left)/1.5;
-      bounds.top = bounds.top + dy;
-      bounds.bottom = bounds.bottom - dy;
-      bounds.right = bounds.right + dx;
-      bounds.left = bounds.left - dx;
-      // Set the default view to show something triple the size of the grid square
-      div.map.zoomToExtent(bounds);
-      // if showing a point, don't zoom in too far
-      if (dy==0 && dx==0) {
-	div.map.zoomTo(11);
-      }
       
     }
   }
