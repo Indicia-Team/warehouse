@@ -17,7 +17,7 @@ $apiKey = helper_config::$geoplanet_api_key;
 (function($){ 
 $(document).ready(function()
 {
-$('#map').indiciaMap().indiciaMapEdit().locationFinder({apiKey : '<?php echo $apiKey; ?>'});
+$('#map').indiciaMap({presetLayers : ['google_hybrid']}).indiciaMapEdit().locationFinder({apiKey : '<?php echo $apiKey; ?>'});
 });
 })(jQuery);
 </script>
