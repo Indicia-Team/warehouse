@@ -54,7 +54,7 @@
       });
     };
     
-   this.showWktFeature = function(div, wkt) {
+    this.showWktFeature = function(div, wkt) {
       var editlayer = div.map.editLayer;
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
@@ -75,7 +75,7 @@
       if (dy==0 && dx==0) {
 	div.map.zoomTo(11);
       }
-    }
+    };
     
     // Private functions
     
@@ -103,7 +103,15 @@
 	html += "</select>\n";
       }
       html += "</span>";
-      $(div).before(html);
+      
+      if (pos == 0)
+      {
+	$(div).before(html);
+      }
+      else
+      {
+	$(div).after(html);
+      }
     }
     
     /**
@@ -124,36 +132,36 @@
 	    OpenLayers.Control.prototype.initialize.apply(this, arguments);
 	    this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
 	  },
-	  trigger: function(e) 
-	  {
-	    var lonlat = map.getLonLatFromViewPortPx(e.xy);
-	    // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-	    var precision = map.getScale()/200;
-	    // now round to find appropriate square size
-	    if (precision<30) {
-	      precision=8;
-	    } else if (precision<300) {
-	      precision=6;
-	    } else if (precision<3000) {
-	      precision=4;
-	    } else {
-	      precision=2;
-	    }
-	    $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/wkt_to_sref"+
-	    "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
-	    "&system=" + $(systemsFld).val() +
-	    "&precision=" + precision +
-	    "&callback=?", function(data)
-	    {
-	      $(inputFld).attr('value', data.sref);
-	      map.editLayer.destroyFeatures();
-	      $(geomFld).attr('value', data.wkt);
-	      var parser = new OpenLayers.Format.WKT();
-	      var feature = parser.read(data.wkt);
-	      map.editLayer.addFeatures([feature]);
-	    }
-	    );
-	  }
+						   trigger: function(e) 
+						   {
+						     var lonlat = map.getLonLatFromViewPortPx(e.xy);
+						     // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+						     var precision = map.getScale()/200;
+						     // now round to find appropriate square size
+						     if (precision<30) {
+						       precision=8;
+						     } else if (precision<300) {
+						       precision=6;
+						     } else if (precision<3000) {
+						       precision=4;
+						     } else {
+						       precision=2;
+						     }
+						     $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/wkt_to_sref"+
+						     "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
+						     "&system=" + $(systemsFld).val() +
+						     "&precision=" + precision +
+						     "&callback=?", function(data)
+						     {
+						       $(inputFld).attr('value', data.sref);
+						       map.editLayer.destroyFeatures();
+						       $(geomFld).attr('value', data.wkt);
+						       var parser = new OpenLayers.Format.WKT();
+						       var feature = parser.read(data.wkt);
+						       map.editLayer.addFeatures([feature]);
+						     }
+						     );
+						   }
       });
       
       // Add the click control to the map.
@@ -173,7 +181,6 @@
 	}
 	);
       });
-      
     }
   }
   });
