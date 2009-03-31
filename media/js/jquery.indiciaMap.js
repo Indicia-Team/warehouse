@@ -21,7 +21,7 @@
 	     initial_zoom: 7,
 	     proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
 	     displayFormat: "image/png",
-	     presetLayers: ['google_physical', 'google_streets', 'google_hybrid', 'google_satellite', 'openlayers_wms', 'virtual_earth'],
+	     presetLayers: [],
 	     openLayersOptions: 
 	     {
 	       projection: new OpenLayers.Projection("EPSG:900913"),
