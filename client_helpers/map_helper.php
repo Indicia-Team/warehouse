@@ -4,6 +4,7 @@ require_once "helper_config.php";
 /**
 * <p> Class abstracting a mapping component - will support methods to add layers,
 * controls etc.</p>
+* @deprecated Use map() in data_entry_helper instead.
 */
 Class Map extends helper_config
 {
