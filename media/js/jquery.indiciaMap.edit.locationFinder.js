@@ -142,11 +142,18 @@
 	    $.each(found.places, function(i,place){
 	      ref= place.centroid.latitude + ', ' + place.centroid.longitude;
 	      placename = place.name+' (' + place.placeTypeName + ')';
-	      if (place.admin1!='')
-		placename = placename + ', '+place.admin1
-		if (place.admin2!='')
-		  placename = placename + '\\' + place.admin2;
-		ol.append($("<li>").append($("<a href='#' >" + placename + "</a>").click(function() {displayLocation(div, ref);})));
+	      if (place.admin1!='') placename = placename + ', '+place.admin1;
+	      if (place.admin2!='') placename = placename + '\\' + place.admin2;
+	      
+	      var foo = function(ref)
+	      {
+		return function()
+		{
+		  displayLocation(div, ref);
+		}
+	      };
+
+	      ol.append($("<li>").append($("<a href='#'>" + placename + "</a>").click(foo(ref))));
 	    });
 	    ol.appendTo(outputDivId);
 	    $(searchDivId).show("slow");
