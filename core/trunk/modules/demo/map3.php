@@ -5,7 +5,7 @@
 </head>
 <body>
 <?php 
-echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, true);
+echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true);
 echo data_entry_helper::dump_javascript();
 ?>
 </body>

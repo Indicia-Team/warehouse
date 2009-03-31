@@ -848,12 +848,13 @@ if (array_key_exists('errors', $response)) {
       $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
       if ($edit)
       {
-	$foo = $wkt ? "{ wkt : $wkt }" : '';
+	$foo = ($wkt != null) ? "{ wkt : $wkt }" : '';
 	$javascript .= ".indiciaMapEdit($foo)";
 	if ($locate)
 	{
 	  $api = parent::$geoplanet_api_key;
-	  $javascript .= ".locationFinder( { apiKey : '$api' } )";
+	  $indicia = parent::$base_url;
+	  $javascript .= ".locationFinder( { indiciaSvc: '$indicia', apiKey : '$api' } )";
 	}
       }
       $javascript .= ";";
