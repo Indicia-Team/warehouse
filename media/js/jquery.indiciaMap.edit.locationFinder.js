@@ -31,10 +31,10 @@
     
     this.construct = function(options)
     {
-      var settings = {};
-      $.extend(settings, $.indiciaMap.defaults, $.indiciaMapEdit.defaults, $.locationFinder.defaults, options);
       return this.each(function()
       {
+	var settings = {};
+	$.extend(settings, $.locationFinder.defaults, this.settings, options);
 	this.settings = settings;
 	
 	if (this.settings.placeControls)
