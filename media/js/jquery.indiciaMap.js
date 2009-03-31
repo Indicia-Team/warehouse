@@ -31,6 +31,8 @@
 	     maxResolution: 156543.0339,
 	     maxExtent: new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)
 	     },
+	    indiciaWMSLayers: {},
+	    indiciaWFSLayers : {},
 	    layers: [],
 	    controls: []
     };
@@ -68,10 +70,10 @@
 	}
 	
 	// Constructs the map
-	var map = new OpenLayers.Map($(this)[0], this.settings['openLayersOptions']);
+	var map = new OpenLayers.Map($(this)[0], this.settings.openLayersOptions);
 	
 	// Iterate over the preset layers, adding them to the map
-	$.each(this.settings['presetLayers'], function(i, item)
+	$.each(this.settings.presetLayers., function(i, item)
 	{
 	  // Check whether this is a defined layer
 	  if ($.indiciaMap.presetLayers.hasOwnProperty(item))
@@ -80,11 +82,22 @@
 	    map.addLayers([layer]);
 	  }
 	});
-	$.each(this.settings['layers'], function(i, item)
+	
+	// Convert indicia WMS/WFS layers into js objects
+	$.each(this.settings.indiciaWMSLayers, function(key, value)
+	{
+	  this.settings.layers[] = new OpenLayers.Layer.WMS(key, this.settings.indiciaGeoSvc + '/wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true});
+	});
+	$.each(this.settings.indiciaWFSLayers, function(key, value)
+	{
+	  this.settings.layers[] = new OpenLayers.Layer.WFS(key, this.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true });
+	});
+	
+	$.each(this.settings.layers, function(i, item)
 	{
 	  map.addLayers([item]);
 	});
-	$.each(this.settings['controls'], function(i, item)
+	$.each(this.settings.controls, function(i, item)
 	{
 	  map.addControl(item);
 	});
