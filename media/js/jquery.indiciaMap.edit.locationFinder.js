@@ -145,15 +145,7 @@
 	      if (place.admin1!='') placename = placename + ', '+place.admin1;
 	      if (place.admin2!='') placename = placename + '\\' + place.admin2;
 	      
-	      var foo = function(ref)
-	      {
-		return function()
-		{
-		  displayLocation(div, ref);
-		}
-	      };
-
-	      ol.append($("<li>").append($("<a href='#'>" + placename + "</a>").click(foo(ref))));
+	      ol.append($("<li>").append($("<a href='#'>" + placename + "</a>").click((function(ref){return function() { displayLocation(div, ref); } })(ref))));
 	    });
 	    ol.appendTo(outputDivId);
 	    $(searchDivId).show("slow");
