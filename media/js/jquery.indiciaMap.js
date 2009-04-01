@@ -83,14 +83,15 @@
 	  }
 	});
 	
+	var div = this;
 	// Convert indicia WMS/WFS layers into js objects
 	$.each(this.settings.indiciaWMSLayers, function(key, value)
 	{
-	  this.settings.layers.push(new OpenLayers.Layer.WMS(key, this.settings.indiciaGeoSvc + '/wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
+	  div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + '/wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
 	});
 	$.each(this.settings.indiciaWFSLayers, function(key, value)
 	{
-	  this.settings.layers.push(new OpenLayers.Layer.WFS(key, this.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
+	  div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
 	});
 	
 	$.each(this.settings.layers, function(i, item)
