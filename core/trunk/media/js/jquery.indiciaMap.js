@@ -13,49 +13,54 @@
     this.defaults = 
     {
       indiciaSvc : "http://localhost/indicia",
-      indiciaGeoSvc : "http://localhost:8080/geoserver",
-	     height: "600px",
-	     width: "800px",
-	     initial_lat: 6700000,
-	     initial_long: -100000,
-	     initial_zoom: 7,
-	     proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
-	     displayFormat: "image/png",
-	     presetLayers: [],
-	     openLayersOptions: 
-	     {
-	       projection: new OpenLayers.Projection("EPSG:900913"),
-	     displayProjection: new OpenLayers.Projection("EPSG:4326"),
-	     units: "m",
-	     numZoomLevels: 18,
-	     maxResolution: 156543.0339,
-	     maxExtent: new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)
-	     },
+	    indiciaGeoSvc : "http://localhost:8080/geoserver",
+	    height: "600px",
+	    width: "800px",
+	    initial_lat: 6700000,
+	    initial_long: -100000,
+	    initial_zoom: 7,
+	    proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
+	    displayFormat: "image/png",
+	    presetLayers: [],
 	    indiciaWMSLayers: {},
 	    indiciaWFSLayers : {},
 	    layers: [],
 	    controls: []
     };
     
+    // Options to pass to the openlayers map constructor
+    this.openLayersDefaults =
+    {
+      projection: new OpenLayers.Projection("EPSG:900913"),
+					     displayProjection: new OpenLayers.Projection("EPSG:4326"),
+	    units: "m",
+	    numZoomLevels: 18,
+	    maxResolution: 156543.0339,
+	    maxExtent: new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)
+    };
+    
     // Potential layers to add to the map
     this.presetLayers =
     {
       google_physical : function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': 'true'})},
-	     google_streets : function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true})},
-	     google_hybrid : function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true})},
-	     google_satellite : function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true})},
-	     openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true})},
-	     nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true})},
-	     virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true})},
-	     multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true})},
-	     multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('OS Landranger', {sphericalMercator: true, dataSource: 904})}
+	    google_streets : function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true})},
+	    google_hybrid : function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true})},
+	    google_satellite : function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true})},
+	    openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true})},
+	    nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true})},
+	    virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true})},
+	    multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true})},
+	    multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('OS Landranger', {sphericalMercator: true, dataSource: 904})}
     };
     
-    this.construct = function(options)
+    this.construct = function(options, oloptions)
     {
       var settings = {};
+      var openLayersOptions = {};
       // Deep extend
-      $.extend(true, settings, $.indiciaMap.defaults, options);
+      $.extend(settings, $.indiciaMap.defaults, options);
+      $.extend(openLayersOptions, $.indiciaMap.openLayersDefaults, oloptions);
+      
       return this.each(function()
       {
 	this.settings = settings;
@@ -70,7 +75,7 @@
 	}
 	
 	// Constructs the map
-	var map = new OpenLayers.Map($(this)[0], this.settings.openLayersOptions);
+	var map = new OpenLayers.Map($(this)[0], openLayersOptions);
 	
 	// Iterate over the preset layers, adding them to the map
 	$.each(this.settings.presetLayers, function(i, item)
