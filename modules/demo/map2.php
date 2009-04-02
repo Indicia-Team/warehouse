@@ -17,7 +17,8 @@ $apiKey = helper_config::$geoplanet_api_key;
 (function($){ 
 $(document).ready(function()
 {
-$('#map').indiciaMap({presetLayers : ['openlayers_wms']}).indiciaMapEdit().locationFinder({apiKey : '<?php echo $apiKey; ?>'});
+var a = new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true});
+$('#map').indiciaMap({layers : [a]}).indiciaMapEdit().locationFinder({apiKey : '<?php echo $apiKey; ?>'});
 });
 })(jQuery);
 </script>
