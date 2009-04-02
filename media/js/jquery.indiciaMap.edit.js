@@ -31,7 +31,7 @@
       return this.each(function()
       {
 	var settings = {};
-        $.extend(true, settings, $.indiciaMapEdit.defaults, this.settings, options);
+        $.extend(settings, $.indiciaMapEdit.defaults, this.settings, options);
 	this.settings = settings;
 	
 	// Add an editable layer to the map
