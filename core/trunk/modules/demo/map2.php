@@ -12,13 +12,13 @@ $apiKey = helper_config::$geoplanet_api_key;
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.edit.js' ></script>
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.edit.locationFinder.js' ></script>
 <!-- <script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script> -->
-<!-- <script src="http://maps.google.com/maps?file=api&v=2&key=null" type="text/javascript"></script> -->
+<script src="http://maps.google.com/maps?file=api&v=2&key=null" type="text/javascript"></script>
 <script type='text/javascript'>
 (function($){ 
 $(document).ready(function()
 {
 var a = new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true});
-$('#map').indiciaMap({layers : [a]}).indiciaMapEdit().locationFinder({apiKey : '<?php echo $apiKey; ?>'});
+$('#map').indiciaMap({presetLayers : ['google_physical', 'google_hybrid'], layers : [a]}).indiciaMapEdit().locationFinder({apiKey : '<?php echo $apiKey; ?>'});
 });
 })(jQuery);
 </script>
