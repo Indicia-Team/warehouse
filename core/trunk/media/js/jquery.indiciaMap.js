@@ -94,10 +94,8 @@
 	  div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
 	});
 	
-	$.each(this.settings.layers, function(i, item)
-	{
-	  map.addLayers([item]);
-	});
+	map.addLayers(this.settings.layers);
+	
 	$.each(this.settings.controls, function(i, item)
 	{
 	  map.addControl(item);
