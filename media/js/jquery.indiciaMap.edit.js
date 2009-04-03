@@ -13,7 +13,7 @@
 {
   $.extend({indiciaMapEdit : new function()
   {
-    this.defaults = 
+    this.defaults =
     {
       wkt : null,
 	    layerName : "Current location boundary",
@@ -21,11 +21,13 @@
 	    geom_field_name : 'geom',
 	    systems_field_name : 'entered_sref_systems',
 	    systems : {4326 : "Lat/Long on the WGS84 Datum", OSGB : "Ordnance Survey British National Grid"},
+	    label_spatial_ref : "Spatial Ref.",
+	    label_system : "Spatial Ref. System",
 	    placeControls : true,
 	    controlPosition : 0,
-	    boundaryStyle: new OpenLayers.Util.applyDefaults({ strokeWidth: 1, strokeColor: "#ff0000", fillOpacity: 0.3, fillColor:"#ff0000" }, OpenLayers.Feature.Vector.style['default']) 
+	    boundaryStyle: new OpenLayers.Util.applyDefaults({ strokeWidth: 1, strokeColor: "#ff0000", fillOpacity: 0.3, fillColor:"#ff0000" }, OpenLayers.Feature.Vector.style['default'])
     };
-    
+
     this.construct = function(options)
     {
       return this.each(function()
@@ -33,33 +35,33 @@
 	var settings = {};
         $.extend(settings, $.indiciaMapEdit.defaults, this.settings, options);
 	this.settings = settings;
-	
+
 	// Add an editable layer to the map
 	var editLayer = new OpenLayers.Layer.Vector(this.settings.layerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true});
 	this.map.editLayer = editLayer;
 	this.map.addLayers([this.map.editLayer]);
-	
+
 	if (this.settings.wkt != null)
 	{
 	  showWktFeature(this, this.settings.wkt);
 	}
-	
+
 	if (this.settings.placeControls)
 	{
 	  placeControls(this);
 	}
-	
+
 	registerControls(this);
-	
+
       });
     };
-    
+
     this.showWktFeature = function(div, wkt) {
       var editlayer = div.map.editLayer;
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
       var bounds=feature.geometry.getBounds();
-      
+
       editlayer.destroyFeatures();
       editlayer.addFeatures([feature]);
       // extend the boundary to include a buffer, so the map does not zoom too tight.
@@ -76,9 +78,9 @@
 	div.map.zoomTo(11);
       }
     };
-    
+
     // Private functions
-    
+
     /**
     * Adds controls into the div in the specified position.
     */
@@ -86,9 +88,9 @@
     {
       var pos = div.settings.controlPosition;
       var systems = div.settings.systems;
-      
+
       var html = "<span>";
-      html += "<label for='"+div.settings.input_field_name+"'>Spatial Reference:</label>";
+      html += "<label for='"+div.settings.input_field_name+"'>"+div.settings.label_spatial_ref+":</label>";
       html += "<input type='text' id='" + div.settings.input_field_name + "' name='" + div.settings.input_field_name + "' />\n";
       if (systems.length == 1)
       {
@@ -97,13 +99,13 @@
       }
       else
       {
-	html += "<label for='"+div.settings.systems_field_name+"'>Spatial Reference System:</label>";
+	html += "<label for='"+div.settings.systems_field_name+"'>"+div.settings.label_system+":</label>";
 	html += "<select id='" + div.settings.systems_field_name + "' name='" + div.settings.systems_field_name + "' >\n";
 	$.each(systems, function(key, val) { html += "<option value='" + key + "'>" + val + "</option>\n" });
 	html += "</select>\n";
       }
       html += "</span>";
-      
+
       if (pos == 0)
       {
 	$(div).before(html);
@@ -113,7 +115,7 @@
 	$(div).after(html);
       }
     }
-    
+
     /**
     * Registers controls with the map - binds functions to them and places correct data in if wkt has been supplied.
     */
@@ -123,16 +125,16 @@
       var geomFld = '#' + div.settings.geom_field_name;
       var systemsFld = '#' +div.settings.systems_field_name;
       var map = div.map;
-      
+
       OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
 	defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
-	  initialize: function(options) 
-	  { 
+	  initialize: function(options)
+	  {
 	    this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
 	    OpenLayers.Control.prototype.initialize.apply(this, arguments);
 	    this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
 	  },
-						   trigger: function(e) 
+						   trigger: function(e)
 						   {
 						     var lonlat = map.getLonLatFromViewPortPx(e.xy);
 						     // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
@@ -163,12 +165,12 @@
 						     );
 						   }
       });
-      
+
       // Add the click control to the map.
       var click = new OpenLayers.Control.Click();
       map.addControl(click);
       click.activate();
-      
+
       // Bind functions to the input field.
       $(inputFld).change(function()
       {
@@ -184,6 +186,6 @@
     }
   }
   });
-  
+
   $.fn.extend({ indiciaMapEdit : $.indiciaMapEdit.construct });
 })(jQuery);

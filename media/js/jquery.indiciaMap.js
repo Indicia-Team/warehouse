@@ -10,7 +10,7 @@
   $.extend({indiciaMap : new function()
   {
     // Quite a lot of options here
-    this.defaults = 
+    this.defaults =
     {
       indiciaSvc : "http://localhost/indicia",
 	    indiciaGeoSvc : "http://localhost:8080/geoserver",
@@ -19,6 +19,7 @@
 	    initial_lat: 6700000,
 	    initial_long: -100000,
 	    initial_zoom: 7,
+	    scroll_wheel_zoom: true,
 	    proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
 	    displayFormat: "image/png",
 	    presetLayers: [],
@@ -27,7 +28,7 @@
 	    layers: [],
 	    controls: []
     };
-    
+
     // Options to pass to the openlayers map constructor
     this.openLayersDefaults =
     {
@@ -38,7 +39,7 @@
 	    maxResolution: 156543.0339,
 	    maxExtent: new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)
     };
-    
+
     // Potential layers to add to the map
     this.presetLayers =
     {
@@ -52,7 +53,7 @@
 	    multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true})},
 	    multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('OS Landranger', {sphericalMercator: true, dataSource: 904})}
     };
-    
+
     this.construct = function(options, oloptions)
     {
       var settings = {};
@@ -60,23 +61,23 @@
       // Deep extend
       $.extend(settings, $.indiciaMap.defaults, options);
       $.extend(openLayersOptions, $.indiciaMap.openLayersDefaults, oloptions);
-      
+
       return this.each(function()
       {
 	this.settings = settings;
-	
+
 	// Sizes the div
 	$(this).css('height', this.settings.height).css('width', this.settings.width);
-	
+
 	// If we're using a proxy
 	if (this.settings.proxy)
 	{
 	  OpenLayers.ProxyHost = this.settings.proxy;
 	}
-	
+
 	// Constructs the map
 	var map = new OpenLayers.Map($(this)[0], openLayersOptions);
-	
+
 	// Iterate over the preset layers, adding them to the map
 	$.each(this.settings.presetLayers, function(i, item)
 	{
@@ -87,7 +88,7 @@
 	    map.addLayers([layer]);
 	  }
 	});
-	
+
 	var div = this;
 	// Convert indicia WMS/WFS layers into js objects
 	$.each(this.settings.indiciaWMSLayers, function(key, value)
@@ -98,9 +99,9 @@
 	{
 	  div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
 	});
-	
+
 	map.addLayers(this.settings.layers);
-	
+
 	$.each(this.settings.controls, function(i, item)
 	{
 	  map.addControl(item);
@@ -111,12 +112,21 @@
 	}
 	// Centre the map
 	map.setCenter(new OpenLayers.LonLat(this.settings['initial_long'],this.settings['initial_lat']),this.settings['initial_zoom']);
+
+	// Disable the scroll wheel from zooming if required
+	if (!this.settings.scroll_wheel_zoom) {
+		$.each(map.controls, function(i, control) {
+			if (control instanceof OpenLayers.Control.Navigation) {
+				control.disableZoomWheel();
+			}
+		});
+	}
 	this.map = map;
       });
     };
   }
   });
-  
+
   $.fn.extend({
     indiciaMap : $.indiciaMap.construct
   });
