@@ -20,9 +20,9 @@
 	    input_field_name : 'entered_sref',
 	    geom_field_name : 'geom',
 	    systems_field_name : 'entered_sref_systems',
-	    systems : {4326 : "Lat/Long on the WGS84 Datum", OSGB : "Ordnance Survey British National Grid"},
+	    systems : {OSGB : "British National Grid", 4326 : "Lat/Long on the WGS84 Datum"},
 	    label_spatial_ref : "Spatial Ref.",
-	    label_system : "Spatial Ref. System",
+	    label_system : "using",
 	    placeControls : true,
 	    controlPosition : 0,
 	    boundaryStyle: new OpenLayers.Util.applyDefaults({ strokeWidth: 1, strokeColor: "#ff0000", fillOpacity: 0.3, fillColor:"#ff0000" }, OpenLayers.Feature.Vector.style['default'])
@@ -90,7 +90,7 @@
       var systems = div.settings.systems;
 
       var html = "<span>";
-      html += "<label for='"+div.settings.input_field_name+"'>"+div.settings.label_spatial_ref+":</label>";
+      html += "<label for='"+div.settings.input_field_name+"'>"+div.settings.label_spatial_ref+":</label>\n";
       html += "<input type='text' id='" + div.settings.input_field_name + "' name='" + div.settings.input_field_name + "' />\n";
       if (systems.length == 1)
       {
@@ -99,7 +99,7 @@
       }
       else
       {
-	html += "<label for='"+div.settings.systems_field_name+"'>"+div.settings.label_system+":</label>";
+	html += "<label style=\"width: auto\" for='"+div.settings.systems_field_name+"'>"+div.settings.label_system+":</label>";
 	html += "<select id='" + div.settings.systems_field_name + "' name='" + div.settings.systems_field_name + "' >\n";
 	$.each(systems, function(key, val) { html += "<option value='" + key + "'>" + val + "</option>\n" });
 	html += "</select>\n";
