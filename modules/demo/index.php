@@ -39,7 +39,10 @@ View the source code in <a href="viewsource.php?file=map_polygon_capture.php">ma
 <p>Browse a grid of occurrences captured by this instance of the Core Module. Also demonstrates viewing, commenting and editing existing occurrences.
 View the source code in <a href="viewsource.php?file=occurrence_grid.php">occurrence_grid.php</a> and <a href="viewsource.php?file=occurrence.php">occurrence.php</a>.</p>
 </li>
-<li><a href="valid.php">Simple demonstration of validation</a></li>
+<li><a href="valid.php">Validation service</a>
+<p>Illustrates a JSON submission being sent to the validation services for a pre-check.
+View the source code in <a href="viewsource.php?file=valid.php">valid.php</a>.</p>
+</li>
 
 <li><a href="test_treeview.php">Demonstration of 3 term based treeviews.</a></li>
 <li><a href="../../index.php/services/data/location?mode=xml&view=detail">List the locations as XML by calling the Data service</a></li>

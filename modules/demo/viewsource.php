@@ -7,6 +7,7 @@ $allowed = array(
 	'occurrence_grid.php',
 	'occurrence.php',
 	'map_polygon_capture.php',
+	'valid.php'
 );
 
 if ($_GET['file']) {
