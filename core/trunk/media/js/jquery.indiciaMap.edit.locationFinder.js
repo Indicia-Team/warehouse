@@ -93,6 +93,7 @@
 	if (e.which == 13)
 	{
 	  locate(div);
+	  return false;
 	}
       });
 
