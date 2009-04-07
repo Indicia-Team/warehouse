@@ -93,7 +93,7 @@
       html += "<label for='"+div.settings.input_field_name+"'>"+div.settings.label_spatial_ref+":</label>\n";
       html += "<input type='text' id='" + div.settings.input_field_name + "' name='" + div.settings.input_field_name + "' />\n";
       // hidden field for the geom
-      html += "<input type='hidden' id='" + div.settings.geom_field_name + "' name='" + div.settings.geom_field_name + "' />\n";
+      html += "<input type='hidden' class='hidden' id='" + div.settings.geom_field_name + "' name='" + div.settings.geom_field_name + "' />\n";
       if (systems.length == 1)
       {
 	// Hidden field for the system
