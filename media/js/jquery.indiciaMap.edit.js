@@ -19,7 +19,7 @@
 	    layerName : "Current location boundary",
 	    input_field_name : 'entered_sref',
 	    geom_field_name : 'geom',
-	    systems_field_name : 'entered_sref_systems',
+	    systems_field_name : 'entered_sref_system',
 	    systems : {OSGB : "British National Grid", 4326 : "Lat/Long on the WGS84 Datum"},
 	    label_spatial_ref : "Spatial Ref.",
 	    label_system : "using",
@@ -92,6 +92,8 @@
       var html = "<span>";
       html += "<label for='"+div.settings.input_field_name+"'>"+div.settings.label_spatial_ref+":</label>\n";
       html += "<input type='text' id='" + div.settings.input_field_name + "' name='" + div.settings.input_field_name + "' />\n";
+      // hidden field for the geom
+      html += "<input type='hidden' id='" + div.settings.geom_field_name + "' name='" + div.settings.geom_field_name + "' />\n";
       if (systems.length == 1)
       {
 	// Hidden field for the system

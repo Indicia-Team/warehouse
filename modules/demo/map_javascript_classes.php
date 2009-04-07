@@ -1,5 +1,6 @@
-<?php include '../../client_helpers/helper_config.php'; 
-$apiKey = helper_config::$geoplanet_api_key;
+<?php include '../../client_helpers/helper_config.php';
+$geoplanetApiKey = helper_config::$geoplanet_api_key;
+$multimapApiKey = helper_config::$multimap_api_key;
 ?>
 <html>
 <head>
@@ -11,14 +12,23 @@ $apiKey = helper_config::$geoplanet_api_key;
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.js' ></script>
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.edit.js' ></script>
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.edit.locationFinder.js' ></script>
-<!-- <script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script> -->
 <script src="http://maps.google.com/maps?file=api&v=2&key=null" type="text/javascript"></script>
+<script type="text/javascript" src="http://developer.multimap.com/API/maps/1.2/<?php echo $multimapApiKey; ?>" ></script>
 <script type='text/javascript'>
-(function($){ 
+(function($){
 $(document).ready(function()
 {
-var a = new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true});
-$('#map').indiciaMap({presetLayers : ['google_physical', 'google_hybrid'], layers : [a]}).indiciaMapEdit().locationFinder({apiKey : '<?php echo $apiKey; ?>'});
+$('#map').indiciaMap({
+		presetLayers : ['multimap_landranger', 'google_physical', 'google_hybrid'],
+		width: "700px",
+		height: "700px",
+		initial_zoom: 6,
+		initial_lat: 7260000,
+	}).
+	indiciaMapEdit().
+	locationFinder({
+		apiKey : '<?php echo $geoplanetApiKey; ?>'
+	});
 });
 })(jQuery);
 </script>
