@@ -1,27 +1,7 @@
 <html>
 <head>
 <title>Indicia external site species checklist test page</title>
-<link rel="stylesheet" href="../../../media/css/ui.datepicker.css" type="text/css" media="screen">
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
-<link rel="stylesheet" href="../../../media/css/jquery.autocomplete.css" />
-
-<script type="text/javascript" src="../../../media/js/jquery-1.3.1.js"></script>
-<script type="text/javascript" src="../../../media/js/ui.core.js"></script>
-<script type="text/javascript" src="../../../media/js/ui.datepicker.js"></script>
-<script type="text/javascript" src="../../../media/js/jquery.autocomplete.js"></script>
-<script type="text/javascript" src="../../../media/js/json2.js"></script>
-<script type="text/javascript">
-(function($){
-$(document).ready(function() {
-  $('#sampleDate').datepicker({dateFormat : 'yy-mm-dd'});
-  $('.date').datepicker({dateFormat : 'yy-mm-dd'});
-  $('#sampleDate').change(function() {
-    $('.date').removeClass('hasDatepicker')
-    .datepicker({ dateFormat : 'yy-mm-dd', minDate : $(this).datepicker('getDate') });
-  });
-});
-})(jQuery);
-</script>
 </head>
 <body>
 <h1>Indicia Species Checklist Test</h1>
@@ -34,10 +14,10 @@ if ($_POST){
  // We're mainly submitting to the sample model
  $sampleMod = data_entry_helper::wrap($_POST, 'sample');
  $occurrences = data_entry_helper::wrap_species_checklist($_POST);
- 
+
  // Add the occurrences in as submodels
  $sampleMod['subModels'] = $occurrences;
- 
+
  // Wrap submission and submit
  $submission = array('submission' => array('entries' => array(
  array ( 'model' => $sampleMod ))));
@@ -45,7 +25,7 @@ if ($_POST){
  'save', $submission);
  data_entry_helper::dump_errors($response);
  }
- 
+
  ?>
  <form method='post'>
  <?php
@@ -61,15 +41,12 @@ if ($_POST){
  <input type="text" size="30" value="click here" id="sampleDate" name="date" />
  <style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style>
  <br />
- <label for="entered_sref">Spatial Reference:</label>
- <?php echo data_entry_helper::map_picker('entered_sref',
- array('osgb'=>'British National Grid','4326'=>'Latitude and Longitude (WGS84)')); ?>
- <br />
+ <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
  <?php echo data_entry_helper::species_checklist($config['species_checklist_taxon_list'], $config['species_checklist_occ_attributes'], $readAuth); ?>
+ <?php echo "here"; ?>
  <br />
  <input type='submit' value='submit' />
  </form>
  </body>
  <?php echo data_entry_helper::dump_javascript(); ?>
  </html>
- 

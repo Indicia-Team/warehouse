@@ -6,8 +6,6 @@ include 'data_entry_config.php';
 ?>
 <title>Indicia external site data entry test page</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
-<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=<?php echo $config['google_api_key'] ?>"
-type="text/javascript"></script>
 </head>
 <body>
 <h1>Indicia Data entry test</h1>
@@ -110,20 +108,9 @@ $readAuth = data_entry_helper::get_read_auth(1, 'password');
 <label for="date">Date:</label>
 <?php echo data_entry_helper::date_picker('date'); ?>
 <br />
-<label for="place_search">Search for place on map:</label>
-<?php echo data_entry_helper::geoplanet_search(); ?>
-<br/>
-<label for="entered_sref">Spatial Reference:</label>
-<?php echo data_entry_helper::map_picker
-(
-'entered_sref', 'geom',
-array('osgb'=>'British National Grid','4326'=>'Latitude and Longitude (WGS84)'),
-array('inc_google'=>'true', 'init_layer'=>'Google Physical'),
-field('geom')
-); ?>
-<br />
+<?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
 <label for="location_name">Locality Description:</label>
-<input name="location_name" size="50" value='<?php echo field('location_name'); ?>'/><br />
+<input name="location_name" class="wide" value='<?php echo field('location_name'); ?>'/><br />
 <label for="survey_id">Survey</label>
 <?php echo data_entry_helper::select('survey_id', 'survey', 'title', 'id', $readAuth, field('survey_id')); ?>
 <br />
@@ -131,8 +118,9 @@ field('geom')
 <?php echo data_entry_helper::autocomplete('determiner_id', 'person', 'caption', 'id', $readAuth, field('determiner'), field('determiner_id')); ?>
 <br />
 <label for='comment'>Comment</label>
-<textarea id='comment' name='comment'><?php echo field('comment'); ?></textarea>
+<textarea id='comment' name='comment' class="wide"><?php echo field('comment'); ?></textarea>
 <br />
+<label for='occurrence_image'>Image Upload</label>
 <?php echo data_entry_helper::image_upload('occurrence_image'); ?>
 <fieldset>
 <legend>Occurrence attributes</legend>
@@ -145,11 +133,12 @@ field('geom')
 <fieldset>
 <legend>Sample attributes</legend>
 <label for='<?php echo $config['weather']; ?>'>Weather</label>
-<input type='text' name='<?php echo $config['weather']; ?>' id='<?php echo $config['weather']; ?>'/><br />
+<input type='text' name='<?php echo $config['weather']; ?>' class="wide" id='<?php echo $config['weather']; ?>'/><br />
 <label for='<?php echo $config['temperature']; ?>'>Temperature (Celsius)</label>
 <input type='text' name='<?php echo $config['temperature']; ?>' id='<?php echo $config['temperature']; ?>'/><br />
 <label for='<?php echo $config['surroundings']; ?>'>Surroundings</label>
-<?php echo data_entry_helper::radio_group($config['surroundings'], 'termlists_term', 'term', 'id', $readAuth + array('termlist_id' => $config['surroundings_termlist'])); ?> </br>
+<div style="display: inline-block"><?php echo data_entry_helper::radio_group($config['surroundings'], 'termlists_term', 'term', 'id', $readAuth + array('termlist_id' => $config['surroundings_termlist']), '<br />'); ?></div>
+<br/>
 <label for='<?php echo $config['site_usage']; ?>[]'>Site Usage</label>
 <?php echo data_entry_helper::listbox($config['site_usage'].'[]', 'termlists_term', 'term', 4, true, 'id', $readAuth + array('termlist_id' => $config['site_usage_termlist'])); ?>
 </fieldset>

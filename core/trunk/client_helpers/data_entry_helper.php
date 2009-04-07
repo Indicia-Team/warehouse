@@ -3,7 +3,7 @@
 require_once('helper_config.php');
 
 class data_entry_helper extends helper_config {
-  
+
 
   public static function _RESOURCES()
   {
@@ -26,7 +26,7 @@ class data_entry_helper extends helper_config {
     'virtualearth' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
     );
   }
-  
+
   private static function add_resource($resource)
   {
     global $res;
@@ -44,7 +44,7 @@ class data_entry_helper extends helper_config {
       }
     }
   }
-  
+
   /**
   * Helper function to collect javascript code in a single location.
   */
@@ -74,7 +74,7 @@ class data_entry_helper extends helper_config {
  </script>";
  return $stylesheets.$libraries.$script;
  }
- 
+
  /**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
  */
@@ -126,12 +126,11 @@ public static function get_from_session($name, $default='') {
 * Helper function to support image upload
 */
 public static function image_upload($id){
-  $r = "<label for='$id'>Image upload</label>";
   $r .= "<input type='file' id='$id' name='$id' accept='png|jpg|gif'/>";
-  
+
   return $r;
   }
-  
+
   /**
   * Helper function to generate a species checklist from a given taxon list.
   *
@@ -173,7 +172,7 @@ public static function image_upload($id){
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $taxalist = curl_exec($session);
     $taxalist = json_decode(array_pop(explode("\r\n\r\n",$taxalist)), true);
-    
+
     // Get the list of occurrence attributes
     foreach ($occ_attrs as $occAttr)
     {
@@ -201,16 +200,16 @@ public static function image_upload($id){
 	    $occAttrControls[$occAttr] =
 	    "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' value='click here'/>";
 	    break;
-	    
+
 	  default:
 	    $occAttrControls[$occAttr] =
 	    "<input type='text' id='oa:$occAttr' name='oa:$occAttr'/>";
 	    break;
 	}
       }
-      
+
     }
-    
+
     // Build the grid
     if (! array_key_exists('error', $taxalist))
     {
@@ -222,7 +221,7 @@ public static function image_upload($id){
 	$grid .= "<td class='scOccAttrCell'>$oc</td>";
       }
       $grid .= "</tr></tbody></table>";
-      
+
       $grid .= "<table class='speciesCheckList'>";
       $grid .= "<thead><th>Species</th><th>Present (Y/N)</th>";
       foreach ($occAttrs as $a) {
@@ -242,7 +241,7 @@ public static function image_upload($id){
 	$grid .= "</tr>";
       }
       $grid .= "</tbody></table>";
-      
+
       // Insert an autocomplete box if the termlist has a parent or an alternate
       // termlist has been given in the parameter.
       if ($lookupList == null) {
@@ -254,14 +253,14 @@ public static function image_upload($id){
 	  $lookupList = $tl[0]['parent_id'];
       }
     }
-    
+
     if ($lookupList != null) {
       // Javascript to add further rows to the grid
       $grid .= "<script type='text/javascript'
       src='./addRowToGrid.js' ></script>";
       $javascript .= "var addRowFn = addRowToGrid('$url', $readAuth);
       jQuery('#addRowButton').click(addRowFn);\r\n";
-      
+
       // Drop an autocomplete box against the parent termlist
       $grid .= data_entry_helper::autocomplete('addSpeciesBox',
 							    'taxa_taxon_list', 'taxon', 'id', $readAuth +
@@ -269,13 +268,13 @@ public static function image_upload($id){
 							    'taxon_list_id' => $lookupList));
 							    $grid .= "<button type='button' id='addRowButton'>
 							    Add Row</button>";
-							    
+
     }
-    
+
     return $grid;
   }
   }
-  
+
   /**
   * Helper function to generate a treeview from a given list
   *
@@ -300,7 +299,7 @@ public static function image_upload($id){
   * Need to do initial value.
   * Need to look at how the filetree can be implemented.
   */
-  
+
   public static function treeview($control_id, $entity,
 				   $nameField, $valueField, $topField, $topValue, $parentField,
 				   $defaultValue, $extraParams,
@@ -320,7 +319,7 @@ public static function image_upload($id){
 				     }
 				     // lop the comma off the end
 				     $sParams = substr($sParams, 0, -1);
-				     
+
 				     $javascript .= "jQuery('#tr$control_id').treeview(
 				     {
 				       url: '$url/$entity',
@@ -349,12 +348,12 @@ public static function image_upload($id){
 										       }
 				     }
 				     );";
-				     
+
 				     $tree = '<input type="hidden" class="hidden" id="'.$control_id.'" name="'.$control_id.'" /><ul id="tr'.$control_id.'" class="'.$extraClass.'"></ul>';
 				     return $tree;
 				   }
-				   
-				   
+
+
 				   /**
 				   * Helper function to insert a date picker control.
 				   */
@@ -368,8 +367,8 @@ public static function image_upload($id){
 				     '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ';
 				     return $r;
 				   }
-				   
-				   
+
+
 				   /**
 				   * Helper function to generate a select control from a Indicia core service query.
 				   *
@@ -416,10 +415,10 @@ public static function image_upload($id){
 				     }
 				     else
 				       echo "Error loading control";
-				     
+
 				     return $r;
 				   }
-				   
+
 				   /**
 				   * Helper function to generate a list box from a Indicia core service query.
 				   */
@@ -458,8 +457,8 @@ public static function image_upload($id){
 				     else echo "Error loading control";
 				     return $r;
 				   }
-				   
-				   
+
+
 				   /**
 				   * Helper function to generate an autocomplete box from an Indicia core service query.
 				   */
@@ -476,7 +475,7 @@ public static function image_upload($id){
 				     }
 				     // lop the comma off the end
 				     $sParams = substr($sParams, 0, -1);
-				     
+
 				     // Reference the necessary libraries
 				     $javascript .= "jQuery('input#ac$id').autocomplete('$url/$entity',
 			{
@@ -519,7 +518,7 @@ public static function image_upload($id){
       "<input id='ac$id' name='ac$id' value='$defaultName' />";
       return $r;
 			  }
-			  
+
 			  /**
 			  * Helper function to list the output from a request against the data services, using an HTML template
 			  * for each item.
@@ -560,10 +559,10 @@ public static function image_upload($id){
     }
     else
       echo "Error loading control";
-    
+
     return $r;
 			  }
-			  
+
 			  /**
 			  * Helper function to generate a radio group from a Indicia core service query.
 			  */
@@ -592,10 +591,10 @@ public static function image_upload($id){
       }
     }
 			  }
-			  
+
 			  return $r;
 				   }
-				   
+
 				   public static function forward_post_to($entity, $array = null) {
 				     if ($array == null) $array = self::wrap($_POST, $entity);
 				     $request = parent::$base_url."/index.php/services/data/$entity";
@@ -618,21 +617,21 @@ public static function image_upload($id){
     // The last block of text in the response is the body
     return json_decode(array_pop(explode("\r\n\r\n",$response)), true);
 				   }
-				   
+
 				   public static function handle_media($media_id = 'imgUpload') {
 				     if (array_key_exists($media_id, $_FILES)) {
 				       syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
 				       $uploadpath = parent::$upload_path;
 				       $target_url = parent::$base_url."/index.php/services/data/handle_media";
-				       
+
 				       $name = $_FILES[$media_id]['name'];
 				       $fname = $_FILES[$media_id]['tmp_name'];
 				       $fext = array_pop(explode(".", $name));
 				       $bname = basename($fname, ".$fext");
-				       
+
 				       // Generate a file id to store the image as
 				       $destination = time().rand(0,1000).".".$fext;
-				       
+
 				       if (move_uploaded_file($fname, $uploadpath.$destination)) {
 					 $postargs = array();
 					 if (array_key_exists('auth_token', $_POST))
@@ -648,17 +647,17 @@ public static function image_upload($id){
 					 $result=curl_exec ($ch);
 					 curl_close ($ch);
 					 return $destination;
-					 
+
 				       } else {
 					 //TODO error messaging
 					 return false;
 				       }
 				     }
-				     
-				     
-				     
+
+
+
 				   }
-				   
+
 				   /**
 				   * Wraps data from a species checklist grid (generated by
 				   * data_entry_helper::species_checklist) into a suitable format for submission. This will
@@ -701,10 +700,10 @@ public static function image_upload($id){
     'fkId' => 'sample_id',
      'model' => $occ);
 					 }
-					 
+
 					 return $subModels;
 					 }
-					 
+
 					 /**
 					 * Wraps attribute fields (entered as normal) into a suitable container for submission.
 					 * Throws an error if $entity is not something for which attributes are known to exist.
@@ -735,14 +734,14 @@ public static function image_upload($id){
   $entity."_attribute_id" => $a[1],
 		 'value' => $value
 		 );
-		 
+
 }
 					   }
 					   foreach ($oap as $oa) {
 					     $occAttrs[] = data_entry_helper::wrap($oa, "$entity"."_attribute");
 					   }
 					   return $occAttrs;
-					   
+
 					   }
 					   public static function wrap( $array, $entity)
 					   {
@@ -751,7 +750,7 @@ public static function image_upload($id){
 					     'id' => $entity,
 							 'fields' => array()
 							 );
-							 
+
 							 // Iterate through the array
 							 foreach ($array as $a => $b)
 							 {
@@ -765,7 +764,7 @@ public static function image_upload($id){
 							 }
 							 return $sa;
 					   }
-					   
+
 					   /**
 					   * Takes a response, and outputs any errors from it onto the screen.
 					   *
@@ -806,9 +805,9 @@ if (array_key_exists('errors', $response)) {
   else
     echo $response;
   }
-  
+
   /**
-  * Generates a map control, with optional data entry fields and location finder powered by the 
+  * Generates a map control, with optional data entry fields and location finder powered by the
   * Yahoo! geoservices API.
   *
   * @param string $div Id of a div to add the map into
@@ -823,7 +822,7 @@ if (array_key_exists('errors', $response)) {
     self::add_resource('indiciaMap');
     if ($edit) self::add_resource('indiciaMapEdit');
     if ($locate) self::add_resource('locationFinder');
-    
+
     foreach ($layers as $layer)
     {
       $a = explode('_', $layer);
@@ -841,7 +840,7 @@ if (array_key_exists('errors', $response)) {
 	  break;
       }
     }
-    
+
     if ($defaultJs)
     {
       $jsLayers = "[ '".implode('\', \'', $layers)."' ]";
@@ -892,10 +891,12 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
   $init_layer = self::option('init_layer', $opts, '');
   $r = '<script type="text/javascript" src="'.parent::$base_url.'/media/js/OpenLayers.js"></script>';
   $r .= '<script type="text/javascript" src="'.parent::$base_url.'/media/js/spatial-ref.js"></script>';
-  $r .= '<script type="text/javascript" src="http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1"></script>';
+  if ($inc_virtual_earth) {
+  	$r .= '<script type="text/javascript" src="http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1"></script>';
+  }
   $javascript .= "init_map(\"".parent::$base_url."\", $init_wkt, '$field_name', '$geom_field_name', ".
   "$inc_virtual_earth, $inc_google, '".parent::$geoplanet_api_key."', $init_lat, $init_long, $init_zoom, '$init_layer');\r\n";
-  
+
   $r .= '<input id="'.$field_name.'" name="'.$field_name.'" value="'.$init_value.'" '.
   'onblur="exit_sref();" onclick="enter_sref();"/>';
   if (count($systems)==1)
@@ -914,7 +915,7 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
   $r .= '<div id="map" class="smallmap" style="width: '.$width.'px; height: '.$height.'px;"></div>';
   return $r;
   }
-  
+
   /**
   * Private method to find an option from an associative array of options. If not present, returns the default.
   */
@@ -927,7 +928,7 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
   }
   return $r;
   }
-  
+
   /**
   * Helper function to put a location search box onto the data entry page, linked to a map picker.
   * The search box uses the GeoPlanet API to find locations.
@@ -952,8 +953,8 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
 				'<a href="#" id="place_close_button" onclick="jQuery(\'#place_search_box\').hide(\'fast\');">Close</a></div>';
 				return $r;
 			      }
-			      
-			      
+
+
 			      /**
 			      * Retrieves a read token and passes it back as an array suitable to drop into the
 			      * 'extraParams' options for an Ajax call.
@@ -975,7 +976,7 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
 					     'nonce' => $nonce
 					     );
 			      }
-			      
+
 			      /**
 			      * Retrieves a token and inserts it into a data entry form which authenticates that the
 			      * form was submitted by this website.
@@ -1001,4 +1002,3 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
 			      }
 			      }
 			      ?>
-			      
