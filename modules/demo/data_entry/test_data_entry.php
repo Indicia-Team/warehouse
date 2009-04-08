@@ -2,7 +2,7 @@
 <head>
 <?php
 include '../../../client_helpers/data_entry_helper.php';
-include 'data_entry_config.php';
+include '../data_entry_config.php';
 ?>
 <title>Indicia external site data entry test page</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
@@ -46,11 +46,11 @@ if ($_POST)
      // TODO Get a caption for the image
      $oiFields = array(
      'path' => $name,
-		       'caption' => 'An image in need of a caption');
-		       $oiMod = data_entry_helper::wrap($oiFields, 'occurrence_image');
-		       $occurrenceMod['subModels'][] = array(
-		       'fkId' => 'occurrence_id',
-							     'model' => $oiMod);
+           'caption' => 'An image in need of a caption');
+           $oiMod = data_entry_helper::wrap($oiFields, 'occurrence_image');
+           $occurrenceMod['subModels'][] = array(
+           'fkId' => 'occurrence_id',
+                   'model' => $oiMod);
    }
 
    $submission = array('submission' => array('entries' => array(
