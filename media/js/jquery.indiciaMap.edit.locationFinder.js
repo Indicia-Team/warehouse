@@ -17,32 +17,32 @@
     this.defaults =
     {
       placeControls : true,
-	    controlPosition : 0,
-	    search_input_name : 'place_search',
-	    search_box_name : 'place_search_box',
-	    search_button_name : 'place_search_button',
-	    search_output_name : 'place_search_output',
-	    search_close_name : 'place_search_close',
-	    preferredArea : 'gb',
-	    country : 'United Kingdom',
-	    lang : 'en-EN',
-	    apiKey : ''
+      controlPosition : 0,
+      search_input_name : 'place_search',
+      search_box_name : 'place_search_box',
+      search_button_name : 'place_search_button',
+      search_output_name : 'place_search_output',
+      search_close_name : 'place_search_close',
+      preferredArea : 'gb',
+      country : 'United Kingdom',
+      lang : 'en-EN',
+      apiKey : ''
     };
 
     this.construct = function(options)
     {
       return this.each(function()
       {
-	var settings = {};
-	$.extend(settings, $.locationFinder.defaults, this.settings, options);
-	this.settings = settings;
+  var settings = {};
+  $.extend(settings, $.locationFinder.defaults, this.settings, options);
+  this.settings = settings;
 
-	if (this.settings.placeControls)
-	{
-	  placeControls(this);
-	}
+  if (this.settings.placeControls)
+  {
+    placeControls(this);
+  }
 
-	registerControls(this);
+  registerControls(this);
       });
     };
 
@@ -67,11 +67,11 @@
 
       if (pos == 0)
       {
-	$(div).before(html);
+  $(div).before(html);
       }
       else
       {
-	$(div).after(html);
+  $(div).after(html);
       }
     }
 
@@ -85,27 +85,28 @@
 
       $(buttonId).click(function()
       {
-	locate(div);
+  locate(div);
       });
 
       $(inputId).keypress(function(e)
       {
-	if (e.which == 13)
-	{
-	  locate(div);
-	  return false;
-	}
+  if (e.which == 13)
+  {
+    locate(div);
+    return false;
+  }
       });
 
       $(closeId).click(function()
       {
-	$(searchDivId).hide('fast');
+  $(searchDivId).hide('fast');
       });
     };
 
     function locate(div)
     {
-
+      if (div.settings.apiKey.length==0)
+        alert('Incorrect configuration - Geoplanet API Key not specified.');
       var pref_area = div.settings.preferredArea;
       var country = div.settings.country;
       var lang = div.settings.lang;
@@ -119,42 +120,42 @@
       var ref;
       var searchtext = $(inputId).attr('value');
       if (searchtext != '') {
-	var request = 'http://where.yahooapis.com/v1/places.q("' +
-	searchtext + ' ' + pref_area + '", "' + country + '");count=10';
-	$.getJSON(request + "?format=json&lang="+lang+"&appid="+geoplanet_api_key+"&callback=?", function(data){
-	  // an array to store the responses in the required country, because GeoPlanet will not limit to a country
-	  var found = { places: [], count: 0 };
-	  jQuery.each(data.places.place, function(i,place) {
-	    // Ingore places outside the chosen country, plus ignore places that were hit because they
-	    // are similar to the country name we are searching in.
-	    if (place.country.toUpperCase()==country.toUpperCase()
-	      && (place.name.toUpperCase().indexOf(country.toUpperCase())==-1
-	      || place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
-	      found.places.push(place);
-	    found.count++;
-	    }
-	  });
-	  if (found.count==1 && found.places[0].name.toLowerCase()==searchtext.toLowerCase()) {
-	    ref=found.places[0].centroid.latitude + ', ' + found.places[0].centroid.longitude;
-	    displayLocation(div, ref);
-	  } else if (found.count!=0) {
-	    $('<p>Select from the following places that were found matching your search, then click on the map to specify the exact location:</p>').appendTo(outputDivId);
-	    var ol=$('<ol>');
-	    $.each(found.places, function(i,place){
-	      ref= place.centroid.latitude + ', ' + place.centroid.longitude;
-	      placename = place.name+' (' + place.placeTypeName + ')';
-	      if (place.admin1!='') placename = placename + ', '+place.admin1;
-	      if (place.admin2!='') placename = placename + '\\' + place.admin2;
+  var request = 'http://where.yahooapis.com/v1/places.q("' +
+  searchtext + ' ' + pref_area + '", "' + country + '");count=10';
+  $.getJSON(request + "?format=json&lang="+lang+"&appid="+geoplanet_api_key+"&callback=?", function(data){
+    // an array to store the responses in the required country, because GeoPlanet will not limit to a country
+    var found = { places: [], count: 0 };
+    jQuery.each(data.places.place, function(i,place) {
+      // Ingore places outside the chosen country, plus ignore places that were hit because they
+      // are similar to the country name we are searching in.
+      if (place.country.toUpperCase()==country.toUpperCase()
+        && (place.name.toUpperCase().indexOf(country.toUpperCase())==-1
+        || place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
+        found.places.push(place);
+      found.count++;
+      }
+    });
+    if (found.count==1 && found.places[0].name.toLowerCase()==searchtext.toLowerCase()) {
+      ref=found.places[0].centroid.latitude + ', ' + found.places[0].centroid.longitude;
+      displayLocation(div, ref);
+    } else if (found.count!=0) {
+      $('<p>Select from the following places that were found matching your search, then click on the map to specify the exact location:</p>').appendTo(outputDivId);
+      var ol=$('<ol>');
+      $.each(found.places, function(i,place){
+        ref= place.centroid.latitude + ', ' + place.centroid.longitude;
+        placename = place.name+' (' + place.placeTypeName + ')';
+        if (place.admin1!='') placename = placename + ', '+place.admin1;
+        if (place.admin2!='') placename = placename + '\\' + place.admin2;
 
-	      ol.append($("<li>").append($("<a href='#'>" + placename + "</a>").click((function(ref){return function() { displayLocation(div, ref); } })(ref))));
-	    });
-	    ol.appendTo(outputDivId);
-	    $(searchDivId).show("slow");
-	  } else {
-	    $('<p>No locations found with that name. Try a nearby town name.</p>').appendTo(outputDivId);
-	    $(searchDivId).show("slow");
-	  }
-	});
+        ol.append($("<li>").append($("<a href='#'>" + placename + "</a>").click((function(ref){return function() { displayLocation(div, ref); } })(ref))));
+      });
+      ol.appendTo(outputDivId);
+      $(searchDivId).show("slow");
+    } else {
+      $('<p>No locations found with that name. Try a nearby town name.</p>').appendTo(outputDivId);
+      $(searchDivId).show("slow");
+    }
+  });
       }
     }
 
@@ -163,7 +164,7 @@
       $.getJSON(
       div.settings.indiciaSvc + "/index.php/services/spatial/sref_to_wkt" + "?sref=" + ref + "&system=4326" + "&callback=?", function(data)
       {
-	$.indiciaMapEdit.showWktFeature(div, data.wkt);
+  $.indiciaMapEdit.showWktFeature(div, data.wkt);
       }
       );
     }

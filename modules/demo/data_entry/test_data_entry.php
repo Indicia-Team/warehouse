@@ -6,6 +6,7 @@ include '../data_entry_config.php';
 ?>
 <title>Indicia external site data entry test page</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
+<link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
 </head>
 <body>
 <h1>Indicia Data entry test</h1>
@@ -109,6 +110,7 @@ $readAuth = data_entry_helper::get_read_auth(1, 'password');
 <?php echo data_entry_helper::date_picker('date'); ?>
 <br />
 <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
+<br />
 <label for="location_name">Locality Description:</label>
 <input name="location_name" class="wide" value='<?php echo field('location_name'); ?>'/><br />
 <label for="survey_id">Survey</label>

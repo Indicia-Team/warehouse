@@ -12,7 +12,8 @@
   $config['multimap_api_key']='OA09030216927391041';
   $config['geoplanet_api_key']='QYAOqp3V34GihJbRI_QUbiAC.KYbWake8g8DXwpLgGlZliB5eTXyTGHQ0aJDBPLwFkfaaQ--';
   $config['species_checklist_taxon_list']='1';
-  $config['species_checklist_occ_attributes'] = array(1,2);
+  $config['species_checklist_alt_list']='2';
+  $config['species_checklist_occ_attributes'] = array(2);
   $config['website_id'] = 1;
   $config['password'] = 'password';
 
