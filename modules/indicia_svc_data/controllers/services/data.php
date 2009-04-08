@@ -38,21 +38,21 @@ class Data_Controller extends Service_Base_Controller {
   //
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
-									'location',
-									'occurrence',
-									'occurrence_comment',
- 									'person',
-									'sample',
-  									'survey',
-									'user'
-								  );
+                  'location',
+                  'occurrence',
+                  'occurrence_comment',
+                   'person',
+                  'sample',
+                    'survey',
+                  'user'
+                  );
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
   // and website_id, so that we can work out whether access to a particular record is allowed.
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
-  									'taxa_taxon_list'
-  									);
+                    'taxa_taxon_list'
+                    );
 
   /**
   * Provides the /services/data/language service.
@@ -60,7 +60,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function language()
   {
-	$this->handle_call('language');
+  $this->handle_call('language');
   }
 
   /**
@@ -87,7 +87,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function occurrence_attribute()
   {
-	$this->handle_call('occurrence_attribute');
+  $this->handle_call('occurrence_attribute');
   }
 
   /**
@@ -114,7 +114,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function survey()
   {
-	$this->handle_call('survey');
+  $this->handle_call('survey');
   }
 
   /**
@@ -123,7 +123,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function taxon_group()
   {
-	$this->handle_call('taxon_group');
+  $this->handle_call('taxon_group');
   }
 
   /**
@@ -132,7 +132,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function taxon_list()
   {
-	$this->handle_call('taxon_list');
+  $this->handle_call('taxon_list');
   }
 
   /**
@@ -141,7 +141,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function taxa_taxon_list()
   {
-	$this->handle_call('taxa_taxon_list');
+  $this->handle_call('taxa_taxon_list');
   }
 
   /**
@@ -159,7 +159,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function termlist()
   {
-  	$this->handle_call('termlist');
+    $this->handle_call('termlist');
   }
 
   /**
@@ -168,7 +168,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function termlists_term()
   {
-  	$this->handle_call('termlists_term');
+    $this->handle_call('termlists_term');
   }
 
   /**
@@ -186,7 +186,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   public function website()
   {
-  	$this->handle_call('website');
+    $this->handle_call('website');
   }
 
   /**
@@ -208,17 +208,17 @@ class Data_Controller extends Service_Base_Controller {
 
       if (array_key_exists('submission', $_POST))
       {
-			$this->handle_submit();
+      $this->handle_submit();
       }
       else
       {
-			$this->handle_request();
+      $this->handle_request();
       }
       // last thing we do is set the output
       if ($this->content_type)
       {
-	header($this->content_type);
-	echo $this->response;
+  header($this->content_type);
+  echo $this->response;
       }
     }
     catch (Exception $e)
@@ -286,43 +286,43 @@ class Data_Controller extends Service_Base_Controller {
     switch ($mode)
     {
       case 'json':
-	$a =  json_encode($records);
-	$this->content_type = 'Content-Type: application/json';
-	if (array_key_exists('callback', $_GET))
-	{
-	  $a = $_GET['callback']."(".$a.")";
-	}
-	echo $a;
-	break;
+  $a =  json_encode($records);
+  $this->content_type = 'Content-Type: application/json';
+  if (array_key_exists('callback', $_GET))
+  {
+    $a = $_GET['callback']."(".$a.")";
+  }
+  echo $a;
+  break;
       case 'xml':
-	if (array_key_exists('xsl', $_GET))
-	{
-	  $xsl = $_GET['xsl'];
-	  if (!strpos($xsl, '/'))
-	  // xsl is not a fully qualified path, so point it to the media folder.
-	  $xsl = url::base().'media/services/stylesheets/'.$xsl;
-	}
-	else
-	{
-	  $xsl = '';
-	}
-	$this->response = $this->xml_encode($records, $xsl, TRUE);
-	$this->content_type = 'Content-Type: text/xml';
-	break;
+  if (array_key_exists('xsl', $_GET))
+  {
+    $xsl = $_GET['xsl'];
+    if (!strpos($xsl, '/'))
+    // xsl is not a fully qualified path, so point it to the media folder.
+    $xsl = url::base().'media/services/stylesheets/'.$xsl;
+  }
+  else
+  {
+    $xsl = '';
+  }
+  $this->response = $this->xml_encode($records, $xsl, TRUE);
+  $this->content_type = 'Content-Type: text/xml';
+  break;
       case 'csv':
-	$this->response =  $this->csv_encode($records);
-	$this->content_type = 'Content-Type: text/comma-separated-values';
-	break;
+  $this->response =  $this->csv_encode($records);
+  $this->content_type = 'Content-Type: text/comma-separated-values';
+  break;
       default:
-	// Code to load from a view
-	if (file_exists('views',"services/data/$entity/$mode"))
-	{
-	  $this->response = $this->view_encode($records, View::factory("services/data/$entity/$mode"));
-	}
-	else
-	{
-	  throw new ServiceError("$this->entity data cannot be output using mode $mode.");
-	}
+  // Code to load from a view
+  if (file_exists('views',"services/data/$entity/$mode"))
+  {
+    $this->response = $this->view_encode($records, View::factory("services/data/$entity/$mode"));
+  }
+  else
+  {
+    throw new ServiceError("$this->entity data cannot be output using mode $mode.");
+  }
     }
   }
 
@@ -371,14 +371,14 @@ class Data_Controller extends Service_Base_Controller {
 
     $this->db->from($this->viewname);
     $select = '*';
-    $this->db->select($select);    
+    $this->db->select($select);
     if(!in_array ($this->entity, $this->allow_full_access)) {
         if(array_key_exists ('website_id', $this->view_columns))
         {
-		    $this->db->in('website_id', array(null, $this->website_id));
+        $this->db->in('website_id', array(null, $this->website_id));
         } else {
-    	    Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-      	    throw new ServiceError('No access to '.$this->viewname.' allowed.');
+          Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
+            throw new ServiceError('No access to '.$this->viewname.' allowed.');
         }
     }
 
@@ -390,15 +390,15 @@ class Data_Controller extends Service_Base_Controller {
     switch ($mode)
     {
       case 'json':
-	$a = json_encode($return);
-	if (array_key_exists('callback', $_GET))
-	{
-	  $a = $_GET['callback']."(".$a.")";
-	}
-	echo $a;
-	break;
+  $a = json_encode($return);
+  if (array_key_exists('callback', $_GET))
+  {
+    $a = $_GET['callback']."(".$a.")";
+  }
+  echo $a;
+  break;
       default:
-	echo json_encode($return);
+  echo json_encode($return);
     }
   }
 
@@ -419,13 +419,13 @@ class Data_Controller extends Service_Base_Controller {
       // if we are outputting a specific record, root is singular
       if ($this->uri->total_arguments())
       {
-	$root = $this->entity;
-	// We don't need to repeat the element for each record, as there is only 1.
-	$array = $array[0];
+  $root = $this->entity;
+  // We don't need to repeat the element for each record, as there is only 1.
+  $array = $array[0];
       }
       else
       {
-	$root = inflector::plural($this->entity);
+  $root = inflector::plural($this->entity);
       }
       $data = '<?xml version="1.0"?>';
       if ($xsl)
@@ -443,47 +443,47 @@ class Data_Controller extends Service_Base_Controller {
     {
       if (!in_array($element, $to_skip))
       {
-	if ($value)
-	{
-	  if (is_numeric($element))
-	  {
-	    $element = $this->entity;
-	  }
-	  if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)))
-	  {
-	    $element = substr($element, 0, -3);
-	    // This is a foreign key described by another field, so create an xlink path
-	    if (array_key_exists($element, $this->model->belongs_to))
-	    {
-	      // Belongs_to specifies a fk table that does not match the attribute name
-	      $fk_entity=$this->model->belongs_to[$element];
-	    }
-	    elseif ($element=='parent')
-	    {
-	      $fk_entity=$this->entity;
-	    } else {
-	      // Belongs_to specifies a fk table that matches the attribute name
-	      $fk_entity=$element;
-	    }
-	    $data .= ($indent?str_repeat("\t", $recursion):'');
-	    $data .= "<$element id=\"$value\" xlink:href=\"".url::base(TRUE)."services/data/$fk_entity/$value\">";
-	    $data .= $array[$element];
-	    // We output the associated caption element already, so add it to the list to skip
-	    $to_skip[count($to_skip)-1]=$element;
-	  }
-	  else
-	  {
-	    $data .= ($indent?str_repeat("\t", $recursion):'').'<'.$element.'>';
-	    if (is_array($value)) {
+  if ($value)
+  {
+    if (is_numeric($element))
+    {
+      $element = $this->entity;
+    }
+    if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)))
+    {
+      $element = substr($element, 0, -3);
+      // This is a foreign key described by another field, so create an xlink path
+      if (array_key_exists($element, $this->model->belongs_to))
+      {
+        // Belongs_to specifies a fk table that does not match the attribute name
+        $fk_entity=$this->model->belongs_to[$element];
+      }
+      elseif ($element=='parent')
+      {
+        $fk_entity=$this->entity;
+      } else {
+        // Belongs_to specifies a fk table that matches the attribute name
+        $fk_entity=$element;
+      }
+      $data .= ($indent?str_repeat("\t", $recursion):'');
+      $data .= "<$element id=\"$value\" xlink:href=\"".url::base(TRUE)."services/data/$fk_entity/$value\">";
+      $data .= $array[$element];
+      // We output the associated caption element already, so add it to the list to skip
+      $to_skip[count($to_skip)-1]=$element;
+    }
+    else
+    {
+      $data .= ($indent?str_repeat("\t", $recursion):'').'<'.$element.'>';
+      if (is_array($value)) {
  $data .= ($indent?"\r\n":'').$this->xml_encode($value, NULL, $indent, ($recursion + 1)).($indent?str_repeat("\t", $recursion):'');
  }
  else
  {
    $data .= $value;
  }
-	  }
-	  $data .= '</'.$element.'>'.($indent?"\r\n":'');
-	}
+    }
+    $data .= '</'.$element.'>'.($indent?"\r\n":'');
+  }
       }
     }
     if (!$recursion)
@@ -511,21 +511,21 @@ class Data_Controller extends Service_Base_Controller {
     if(!in_array ($this->entity, $this->allow_full_access)) {
         if(array_key_exists ('website_id', $this->view_columns))
         {
-		    $this->db->in('website_id', array(null, $this->website_id));
+        $this->db->in('website_id', array(null, $this->website_id));
         } else {
             Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-      	    throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
+            throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
         }
     }
      // if requesting a single item in the segment, filter for it, otherwise use GET parameters to control the list returned
     if ($this->uri->total_arguments()==0)
       $this->apply_get_parameters_to_db();
     else {
- 		if (!$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id))
-	    {
-			Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-      		throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-	    }
+     if (!$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id))
+      {
+      Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
+          throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
+      }
         $this->db->where($this->viewname.'.id', $this->uri->argument(1));
     }
     return $this->db->get()->result_array(FALSE);
@@ -565,72 +565,72 @@ class Data_Controller extends Service_Base_Controller {
     {
       switch ($param)
       {
-	case 'sortdir':
-	  $sortdir=strtoupper($value);
-	  if ($sortdir != 'ASC' && $sortdir != 'DESC')
-	  {
-	    $sortdir='ASC';
-	  }
-	  break;
-	case 'orderby':
-	  if (array_key_exists(strtolower($value), $this->view_columns))
-	  $orderby=strtolower($value);
-	  break;
-	case 'limit':
-	  if (is_numeric($value))
-	  $this->db->limit($value);
-	  break;
-	case 'offset':
-	  if (is_numeric($value))
-	  $this->db->offset($value);
-	  break;
-	case 'qfield':
-	  if (array_key_exists(strtolower($value), $this->view_columns))
-	  {
-	    $qfield = strtolower($value);
-	  }
-	  break;
-	case 'q':
-	  $q = strtolower($value);
-	  break;
-	case 'attrs':
-	  // Check that we're dealing with 'occurrence' or 'sample' here
-	  switch($this->entity)
-	  {
-	    case 'sample':
-	      Kohana::log('info', "Fetching attributes $value for sample");
-	      $attrs = explode(',', $value);
-	      break;
-	    case 'occurrence':
-	      Kohana::log('info', "Fetching attributes $value for occurrence");
-	      $attrs = explode(',', $value);
-	      break;
-	    default:
-	      Kohana::log('info', 'Trying to fetch attributes for non sample/occurrence table. Ignoring.');
-	  }
-	  break;
-	    default:
-	      if (array_key_exists(strtolower($param), $this->view_columns))
-	      {
-		// A parameter has been supplied which specifies the field name of a filter field
-			if ($value == 'NULL')
-				$value = NULL;
-	    if ($this->view_columns[$param]=='int' || $this->view_columns[$param]=='bool')
-		$where[$param]=$value;
-		else
-		  $like[$param]=$value;
-	      }
+  case 'sortdir':
+    $sortdir=strtoupper($value);
+    if ($sortdir != 'ASC' && $sortdir != 'DESC')
+    {
+      $sortdir='ASC';
+    }
+    break;
+  case 'orderby':
+    if (array_key_exists(strtolower($value), $this->view_columns))
+    $orderby=strtolower($value);
+    break;
+  case 'limit':
+    if (is_numeric($value))
+    $this->db->limit($value);
+    break;
+  case 'offset':
+    if (is_numeric($value))
+    $this->db->offset($value);
+    break;
+  case 'qfield':
+    if (array_key_exists(strtolower($value), $this->view_columns))
+    {
+      $qfield = strtolower($value);
+    }
+    break;
+  case 'q':
+    $q = strtolower($value);
+    break;
+  case 'attrs':
+    // Check that we're dealing with 'occurrence' or 'sample' here
+    switch($this->entity)
+    {
+      case 'sample':
+        Kohana::log('info', "Fetching attributes $value for sample");
+        $attrs = explode(',', $value);
+        break;
+      case 'occurrence':
+        Kohana::log('info', "Fetching attributes $value for occurrence");
+        $attrs = explode(',', $value);
+        break;
+      default:
+        Kohana::log('info', 'Trying to fetch attributes for non sample/occurrence table. Ignoring.');
+    }
+    break;
+      default:
+        if (array_key_exists(strtolower($param), $this->view_columns))
+        {
+    // A parameter has been supplied which specifies the field name of a filter field
+      if ($value == 'NULL')
+        $value = NULL;
+      if ($this->view_columns[$param]=='int' || $this->view_columns[$param]=='bool')
+    $where[$param]=$value;
+    else
+      $like[$param]=$value;
+        }
       }
     }
     if (isset($qfield) && isset($q))
     {
       if ($this->view_columns[$qfield]=='int' || $this->view_columns[$qfield]=='bool')
       {
-	$where[$qfield]=$q;
+  $where[$qfield]=$q;
       }
       else
       {
-	$like[$qfield]=$q;
+  $like[$qfield]=$q;
       }
     }
     if ($orderby)
@@ -667,18 +667,18 @@ class Data_Controller extends Service_Base_Controller {
       //Test if numeric
       if (!is_numeric($cell))
       {
-	//Escape the enclose
-	$cell = str_replace($enclose,$enclose.$enclose,$cell);
-	//Not numeric enclose
-	$cell = $enclose . $cell . $enclose;
+  //Escape the enclose
+  $cell = str_replace($enclose,$enclose.$enclose,$cell);
+  //Not numeric enclose
+  $cell = $enclose . $cell . $enclose;
       }
       if ($output=='')
       {
-	$output = $cell;
+  $output = $cell;
       }
       else
       {
-	$output.=  $delimiter . $cell;
+  $output.=  $delimiter . $cell;
       }
     }
     $output.=$newline;
@@ -708,13 +708,13 @@ class Data_Controller extends Service_Base_Controller {
       $this->authenticate();
       if (array_key_exists('submission', $_POST))
       {
-	$mode = $this->get_input_mode();
-	switch ($mode)
-	{
-	  case 'json':
-	    $s = json_decode($_POST['submission'], true);
-	}
-	$this->submit($s);
+  $mode = $this->get_input_mode();
+  switch ($mode)
+  {
+    case 'json':
+      $s = json_decode($_POST['submission'], true);
+  }
+  $this->submit($s);
       }
       // return a success message
       echo json_encode(array('success'=>'multiple records'));
@@ -761,19 +761,19 @@ class Data_Controller extends Service_Base_Controller {
   protected function check_update_access($entity, $s)
   {
       if (!in_array($entity, $this->allow_updates)) {
-			Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
-      		throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
-	  }
+      Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
+          throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
+    }
 
       if(array_key_exists('id', $s['fields']))
-      	if (is_numeric($s['fields']['id']['value']))
-	      	// there is an numeric id field so modifying an existing record
-	      	if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id))
-	      	{
-				Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-      		    throw new ServiceError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-	      	}
-	  return true;
+        if (is_numeric($s['fields']['id']['value']))
+          // there is an numeric id field so modifying an existing record
+          if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id))
+          {
+        Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
+              throw new ServiceError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
+          }
+    return true;
   }
 
   /**
@@ -793,21 +793,21 @@ class Data_Controller extends Service_Base_Controller {
       $nonces = $this->cache->find($mode);
       if (array_key_exists($nonce, $nonces))
       {
-		$website_id = $nonces[$nonce];
-		$website = ORM::factory('website', $website_id);
-		if ($website->id) {
-			$password = ORM::factory('website', $website_id)->password;
-			if (sha1("$nonce:$password")==$array['auth_token'])
-			{
-			  Kohana::log('info', "Authentication successful.");
-			  $authentic=TRUE;
-			  $this->website_id = $website_id;
-			}
-		}
+    $website_id = $nonces[$nonce];
+    $website = ORM::factory('website', $website_id);
+    if ($website->id) {
+      $password = ORM::factory('website', $website_id)->password;
+      if (sha1("$nonce:$password")==$array['auth_token'])
+      {
+        Kohana::log('info', "Authentication successful.");
+        $authentic=TRUE;
+        $this->website_id = $website_id;
+      }
+    }
 
-		// Refresh the nonce. If it's a write nonce, we'll delete it later when the data has been saved
-		$this->cache->delete($nonce);
-		$this->cache->set($nonce, $website_id, $mode);
+    // Refresh the nonce. If it's a write nonce, we'll delete it later when the data has been saved
+    $this->cache->delete($nonce);
+    $this->cache->set($nonce, $website_id, $mode);
       }
     }
 
@@ -818,24 +818,23 @@ class Data_Controller extends Service_Base_Controller {
     };
   }
 
-	protected function check_record_access($entity, $id, $website_id)
-	{
-		// if $id is null, then we have a new record, so no need to check if we have access to the record
-		if (is_null($id))
-			return true;
-		$table = inflector::plural($entity);
-    	$viewname='list_'.$table;
-    	$db = new Database;
-    	$fields=$db->list_fields($viewname);
-  		if(empty($fields)) {
-			Kohana::log('info', $viewname.' not present - access denied');
-     		throw new ServiceError('Access to entity '.$entity.' denied.');
-  		}
-    	$db->from($viewname);
-    	$select = 'id';
-    	$db->select($select)->where(array('id' => $id));
+  protected function check_record_access($entity, $id, $website_id)
+  {
+    // if $id is null, then we have a new record, so no need to check if we have access to the record
+    if (is_null($id))
+      return true;
+    $table = inflector::plural($entity);
+      $viewname='list_'.$table;
+      $db = new Database;
+      $fields=$db->list_fields($viewname);
+      if(empty($fields)) {
+      Kohana::log('info', $viewname.' not present - access denied');
+         throw new ServiceError('Access to entity '.$entity.' denied.');
+      }
+      $db->from($viewname);
+      $db->where(array('id' => $id));
 
-    	if(!in_array ($this->entity, $this->allow_full_access)) {
+      if(!in_array ($this->entity, $this->allow_full_access)) {
             if(array_key_exists ('website_id', $this->view_columns))
             {
                 $db->in('website_id', array(null, $this->website_id));
@@ -843,10 +842,10 @@ class Data_Controller extends Service_Base_Controller {
                 Kohana::log('info', $viewname.' does not have a website_id - access denied');
                 throw new ServiceError('No access to entity '.$entity.' allowed.');
             }
-    	}
-		$number_rec = $db->find_all()->count();
-		return ($number_rec > 0 ? true : false);
-	}
+      }
+    $number_rec = $db->count_records();
+    return ($number_rec > 0 ? true : false);
+  }
 
   /**
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
