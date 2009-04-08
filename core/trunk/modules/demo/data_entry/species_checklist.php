@@ -43,7 +43,6 @@ if ($_POST){
  <br />
  <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
  <?php echo data_entry_helper::species_checklist($config['species_checklist_taxon_list'], $config['species_checklist_occ_attributes'], $readAuth); ?>
- <?php echo "here"; ?>
  <br />
  <input type='submit' value='submit' />
  </form>
