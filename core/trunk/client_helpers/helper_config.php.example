@@ -1,11 +1,13 @@
 <?php
 
 class helper_config {
-	static $base_url='http://192.171.199.208/indicia';
-	static $geoplanet_api_key='...';
-	static $upload_path = './upload/';
-	static $google_api_key='...';
-	static $multimap_api_key='...';
+  static $base_url='http://192.171.199.208/indicia';
+  static $upload_path = './upload/';
+  // The following only need to be configured if using the data_entry_helper::map method, as it autogenerates the script links for you.
+  static $geoplanet_api_key='...';
+  static $google_api_key='...';
+  static $multimap_api_key='...';
+  // end of items required by data_entry_helper::map
 }
 
 ?>

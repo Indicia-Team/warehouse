@@ -5,8 +5,8 @@
     <link rel="stylesheet" href="style.css" type="text/css" />
     <script src="../../media/js/OpenLayers.js"></script>
     <script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
-    <?php include 'data_entry/data_entry_config.php'; ?>
-	<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=<?php echo $config['google_api_key'] ?>"
+    <?php include 'data_entry_config.php'; ?>
+  <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=<?php echo $config['google_api_key'] ?>"
       type="text/javascript"></script>
     <script type="text/javascript">
         // making this a global variable so that it is accessible for
@@ -17,35 +17,35 @@
 
         function init(){
 
-			var options = {
-				projection: new OpenLayers.Projection("EPSG:900913"),
-				displayProjection: new OpenLayers.Projection("EPSG:4326"),
-				units: "m",
-				numZoomLevels: 18,
-				maxResolution: 156543.0339,
-				maxExtent: new OpenLayers.Bounds(
-					-20037508, -20037508,
-					20037508, 20037508.34)
-			};
+      var options = {
+        projection: new OpenLayers.Projection("EPSG:900913"),
+        displayProjection: new OpenLayers.Projection("EPSG:4326"),
+        units: "m",
+        numZoomLevels: 18,
+        maxResolution: 156543.0339,
+        maxExtent: new OpenLayers.Bounds(
+          -20037508, -20037508,
+          20037508, 20037508.34)
+      };
 
             map = new OpenLayers.Map('map', options);
 
             var gphy = new OpenLayers.Layer.Google(
-			"Google Physical",
- 			{type: G_PHYSICAL_MAP, 'sphericalMercator': true}
-			);
-			var gmap = new OpenLayers.Layer.Google(
-				"Google Streets", // the default
-				{numZoomLevels: 20, 'sphericalMercator': true}
-			);
-			var ghyb = new OpenLayers.Layer.Google(
-				"Google Hybrid",
-				{type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}
-			);
-			var gsat = new OpenLayers.Layer.Google(
-				"Google Satellite",
-				{type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}
-			);
+      "Google Physical",
+       {type: G_PHYSICAL_MAP, 'sphericalMercator': true}
+      );
+      var gmap = new OpenLayers.Layer.Google(
+        "Google Streets", // the default
+        {numZoomLevels: 20, 'sphericalMercator': true}
+      );
+      var ghyb = new OpenLayers.Layer.Google(
+        "Google Hybrid",
+        {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}
+      );
+      var gsat = new OpenLayers.Layer.Google(
+        "Google Satellite",
+        {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}
+      );
 
             var ol_wms = new OpenLayers.Layer.WMS(
                 "OpenLayers WMS",
@@ -60,11 +60,11 @@
             );
 
             var velayer = new OpenLayers.Layer.VirtualEarth(
-            	"Virtual Earth",
-            	{'type': VEMapStyle.Aerial, 'sphericalMercator': true}
+              "Virtual Earth",
+              {'type': VEMapStyle.Aerial, 'sphericalMercator': true}
             );
 
-			// Samples layer
+      // Samples layer
             var samples = new OpenLayers.Layer.WMS(
                 "Samples from Indicia", "http://192.171.199.208:8080/geoserver/wms",
                 {

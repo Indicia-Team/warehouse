@@ -846,60 +846,6 @@ if (array_key_exists('errors', $response)) {
   echo $r;
 }
 
-/**
-* Puts a spatial reference entry control, optional system selector, and map onto a data entry form.
-* The system selector is automatically output if there is more than one system present, otherwise it
-* is replaced by a hidden input.
-*
-* @param string $field_name Name of the spatial reference db field.
-* @param string $geom_field_name Name of the geom db field.
-* @param array $systems Associative array of the available spatial reference systems, in form code -> description.
-* @param array $opts Associative array of additional options. Possible options are init_value, width, height, instruct, inc_virtual_earth, inc_google, init_lat, init_long, init_zoom, init_layer.
-* @param string $init_wkt Well Known Text for the initial polygon to display, used when redisplaying an edited record.
-* @deprecated Use map() with $edit = true instead.
-*/
-public static function map_picker($field_name, $geom_field_name, $systems, $opts = Array(), $init_wkt = '') {
-  global $javascript;
-  $init_wkt = ($init_wkt == '') ? 'null' : "'".$init_wkt."'";
-  // Handle the options
-  $init_value = self::option('init_value', $opts, '');
-  $width      = self::option('width', $opts, '600');
-  $height     = self::option('height', $opts, '350');
-  $instruct   = self::option('instruct', $opts, "Zoom the map in by double-clicking then single click on the location's centre to set the ".
-  "spatial reference. The more you zoom in, the more accurate the reference will be.");
-  $inc_google = self::option('inc_google', $opts, 'false');
-  $inc_virtual_earth = self::option('inc_virtual_earth', $opts, 'true');
-  $init_lat   = self::option('init_lat', $opts, '7300000');
-  $init_long  = self::option('init_long', $opts, '-100000');
-  $init_zoom  = self::option('init_zoom', $opts, '5');
-  $init_layer = self::option('init_layer', $opts, '');
-  $r = '<script type="text/javascript" src="'.parent::$base_url.'/media/js/OpenLayers.js"></script>';
-  $r .= '<script type="text/javascript" src="'.parent::$base_url.'/media/js/spatial-ref.js"></script>';
-  if ($inc_virtual_earth) {
-    $r .= '<script type="text/javascript" src="http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1"></script>';
-  }
-  $javascript .= "init_map(\"".parent::$base_url."\", $init_wkt, '$field_name', '$geom_field_name', ".
-  "$inc_virtual_earth, $inc_google, '".parent::$geoplanet_api_key."', $init_lat, $init_long, $init_zoom, '$init_layer');\r\n";
-
-  $r .= '<input id="'.$field_name.'" name="'.$field_name.'" value="'.$init_value.'" '.
-  'onblur="exit_sref();" onclick="enter_sref();"/>';
-  if (count($systems)==1)
-  {
-    $srids = array_keys($systems);
-    // only 1 spatial reference system, so put it into a hidden input
-    $r .= '<input id="'.$field_name.'_system" name="'.$field_name.'_system" type="hidden" class="hidden" value="'.$srids[0].'" />';
-  } else {
-    $r .= '<select id="'.$field_name.'_system" name="'.$field_name.'_system">';
-    foreach($systems as $srid=>$desc)
-      $r .= "<option value=\"$srid\">$desc</option>";
-    $r .= '</select>';
-  }
-  $r .= "<input type=\"hidden\" class=\"hidden\" id=\"$geom_field_name\" name=\"$geom_field_name\" />";
-  $r .= '<p class="instruct">'.$instruct.'</p>';
-  $r .= '<div id="map" class="smallmap" style="width: '.$width.'px; height: '.$height.'px;"></div>';
-  return $r;
-  }
-
   /**
   * Private method to find an option from an associative array of options. If not present, returns the default.
   */
@@ -914,88 +860,62 @@ public static function map_picker($field_name, $geom_field_name, $systems, $opts
   }
 
   /**
-  * Helper function to put a location search box onto the data entry page, linked to a map picker.
-  * The search box uses the GeoPlanet API to find locations.
-  *
-  * @param int $id id attribute for the returned control.
-  * @param string $link_text Text to display for the search link
-  * @param string $pref_area Text to suffix to location searches, to help keep them in the target region. E.g. Dorset.
-  * @param string $country Text Focus for to location searches, to enforce that they are only returned in the target country.
-  * Set to '' for worldwide searches. Defaults to United Kingdom.
-  * @param string $lang Language code for the preferred output. RFC 4646 code, e.g. en-GB, fr-FR etc.
-  *  *
-  * @return HTML for the location search box.
-  * @deprecated Use map() with $locate = true instead.
+  * Retrieves a token and inserts it into a data entry form which authenticates that the
+  * form was submitted by this website.
   */
-  public static function geoplanet_search($id='place_search', $link_text='find on map', $pref_area='gb',
-            $country='United Kingdom', $lang="en-EN")
-            {
-        self::add_resource('jquery');
-        $r = "<input name=\"$id\" id=\"$id\" onkeypress=\"return check_find_enter(event, '$pref_area', '$country', '$lang')\"/>" .
-        "<input type=\"button\" id=\"find_place_button\" style=\"margin-top: -2px;\" value=\"find\" onclick=\"find_place('$pref_area', '$country', '$lang');\"/>" .
-        '<div id="place_search_box" style="display: none"><div id="place_search_output"></div>' .
-        '<a href="#" id="place_close_button" onclick="jQuery(\'#place_search_box\').hide(\'fast\');">Close</a></div>';
-        return $r;
-            }
-
-
-            /**
-            * Retrieves a read token and passes it back as an array suitable to drop into the
-            * 'extraParams' options for an Ajax call.
-            */
-            public static function get_read_auth($website_id, $password) {
-        $postargs = "website_id=$website_id";
-        // Get the curl session object
-        $session = curl_init(parent::$base_url.'/index.php/services/security/get_read_nonce');
-        // Set the POST options.
-        curl_setopt ($session, CURLOPT_POST, true);
-        curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
-        curl_setopt($session, CURLOPT_HEADER, true);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        // Do the POST and then close the session
-        $response = curl_exec($session);
-        list($response_headers,$nonce) = explode("\r\n\r\n",$response,2);
-        return array(
-        'auth_token' => sha1("$nonce:$password"),
-               'nonce' => $nonce
-               );
-            }
-
-            /**
-            * Retrieves a token and inserts it into a data entry form which authenticates that the
-            * form was submitted by this website.
-            */
-            public static function get_auth($website_id, $password) {
-        $postargs = "website_id=$website_id";
-        // Get the curl session object
-        $session = curl_init(parent::$base_url.'/index.php/services/security/get_nonce');
-        // Set the POST options.
-        curl_setopt ($session, CURLOPT_POST, true);
-        curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
-        curl_setopt($session, CURLOPT_HEADER, true);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        // Do the POST and then close the session
-        $response = curl_exec($session);
-        list($response_headers,$nonce) = explode("\r\n\r\n",$response,2);
-        curl_close($session);
-        $result = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
-        'value="'.sha1("$nonce:$password").'" />'."\r\n";
-        $result .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
-        'value="'.$nonce.'" />'."\r\n";
-        return $result;
-            }
-
-/**
- * Takes an associative array and converts it to a list of params for a query string.
- */
-private static function array_to_query_string($array) {
-  $r = '';
-  foreach ($array as $a => $b)
-  {
-    $r .= "&$a=$b";
+  public static function get_auth($website_id, $password) {
+    $postargs = "website_id=$website_id";
+    // Get the curl session object
+    $session = curl_init(parent::$base_url.'/index.php/services/security/get_nonce');
+    // Set the POST options.
+    curl_setopt ($session, CURLOPT_POST, true);
+    curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+    curl_setopt($session, CURLOPT_HEADER, true);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    // Do the POST and then close the session
+    $response = curl_exec($session);
+    list($response_headers,$nonce) = explode("\r\n\r\n",$response,2);
+    curl_close($session);
+    $result = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
+    'value="'.sha1("$nonce:$password").'" />'."\r\n";
+    $result .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
+    'value="'.$nonce.'" />'."\r\n";
+    return $result;
   }
-  return $r;
-}
+
+  /**
+  * Retrieves a read token and passes it back as an array suitable to drop into the
+  * 'extraParams' options for an Ajax call.
+  */
+  public static function get_read_auth($website_id, $password) {
+    $postargs = "website_id=$website_id";
+    // Get the curl session object
+    $session = curl_init(parent::$base_url.'/index.php/services/security/get_read_nonce');
+    // Set the POST options.
+    curl_setopt ($session, CURLOPT_POST, true);
+    curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+    curl_setopt($session, CURLOPT_HEADER, true);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    // Do the POST and then close the session
+    $response = curl_exec($session);
+    list($response_headers,$nonce) = explode("\r\n\r\n",$response,2);
+    return array(
+    'auth_token' => sha1("$nonce:$password"),
+           'nonce' => $nonce
+    );
+  }
+
+  /**
+   * Takes an associative array and converts it to a list of params for a query string.
+   */
+  private static function array_to_query_string($array) {
+    $r = '';
+    foreach ($array as $a => $b)
+    {
+      $r .= "&$a=$b";
+    }
+    return $r;
+  }
 
 }
 

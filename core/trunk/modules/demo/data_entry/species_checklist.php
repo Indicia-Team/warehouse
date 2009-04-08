@@ -7,7 +7,7 @@
 <h1>Indicia Species Checklist Test</h1>
 <?php
 include '../../../client_helpers/data_entry_helper.php';
-include 'data_entry_config.php';
+include '../data_entry_config.php';
 $javascript = '';
 // Catch and submit POST data.
 if ($_POST){
