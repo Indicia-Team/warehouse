@@ -12,6 +12,7 @@ class data_entry_helper extends helper_config {
     (
     'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.js")),
     'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js")),
+    'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/addRowToGrid.js")),
     'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.js")),
     'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
     'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
@@ -210,13 +211,12 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
   if (! array_key_exists('error', $taxalist))
   {
 
-    $grid = "<table class='invisible'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>".
+    $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>".
     "<td class='scPresenceCell'><input type='checkbox' name='' value='' /></td>";
     foreach ($occAttrControls as $oc) {
       $grid .= "<td class='scOccAttrCell'>$oc</td>";
     }
     $grid .= "</tr></tbody></table>";
-echo "<pre>$grid</pre>";
     $grid .= "<table class='speciesCheckList'>";
     $grid .= "<thead><th>Species</th><th>Present (Y/N)</th>";
     foreach ($occAttrs as $a) {
@@ -248,22 +248,21 @@ echo "<pre>$grid</pre>";
         $lookupList = $tl[0]['parent_id'];
       }
     }
-
     if ($lookupList != null) {
       // Javascript to add further rows to the grid
-      $grid .= "<script type='text/javascript'
-      src='./addRowToGrid.js' ></script>";
+      self::add_resource('addrowtogrid');
       $javascript .= "var addRowFn = addRowToGrid('$url', $readAuth);
       jQuery('#addRowButton').click(addRowFn);\r\n";
 
       // Drop an autocomplete box against the parent termlist
       $grid .= data_entry_helper::autocomplete('addSpeciesBox',
-        'taxa_taxon_list', 'taxon', 'id', $readAuth +
-        array('preferred' => 't',
-          'taxon_list_id' => $lookupList));
-          $grid .= "<button type='button' id='addRowButton'>Add Row</button>";
+          'taxa_taxon_list', 'taxon', 'id', $readAuth +
+          array('taxon_list_id' => $lookupList));
+      $grid .= "<button type='button' id='addRowButton'>Add Row</button>";
     }
     return $grid;
+  } else {
+    return $taxalist['error'];
   }
 }
 

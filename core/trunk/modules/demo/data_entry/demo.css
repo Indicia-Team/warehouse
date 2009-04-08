@@ -72,60 +72,9 @@ div#occAttr0 {
   width: 205px;
 }
 
-table.speciesCheckList {
-  border-collapse: collapse;
-}
-
-table.speciesCheckList thead {
-  border: 1px solid #666666;
-  background-color: #c7c7d7;
-}
-
-table.speciesCheckList .scTaxonCell {
-  background-color: #d7d7e7;
-  border-right: solid 1px #666666;
-}
-
-table.speciesCheckList tr {
-  border: 1px solid #666666;
-}
-
-table.speciesCheckList td, table.speciesCheckList th {
-  padding: 0 6px 0 6px;
-}
-
-table.invisible {
-  display: none;
-}
-
-#place_search_box {
-  border: solid grey 1px;
-  background-color: #e7e7e7;
-  padding: 1em;
-  margin-left: 1em;
-  font-size: 90%;
-}
-
-#place_search_output p {
-  padding-bottom: 0;
-}
-
-
-#place_search_output ol  {
-  list-style-type: none;
-  padding-left: 2em;
-  padding-bottom: 1em;
-}
-
-#place_close_button {
-  border: solid grey 1px;
-  background-color: #eeeeee;
-  padding: 0.5em;
-}
-
-#map {
-  margin-left: 205px !important;
-  margin-bottom: 12px !important;
+#outermap {
+  margin-left: 205px;
+  margin-bottom: 12px;
 }
 
 .wide {

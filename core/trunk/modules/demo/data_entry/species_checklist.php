@@ -2,6 +2,7 @@
 <head>
 <title>Indicia external site species checklist test page</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
+<link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
 </head>
 <body>
 <h1>Indicia Species Checklist Test</h1>
@@ -42,7 +43,9 @@ if ($_POST){
  <style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style>
  <br />
  <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
+ <br />
  <?php echo data_entry_helper::species_checklist($config['species_checklist_taxon_list'], $config['species_checklist_occ_attributes'], $readAuth); ?>
+
  <br />
  <input type='submit' value='submit' />
  </form>
