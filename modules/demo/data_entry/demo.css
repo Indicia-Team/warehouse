@@ -51,23 +51,6 @@ div#occAttr0 {
   padding: 0;
 }
 
-.error {
-  border: solid red 1px;
-  background-color: #FFCCCC;
-}
-
-.error_message {
-  font-weight: bold;
-}
-
-.success {
-  border: dashed blue 1px;
-  background-color: #CCCCFF;
-  width: auto;
-  margin: 12px;
-  padding: 12px;
-}
-
 #actaxa_taxon_list_id, #acdeterminer_id, #survey_id {
   width: 205px;
 }

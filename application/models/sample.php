@@ -42,7 +42,7 @@ class Sample_Model extends ORM
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('date_type', 'required', 'length[1,2]');
-    $system 	 = $orig_values['entered_sref_system'];
+    $system = $orig_values['entered_sref_system'];
     $array->add_rules('entered_sref', "sref[$system]");
     $array->add_rules('entered_sref_system', 'sref_system');
 
@@ -61,7 +61,7 @@ class Sample_Model extends ORM
      {
        if (array_key_exists($a, $array->as_array()))
        {
-	 $this->__set($a, $array[$a]);
+   $this->__set($a, $array[$a]);
        }
      }
 
@@ -88,8 +88,8 @@ class Sample_Model extends ORM
     if (substr($key,-4) == 'geom')
     {
       if ($value) {
-	$row = $this->db->query("SELECT ST_GeomFromText('$value', ".kohana::config('sref_notations.internal_srid').") AS geom")->current();
-	$value = $row->geom;
+  $row = $this->db->query("SELECT ST_GeomFromText('$value', ".kohana::config('sref_notations.internal_srid').") AS geom")->current();
+  $value = $row->geom;
       }
     }
     parent::__set($key, $value);
@@ -127,44 +127,44 @@ class Sample_Model extends ORM
      {
        $value = $attr['fields']['value'];
        if ($value['value'] != '') {
-	 $attrId = $attr['fields']['sample_attribute_id']['value'];
-	 $oa = ORM::factory('sample_attribute', $attrId);
-	 $vf = null;
-	 switch ($oa->data_type) {
-	   case 'T':
-	     $vf = 'text_value';
-	     break;
-	   case 'F':
-	     $vf = 'float_value';
-	     break;
-	   case 'D':
-	     // Date
-	     $vd=vague_date::string_to_vague_date($value['value']);
-	     $attr['fields']['date_start_value']['value'] = $vd['start'];
-	     $attr['fields']['date_end_value']['value'] = $vd['end'];
-	     $attr['fields']['date_type_value']['value'] = $vd['type'];
-	     break;
-	   case 'V':
-	     // Vague Date
-	     $vd=vague_date::string_to_vague_date($value['value']);
-	     $attr['fields']['date_start_value']['value'] = $vd['start'];
-	     $attr['fields']['date_end_value']['value'] = $vd['end'];
-	     $attr['fields']['date_type_value']['value'] = $vd['type'];
-	     break;
-	   default:
-	     // Lookup in list
-	     $vf = 'int_value';
-	     break;
-	 }
+   $attrId = $attr['fields']['sample_attribute_id']['value'];
+   $oa = ORM::factory('sample_attribute', $attrId);
+   $vf = null;
+   switch ($oa->data_type) {
+     case 'T':
+       $vf = 'text_value';
+       break;
+     case 'F':
+       $vf = 'float_value';
+       break;
+     case 'D':
+       // Date
+       $vd=vague_date::string_to_vague_date($value['value']);
+       $attr['fields']['date_start_value']['value'] = $vd['start'];
+       $attr['fields']['date_end_value']['value'] = $vd['end'];
+       $attr['fields']['date_type_value']['value'] = $vd['type'];
+       break;
+     case 'V':
+       // Vague Date
+       $vd=vague_date::string_to_vague_date($value['value']);
+       $attr['fields']['date_start_value']['value'] = $vd['start'];
+       $attr['fields']['date_end_value']['value'] = $vd['end'];
+       $attr['fields']['date_type_value']['value'] = $vd['type'];
+       break;
+     default:
+       // Lookup in list
+       $vf = 'int_value';
+       break;
+   }
 
-	 if ($vf != null) $attr['fields'][$vf] = $value;
-	 $attr['fields']['sample_id']['value'] = $this->id;
+   if ($vf != null) $attr['fields'][$vf] = $value;
+   $attr['fields']['sample_id']['value'] = $this->id;
 
-	 $oam = ORM::factory('sample_attribute_value');
-	 $oam->submission = $attr;
-	 if (!$oam->inner_submit()) {
-	   $this->db->query('ROLLBACK');
-	   return null;
+   $oam = ORM::factory('sample_attribute_value');
+   $oam->submission = $attr;
+   if (!$oam->inner_submit()) {
+     $this->db->query('ROLLBACK');
+     return null;
        }
      }
    }

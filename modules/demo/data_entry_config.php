@@ -16,5 +16,6 @@
   $config['species_checklist_occ_attributes'] = array(2);
   $config['website_id'] = 1;
   $config['password'] = 'password';
+  $config['survey_id'] = 1;
 
 ?>

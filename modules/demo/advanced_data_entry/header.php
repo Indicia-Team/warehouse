@@ -1,4 +1,5 @@
 <?php
+session_start();
 require '../../../client_helpers/data_entry_helper.php';
 require '../data_entry_config.php';
 $baseUrl = helper_config::$base_url;
@@ -6,11 +7,13 @@ $googleApiKey = $config['google_api_key'];
 $multimapApiKey = $config['multimap_api_key'];
 $geoplanetApiKey = $config['geoplanet_api_key'];
 $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
+// As this is the first page of the wizard, clear the wizard content
+data_entry_helper::clear_session();
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
 <head>
-<title>Indicia external site data entry test page</title>
+<title>Set up the record card header</title>
 <link rel="stylesheet" href="advanced.css" type="text/css" media="screen" />
 <link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
 <script type='text/javascript' src='<?php echo $baseUrl ?>/media/js/jquery.js' ></script>
@@ -23,24 +26,31 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 <script src="http://maps.google.com/maps?file=api&v=2&key=<?php echo $googleApiKey; ?>" type="text/javascript"></script>
 <script type="text/javascript" src="http://developer.multimap.com/API/maps/1.2/<?php echo $multimapApiKey; ?>" ></script>
 <script type='text/javascript'>
-
+var polygonLayer;
 
 (function($){
 $(document).ready(function()
 {
   // Create a vector layer to capture polygons onto, and a control to do the drawing
-  var polygonLayer = new OpenLayers.Layer.Vector("Polygon Layer");
+  polygonLayer = new OpenLayers.Layer.Vector("Polygon Layer");
   var drawControl = new OpenLayers.Control.DrawFeature(polygonLayer, OpenLayers.Handler.Polygon);
   var navigateControl = new OpenLayers.Control.Navigation();
+  var trashButton = new OpenLayers.Control.Button({
+    displayClass: "trashButton", trigger: TrashEdits
+  });
+  var mousePos = new OpenLayers.Control.MousePosition({
+    div: document.getElementById("mousePos"),
+    prefix: "Lat\\Long:"
+  });
   var panel = new OpenLayers.Control.Panel({
     div: document.getElementById("panel")
   });
-  panel.addControls([navigateControl, drawControl]);
+  panel.addControls([navigateControl, drawControl, trashButton]);
   $('#map').indiciaMap({
       width: "670px",
       presetLayers : ['multimap_landranger', 'google_physical', 'google_satellite'],
       layers : [polygonLayer],
-      controls: [panel, drawControl, navigateControl]
+      controls: [panel, drawControl, navigateControl, mousePos]
       }).indiciaMapEdit().locationFinder({
         apiKey: '<?php echo $geoplanetApiKey; ?>'
       });
@@ -48,6 +58,12 @@ $(document).ready(function()
   drawControl.events.register('featureadded', drawControl, FeatureAdded);
 });
 })(jQuery);
+
+// Called when the trashEdits button is clicked
+function TrashEdits() {
+  polygonLayer.destroyFeatures();
+  $('#geom').attr('value', '');
+}
 
 // Called when a polygon is added to the map
 function FeatureAdded(control) {
@@ -68,7 +84,7 @@ function FeatureAdded(control) {
   } else {
     precision=2;
   }
-  $.getJSON("<?php echo $base_url; ?>/index.php/services/spatial/wkt_to_sref"+
+  $.getJSON("<?php echo $baseUrl; ?>/index.php/services/spatial/wkt_to_sref"+
     "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
     "&system=" + $('#entered_sref_system').val() +
     "&precision=" + precision +
@@ -86,14 +102,14 @@ function FeatureAdded(control) {
 
 <p>Please enter summary information for your record card below.</p>
 
-<form action="list.php" method="post" enctype="text/plain">
+<form action="list.php" method="post">
 <fieldset>
 <legend>Card Header</legend>
 <label for="date">Date:</label>
 <?php echo data_entry_helper::date_picker('date'); ?>
 <br/>
 <div id="map"></div>
-<div id="panel" class="olControlPanel"></div>
+<div id="panel" class="olControlPanel"></div><span id="mousePos"></span>
 <label for="smpAttr:1">Weather:</label>
 <input type="text" id="smpAttr:1" name="smpAttr:1" class="wide" />
 <br/>

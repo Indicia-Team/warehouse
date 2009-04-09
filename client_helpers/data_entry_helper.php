@@ -12,7 +12,7 @@ class data_entry_helper extends helper_config {
     (
     'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.js")),
     'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js")),
-    'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/addRowToGrid.js")),
+    'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/client_helpers/addRowToGrid.js")),
     'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.js")),
     'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
     'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
@@ -210,9 +210,8 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
   // Build the grid
   if (! array_key_exists('error', $taxalist))
   {
-
     $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>".
-    "<td class='scPresenceCell'><input type='checkbox' name='' value='' /></td>";
+    "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
     foreach ($occAttrControls as $oc) {
       $grid .= "<td class='scOccAttrCell'>$oc</td>";
     }
@@ -251,10 +250,12 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
     if ($lookupList != null) {
       // Javascript to add further rows to the grid
       self::add_resource('addrowtogrid');
-      $javascript .= "var addRowFn = addRowToGrid('$url', $readAuth);
+      $javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
+          $readAuth['auth_token']."', 'nonce' : '".$readAuth['nonce']."'});
       jQuery('#addRowButton').click(addRowFn);\r\n";
 
       // Drop an autocomplete box against the parent termlist
+      $grid .= '<label for="addSpeciesBox">Enter additional species:</label>';
       $grid .= data_entry_helper::autocomplete('addSpeciesBox',
           'taxa_taxon_list', 'taxon', 'id', $readAuth +
           array('taxon_list_id' => $lookupList));
@@ -548,45 +549,55 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
     return $r;
         }
 
-        /**
-        * Helper function to generate a radio group from a Indicia core service query.
-        */
-        public static function radio_group($id, $entity, $nameField, $valueField = null, $extraParams = null, $sep='', $default = '') {
-          $url = parent::$base_url."/index.php/services/data";
-          // If valueField is null, set it to $nameField
-          if ($valueField == null) $valueField = $nameField;
-          // Execute a request to the service
-          $request = "$url/$entity?mode=json";
-          $request .= self::array_to_query_string($extraParams);
-          // Get the curl session object
-          $session = curl_init($request);
-          curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-          $response = json_decode(curl_exec($session), true);
-          $r = "";
-          if (!array_key_exists('error', $response)){
-      foreach ($response as $item){
-  if (array_key_exists($nameField, $item) &&
-    array_key_exists($valueField, $item)) {
-    $name = htmlspecialchars($item[$nameField], ENT_QUOTES);
-  $checked = ($default == $item[$valueField]) ? 'checked="checked"' : '' ;
-  $r .= "<input type='radio' id='$id' name='$id' value='$item[$nameField]' $checked />";
-  $r .= $name.$sep;
+  /**
+  * Helper function to generate a radio group from a Indicia core service query.
+  *
+  * @param string $id Name of the field that will be populated by this control.
+  * @param string $entity Name of the data entity that is being used to generate the list, e.g. termlists_term.
+  * @param string $nameField Name of the field used to generate the caption for each radio item.
+  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $nameField.
+  * @param array $extraParams Associative array of extra parameters appended to the web service request for the list of items. For example,
+  * specifying $readAuth + array('termlist_id' => 1) would filter the terms generated to termlist 1.
+  * @param string $sep Separator inserted betweeen each radio item, if required. For example,
+  * '<br/>' causes radio buttons to appear on separate lines.
+  * @param string $default Value of the radio button that should be selected when loaded. This can be used to specify a default, or to re-load
+  * a value from an existing record.
+  */
+  public static function radio_group($id, $entity, $nameField, $valueField = null, $extraParams = null, $sep='', $default = '') {
+    $url = parent::$base_url."/index.php/services/data";
+    // If valueField is null, set it to $nameField
+    if ($valueField == null) $valueField = $nameField;
+    // Execute a request to the service
+    $request = "$url/$entity?mode=json";
+    $request .= self::array_to_query_string($extraParams);
+    // Get the curl session object
+    $session = curl_init($request);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    $response = json_decode(curl_exec($session), true);
+    $r = "";
+    if (!array_key_exists('error', $response)){
+      foreach ($response as $item) {
+        if (array_key_exists($nameField, $item) && array_key_exists($valueField, $item)) {
+          $name = htmlspecialchars($item[$nameField], ENT_QUOTES);
+          $checked = ($default == $item[$valueField]) ? 'checked="checked"' : '' ;
+          $r .= "<input type='radio' id='$id' name='$id' value='$item[$valueField]' $checked />";
+          $r .= $name.$sep;
+        }
       }
     }
-        }
+    return $r;
+  }
 
-        return $r;
-           }
-
-           public static function forward_post_to($entity, $array = null) {
-             if ($array == null) $array = self::wrap($_POST, $entity);
-             $request = parent::$base_url."/index.php/services/data/$entity";
-             $postargs = 'submission='.json_encode($array);
-             // passthrough the authentication tokens as POST data
-             if (array_key_exists('auth_token', $_POST))
-             $postargs .= '&auth_token='.$_POST['auth_token'];
-             if (array_key_exists('nonce', $_POST))
-    $postargs .= '&nonce='.$_POST['nonce'];
+  public static function forward_post_to($entity, $array = null) {
+    if ($array == null)
+      $array = self::wrap($_POST, $entity);
+    $request = parent::$base_url."/index.php/services/data/$entity";
+    $postargs = 'submission='.json_encode($array);
+    // passthrough the authentication tokens as POST data
+    if (array_key_exists('auth_token', $_POST))
+      $postargs .= '&auth_token='.$_POST['auth_token'];
+    if (array_key_exists('nonce', $_POST))
+      $postargs .= '&nonce='.$_POST['nonce'];
     // Get the curl session object
     $session = curl_init($request);
     // Set the POST options.
@@ -598,8 +609,12 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
     $response = curl_exec($session);
     curl_close($session);
     // The last block of text in the response is the body
-    return json_decode(array_pop(explode("\r\n\r\n",$response)), true);
-           }
+    $output = json_decode(array_pop(explode("\r\n",$response)), true);
+    // If this is not JSON, it is an error, so just return it as is.
+    if (!$output)
+      $output = array_pop(explode("\r\n",$response));
+    return $output;
+  }
 
            public static function handle_media($media_id = 'imgUpload') {
              if (array_key_exists($media_id, $_FILES)) {
@@ -655,8 +670,6 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
            }
            if (array_key_exists('determiner_id', $arr)){
              $determiner_id = $arr['determiner_id'];
-           } else {
-             throw new Exception('Cannot find determiner id in POST array!');
            }
            $records = array();
            $subModels = array();
@@ -748,45 +761,47 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
                return $sa;
              }
 
-             /**
-             * Takes a response, and outputs any errors from it onto the screen.
-             *
-             * @todo method of placing the errors alongside the controls.
-             */
-             public static function dump_errors($response)
-             {
-               if (is_array($response)) {
-                 if (array_key_exists('error',$response)) {
-  echo '<div class="error">';
-  echo '<p>An error occurred when the data was submitted.</p>';
-  if (is_array($response['error'])) {
-    echo '<ul>';
-    foreach ($response['error'] as $field=>$message)
-      echo "<li>$field: $message</li>";
-    echo '</ul>';
-} else {
-  echo '<p class="error_message">'.$response['error'].'</p>';
-}
-if (array_key_exists('file', $response) && array_key_exists('line', $response)) {
-  echo '<p>Error occurred in '.$response['file'].' at line '.$response['line'].'</p>';
-}
-if (array_key_exists('errors', $response)) {
-  echo '<pre>'.print_r($response['errors'], true).'</pre>';
-               }
-               if (array_key_exists('trace', $response)) {
-                 echo '<pre>'.print_r($response['trace'], true).'</pre>';
-               }
-               echo '</div>';
-             } elseif (array_key_exists('warning',$response)) {
-    echo 'A warning occurred when the data was submitted.';
-    echo '<p class="error">'.$response['error'].'</p>';
-  } elseif (array_key_exists('success',$response)) {
-    echo '<div class="success">Data was successfully inserted ('.
-    $response['success'].')</div>';
-  }
-  }
+  /**
+  * Takes a response, and outputs any errors from it onto the screen.
+  *
+  * @todo method of placing the errors alongside the controls.
+  */
+  public static function dump_errors($response)
+  {
+    if (is_array($response)) {
+      if (array_key_exists('error',$response)) {
+        echo '<div class="error">';
+        echo '<p>An error occurred when the data was submitted.</p>';
+        if (is_array($response['error'])) {
+          echo '<ul>';
+          foreach ($response['error'] as $field=>$message)
+            echo "<li>$field: $message</li>";
+          echo '</ul>';
+        } else {
+          echo '<p class="error_message">'.$response['error'].'</p>';
+        }
+        if (array_key_exists('file', $response) && array_key_exists('line', $response)) {
+          echo '<p>Error occurred in '.$response['file'].' at line '.$response['line'].'</p>';
+        }
+        if (array_key_exists('errors', $response)) {
+          echo '<pre>'.print_r($response['errors'], true).'</pre>';
+        }
+        if (array_key_exists('trace', $response)) {
+          echo '<pre>'.print_r($response['trace'], true).'</pre>';
+        }
+        echo '</div>';
+      }
+      elseif (array_key_exists('warning',$response)) {
+        echo 'A warning occurred when the data was submitted.';
+        echo '<p class="error">'.$response['error'].'</p>';
+      }
+      elseif (array_key_exists('success',$response)) {
+        echo '<div class="success">Data was successfully inserted ('.
+            $response['success'].')</div>';
+      }
+    }
   else
-    echo $response;
+    echo "<div class=\"error\">$response</div>";
   }
 
   /**
@@ -899,8 +914,8 @@ if (array_key_exists('errors', $response)) {
     $response = curl_exec($session);
     list($response_headers,$nonce) = explode("\r\n\r\n",$response,2);
     return array(
-    'auth_token' => sha1("$nonce:$password"),
-           'nonce' => $nonce
+        'auth_token' => sha1("$nonce:$password"),
+        'nonce' => $nonce
     );
   }
 
