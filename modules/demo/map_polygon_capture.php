@@ -7,6 +7,7 @@ $base_url = helper_config::$base_url;
 <html>
 <head>
 <title>Map helper test</title>
+<link rel="stylesheet" href="demo.css" type="text/css" media="screen">
 <script type='text/javascript' src='../../media/js/jquery.js' ></script>
 <script type='text/javascript' src='../../media/js/json2.js' ></script>
 <script type='text/javascript' src='../../media/js/OpenLayers.js' ></script>
@@ -62,6 +63,10 @@ function FeatureAdded(control) {
 </script>
 </head>
 <body>
+<div id="wrap">
+<h1>Polygon Capture Map</h1>
+<p>Click on the map to define a polygon. Double click to finish.</p>
 <div id='map' />
+</div>
 </body>
 </html>

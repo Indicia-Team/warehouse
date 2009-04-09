@@ -9,6 +9,7 @@ include '../data_entry_config.php';
 <link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
 </head>
 <body>
+<div id="wrap">
 <h1>Indicia Data entry test</h1>
 <p>Note that this page requires the PHP curl extension to send requests to the Indicia server.</p>
 <?php
@@ -146,6 +147,7 @@ $readAuth = data_entry_helper::get_read_auth(1, 'password');
 </fieldset>
 <input type="submit" value="Save" />
 </form>
+</div>
 </body>
 <?php echo data_entry_helper::dump_javascript(); ?>
 </html>

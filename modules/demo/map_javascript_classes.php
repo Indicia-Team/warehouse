@@ -7,6 +7,7 @@ $multimapApiKey = $config['multimap_api_key'];
 <html>
 <head>
 <title>Map helper test</title>
+<link rel="stylesheet" href="demo.css" type="text/css" media="screen">
 <script type='text/javascript' src='../../media/js/jquery.js' ></script>
 <script type='text/javascript' src='../../media/js/json2.js' ></script>
 <script type='text/javascript' src='../../media/js/OpenLayers.js' ></script>
@@ -36,6 +37,10 @@ $('#map').indiciaMap({
 </script>
 </head>
 <body>
+<div id="wrap">
+<h1>JavaScript Classes Map</h1>
+<p>Zoom the map in to see the OS Landranger layer appear</p>
 <div id='map' />
+</div>
 </body>
 </html>

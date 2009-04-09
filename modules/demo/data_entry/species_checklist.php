@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
 </head>
 <body>
+<div id="wrap">
 <h1>Indicia Species Checklist Test</h1>
 <?php
 include '../../../client_helpers/data_entry_helper.php';
@@ -49,6 +50,7 @@ if ($_POST){
  <br />
  <input type='submit' value='submit' />
  </form>
+ </div>
  </body>
  <?php echo data_entry_helper::dump_javascript(); ?>
  </html>
