@@ -1,6 +1,5 @@
 <?php
 require '../data_entry_config.php';
-$geoplanetApiKey = $config['geoplanet_api_key'];;
 $googleApiKey = $config['google_api_key'];
 $multimapApiKey = $config['multimap_api_key'];
 ?>
@@ -25,15 +24,11 @@ $(document).ready(function()
 {
 $('#map').indiciaMap({
     presetLayers : ['multimap_landranger', 'google_physical', 'google_satellite'],
-    indiciaWMSLayers : {'Samples' : 'indicia:samples'}
+    indiciaWMSLayers : {'Samples' : 'indicia:samples'},
     width: "700px",
     height: "700px",
     initial_zoom: 6,
     initial_lat: 7260000,
-  }).
-  indiciaMapEdit().
-  locationFinder({
-    apiKey : '<?php echo $geoplanetApiKey; ?>'
   });
 });
 })(jQuery);
