@@ -4,11 +4,20 @@
   padding: 0;
 }
 
-body
-{
-  padding: 30px;
-  font-size: 80%;
-  font-family: Trebuchet MS, Helvetica, sans-serif;
+body {
+  font-size:90%;
+  font-family: calibri, sans-serif;
+  width: 780px;
+  margin: auto;
+  text-align: center;
+  background-color: #BAD1EC;
+}
+
+#wrap {
+  text-align: left;
+  background-color: #ffffff;
+  padding: 8px;
+  border: solid black 1px;
 }
 
 p
