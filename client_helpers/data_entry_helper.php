@@ -164,7 +164,8 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
   $url = parent::$base_url."/index.php/services/data";
   $termRequest = "$url/taxa_taxon_list?mode=json&taxon_list_id=$list_id&preferred=t";
   $termRequest .= self::array_to_query_string($readAuth);
-  $termRequest .= self::array_to_query_string($extraParams);
+  if ($extraParams)
+    $termRequest .= self::array_to_query_string($extraParams);
   // Get the curl session object
   $session = curl_init($termRequest);
   curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
