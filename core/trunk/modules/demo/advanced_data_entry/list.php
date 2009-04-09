@@ -23,7 +23,7 @@ data_entry_helper::add_post_to_session();
 <legend>Species List</legend>
 <?php echo data_entry_helper::get_auth($config['website_id'], $config['password']); ?>
 <input type="hidden" class="auto" name="website_id" id="website_id" value="<?php echo $config['website_id']; ?>" />
-<input type="hidden" class="auto" name="website_id" id="website_id" value="<?php echo $config['survey_id']; ?>" />
+<input type="hidden" class="auto" name="survey_id" id="website_id" value="<?php echo $config['survey_id']; ?>" />
 <?php echo data_entry_helper::species_checklist(
     $config['species_checklist_taxon_list'],
     $config['species_checklist_occ_attributes'],
