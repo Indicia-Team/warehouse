@@ -31,7 +31,7 @@ data_entry_helper::add_post_to_session();
     null,
     $config['species_checklist_alt_list']); ?>
 <br />
-<input type="submit" value="Next" class="auto" />
+<input type="submit" value="Save" class="auto" />
 </fieldset>
 </form>
 </div>

@@ -25,6 +25,7 @@ data_entry_helper::clear_session();
 <script type='text/javascript' src='../../../media/js/jquery.indiciaMap.edit.locationFinder.js' ></script>
 <script src="http://maps.google.com/maps?file=api&v=2&key=<?php echo $googleApiKey; ?>" type="text/javascript"></script>
 <script type="text/javascript" src="http://developer.multimap.com/API/maps/1.2/<?php echo $multimapApiKey; ?>" ></script>
+<script type="text/javascript" src="http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1"></script>
 <script type='text/javascript'>
 var polygonLayer;
 
@@ -48,7 +49,7 @@ $(document).ready(function()
   panel.addControls([navigateControl, drawControl, trashButton]);
   $('#map').indiciaMap({
       width: "670px",
-      presetLayers : ['multimap_landranger', 'google_physical', 'google_satellite'],
+      presetLayers : ['multimap_landranger', 'google_physical', 'google_satellite', 'virtual_earth'],
       layers : [polygonLayer],
       controls: [panel, drawControl, navigateControl, mousePos]
       }).indiciaMapEdit().locationFinder({
