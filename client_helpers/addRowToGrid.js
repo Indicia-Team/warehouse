@@ -8,7 +8,6 @@ function addRowToGrid(url, readAuth){
     var authority;
     var ttlId = $('#addSpeciesBox').val();
     if (ttlId == '') return null;
-    alert(readAuth['auth_token']);
     $.getJSON(url+"/taxa_taxon_list/"+ttlId+"?mode=json"+
         "&auth_token="+readAuth['auth_token']+
         "&nonce="+readAuth['nonce']+

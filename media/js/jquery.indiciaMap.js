@@ -93,6 +93,8 @@
   // Convert indicia WMS/WFS layers into js objects
   $.each(this.settings.indiciaWMSLayers, function(key, value)
   {
+  alert(div.settings.indiciaGeoSvc + '/wms');
+  alert(value);
     div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + '/wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
   });
   $.each(this.settings.indiciaWFSLayers, function(key, value)

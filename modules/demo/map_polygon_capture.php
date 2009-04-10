@@ -14,7 +14,7 @@ $base_url = helper_config::$base_url;
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.js' ></script>
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.js' ></script>
 <script type='text/javascript' src='../../media/js/jquery.indiciaMap.edit.js' ></script>
-<script src="http://maps.google.com/maps?file=api&v=2&key=<?php echo $google_api_key; ?>" type="text/javascript"></script>
+<script src="http://maps.google.com/maps?file=api&v=2&key=<?php echo $googleApiKey; ?>" type="text/javascript"></script>
 <script type='text/javascript'>
 
 (function($){
