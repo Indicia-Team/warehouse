@@ -5,8 +5,8 @@ $multimapApiKey = $config['multimap_api_key'];
 $geoserverUrl = $config['geoserver_url'];
 $featureType = $config['feature_type'];
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <title>Distribution Map</title>
 <link rel="stylesheet" href="advanced.css" type="text/css" media="screen" />

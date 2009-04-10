@@ -5,7 +5,7 @@
 
 body {
   font-size:90%;
-  font-family: calibri, sans-serif;
+  font-family: verdana, sans-serif;
   width: 780px;
   margin: auto;
   text-align: center;
@@ -20,20 +20,29 @@ body {
 }
 
 ol.demolist {
+  margin-top: 8px;
   list-style-type: none;
   width: 750px;
 }
 
-ol.demolist li {
+ol.demolist li h2 {
+  margin-top: 24px;
+  border-bottom: 1px solid silver;
+}
+
+ol.demolist li ol li {
   border: solid #DDDDDD 1px;
   background-color: #f2f2f2;
   margin: 8px;
+  display: -moz-inline-stack;
   display: inline-block;
-  width: 355px;
+  width: 350px;
   vertical-align: top;
+  zoom: 1;
+  *display: inline;
 }
 
-ol.demolist li p {
+ol.demolist li ol li p {
   font-size: 90%;
 }
 
