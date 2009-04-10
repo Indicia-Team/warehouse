@@ -40,8 +40,7 @@ if ($_POST){
  <input type='hidden' id='record_status' name='record_status' value='C' />
  <input type='hidden' id='determiner_id' name='determiner_id' value='1' />
  <label for="date">Date:</label>
- <input type="text" size="30" value="click here" id="sampleDate" name="date" />
- <style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style>
+ <?php echo data_entry_helper::date_picker('date'); ?>
  <br />
  <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
  <br />
