@@ -1,6 +1,7 @@
 <?php
 include '../../client_helpers/data_entry_helper.php';
-$readAuth = data_entry_helper::get_read_auth(1, 'password');
+include 'data_entry_config.php';
+$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
 ?>
 <html>
 <head>
