@@ -23,8 +23,6 @@ $featureType = $config['feature_type'];
 (function($){
 $(document).ready(function()
 {
-  alert('<?php echo $geoserverUrl; ?>');
-  alert('<?php echo $featureType; ?>');
 $('#map').indiciaMap({
     presetLayers : ['multimap_landranger', 'google_physical', 'google_satellite'],
     indiciaGeoSvc: '<?php echo $geoserverUrl; ?>',
