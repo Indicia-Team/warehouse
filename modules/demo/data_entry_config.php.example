@@ -17,5 +17,7 @@
   $config['website_id'] = 1;
   $config['password'] = 'password';
   $config['survey_id'] = 1;
+  $config['geoserver_url'] = 'http://localhost:8080/geoserver/';
+  $config['feature_type'] = 'opal:indicia_samples';
 
 ?>

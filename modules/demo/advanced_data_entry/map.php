@@ -2,6 +2,8 @@
 require '../data_entry_config.php';
 $googleApiKey = $config['google_api_key'];
 $multimapApiKey = $config['multimap_api_key'];
+$geoserverUrl = $config['geoserver_url'];
+$featureType = $config['feature_type'];
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
@@ -24,11 +26,12 @@ $(document).ready(function()
 {
 $('#map').indiciaMap({
     presetLayers : ['multimap_landranger', 'google_physical', 'google_satellite'],
-    indiciaWMSLayers : {'Samples' : 'indicia:samples'},
+    indiciaGeoSvc: '<?php echo $geoserverUrl; ?>',
+    indiciaWMSLayers : {'Occurrences' : '<?php echo $featureType; ?>'},
     width: "700px",
     height: "700px",
     initial_zoom: 6,
-    initial_lat: 7260000,
+    initial_lat: 7260000
   });
 });
 })(jQuery);
