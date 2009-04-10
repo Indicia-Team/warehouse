@@ -797,8 +797,7 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
         echo '<p class="error">'.$response['error'].'</p>';
       }
       elseif (array_key_exists('success',$response)) {
-        echo '<div class="success">Data was successfully inserted ('.
-            $response['success'].')</div>';
+        echo '<div class="success">Thank you for submitting your data.</div>';
       }
     }
   else

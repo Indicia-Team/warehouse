@@ -44,6 +44,8 @@ input, select {
 
 .olControlPanel {
     display: inline-block;
+    zoom: 1;
+    *display: inline;
     border: solid #cccccc 1px;
     border-right: none;
     background-color: #e7e7e7;
@@ -52,6 +54,8 @@ input, select {
 
 .olControlPanel div {
   display: inline-block;
+  zoom: 1;
+  *display: inline;
   height: 22px;
   width: 24px;
   margin: 2px;
