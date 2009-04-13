@@ -124,7 +124,7 @@ public static function get_from_session($name, $default='') {
 
 
 /**
-* Helper function to support image upload
+* Helper function to support image upload by inserting a file path upload control.
 */
 public static function image_upload($id){
   $r .= "<input type='file' id='$id' name='$id' accept='png|jpg|gif'/>";
@@ -565,6 +565,28 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
   * a value from an existing record.
   */
   public static function radio_group($id, $entity, $nameField, $valueField = null, $extraParams = null, $sep='', $default = '') {
+    return self::check_or_radio_group(false, $id, $entity, $nameField, $valueField, $extraParams, $sep, $default);
+  }
+
+ /**
+  * Helper function to generate a list of checkboxes from a Indicia core service query.
+  *
+  * @param string $id Name of the field that will be populated by this control.
+  * @param string $entity Name of the data entity that is being used to generate the list, e.g. termlists_term.
+  * @param string $nameField Name of the field used to generate the caption for each radio item.
+  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $nameField.
+  * @param array $extraParams Associative array of extra parameters appended to the web service request for the list of items. For example,
+  * specifying $readAuth + array('termlist_id' => 1) would filter the terms generated to termlist 1.
+  * @param string $sep Separator inserted betweeen each radio item, if required. For example,
+  * '<br/>' causes radio buttons to appear on separate lines.
+  * @param string $default Value of the radio button that should be selected when loaded. This can be used to specify a default, or to re-load
+  * a value from an existing record.
+  */
+  public static function checkbox_group($id, $entity, $nameField, $valueField = null, $extraParams = null, $sep='', $default = '') {
+    return self::check_or_radio_group(true, $id, $entity, $nameField, $valueField, $extraParams, $sep, $default);
+  }
+
+  private static function check_or_radio_group($checkbox, $id, $entity, $nameField, $valueField, $extraParams, $sep, $default) {
     $url = parent::$base_url."/index.php/services/data";
     // If valueField is null, set it to $nameField
     if ($valueField == null) $valueField = $nameField;
@@ -576,13 +598,18 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $response = json_decode(curl_exec($session), true);
     $r = "";
+    if ($checkbox)
+      $type="checkbox";
+    else
+      $type="radio";
+
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
         if (array_key_exists($nameField, $item) && array_key_exists($valueField, $item)) {
           $name = htmlspecialchars($item[$nameField], ENT_QUOTES);
           $checked = ($default == $item[$valueField]) ? 'checked="checked"' : '' ;
-          $r .= "<input type='radio' id='$id' name='$id' value='$item[$valueField]' $checked />";
-          $r .= $name.$sep;
+          $r .= "<span><input type='$type' id='$id' name='$id' value='$item[$valueField]' $checked />";
+          $r .= "$name</span>$sep";
         }
       }
     }
