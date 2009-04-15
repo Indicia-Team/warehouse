@@ -127,10 +127,10 @@ public static function get_from_session($name, $default='') {
 * Helper function to support image upload by inserting a file path upload control.
 */
 public static function image_upload($id){
-  $r .= "<input type='file' id='$id' name='$id' accept='png|jpg|gif'/>";
+  $r = "<input type='file' id='$id' name='$id' accept='png|jpg|gif'/>";
 
   return $r;
-  }
+}
 
 /**
  * Helper function to generate a species checklist from a given taxon list.
@@ -465,8 +465,10 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
              // lop the comma off the end
              $sParams = substr($sParams, 0, -1);
 
-             // Reference the necessary libraries
-             $javascript .= "jQuery('input#ac$id').autocomplete('$url/$entity',
+             // First create an id for our visible input control, then make it autocomplete. Strip colons
+             // as they mess up the jQuery selectors
+             $inputId = 'ac'.str_replace(':', '', $id);
+             $javascript .= "jQuery('input#$inputId').autocomplete('$url/$entity',
       {
         minChars : 1,
       mustMatch : true,
@@ -500,11 +502,11 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
   return item.$valueField;
         }
         });
-        jQuery('input#ac$id').result(function(event, data){
+        jQuery('input#$inputId').result(function(event, data){
   jQuery('input#$id').attr('value', data.id);
       });\r\n";
       $r = "<input type='hidden' class='hidden' id='$id' name='$id' value='$defaultValue' />".
-      "<input id='ac$id' name='ac$id' value='$defaultName' />";
+      "<input id='$inputId' name='$inputId' value='$defaultName' />";
       return $r;
         }
 
