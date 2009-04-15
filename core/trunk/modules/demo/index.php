@@ -11,8 +11,8 @@
 <h1>Indicia demonstrations</h1>
 <?php
   // for first time usage, check that the data entry config file exists.
-  if (!file_exists('data_entry/data_entry_config.php')) {
-    rename('data_entry/data_entry_config.php.example', 'data_entry/data_entry_config.php');
+  if (!file_exists('data_entry_config.php')) {
+    rename('data_entry_config.php.example', 'data_entry_config.php');
   }
 
 ?>
