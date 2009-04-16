@@ -4,121 +4,57 @@ require_once('helper_config.php');
 
 class data_entry_helper extends helper_config {
 
-
-  public static function _RESOURCES()
-  {
-    $base = parent::$base_url;
-    return array
-    (
-    'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.js")),
-    'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js")),
-    'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/client_helpers/addRowToGrid.js")),
-    'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.js")),
-    'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
-    'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
-    'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.autocomplete.css"), 'javascript' => array("$base/media/js/jquery.autocomplete.js")),
-    'ui_core' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/ui.core.js")),
-    'datepicker' => array('deps' => array('ui_core'), 'stylesheets' => array("$base/media/css/ui.datepicker.css"), 'javascript' => array("$base/media/js/ui.datepicker.js")),
-    'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/json2.js")),
-    'treeview' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.treeview.css"), 'javascript' => array("$base/media/js/jquery.treeview.js", "$base/media/js/jquery.treeview.async.js",
-    "$base/media/js/jquery.treeview.edit.js")),
-    'googlemaps' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://maps.google.com/maps?file=api&v=2&key=".parent::$google_api_key)),
-    'multimap' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
-    'virtualearth' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
-    );
-  }
-
-  private static function add_resource($resource)
-  {
-    global $res;
-    if (!isset($res)) $res = array();
-    if (array_key_exists($resource, self::_RESOURCES()))
-    {
-      if (!in_array($resource, $res))
-      {
-  $RESOURCES = self::_RESOURCES();
-  foreach ($RESOURCES[$resource]['deps'] as $dep)
-  {
-    self::add_resource($dep);
-  }
-  $res[] = $resource;
+ /**
+ * Removes any data entry values persisted into the $_SESSION by Indicia.
+ */
+  public static function clear_session() {
+    foreach ($_SESSION as $name=>$value) {
+      if (substr($name, 0, 8)=='indicia:') {
+        unset($_SESSION[$name]);
       }
     }
   }
 
   /**
-  * Helper function to collect javascript code in a single location.
-  */
-  public static function dump_javascript() {
- global $javascript;
- global $res;
- $libraries = '';
- $stylesheets = '';
- if (isset($res)) {
- $RESOURCES = self::_RESOURCES();
- foreach ($res as $resource)
- {
-   foreach ($RESOURCES[$resource]['stylesheets'] as $s)
-   {
-     $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
-   }
-   foreach ($RESOURCES[$resource]['javascript'] as $j)
-   {
-     $libraries .= "<script type='text/javascript' src='$j'></script>\n";
-   }
- }
- }
- $script = "<script type='text/javascript'>
- jQuery(document).ready(function() {
- $javascript
- });
- </script>";
- return $stylesheets.$libraries.$script;
- }
-
- /**
- * Removes any data entry values persisted into the $_SESSION by Indicia.
- */
- public static function clear_session() {
- foreach ($_SESSION as $name=>$value) {
- if (substr($name, 0, 8)=='indicia:') {
-   unset($_SESSION[$name]);
-   }
-   }
-}
-
-public static function add_post_to_session () {
-  foreach ($_POST as $name=>$value) {
-    $_SESSION['indicia:'.$name]=$value;
-  }
-}
-
-public static function extract_session_array () {
-  $result = array();
-  foreach ($_SESSION as $name=>$value) {
-    if (substr($name, 0, 8)=='indicia:') {
-      $result[substr($name, 8)]=$value;
+   * Adds the data from the $_POST array into the session. Call this method when arriving at the second
+   * and subsequent pages of a data entry wizard to keep the previous page's data available for saving later.
+   */
+  public static function add_post_to_session () {
+    foreach ($_POST as $name=>$value) {
+      $_SESSION['indicia:'.$name]=$value;
     }
   }
-  return $result;
-}
 
-/**
-* Retrieves a data value from the Indicia Session data
-*
-* @param string $name Name of the session value to retrieve
-* @param string $default Default value to return if not set or empty
-*/
-public static function get_from_session($name, $default='') {
-  $result = '';
-  if (array_key_exists("indicia:$name", $_SESSION)) {
-    $result = $_SESSION["indicia:$name"];
+  /**
+   * Returns an array constructed from all the indicia variables that have previously been stored
+   * in the session.
+   */
+  public static function extract_session_array () {
+    $result = array();
+    foreach ($_SESSION as $name=>$value) {
+      if (substr($name, 0, 8)=='indicia:') {
+        $result[substr($name, 8)]=$value;
+      }
+    }
+    return $result;
   }
-  if (!$result) {
-    $result = $default;
+
+  /**
+  * Retrieves a data value from the Indicia Session data
+  *
+  * @param string $name Name of the session value to retrieve
+  * @param string $default Default value to return if not set or empty
+  */
+  public static function get_from_session($name, $default='') {
+    $result = '';
+    if (array_key_exists("indicia:$name", $_SESSION)) {
+      $result = $_SESSION["indicia:$name"];
+    }
+    if (!$result) {
+      $result = $default;
+    }
+    return $result;
   }
-  return $result;
-}
 
 
 
@@ -618,6 +554,10 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
     return $r;
   }
 
+  /**
+   * Either takes the passed in array, or the post data if this is null, and forwards it to the data services
+   * for saving as a member of the entity identified.
+   */
   public static function forward_post_to($entity, $array = null) {
     if ($array == null)
       $array = self::wrap($_POST, $entity);
@@ -646,150 +586,243 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
     return $output;
   }
 
-           public static function handle_media($media_id = 'imgUpload') {
-             if (array_key_exists($media_id, $_FILES)) {
-               syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
-               $uploadpath = parent::$upload_path;
-               $target_url = parent::$base_url."/index.php/services/data/handle_media";
+  public static function handle_media($media_id = 'imgUpload') {
+    if (array_key_exists($media_id, $_FILES)) {
+      syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
+      $uploadpath = parent::$upload_path;
+      $target_url = parent::$base_url."/index.php/services/data/handle_media";
 
-               $name = $_FILES[$media_id]['name'];
-               $fname = $_FILES[$media_id]['tmp_name'];
-               $fext = array_pop(explode(".", $name));
-               $bname = basename($fname, ".$fext");
+      $name = $_FILES[$media_id]['name'];
+      $fname = $_FILES[$media_id]['tmp_name'];
+      $fext = array_pop(explode(".", $name));
+      $bname = basename($fname, ".$fext");
 
-               // Generate a file id to store the image as
-               $destination = time().rand(0,1000).".".$fext;
+      // Generate a file id to store the image as
+      $destination = time().rand(0,1000).".".$fext;
 
-               if (move_uploaded_file($fname, $uploadpath.$destination)) {
-           $postargs = array();
-           if (array_key_exists('auth_token', $_POST))
-             $postargs['auth_token'] = $_POST['auth_token'];
-           if (array_key_exists('nonce', $_POST))
-             $postargs['nonce'] = $_POST['nonce'];
-           $file_to_upload = array('media_upload'=>'@'.$uploadpath.
-           $destination);
-           $ch = curl_init();
-           curl_setopt($ch, CURLOPT_URL,$target_url);
-           curl_setopt($ch, CURLOPT_POST,1);
-           curl_setopt($ch, CURLOPT_POSTFIELDS, $file_to_upload + $postargs);
-           $result=curl_exec ($ch);
-           curl_close ($ch);
-           return $destination;
-
-               } else {
-           //TODO error messaging
-           return false;
-               }
-             }
-
-
-
-           }
-
-           /**
-           * Wraps data from a species checklist grid (generated by
-           * data_entry_helper::species_checklist) into a suitable format for submission. This will
-           * return an array of submodel entries which can be dropped directly into the subModel
-           * section of the submission array.
-           */
-           public static function wrap_species_checklist($arr){
-             if (array_key_exists('website_id', $arr)){
-             $website_id = $arr['website_id'];
-           } else {
-             throw new Exception('Cannot find website id in POST array!');
-           }
-           if (array_key_exists('determiner_id', $arr)){
-             $determiner_id = $arr['determiner_id'];
-           }
-           $records = array();
-           $subModels = array();
-           foreach ($arr as $key=>$value){
-             if (strpos($key, 'sc') !== false){
-             // Don't explode the last element for occurrence attributes
-             $a = explode(':', $key, 3);
-             $records[$a[1]][$a[2]] = $value;
-           }
-           }
-           foreach ($records as $id => $record){
-             if (! array_key_exists('present', $record) || !$record['present']){
-      unset ($records[$id]);
-      break;
+      if (move_uploaded_file($fname, $uploadpath.$destination)) {
+        $postargs = array();
+        if (array_key_exists('auth_token', $_POST)) {
+               $postargs['auth_token'] = $_POST['auth_token'];
+        }
+        if (array_key_exists('nonce', $_POST)) {
+          $postargs['nonce'] = $_POST['nonce'];
+        }
+        $file_to_upload = array('media_upload'=>'@'.$uploadpath.$destination);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL,$target_url);
+        curl_setopt($ch, CURLOPT_POST,1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $file_to_upload + $postargs);
+        $result=curl_exec ($ch);
+        curl_close ($ch);
+        return $destination;
+      } else {
+        //TODO error messaging
+        return false;
+      }
     }
-    $record['taxa_taxon_list_id'] = $id;
-    $record['website_id'] = $website_id;
-    $record['determiner_id'] = $determiner_id;
-    $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
-    $occ = data_entry_helper::wrap($record, 'occurrence');
-    $occ['metaFields']['occAttributes']['value'] = $occAttrs;
-    $subModels[] = array
-    (
-    'fkId' => 'sample_id',
-     'model' => $occ);
-           }
+  }
 
-           return $subModels;
-           }
+  /**
+  * Wraps data from a species checklist grid (generated by
+  * data_entry_helper::species_checklist) into a suitable format for submission. This will
+  * return an array of submodel entries which can be dropped directly into the subModel
+  * section of the submission array.
+  *
+  * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
+  */
+  public static function wrap_species_checklist($arr){
+    if (array_key_exists('website_id', $arr)){
+      $website_id = $arr['website_id'];
+    } else {
+      throw new Exception('Cannot find website id in POST array!');
+    }
+    if (array_key_exists('determiner_id', $arr)){
+      $determiner_id = $arr['determiner_id'];
+    }
+    $records = array();
+    $subModels = array();
+    foreach ($arr as $key=>$value){
+      if (strpos($key, 'sc') !== false){
+        // Don't explode the last element for occurrence attributes
+        $a = explode(':', $key, 3);
+        $records[$a[1]][$a[2]] = $value;
+      }
+    }
+    foreach ($records as $id => $record){
+      if (! array_key_exists('present', $record) || !$record['present']){
+        unset ($records[$id]);
+        break;
+      }
+      $record['taxa_taxon_list_id'] = $id;
+      $record['website_id'] = $website_id;
+      $record['determiner_id'] = $determiner_id;
+      $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
+      $occ = data_entry_helper::wrap($record, 'occurrence');
+      $occ['metaFields']['occAttributes']['value'] = $occAttrs;
+      $subModels[] = array(
+        'fkId' => 'sample_id',
+        'model' => $occ
+      );
+    }
 
-           /**
-           * Wraps attribute fields (entered as normal) into a suitable container for submission.
-           * Throws an error if $entity is not something for which attributes are known to exist.
-           * @return array
-           */
-           public static function wrap_attributes($arr, $entity) {
-             switch ($entity) {
-               case 'occurrence':
-                 $prefix = 'occAttr';
-                 break;
-               case 'location':
-                 $prefix = 'locAttr';
-                 break;
-               case 'sample':
-                 $prefix = 'smpAttr';
-                 break;
-               default:
-                 throw new Exception('Unknown attribute type. Unable to wrap.');
-             }
-             $oap = array();
-             $occAttrs = array();
-             foreach ($arr as $key => $value) {
-               if (strpos($key, $prefix) !== false) {
-  $a = explode(':', $key);
-  // Attribute in the form occAttr:36 for attribute with attribute id
-  // of 36.
-  $oap[] = array(
-  $entity."_attribute_id" => $a[1],
-     'value' => $value
-     );
+    return $subModels;
+  }
 
-}
-             }
-             foreach ($oap as $oa) {
-               $occAttrs[] = data_entry_helper::wrap($oa, "$entity"."_attribute");
-             }
-             return $occAttrs;
+  /**
+  * Wraps attribute fields (entered as normal) into a suitable container for submission.
+  * Throws an error if $entity is not something for which attributes are known to exist.
+  * @return array
+  */
+  public static function wrap_attributes($arr, $entity) {
+    switch ($entity) {
+      case 'occurrence':
+        $prefix = 'occAttr';
+        break;
+      case 'location':
+        $prefix = 'locAttr';
+        break;
+      case 'sample':
+        $prefix = 'smpAttr';
+        break;
+      default:
+        throw new Exception('Unknown attribute type. Unable to wrap.');
+    }
+    $oap = array();
+    $occAttrs = array();
+    foreach ($arr as $key => $value) {
+      if (strpos($key, $prefix) !== false) {
+        $a = explode(':', $key);
+        // Attribute in the form occAttr:36 for attribute with attribute id
+        // of 36.
+        $oap[] = array(
+        $entity."_attribute_id" => $a[1],
+            'value' => $value
+        );
+      }
+    }
+    foreach ($oap as $oa) {
+      $occAttrs[] = data_entry_helper::wrap($oa, "$entity"."_attribute");
+    }
+    return $occAttrs;
+  }
 
-             }
-             public static function wrap( $array, $entity)
-             {
-               // Initialise the wrapped array
-               $sa = array(
-               'id' => $entity,
-               'fields' => array()
-               );
+  /**
+   * Wraps an array (e.g. Post or Session data generated by a form) into a structure
+   * suitable for submission.
+   *
+   * @param array $array Array of data generated from data entry controls.
+   * @param string $entity Name of the entity to wrap data for.
+   */
+  public static function wrap($array, $entity)
+  {
+    // Initialise the wrapped array
+    $sa = array(
+        'id' => $entity,
+        'fields' => array()
+    );
 
-               // Iterate through the array
-               foreach ($array as $a => $b)
-               {
-                 // Don't wrap the authentication tokens
-                 if ($a!='auth_token' && $a!='nonce')
-                 {
-                   // This should be a field in the model.
-                   // Add a new field to the save array
-                   $sa['fields'][$a] = array('value' => $b);
-                 }
-               }
-               return $sa;
-             }
+    // Iterate through the array
+    foreach ($array as $a => $b)
+    {
+      // Don't wrap the authentication tokens
+      if ($a!='auth_token' && $a!='nonce')
+      {
+        // This should be a field in the model.
+        // Add a new field to the save array
+        $sa['fields'][$a] = array('value' => $b);
+      }
+    }
+    return $sa;
+  }
+
+
+  /**
+  * Generates a map control, with optional data entry fields and location finder powered by the
+  * Yahoo! geoservices API.
+  *
+  * @param string $div Id of a div to add the map into
+  * @param array $layers Array of preset layers to include
+  * @param bool $edit Include editable controls
+  * @param bool $locate Include location finder
+  * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
+  */
+  public static function map($div, $layers = array('google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'openlayers_wms', 'virtual_earth'), $edit = false, $locate = false, $wkt = null, $defaultJs = true)
+  {
+    global $javascript;
+    self::add_resource('indiciaMap');
+    if ($edit) self::add_resource('indiciaMapEdit');
+    if ($locate) self::add_resource('locationFinder');
+
+    foreach ($layers as $layer)
+    {
+      $a = explode('_', $layer);
+      $a = strtolower($a[0]);
+      switch($a)
+      {
+        case 'google':
+          self::add_resource('googlemaps');
+          break;
+        case 'multimap':
+          self::add_resource('multimap');
+          break;
+        case 'virtual':
+          self::add_resource('virtualearth');
+          break;
+      }
+    }
+
+    if ($defaultJs)
+    {
+      $jsLayers = "[ '".implode('\', \'', $layers)."' ]";
+      $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
+      if ($edit)
+      {
+        $foo = ($wkt != null) ? "{ wkt : $wkt }" : '';
+        $javascript .= ".indiciaMapEdit($foo)";
+        if ($locate)
+        {
+          $api = parent::$geoplanet_api_key;
+          $indicia = parent::$base_url;
+          $javascript .= ".locationFinder( { indiciaSvc: '$indicia', apiKey : '$api' } )";
+        }
+      }
+      $javascript .= ";";
+    }
+    $r = "<div id='$div'></div>";
+    echo $r;
+  }
+
+  /**
+  * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
+  * page which uses the data entry helper so output all JavaScript required by previous calls.
+  */
+  public static function dump_javascript() {
+    global $javascript;
+    global $res;
+    $libraries = '';
+    $stylesheets = '';
+    if (isset($res)) {
+      $RESOURCES = self::_RESOURCES();
+      foreach ($res as $resource)
+      {
+        foreach ($RESOURCES[$resource]['stylesheets'] as $s)
+        {
+          $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
+        }
+        foreach ($RESOURCES[$resource]['javascript'] as $j)
+        {
+          $libraries .= "<script type='text/javascript' src='$j'></script>\n";
+        }
+      }
+    }
+    $script = "<script type='text/javascript'>
+    jQuery(document).ready(function() {
+    $javascript
+    });
+    </script>";
+    return $stylesheets.$libraries.$script;
+  }
 
   /**
   * Takes a response, and outputs any errors from it onto the screen.
@@ -833,78 +866,13 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
     echo "<div class=\"error\">$response</div>";
   }
 
-  /**
-  * Generates a map control, with optional data entry fields and location finder powered by the
-  * Yahoo! geoservices API.
-  *
-  * @param string $div Id of a div to add the map into
-  * @param array $layers Array of preset layers to include
-  * @param bool $edit Include editable controls
-  * @param bool $locate Include location finder
-  * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
-  */
-  public static function map($div, $layers = array('google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'openlayers_wms', 'virtual_earth'), $edit = false, $locate = false, $wkt = null, $defaultJs = true)
-  {
-    global $javascript;
-    self::add_resource('indiciaMap');
-    if ($edit) self::add_resource('indiciaMapEdit');
-    if ($locate) self::add_resource('locationFinder');
-
-    foreach ($layers as $layer)
-    {
-      $a = explode('_', $layer);
-      $a = strtolower($a[0]);
-      switch($a)
-      {
-  case 'google':
-    self::add_resource('googlemaps');
-    break;
-  case 'multimap':
-    self::add_resource('multimap');
-    break;
-  case 'virtual':
-    self::add_resource('virtualearth');
-    break;
-      }
-    }
-
-    if ($defaultJs)
-    {
-      $jsLayers = "[ '".implode('\', \'', $layers)."' ]";
-      $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
-      if ($edit)
-      {
-  $foo = ($wkt != null) ? "{ wkt : $wkt }" : '';
-  $javascript .= ".indiciaMapEdit($foo)";
-  if ($locate)
-  {
-    $api = parent::$geoplanet_api_key;
-    $indicia = parent::$base_url;
-    $javascript .= ".locationFinder( { indiciaSvc: '$indicia', apiKey : '$api' } )";
-  }
-      }
-      $javascript .= ";";
-  }
-  $r = "<div id='$div'></div>";
-  echo $r;
-}
-
-  /**
-  * Private method to find an option from an associative array of options. If not present, returns the default.
-  */
-  private static function option($key, array $opts, $default)
-  {
-    if (array_key_exists($key, $opts)) {
-    $r = $opts[$key];
-  } else {
-    $r = $default;
-  }
-  return $r;
-  }
 
   /**
   * Retrieves a token and inserts it into a data entry form which authenticates that the
   * form was submitted by this website.
+  *
+  * @param string $website_id Indicia ID for the website.
+  * @param string $password Indicia password for the website.
   */
   public static function get_auth($website_id, $password) {
     $postargs = "website_id=$website_id";
@@ -929,6 +897,9 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
   /**
   * Retrieves a read token and passes it back as an array suitable to drop into the
   * 'extraParams' options for an Ajax call.
+  *
+  * @param string $website_id Indicia ID for the website.
+  * @param string $password Indicia password for the website.
   */
   public static function get_read_auth($website_id, $password) {
     $postargs = "website_id=$website_id";
@@ -958,6 +929,69 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
       $r .= "&$a=$b";
     }
     return $r;
+  }
+
+  /**
+  * Private method to find an option from an associative array of options. If not present, returns the default.
+  */
+  private static function option($key, array $opts, $default)
+  {
+    if (array_key_exists($key, $opts)) {
+      $r = $opts[$key];
+    } else {
+      $r = $default;
+    }
+    return $r;
+  }
+
+  /**
+   * List of external resources including stylesheets and js files used by the data entry helper class.
+   */
+  private static function _RESOURCES()
+  {
+    $base = parent::$base_url;
+    return array
+    (
+    'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.js")),
+    'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js")),
+    'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/client_helpers/addRowToGrid.js")),
+    'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.js")),
+    'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
+    'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
+    'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.autocomplete.css"), 'javascript' => array("$base/media/js/jquery.autocomplete.js")),
+    'ui_core' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/ui.core.js")),
+    'datepicker' => array('deps' => array('ui_core'), 'stylesheets' => array("$base/media/css/ui.datepicker.css"), 'javascript' => array("$base/media/js/ui.datepicker.js")),
+    'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/json2.js")),
+    'treeview' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.treeview.css"), 'javascript' => array("$base/media/js/jquery.treeview.js", "$base/media/js/jquery.treeview.async.js",
+    "$base/media/js/jquery.treeview.edit.js")),
+    'googlemaps' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://maps.google.com/maps?file=api&v=2&key=".parent::$google_api_key)),
+    'multimap' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
+    'virtualearth' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
+    );
+  }
+
+  /**
+   * Internal method to link up the external css or js files associated with a set of code.
+   * Ensures each file is only linked once.
+   *
+   * @param string $resource Name of resource to link.
+   */
+  private static function add_resource($resource)
+  {
+    global $res;
+    if (!isset($res)) $res = array();
+    if (array_key_exists($resource, self::_RESOURCES()))
+    {
+      if (!in_array($resource, $res))
+      {
+        $RESOURCES = self::_RESOURCES();
+        foreach ($RESOURCES[$resource]['deps'] as $dep)
+        {
+          self::add_resource($dep);
+        }
+        $res[] = $resource;
+      }
+    }
   }
 
 }
