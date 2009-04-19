@@ -123,30 +123,28 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $gridmodel = ORM::factory('gv_taxon_lists_taxon');
 
     // Add grid component
-    $grid =	Gridview_Controller::factory
-    (
-    $gridmodel,
-    $page_no,
-    $limit,
-    4);
+    $grid =	Gridview_Controller::factory(
+      $gridmodel,
+      $page_no,
+      $limit,
+      4
+  );
     $grid->base_filter = $this->base_filter;
     $grid->base_filter['parent_id'] = $id;
     $grid->columns = $this->columns;
     $grid->actionColumns = array(
-    'edit' => 'taxa_taxon_list/edit/£id£'
+      'edit' => 'taxa_taxon_list/edit/£id£'
     );
 
     // Add items to view
     $vArgs = array
     (
-    'taxon_list_id' => $this->model->taxon_list_id,
-    'table' => $grid->display(),
-    'synonomy' => $this->formatScientificSynonomy($this->
-    getSynonomy($this->model->
-    taxon_meaning_id)),
-    'commonNames' => $this->formatCommonSynonomy($this->
-    getSynonomy($this->model->
-    taxon_meaning_id))
+      'taxon_list_id' => $this->model->taxon_list_id,
+      'table' => $grid->display(),
+      'synonomy' => $this->formatScientificSynonomy($this->
+        getSynonomy($this->model->taxon_meaning_id)),
+      'commonNames' => $this->formatCommonSynonomy($this->
+        getSynonomy($this->model->taxon_meaning_id))
     );
     $this->setView('taxa_taxon_list/taxa_taxon_list_edit', 'Taxon', $vArgs);
 
@@ -203,6 +201,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   public function save()
   {
     $_POST['preferred'] = 't';
+    if (!is_numeric($_POST['language_id']))
+      $_POST['language_id']=2; // latin
     // If we have an image, upload it and set the image path as required.
     $ups = Kohana::config('indicia.maxUploadSize');
     syslog(LOG_DEBUG, "Maximum upload size is $ups.");
