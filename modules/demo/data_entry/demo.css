@@ -72,3 +72,19 @@ div#occAttr0 {
 .wide {
   width: 400px;
 }
+
+.checklist span {
+  margin-right: 22px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.checklist input {
+  margin-right: 8px;
+}
+
+.checklist {
+  border: silver solid 1px;
+  margin-bottom: 8px;
+  padding: 8px;
+}
