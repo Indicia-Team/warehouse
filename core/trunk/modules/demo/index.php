@@ -23,7 +23,7 @@
 <ol>
 <li><a href="data_entry/simple_data_entry.php">Data Entry 1</a>
 <p>A demonstration of a very simple data entry page, allowing entry of a single occurrence at a time.
-View the source code in <a href="viewsource.php?file=data_entry/test_data_entry.php">test_data_entry.php</a>.</p>
+View the source code in <a href="viewsource.php?file=data_entry/simple_data_entry.php">simple_data_entry.php</a>.</p>
 </li>
 <li><a href="data_entry/test_data_entry.php">Data entry 2</a>
 <p>A demonstration of a data entry page, allowing entry of a single occurrence at a time. Also includes some fields
@@ -37,7 +37,12 @@ View the source code in <a href="viewsource.php?file=data_entry/species_checklis
 <li><a href="advanced_data_entry/header.php">Data entry wizard</a>
 <p>A demonstration data entry "mini-site" which includes a wizard for entering a checklist of species found at a place and a distribution map
 as a reward after a record has been contributed. The map also has a toolbar to allow switching to a mode for capturing polygon shaped occurrences
-rather than just points or grid squares. View the source code in <a href="viewsource.php?file=advanced_data_entry/header.php">species_checklist.php</a>.</p>
+rather than just points or grid squares. View the source code in
+<a href="viewsource.php?file=advanced_data_entry/header.php">header.php</a>,
+<a href="viewsource.php?file=advanced_data_entry/list.php">list.php</a>,
+<a href="viewsource.php?file=advanced_data_entry/save.php">save.php</a>,
+<a href="viewsource.php?file=advanced_data_entry/success.php">success.php</a> and
+<a href="viewsource.php?file=advanced_data_entry/map.php">map.php</a>.</p>
 </li>
 </ol>
 </li>
