@@ -31,15 +31,14 @@ form {
   padding: 12px;
 }
 
-input, select, textarea {
-  vertical-align: top;
+fieldset {
+  padding: 12px;
 }
 
 label {
   width: 200px;
   display: inline-block;
   line-height: 1.9em;
-  vertical-align: top;
 }
 
 p#addOccAttr {
