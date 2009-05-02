@@ -51,7 +51,7 @@
       nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true})},
       virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true})},
       multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true})},
-      multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('OS Landranger', {sphericalMercator: true, dataSource: 904})}
+      multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true, dataSource: 904})}
     };
 
     this.construct = function(options, oloptions)

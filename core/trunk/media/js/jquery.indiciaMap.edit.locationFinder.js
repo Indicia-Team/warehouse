@@ -1,5 +1,4 @@
-/*
-* Location finder plugin for jQuery.indiciaMap.
+/* Location finder plugin for jQuery.indiciaMap.
 * @requires jquery
 * @requires jquery.indiciaMap
 * @requires jquery.indiciaMap.edit
@@ -33,17 +32,15 @@
     {
       return this.each(function()
       {
-  var settings = {};
-  $.extend(settings, $.locationFinder.defaults, this.settings, options);
-  this.settings = settings;
+        var settings = {};
+        $.extend(settings, $.locationFinder.defaults, this.settings, options);
+        this.settings = settings;
 
-  if (this.settings.placeControls)
-  {
-    placeControls(this);
-  }
-
-  registerControls(this);
-      });
+        if (this.settings.placeControls)
+        {
+          placeControls(this);			  }
+          registerControls(this);
+        });
     };
 
     // Private functions
@@ -67,11 +64,11 @@
 
       if (pos == 0)
       {
-  $(div).before(html);
+        $(div).before(html);
       }
       else
       {
-  $(div).after(html);
+        $(div).after(html);
       }
     }
 
@@ -85,21 +82,21 @@
 
       $(buttonId).click(function()
       {
-  locate(div);
+        locate(div);
       });
 
       $(inputId).keypress(function(e)
       {
-  if (e.which == 13)
-  {
-    locate(div);
-    return false;
-  }
+        if (e.which == 13)
+        {
+          locate(div);
+          return false;
+        }
       });
 
       $(closeId).click(function()
       {
-  $(searchDivId).hide('fast');
+        $(searchDivId).hide('fast');
       });
     };
 
