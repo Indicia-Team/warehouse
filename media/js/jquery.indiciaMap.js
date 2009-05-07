@@ -1,6 +1,21 @@
 /**
-* Re-implementation of the map helper as a purely client-side library, because the mixed method in use was messy and
-* going to be difficult to maintain.
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ */
+
+/**
+* Class: indiciaMap
+* JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
 * and can be used in a chainable way. Likewise, another plugin will provide support for finding places.
 */
