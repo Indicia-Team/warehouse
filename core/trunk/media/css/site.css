@@ -1,163 +1,164 @@
 *
 {
-	margin: 0;
-	padding: 0;
+  margin: 0;
+  padding: 0;
 }
 
 body
 {
-	margin: auto;
-	width: 760px;
-	font-size: 80%;
-	background: #E5E0C3 url(../images/gradient.png) repeat-x top left;
-	text-align: center;
-	font-family: Trebuchet MS, Helvetica, sans-serif;
+  margin: auto;
+  width: 760px;
+  font-size: 80%;
+  background: #E5E0C3 url(../images/gradient.png) repeat-x top left;
+  text-align: center;
+  font-family: Trebuchet MS, Helvetica, sans-serif;
 }
 
 #wrapper
 {
-	text-align: left;
-	background-color: #FFFFFF;
-	padding: 6px;
-	float: left;
-	border: solid #CCCCCC 1px;
+  text-align: left;
+  background-color: #FFFFFF;
+  padding: 6px;
+  float: left;
+  border: solid #CCCCCC 1px;
 }
 
 #banner
 {
-	background: #2075C5 url(../images/banner.jpg) no-repeat top left;
-	color: #FEFEFE;
-	padding: 16px;
-	height: 94px;
-	width: 716px;
-	float: left;
+  background: #2075C5 url(../images/banner.jpg) no-repeat top left;
+  color: #FEFEFE;
+  padding: 16px;
+  height: 94px;
+  width: 716px;
+  float: left;
 }
 
 #banner span
 {
-	font-family: Tahoma, Geneva, sans-serif;
-	font-size: 2em;
+  font-family: Tahoma, Geneva, sans-serif;
+  font-size: 2em;
+  margin-left: 70px;
 }
 
 
 table
 {
-	margin-bottom: 6px;
+  margin-bottom: 6px;
 }
 
 th
 {
-	border-right: 1px solid #C1DAD7;
-	border-bottom: 1px solid #C1DAD7;
-	border-top: 1px solid #C1DAD7;
-	text-align: left;
-	padding: 3px 6px 3px 6px;
-	background-color: #CAE8EA;
+  border-right: 1px solid #C1DAD7;
+  border-bottom: 1px solid #C1DAD7;
+  border-top: 1px solid #C1DAD7;
+  text-align: left;
+  padding: 3px 6px 3px 6px;
+  background-color: #CAE8EA;
 }
 
 table#pageGrid thead tr th
 {
-	background-repeat: no-repeat;
-	background-position: center right;
-	padding-right: 20px;
-	cursor: pointer;
+  background-repeat: no-repeat;
+  background-position: center right;
+  padding-right: 20px;
+  cursor: pointer;
 }
 
 table#pageGrid thead tr th.gvColAsc, table#pageGrid thead tr th.gvColDesc
 {
-	background-color: #CAEFAB;
+  background-color: #CAEFAB;
 }
 
 table#pageGrid thead tr th.gvCol
 {
-	background-image: url(../images/bg.gif);
+  background-image: url(../images/bg.gif);
 }
 
 table#pageGrid thead tr th.gvColAsc
 {
-	background-image: url(../images/asc.gif);
+  background-image: url(../images/asc.gif);
 }
 
 table#pageGrid thead tr th.gvColDesc
 {
-	background-image: url(../images/desc.gif);
+  background-image: url(../images/desc.gif);
 }
 
 td
 {
-	padding: 0 6px 0 6px;
+  padding: 0 6px 0 6px;
 }
 
 td a
 {
-	text-decoration: none;
-	color: #203080;
+  text-decoration: none;
+  color: #203080;
 }
 
 td a:hover
 {
-	text-decoration: underline;
+  text-decoration: underline;
 }
 
 
 tr.oddRow
 {
-	background: #F2F2F2;
+  background: #F2F2F2;
 }
 
 #gvFilter
 {
-	margin-bottom: 1em;
+  margin-bottom: 1em;
 }
 
 .form_error
 {
-	color: #FF0000;
-	vertical-align: top;
+  color: #FF0000;
+  vertical-align: top;
 }
 
 #content
 {
-	float: left;
-	clear: both;
-	margin: 20px;
+  float: left;
+  clear: both;
+  margin: 20px;
 }
 
 h1
 {
-	color: #103A6A;
-	margin-bottom: 12px;
-	font-size: 1.4em;
-	letter-spacing:-1px;
+  color: #103A6A;
+  margin-bottom: 12px;
+  font-size: 1.4em;
+  letter-spacing:-1px;
 }
 
 #footer
 {
-	clear:both;
-	margin-top:1em;
-	border-top: 2px solid #C1DAD7;
-	padding: 1em;
-	color:#666666;
-	font-size:1em;
+  clear:both;
+  margin-top:1em;
+  border-top: 2px solid #C1DAD7;
+  padding: 1em;
+  color:#666666;
+  font-size:1em;
 }
 
 p#metadata_toggle
 {
-	text-align: right;
-	color: #103A6A;
-	display: none;
-	cursor: pointer;
+  text-align: right;
+  color: #103A6A;
+  display: none;
+  cursor: pointer;
 }
 
 .instruct
 {
-	width: 600px;
-	color: #666666;
-	font-size: 90%;
+  width: 600px;
+  color: #666666;
+  font-size: 90%;
 }
 
 #sublists
 {
-	border-top: 2px solid #C1DAD7;
-	margin-top: 16px;
+  border-top: 2px solid #C1DAD7;
+  margin-top: 16px;
 }
