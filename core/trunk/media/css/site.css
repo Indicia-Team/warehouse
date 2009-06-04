@@ -33,10 +33,17 @@ body
   float: left;
 }
 
-#banner span
+#sitetitle
 {
   font-family: Tahoma, Geneva, sans-serif;
   font-size: 2em;
+  margin-left: 70px;
+}
+
+#subtitle
+{
+  font-family: Tahoma, Geneva, sans-serif;
+  font-size: 1.2em;
   margin-left: 70px;
 }
 

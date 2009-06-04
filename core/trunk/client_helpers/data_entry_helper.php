@@ -98,10 +98,14 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
   global $javascript;
   // Declare the data service
   $url = parent::$base_url."/index.php/services/data";
-  $termRequest = "$url/taxa_taxon_list?mode=json&taxon_list_id=$list_id&preferred=t";
+  $termRequest = "$url/taxa_taxon_list?mode=json&taxon_list_id=$list_id";
   $termRequest .= self::array_to_query_string($readAuth);
   if ($extraParams)
     $termRequest .= self::array_to_query_string($extraParams);
+  if (!array_key_exists('preferred', $extraParams)) {
+    // Default behaviour is to select preferred names
+    $termRequest .= '&preferred=t';
+  }
   // Get the curl session object
   $session = curl_init($termRequest);
   curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -446,39 +450,39 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
       return $r;
         }
 
-        /**
-        * Helper function to list the output from a request against the data services, using an HTML template
-        * for each item.
-        *
-        * @param string $entity Name of the data entity that is being requested.
-        * @param array $extraParams Additional parameters passed to the data services in the URL request. For example, this
-        * can be used to specify the read authorisation, select only entries which match a certain field value, and
-        * select the details view by specifying: $readAuth + array('field to test' => value,'view' => 'details').
-        * @param string $template HTML template which will be emitted for each item. Fields from the data are identified
-        * by wrapping them in ||. For example, <li>|term|</li> would result in the field called term's value being placed inside
-        * <li> tags.
-        * @return string HTML code for the list of items.
-        */
-        public static function list_in_template($entity, $extraParams = null, $template) {
-          $url = parent::$base_url."/index.php/services/data";
-          // Execute a request to the service
-          $request = "$url/$entity?mode=json";
-          $request .= self::array_to_query_string($extraParams);
-          // Get the curl session object
-          $session = curl_init($request);
-          curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-          $response = curl_exec($session);
-          $response = json_decode(array_pop(explode("\r\n\r\n",$response)), true);
-          $r = "";
-          if (!array_key_exists('error', $response)){
+  /**
+  * Helper function to list the output from a request against the data services, using an HTML template
+  * for each item.
+  *
+  * @param string $entity Name of the data entity that is being requested.
+  * @param array $extraParams Additional parameters passed to the data services in the URL request. For example, this
+  * can be used to specify the read authorisation, select only entries which match a certain field value, and
+  * select the details view by specifying: $readAuth + array('field to test' => value,'view' => 'details').
+  * @param string $template HTML template which will be emitted for each item. Fields from the data are identified
+  * by wrapping them in ||. For example, <li>|term|</li> would result in the field called term's value being placed inside
+  * <li> tags.
+  * @return string HTML code for the list of items.
+  */
+  public static function list_in_template($entity, $extraParams = null, $template) {
+    $url = parent::$base_url."/index.php/services/data";
+    // Execute a request to the service
+    $request = "$url/$entity?mode=json";
+    $request .= self::array_to_query_string($extraParams);
+    // Get the curl session object
+    $session = curl_init($request);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($session);
+    $response = json_decode(array_pop(explode("\r\n\r\n",$response)), true);
+    $r = "";
+    if (!array_key_exists('error', $response)){
       $r .= "<ul>";
       foreach ($response as $row){
-  $item = $template;
-  foreach ($row as $field => $value) {
-      $value = htmlspecialchars($value, ENT_QUOTES);
-      $item = str_replace("|$field|", $value, $item);
-    }
-    $r .= $item;
+        $item = $template;
+        foreach ($row as $field => $value) {
+          $value = htmlspecialchars($value, ENT_QUOTES);
+          $item = str_replace("|$field|", $value, $item);
+        }
+        $r .= $item;
       }
       $r .= "</ul>";
     }
@@ -486,7 +490,7 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
       echo "Error loading control";
 
     return $r;
-        }
+  }
 
   /**
   * Helper function to generate a radio group from a Indicia core service query.
@@ -545,8 +549,8 @@ public static function species_checklist($list_id, $occ_attrs, $readAuth, $extra
       foreach ($response as $item) {
         if (array_key_exists($nameField, $item) && array_key_exists($valueField, $item)) {
           $name = htmlspecialchars($item[$nameField], ENT_QUOTES);
-          $checked = ($default == $item[$valueField]) ? 'checked="checked"' : '' ;
-          $r .= "<span><input type='$type' id='$id' name='$id' value='$item[$valueField]' $checked />";
+          $checked = ($default == $item[$valueField]) ? 'checked="checked" ' : '' ;
+          $r .= "<span><input type='$type' id='$id' name='$id' value='$item[$valueField]' $checked/>";
           $r .= "$name</span>$sep";
         }
       }
