@@ -17,7 +17,7 @@
 <!-- BEGIN: jquery/superfish init -->
 <?php
     echo html::script(array(
-	    'media/js/json2.js',
+      'media/js/json2.js',
             'media/js/jquery.js',
             'media/js/jquery.url.js',
             'media/js/hasharray.js',
@@ -43,7 +43,8 @@
 
     <!-- BEGIN: banner -->
     <div id="banner" role="banner">
-        <span>Indicia</span>
+        <span id="sitetitle">Indicia</span><br/>
+        <span id="subtitle">The NBN OPAL Online Recording Toolkit</span>
     </div>
     <!-- END: banner -->
 
