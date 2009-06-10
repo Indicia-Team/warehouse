@@ -453,12 +453,17 @@ class data_entry_helper extends helper_config {
    * @param string $id Id and name of the postcode textbox this generates. Defaults to postcode.
    * @param string $sref_field Name of the field that the spatial reference is saved into. Defaults to entered_sref.
    * @param string $system_field Name of the field that the spatial reference system is saved into. Defaults to entered_sref_system.
+   * @param boolean $hiddenFields Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
+   * should be inputs with id set to $sref_field and $system_field already in existance. Defaults to true.
    */
-  public static function postcode_textbox($id="postcode", $sref_field="entered_sref", $system_field="entered_sref_system", $linkedAddressBoxId=null) {
-    self::add_resource('postcodes');
+  public static function postcode_textbox($id="postcode", $sref_field="entered_sref", $system_field="entered_sref_system",
+      $linkedAddressBoxId=null, $hiddenFields=true) {
+    self::add_resource('google_search');
     $r = "<input type='text' name='$id' id='$id' onblur='javascript:decodePostcode(\"$id\", \"$sref_field\", \"$system_field\", \"$linkedAddressBoxId\")' />";
-    $r .= "<input type='hidden' name='$sref_field' id='$sref_field' />";
-    $r .= "<input type='hidden' name='$system_field' id='$system_field' />";
+    if ($hiddenFields) {
+      $r .= "<input type='hidden' name='$sref_field' id='$sref_field' />";
+      $r .= "<input type='hidden' name='$system_field' id='$system_field' />";
+    }
     return $r;
   }
 
@@ -982,7 +987,7 @@ class data_entry_helper extends helper_config {
       'googlemaps' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://maps.google.com/maps?file=api&v=2&key=".parent::$google_api_key)),
       'multimap' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
       'virtualearth' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
-      'postcodes' => array('deps' => array(), 'stylesheets' => array(),
+      'google_search' => array('deps' => array(), 'stylesheets' => array(),
           'javascript' => array(
             "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
             "$base/media/js/google_search.js"
