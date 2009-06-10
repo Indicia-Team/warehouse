@@ -1,5 +1,34 @@
 <?php
 
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Core
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+ defined('SYSPATH') or die('No direct script access.');
+
+/**
+ * Base class for controllers in the Indicia Core module. Provides standard functionality
+ * across all pages, e.g. checking user is authenticated and if not redirecting them to the
+ * home page, or checking if a system upgrade is available and required.
+ *
+ * @package Core
+ */
 class Indicia_Controller extends Template_Controller {
   // Template view name
   public $template = 'templates/template';
@@ -8,7 +37,7 @@ class Indicia_Controller extends Template_Controller {
   {
     parent::__construct();
 
-    // assign view array with system informations
+    // assign view array with system information
     //
     $this->template->system = Kohana::config('indicia.system', false, false);
 
@@ -24,48 +53,48 @@ class Indicia_Controller extends Template_Controller {
     {
       $menu = array
       (
-      'Home' => array(),
-      'Lookup Lists' => array
-      (
-      'Species Lists'=>'taxon_list',
-       'Taxon Groups'=>'taxon_group',
-       'Term Lists'=>'termlist',
-       'Locations'=>'location',
-       'Surveys'=>'survey',
-       'People'=>'person'
-       ),
-       'Custom Attributes' => array
-       (
-       'Occurrence Attributes'=>'occurrence_attribute',
-	'Sample Attributes'=>'sample_attribute',
-	'Location Attributes'=>'location_attribute'
-	),
-	'Entered Data' => array
-	(
-	'Occurrences' => 'occurrence',
-	 'Samples' => 'sample',
-	 'Reports' => 'report'
-	 ),
-	 'Admin' => array
-	 (
-	 'Users'=>'user',
-	  'Websites'=>'website',
-	  'Languages'=>'language',
-	  'Titles'=>'title'
-	  ),
-	  'Logged in as '.$_SESSION['auth_user']->username => array
-	  (
-	  'Set New Password' => 'new_password',
-	   'Logout'=>'logout'
-	   )
-	   );
-	   if(!$this->auth->logged_in('CoreAdmin'))
-	   unset($menu['Admin']);
-	   $this->template->menu = $menu;
+        'Home' => array(),
+        'Lookup Lists' => array
+        (
+          'Species Lists'=>'taxon_list',
+          'Taxon Groups'=>'taxon_group',
+          'Term Lists'=>'termlist',
+          'Locations'=>'location',
+          'Surveys'=>'survey',
+          'People'=>'person'
+        ),
+        'Custom Attributes' => array
+        (
+          'Occurrence Attributes'=>'occurrence_attribute',
+          'Sample Attributes'=>'sample_attribute',
+          'Location Attributes'=>'location_attribute'
+        ),
+        'Entered Data' => array
+        (
+          'Occurrences' => 'occurrence',
+          'Samples' => 'sample',
+          'Reports' => 'report'
+        ),
+        'Admin' => array
+        (
+          'Users'=>'user',
+          'Websites'=>'website',
+          'Languages'=>'language',
+          'Titles'=>'title'
+        ),
+        'Logged in as '.$_SESSION['auth_user']->username => array
+        (
+          'Set New Password' => 'new_password',
+          'Logout'=>'logout'
+        )
+      );
+      if(!$this->auth->logged_in('CoreAdmin'))
+        unset($menu['Admin']);
+      $this->template->menu = $menu;
     } else
       $this->template->menu = array();
   }
-  
+
   /**
   * Retrieve a suitable title for the edit page, depending on whether it is a new record
   * or an existing one.
@@ -77,7 +106,7 @@ class Indicia_Controller extends Template_Controller {
     else
       return "New $name";
   }
-  
+
   /**
   * Return the metadata sub-template for the edit page of any model. Returns nothing
   * if there is no ID (so no metadata).
@@ -93,7 +122,7 @@ class Indicia_Controller extends Template_Controller {
       return '';
     }
   }
-  
+
   /**
   * set view
   *
@@ -108,13 +137,13 @@ class Indicia_Controller extends Template_Controller {
     $view->metadata          = $this->GetMetadataView(  $this->model );
     $this->template->title   = $this->GetEditPageTitle( $this->model, $pagetitle );
     $view->model             = $this->model;
-    
+
     foreach ($viewArgs as $arg => $val) {
-	    $view->set($arg, $val);
-	  }
-	  $this->template->content = $view;
+      $view->set($arg, $val);
+    }
+    $this->template->content = $view;
   }
-  
+
   /**
   * Wraps a standard $_POST type array into a save array suitable for use in saving
   * records.
@@ -136,31 +165,31 @@ class Indicia_Controller extends Template_Controller {
     'superModels' => array(),
     'subModels' => array()
     );
-    
+
     // Iterate through the array
     foreach ($array as $a => $b)
     {
       // Check whether this is a fk placeholder
       if (substr($a,0,3) == 'fk_'
-	&& $fkLink)
+  && $fkLink)
       {
-	// Generate a foreign key instance
-	$sa['fkFields'][$a] = array
-	(
-	// Foreign key id field is table_id
-	'fkIdField' => substr($a,3)."_id",
-	 'fkTable' => substr($a,3),
-	 'fkSearchField' =>
-	 ORM::factory(substr($a,3))->get_search_field(),
-	 'fkSearchValue' => $b
-	 );
-	 // Determine the foreign table name
-	 $m = ORM::factory($id);
-	 if (array_key_exists(substr($a,3), $m->belongs_to))
-	 {
-	   $sa['fkFields'][$a]['fkTable'] = $m->belongs_to[substr($a,3)];
-	 } else if ($m instanceof ORM_Tree && substr($a,3) == 'parent') {
-	   $sa['fkFields'][$a]['fkTable'] = $id;
+  // Generate a foreign key instance
+  $sa['fkFields'][$a] = array
+  (
+  // Foreign key id field is table_id
+  'fkIdField' => substr($a,3)."_id",
+   'fkTable' => substr($a,3),
+   'fkSearchField' =>
+   ORM::factory(substr($a,3))->get_search_field(),
+   'fkSearchValue' => $b
+   );
+   // Determine the foreign table name
+   $m = ORM::factory($id);
+   if (array_key_exists(substr($a,3), $m->belongs_to))
+   {
+     $sa['fkFields'][$a]['fkTable'] = $m->belongs_to[substr($a,3)];
+   } else if ($m instanceof ORM_Tree && substr($a,3) == 'parent') {
+     $sa['fkFields'][$a]['fkTable'] = $id;
       }
     }
     else
@@ -219,7 +248,7 @@ public function save()
   {
     $this->model = ORM::factory($this->model->object_name, $_POST['id']);
   }
-  
+
   /**
   * Were we instructed to delete the post?
   */
@@ -231,10 +260,10 @@ public function save()
   {
     $_POST['deleted'] = 'f';
   }
-  
+
   // Wrap the post object and then submit it
   $this->submit($this->wrap($_POST));
-  
+
 }
 
 /**
@@ -246,17 +275,17 @@ private function check_for_upgrade()
   // system file which is distributed with every indicia version
   //
   $new_system = Kohana::config('indicia_dist.system');
-  
+
   // get system info with the version number of the database
   $db_system = new System_Model;
-  
+
   // compare the script version against the database version
   // if both arent equal start the upgrade process
   //
   if(0 != version_compare($db_system->getVersion(), $new_system['version'] ))
   {
     $upgrade = new Upgrade_Model;
-    
+
     // upgrade to version $new_system['version']
     //
     if(true !== ($result = $upgrade->run($db_system->getVersion(), $new_system)))
@@ -272,7 +301,7 @@ private function check_for_upgrade()
       die( 'UPGRADE ERROR: <pre>' . nl2br($result) . '</pre>' );
     }
     }
-    
+
     // if successful, reload the system
     //
     url::redirect();
