@@ -35,12 +35,6 @@ fieldset {
   padding: 12px;
 }
 
-label {
-  width: 200px;
-  display: inline-block;
-  line-height: 1.9em;
-}
-
 p#addOccAttr {
   text-align: right;
   color: #D00002;

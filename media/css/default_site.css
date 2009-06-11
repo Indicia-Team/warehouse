@@ -69,3 +69,21 @@ table.speciesCheckList td, table.speciesCheckList th {
   margin: 12px;
   padding: 12px;
 }
+
+label {
+  width: 200px;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  line-height: 1.9em;
+  vertical-align: top;
+}
+
+input {
+  vertical-align: middle;
+}
+
+.auto {
+  width: auto
+}
