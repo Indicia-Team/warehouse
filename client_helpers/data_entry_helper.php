@@ -547,15 +547,15 @@ class data_entry_helper extends helper_config {
    * @param string $sref_field Name of the field that the spatial reference is saved into. Defaults to entered_sref.
    * @param string $system_field Name of the field that the spatial reference system is saved into. Defaults to entered_sref_system.
    * @param string $geom_field Name of the field that the spatial reference geometry is saved into. Defaults to geom.
-   * @param boolean $hiddenFields Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
-   * should be inputs with id set to $sref_field, $system_field and $geom_field already in existance. Defaults to true.
    * @param string $linkedAddressBoxId Optional. ID of the control used to capture the other address lines. If specified,
    * then when a postcode is captured, the address control is auto-populated with the town/city and region of the address.
+   * @param boolean $hiddenFields Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
+   * should be inputs with id set to $sref_field, $system_field and $geom_field already in existance. Defaults to true.
    */
   public static function postcode_textbox($id="postcode", $sref_field="entered_sref", $system_field="entered_sref_system",
       $geom_field="geom", $linkedAddressBoxId=null, $hiddenFields=true) {
     self::add_resource('google_search');
-    $r = "<input type='text' name='$id' id='$id' " +
+    $r = "<input type='text' name='$id' id='$id' " .
         "onblur='javascript:decodePostcode(\"$id\", \"$sref_field\", \"$system_field\", \"$geom_field\", \"$linkedAddressBoxId\")' />";
     if ($hiddenFields) {
       $r .= "<input type='hidden' name='$sref_field' id='$sref_field' />";
