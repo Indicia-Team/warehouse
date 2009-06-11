@@ -25,9 +25,10 @@ google.load("search", "1");
 * postcodeField - The id of the control which contains the postcode
 * srefField - Optional, the id of the control which receives the lat/long
 * systemField - Optional, the id of the control identifying the system of the spatial reference
+* geomField - Optional, the id of the control which receives the geometry (WKT).
 * addressField - Optional, the id of the control which receives the address locality information.
 */
-function decodePostcode(postcodeField, srefField, systemField, addressField) {
+function decodePostcode(postcodeField, srefField, systemField, geomField, addressField) {
   usePointFromPostcode(
       document.getElementById(postcodeField).value,
       function(place) {
@@ -39,6 +40,9 @@ function decodePostcode(postcodeField, srefField, systemField, addressField) {
         }
         if (systemField) {
           document.getElementById(systemField).value='4326'; // SRID for WGS84 lat long
+        }
+        if (geomField) {
+          document.getElementById(geomField).value='POINT(' + place.lng + ' ' + place.lat + ')';
         }
       }
   );
