@@ -27,7 +27,7 @@ class XMLReportReader_Core implements ReportReader
   private $order_by;
   private $params = array();
   private $columns = array();
-  
+
   /**
   * <p> Constructs a reader for the specified report. </p>
   */
@@ -42,34 +42,34 @@ class XMLReportReader_Core implements ReportReader
       $reader->open($report);
       while($reader->read())
       {
-	switch($reader->nodeType)
-	{
-	  case (XMLREADER::ELEMENT):
-	    switch ($reader->name)
-	    {
-	      case 'report':
-		$this->title = $reader->getAttribute('title');
-		$this->description = $reader->getAttribute('description');
-		break;
-	      case 'query':
-		$reader->read();
-		$this->query = $reader->value;
-		$this->inferFromQuery();
-		break;
-	      case 'order_by':
-		$reader->read();
-		$this->order_by[] = $reader->value;
-		break;
-	      case 'param':
-		$this->mergeParam($reader->getAttribute('name'), $reader->getAttribute('display'), $reader->getAttribute('datatype'), $reader->getAttribute('description'));
-		break;
-	      case 'column':
-		$this->mergeColumn($reader->getAttribute('name'), $reader->getAttribute('display'),
-		 $reader->getAttribute('style'));
-		 break;
-	    }
-	    break;
-	}
+        switch($reader->nodeType)
+        {
+          case (XMLREADER::ELEMENT):
+            switch ($reader->name)
+            {
+              case 'report':
+                $this->title = $reader->getAttribute('title');
+                $this->description = $reader->getAttribute('description');
+                break;
+              case 'query':
+                $reader->read();
+                $this->query = $reader->value;
+                $this->inferFromQuery();
+                break;
+              case 'order_by':
+                $reader->read();
+                $this->order_by[] = $reader->value;
+                break;
+              case 'param':
+                $this->mergeParam($reader->getAttribute('name'), $reader->getAttribute('display'), $reader->getAttribute('datatype'), $reader->getAttribute('description'));
+                break;
+              case 'column':
+                $this->mergeColumn($reader->getAttribute('name'), $reader->getAttribute('display'),
+                $reader->getAttribute('style'));
+                break;
+            }
+            break;
+        }
       }
       $reader->close();
     }
@@ -78,7 +78,7 @@ class XMLReportReader_Core implements ReportReader
       throw new Exception("Report: $report\n".$e->getMessage());
     }
   }
-  
+
   /**
   * <p> Returns the title of the report. </p>
   */
@@ -86,7 +86,7 @@ class XMLReportReader_Core implements ReportReader
   {
     return $this->title;
   }
-  
+
   /**
   * <p> Returns the description of the report. </p>
   */
@@ -94,7 +94,7 @@ class XMLReportReader_Core implements ReportReader
   {
     return $this->description;
   }
-  
+
   /**
   * <p> Returns the query specified. </p>
   */
@@ -102,12 +102,12 @@ class XMLReportReader_Core implements ReportReader
   {
     return $this->query;
   }
-  
+
   /**
   * <p> Uses source-specific validation methods to check whether the report query is valid. </p>
   */
   public function isValid(){}
-  
+
   /**
   * <p> Returns the order by clause for the query. </p>
   */
@@ -115,7 +115,7 @@ class XMLReportReader_Core implements ReportReader
   {
     return implode(', ', $this->order_by);
   }
-  
+
   /**
   * <p> Gets a list of parameters (name => array('display' => display, ...)) </p>
   */
@@ -123,7 +123,7 @@ class XMLReportReader_Core implements ReportReader
   {
     return $this->params;
   }
-  
+
   /**
   * <p> Gets a list of the columns (name => array('display' => display, 'style' => style)) </p>
   */
@@ -131,7 +131,7 @@ class XMLReportReader_Core implements ReportReader
   {
     return $this->columns;
   }
-  
+
   /**
   * <p> Returns a description of the report appropriate to the level specified. </p>
   */
@@ -140,35 +140,35 @@ class XMLReportReader_Core implements ReportReader
     switch ($descLevel)
     {
       case (ReportReader::REPORT_DESCRIPTION_BRIEF):
-	return array('name' => $this->name, 'title' => $this->getTitle(), 'description' => $this->getDescription());
-	break;
+        return array('name' => $this->name, 'title' => $this->getTitle(), 'description' => $this->getDescription());
+        break;
       case (ReportReader::REPORT_DESCRIPTION_FULL):
-	// Everything
-		return array
-	(
-	'name' => $this->name,
-	'title' => $this->getTitle(),
-	'description' => $this->getDescription(),
-	'columnns' => $this->columns,
-	'parameters' => $this->params,
-	'query' => $this->query,
-	'order_by' => $this->order_by
-	);
-	break;
+        // Everything
+        return array
+        (
+          'name' => $this->name,
+          'title' => $this->getTitle(),
+          'description' => $this->getDescription(),
+          'columnns' => $this->columns,
+          'parameters' => $this->params,
+          'query' => $this->query,
+          'order_by' => $this->order_by
+        );
+        break;
       case (ReportReader::REPORT_DESCRIPTION_DEFAULT):
       default:
-	// At this report level, we include most of the useful stuff.
-	return array
-	(
-	'name' => $this->name,
-	'title' => $this->getTitle(),
-	'description' => $this->getDescription(),
-	'columnns' => $this->columns,
-	'parameters' => $this->params
-	);
+        // At this report level, we include most of the useful stuff.
+        return array
+        (
+          'name' => $this->name,
+          'title' => $this->getTitle(),
+          'description' => $this->getDescription(),
+          'columnns' => $this->columns,
+          'parameters' => $this->params
+        );
     }
   }
-  
+
   private function mergeParam($name, $display = '', $type = '', $description = '')
   {
     if (array_key_exists($name, $this->params))
@@ -182,7 +182,7 @@ class XMLReportReader_Core implements ReportReader
       $this->params[$name] = array('datatype'=>$type, 'display'=>$display, 'description'=>$description);
     }
   }
-  
+
   private function mergeColumn($name, $display = '', $style = '')
   {
     if (array_key_exists($name, $this->columns))
@@ -195,15 +195,19 @@ class XMLReportReader_Core implements ReportReader
       $this->columns[$name] = array('display' => $display, 'style' => $style);
     }
   }
-  
+
   /**
   * Infers parameters such as column names and parameters from the query string.
   */
   private function inferFromQuery()
   {
-    // Find the columns we're searching for - nested between a SELECT and a FROM
-    $i0 = strpos(strtolower($this->query), ' select ') + 7;
-    $i1 = strpos(strtolower($this->query), ' from ') - $i0;
+    // Find the columns we're searching for - nested between a SELECT and a FROM.
+    // To ensure we can detect the word FROM and SELECT, use a regex to wrap spaces around them, then can
+    // do a regular string search
+    $this->query=preg_replace("/\b(select)\b/i", ' select ', $this->query);
+    $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
+    $i0 = strpos($this->query, ' select ') + 7;
+    $i1 = strpos($this->query, ' from ') - $i0;
     $cols = explode(',', substr($this->query, $i0, $i1));
     // We have cols, which may either be of the form 'x' or of the form 'x as y'
     foreach ($cols as $col)
@@ -211,26 +215,26 @@ class XMLReportReader_Core implements ReportReader
       $a = explode(' as ', strtolower($col));
       if (count($a) == 2)
       {
-	// Okay, we have an 'as' clause
-	$this->mergeColumn(trim($a[1]));
+        // Okay, we have an 'as' clause
+        $this->mergeColumn(trim($a[1]));
       }
       else
       {
-	// Treat this as a single thing
-	// But it might have a . in it if it's a multi-table query, so look at the last bit
-	$b = explode('.' , $a[0]);
-	$b = $b[count($b) - 1];
-	$this->mergeColumn(trim($b));
+        // Treat this as a single thing
+        // But it might have a . in it if it's a multi-table query, so look at the last bit
+        $b = explode('.' , $a[0]);
+        $b = $b[count($b) - 1];
+        $this->mergeColumn(trim($b));
       }
     }
-    
+
     // Okay, now we need to find parameters, which we do with regex.
     preg_match_all('/#([a-z0-9_]+)#%/i', $this->query, $matches);
     // Here is why I remember (yet again) why I hate PHP...
     foreach ($matches[1] as $param)
     {
       $this->mergeParam($param);
-    }   
+    }
   }
-  
+
 }
