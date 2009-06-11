@@ -560,6 +560,7 @@ class data_entry_helper extends helper_config {
     if ($hiddenFields) {
       $r .= "<input type='hidden' name='$sref_field' id='$sref_field' />";
       $r .= "<input type='hidden' name='$system_field' id='$system_field' />";
+      $r .= "<input type='hidden' name='$geom_field' id='$geom_field' />";
     }
     return $r;
   }
