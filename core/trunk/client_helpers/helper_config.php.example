@@ -5,6 +5,7 @@ class helper_config {
   static $upload_path = './upload/';
   // The following only need to be configured if using the data_entry_helper::map method, as it autogenerates the script links for you.
   static $geoplanet_api_key='...';
+  static $google_search_api_key='...';
   static $google_api_key='...';
   static $multimap_api_key='...';
   // end of items required by data_entry_helper::map

@@ -19,6 +19,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+require_once('lang.php');
 require_once('helper_config.php');
 
 /**
@@ -194,7 +195,7 @@ class data_entry_helper extends helper_config {
       }
       $grid .= "</tr></tbody></table>";
       $grid .= "<table class='speciesCheckList'>";
-      $grid .= "<thead><th>Species</th><th>Present (Y/N)</th>";
+      $grid .= "<thead><th>".lang::get('species_checklist.species')."</th><th>".lang::get('species_checklist.present')."</th>";
       foreach ($occAttrs as $a) {
         $grid .= "<th>$a</th>";
       }
