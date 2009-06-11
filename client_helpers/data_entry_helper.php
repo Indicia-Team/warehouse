@@ -1,11 +1,39 @@
 <?php
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Client
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
+ * @link 	http://code.google.com/p/indicia/
+ */
 
 require_once('helper_config.php');
 
+/**
+ * Static helper class that provides automatic HTML and JavaScript generation for Indicia online
+ * recording website data entry controls. Examples include auto-complete text boxes that are populated
+ * by Indicia species lists, maps for spatial reference selection and date pickers.
+ *
+ * @package	Client
+ */
 class data_entry_helper extends helper_config {
 
  /**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
+ *
+ * @link	http://code.google.com/p/indicia/wiki/TutorialDataEntryWizard
  */
   public static function clear_session() {
     foreach ($_SESSION as $name=>$value) {
@@ -18,6 +46,8 @@ class data_entry_helper extends helper_config {
   /**
    * Adds the data from the $_POST array into the session. Call this method when arriving at the second
    * and subsequent pages of a data entry wizard to keep the previous page's data available for saving later.
+   *
+   * @link	http://code.google.com/p/indicia/wiki/TutorialDataEntryWizard
    */
   public static function add_post_to_session () {
     foreach ($_POST as $name=>$value) {
@@ -28,6 +58,8 @@ class data_entry_helper extends helper_config {
   /**
    * Returns an array constructed from all the indicia variables that have previously been stored
    * in the session.
+   *
+   * @link	http://code.google.com/p/indicia/wiki/TutorialDataEntryWizard
    */
   public static function extract_session_array () {
     $result = array();
@@ -44,6 +76,7 @@ class data_entry_helper extends helper_config {
   *
   * @param string $name Name of the session value to retrieve
   * @param string $default Default value to return if not set or empty
+  * @link	http://code.google.com/p/indicia/wiki/TutorialDataEntryWizard
   */
   public static function get_from_session($name, $default='') {
     $result = '';
@@ -79,13 +112,17 @@ class data_entry_helper extends helper_config {
    * control from the parent list of the one given. This will take the form of an autocomplete
    * box against the parent list which will add an extra row to the control upon selection.</p>
    *
-   * @param int list_id Database id of the taxon list to lookup against.
-   * @param int[] occ_attrs Integer array, where each entry corresponds to the id of the
+   * @param int $list_id Database id of the taxon list to lookup against.
+   * @param int[] $occ_attrs Integer array, where each entry corresponds to the id of the
    * desired attribute in the occurrence_attributes table.
-   * @param string[] readAuth The read authorisation key/value pair, needed for making
+   * @param string[] $readAuth The read authorisation key/value pair, needed for making
    * queries to the data services.
-   * @param string[] extraParams Array of key=>value pairs which will be passed to the service
+   * @param string[] $extraParams Array of key=>value pairs which will be passed to the service
    * as GET parameters.
+   * @param int $lookupList Optional. ID of the taxon checklist which is available for the user to
+   * select additional taxa to add to the list from. If specified, then an autocomplete text box and
+   * Add Row button are generated automatically allowing the user to pick a species to add as an
+   * extra row.
    */
   public static function species_checklist($list_id, $occ_attrs, $readAuth, $extraParams = array(), $lookupList = null)
   {
@@ -213,13 +250,13 @@ class data_entry_helper extends helper_config {
   * @param string $control_id id attribute for the returned hidden input control.
   * NB the tree itself will have an id of "tr$control_id"
   * @param string $entity Name (Kohana-style) of the database entity to be queried.
-  * @param string $nameField Field to draw values to show in the control from.
+  * @param string $captionField Field to draw values to show in the control from.
   * @param string $valueField Field to draw values to return from the control from. Defaults
-  * to the value of $nameField.
+  * to the value of $captionField.
   * @param string $topField Field used in filter to define top level entries
   * @param string $topValue Value of $topField used in filter to define top level entries
   * @param string $parentField Field used to indicate parent within tree for a record.
-  * to the value of $nameField.
+  * to the value of $captionField.
   * @param string $defaultValue initial value to set the control to (not currently used).
   * @param string[] extraParams Array of key=>value pairs which will be passed to the service
   * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
@@ -232,7 +269,7 @@ class data_entry_helper extends helper_config {
   * Need to look at how the filetree can be implemented.
   */
   public static function treeview($control_id, $entity,
-    $nameField, $valueField, $topField, $topValue, $parentField,
+    $captionField, $valueField, $topField, $topValue, $parentField,
     $defaultValue, $extraParams,
     $extraClass = 'treeview')
     {
@@ -241,8 +278,8 @@ class data_entry_helper extends helper_config {
       global $javascript;
       // Declare the data service
       $url = parent::$base_url."/index.php/services/data";
-      // If valueField is null, set it to $nameField
-      if ($valueField == null) $valueField = $nameField;
+      // If valueField is null, set it to $captionField
+      if ($valueField == null) $valueField = $captionField;
       // Do stuff with extraParams
       $sParams = '';
       foreach ($extraParams as $a => $b){
@@ -255,12 +292,12 @@ class data_entry_helper extends helper_config {
       {
         url: '$url/$entity',
         extraParams : {
-          orderby : '$nameField',
+          orderby : '$captionField',
           mode : 'json',
           $sParams
         },
         valueControl: '$control_id',
-        nameField: '$nameField',
+        nameField: '$captionField',
         valueField: '$valueField',
         topField: '$topField',
         topValue: '$topValue',
@@ -270,7 +307,7 @@ class data_entry_helper extends helper_config {
         var results =
         {
           'data' : data,
-          'caption' : data.$nameField,
+          'caption' : data.$captionField,
           'value' : data.$valueField
         };
         return results;
@@ -284,6 +321,12 @@ class data_entry_helper extends helper_config {
 
   /**
   * Helper function to insert a date picker control.
+  *
+  * @param string $id Id and name of the control generated, which should correspond to the database field this is
+  * being posted into. If posting into a vague date field, then just the unique prefix for the field name should be
+  * specified. For example, if posting into sample.date_start, sample.date_end and sample.date_type, then the value
+  * for this parameter should be 'date'.
+  * @param string $default Optional. Date to display in this field by default.
   */
   public static function date_picker($id, $default = '') {
     self::add_resource('datepicker');
@@ -301,20 +344,20 @@ class data_entry_helper extends helper_config {
    *
    * @param int $id id attribute for the returned control.
    * @param string $entity Name (Kohana-style) of the database entity to be queried.
-   * @param string $nameField Field to draw values to show in the control from.
+   * @param string $captionField Field to draw values to show in the control from.
    * @param string $valueField Field to draw values to return from the control from. Defaults
-   * to the value of $nameField.
+   * to the value of $captionField.
    * @param map<string, string> $extraParams Associative array of items to pass via the query
    * string to the service.
    *
    * @return string HTML code for a select control.
    */
-  public static function select($id, $entity, $nameField, $valueField = null, $extraParams = null, $default = '')
+  public static function select($id, $entity, $captionField, $valueField = null, $extraParams = null, $default = '')
   {
     self::add_resource('json');
     $url = parent::$base_url."/index.php/services/data";
-    // If valueField is null, set it to $nameField
-    if ($valueField == null) $valueField = $nameField;
+    // If valueField is null, set it to $captionField
+    if ($valueField == null) $valueField = $captionField;
     // Execute a request to the service
     $request = "$url/$entity?mode=json";
     $request .= self::array_to_query_string($extraParams);
@@ -327,12 +370,12 @@ class data_entry_helper extends helper_config {
     if (!array_key_exists('error', $response)){
       $r .= "<select name='$id' id='$id' >";
       foreach ($response as $item){
-        if (array_key_exists($nameField, $item) &&
+        if (array_key_exists($captionField, $item) &&
             array_key_exists($valueField, $item))
         {
           $selected = ($default == $item[$valueField]) ? "selected = 'selected'" : '';
           $r .= "<option value='$item[$valueField]' $selected >";
-          $r .= $item[$nameField];
+          $r .= $item[$captionField];
           $r .= "</option>";
         }
       }
@@ -347,11 +390,11 @@ class data_entry_helper extends helper_config {
   /**
    * Helper function to generate a list box from a Indicia core service query.
    */
-  public static function listbox($id, $entity, $nameField, $size = 3, $multival = false, $valueField = null, $extraParams = null, $default = '')
+  public static function listbox($id, $entity, $captionField, $size = 3, $multival = false, $valueField = null, $extraParams = null, $default = '')
   {
     $url = parent::$base_url."/index.php/services/data";
-    // If valueField is null, set it to $nameField
-    if ($valueField == null) $valueField = $nameField;
+    // If valueField is null, set it to $captionField
+    if ($valueField == null) $valueField = $captionField;
     // Execute a request to the service
     $request = "$url/$entity?mode=json";
     $request .= self::array_to_query_string($extraParams);
@@ -366,12 +409,12 @@ class data_entry_helper extends helper_config {
       $r .= "<select id='$id' name='$id' multiple='$multival' size='$size'>";
       foreach ($response as $item)
       {
-        if (array_key_exists($nameField, $item) &&
+        if (array_key_exists($captionField, $item) &&
             array_key_exists($valueField, $item))
         {
           $selected = ($default == $item[$valueField]) ? 'selected="selected"' : '';
           $r .= "<option value='$item[$valueField]' $selected >";
-          $r .= $item[$nameField];
+          $r .= $item[$captionField];
           $r .= "</option>";
         }
       }
@@ -383,78 +426,129 @@ class data_entry_helper extends helper_config {
   }
 
 
-           /**
-           * Helper function to generate an autocomplete box from an Indicia core service query.
-           */
-           public static function autocomplete($id, $entity, $nameField, $valueField = null, $extraParams = null, $defaultName = '', $defaultValue = '') {
-             self::add_resource('autocomplete');
-             global $javascript;
-             $url = parent::$base_url."/index.php/services/data";
-             // If valueField is null, set it to $nameField
-             if ($valueField == null) $valueField = $nameField;
-             // Do stuff with extraParams
-             $sParams = '';
-             foreach ($extraParams as $a => $b){
-               $sParams .= "$a : '$b',";
-             }
-             // lop the comma off the end
-             $sParams = substr($sParams, 0, -1);
+  /**
+  * Helper function to generate an autocomplete box from an Indicia core service query.
+  *
+  * @param string $id Id and name of the HTML input generated, corresponding to the database field this posts the valueField into.
+  * @param string $entity Name of the Indicia entity being posted into. Possibilities are:
+  * <ul>
+  * <li>language</li>
+  * <li>location</li>
+  * <li>occurrence</li>
+  * <li>occurrence_attribute</li>
+  * <li>occurrence_comment</li>
+  * <li>person</li>
+  * <li>sample</li>
+  * <li>survey</li>
+  * <li>taxon_group</li>
+  * <li>taxa_taxon_list</li>
+  * <li>taxon_list</li>
+  * <li>term</li>
+  * <li>termlist</li>
+  * <li>termlists_term</li>
+  * <li>user</li>
+  * <li>website</li>
+  * </ul>
+  * @param $captionField string Name of the database field used to generate the display caption for each data item.
+  * @param $valueField string Name of the database field used to obtain the value which is stored into the database
+  * when this control is saved. Typically, $captionField is used to identify a caption, and $valueField is used to identify
+  * the ID stored in the database referring to that caption.
+  * @param array $extraParams List of name value pairs for extra parameters that are passed in the calls to the Indicia
+  * data services when populating this control. This should include the read authentication and
+  * any additional filters required when selecting the data. For example, the following value for this parameter causes
+  * the control's content to be filtered to a specific termlist.<br/>
+  * <CODE>$readAuth + array('termlist_id' => $config['surroundings_termlist'])</CODE>
+  * @param string $defaultCaption Default caption to display in the control on startup.
+  * @param strnig $defaultValue Default hidden value for the control on startup.
+  * @see get_read_auth()
+  * @link http://code.google.com/p/indicia/wiki/DataModel
+  */
+  public static function autocomplete($id, $entity, $captionField, $valueField = null, $extraParams = null, $defaultCaption = '', $defaultValue = '') {
+    self::add_resource('autocomplete');
+    global $javascript;
+    $url = parent::$base_url."/index.php/services/data";
+    // If valueField is null, set it to $captionField
+    if ($valueField == null) $valueField = $captionField;
+    // Do stuff with extraParams
+    $sParams = '';
+    foreach ($extraParams as $a => $b){
+      $sParams .= "$a : '$b',";
+    }
+    // lop the comma off the end
+    $sParams = substr($sParams, 0, -1);
 
-             // First create an id for our visible input control, then make it autocomplete. Strip colons
-             // as they mess up the jQuery selectors
-             $inputId = 'ac'.str_replace(':', '', $id);
-             $javascript .= "jQuery('input#$inputId').autocomplete('$url/$entity',
+    // First create an id for our visible input control, then make it autocomplete. Strip colons
+    // as they mess up the jQuery selectors
+    $inputId = 'ac'.str_replace(':', '', $id);
+    $javascript .= "jQuery('input#$inputId').autocomplete('$url/$entity',
       {
         minChars : 1,
-      mustMatch : true,
-      extraParams :
-      {
-        orderby : '$nameField',
-      mode : 'json',
-      qfield : '$nameField',
-      $sParams
-           },
-      dataType: 'jsonp',
-      parse: function(data)
-      {
-        var results = [];
-        jQuery.each(data, function(i, item)
+        mustMatch : true,
+        extraParams :
+        {
+          orderby : '$captionField',
+          mode : 'json',
+          qfield : '$captionField',
+          $sParams
+        },
+        dataType: 'jsonp',
+        parse: function(data)
+        {
+          var results = [];
+          jQuery.each(data, function(i, item)
         {
           results[results.length] =
           {
             'data' : item,
-       'result' : item.$nameField,
-       'value' : item.$valueField
+            'result' : item.$captionField,
+            'value' : item.$valueField
           };
         });
         return results;
-        },
-       formatItem: function(item)
-       {
-         return item.$nameField;
-        },
-       formatResult: function(item) {
-  return item.$valueField;
-        }
-        });
-        jQuery('input#$inputId').result(function(event, data){
-  jQuery('input#$id').attr('value', data.id);
-      });\r\n";
-      $r = "<input type='hidden' class='hidden' id='$id' name='$id' value='$defaultValue' />".
-      "<input id='$inputId' name='$inputId' value='$defaultName' />";
-      return $r;
-        }
+      },
+      formatItem: function(item)
+      {
+        return item.$captionField;
+      },
+      formatResult: function(item) {
+        return item.$valueField;
+      }
+    });
+    jQuery('input#$inputId').result(function(event, data) {
+      jQuery('input#$id').attr('value', data.id);
+    });\r\n";
+    $r = "<input type='hidden' class='hidden' id='$id' name='$id' value='$defaultValue' />".
+         "<input id='$inputId' name='$inputId' value='$defaultCaption' />";
+    return $r;
+  }
 
   /**
-   * Helper function to output a textbox that also includes hidden fields for the latitude
-   * and longitude. When the focus leaves the textbox, the Google AJAX Search API is used
-   * to obtain the latitude and longitude so they can be saved with the record.
+   * Helper function to output a textbox for determining a locality from an entered postcode.
+   *
+   * <p>The textbox optionally includes hidden fields for the latitude and longitude and can
+   * link to an address control for automatic generation of address information. When the focus
+   * leaves the textbox, the Google AJAX Search API is used to obtain the latitude and longitude
+   * so they can be saved with the record.</p>
+   *
+   * <p>The following example displays a postcode box and an address box, which is auto-populated
+   * when a postcode is given. The spatial reference controls are "hidden" from the user but
+   * are available to post into the database.</p>
+   * <code>
+   * <label for="date">Postcode:</label>
+   * <?php echo data_entry_helper::postcode_textbox("postcode", "entered_sref", "entered_sref_system", "address"); ?>
+   * <br />
+   * <label for="date">Address:</label>
+   * <textarea id="address"></textarea>
+   * <br />
+   * </code>
    *
    * @param string $id Id and name of the postcode textbox this generates. Defaults to postcode.
    * @param string $sref_field Name of the field that the spatial reference is saved into. Defaults to entered_sref.
    * @param string $system_field Name of the field that the spatial reference system is saved into. Defaults to entered_sref_system.
    * @param boolean $hiddenFields Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
    * should be inputs with id set to $sref_field and $system_field already in existance. Defaults to true.
+   * @param string $linkedAddressBoxId Optional. ID of the control used to capture the other address lines. If specified,
+   * then when a postcode is captured, the address control is auto-populated with the town/city and region of the address.
    */
   public static function postcode_textbox($id="postcode", $sref_field="entered_sref", $system_field="entered_sref_system",
       $linkedAddressBoxId=null, $hiddenFields=true) {
@@ -514,8 +608,8 @@ class data_entry_helper extends helper_config {
   *
   * @param string $id Name of the field that will be populated by this control.
   * @param string $entity Name of the data entity that is being used to generate the list, e.g. termlists_term.
-  * @param string $nameField Name of the field used to generate the caption for each radio item.
-  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $nameField.
+  * @param string $captionField Name of the field used to generate the caption for each radio item.
+  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $captionField.
   * @param array $extraParams Associative array of extra parameters appended to the web service request for the list of items. For example,
   * specifying $readAuth + array('termlist_id' => 1) would filter the terms generated to termlist 1.
   * @param string $sep Separator inserted betweeen each radio item, if required. For example,
@@ -523,8 +617,8 @@ class data_entry_helper extends helper_config {
   * @param string $default Value of the radio button that should be selected when loaded. This can be used to specify a default, or to re-load
   * a value from an existing record.
   */
-  public static function radio_group($id, $entity, $nameField, $valueField = null, $extraParams = null, $sep='', $default = '') {
-    return self::check_or_radio_group(false, $id, $entity, $nameField, $valueField, $extraParams, $sep, $default);
+  public static function radio_group($id, $entity, $captionField, $valueField = null, $extraParams = null, $sep='', $default = '') {
+    return self::check_or_radio_group(false, $id, $entity, $captionField, $valueField, $extraParams, $sep, $default);
   }
 
  /**
@@ -532,8 +626,8 @@ class data_entry_helper extends helper_config {
   *
   * @param string $id Name of the field that will be populated by this control.
   * @param string $entity Name of the data entity that is being used to generate the list, e.g. termlists_term.
-  * @param string $nameField Name of the field used to generate the caption for each radio item.
-  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $nameField.
+  * @param string $captionField Name of the field used to generate the caption for each radio item.
+  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $captionField.
   * @param array $extraParams Associative array of extra parameters appended to the web service request for the list of items. For example,
   * specifying $readAuth + array('termlist_id' => 1) would filter the terms generated to termlist 1.
   * @param string $sep Separator inserted betweeen each radio item, if required. For example,
@@ -541,14 +635,14 @@ class data_entry_helper extends helper_config {
   * @param string $default Value of the radio button that should be selected when loaded. This can be used to specify a default, or to re-load
   * a value from an existing record.
   */
-  public static function checkbox_group($id, $entity, $nameField, $valueField = null, $extraParams = null, $sep='', $default = '') {
-    return self::check_or_radio_group(true, $id, $entity, $nameField, $valueField, $extraParams, $sep, $default);
+  public static function checkbox_group($id, $entity, $captionField, $valueField = null, $extraParams = null, $sep='', $default = '') {
+    return self::check_or_radio_group(true, $id, $entity, $captionField, $valueField, $extraParams, $sep, $default);
   }
 
-  private static function check_or_radio_group($checkbox, $id, $entity, $nameField, $valueField, $extraParams, $sep, $default) {
+  private static function check_or_radio_group($checkbox, $id, $entity, $captionField, $valueField, $extraParams, $sep, $default) {
     $url = parent::$base_url."/index.php/services/data";
-    // If valueField is null, set it to $nameField
-    if ($valueField == null) $valueField = $nameField;
+    // If valueField is null, set it to $captionField
+    if ($valueField == null) $valueField = $captionField;
     // Execute a request to the service
     $request = "$url/$entity?mode=json";
     $request .= self::array_to_query_string($extraParams);
@@ -564,8 +658,8 @@ class data_entry_helper extends helper_config {
 
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
-        if (array_key_exists($nameField, $item) && array_key_exists($valueField, $item)) {
-          $name = htmlspecialchars($item[$nameField], ENT_QUOTES);
+        if (array_key_exists($captionField, $item) && array_key_exists($valueField, $item)) {
+          $name = htmlspecialchars($item[$captionField], ENT_QUOTES);
           $checked = ($default == $item[$valueField]) ? 'checked="checked" ' : '' ;
           $r .= "<span><input type='$type' id='$id' name='$id' value='$item[$valueField]' $checked/>";
           $r .= "$name</span>$sep";
@@ -817,6 +911,8 @@ class data_entry_helper extends helper_config {
   /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
   * page which uses the data entry helper so output all JavaScript required by previous calls.
+  *
+  * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
     global $javascript;
@@ -846,9 +942,12 @@ class data_entry_helper extends helper_config {
   }
 
   /**
-  * Takes a response, and outputs any errors from it onto the screen.
+  * Takes a response from a call to forward_post_to() and outputs any errors from it onto the screen.
   *
+  * @param string $response Return value from a call to forward_post_to().
   * @todo method of placing the errors alongside the controls.
+  * @see forward_post_to()
+  * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_errors($response)
   {
