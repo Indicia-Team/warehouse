@@ -28,6 +28,9 @@ require_once('lang/default.php');
  * file has been linked to the PHP page which overrides the requested term.
  *
  * @package	Client
+ * @link <?php
+require 'client_helpers\lang\custom.php';
+?>
  */
 class lang {
 
