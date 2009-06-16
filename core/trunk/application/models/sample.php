@@ -38,30 +38,37 @@ class Sample_Model extends ORM
   public function validate(Validation $array, $save = FALSE)
   {
     $orig_values = $array->as_array();
+    kohana::log('info', $array['date_start']);
+    kohana::log('info', 'Array dumped');
 
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('date_type', 'required', 'length[1,2]');
-    $system = $orig_values['entered_sref_system'];
-    $array->add_rules('entered_sref', "sref[$system]");
-    $array->add_rules('entered_sref_system', 'sref_system');
+    if (array_key_exists('entered_sref_system', $orig_values)) {
+      $system = $orig_values['entered_sref_system'];
+      $array->add_rules('entered_sref', "sref[$system]");
+      $array->add_rules('entered_sref_system', 'sref_system');
+    } else {
+      $array->add_rules('entered_sref', "required");
+      $array->add_rules('entered_sref_system', 'required');
+    }
+    $array->add_rules('geom', 'required');
 
     // Any fields that don't have a validation rule need to be copied into the model manually
     $extraFields = array
     (
-    'date_start',
-     'date_end',
-     'geom',
-     'location_name',
-     'survey_id',
-     'deleted',
-     'recorder_names'
+      'date_start',
+      'date_end',
+      'location_name',
+      'survey_id',
+      'deleted',
+      'recorder_names'
      );
      foreach ($extraFields as $a)
      {
        if (array_key_exists($a, $array->as_array()))
        {
-   $this->__set($a, $array[$a]);
+         $this->__set($a, $array[$a]);
        }
      }
 
@@ -73,10 +80,12 @@ class Sample_Model extends ORM
   */
   protected function preSubmit()
   {
-    $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
-    $this->submission['fields']['date_start']['value'] = $vague_date['start'];
-    $this->submission['fields']['date_end']['value'] = $vague_date['end'];
-    $this->submission['fields']['date_type']['value'] = $vague_date['type'];
+
+      $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
+      $this->submission['fields']['date_start']['value'] = $vague_date['start'];
+      $this->submission['fields']['date_end']['value'] = $vague_date['end'];
+      $this->submission['fields']['date_type']['value'] = $vague_date['type'];
+
     return parent::presubmit();
   }
 
