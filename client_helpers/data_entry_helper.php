@@ -520,6 +520,7 @@ class data_entry_helper extends helper_config {
     });\r\n";
     $r = "<input type='hidden' class='hidden' id='$id' name='$id' value='$defaultValue' />".
          "<input id='$inputId' name='$inputId' value='$defaultCaption' />";
+    $r .= self::check_errors($id);
     return $r;
   }
 
@@ -1123,6 +1124,21 @@ class data_entry_helper extends helper_config {
     }
   }
 
+  /**
+   * Returns a span containing any validation errors active on the form for the
+   * control with the supplied ID.
+   *
+   * @param string $id ID of the control to retrieve errors for.
+   */
+  public static function check_errors($id)
+  {
+    global $errors;
+    $r = '';
+    if (isset($errors) && (array_key_exists($id, $errors))) {
+      $r .= '<span class="error">'.$errors[$id].'</span>';
+    }
+    return $r;
+  }
 }
 
 ?>

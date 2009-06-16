@@ -208,17 +208,17 @@ class Data_Controller extends Service_Base_Controller {
 
       if (array_key_exists('submission', $_POST))
       {
-      $this->handle_submit();
+        $this->handle_submit();
       }
       else
       {
-      $this->handle_request();
+        $this->handle_request();
       }
       // last thing we do is set the output
       if ($this->content_type)
       {
-  header($this->content_type);
-  echo $this->response;
+        header($this->content_type);
+        echo $this->response;
       }
     }
     catch (Exception $e)
@@ -708,13 +708,13 @@ class Data_Controller extends Service_Base_Controller {
       $this->authenticate();
       if (array_key_exists('submission', $_POST))
       {
-  $mode = $this->get_input_mode();
-  switch ($mode)
-  {
-    case 'json':
-      $s = json_decode($_POST['submission'], true);
-  }
-  $this->submit($s);
+        $mode = $this->get_input_mode();
+        switch ($mode)
+        {
+          case 'json':
+            $s = json_decode($_POST['submission'], true);
+        }
+        $this->submit($s);
       }
       // return a success message
       echo json_encode(array('success'=>'multiple records'));
@@ -731,6 +731,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   protected function submit($s)
   {
+    kohana::log('info', 'submit');
     foreach ($s['submission']['entries'] as $m)
     {
       $m = $m['model'];
