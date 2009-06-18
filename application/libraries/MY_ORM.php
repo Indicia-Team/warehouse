@@ -3,6 +3,9 @@
 abstract class ORM extends ORM_Core {
   public $submission = array();
   protected $errors = array();
+  protected $linkedModels = array();
+  protected $missingAttrs = array();
+
 
   // The default field that is searchable is called title. Override this when a different field name is used.
   // Used to match against, for example when importing csv values.
@@ -19,9 +22,9 @@ abstract class ORM extends ORM_Core {
     {
       $vd = vague_date::vague_date_to_string(array
       (
-      date_create($this->object['date_start']),
-      date_create($this->object['date_end']),
-      $this->object['date_type']
+        date_create($this->object['date_start']),
+        date_create($this->object['date_end']),
+        $this->object['date_type']
       ));
 
       $this->object['vague_date'] = $vd;
@@ -49,7 +52,7 @@ abstract class ORM extends ORM_Core {
   }
 
   /**
-   * Provide an accessor so that the view helper can retrieve the errors for the model by field name.
+   * Provide an accessor so that the view helper can retrieve the for the model by field name.
    */
   public function getError($fieldname) {
     if (array_key_exists($fieldname, $this->errors)) {
@@ -60,12 +63,31 @@ abstract class ORM extends ORM_Core {
   }
 
   /**
-   * Retrieve an array containing all errors
+   * Retrieve an array containing all errors.
+   * The array entries are of the form 'entity:field => value'.
    */
   public function getAllErrors()
   {
-    return $this->errors;
+    $r = array();
+    // Get this model's errors, ensuring array keys have prefixes identifying the entity
+    foreach ($this->errors as $key => $value) {
+      $r[$this->object_name.':'.$key]=$value;
+    }
+    // Now the custom attribute errors
+    $r = array_merge($r, $this->missingAttrs);
+
+    foreach ($this->linkedModels as $m) {
+      // Get the linked model's errors, ensuring array keys have prefixes identifying the entity
+      foreach($m->errors as $key => $value) {
+        $r[$m->object_name.':'.$key]=$value;
+      }
+      // Now the linked model custom attribute errors
+      $r = array_merge($r, $m->missingAttrs);
+    }
+
+    return $r;
   }
+
 
   /**
    * Override the ORM validate method to store the validation errors in an array, making
@@ -74,11 +96,9 @@ abstract class ORM extends ORM_Core {
   public function validate(Validation $array, $save = FALSE) {
     $this->set_metadata();
     if (parent::validate($array, $save)) {
-      kohana::log('info','validated');
       return TRUE;
     }
     else {
-      kohana::log('info','validat=ion fails'.$this->object_name);
       // put the trimmed and processed data back into the model
       $arr = $array->as_array();
       $arr['created_on'] = $this->created_on;
@@ -192,6 +212,7 @@ abstract class ORM extends ORM_Core {
     }
     return $res;
   }
+
   public function inner_submit(){
     $mn = $this->object_name;
     $return = true;
@@ -203,7 +224,6 @@ abstract class ORM extends ORM_Core {
         $m = ORM::factory($b['fkTable']);
 
         // Check that it has the required search field
-
         if (array_key_exists($b['fkSearchField'], $m->table_columns)) {
           $this->submission['fields'][$b['fkIdField']] =
             $m->where(array(
@@ -234,6 +254,7 @@ abstract class ORM extends ORM_Core {
         }
         // We need to try attaching the model to get details back
         $this->add($m);
+        array_push($this->linkedModels, $m);
       }
     }
 
@@ -285,10 +306,14 @@ abstract class ORM extends ORM_Core {
         // check whether it returns correctly
         $m->submission = $a['model'];
         $result = $m->inner_submit();
+        array_push($this->linkedModels, $m);
         if ($result == null) $return = null;
       }
     }
-
+    $this->check_required_attributes(
+      array_key_exists('website_id', $vArray) ? $vArray['website_id'] : null,
+      array_key_exists('survey_id', $vArray) ? $vArray['survey_id'] : null
+    );
 
     // Call postSubmit
     if ($return != null) {
@@ -301,11 +326,41 @@ abstract class ORM extends ORM_Core {
   }
 
   /**
-   * Function to be overridden by and model doing post-submission processing (for example,
-   * submitting occurrence attributes.)
+   * Function that iterates through the required attributes of the current model, and
+   * ensures that each of them has a submodel in the submission.
    */
-  protected function postSubmit(){
-    return true;
+  private function check_required_attributes($website_id, $survey_id) {
+    $this->missingAttrs = array();
+    // Test if this model has an attributes sub-table.
+    if (isset($this->has_attributes) && $this->has_attributes) {
+      $db = new Database();
+      $attr_entity = $this->object_name.'_attribute';
+      $db->from($attr_entity.'s_websites');
+      $db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
+      $db->select($attr_entity.'s.id', $attr_entity.'s.caption');
+      $db->like('validation_rules','required');
+      $db->where($attr_entity.'s.deleted', 'f');
+      $db->in($attr_entity.'s_websites.website_id', array($website_id, null));
+      $db->in($attr_entity.'s_websites.restrict_to_survey_id', array($survey_id, null));
+      $result=$db->get();
+
+      $got_values=array();
+      // Attributes are stored in a metafield. Find the ones we actually have a value for
+      if (array_key_exists('metaFields', $this->submission) &&
+          array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
+      {
+        foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr) {
+          if ($attr['fields']['value']['value']) {
+            array_push($got_values, $attr['fields'][$this->object_name.'_attribute_id']['value']);
+          }
+        }
+      }
+      foreach($result as $row) {
+        if (!in_array($row->id, $got_values)) {
+          $this->missingAttrs[$this->attrs_field_prefix.':'.$row->id]='Please specify a value for the '.$row->caption;
+        }
+      }
+    }
   }
 
   /**
@@ -330,6 +385,70 @@ abstract class ORM extends ORM_Core {
 
     return $a;
   }
+
+ /**
+  * Overrides the postSubmit() function to provide support for adding attributes
+  * within the transaction for any models which support custom attributes.
+  */
+  protected function postSubmit() {
+    if ($this->has_attributes) {
+      // Attributes are stored in a metafield.
+      if (array_key_exists('metaFields', $this->submission) &&
+          array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
+      {
+        Kohana::log("info", "About to submit ".$this->object_name." attributes.");
+        foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr)
+        {
+          $value = $attr['fields']['value'];
+          if ($value['value'] != '') {
+            $attrId = $attr['fields'][$this->object_name.'_attribute_id']['value'];
+            $oa = ORM::factory($this->object_name.'_attribute', $attrId);
+            $vf = null;
+            switch ($oa->data_type) {
+              case 'T':
+                $vf = 'text_value';
+                break;
+              case 'F':
+                $vf = 'float_value';
+                break;
+              case 'D':
+                // Date
+                $vd=vague_date::string_to_vague_date($value['value']);
+                $attr['fields']['date_start_value']['value'] = $vd['start'];
+                $attr['fields']['date_end_value']['value'] = $vd['end'];
+                $attr['fields']['date_type_value']['value'] = $vd['type'];
+                break;
+              case 'V':
+                // Vague Date
+                $vd=vague_date::string_to_vague_date($value['value']);
+                $attr['fields']['date_start_value']['value'] = $vd['start'];
+                $attr['fields']['date_end_value']['value'] = $vd['end'];
+                $attr['fields']['date_type_value']['value'] = $vd['type'];
+                break;
+              default:
+                // Lookup in list
+                $vf = 'int_value';
+                break;
+            }
+
+            if ($vf != null) $attr['fields'][$vf] = $value;
+            $attr['fields'][$this->object_name.'_attribute_id']['value'] = $this->id;
+
+            $oam = ORM::factory($this->object_name.'_attribute_value');
+            $oam->submission = $attr;
+            if (!$oam->inner_submit()) {
+              $this->db->query('ROLLBACK');
+              return null;
+            }
+          }
+        }
+        return true;
+      } else {
+        return true;
+      }
+    }
+  }
+
 }
 
 ?>

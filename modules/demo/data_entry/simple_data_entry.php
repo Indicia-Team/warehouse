@@ -18,20 +18,18 @@ if ($_POST)
 {
   $sampleMod = data_entry_helper::wrap($_POST, 'sample');
   $occurrenceMod = data_entry_helper::wrap($_POST, 'occurrence');
-  $occurrenceMod['superModels'][] = array
+  $sampleMod['subModels'][] = array
   (
   'fkId' => 'sample_id',
-   'model' => $sampleMod
+   'model' => $occurrenceMod
    );
 
    $submission = array('submission' => array('entries' => array(
-     array ( 'model' => $occurrenceMod )
+     array ( 'model' => $sampleMod )
    )));
    $response = data_entry_helper::forward_post_to(
       'save', $submission
    );
-
-   $errors = $response['errors'];
    data_entry_helper::dump_errors($response);
 }
 
@@ -45,12 +43,12 @@ echo data_entry_helper::get_auth(1,'password');
 $readAuth = data_entry_helper::get_read_auth(1, 'password');
 ?>
 <input type='hidden' id='website_id' name='website_id' value='1' />
-<input type='hidden' id='record_status' name='record_status' value='C' />
-<label for='actaxa_taxon_list_id'>Taxon</label>
-<?php echo data_entry_helper::autocomplete('taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
+<input type='hidden' id='record_status' name='occurrence:record_status' value='C' />
+<label for='occurrence:actaxa_taxon_list_id'>Taxon</label>
+<?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
 <br/>
 <label for="date">Date:</label>
-<?php echo data_entry_helper::date_picker('date'); ?>
+<?php echo data_entry_helper::date_picker('sample:date'); ?>
 <br />
 <?php echo data_entry_helper::map('map', array('virtual_earth'), true, false, null, true); ?>
 <br />

@@ -12,8 +12,8 @@ include '../data_entry_config.php';
 <body>
 <div id="wrap">
 <h1>Indicia Data entry test</h1>
-<p>Note that this page requires the PHP curl extension to send requests to the Indicia server.</p>
 <?php
+
 // PHP to catch and submit the POST data from the form - we need to wrap
 // some things manually in order to get the supermodel in.
 if ($_POST)
@@ -59,9 +59,9 @@ if ($_POST)
    $submission = array('submission' => array('entries' => array(
    array ( 'model' => $occurrenceMod )
    )));
-   $response = data_entry_helper::forward_post_to(
-   'save', $submission);
+   $response = data_entry_helper::forward_post_to('save', $submission);
    data_entry_helper::dump_errors($response);
+
 }
 else if ($_GET)
 {
@@ -72,7 +72,7 @@ else if ($_GET)
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $entity = json_decode(curl_exec($session), true);
-    $entity = $entity[0];
+    $entity_to_load = $entity[0];
   }
   else
   {
@@ -80,18 +80,8 @@ else if ($_GET)
   }
 }
 
-function field($field)
-{
-  global $entity;
-  if ($entity != null && array_key_exists($field, $entity))
-  {
-    return $entity[$field];
-  }
-  else
-  {
-    return '';
-  }
-}
+global $reload_post_data;
+$reload_post_data=true;
 
 ?>
 <form method="post" enctype="multipart/form-data" >
@@ -104,9 +94,9 @@ $readAuth = data_entry_helper::get_read_auth(1, 'password');
 ?>
 <input type='hidden' id='website_id' name='website_id' value='1' />
 <input type='hidden' id='record_status' name='record_status' value='C' />
-<input type='hidden' id='id' name='id' value='<?php echo field('id'); ?>' />
+<input type='hidden' id='id' name='id' value='<?php echo data_entry_helper::check_default_value('id'); ?>' />
 <label for='actaxa_taxon_list_id'>Taxon</label>
-<?php echo data_entry_helper::autocomplete('taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth, field('taxon'), field('taxa_taxon_list_id')); ?>
+<?php echo data_entry_helper::autocomplete('taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
 <br/>
 <label for="date">Date:</label>
 <?php echo data_entry_helper::date_picker('date'); ?>
@@ -114,15 +104,15 @@ $readAuth = data_entry_helper::get_read_auth(1, 'password');
 <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
 <br />
 <label for="location_name">Locality Description:</label>
-<input name="location_name" class="wide" value='<?php echo field('location_name'); ?>'/><br />
+<input name="location_name" class="wide" value='<?php echo data_entry_helper::check_default_value('location_name'); ?>'/><br />
 <label for="survey_id">Survey</label>
-<?php echo data_entry_helper::select('survey_id', 'survey', 'title', 'id', $readAuth, field('survey_id')); ?>
+<?php echo data_entry_helper::select('survey_id', 'survey', 'title', 'id', $readAuth); ?>
 <br />
 <label for='acdeterminer_id'>Determiner</label>
-<?php echo data_entry_helper::autocomplete('determiner_id', 'person', 'caption', 'id', $readAuth, field('determiner'), field('determiner_id')); ?>
+<?php echo data_entry_helper::autocomplete('determiner_id', 'person', 'caption', 'id', $readAuth); ?>
 <br />
 <label for='comment'>Comment</label>
-<textarea id='comment' name='comment' class="wide"><?php echo field('comment'); ?></textarea>
+<textarea id='comment' name='comment' class="wide"><?php echo data_entry_helper::check_default_value('comment'); ?></textarea>
 <br />
 <label for='occurrence_image'>Image Upload</label>
 <?php echo data_entry_helper::image_upload('occurrence_image'); ?>
