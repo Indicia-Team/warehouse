@@ -10,6 +10,9 @@
 <div id="wrap"">
 <h1>Indicia demonstrations</h1>
 <?php
+  require '../../client_helpers/data_entry_helper.php';
+  echo data_entry_helper::system_check(true);
+
   // for first time usage, check that the data entry config file exists.
   if (!file_exists('data_entry_config.php')) {
     rename('data_entry_config.php.example', 'data_entry_config.php');

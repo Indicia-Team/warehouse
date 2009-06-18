@@ -75,10 +75,11 @@ $lang = array (
     'sref_system' => 'The spatial reference system is not a valid EPSG or notation code.',
   ),
   'entered_sref' => Array (
+    'required' => 'The spatial reference must be supplied.',
     'sref' => 'The spatial reference is not recognised.',
   ),
   'date_type' => Array (
-    'required' => 'The data type must be provided.',
+    'required' => 'Please supply a date for your observation.',
     'default' => 'Unrecognised vague date type',
   ),
   'first_name' => Array (

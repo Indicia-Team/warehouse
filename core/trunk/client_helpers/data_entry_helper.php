@@ -97,7 +97,7 @@ class data_entry_helper extends helper_config {
   */
   public static function image_upload($id){
     $r = "<input type='file' id='$id' name='$id' accept='png|jpg|gif'/>";
-
+    $r .= self::check_errors($id);
     return $r;
   }
 
@@ -174,7 +174,7 @@ class data_entry_helper extends helper_config {
           case 'D' || 'V':
             // Date-picker control
             $occAttrControls[$occAttr] =
-            "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' value='click here'/>";
+            "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' value='".lang::get('click here')."'/>";
             break;
 
           default:
@@ -248,8 +248,8 @@ class data_entry_helper extends helper_config {
   /**
   * Helper function to generate a treeview from a given list
   *
-  * @param string $control_id id attribute for the returned hidden input control.
-  * NB the tree itself will have an id of "tr$control_id"
+  * @param string $id id attribute for the returned hidden input control.
+  * NB the tree itself will have an id of "tr$id"
   * @param string $entity Name (Kohana-style) of the database entity to be queried.
   * @param string $captionField Field to draw values to show in the control from.
   * @param string $valueField Field to draw values to return from the control from. Defaults
@@ -269,7 +269,7 @@ class data_entry_helper extends helper_config {
   * Need to do initial value.
   * Need to look at how the filetree can be implemented.
   */
-  public static function treeview($control_id, $entity,
+  public static function treeview($id, $entity,
     $captionField, $valueField, $topField, $topValue, $parentField,
     $defaultValue, $extraParams,
     $extraClass = 'treeview')
@@ -281,6 +281,7 @@ class data_entry_helper extends helper_config {
       $url = parent::$base_url."/index.php/services/data";
       // If valueField is null, set it to $captionField
       if ($valueField == null) $valueField = $captionField;
+      $defaultValue = $default = self::check_default_value($id, $defaultValue);
       // Do stuff with extraParams
       $sParams = '';
       foreach ($extraParams as $a => $b){
@@ -289,7 +290,7 @@ class data_entry_helper extends helper_config {
       // lop the comma off the end
       $sParams = substr($sParams, 0, -1);
 
-      $javascript .= "jQuery('#tr$control_id').treeview(
+      $javascript .= "jQuery('#tr$id').treeview(
       {
         url: '$url/$entity',
         extraParams : {
@@ -297,7 +298,7 @@ class data_entry_helper extends helper_config {
           mode : 'json',
           $sParams
         },
-        valueControl: '$control_id',
+        valueControl: '$id',
         nameField: '$captionField',
         valueField: '$valueField',
         topField: '$topField',
@@ -315,7 +316,8 @@ class data_entry_helper extends helper_config {
       }
     });";
 
-    $tree = '<input type="hidden" class="hidden" id="'.$control_id.'" name="'.$control_id.'" /><ul id="tr'.$control_id.'" class="'.$extraClass.'"></ul>';
+    $tree = '<input type="hidden" class="hidden" id="'.$id.'" name="'.$id.'" /><ul id="tr'.$id.'" class="'.$extraClass.'"></ul>';
+    $r .= self::check_errors($id);
     return $tree;
   }
 
@@ -332,11 +334,13 @@ class data_entry_helper extends helper_config {
   public static function date_picker($id, $default = '') {
     self::add_resource('datepicker');
     global $javascript;
-    $javascript .=
-    "jQuery('.$id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\r\n ";
+    $default = self::check_default_value($id, $default, lang::get('click here'));
+    $escaped_id=str_replace(':','\\\\:',$id);
+    $javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\r\n ";
     $r =
-    "<input type='text' size='30' value='click here' class='date' id='$id' name='$id' value='$default'/>" .
-    '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ';
+      "<input type='text' size='30' class='date' id='$id' name='$id' value='$default'/>" .
+      '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ';
+    $r .= self::check_errors($id);
     return $r;
   }
 
@@ -384,7 +388,7 @@ class data_entry_helper extends helper_config {
     }
     else
       echo "Error loading control";
-
+  $r .= self::check_errors($id);
     return $r;
   }
 
@@ -423,6 +427,7 @@ class data_entry_helper extends helper_config {
     }
     else
       echo "Error loading control";
+  $r .= self::check_errors($id);
     return $r;
   }
 
@@ -450,7 +455,8 @@ class data_entry_helper extends helper_config {
   * <li>user</li>
   * <li>website</li>
   * </ul>
-  * @param $captionField string Name of the database field used to generate the display caption for each data item.
+  * @param $captionField string Name of the database field used to generate the display caption for each data item. This does
+  * not need to be prefixed with a table name and colon.
   * @param $valueField string Name of the database field used to obtain the value which is stored into the database
   * when this control is saved. Typically, $captionField is used to identify a caption, and $valueField is used to identify
   * the ID stored in the database referring to that caption.
@@ -460,7 +466,7 @@ class data_entry_helper extends helper_config {
   * the control's content to be filtered to a specific termlist.<br/>
   * <CODE>$readAuth + array('termlist_id' => $config['surroundings_termlist'])</CODE>
   * @param string $defaultCaption Default caption to display in the control on startup.
-  * @param strnig $defaultValue Default hidden value for the control on startup.
+  * @param string $defaultValue Default hidden value for the control on startup.
   * @see get_read_auth()
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
@@ -470,6 +476,8 @@ class data_entry_helper extends helper_config {
     $url = parent::$base_url."/index.php/services/data";
     // If valueField is null, set it to $captionField
     if ($valueField == null) $valueField = $captionField;
+    // Escape the id for jQuery selectors
+    $escaped_id=str_replace(':','\\\\:',$id);
     // Do stuff with extraParams
     $sParams = '';
     foreach ($extraParams as $a => $b){
@@ -477,10 +485,11 @@ class data_entry_helper extends helper_config {
     }
     // lop the comma off the end
     $sParams = substr($sParams, 0, -1);
-
-    // First create an id for our visible input control, then make it autocomplete. Strip colons
-    // as they mess up the jQuery selectors
-    $inputId = 'ac'.str_replace(':', '', $id);
+    $defaultValue = self::check_default_value($id, $defaultValue);
+    $defaultCaption = self::check_default_value($captionField, $defaultCaption);
+    $inputId = $captionField;
+    // Escape the ids for jQuery selectors
+    $escaped_id=str_replace(':','\\\\:',$id);
     $javascript .= "jQuery('input#$inputId').autocomplete('$url/$entity',
       {
         minChars : 1,
@@ -516,7 +525,7 @@ class data_entry_helper extends helper_config {
       }
     });
     jQuery('input#$inputId').result(function(event, data) {
-      jQuery('input#$id').attr('value', data.id);
+      jQuery('input#$escaped_id').attr('value', data.id);
     });\r\n";
     $r = "<input type='hidden' class='hidden' id='$id' name='$id' value='$defaultValue' />".
          "<input id='$inputId' name='$inputId' value='$defaultCaption' />";
@@ -556,13 +565,18 @@ class data_entry_helper extends helper_config {
   public static function postcode_textbox($id="postcode", $sref_field="entered_sref", $system_field="entered_sref_system",
       $geom_field="geom", $linkedAddressBoxId=null, $hiddenFields=true) {
     self::add_resource('google_search');
+    $defaultValue=self::check_default_value($id);
     $r = "<input type='text' name='$id' id='$id' " .
         "onblur='javascript:decodePostcode(\"$id\", \"$sref_field\", \"$system_field\", \"$geom_field\", \"$linkedAddressBoxId\")' />";
     if ($hiddenFields) {
-      $r .= "<input type='hidden' name='$sref_field' id='$sref_field' />";
-      $r .= "<input type='hidden' name='$system_field' id='$system_field' />";
-      $r .= "<input type='hidden' name='$geom_field' id='$geom_field' />";
+      $defaultSref=self::check_default_value($sref_field);
+      $defaultSystem=self::check_default_value($system_field);
+      $defaultGeom=self::check_default_value($geom_field);
+      $r .= "<input type='hidden' name='$sref_field' id='$sref_field' value='$defaultSref' />";
+      $r .= "<input type='hidden' name='$system_field' id='$system_field' value='$defaultSystem' />";
+      $r .= "<input type='hidden' name='$geom_field' id='$geom_field' value='$defaultGeom' />";
     }
+    $r .= self::check_errors($id);
     return $r;
   }
 
@@ -660,7 +674,7 @@ class data_entry_helper extends helper_config {
       $type="checkbox";
     else
       $type="radio";
-
+  $defaultValue=self::check_default_value($id, $default);
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
         if (array_key_exists($captionField, $item) && array_key_exists($valueField, $item)) {
@@ -671,8 +685,69 @@ class data_entry_helper extends helper_config {
         }
       }
     }
+    $r .= self::check_errors($id);
     return $r;
   }
+
+  /**
+  * Generates a map control, with optional data entry fields and location finder powered by the
+  * Yahoo! geoservices API.
+  *
+  * @param string $div Id of a div to add the map into
+  * @param array $layers Array of preset layers to include
+  * @param bool $edit Include editable controls
+  * @param bool $locate Include location finder
+  * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
+  */
+  public static function map($div, $layers = array(
+      'google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'openlayers_wms', 'virtual_earth'
+    ), $edit = false, $locate = false, $wkt = null, $defaultJs = true)
+  {
+    global $javascript;
+    self::add_resource('indiciaMap');
+    if ($edit) self::add_resource('indiciaMapEdit');
+    if ($locate) self::add_resource('locationFinder');
+
+    foreach ($layers as $layer)
+    {
+      $a = explode('_', $layer);
+      $a = strtolower($a[0]);
+      switch($a)
+      {
+        case 'google':
+          self::add_resource('googlemaps');
+          break;
+        case 'multimap':
+          self::add_resource('multimap');
+          break;
+        case 'virtual':
+          self::add_resource('virtualearth');
+          break;
+      }
+    }
+
+    if ($defaultJs)
+    {
+      $jsLayers = "[ '".implode('\', \'', $layers)."' ]";
+      $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
+      if ($edit)
+      {
+        $foo = ($wkt != null) ? "{ wkt : $wkt }" : '';
+        $javascript .= ".indiciaMapEdit($foo)";
+        if ($locate)
+        {
+          $api = parent::$geoplanet_api_key;
+          $indicia = parent::$base_url;
+          $javascript .= ".locationFinder( { indiciaSvc: '$indicia', apiKey : '$api' } )";
+        }
+      }
+      $javascript .= ";";
+    }
+    $r = "<div id='$div'></div>";
+    $r .= self::check_errors('sample:entered_sref');
+    echo $r;
+  }
+
 
   /**
    * Either takes the passed in array, or the post data if this is null, and forwards it to the data services
@@ -816,13 +891,12 @@ class data_entry_helper extends helper_config {
         // Attribute in the form occAttr:36 for attribute with attribute id
         // of 36.
         $oap[] = array(
-        $entity."_attribute_id" => $a[1],
-            'value' => $value
+          $entity."_attribute_id" => $a[1], 'value' => $value
         );
       }
     }
     foreach ($oap as $oa) {
-      $occAttrs[] = data_entry_helper::wrap($oa, "$entity"."_attribute");
+      $occAttrs[] = data_entry_helper::wrap($oa, $entity."_attribute");
     }
     return $occAttrs;
   }
@@ -830,6 +904,12 @@ class data_entry_helper extends helper_config {
   /**
    * Wraps an array (e.g. Post or Session data generated by a form) into a structure
    * suitable for submission.
+   * <p>The attributes in the array are all included, unless they
+   * named using the form entity:attribute (e.g. sample:date) in which case they are
+   * only included if wrapping the matching entity. This allows the content of the wrap
+   * to be limited to only the appropriate information.</p>
+   * <p>Do not prefix the survey_id or website_id attributes being posted with an entity
+   * name as these IDs are used by Indicia for all entities.</p>
    *
    * @param array $array Array of data generated from data entry controls.
    * @param string $entity Name of the entity to wrap data for.
@@ -845,72 +925,17 @@ class data_entry_helper extends helper_config {
     // Iterate through the array
     foreach ($array as $a => $b)
     {
-      // Don't wrap the authentication tokens
-      if ($a!='auth_token' && $a!='nonce')
+      // Don't wrap the authentication tokens, or any attributes tagged as belonging to another entity
+      if ($a!='auth_token' && $a!='nonce' && (!strpos($a, ':') || strpos($a, "$entity:")!==false))
       {
+        // strip the entity name tag if present, as should not be in the submission attribute names
+        $a = str_replace("$entity:", '', $a);
         // This should be a field in the model.
         // Add a new field to the save array
         $sa['fields'][$a] = array('value' => $b);
       }
     }
     return $sa;
-  }
-
-
-  /**
-  * Generates a map control, with optional data entry fields and location finder powered by the
-  * Yahoo! geoservices API.
-  *
-  * @param string $div Id of a div to add the map into
-  * @param array $layers Array of preset layers to include
-  * @param bool $edit Include editable controls
-  * @param bool $locate Include location finder
-  * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
-  */
-  public static function map($div, $layers = array('google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'openlayers_wms', 'virtual_earth'), $edit = false, $locate = false, $wkt = null, $defaultJs = true)
-  {
-    global $javascript;
-    self::add_resource('indiciaMap');
-    if ($edit) self::add_resource('indiciaMapEdit');
-    if ($locate) self::add_resource('locationFinder');
-
-    foreach ($layers as $layer)
-    {
-      $a = explode('_', $layer);
-      $a = strtolower($a[0]);
-      switch($a)
-      {
-        case 'google':
-          self::add_resource('googlemaps');
-          break;
-        case 'multimap':
-          self::add_resource('multimap');
-          break;
-        case 'virtual':
-          self::add_resource('virtualearth');
-          break;
-      }
-    }
-
-    if ($defaultJs)
-    {
-      $jsLayers = "[ '".implode('\', \'', $layers)."' ]";
-      $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
-      if ($edit)
-      {
-        $foo = ($wkt != null) ? "{ wkt : $wkt }" : '';
-        $javascript .= ".indiciaMapEdit($foo)";
-        if ($locate)
-        {
-          $api = parent::$geoplanet_api_key;
-          $indicia = parent::$base_url;
-          $javascript .= ".locationFinder( { indiciaSvc: '$indicia', apiKey : '$api' } )";
-        }
-      }
-      $javascript .= ";";
-    }
-    $r = "<div id='$div'></div>";
-    echo $r;
   }
 
   /**
@@ -950,34 +975,44 @@ class data_entry_helper extends helper_config {
   * Takes a response from a call to forward_post_to() and outputs any errors from it onto the screen.
   *
   * @param string $response Return value from a call to forward_post_to().
-  * @todo method of placing the errors alongside the controls.
+  * @param boolean $inline Set to true if the errors are to be placed alongside the controls rather than at the top of the page.
+  * Default is true.
   * @see forward_post_to()
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
-  public static function dump_errors($response)
+  public static function dump_errors($response, $inline=true)
   {
+    global $entity_to_load;
+    global $errors;
     if (is_array($response)) {
       if (array_key_exists('error',$response)) {
-        echo '<div class="error">';
-        echo '<p>An error occurred when the data was submitted.</p>';
-        if (is_array($response['error'])) {
-          echo '<ul>';
-          foreach ($response['error'] as $field=>$message)
-            echo "<li>$field: $message</li>";
-          echo '</ul>';
+        if ($inline) {
+          // Setup an errors array that the data_entry_helper can output alongside the controls
+          $errors = $response['errors'];
+          // And tell the helper to reload the existing data.
+          $entity_to_load = $_POST;
         } else {
-          echo '<p class="error_message">'.$response['error'].'</p>';
+          echo '<div class="error">';
+          echo '<p>An error occurred when the data was submitted.</p>';
+          if (is_array($response['error'])) {
+            echo '<ul>';
+            foreach ($response['error'] as $field=>$message)
+              echo "<li>$field: $message</li>";
+            echo '</ul>';
+          } else {
+            echo '<p class="error_message">'.$response['error'].'</p>';
+          }
+          if (array_key_exists('file', $response) && array_key_exists('line', $response)) {
+            echo '<p>Error occurred in '.$response['file'].' at line '.$response['line'].'</p>';
+          }
+          if (array_key_exists('errors', $response)) {
+            echo '<pre>'.print_r($response['errors'], true).'</pre>';
+          }
+          if (array_key_exists('trace', $response)) {
+            echo '<pre>'.print_r($response['trace'], true).'</pre>';
+          }
+          echo '</div>';
         }
-        if (array_key_exists('file', $response) && array_key_exists('line', $response)) {
-          echo '<p>Error occurred in '.$response['file'].' at line '.$response['line'].'</p>';
-        }
-        if (array_key_exists('errors', $response)) {
-          echo '<pre>'.print_r($response['errors'], true).'</pre>';
-        }
-        if (array_key_exists('trace', $response)) {
-          echo '<pre>'.print_r($response['trace'], true).'</pre>';
-        }
-        echo '</div>';
       }
       elseif (array_key_exists('warning',$response)) {
         echo 'A warning occurred when the data was submitted.';
@@ -1134,11 +1169,81 @@ class data_entry_helper extends helper_config {
   {
     global $errors;
     $r = '';
-    if (isset($errors) && (array_key_exists($id, $errors))) {
-      $r .= '<span class="error">'.$errors[$id].'</span>';
+    if (isset($errors)) {
+       if (array_key_exists($id, $errors)) {
+         $r .= '<span class="error">'.$errors[$id].'</span>';
+       } elseif (substr($id, -4)=='date') {
+          // For date fields, we also include the type, start and end validation problems
+          if (array_key_exists($id.'_start', $errors)) {
+            $r .= '<span class="error">'.$errors[$id.'_start'].'</span>';
+          }
+          if (array_key_exists($id.'_end', $errors)) {
+            $r .= '<span class="error">'.$errors[$id.'_end'].'</span>';
+          }
+          if (array_key_exists($id.'_type', $errors)) {
+            $r .= '<span class="error">'.$errors[$id.'_type'].'</span>';
+          }
+       }
     }
     return $r;
   }
+
+  /**
+   * Returns the default value for the control with the supplied Id. The default value is
+   * taken as either the $_POST value for this control, or the first of the remaining
+   * arguments which contains a non-empty value.
+   *
+   * @param string $id Id of the control to select the default for.
+   * $param [string, [string ...]] Variable list of possible default values. The first that is
+   * not empty is used.
+   */
+  public static function check_default_value($id) {
+    global $entity_to_load;
+    if ($entity_to_load && array_key_exists($id, $entity_to_load)) {
+      $return = $entity_to_load[$id];
+    }
+    if (!$return) {
+      // iterate the variable arguments and use the first one with a real value
+      for ($i=1; $i<func_num_args(); $i++) {
+        if (func_get_arg($i)) {
+          $return = func_get_arg($i);
+        }
+      }
+    }
+    return $return;
+  }
+
+  /**
+   * Output a DIV which lists configuration problems and is useful for diagnostics.
+   * Currently, tests the PHP version and that the cUrl library is installed.
+   *
+   * @param boolean $fullInfo If true, then successful checks are also output.
+   */
+  public static function system_check($fullInfo) {
+    // PHP_VERSION_ID is available as of PHP 5.2.7, if our
+  // version is lower than that, then emulate it
+  if(!defined('PHP_VERSION_ID'))
+  {
+      $version = PHP_VERSION;
+      define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
+  }
+    $r = '<div class="info"><ul>';
+    // Test PHP version.
+    if (PHP_VERSION_ID<50200) {
+      $r .= '<li class="warning">Warning: PHP version is '.phpversion().' which does not support JSON communication with the Indicia Warehouse.</li>';
+    } elseif ($fullInfo) {
+      $r .= '<li>Success: PHP version is '.phpversion().'.</li>';
+    }
+    // Test cUrl library installed
+    if (!function_exists(curl_exec)) {
+      $r .= '<li class="warning">Warning: The cUrl PHP library is not installed on the server and is required for communication with the Indicia Warehouse.</li>';
+    } elseif ($fullInfo) {
+      $r .= '<li>Success: The cUrl PHP library is installed.</li>';
+    }
+    $r .= '</ul></div>';
+    return $r;
+  }
+
 }
 
 ?>

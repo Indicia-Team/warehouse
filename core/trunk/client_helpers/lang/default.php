@@ -25,6 +25,7 @@
  * @package	Client
  */
 $default_terms = array(
+  'click here'=>'Click here',
   'species_checklist.species'=>'Species',
   'species_checklist.present'=>'Present (Y/N)'
 );
