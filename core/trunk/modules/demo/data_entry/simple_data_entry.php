@@ -45,7 +45,7 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 <input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
 <input type='hidden' id='survey_id' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
 <input type='hidden' id='record_status' name='occurrence:record_status' value='C' />
-<label for='taxon'>Taxon:</label>
+<label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
 <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
 <br/>
 <label for="date">Date:</label>
