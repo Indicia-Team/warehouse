@@ -37,31 +37,30 @@ if ($_POST)
   $occurrenceMod = data_entry_helper::wrap($_POST, 'occurrence');
   $occurrenceMod['superModels'][] = array
   (
-  'fkId' => 'sample_id',
-   'model' => $sampleMod
-   );
-   $occurrenceMod['metaFields']['occAttributes']['value'] = $occAttrs;
+    'fkId' => 'sample_id',
+    'model' => $sampleMod
+  );
+  $occurrenceMod['metaFields']['occAttributes']['value'] = $occAttrs;
 
-   // Send the image
-   if ($name = data_entry_helper::handle_media('occurrence_image'))
-   {
-     // Add occurrence image model
-     // TODO Get a caption for the image
-     $oiFields = array(
-     'path' => $name,
-           'caption' => 'An image in need of a caption');
-           $oiMod = data_entry_helper::wrap($oiFields, 'occurrence_image');
-           $occurrenceMod['subModels'][] = array(
-           'fkId' => 'occurrence_id',
+  // Send the image
+  if ($name = data_entry_helper::handle_media('occurrence_image'))
+  {
+    // Add occurrence image model
+    // TODO Get a caption for the image
+    $oiFields = array(
+    'path' => $name,
+          'caption' => 'An image in need of a caption');
+          $oiMod = data_entry_helper::wrap($oiFields, 'occurrence_image');
+          $occurrenceMod['subModels'][] = array(
+          'fkId' => 'occurrence_id',
                    'model' => $oiMod);
-   }
+  }
 
-   $submission = array('submission' => array('entries' => array(
-   array ( 'model' => $occurrenceMod )
-   )));
-   $response = data_entry_helper::forward_post_to('save', $submission);
-   data_entry_helper::dump_errors($response);
-
+  $submission = array('submission' => array('entries' => array(
+    array ( 'model' => $occurrenceMod )
+  )));
+  $response = data_entry_helper::forward_post_to('save', $submission);
+  data_entry_helper::dump_errors($response);
 }
 else if ($_GET)
 {
@@ -87,32 +86,31 @@ $reload_post_data=true;
 <form method="post" enctype="multipart/form-data" >
 
 <?php
-// This PHP call demonstrates inserting authorisation into the form, for website ID
-// 1 and password 'password'
-echo data_entry_helper::get_auth(1,'password');
-$readAuth = data_entry_helper::get_read_auth(1, 'password');
+// Get authentication information
+echo data_entry_helper::get_auth($config['website_id'], $config['password']);
+$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
 ?>
 <input type='hidden' id='website_id' name='website_id' value='1' />
 <input type='hidden' id='record_status' name='record_status' value='C' />
 <input type='hidden' id='id' name='id' value='<?php echo data_entry_helper::check_default_value('id'); ?>' />
-<label for='actaxa_taxon_list_id'>Taxon</label>
-<?php echo data_entry_helper::autocomplete('taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
+<label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
+<?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
 <br/>
-<label for="date">Date:</label>
-<?php echo data_entry_helper::date_picker('date'); ?>
+<label for="sample:date">Date:</label>
+<?php echo data_entry_helper::date_picker('sample:date'); ?>
 <br />
 <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
 <br />
-<label for="location_name">Locality Description:</label>
-<input name="location_name" class="wide" value='<?php echo data_entry_helper::check_default_value('location_name'); ?>'/><br />
-<label for="survey_id">Survey</label>
-<?php echo data_entry_helper::select('survey_id', 'survey', 'title', 'id', $readAuth); ?>
+<label for="sample:location_name">Locality Description:</label>
+<input name="sample:location_name" class="wide" value='<?php echo data_entry_helper::check_default_value('location_name'); ?>'/><br />
+<label for="sample:survey_id">Survey</label>
+<?php echo data_entry_helper::select('sample:survey_id', 'survey', 'title', 'id', $readAuth); ?>
 <br />
-<label for='acdeterminer_id'>Determiner</label>
-<?php echo data_entry_helper::autocomplete('determiner_id', 'person', 'caption', 'id', $readAuth); ?>
+<label for='occurrence:determiner_id:caption'>Determiner</label>
+<?php echo data_entry_helper::autocomplete('occurrence:determiner_id', 'person', 'caption', 'id', $readAuth); ?>
 <br />
-<label for='comment'>Comment</label>
-<textarea id='comment' name='comment' class="wide"><?php echo data_entry_helper::check_default_value('comment'); ?></textarea>
+<label for='sample:comment'>Comment</label>
+<textarea name='sample:comment' class="wide"><?php echo data_entry_helper::check_default_value('comment'); ?></textarea>
 <br />
 <label for='occurrence_image'>Image Upload</label>
 <?php echo data_entry_helper::image_upload('occurrence_image'); ?>

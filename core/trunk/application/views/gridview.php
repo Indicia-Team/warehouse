@@ -10,8 +10,8 @@ Filter for
 <input type='text' name='filters'/>
 in <select name='columns'>
 <?php foreach ($columns as $name => $newname) {
-	if (!$newname) $newname = $name;
-	echo "<option value='".$name."'>".$newname."</option>";
+  if (!$newname) $newname = $name;
+  echo "<option value='".$name."'>".$newname."</option>";
 }
 ?>
 </select>
@@ -23,11 +23,11 @@ in <select name='columns'>
 <tr class='headingRow'>
 <?php
 foreach ($columns as $name => $newname) {
-	if (!$newname) $newname = $name;
-	echo "<th class='gvSortable gvCol' id='$name'>".ucwords($newname)."</th>";
+  if (!$newname) $newname = $name;
+  echo "<th class='gvSortable gvCol' id='$name'>".ucwords($newname)."</th>";
 }
 foreach ($actionColumns as $name => $action) {
-	echo "<th class='gvAction'>".ucwords($name)."</th>";
+  echo "<th class='gvAction'>".ucwords($name)."</th>";
 }
 ?>
 </tr>

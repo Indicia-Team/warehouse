@@ -742,10 +742,7 @@ class Data_Controller extends Service_Base_Controller {
       $id = $model->id;
       if (!$result)
       {
-        if (isset($model))
-          Throw new ArrayException('Validation error', $model->getAllErrors());
-        else
-          Throw new Exception('Unknown error on submission (to do - get correct error info)');
+        Throw new ArrayException('Validation error', $model->getAllErrors());
       }
       // return the first model
       if (!isset($this->model))
