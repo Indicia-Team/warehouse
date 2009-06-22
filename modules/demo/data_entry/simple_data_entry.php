@@ -30,6 +30,7 @@ if ($_POST)
    $response = data_entry_helper::forward_post_to(
       'save', $submission
    );
+   print_r($submission);
    data_entry_helper::dump_errors($response);
 }
 
@@ -37,14 +38,14 @@ if ($_POST)
 <form method="post" >
 <fieldset>
 <?php
-// This PHP call demonstrates inserting authorisation into the form, for website ID
-// 1 and password 'password'
-echo data_entry_helper::get_auth(1,'password');
-$readAuth = data_entry_helper::get_read_auth(1, 'password');
+// Get authentication information
+echo data_entry_helper::get_auth($config['website_id'], $config['password']);
+$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
 ?>
-<input type='hidden' id='website_id' name='website_id' value='1' />
+<input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
+<input type='hidden' id='survey_id' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
 <input type='hidden' id='record_status' name='occurrence:record_status' value='C' />
-<label for='occurrence:actaxa_taxon_list_id'>Taxon</label>
+<label for='taxon'>Taxon:</label>
 <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
 <br/>
 <label for="date">Date:</label>

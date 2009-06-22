@@ -14,43 +14,42 @@ include '../data_entry_config.php';
 $javascript = '';
 // Catch and submit POST data.
 if ($_POST){
- // We're mainly submitting to the sample model
- $sampleMod = data_entry_helper::wrap($_POST, 'sample');
- $occurrences = data_entry_helper::wrap_species_checklist($_POST);
+  // We're mainly submitting to the sample model
+  $sampleMod = data_entry_helper::wrap($_POST, 'sample');
+  $occurrences = data_entry_helper::wrap_species_checklist($_POST);
 
- // Add the occurrences in as submodels
- $sampleMod['subModels'] = $occurrences;
+  // Add the occurrences in as submodels
+  $sampleMod['subModels'] = $occurrences;
 
- // Wrap submission and submit
- $submission = array('submission' => array('entries' => array(
- array ( 'model' => $sampleMod ))));
- $response = data_entry_helper::forward_post_to(
- 'save', $submission);
- data_entry_helper::dump_errors($response);
- }
+  // Wrap submission and submit
+  $submission = array('submission' => array('entries' => array(
+  array ( 'model' => $sampleMod ))));
+  $response = data_entry_helper::forward_post_to('save', $submission);
+  data_entry_helper::dump_errors($response);
+}
 
- ?>
- <form method='post'>
- <?php
- // This PHP call demonstrates inserting authorisation into the form, for website ID
- // 1 and password 'password'
- echo data_entry_helper::get_auth(1,'password');
- $readAuth = data_entry_helper::get_read_auth(1, 'password');
- ?>
- <input type='hidden' id='website_id' name='website_id' value='1' />
- <input type='hidden' id='record_status' name='record_status' value='C' />
- <input type='hidden' id='determiner_id' name='determiner_id' value='1' />
- <label for="date">Date:</label>
- <?php echo data_entry_helper::date_picker('date'); ?>
- <br />
- <?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
- <br />
- <?php echo data_entry_helper::species_checklist($config['species_checklist_taxon_list'], $config['species_checklist_occ_attributes'], $readAuth); ?>
+?>
 
- <br />
- <input type='submit' value='submit' />
- </form>
- </div>
- </body>
- <?php echo data_entry_helper::dump_javascript(); ?>
- </html>
+<form method='post'>
+<?php
+// Get authentication information
+echo data_entry_helper::get_auth($config['website_id'], $config['password']);
+$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
+?>
+<input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
+<input type='hidden' id='survey_id' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
+<input type='hidden' id='record_status' name='occurrence:record_status' value='C' />
+<label for="sample:date">Date:</label>
+<?php echo data_entry_helper::date_picker('sample:date'); ?>
+<br />
+<?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
+<br />
+<?php echo data_entry_helper::species_checklist($config['species_checklist_taxon_list'], $config['species_checklist_occ_attributes'], $readAuth); ?>
+
+<br />
+<input type='submit' value='Save' />
+</form>
+</div>
+</body>
+<?php echo data_entry_helper::dump_javascript(); ?>
+</html>

@@ -10,7 +10,7 @@ data_entry_helper::add_post_to_session();
 $data = data_entry_helper::extract_session_array();
 // Collect up the sample, sample attributes and grid data
 $sampleMod = data_entry_helper::wrap($data, 'sample');
-$smpAttrs = data_entry_helper::wrap_attributes($_POST, 'sample');
+$smpAttrs = data_entry_helper::wrap_attributes($data, 'sample');
 $occurrences = data_entry_helper::wrap_species_checklist($data);
 
 // Add the occurrences in as submodels
@@ -22,6 +22,7 @@ $sampleMod['metaFields']['smpAttributes']['value'] = $smpAttrs;
 $submission = array('submission' => array(
     'entries' => array(array ( 'model' => $sampleMod ))
 ));
+
 $response = data_entry_helper::forward_post_to('save', $submission);
 if (array_key_exists('success', $response)) {
   // on success, redirect to the thank you page
@@ -41,7 +42,7 @@ if (array_key_exists('success', $response)) {
 <!-- We shouldn't get this far as a success causes redirection -->
 <h1>An error occurred</h1>
 <?php
-  echo data_entry_helper::dump_errors($response);
+  echo data_entry_helper::dump_errors($response, false);
 ?>
 </div>
 </body>

@@ -434,6 +434,12 @@ class data_entry_helper extends helper_config {
 
   /**
   * Helper function to generate an autocomplete box from an Indicia core service query.
+  * Because this generates a hidden ID control as well as a text input control, the HTML label you
+  * associate with this control should be of the form "$id:$caption" rather than just the $id which
+  * is normal for other controls. For example:
+  * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
+  * <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
+  * <br/>
   *
   * @param string $id Id and name of the HTML input generated, corresponding to the database field this posts the valueField into.
   * @param string $entity Name of the Indicia entity being posted into. Possibilities are:
@@ -487,10 +493,11 @@ class data_entry_helper extends helper_config {
     $sParams = substr($sParams, 0, -1);
     $defaultValue = self::check_default_value($id, $defaultValue);
     $defaultCaption = self::check_default_value($captionField, $defaultCaption);
-    $inputId = $captionField;
+    $inputId = "$id:$captionField";
     // Escape the ids for jQuery selectors
     $escaped_id=str_replace(':','\\\\:',$id);
-    $javascript .= "jQuery('input#$inputId').autocomplete('$url/$entity',
+    $escaped_input_id=str_replace(':','\\\\:',$inputId);
+    $javascript .= "jQuery('input#$escaped_input_id').autocomplete('$url/$entity',
       {
         minChars : 1,
         mustMatch : true,
@@ -524,7 +531,7 @@ class data_entry_helper extends helper_config {
         return item.$valueField;
       }
     });
-    jQuery('input#$inputId').result(function(event, data) {
+    jQuery('input#$escaped_input_id').result(function(event, data) {
       jQuery('input#$escaped_id').attr('value', data.id);
     });\r\n";
     $r = "<input type='hidden' class='hidden' id='$id' name='$id' value='$defaultValue' />".
@@ -763,21 +770,12 @@ class data_entry_helper extends helper_config {
       $postargs .= '&auth_token='.$_POST['auth_token'];
     if (array_key_exists('nonce', $_POST))
       $postargs .= '&nonce='.$_POST['nonce'];
-    // Get the curl session object
-    $session = curl_init($request);
-    // Set the POST options.
-    curl_setopt ($session, CURLOPT_POST, true);
-    curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
-    curl_setopt($session, CURLOPT_HEADER, true);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // Do the POST and then close the session
-    $response = curl_exec($session);
-    curl_close($session);
-    // The last block of text in the response is the body
-    $output = json_decode(array_pop(explode("\r\n",$response)), true);
+    $response = self::http_post($request, $postargs);
+    // The response should be in JSON if it worked
+    $output = json_decode($response['output'], true);
     // If this is not JSON, it is an error, so just return it as is.
     if (!$output)
-      $output = array_pop(explode("\r\n",$response));
+      $output = $response['output'];
     return $output;
   }
 
@@ -804,12 +802,7 @@ class data_entry_helper extends helper_config {
           $postargs['nonce'] = $_POST['nonce'];
         }
         $file_to_upload = array('media_upload'=>'@'.$uploadpath.$destination);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL,$target_url);
-        curl_setopt($ch, CURLOPT_POST,1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $file_to_upload + $postargs);
-        $result=curl_exec ($ch);
-        curl_close ($ch);
+        self::http_post($target_url, $file_to_upload + $postargs);
         return $destination;
       } else {
         //TODO error messaging
@@ -1036,21 +1029,12 @@ class data_entry_helper extends helper_config {
   */
   public static function get_auth($website_id, $password) {
     $postargs = "website_id=$website_id";
-    // Get the curl session object
-    $session = curl_init(parent::$base_url.'/index.php/services/security/get_nonce');
-    // Set the POST options.
-    curl_setopt ($session, CURLOPT_POST, true);
-    curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
-    curl_setopt($session, CURLOPT_HEADER, true);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // Do the POST and then close the session
-    $response = curl_exec($session);
-    list($response_headers,$nonce) = explode("\r\n\r\n",$response,2);
-    curl_close($session);
+    $response = self::http_post(parent::$base_url.'/index.php/services/security/get_nonce', $postargs);
+    $nonce = $response['output'];
     $result = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
-    'value="'.sha1("$nonce:$password").'" />'."\r\n";
+        'value="'.sha1("$nonce:$password").'" />'."\r\n";
     $result .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
-    'value="'.$nonce.'" />'."\r\n";
+        'value="'.$nonce.'" />'."\r\n";
     return $result;
   }
 
@@ -1063,16 +1047,8 @@ class data_entry_helper extends helper_config {
   */
   public static function get_read_auth($website_id, $password) {
     $postargs = "website_id=$website_id";
-    // Get the curl session object
-    $session = curl_init(parent::$base_url.'/index.php/services/security/get_read_nonce');
-    // Set the POST options.
-    curl_setopt ($session, CURLOPT_POST, true);
-    curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
-    curl_setopt($session, CURLOPT_HEADER, true);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // Do the POST and then close the session
-    $response = curl_exec($session);
-    list($response_headers,$nonce) = explode("\r\n\r\n",$response,2);
+    $response = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs);
+    $nonce = $response['output'];
     return array(
         'auth_token' => sha1("$nonce:$password"),
         'nonce' => $nonce
@@ -1227,7 +1203,7 @@ class data_entry_helper extends helper_config {
       $version = PHP_VERSION;
       define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
   }
-    $r = '<div class="info"><ul>';
+    $r = '<div class="info"><strong>System check</strong><ul>';
     // Test PHP version.
     if (PHP_VERSION_ID<50200) {
       $r .= '<li class="warning">Warning: PHP version is '.phpversion().' which does not support JSON communication with the Indicia Warehouse.</li>';
@@ -1237,11 +1213,64 @@ class data_entry_helper extends helper_config {
     // Test cUrl library installed
     if (!function_exists(curl_exec)) {
       $r .= '<li class="warning">Warning: The cUrl PHP library is not installed on the server and is required for communication with the Indicia Warehouse.</li>';
-    } elseif ($fullInfo) {
-      $r .= '<li>Success: The cUrl PHP library is installed.</li>';
+    } else {
+      if ($fullInfo) {
+        $r .= '<li>Success: The cUrl PHP library is installed.</li>';
+      }
+      // Test we have full access to the server
+      $postargs = "website_id=$website_id";
+      $curl_check = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs, false);
+      if ($curl_check['result']) {
+        if ($fullInfo) {
+          $r .= '<li>Success: Indicia Warehouse URL responded to a POST request.</li>';
+        }
+      } else {
+        // Some sort of cUrl problem occurred
+        if ($curl_check['errno']) {
+          $r .= '<li class="warning">Warning: The cUrl PHP library could not access the Indicia Warehouse. The error was reported as:';
+          $r .= $curl_check['output'].'</br>';
+          $r .= 'Please ensure that this web server is not prevented from accessing the server identified by the ' .
+              'helper_config.php $base_url setting by a firewall. The current setting is '.parent::$base_url.'</li>';
+        } else {
+          $r .= '<li class="warning">Warning: A request sent to the Indicia Warehouse URL did not respond as expected. ' .
+                'Please ensure that the helper_config.php $base_url setting is correct. ' .
+                'The current setting is '.parent::$base_url.'<br></li>';
+        }
+      }
     }
     $r .= '</ul></div>';
     return $r;
+  }
+
+  /**
+   * Sends a POST using the cUrl library
+   */
+  private function http_post($url, $postargs, $output_errors=true) {
+    $session = curl_init($url);
+    // Set the POST options.
+    curl_setopt ($session, CURLOPT_POST, true);
+    curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+    curl_setopt($session, CURLOPT_HEADER, true);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    // Do the POST and then close the session
+    $response = curl_exec($session);
+    if (curl_errno($session) || strpos($response, 'HTTP/1.1 200 OK')===false) {
+      if ($output_errors) {
+        echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>';
+        echo 'Error number: '.curl_errno($session).'<br/>';
+        echo $response.'</div>';
+      }
+      $return = array(
+          'result'=>false,
+          'output'=> curl_errno($session) ? curl_error($session) : $response,
+          'errno'=>curl_errno($session));
+    } else {
+      $arr_response = explode("\r\n\r\n",$response);
+      // last part of response is the actual data
+      $return = array('result'=>true,'output'=>array_pop($arr_response));
+    }
+    curl_close($session);
+    return $return;
   }
 
 }

@@ -107,7 +107,7 @@ function FeatureAdded(control) {
 <fieldset>
 <legend>Card Header</legend>
 <label for="date">Date:</label>
-<?php echo data_entry_helper::date_picker('date'); ?>
+<?php echo data_entry_helper::date_picker('sample:date'); ?>
 <br/>
 <div id="map"></div>
 <div id="panel" class="olControlPanel"></div><span id="mousePos"></span>

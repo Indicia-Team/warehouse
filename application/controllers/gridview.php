@@ -110,7 +110,6 @@ class Gridview_Controller extends Controller {
         $this->auto_render=false;
         $gridview_body->render(true);
       }
-
     } else {
       return $gridview->render();
     }

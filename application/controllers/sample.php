@@ -25,11 +25,11 @@ class Sample_Controller extends Gridview_Base_Controller
     $this->model = ORM::factory('sample');
     $this->columns = array
     (
-    'entered_sref' => 'Spatial Ref.',
-    'location' => 'Location',
-    'location_name' => 'Location Name',
-    'vague_date' => 'Date',
-    'recorder_names' => 'Recorder Names',
+      'entered_sref' => 'Spatial Ref.',
+      'location' => 'Location',
+      'location_name' => 'Location Name',
+      'vague_date' => 'Date',
+      'recorder_names' => 'Recorder Names',
     );
   }
   /**

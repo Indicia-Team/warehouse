@@ -391,7 +391,7 @@ abstract class ORM extends ORM_Core {
   * within the transaction for any models which support custom attributes.
   */
   protected function postSubmit() {
-    if ($this->has_attributes) {
+    if (isset($this->has_attributes) && $this->has_attributes) {
       // Attributes are stored in a metafield.
       if (array_key_exists('metaFields', $this->submission) &&
           array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
@@ -432,7 +432,8 @@ abstract class ORM extends ORM_Core {
             }
 
             if ($vf != null) $attr['fields'][$vf] = $value;
-            $attr['fields'][$this->object_name.'_attribute_id']['value'] = $this->id;
+            // Hook to the owning entity (the sample, location or occurrence)
+            $attr['fields'][$this->object_name.'_id']['value'] = $this->id;
 
             $oam = ORM::factory($this->object_name.'_attribute_value');
             $oam->submission = $attr;
@@ -442,11 +443,9 @@ abstract class ORM extends ORM_Core {
             }
           }
         }
-        return true;
-      } else {
-        return true;
       }
     }
+    return true;
   }
 
 }

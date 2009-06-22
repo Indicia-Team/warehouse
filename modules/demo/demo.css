@@ -49,3 +49,19 @@ ol.demolist li ol li p {
 h2 {
   font-size: 100%;
 }
+
+.info {
+  border: solid silver 1px;
+  margin: 8px;
+  padding: 8px;
+}
+
+.info ul {
+  list-style-type: none;
+}
+
+.info .warning {
+  color: red;
+  font-weight: bold;
+  margin: 8px 0 8px 0;
+}
