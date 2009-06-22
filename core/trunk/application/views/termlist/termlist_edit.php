@@ -28,18 +28,18 @@
 <input type="hidden" id="website_id" name="website_id" value="<?php echo $model->parent->website_id; ?>" />
 <?php } ?>
 <select id="website_id" name="website_id" <?php if ($model->parent_id != null && $model->parent->website_id != null) echo "disabled='disabled'"; ?>>
-	<option value=''>&lt;Core Module&gt;</option>
+  <option value=''>&lt;Warehouse&gt;</option>
 <?php
-	if (!is_null($this->auth_filter))
-		$websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
-	else
-		$websites = ORM::factory('website')->orderby('title','asc')->find_all();
-	foreach ($websites as $website) {
-		echo '	<option value="'.$website->id.'" ';
-		if ($website->id==$model->website_id)
-			echo 'selected="selected" ';
-		echo '>'.$website->title.'</option>';
-	}
+  if (!is_null($this->auth_filter))
+    $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
+  else
+    $websites = ORM::factory('website')->orderby('title','asc')->find_all();
+  foreach ($websites as $website) {
+    echo '	<option value="'.$website->id.'" ';
+    if ($website->id==$model->website_id)
+      echo 'selected="selected" ';
+    echo '>'.$website->title.'</option>';
+  }
 ?>
 </select>
 <?php echo html::error_message($model->getError('website_id')); ?>
@@ -56,13 +56,13 @@
 <input type="submit" value="View Terms" />
 </form>
 <?php if ( $table != null) { ?>
-	<br />
-	<div id="sublists">
-	<h2> Sublists </h2>
-	<?php echo $table; ?>
+  <br />
+  <div id="sublists">
+  <h2> Sublists </h2>
+  <?php echo $table; ?>
 <form class="cmxform" action="<?php echo url::site(); ?>/termlist/create" method="post">
-	<input type="hidden" name="parent_id" value=<?php echo $model->id ?> />
-	<input type="submit" value="New Sublist" />
-	</form>
-	</div>
+  <input type="hidden" name="parent_id" value=<?php echo $model->id ?> />
+  <input type="submit" value="New Sublist" />
+  </form>
+  </div>
 <?php }} ?>

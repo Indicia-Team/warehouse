@@ -29,17 +29,17 @@
 <?php echo form::checkbox('view_common_names', TRUE, isset($model->view_common_names) AND ($model->view_common_names == 't') ) ?>
 </li>
 <li>
-<label class="wide" for="core_role_id">Role within CORE Module</label>
+<label class="wide" for="core_role_id">Role within Warehouse</label>
 <select class="narrow" id="core_role_id" name="core_role_id" >
-	<option>None</option>
+  <option>None</option>
 <?php
-	$core_roles = ORM::factory('core_role')->orderby('title','asc')->find_all();
-	foreach ($core_roles as $core_role) {
-		echo '	<option value="'.$core_role->id.'" ';
-		if ($core_role->id==$model->core_role_id)
-			echo 'selected="selected" ';
-		echo '>'.$core_role->title.'</option>';
-	}
+  $core_roles = ORM::factory('core_role')->orderby('title','asc')->find_all();
+  foreach ($core_roles as $core_role) {
+    echo '	<option value="'.$core_role->id.'" ';
+    if ($core_role->id==$model->core_role_id)
+      echo 'selected="selected" ';
+    echo '>'.$core_role->title.'</option>';
+  }
 ?>
 </select>
 <?php echo html::error_message($model->getError('core_role_id')); ?>
@@ -51,19 +51,19 @@
 <legend>Website Roles</legend>
 <ol>
 <?php
-	foreach ($model->users_websites as $website) {
-		echo '<li><label class="wide" for="'.$website['name'].'">'.$website['title'].'</label>';
-		echo '  <select class="narrow" id="'.$website['name'].'" name="'.$website['name'].'">';
-		echo '	<option>None</option>';
-		$site_roles = ORM::factory('site_role')->orderby('title','asc')->find_all();
-		foreach ($site_roles as $site_role) {
-			echo '	<option value="'.$site_role->id.'" ';
-			if ($site_role->id==$website['value'])
-				echo 'selected="selected" ';
-			echo '>'.$site_role->title.'</option>';
-		}
-		echo '</select></li>';
-	}
+  foreach ($model->users_websites as $website) {
+    echo '<li><label class="wide" for="'.$website['name'].'">'.$website['title'].'</label>';
+    echo '  <select class="narrow" id="'.$website['name'].'" name="'.$website['name'].'">';
+    echo '	<option>None</option>';
+    $site_roles = ORM::factory('site_role')->orderby('title','asc')->find_all();
+    foreach ($site_roles as $site_role) {
+      echo '	<option value="'.$site_role->id.'" ';
+      if ($site_role->id==$website['value'])
+        echo 'selected="selected" ';
+      echo '>'.$site_role->title.'</option>';
+    }
+    echo '</select></li>';
+  }
 ?>
 </ol>
 </fieldset>
