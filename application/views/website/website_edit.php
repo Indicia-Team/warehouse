@@ -1,4 +1,4 @@
-<p>This page allows you to specify the details of a website that will use the services provided by this Indicia Core Module instance.</p>
+<p>This page allows you to specify the details of a website that will use the services provided by this Indicia Warehouse instance.</p>
 <form class="cmxform" action="<?php echo url::site().'website/save'; ?>" method="post">
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
 <fieldset>
