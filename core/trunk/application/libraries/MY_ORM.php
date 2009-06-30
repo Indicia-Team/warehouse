@@ -353,7 +353,7 @@ abstract class ORM extends ORM_Core {
       $db->select($attr_entity.'s.id', $attr_entity.'s.caption');
       $db->like('validation_rules','required');
       $db->where($attr_entity.'s.deleted', 'f');
-      $db->in($attr_entity.'s_websites.website_id', array($website_id, null));
+      $db->where($attr_entity.'s_websites.website_id', $website_id);
       $db->in($attr_entity.'s_websites.restrict_to_survey_id', array($survey_id, null));
       $result=$db->get();
 
