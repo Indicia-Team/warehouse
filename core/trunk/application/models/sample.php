@@ -96,7 +96,9 @@ class Sample_Model extends ORM
     // can work out the Geom
     if (array_key_exists('entered_sref', $this->submission['fields']) &&
         array_key_exists('entered_sref_system', $this->submission['fields']) &&
-        !array_key_exists('geom', $this->submission['fields'])) {
+        !array_key_exists('geom', $this->submission['fields']) &&
+        $this->submission['fields']['entered_sref']['value'] &&
+        $this->submission['fields']['entered_sref_system']['value']) {
       $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
           $this->submission['fields']['entered_sref']['value'],
           $this->submission['fields']['entered_sref_system']['value']
