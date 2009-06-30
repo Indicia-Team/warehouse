@@ -1,3 +1,27 @@
+<?php
+
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Core
+ * @subpackage Views
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+?>
 <p>This page allows you to specify a persons details.</p>
 <form class="cmxform" action="<?php echo url::site().'person/save'; ?>" method="post">
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
@@ -9,15 +33,15 @@
 <li>
 <label for="title_id">Title</label>
 <select id="title_id" name="title_id">
-	<option>&lt;Please select&gt;</option>
+  <option>&lt;Please select&gt;</option>
 <?php
-	$titles = ORM::factory('title')->orderby('id','asc')->find_all();
-	foreach ($titles as $title) {
-		echo '	<option value="'.$title->id.'" ';
-		if ($title->id==$model->title_id)
-			echo 'selected="selected" ';
-		echo '>'.$title->title.'</option>';
-	}
+  $titles = ORM::factory('title')->orderby('id','asc')->find_all();
+  foreach ($titles as $title) {
+    echo '	<option value="'.$title->id.'" ';
+    if ($title->id==$model->title_id)
+      echo 'selected="selected" ';
+    echo '>'.$title->title.'</option>';
+  }
 ?>
 </select>
 <?php echo html::error_message($model->getError('title_id')); ?>

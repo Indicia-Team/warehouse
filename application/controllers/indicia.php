@@ -15,6 +15,7 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
+ * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
@@ -28,6 +29,7 @@
  * home page, or checking if a system upgrade is available and required.
  *
  * @package Core
+ * @subpackage Controllers
  */
 class Indicia_Controller extends Template_Controller {
   // Template view name

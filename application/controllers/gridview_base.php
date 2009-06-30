@@ -15,6 +15,7 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
+ * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
@@ -26,7 +27,8 @@
  * Base class for controllers which support paginated grids of any datatype. Also
  * supports basic CSV data upload into the grid's underlying model.
  *
- *@package	Core
+ * @package	Core
+ * @subpackage Controllers
  */
 abstract class Gridview_Base_Controller extends Indicia_Controller {
 

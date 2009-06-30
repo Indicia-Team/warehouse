@@ -15,6 +15,7 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
+ * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
@@ -25,6 +26,7 @@
  * the containing page.
  *
  * @package	Core
+ * @subpackage Controllers
  */
 class Attr_Gridview_Controller extends Controller {
 
