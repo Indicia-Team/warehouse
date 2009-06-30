@@ -570,18 +570,16 @@ class data_entry_helper extends helper_config {
    * should be inputs with id set to $sref_field, $system_field and $geom_field already in existance. Defaults to true.
    */
   public static function postcode_textbox($id, $sref_field="entered_sref", $system_field="entered_sref_system",
-      $geom_field="geom", $linkedAddressBoxId=null, $hiddenFields=true) {
+      $linkedAddressBoxId=null, $hiddenFields=true) {
     self::add_resource('google_search');
     $defaultValue=self::check_default_value($id);
     $r = "<input type='text' name='$id' id='$id' value='$defaultValue' " .
-        "onblur='javascript:decodePostcode(\"$id\", \"$sref_field\", \"$system_field\", \"$geom_field\", \"$linkedAddressBoxId\")' />";
+        "onblur='javascript:decodePostcode(\"$id\", \"$sref_field\", \"$system_field\", \"$linkedAddressBoxId\")' />";
     if ($hiddenFields) {
       $defaultSref=self::check_default_value($sref_field);
-      $defaultSystem=self::check_default_value($system_field);
-      $defaultGeom=self::check_default_value($geom_field);
+      $defaultSystem=self::check_default_value($system_field, '4326');
       $r .= "<input type='hidden' name='$sref_field' id='$sref_field' value='$defaultSref' />";
       $r .= "<input type='hidden' name='$system_field' id='$system_field' value='$defaultSystem' />";
-      $r .= "<input type='hidden' name='$geom_field' id='$geom_field' value='$defaultGeom' />";
     }
     $r .= self::check_errors($id);
     return $r;
