@@ -1,20 +1,31 @@
 <?php
+
 /**
- * INDICIA
- * @link http://code.google.com/p/indicia/
- * @package Indicia
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Core
+ * @subpackage Controllers
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
  */
 
 /**
- * Website page controller
+ * Controller providing CRUD access to the list of websites registered on this Warehouse instance.
  *
- *
- * @package Indicia
- * @subpackage Controller
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @author xxxxxxx <xxx@xxx.net> / $Author$
- * @copyright xxxx
- * @version $Rev$ / $LastChangedDate$
+ * @package	Core
+ * @subpackage Controllers
  */
 class Website_Controller extends Gridview_Base_Controller
 {
@@ -30,7 +41,7 @@ class Website_Controller extends Gridview_Base_Controller
                                'url' =>'' );
 
         $this->pagetitle = "Websites";
-		$this->model = ORM::factory('website');
+    $this->model = ORM::factory('website');
     }
 
     /**
@@ -43,14 +54,14 @@ class Website_Controller extends Gridview_Base_Controller
      */
     public function create()
     {
-		if (!$this->page_authorised())
-		{
-			$this->access_denied();
-		}
-		else
-		{
-    		$this->setView('website/website_edit', 'Website');
-		}
+    if (!$this->page_authorised())
+    {
+      $this->access_denied();
+    }
+    else
+    {
+        $this->setView('website/website_edit', 'Website');
+    }
     }
 
     /**
@@ -60,13 +71,13 @@ class Website_Controller extends Gridview_Base_Controller
      */
     public function edit($id = null)
     {
-		if (!$this->page_authorised())
-		{
-			$this->access_denied();
-		}
-		else if ($id == null)
+    if (!$this->page_authorised())
+    {
+      $this->access_denied();
+    }
+    else if ($id == null)
         {
-	   		$this->setError('Invocation error: missing argument', 'You cannot call edit website without an ID');
+         $this->setError('Invocation error: missing argument', 'You cannot call edit website without an ID');
         }
         else
         {
@@ -78,14 +89,14 @@ class Website_Controller extends Gridview_Base_Controller
 
     protected function submit_fail() {
         $this->model->password2 = $_POST['password2'];
-    	$mn = $this->model->object_name;
+      $mn = $this->model->object_name;
         $this->setView($mn."/".$mn."_edit", ucfirst($mn));
     }
-	
-	public function page_authorised ()
-	{
-		return $this->auth->logged_in('CoreAdmin');
-	}
+
+  public function page_authorised ()
+  {
+    return $this->auth->logged_in('CoreAdmin');
+  }
 }
 
 ?>

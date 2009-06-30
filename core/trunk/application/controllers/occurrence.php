@@ -15,6 +15,7 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
+ * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
@@ -26,6 +27,7 @@
  * Controller providing CRUD access to the occurrence data.
  *
  * @package	Core
+ * @subpackage Controllers
  */
 class Occurrence_controller extends Gridview_Base_Controller {
 

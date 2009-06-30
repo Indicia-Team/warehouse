@@ -1,42 +1,65 @@
-<?php echo html::script(array(
-	'media/js/jquery.ajaxQueue.js',
-	'media/js/jquery.bgiframe.min.js',
-	'media/js/thickbox-compressd.js',
-	'media/js/jquery.autocomplete.js'
+<?php
+
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Core
+ * @subpackage Views
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+echo html::script(array(
+  'media/js/jquery.ajaxQueue.js',
+  'media/js/jquery.bgiframe.min.js',
+  'media/js/thickbox-compressd.js',
+  'media/js/jquery.autocomplete.js'
 ), FALSE); ?>
 <script type="text/javascript" >
 $(document).ready(function() {
-	$("input#parent").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
-		minChars : 1,
-		mustMatch : true,
-		extraParams : {
-			taxon_list_id : "<?php echo $taxon_list_id; ?>",
-			orderby : "taxon",
-			mode : "json",
-			qfield : "taxon",
-			preferred : 'true'
-		},
-		parse: function(data) {
-			var results = [];
-			var obj = JSON.parse(data);
-			$.each(obj, function(i, item) {
-				results[results.length] = {
-					'data' : item,
-					'value' : item.id,
-					'result' : item.taxon };
-			});
-			return results;
-		},
-		formatItem: function(item) {
-			return item.taxon;
-		},
-		formatResult: function(item) {
-			return item.id;
-		}
-	});
-	$("input#parent").result(function(event, data){
-		$("input#parent_id").attr('value', data.id);
-	});
+  $("input#parent").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
+    minChars : 1,
+    mustMatch : true,
+    extraParams : {
+      taxon_list_id : "<?php echo $taxon_list_id; ?>",
+      orderby : "taxon",
+      mode : "json",
+      qfield : "taxon",
+      preferred : 'true'
+    },
+    parse: function(data) {
+      var results = [];
+      var obj = JSON.parse(data);
+      $.each(obj, function(i, item) {
+        results[results.length] = {
+          'data' : item,
+          'value' : item.id,
+          'result' : item.taxon };
+      });
+      return results;
+    },
+    formatItem: function(item) {
+      return item.taxon;
+    },
+    formatResult: function(item) {
+      return item.id;
+    }
+  });
+  $("input#parent").result(function(event, data){
+    $("input#parent_id").attr('value', data.id);
+  });
 });
 </script>
 <?php
@@ -62,16 +85,16 @@ echo html::error_message($model->getError('image_path'));
 <li>
 <label for="language_id">Language</label>
 <select id="language_id" name="language_id">
-	<option value=''>&lt;Please select&gt;</option>
+  <option value=''>&lt;Please select&gt;</option>
 <?php
-	$languages = ORM::factory('language')->orderby('language','asc')->find_all();
-	foreach ($languages as $lang) {
-		echo '	<option value="'.$lang->id.'" ';
-		if ($model->taxon_id != null && $lang->id==$model->taxon->language_id) {
-			echo 'selected="selected" ';
-		}
-		echo '>'.$lang->language.'</option>';
-	}
+  $languages = ORM::factory('language')->orderby('language','asc')->find_all();
+  foreach ($languages as $lang) {
+    echo '	<option value="'.$lang->id.'" ';
+    if ($model->taxon_id != null && $lang->id==$model->taxon->language_id) {
+      echo 'selected="selected" ';
+    }
+    echo '>'.$lang->language.'</option>';
+  }
 ?>
 </select>
 <?php echo html::error_message($model->getError('language_id')); ?>
@@ -103,16 +126,16 @@ echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
 <li>
 <label for="taxon_group_id">Taxon Group</label>
 <select id="taxon_group_id" name="taxon_group_id">
-	<option value=''>&lt;Please select&gt;</option>
+  <option value=''>&lt;Please select&gt;</option>
 <?php
-	$taxon_groups = ORM::factory('taxon_group')->orderby('title','asc')->where('deleted', 'f')->find_all();
-	foreach ($taxon_groups as $lang) {
-		echo '	<option value="'.$lang->id.'" ';
-		if ($model->taxon_id != null && $lang->id==$model->taxon->taxon_group_id) {
-			echo 'selected="selected" ';
-		}
-		echo '>'.$lang->title.'</option>';
-	}
+  $taxon_groups = ORM::factory('taxon_group')->orderby('title','asc')->where('deleted', 'f')->find_all();
+  foreach ($taxon_groups as $lang) {
+    echo '	<option value="'.$lang->id.'" ';
+    if ($model->taxon_id != null && $lang->id==$model->taxon->taxon_group_id) {
+      echo 'selected="selected" ';
+    }
+    echo '>'.$lang->title.'</option>';
+  }
 ?>
 </select>
 </li>
@@ -151,11 +174,11 @@ echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
 </form>
 
 <?php if ($model->id != '' && $table != null) { ?>
-	<br />
-	<h2> Child Taxa </h2>
-	<?php echo $table; ?>
+  <br />
+  <h2> Child Taxa </h2>
+  <?php echo $table; ?>
 <form class="cmxform" action="<?php echo url::site(); ?>taxa_taxon_list/create/<?php echo $model->taxon_list_id; ?>" method="post">
-	<input type="hidden" name="parent_id" value=<?php echo $model->id ?> />
-	<input type="submit" value="New Child Taxon" />
-	</form>
+  <input type="hidden" name="parent_id" value=<?php echo $model->id ?> />
+  <input type="submit" value="New Child Taxon" />
+  </form>
 <?php } ?>

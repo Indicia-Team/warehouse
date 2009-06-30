@@ -1,69 +1,93 @@
+<?php
+
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Core
+ * @subpackage Views
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+?>
 <?php echo html::script(array(
-	'media/js/jquery.ajaxQueue.js',
-	'media/js/jquery.bgiframe.min.js',
-	'media/js/thickbox-compressd.js',
-	'media/js/jquery.autocomplete.js'
+  'media/js/jquery.ajaxQueue.js',
+  'media/js/jquery.bgiframe.min.js',
+  'media/js/thickbox-compressd.js',
+  'media/js/jquery.autocomplete.js'
 ), FALSE); ?>
 <script type="text/javascript" >
 $(document).ready(function() {
-	$("input#determiner").autocomplete("<?php echo url::site() ?>services/data/person", {
-		minChars : 1,
-		mustMatch : true,
-		extraParams : {
-			orderby : "caption",
-			mode : "json",
-			deleted : 'false'
-		},
-		parse: function(data) {
-			var results = [];
-			var obj = JSON.parse(data);
-			$.each(obj, function(i, item) {
-				results[results.length] = {
-					'data' : item,
-					'value' : item.id,
-					'result' : item.caption };
-			});
-			return results;
-		},
-		formatItem: function(item) {
-			return item.caption;
-		},
-		formatResult: function(item) {
-			return item.id;
-		}
-	});
-	$("input#determiner").result(function(event, data){
-		$("input#determiner_id").attr('value', data.id);
-	});
-	$("input#taxon").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
-		minChars : 1,
-		mustMatch : true,
-		extraParams : {
-			orderby : "taxon",
-			mode : "json",
-			deleted : 'false'
-		},
-		parse: function(data) {
-			var results = [];
-			var obj = JSON.parse(data);
-			$.each(obj, function(i, item) {
-				results[results.length] = {
-					'data' : item,
-					'value' : item.id,
-					'result' : item.taxon };
-			});
-			return results;
-		},
-		formatItem: function(item) {
-			return item.taxon;
-		},
-		formatResult: function(item) {
-			return item.id;
-		}
-	});
-	$("input#taxon").result(function(event, data){
-		$("input#taxa_taxon_list_id").attr('value', data.id);
-	});
+  $("input#determiner").autocomplete("<?php echo url::site() ?>services/data/person", {
+    minChars : 1,
+    mustMatch : true,
+    extraParams : {
+      orderby : "caption",
+      mode : "json",
+      deleted : 'false'
+    },
+    parse: function(data) {
+      var results = [];
+      var obj = JSON.parse(data);
+      $.each(obj, function(i, item) {
+        results[results.length] = {
+          'data' : item,
+          'value' : item.id,
+          'result' : item.caption };
+      });
+      return results;
+    },
+    formatItem: function(item) {
+      return item.caption;
+    },
+    formatResult: function(item) {
+      return item.id;
+    }
+  });
+  $("input#determiner").result(function(event, data){
+    $("input#determiner_id").attr('value', data.id);
+  });
+  $("input#taxon").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
+    minChars : 1,
+    mustMatch : true,
+    extraParams : {
+      orderby : "taxon",
+      mode : "json",
+      deleted : 'false'
+    },
+    parse: function(data) {
+      var results = [];
+      var obj = JSON.parse(data);
+      $.each(obj, function(i, item) {
+        results[results.length] = {
+          'data' : item,
+          'value' : item.id,
+          'result' : item.taxon };
+      });
+      return results;
+    },
+    formatItem: function(item) {
+      return item.taxon;
+    },
+    formatResult: function(item) {
+      return item.id;
+    }
+  });
+  $("input#taxon").result(function(event, data){
+    $("input#taxa_taxon_list_id").attr('value', data.id);
+  });
 });
 </script>
 <form class="cmxform"  name='editList' action="<?php echo url::site().'occurrence/save' ?>" method="POST">
@@ -75,8 +99,8 @@ $(document).ready(function() {
 <ol>
 <li>
 <label for='taxon'>Taxon:</label>
-<?php print form::input('taxon', $model->taxa_taxon_list->taxon->taxon); 
-print form::hidden('taxa_taxon_list_id', $model->taxa_taxon_list_id); 
+<?php print form::input('taxon', $model->taxa_taxon_list->taxon->taxon);
+print form::hidden('taxa_taxon_list_id', $model->taxa_taxon_list_id);
 echo html::error_message($model->getError('taxa_taxon_list_id')); ?>
 </li>
 <li>
@@ -86,7 +110,7 @@ echo html::error_message($model->taxa_taxon_list->taxon->getError('date_start'))
 </li>
 <li>
 <label for='determiner'>Determiner:</label>
-<?php 
+<?php
 $fname = $model->determiner_id ? $model->determiner->first_name : '';
 $sname = $model->determiner_id ? $model->determiner->surname : '';
 print form::input('determiner', $fname.' '.$sname);
@@ -95,7 +119,7 @@ echo html::error_message($model->getError('determiner_id')); ?>
 </li>
 <li>
 <label for='confidential'>Confidential?:</label>
-<?php 
+<?php
 print form::checkbox('confidential', 'true', $model->confidential=='t' ? 1 : 0);
 echo html::error_message($model->getError('confidential'));
 ?>

@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package	Core.Controllers
+ * @subpackage Controllers
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
@@ -26,6 +27,7 @@
  * Controller class for the home page.
  *
  * @package Core
+ * @subpackage Controllers
  */
 class Home_Controller extends Indicia_Controller {
   public function index()
