@@ -211,7 +211,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   public function save()
   {
     $_POST['preferred'] = 't';
-    if (!is_numeric($_POST['language_id']))
+    if (!array_key_exists('language_id', $_POST) || !is_numeric($_POST['language_id']))
       $_POST['language_id']=2; // latin
     // If we have an image, upload it and set the image path as required.
     $ups = Kohana::config('indicia.maxUploadSize');

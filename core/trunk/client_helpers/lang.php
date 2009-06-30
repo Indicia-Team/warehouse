@@ -28,9 +28,6 @@ require_once('lang/default.php');
  * file has been linked to the PHP page which overrides the requested term.
  *
  * @package	Client
- * @link <?php
-require 'client_helpers\lang\custom.php';
-?>
  */
 class lang {
 
@@ -48,9 +45,12 @@ class lang {
         $output=$custom_terms[$key];
       }
     }
-    // use default term if no custom terms, or absent from custom term list
-    if ($output=='') {
+    if ($output=='' && array_key_exists($key, $default_terms)) {
+      // use default term if no custom terms, or absent from custom term list
       $output=$default_terms[$key];
+    } elseif ($output=='') {
+      // no translation, so use original requested key
+      $output=$key;
     }
     return $output;
   }

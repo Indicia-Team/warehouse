@@ -583,7 +583,7 @@ class data_entry_helper extends helper_config {
       $r .= "<input type='hidden' name='$system_field' id='$system_field' value='$defaultSystem' />";
       $r .= "<input type='hidden' name='$geom_field' id='$geom_field' value='$defaultGeom' />";
     }
-    $r .= self::check_errors($id);
+    $r .= self::check_errors($sref_field);
     return $r;
   }
 
@@ -1144,24 +1144,28 @@ class data_entry_helper extends helper_config {
   public static function check_errors($id)
   {
     global $errors;
-    $r = '';
+    $error='';
     if (isset($errors)) {
        if (array_key_exists($id, $errors)) {
-         $r .= '<span class="error">'.$errors[$id].'</span>';
+         $error = $errors[$id];
        } elseif (substr($id, -4)=='date') {
           // For date fields, we also include the type, start and end validation problems
           if (array_key_exists($id.'_start', $errors)) {
-            $r .= '<span class="error">'.$errors[$id.'_start'].'</span>';
+            $error = $errors[$id.'_start'];
           }
           if (array_key_exists($id.'_end', $errors)) {
-            $r .= '<span class="error">'.$errors[$id.'_end'].'</span>';
+            $error = $errors[$id.'_end'];
           }
           if (array_key_exists($id.'_type', $errors)) {
-            $r .= '<span class="error">'.$errors[$id.'_type'].'</span>';
+            $error = $errors[$id.'_type'];
           }
        }
     }
-    return $r;
+    if ($error!='') {
+       return '<span class="error">'.lang::get($error).'</span>';
+    } else {
+      return '';
+    }
   }
 
   /**

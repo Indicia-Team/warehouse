@@ -29,23 +29,30 @@ google.load("search", "1");
 * addressField - Optional, the id of the control which receives the address locality information.
 */
 function decodePostcode(postcodeField, srefField, systemField, geomField, addressField) {
-  usePointFromPostcode(
-      document.getElementById(postcodeField).value,
-      function(place) {
-        if (addressField) {
-          document.getElementById(addressField).value="\n" + place.city + "\n" + place.region;
+  if (document.getElementById(postcodeField).value!='') {
+    usePointFromPostcode(
+        document.getElementById(postcodeField).value,
+        function(place) {
+          if (addressField) {
+            document.getElementById(addressField).value="\n" + place.city + "\n" + place.region;
+          }
+          if (srefField) {
+            document.getElementById(srefField).value=place.lat + ', ' + place.lng;
+          }
+          if (systemField) {
+            document.getElementById(systemField).value='4326'; // SRID for WGS84 lat long
+          }
+          if (geomField) {
+            document.getElementById(geomField).value='POINT(' + place.lng + ' ' + place.lat + ')';
+          }
         }
-        if (srefField) {
-          document.getElementById(srefField).value=place.lat + ', ' + place.lng;
-        }
-        if (systemField) {
-          document.getElementById(systemField).value='4326'; // SRID for WGS84 lat long
-        }
-        if (geomField) {
-          document.getElementById(geomField).value='POINT(' + place.lng + ' ' + place.lat + ')';
-        }
-      }
-  );
+    );
+  } else {
+    // Postcode was cleared, so remove the geom info
+    document.getElementById(srefField).value='';
+    document.getElementById(systemField).value='';
+    document.getElementById(geomField).value='';
+  }
 };
 
 // Private method
