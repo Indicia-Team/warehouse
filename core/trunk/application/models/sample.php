@@ -92,7 +92,16 @@ class Sample_Model extends ORM
     $this->submission['fields']['date_start']['value'] = $vague_date['start'];
     $this->submission['fields']['date_end']['value'] = $vague_date['end'];
     $this->submission['fields']['date_type']['value'] = $vague_date['type'];
-
+    // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
+    // can work out the Geom
+    if (array_key_exists('entered_sref', $this->submission['fields']) &&
+        array_key_exists('entered_sref_system', $this->submission['fields']) &&
+        !array_key_exists('geom', $this->submission['fields'])) {
+      $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
+          $this->submission['fields']['entered_sref']['value'],
+          $this->submission['fields']['entered_sref_system']['value']
+      );
+    }
     return parent::presubmit();
   }
 
