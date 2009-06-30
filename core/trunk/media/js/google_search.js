@@ -28,7 +28,7 @@ google.load("search", "1");
 * geomField - Optional, the id of the control which receives the geometry (WKT).
 * addressField - Optional, the id of the control which receives the address locality information.
 */
-function decodePostcode(postcodeField, srefField, systemField, geomField, addressField) {
+function decodePostcode(postcodeField, srefField, systemField, addressField) {
   if (document.getElementById(postcodeField).value!='') {
     usePointFromPostcode(
         document.getElementById(postcodeField).value,
@@ -42,16 +42,12 @@ function decodePostcode(postcodeField, srefField, systemField, geomField, addres
           if (systemField) {
             document.getElementById(systemField).value='4326'; // SRID for WGS84 lat long
           }
-          if (geomField) {
-            document.getElementById(geomField).value='POINT(' + place.lng + ' ' + place.lat + ')';
-          }
         }
     );
   } else {
     // Postcode was cleared, so remove the geom info
     document.getElementById(srefField).value='';
     document.getElementById(systemField).value='';
-    document.getElementById(geomField).value='';
   }
 };
 
