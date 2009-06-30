@@ -5,6 +5,7 @@ abstract class ORM extends ORM_Core {
   protected $errors = array();
   protected $linkedModels = array();
   protected $missingAttrs = array();
+  protected $identifiers = array('website_id'=>null,'survey_id'=>null);
 
 
   // The default field that is searchable is called title. Override this when a different field name is used.
@@ -99,7 +100,7 @@ abstract class ORM extends ORM_Core {
    */
   public function validate(Validation $array, $save = FALSE, $extraFields=NULL) {
     if ($extraFields) {
-      foreach ($extraFields as $a)
+       foreach ($extraFields as $a)
       {
         if (array_key_exists($a, $array->as_array()))
         {
@@ -178,11 +179,18 @@ abstract class ORM extends ORM_Core {
    * checks unless they really want to skip them.
    */
   protected function preSubmit(){
-    //Overridden code happens here.
+    // Grab the survey id and website id if they are in the submission, as they are used to check
+    // attributes that apply and other permissions.
+    if (array_key_exists('website_id', $this->submission['fields'])) {
+      $this->identifiers['website_id']=$this->submission['fields']['website_id']['value'];
+    }
+    if (array_key_exists('survey_id', $this->submission['fields'])) {
+      $this->identifiers['survey_id']=$this->submission['fields']['survey_id']['value'];
+    }
 
     // Ensure that the only fields being submitted are those present in the model.
     $this->submission['fields'] = array_intersect_key(
-      $this->submission['fields'], $this->table_columns);
+        $this->submission['fields'], $this->table_columns);
 
 
     // Where fields are numeric, ensure that we don't try to submit strings to
@@ -270,7 +278,6 @@ abstract class ORM extends ORM_Core {
         array_push($this->linkedModels, $m);
       }
     }
-
     // Call pre-submit
     $this->preSubmit();
 
@@ -323,10 +330,7 @@ abstract class ORM extends ORM_Core {
         if ($result == null) $return = null;
       }
     }
-    $this->check_required_attributes(
-      array_key_exists('website_id', $vArray) ? $vArray['website_id'] : null,
-      array_key_exists('survey_id', $vArray) ? $vArray['survey_id'] : null
-    );
+    $this->check_required_attributes();
 
     // Call postSubmit
     if ($return != null) {
@@ -342,8 +346,9 @@ abstract class ORM extends ORM_Core {
    * Function that iterates through the required attributes of the current model, and
    * ensures that each of them has a submodel in the submission.
    */
-  private function check_required_attributes($website_id, $survey_id) {
+  private function check_required_attributes() {
     $this->missingAttrs = array();
+
     // Test if this model has an attributes sub-table.
     if (isset($this->has_attributes) && $this->has_attributes) {
       $db = new Database();
@@ -353,10 +358,9 @@ abstract class ORM extends ORM_Core {
       $db->select($attr_entity.'s.id', $attr_entity.'s.caption');
       $db->like('validation_rules','required');
       $db->where($attr_entity.'s.deleted', 'f');
-      $db->where($attr_entity.'s_websites.website_id', $website_id);
-      $db->in($attr_entity.'s_websites.restrict_to_survey_id', array($survey_id, null));
+      $db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
+      $db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       $result=$db->get();
-
       $got_values=array();
       // Attributes are stored in a metafield. Find the ones we actually have a value for
       if (array_key_exists('metaFields', $this->submission) &&
