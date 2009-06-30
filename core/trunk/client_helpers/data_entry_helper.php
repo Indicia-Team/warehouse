@@ -560,7 +560,7 @@ class data_entry_helper extends helper_config {
    * <br />
    * </code>
    *
-   * @param string $id Id and name of the postcode textbox this generates. Defaults to postcode.
+   * @param string $id Id and name of the postcode textbox this generates.
    * @param string $sref_field Name of the field that the spatial reference is saved into. Defaults to entered_sref.
    * @param string $system_field Name of the field that the spatial reference system is saved into. Defaults to entered_sref_system.
    * @param string $geom_field Name of the field that the spatial reference geometry is saved into. Defaults to geom.
@@ -569,11 +569,11 @@ class data_entry_helper extends helper_config {
    * @param boolean $hiddenFields Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
    * should be inputs with id set to $sref_field, $system_field and $geom_field already in existance. Defaults to true.
    */
-  public static function postcode_textbox($id="postcode", $sref_field="entered_sref", $system_field="entered_sref_system",
+  public static function postcode_textbox($id, $sref_field="entered_sref", $system_field="entered_sref_system",
       $geom_field="geom", $linkedAddressBoxId=null, $hiddenFields=true) {
     self::add_resource('google_search');
     $defaultValue=self::check_default_value($id);
-    $r = "<input type='text' name='$id' id='$id' " .
+    $r = "<input type='text' name='$id' id='$id' value='$defaultValue' " .
         "onblur='javascript:decodePostcode(\"$id\", \"$sref_field\", \"$system_field\", \"$geom_field\", \"$linkedAddressBoxId\")' />";
     if ($hiddenFields) {
       $defaultSref=self::check_default_value($sref_field);
@@ -583,7 +583,7 @@ class data_entry_helper extends helper_config {
       $r .= "<input type='hidden' name='$system_field' id='$system_field' value='$defaultSystem' />";
       $r .= "<input type='hidden' name='$geom_field' id='$geom_field' value='$defaultGeom' />";
     }
-    $r .= self::check_errors($sref_field);
+    $r .= self::check_errors($id);
     return $r;
   }
 
