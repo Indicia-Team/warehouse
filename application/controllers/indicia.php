@@ -32,6 +32,7 @@
  * @subpackage Controllers
  */
 class Indicia_Controller extends Template_Controller {
+
   // Template view name
   public $template = 'templates/template';
 
@@ -172,154 +173,186 @@ class Indicia_Controller extends Template_Controller {
     foreach ($array as $a => $b)
     {
       // Check whether this is a fk placeholder
-      if (substr($a,0,3) == 'fk_'
-  && $fkLink)
+      if (substr($a,0,3) == 'fk_' && $fkLink)
       {
-  // Generate a foreign key instance
-  $sa['fkFields'][$a] = array
-  (
-  // Foreign key id field is table_id
-  'fkIdField' => substr($a,3)."_id",
-   'fkTable' => substr($a,3),
-   'fkSearchField' =>
-   ORM::factory(substr($a,3))->get_search_field(),
-   'fkSearchValue' => $b
-   );
-   // Determine the foreign table name
-   $m = ORM::factory($id);
-   if (array_key_exists(substr($a,3), $m->belongs_to))
-   {
-     $sa['fkFields'][$a]['fkTable'] = $m->belongs_to[substr($a,3)];
-   } else if ($m instanceof ORM_Tree && substr($a,3) == 'parent') {
-     $sa['fkFields'][$a]['fkTable'] = $id;
+        // Generate a foreign key instance
+        $sa['fkFields'][$a] = array
+        (
+          // Foreign key id field is table_id
+          'fkIdField' => substr($a,3)."_id",
+          'fkTable' => substr($a,3),
+          'fkSearchField' => ORM::factory(substr($a,3))->get_search_field(),
+          'fkSearchValue' => $b
+        );
+        // Determine the foreign table name
+        $m = ORM::factory($id);
+        if (array_key_exists(substr($a,3), $m->belongs_to))
+        {
+          $sa['fkFields'][$a]['fkTable'] = $m->belongs_to[substr($a,3)];
+        } else if ($m instanceof ORM_Tree && substr($a,3) == 'parent') {
+          $sa['fkFields'][$a]['fkTable'] = $id;
+        }
+      }
+      else
+      {
+        // This should be a field in the model.
+        // Add a new field to the save array
+        $sa['fields'][$a] = array(
+        // Set the value
+        'value' => $b);
       }
     }
-    else
-    {
-      // This should be a field in the model.
-      // Add a new field to the save array
-      $sa['fields'][$a] = array(
-      // Set the value
-      'value' => $b);
-    }
-  }
-  return $sa;
-}
-
-/**
-* Sets the model submission, saves the submission array.
-*/
-protected function submit($submission)
-{
-  $this->model->submission = $submission;
-  if (($id = $this->model->submit()) != null)
-  {
-    // Record has saved correctly
-    $this->submit_succ($id);
-  } else {
-    // Record has errors - now embedded in model
-    $this->submit_fail();
-  }
-}
-
-/**
-* Returns to the index view for this controller.
-*/
-protected function submit_succ($id)
-{
-  Kohana::log("info", "Submitted record ".$id." successfully.");
-  url::redirect($this->model->object_name);
-}
-
-/**
-* Returns to the edit page to correct errors - now embedded in the model
-*/
-protected function submit_fail()
-{
-  $mn = $this->model->object_name;
-  $this->setView($mn."/".$mn."_edit", ucfirst($mn));
-}
-
-
-/**
-* Saves the post array by wrapping it and then submitting it.
-*/
-public function save()
-{
-  if (! empty($_POST['id']))
-  {
-    $this->model = ORM::factory($this->model->object_name, $_POST['id']);
+    return $sa;
   }
 
   /**
-  * Were we instructed to delete the post?
+  * Sets the model submission, saves the submission array.
   */
-  if ($_POST['submit'] == 'Delete')
+  protected function submit($submission)
   {
-    $_POST['deleted'] = 't';
-  }
-  else
-  {
-    $_POST['deleted'] = 'f';
-  }
-
-  // Wrap the post object and then submit it
-  $this->submit($this->wrap($_POST));
-
-}
-
-/**
-* Check version of the php scripts against the database version
-*
-*/
-private function check_for_upgrade()
-{
-  // system file which is distributed with every indicia version
-  //
-  $new_system = Kohana::config('indicia_dist.system');
-
-  // get system info with the version number of the database
-  $db_system = new System_Model;
-
-  // compare the script version against the database version
-  // if both arent equal start the upgrade process
-  //
-  if(0 != version_compare($db_system->getVersion(), $new_system['version'] ))
-  {
-    $upgrade = new Upgrade_Model;
-
-    // upgrade to version $new_system['version']
-    //
-    if(true !== ($result = $upgrade->run($db_system->getVersion(), $new_system)))
+    $this->model->submission = $submission;
+    if (($id = $this->model->submit()) != null)
     {
-      // fatal error: the system stops here
-      //
-      if( false === Kohana::config('core.display_errors'))
+      // Record has saved correctly
+      $this->submit_succ($id);
+    } else {
+      // Record has errors - now embedded in model
+      $this->submit_fail();
+    }
+  }
+
+  /**
+  * Returns to the index view for this controller.
+  */
+  protected function submit_succ($id)
+  {
+    Kohana::log("info", "Submitted record ".$id." successfully.");
+    url::redirect($this->model->object_name);
+  }
+
+  /**
+  * Returns to the edit page to correct errors - now embedded in the model
+  */
+  protected function submit_fail()
+  {
+    $mn = $this->model->object_name;
+    $this->setView($mn."/".$mn."_edit", ucfirst($mn));
+  }
+
+
+  /**
+  * Saves the post array by wrapping it and then submitting it.
+  */
+  public function save()
+  {
+    if (! empty($_POST['id']))
     {
-      die( Kohana::lang('setup.error_upgrade_for_end_user') );
+      $this->model = ORM::factory($this->model->object_name, $_POST['id']);
+    }
+
+    /**
+    * Were we instructed to delete the post?
+    */
+    if ($_POST['submit'] == 'Delete')
+    {
+      $_POST['deleted'] = 't';
     }
     else
     {
-      die( 'UPGRADE ERROR: <pre>' . nl2br($result) . '</pre>' );
-    }
+      $_POST['deleted'] = 'f';
     }
 
-    // if successful, reload the system
-    //
-    url::redirect();
+    // Wrap the post object and then submit it
+    $this->submit($this->wrap($_POST));
+
   }
-}
 
-protected function setError($title, $message)
-{
-  $this->template->title   = $title;
-  $this->template->content = new View('templates/error_message');
-  $this->template->content->message = $message;
-}
+  /**
+  * Check version of the php scripts against the database version
+  */
+  private function check_for_upgrade()
+  {
+    // system file which is distributed with every indicia version
+    //
+    $new_system = Kohana::config('indicia_dist.system');
 
-protected function access_denied($level = 'records.')
-{
-  $this->setError('Access Denied', 'You do not have sufficient permissions to access the '.$this->model->table_name.' '.$level);
-}
+    // get system info with the version number of the database
+    $db_system = new System_Model;
+
+    // compare the script version against the database version
+    // if both arent equal start the upgrade process
+    //
+    if(0 != version_compare($db_system->getVersion(), $new_system['version'] ))
+    {
+      $upgrade = new Upgrade_Model;
+
+      // upgrade to version $new_system['version']
+      //
+      if(true !== ($result = $upgrade->run($db_system->getVersion(), $new_system)))
+      {
+        // fatal error: the system stops here
+        //
+        if( false === Kohana::config('core.display_errors'))
+      {
+        die( Kohana::lang('setup.error_upgrade_for_end_user') );
+      }
+      else
+      {
+        die( 'UPGRADE ERROR: <pre>' . nl2br($result) . '</pre>' );
+      }
+      }
+
+      // if successful, reload the system
+      //
+      url::redirect();
+    }
+  }
+
+  protected function setError($title, $message)
+  {
+    $this->template->title   = $title;
+    $this->template->content = new View('templates/error_message');
+    $this->template->content->message = $message;
+  }
+
+  protected function access_denied($level = 'records.')
+  {
+    $this->setError('Access Denied', 'You do not have sufficient permissions to access the '.$this->model->table_name.' '.$level);
+  }
+
+  /**
+   * Override the load view behaviour to display better error information when a view
+   * fails to load.
+   */
+  public function _kohana_load_view($kohana_view_filename, $kohana_input_data)
+  {
+    if ($kohana_view_filename == '')
+      return;
+
+    // Buffering on
+    ob_start();
+
+    // Import the view variables to local namespace
+    extract($kohana_input_data, EXTR_SKIP);
+
+    // Views are straight HTML pages with embedded PHP, so importing them
+    // this way insures that $this can be accessed as if the user was in
+    // the controller, which gives the easiest access to libraries in views
+
+    // Put the include in a try catch block
+    try
+    {
+      include $kohana_view_filename;
+    }
+    catch (Exception $e)
+    {
+      // Put the error out
+      echo '<pre>'.print_r($e, TRUE).'</pre>';
+      throw $e;
+    }
+
+    // Fetch the output and close the buffer
+    return ob_get_clean();
+  }
 
 }

@@ -42,7 +42,7 @@
 <li>
 <label for="website_id">Website</label>
 <select id="website_id" name="website_id">
-  <option>&lt;Please select&gt;</option>
+  <option value="">&lt;Please select&gt;</option>
 <?php
   if (!is_null($this->auth_filter))
     $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();

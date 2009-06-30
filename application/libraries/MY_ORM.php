@@ -92,8 +92,21 @@ abstract class ORM extends ORM_Core {
   /**
    * Override the ORM validate method to store the validation errors in an array, making
    * them accessible to the views.
+   *
+   * @param Validation $array Validation array object.
+   * @param boolean $save Optional. True if this call also saves the data, false to just validate. Default is false.
+   * @param array() $extraFields Optional. List of additional fields that are not validated but must be included in a submission.
    */
-  public function validate(Validation $array, $save = FALSE) {
+  public function validate(Validation $array, $save = FALSE, $extraFields=NULL) {
+    if ($extraFields) {
+      foreach ($extraFields as $a)
+      {
+        if (array_key_exists($a, $array->as_array()))
+        {
+          $this->__set($a, $array[$a]);
+        }
+      }
+    }
     $this->set_metadata();
     if (parent::validate($array, $save)) {
       return TRUE;

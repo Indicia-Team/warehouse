@@ -113,6 +113,8 @@ abstract class ATTR_ORM extends ORM {
 
   /**
    * Checks a field in the submission. If missing or not a number, sets it to null.
+   *
+   * @param string $field Name of field to check
    */
   private function checkSubmitNumericField($field) {
     if (!array_key_exists($field, $this->submission['fields']) ||
@@ -122,14 +124,16 @@ abstract class ATTR_ORM extends ORM {
   }
 
   /**
-   * Checks a field in the submission. If missing or false, sets it to f, otherwise t.
+   * Checks a boolean field in the submission. If missing or false, sets it to f, otherwise t.
+   *
+   * @param string $field Name of field to check
    */
   private function checkSubmitBoolField($field) {
     if (!array_key_exists($field, $this->submission['fields']) ||
-        !$this->submission['fields']['termlist_id']['value']) {
-      $this->submission['fields']['termlist_id']='f';
+        !$this->submission['fields'][$field]['value']) {
+      $this->submission['fields'][$field]='f';
     } else {
-      $this->submission['fields']['termlist_id']='t';
+      $this->submission['fields'][$field]='t';
     }
   }
 

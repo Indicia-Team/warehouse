@@ -30,7 +30,6 @@ if ($_POST)
    $response = data_entry_helper::forward_post_to(
       'save', $submission
    );
-   print_r($submission);
    data_entry_helper::dump_errors($response);
 }
 

@@ -63,10 +63,10 @@ $(document).ready(function() {
 });
 </script>
 <?php
-if ($model->image_path != null)
+if (array_key_exists('image_path', $model) && $model->image_path != null)
 {
-echo html::image(array('src' => 'upload/'.$model->image_path, 'width' => 100));
-echo html::error_message($model->getError('image_path'));
+  echo html::image(array('src' => 'upload/'.$model->image_path, 'width' => 100));
+  echo html::error_message($model->getError('image_path'));
 }
 ?>
 <form class="cmxform"  name='editList' action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="POST" enctype="multipart/form-data">
