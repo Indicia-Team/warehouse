@@ -48,10 +48,7 @@ class Login_Controller extends Indicia_Controller {
       $this->template->content->link_to_logout = 'YES';
       return;
     }
-    $this->template->title = 'User Login';
-    $this->template->content = new View('login/login_by_username');
-    $this->template->content->error_message = '';
-    $this->template->content->admin_contact = $login_config['admin_contact'];
+    $this->build_template('login_by_username');
     if (request::method() == 'post')
     {
       if ($this->auth->login(array('username' => $_POST['UserName']), $_POST['Password'], isset($_POST['remember_me'])))
@@ -86,10 +83,7 @@ class Login_Controller extends Indicia_Controller {
       $this->template->content->link_to_logout = 'YES';
       return;
     }
-    $this->template->title = 'User Login';
-    $this->template->content = new View('login/login_by_email');
-    $this->template->content->error_message = '';
-    $this->template->content->admin_contact = $login_config['admin_contact'];
+    $this->build_template('login_by_email');
     if ( $login_config['login_by_email'] != 'YES')
     {
       $this->template->content->link_to_username = 'YES';
@@ -111,6 +105,22 @@ class Login_Controller extends Indicia_Controller {
       }
       $this->template->content->error_message = 'Invalid Email address/Password Combination, or insufficient privileges';
     }
+  }
+
+  /**
+   * Builds the required login view for a specific template.
+   *
+   * @param string $template Name of the template to build the view for, either
+   * login_by_username or login_by_password.
+   */
+  private function build_template($template) {
+    $this->template->title = 'User Login';
+    $this->template->content = new View('login/'.$template);
+    $introduction = new View('login/introduction');
+    $login_config=Kohana::config('login');
+    $introduction->admin_contact = $login_config['admin_contact'];
+    $this->template->content->introduction = $introduction;
+    $this->template->content->error_message = '';
   }
 
 }

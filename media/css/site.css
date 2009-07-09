@@ -14,6 +14,11 @@ body
   font-family: Trebuchet MS, Helvetica, sans-serif;
 }
 
+p
+{
+  margin-bottom: 0.5em;
+}
+
 #wrapper
 {
   text-align: left;

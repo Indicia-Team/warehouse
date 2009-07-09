@@ -1177,6 +1177,7 @@ class data_entry_helper extends helper_config {
    */
   public static function check_default_value($id) {
     global $entity_to_load;
+    $return = null;
     if ($entity_to_load && array_key_exists($id, $entity_to_load)) {
       $return = $entity_to_load[$id];
     }
@@ -1213,14 +1214,14 @@ class data_entry_helper extends helper_config {
       $r .= '<li>Success: PHP version is '.phpversion().'.</li>';
     }
     // Test cUrl library installed
-    if (!function_exists(curl_exec)) {
+    if (!function_exists('curl_exec')) {
       $r .= '<li class="warning">Warning: The cUrl PHP library is not installed on the server and is required for communication with the Indicia Warehouse.</li>';
     } else {
       if ($fullInfo) {
         $r .= '<li>Success: The cUrl PHP library is installed.</li>';
       }
-      // Test we have full access to the server
-      $postargs = "website_id=$website_id";
+      // Test we have full access to the server - it doesn't matter what website id we pass here.'
+      $postargs = "website_id=0";
       $curl_check = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs, false);
       if ($curl_check['result']) {
         if ($fullInfo) {
