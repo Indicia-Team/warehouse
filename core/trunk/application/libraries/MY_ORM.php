@@ -2,15 +2,14 @@
 
 abstract class ORM extends ORM_Core {
   public $submission = array();
+  /**
+   * The default field that is searchable is called title. Override this when a different field name is used.
+   */
+  protected $search_field='title';
   protected $errors = array();
   protected $linkedModels = array();
   protected $missingAttrs = array();
   protected $identifiers = array('website_id'=>null,'survey_id'=>null);
-
-
-  // The default field that is searchable is called title. Override this when a different field name is used.
-  // Used to match against, for example when importing csv values.
-  protected $search_field='title';
 
   /**
    * Override load_values to add in a vague date field.
@@ -394,12 +393,11 @@ abstract class ORM extends ORM_Core {
     if ($fk == true) {
       foreach ($this->table_columns as $name => $type) {
         if (substr($name, -3) == "_id") {
-          Kohana::log("info", $name." added as fk field.");
+          Kohana::log("debug", $name." added as fk field.");
           $a["fk_".substr($name, 0, -3)] = $type;
         }
       }
     }
-
     return $a;
   }
 
@@ -463,6 +461,26 @@ abstract class ORM extends ORM_Core {
       }
     }
     return true;
+  }
+
+  /**
+   * Accessor for search_field.
+   * @return The searchable field in this model.
+   */
+  public function getSearchField() {
+    return $this->search_field;
+  }
+
+  /**
+   * Accessor for children.
+   * @return The children in this model or an empty string.
+   */
+  public function getChildren() {
+    if (isset($this->children)) {
+      return $this->children;
+    } else {
+      return '';
+    }
   }
 
 }

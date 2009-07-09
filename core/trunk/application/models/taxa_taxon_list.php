@@ -54,6 +54,7 @@ class Taxa_taxon_list_Model extends ORM_Tree {
     );
     return parent::validate($array, $save, $extraFields);
   }
+
   /**
    * If we want to delete the record, we need to check that no dependents exist.
    */
@@ -65,27 +66,14 @@ class Taxa_taxon_list_Model extends ORM_Tree {
       }
     }
   }
+
   /**
    * Return a displayable caption for the item.
    * For People, this should be a combination of the Firstname and Surname.
    */
   public function caption()
   {
-
     return ($this->taxon_id != null ? $this->taxon->taxon : '');
-  }
-
-  public function getSubmittableFields() {
-    return array(
-      'taxon' => '',
-      'fk_language' => '',
-      'fk_taxon_group' => '',
-      'authority' => '',
-      'search_code' => '',
-      'external_key' => '',
-      'fk_parent' => '',
-      'taxonomic_sort_order' => '',
-    );
   }
 
 }

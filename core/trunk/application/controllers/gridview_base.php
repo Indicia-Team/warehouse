@@ -115,7 +115,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     return $grid->display();
   }
 
-  public function upload_mappings($returnpage = 1) {
+  public function upload_mappings() {
     $_FILES = Validation::factory($_FILES)
       ->add_rules('csv_upload', 'upload::valid',
                'upload::required', 'upload::type[csv]', 'upload::size[1M]');
@@ -132,19 +132,19 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       $view->columns = fgetcsv($handle, 1000, ",");
       fclose($handle);
       $view->model = $this->model;
-      $view->returnPage = $returnpage;
       $view->controllerpath = $this->controllerpath;
       $this->template->content = $view;
     } else {
-      // TODO: Display a validation error and remember current viewstate
-      url::redirect($this->controllerpath.'/page/'.$this->model->id);
+      // TODO: error message needs a back button.
+      $this->setError('File missing', 'Please select a CSV file to upload before clicking the Upload button.');
     }
 
 
   }
 
-  public function upload($returnPage) {
+  public function upload() {
     $csvTempFile = $_SESSION['uploaded_csv'];
+    kohana::log('info', 'start upload');
     // make sure the file still exists
     if (file_exists($csvTempFile))
     {
@@ -162,25 +162,27 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
             if ($attr!='<please select>') {
               // Add the data to the save array
               $saveArray[$attr] = $data[$index];
-              Kohana::log("info", "Upload ".$attr.": ".$data[$index]);
             }
           } else {
             // This is one of our static fields at the end
             $saveArray[$col] = $attr;
-            Kohana::log("info", "Upload ".$col.": ".$attr);
           }
           $index++;
         }
         // Save the record
         $this->model->clear();
+        kohana::log('debug', 'About to wrap');
+        kohana::log('debug', kohana::debug($saveArray));
         $this->model->submission = $this->wrap($saveArray, true);
+        kohana::log('debug', kohana::debug($this->model->submission));
         $this->model->submit();
       }
       fclose($handle);
-      // need to flash a success message
+      // TODO: need to flash a success message
       // clean up the uploaded file
       unlink($csvTempFile);
-      url::redirect($this->controllerpath."/page/".$returnPage);
+      kohana::log('info', 'end upload');
+      url::redirect($this->controllerpath);
     }
   }
 

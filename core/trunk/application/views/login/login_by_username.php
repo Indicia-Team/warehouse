@@ -21,8 +21,10 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-?>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting of wildlife records. Indicia is an Open Source project funded by the Open Air Laboratories Network and managed by the Centre for Ecology and Hydrology.<br /><br />
-In order to gain access to this Indicia system you must log on. If you do not have an account and need one, please contact the administrator <?php echo $admin_contact; ?> who can create one for you.<br /><br />
+echo $introduction;
+?>
+<br />
+
 <form class="cmxform" name = "login" action="<?php echo url::site(); ?>login" method="post">
 <fieldset>
 <legend>Login details</legend>

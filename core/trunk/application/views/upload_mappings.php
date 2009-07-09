@@ -21,15 +21,16 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-echo form::open($controllerpath.'/upload/'.$returnPage, array('class'=>'cmxform')); ?>
+echo form::open($controllerpath.'/upload', array('class'=>'cmxform')); ?>
 <p>Please map each column in the CSV file you are uploading to the associated attribute in the destination list.</p>
 <br />
 <table><thead><th>Column in CSV File</th><th>Maps to attribute</th></thead>
 <tbody>
-<?php foreach ($columns as $col): ?>
+<?php $options = html::model_field_options($model, '<please select>');
+foreach ($columns as $col): ?>
   <tr>
     <td><?php echo $col; ?></td>
-    <td><?php echo html::dropdown_model_fields($model, $col, '<please select>'); ?></td>
+    <td><select <?php echo 'id="'.$col.'" name="'.$col.'">'.$options; ?></select></td>
   </tr>
 <?php endforeach; ?>
 </tbody>

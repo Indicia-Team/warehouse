@@ -172,34 +172,37 @@ class Indicia_Controller extends Template_Controller {
     // Iterate through the array
     foreach ($array as $a => $b)
     {
+      $b = trim($b);
       // Check whether this is a fk placeholder
       if (substr($a,0,3) == 'fk_' && $fkLink)
       {
+        $m = ORM::factory($id);
+        $fieldName = substr($a,3);
+        if (array_key_exists($fieldName, $m->belongs_to)) {
+          $fkTable = $m->belongs_to[$fieldName];
+        } elseif ($m instanceof ORM_Tree && $fieldName == 'parent') {
+          $fkTable = inflector::singular($model->getChildren());
+        } else {
+           $fkTable = $fieldName;
+        }
         // Generate a foreign key instance
         $sa['fkFields'][$a] = array
         (
           // Foreign key id field is table_id
           'fkIdField' => substr($a,3)."_id",
-          'fkTable' => substr($a,3),
-          'fkSearchField' => ORM::factory(substr($a,3))->get_search_field(),
+          'fkTable' => $fkTable,
+          'fkSearchField' => ORM::factory($fkTable)->get_search_field(),
           'fkSearchValue' => $b
         );
-        // Determine the foreign table name
-        $m = ORM::factory($id);
-        if (array_key_exists(substr($a,3), $m->belongs_to))
-        {
-          $sa['fkFields'][$a]['fkTable'] = $m->belongs_to[substr($a,3)];
-        } else if ($m instanceof ORM_Tree && substr($a,3) == 'parent') {
-          $sa['fkFields'][$a]['fkTable'] = $id;
-        }
       }
       else
       {
         // This should be a field in the model.
         // Add a new field to the save array
         $sa['fields'][$a] = array(
-        // Set the value
-        'value' => $b);
+          // Set the value
+          'value' => $b
+        );
       }
     }
     return $sa;
