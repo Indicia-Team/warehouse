@@ -281,25 +281,25 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     }
     $sa['superModels'][] = array
     (
-    'fkId' => 'taxon_id',
-     'model' => parent::wrap($taxonFields, $linkFk, 'taxon')
-     );
+      'fkId' => 'taxon_id',
+      'model' => parent::wrap($taxonFields, $linkFk, 'taxon')
+    );
 
-     if (array_key_exists('synonomy', $array))
-     {
-       $sa['metaFields']['synonomy'] = array(
-       'value' => $array['synonomy']
-       );
-     }
+    if (array_key_exists('synonomy', $array))
+    {
+      $sa['metaFields']['synonomy'] = array(
+        'value' => $array['synonomy']
+      );
+    }
 
-     if (array_key_exists('commonNames', $array))
-     {
-       $sa['metaFields']['commonNames'] = array(
-       'value' => $array['commonNames']
-       );
-     }
+    if (array_key_exists('commonNames', $array))
+    {
+      $sa['metaFields']['commonNames'] = array(
+        'value' => $array['commonNames']
+      );
+    }
 
-     return $sa;
+    return $sa;
   }
 
   /**

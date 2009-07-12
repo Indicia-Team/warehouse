@@ -162,11 +162,11 @@ class Indicia_Controller extends Template_Controller {
     // Initialise the wrapped array
     $sa = array
     (
-    'id' => $id,
-    'fields' => array(),
-    'fkFields' => array(),
-    'superModels' => array(),
-    'subModels' => array()
+      'id' => $id,
+      'fields' => array(),
+      'fkFields' => array(),
+      'superModels' => array(),
+      'subModels' => array()
     );
 
     // Iterate through the array
