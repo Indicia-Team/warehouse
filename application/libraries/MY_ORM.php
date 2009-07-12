@@ -1,11 +1,17 @@
 <?php
 
+class SubmitException extends Exception {
+
+}
+
 abstract class ORM extends ORM_Core {
   public $submission = array();
+
   /**
    * The default field that is searchable is called title. Override this when a different field name is used.
    */
   protected $search_field='title';
+
   protected $errors = array();
   protected $linkedModels = array();
   protected $missingAttrs = array();
@@ -178,6 +184,7 @@ abstract class ORM extends ORM_Core {
    * checks unless they really want to skip them.
    */
   protected function preSubmit(){
+    kohana::log('info','preSubmit start');
     // Grab the survey id and website id if they are in the submission, as they are used to check
     // attributes that apply and other permissions.
     if (array_key_exists('website_id', $this->submission['fields'])) {
@@ -204,9 +211,9 @@ abstract class ORM extends ORM_Core {
           }
       }
     }
-
-
+    kohana::log('info','preSubmit end');
   }
+
   /**
    * Submits the data by:
    * - Calling the preSubmit function to clean data.
@@ -245,20 +252,20 @@ abstract class ORM extends ORM_Core {
 
         // Check that it has the required search field
         if (array_key_exists($b['fkSearchField'], $m->table_columns)) {
-          $this->submission['fields'][$b['fkIdField']] =
-            $m->where(array(
+          $fkRecord = $m->where(array(
               $b['fkSearchField'] => $b['fkSearchValue']))
-              ->find()->id;
+              ->find();
+          if (!$fkRecord->id) {
+            throw new SubmitException("Could not find record for related record key search on ".$b['fkSearchValue'].
+                " in ".$b['fkTable']);
+          }
+          $this->submission['fields'][$b['fkIdField']] = $fkRecord->id;
         }
       }
     }
-
     // Iterate through supermodels, calling their submit methods with subarrays
     if (array_key_exists('superModels', $this->submission)) {
       foreach ($this->submission['superModels'] as $a) {
-
-        Kohana::log("info", "Submitting supermodel ".$a['model']['id'].".");
-
         // Establish the right model
         $m = ORM::factory($a['model']['id']);
 
@@ -279,13 +286,11 @@ abstract class ORM extends ORM_Core {
     }
     // Call pre-submit
     $this->preSubmit();
-
     // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
     Kohana::log("info", "About to validate the following array in model ".$this->object_name);
-    foreach ($vArray as $a => $b){
-      Kohana::log("info", $a.": ".$b);
-    }
+    Kohana::log("info", kohana::debug($vArray));
+
     // If we're editing an existing record.
     if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
       $this->find($vArray['id']);

@@ -115,6 +115,10 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     return $grid->display();
   }
 
+  /**
+   * Controller action to build the page that allows each field in an uploaded CSV
+   * file to be mapped to the appropriate model attributes.
+   */
   public function upload_mappings() {
     $_FILES = Validation::factory($_FILES)
       ->add_rules('csv_upload', 'upload::valid',
@@ -138,13 +142,13 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       // TODO: error message needs a back button.
       $this->setError('File missing', 'Please select a CSV file to upload before clicking the Upload button.');
     }
-
-
   }
 
+  /**
+   * Controller action that performs the import of data in an uploaded CSV file.
+   */
   public function upload() {
     $csvTempFile = $_SESSION['uploaded_csv'];
-    kohana::log('info', 'start upload');
     // make sure the file still exists
     if (file_exists($csvTempFile))
     {
@@ -154,14 +158,21 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       $handle = fopen ($csvTempFile, "r");
       // skip the title row
       fgetcsv($handle, 1000, ",");
+      $problems = array();
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
         $index = 0;
         $saveArray = array();
         foreach ($_POST as $col=>$attr) {
           if (isset($data[$index])) {
             if ($attr!='<please select>') {
-              // Add the data to the save array
-              $saveArray[$attr] = $data[$index];
+              if (strpos($attr, '.')!==false) {
+                // This is an attribute for another record, e.g. taxon.language_id
+                $tokens = explode('.', $attr);
+                $extraRecords[$tokens[0]][$tokens[1]]=$data[$index];
+              } else {
+                // Add the data to the main record save array
+                $saveArray[$attr] = $data[$index];
+              }
             }
           } else {
             // This is one of our static fields at the end
@@ -171,19 +182,30 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         }
         // Save the record
         $this->model->clear();
-        kohana::log('debug', 'About to wrap');
-        kohana::log('debug', kohana::debug($saveArray));
         $this->model->submission = $this->wrap($saveArray, true);
-        kohana::log('debug', kohana::debug($this->model->submission));
-        $this->model->submit();
+        try {
+          $this->model->submit();
+        } catch (Exception $e) {
+          array_push($data, $e->getMessage());
+          array_push($problems, $data);
+          kohana::log("info", $e->getMessage());
+        }
       }
       fclose($handle);
-      // TODO: need to flash a success message
+
       // clean up the uploaded file
       unlink($csvTempFile);
-      kohana::log('info', 'end upload');
-      url::redirect($this->controllerpath);
+      if (count($problems)>0) {
+        $view = new View('upload_problems');
+        $view->problems = $problems;
+        $this->template->title = "Upload Problems";
+        $this->template->content = $view;
+      } else {
+        // TODO: need to flash a success message
+        url::redirect($this->controllerpath);
+      }
     }
+
   }
 
 }

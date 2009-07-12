@@ -76,4 +76,23 @@ class Taxa_taxon_list_Model extends ORM_Tree {
     return ($this->taxon_id != null ? $this->taxon->taxon : '');
   }
 
+  /**
+   * Override the list of default submittable fields for CSV import. This allows details of the
+   * taxon to also be imported.
+   */
+  public function getSubmittableFields() {
+    return array(
+      'taxon' => '',
+      'fk_language' => '',
+      'language_id' => '',
+      'fk_taxon_group' => '',
+      'taxon_group_id' => '',
+      'authority' => '',
+      'search_code' => '',
+      'external_key' => '',
+      'fk_parent' => '',
+      'taxonomic_sort_order' => '',
+    );
+  }
+
 }
