@@ -27,38 +27,8 @@ if ($_POST)
     }
   }
 
-  // We have occurrence attributes that we have to wrap
-  $occAttrs = data_entry_helper::wrap_attributes($_POST, 'occurrence');
-  $smpAttrs = data_entry_helper::wrap_attributes($_POST, 'sample');
-
-  $sampleMod = data_entry_helper::wrap($_POST, 'sample');
-  $sampleMod['metaFields']['smpAttributes']['value'] = $smpAttrs;
-
-  $occurrenceMod = data_entry_helper::wrap($_POST, 'occurrence');
-  $occurrenceMod['superModels'][] = array
-  (
-    'fkId' => 'sample_id',
-    'model' => $sampleMod
-  );
-  $occurrenceMod['metaFields']['occAttributes']['value'] = $occAttrs;
-
-  // Send the image
-  if ($name = data_entry_helper::handle_media('occurrence_image'))
-  {
-    // Add occurrence image model
-    // TODO Get a caption for the image
-    $oiFields = array(
-    'path' => $name,
-          'caption' => 'An image in need of a caption');
-          $oiMod = data_entry_helper::wrap($oiFields, 'occurrence_image');
-          $occurrenceMod['subModels'][] = array(
-          'fkId' => 'occurrence_id',
-                   'model' => $oiMod);
-  }
-
-  $submission = array('submission' => array('entries' => array(
-    array ( 'model' => $occurrenceMod )
-  )));
+  $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
+echo '<pre>Submission: '.print_r($submission, true).'</pre>';
   $response = data_entry_helper::forward_post_to('save', $submission);
   data_entry_helper::dump_errors($response);
 }
@@ -113,7 +83,7 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 <textarea name='sample:comment' class="wide"><?php echo data_entry_helper::check_default_value('comment'); ?></textarea>
 <br />
 <label for='occurrence_image'>Image Upload</label>
-<?php echo data_entry_helper::image_upload('occurrence_image'); ?>
+<?php echo data_entry_helper::image_upload('occurrence:image'); ?>
 <fieldset>
 <legend>Occurrence attributes</legend>
 <label for='<?php echo $config['dafor']; ?>'>Abundance DAFOR</label>

@@ -16,21 +16,11 @@ include '../data_entry_config.php';
 // Catch a submission to the form and send it to Indicia
 if ($_POST)
 {
-  $sampleMod = data_entry_helper::wrap($_POST, 'sample');
-  $occurrenceMod = data_entry_helper::wrap($_POST, 'occurrence');
-  $sampleMod['subModels'][] = array
-  (
-  'fkId' => 'sample_id',
-   'model' => $occurrenceMod
-   );
-
-   $submission = array('submission' => array('entries' => array(
-     array ( 'model' => $sampleMod )
-   )));
-   $response = data_entry_helper::forward_post_to(
-      'save', $submission
-   );
-   data_entry_helper::dump_errors($response);
+  $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
+  $response = data_entry_helper::forward_post_to(
+    'save', $submission
+  );
+  data_entry_helper::dump_errors($response);
 }
 
 ?>
