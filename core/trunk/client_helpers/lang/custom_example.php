@@ -19,6 +19,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+global $custom_terms;
+
 /**
  * Example providing a list of customised or localised terms used by the lang class.
  * Each listed term overrides the equivalent term in the default.php file. If not present, then
