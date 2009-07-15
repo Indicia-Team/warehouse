@@ -777,7 +777,7 @@ class data_entry_helper extends helper_config {
     return $output;
   }
 
-  public static function handle_media($media_id = 'imgUpload') {
+  public static function handle_media($media_id) {
     if (array_key_exists($media_id, $_FILES)) {
       syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
       $uploadpath = parent::$upload_path;
@@ -861,19 +861,7 @@ class data_entry_helper extends helper_config {
   * @return array
   */
   public static function wrap_attributes($arr, $entity) {
-    switch ($entity) {
-      case 'occurrence':
-        $prefix = 'occAttr';
-        break;
-      case 'location':
-        $prefix = 'locAttr';
-        break;
-      case 'sample':
-        $prefix = 'smpAttr';
-        break;
-      default:
-        throw new Exception('Unknown attribute type. Unable to wrap.');
-    }
+    $prefix=self::get_attr_entity_prefix($entity).'Attr';
     $oap = array();
     $occAttrs = array();
     foreach ($arr as $key => $value) {
@@ -890,6 +878,28 @@ class data_entry_helper extends helper_config {
       $occAttrs[] = data_entry_helper::wrap($oa, $entity."_attribute");
     }
     return $occAttrs;
+  }
+
+  /**
+   * Returns a 3 character prefix representing an entity name that can have
+   * custom attributes attached.
+   * @param string $entity Entity name (location, sample or occurrence).
+   */
+  private static function get_attr_entity_prefix($entity) {
+    switch ($entity) {
+      case 'occurrence':
+        $prefix = 'occ';
+        break;
+      case 'location':
+        $prefix = 'loc';
+        break;
+      case 'sample':
+        $prefix = 'smp';
+        break;
+      default:
+        throw new Exception('Unknown attribute type. ');
+    }
+    return $prefix;
   }
 
   /**
@@ -954,15 +964,65 @@ class data_entry_helper extends helper_config {
    * )
    */
   public static function build_submission($values, $structure) {
-    $modelWrapped = data_entry_helper::wrap($values, $structure['model']);
-    $submodelWrapped = data_entry_helper::wrap($values, $structure['submodel']['model']);
-    $modelWrapped['subModels'][] = array(
-      'fkId' => $structure['submodel']['fk'],
-      'model' => $submodelWrapped
-    );
+    // Wrap the main model and attrs into JSON
+    $modelWrapped = self::wrap_with_attrs($values, $structure['model']);
+    // Is there a child model?
+    if (array_key_exists('submodel', $structure)) {
+      $submodelWrapped = self::wrap_with_attrs($values, $structure['submodel']['model']);
+      // Join the parent and child models together
+      if (!array_key_exists('subModels', $modelWrapped)) {
+        $modelWrapped['subModels']=array();
+      }
+      array_push($modelWrapped['subModels'], array(
+        'fkId' => $structure['submodel']['fk'],
+        'model' => $submodelWrapped
+      ));
+    }
+
     return array('submission' => array('entries' => array(
       array ( 'model' => $modelWrapped )
     )));
+  }
+
+  /**
+   * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,
+   * and also grabs the custom attributes (if there are any) and links them to the model.
+   *
+   * @param array $values Array of form data (e.g. $_POST).
+   * @param string $modelName Name of the model to wrap data for. If this is sample, occurrence or location
+   * then custom attributes will also be wrapped. Furthermore, any attribute called $modelName:image can
+   * contain an image upload (as long as a suitable entity is available to store the image in).
+   */
+  public static function wrap_with_attrs($values, $modelName) {
+    // Get the parent model into JSON
+    $modelWrapped = data_entry_helper::wrap($values, $modelName);
+    // Might it have custom attributes?
+    if (strcasecmp($modelName, 'occurrence')==0 ||
+        strcasecmp($modelName, 'sample')==0 ||
+        strcasecmp($modelName, 'location')==0) {
+      // Get the attributes
+      $attrs = self::wrap_attributes($values, $modelName);
+      // If any exist, then store them in the model
+      if (count($attrs)>0) {
+        $modelWrapped['metaFields'][self::get_attr_entity_prefix($modelName).'Attributes']['value']=$attrs;
+      }
+    }
+    // Does it have an image?
+    if ($name = data_entry_helper::handle_media("$modelName:image"))
+    {
+      // Add occurrence image model
+      // TODO Get a caption for the image
+      $oiFields = array(
+          'path' => $name,
+          'caption' => 'Default caption'
+      );
+      $oiMod = data_entry_helper::wrap($oiFields, $modelName.'_image');
+      $modelWrapped['subModels'][] = array(
+          'fkId' => 'occurrence_id',
+          'model' => $oiMod
+      );
+    }
+    return $modelWrapped;
   }
 
   /**
