@@ -930,6 +930,42 @@ class data_entry_helper extends helper_config {
   }
 
   /**
+   * Helper function to simplify building of a submission that contains a single sample
+   * and occurrence record.
+   * @param array $values List of the posted values to create the submission from. Each entry's
+   * key should be occurrence:fieldname, sample:fieldname, occAttr:n or smpAttr:n to be correctly
+   * identified.
+   */
+  public static function build_sample_occurrence_submission($values) {
+    return self::build_submission($values, array(
+        'model' => 'sample',
+        'submodel' => array('model' => 'occurrence', fk => 'sample_id')
+    ));
+  }
+
+  /**
+   * Helper function to simplify building of a submission. Does simple submissions that do not involve
+   * species checklist grids.
+   * @param array $values List of the posted values to create the submission from.
+   * @param array $structure Describes the structure of the submission. The form should be:
+   * array(
+   *     'model' => 'main model name',
+   *     'submodel' => array('model' => 'child model name', fk => 'foreign key name')
+   * )
+   */
+  public static function build_submission($values, $structure) {
+    $modelWrapped = data_entry_helper::wrap($values, $structure['model']);
+    $submodelWrapped = data_entry_helper::wrap($values, $structure['submodel']['model']);
+    $modelWrapped['subModels'][] = array(
+      'fkId' => $structure['submodel']['fk'],
+      'model' => $submodelWrapped
+    );
+    return array('submission' => array('entries' => array(
+      array ( 'model' => $modelWrapped )
+    )));
+  }
+
+  /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
   * page which uses the data entry helper so output all JavaScript required by previous calls.
   *
@@ -1079,6 +1115,14 @@ class data_entry_helper extends helper_config {
   }
 
   /**
+   * Causes the default_site.css stylesheet to be included in the list of resources on the
+   * page. This gives a basic form layout.
+   */
+  public static function link_default_stylesheet() {
+    self::add_resource('defaultStylesheet');
+  }
+
+  /**
    * List of external resources including stylesheets and js files used by the data entry helper class.
    */
   private static function _RESOURCES()
@@ -1105,7 +1149,8 @@ class data_entry_helper extends helper_config {
             "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
             "$base/media/js/google_search.js"
           )
-      )
+      ),
+      'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array("$base/media/css/default_site.css"), 'javascript' => array())
     );
   }
 
