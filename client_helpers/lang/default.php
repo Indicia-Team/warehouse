@@ -19,6 +19,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+global $default_terms;
+
 /**
  * Provides a list of default localisable terms used by the lang class.
  *
