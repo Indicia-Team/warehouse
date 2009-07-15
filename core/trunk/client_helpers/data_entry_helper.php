@@ -799,9 +799,10 @@ class data_entry_helper extends helper_config {
         if (array_key_exists('nonce', $_POST)) {
           $postargs['nonce'] = $_POST['nonce'];
         }
-        $file_to_upload = array('media_upload'=>'@'.$uploadpath.$destination);
+        $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
         self::http_post($target_url, $file_to_upload + $postargs);
         return $destination;
+
       } else {
         //TODO error messaging
         return false;
@@ -1360,12 +1361,15 @@ class data_entry_helper extends helper_config {
     curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
     curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+
     // Do the POST and then close the session
     $response = curl_exec($session);
     if (curl_errno($session) || strpos($response, 'HTTP/1.1 200 OK')===false) {
       if ($output_errors) {
         echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>';
-        echo 'Error number: '.curl_errno($session).'<br/>';
+        if (curl_errno($session))
+          echo 'Error number: '.curl_errno($session).'<br/>';
+        echo "Server response<br/>";
         echo $response.'</div>';
       }
       $return = array(
