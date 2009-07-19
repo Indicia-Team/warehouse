@@ -48,11 +48,11 @@ class Sample_Attribute_Value_Model extends ORM {
       $oam = ORM::factory('sample_attribute', $id);
       switch ($oam->data_type) {
       case 'T':
-      $vf = 'text_value';
-      break;
+        $vf = 'text_value';
+        break;
       case 'F':
-      $vf = 'float_value';
-      break;
+        $vf = 'float_value';
+        break;
       case 'D':
         $array->add_rules('date_start_value', 'required');
         $array->add_rules('date_end_value', 'required');
@@ -67,11 +67,11 @@ class Sample_Attribute_Value_Model extends ORM {
         $vf = null;
       break;
       default:
-      $vf = 'int_value';
+        $vf = 'int_value';
       }
       // Require the field with the value in
       if ($vf != null) $array->add_rules($vf, 'required');
-      // Now get the custom attributes
+      // Now get the custom attribute validation rules
       if ($oam->validation_rules != '') {
         $rules = explode("\r\n", $oam->validation_rules);
         foreach ($rules as $a){

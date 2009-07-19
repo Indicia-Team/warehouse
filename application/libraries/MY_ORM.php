@@ -1,8 +1,25 @@
 <?php
 
-class SubmitException extends Exception {
-
-}
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Core
+ * @subpackage Libraries
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
 
 abstract class ORM extends ORM_Core {
   public $submission = array();
@@ -16,6 +33,12 @@ abstract class ORM extends ORM_Core {
   protected $linkedModels = array();
   protected $missingAttrs = array();
   protected $identifiers = array('website_id'=>null,'survey_id'=>null);
+  /**
+   * This field allows the errors from this model to be reported against a predefined key,
+   * not always table:fieldname. This is handy when reporting errors for custom attribute values,
+   * when the key needs to be the custom attribute type and id, not the table and fieldname.
+   */
+  protected $forceErrorKey = '';
 
   /**
    * Override load_values to add in a vague date field.
@@ -85,7 +108,12 @@ abstract class ORM extends ORM_Core {
     foreach ($this->linkedModels as $m) {
       // Get the linked model's errors, ensuring array keys have prefixes identifying the entity
       foreach($m->errors as $key => $value) {
-        $r[$m->object_name.':'.$key]=$value;
+        if ($m->forceErrorKey) {
+          $key = $m->forceErrorKey;
+        } else {
+          $key = $m->object_name.':'.$key;
+        }
+        $r[$key]=$value;
       }
       // Now the linked model custom attribute errors
       $r = array_merge($r, $m->missingAttrs);
@@ -184,7 +212,7 @@ abstract class ORM extends ORM_Core {
    * checks unless they really want to skip them.
    */
   protected function preSubmit(){
-    kohana::log('info','preSubmit start');
+    kohana::log('debug','preSubmit start');
     // Grab the survey id and website id if they are in the submission, as they are used to check
     // attributes that apply and other permissions.
     if (array_key_exists('website_id', $this->submission['fields'])) {
@@ -211,7 +239,14 @@ abstract class ORM extends ORM_Core {
           }
       }
     }
-    kohana::log('info','preSubmit end');
+    kohana::log('debug','preSubmit end');
+  }
+
+  /**
+   * Allow models to implement code that is called after submission by overriding this method.
+   */
+  protected function postSubmit() {
+    return true;
   }
 
   /**
@@ -227,14 +262,20 @@ abstract class ORM extends ORM_Core {
    * If not, returns null - errors are embedded in the model.
    */
   public function submit(){
-    Kohana::log('info', 'Commencing new transaction.');
+    Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
-    $res = $this->inner_submit();
+    try {
+      $res = $this->inner_submit();
+    } catch (Exception $e) {
+      kohana::log('info', 'Exception occurred during inner_submit. '.$e->getMessage());
+      $res = false;
+      $this->errors['record'] = $e->getMessage();
+    }
     if ($res) {
-      Kohana::log('info', 'Committing transaction.');
+      Kohana::log('debug', 'Committing transaction.');
       $this->db->query('COMMIT;');
     } else {
-      Kohana::log('info', 'Rolling back transaction.');
+      Kohana::log('debug', 'Rolling back transaction.');
       $this->db->query('ROLLBACK;');
     }
     return $res;
@@ -242,9 +283,57 @@ abstract class ORM extends ORM_Core {
 
   public function inner_submit(){
     $mn = $this->object_name;
-    $return = true;
     $collapseVals = create_function('$arr', 'return $arr["value"];');
-    // Link in foreign fields
+    $return = $this->populateFkLookups();
+    $return = $this->createParentRecords() && $return;
+    $this->preSubmit();
+    // Flatten the array to one that can be validated
+    $vArray = array_map($collapseVals, $this->submission['fields']);
+    Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
+    Kohana::log("debug", kohana::debug($vArray));
+
+    // If we're editing an existing record.
+    if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
+      $this->find($vArray['id']);
+    }
+    // Create a new record by calling the validate method
+    if ($this->validate(new Validation($vArray), true)) {
+      // Record has successfully validated. Return the id.
+      Kohana::log("debug", "Record ".$this->id." has validated successfully");
+      if ($return) $return = $this->id;
+    } else {
+      // Errors.
+      Kohana::log("debug", "Record did not validate.");
+      // Log more detailed information on why
+      foreach ($this->errors as $f => $e){
+        Kohana::log("debug", "Field ".$f.": ".$e.".");
+      }
+      $return = false;
+    }
+    $return = $this->checkRequiredAttributes() && $return;
+    $return = $this->createChildRecords() && $return;
+    $return = $this->createAttributes() && $return;
+
+    // Call postSubmit
+    if ($return) {
+      $ps = $this->postSubmit();
+        if ($ps == null) {
+          $return = false;
+        }
+    }
+    kohana::log('debug', 'done inner submit');
+    return $return;
+  }
+
+  /**
+   * When a field is present in the model that is an fkField, this means it contains a lookup
+   * caption that must be searched for in the fk entity. This method does the searching and
+   * puts the fk id back into the main model so when it is saved, it links to the correct fk
+   * record.
+   *
+   * @return boolean True if all lookups populated successfully.
+   */
+  private function populateFkLookups() {
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
         // Establish the correct model
@@ -256,13 +345,22 @@ abstract class ORM extends ORM_Core {
               $b['fkSearchField'] => $b['fkSearchValue']))
               ->find();
           if (!$fkRecord->id) {
-            throw new SubmitException("Could not find record for related record key search on ".$b['fkSearchValue'].
-                " in ".$b['fkTable']);
+            $this->errors[$a] = "Could not find record for related record key search on ".$b['fkSearchValue'].
+                " in ".$b['fkTable'];
+            return false;
           }
           $this->submission['fields'][$b['fkIdField']] = $fkRecord->id;
         }
       }
     }
+    return true;
+  }
+
+  /**
+   * Generate any records that this model contains an FK reference to in the
+   * Supermodels part of the submission.
+   */
+  private function createParentRecords() {
     // Iterate through supermodels, calling their submit methods with subarrays
     if (array_key_exists('superModels', $this->submission)) {
       foreach ($this->submission['superModels'] as $a) {
@@ -274,83 +372,57 @@ abstract class ORM extends ORM_Core {
         $m->submission = $a['model'];
         $result = $m->inner_submit();
         if ($result) {
-          Kohana::log("info", "Setting field ".$a['fkId']." to ".$result);
+          Kohana::log("debug", "Setting field ".$a['fkId']." to ".$result);
           $this->submission['fields'][$a['fkId']]['value'] = $result;
         } else {
-          $return = null;
+          array_push($this->linkedModels, $m);
+          return false;
         }
         // We need to try attaching the model to get details back
         $this->add($m);
-        array_push($this->linkedModels, $m);
       }
     }
-    // Call pre-submit
-    $this->preSubmit();
-    // Flatten the array to one that can be validated
-    $vArray = array_map($collapseVals, $this->submission['fields']);
-    Kohana::log("info", "About to validate the following array in model ".$this->object_name);
-    Kohana::log("info", kohana::debug($vArray));
+    return true;
+  }
 
-    // If we're editing an existing record.
-    if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
-      $this->find($vArray['id']);
-    }
-    // Create a new record by calling the validate method
-    if ($this->validate(new Validation($vArray), true)) {
-      // Record has successfully validated. Return the id.
-      Kohana::log("info", "Record ".
-        $this->id.
-        " has validated successfully");
-      if ($return != null) $return = $this->id;
-    } else {
-      // Errors. Return null and rollback the transaction.
-      Kohana::log("info", "Record did not validate.");
-      // Print more detailed information on why
-      foreach ($this->errors as $f => $e){
-        Kohana::log("info", "Field ".$f.": ".$e.".");
-      }
-      $return = null;
-    }
-    // If there are submodels, submit them.
+  /**
+   * Generate any records that refer to this model in the subModela part of the
+   * submission.
+   */
+  private function createChildRecords() {
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model
       foreach ($this->submission['subModels'] as $a) {
 
-        Kohana::log("info", "Submitting submodel ".$a['model']['id'].".");
+        Kohana::log("debug", "Submitting submodel ".$a['model']['id'].".");
 
         // Establish the right model
         $m = ORM::factory($a['model']['id']);
 
         // Set the correct parent key in the subModel
         $fkId = $a['fkId'];
-        Kohana::log("info", "Setting field ".$fkId." to ".$this->id);
+        Kohana::log("debug", "Setting field ".$fkId." to ".$this->id);
         $a['model']['fields'][$fkId]['value'] = $this->id;
 
         // Call the submit method for that model and
         // check whether it returns correctly
         $m->submission = $a['model'];
         $result = $m->inner_submit();
-        array_push($this->linkedModels, $m);
-        if ($result == null) $return = null;
+        if (!$result) {
+          // Remember this model so that its errors can be reported
+          array_push($this->linkedModels, $m);
+          return false;
+        }
       }
     }
-    $this->check_required_attributes();
-
-    // Call postSubmit
-    if ($return != null) {
-      $ps = $this->postSubmit();
-        if ($ps == null) {
-          $return = null;
-        }
-    }
-    return $return;
+    return true;
   }
 
   /**
    * Function that iterates through the required attributes of the current model, and
    * ensures that each of them has a submodel in the submission.
    */
-  private function check_required_attributes() {
+  private function checkRequiredAttributes() {
     $this->missingAttrs = array();
 
     // Test if this model has an attributes sub-table.
@@ -379,9 +451,11 @@ abstract class ORM extends ORM_Core {
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
           $this->missingAttrs[$this->attrs_field_prefix.':'.$row->id]='Please specify a value for the '.$row->caption;
+          return false;
         }
       }
     }
+    return true;
   }
 
   /**
@@ -398,7 +472,6 @@ abstract class ORM extends ORM_Core {
     if ($fk == true) {
       foreach ($this->table_columns as $name => $type) {
         if (substr($name, -3) == "_id") {
-          Kohana::log("debug", $name." added as fk field.");
           $a["fk_".substr($name, 0, -3)] = $type;
         }
       }
@@ -407,16 +480,14 @@ abstract class ORM extends ORM_Core {
   }
 
  /**
-  * Overrides the postSubmit() function to provide support for adding attributes
-  * within the transaction for any models which support custom attributes.
+  * Create the records for any attributes attached to the current submission.
   */
-  protected function postSubmit() {
+  protected function createAttributes() {
     if (isset($this->has_attributes) && $this->has_attributes) {
       // Attributes are stored in a metafield.
       if (array_key_exists('metaFields', $this->submission) &&
           array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
       {
-        Kohana::log("info", "About to submit ".$this->object_name." attributes.");
         foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr)
         {
           $value = $attr['fields']['value'];
@@ -458,8 +529,11 @@ abstract class ORM extends ORM_Core {
             $oam = ORM::factory($this->object_name.'_attribute_value');
             $oam->submission = $attr;
             if (!$oam->inner_submit()) {
-              $this->db->query('ROLLBACK');
-              return null;
+              // For attribute value errors, we need to report e.g smpAttr:6 as the error key name, not
+              // the table and field name as normal.
+              $oam->forceErrorKey = $this->attrs_field_prefix.':'.$attrId;
+              array_push($this->linkedModels, $oam);
+              return false;
             }
           }
         }

@@ -96,7 +96,37 @@ class data_entry_helper extends helper_config {
   * @param string $id Id of the control to generate.
   */
   public static function image_upload($id){
-    $r = "<input type='file' id='$id' name='$id' accept='png|jpg|gif'/>";
+    $r = "<input type=\"file\" id=\"$id\" name=\"$id\" accept=\"png|jpg|gif\"/>";
+    $r .= self::check_errors($id);
+    return $r;
+  }
+
+  /**
+   * Helper function to output an HTML text input. This includes re-loading of existing values
+   * and displaying of validation error messages.
+   *
+   * @param string $id Id and name of the control generated, which should correspond to the database field this is
+   * being posted into.
+   */
+  public static function text_input($id) {
+    $r = "<input type=\"text\" id=\"$id\" name=\"$id\" value=\"".
+        data_entry_helper::check_default_value($id).
+        "\">";
+    $r .= self::check_errors($id);
+    return $r;
+  }
+
+  /**
+   * Helper function to output an HTML textarea. This includes re-loading of existing values
+   * and displaying of validation error messages.
+   *
+   * @param string $id Id and name of the control generated, which should correspond to the database field this is
+   * being posted into.
+   */
+  public static function textarea($id) {
+    $r = "<textarea id=\"$id\" name=\"$id\">".
+        data_entry_helper::check_default_value($id).
+        "</textarea>";
     $r .= self::check_errors($id);
     return $r;
   }
