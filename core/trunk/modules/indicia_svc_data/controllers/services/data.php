@@ -783,7 +783,6 @@ class Data_Controller extends Service_Base_Controller {
     // Read calls are done using get values, so we merge the two arrays
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE; // default
-    Kohana::log('info', "Attempting to authenticate.");
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
     {
       $nonce = $array['nonce'];
@@ -791,21 +790,21 @@ class Data_Controller extends Service_Base_Controller {
       $nonces = $this->cache->find($mode);
       if (array_key_exists($nonce, $nonces))
       {
-    $website_id = $nonces[$nonce];
-    $website = ORM::factory('website', $website_id);
-    if ($website->id) {
-      $password = ORM::factory('website', $website_id)->password;
-      if (sha1("$nonce:$password")==$array['auth_token'])
-      {
-        Kohana::log('info', "Authentication successful.");
-        $authentic=TRUE;
-        $this->website_id = $website_id;
-      }
-    }
+        $website_id = $nonces[$nonce];
+        $website = ORM::factory('website', $website_id);
+        if ($website->id) {
+          $password = ORM::factory('website', $website_id)->password;
+          if (sha1("$nonce:$password")==$array['auth_token'])
+          {
+            Kohana::log('info', "Authentication successful.");
+            $authentic=TRUE;
+            $this->website_id = $website_id;
+          }
+        }
 
-    // Refresh the nonce. If it's a write nonce, we'll delete it later when the data has been saved
-    $this->cache->delete($nonce);
-    $this->cache->set($nonce, $website_id, $mode);
+        // Refresh the nonce. If it's a write nonce, we'll delete it later when the data has been saved
+        $this->cache->delete($nonce);
+        $this->cache->set($nonce, $website_id, $mode);
       }
     }
 

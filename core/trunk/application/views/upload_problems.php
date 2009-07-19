@@ -23,7 +23,14 @@
 
 ?>
 The following records failed to import.
-<table>
+<table><thead><tr>
+<?php
+foreach ($headers as $header) {
+  echo "<th>$header</th>";
+}
+?>
+<th>Problem</th>
+</tr></thead><tbody>
 <?php
 foreach ($problems as $record) {
   echo "<tr>";
@@ -33,4 +40,4 @@ foreach ($problems as $record) {
   echo "</tr>";
 }
 ?>
-</table>
+</tbody></table>

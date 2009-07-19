@@ -156,8 +156,8 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       ini_set('auto_detect_line_endings',1);
       // create the file pointer
       $handle = fopen ($csvTempFile, "r");
-      // skip the title row
-      fgetcsv($handle, 1000, ",");
+      // skip the header row
+      $headers = fgetcsv($handle, 1000, ",");
       $problems = array();
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
         $index = 0;
@@ -183,12 +183,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         // Save the record
         $this->model->clear();
         $this->model->submission = $this->wrap($saveArray, true);
-        try {
-          $this->model->submit();
-        } catch (Exception $e) {
-          array_push($data, $e->getMessage());
+        if (!$this->model->submit()) {
+          array_push($data, implode(', ', $this->model->getAllErrors()));
           array_push($problems, $data);
-          kohana::log("info", $e->getMessage());
         }
       }
       fclose($handle);
@@ -197,6 +194,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       unlink($csvTempFile);
       if (count($problems)>0) {
         $view = new View('upload_problems');
+        $view->headers = $headers;
         $view->problems = $problems;
         $this->template->title = "Upload Problems";
         $this->template->content = $view;

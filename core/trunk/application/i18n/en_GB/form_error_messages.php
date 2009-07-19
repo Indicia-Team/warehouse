@@ -58,6 +58,9 @@ $lang = array (
     'default' => 'Invalid input.',
     'required' => 'The taxon must be specified.',
   ),
+  'text_value' => array (
+    'regex' => 'The value is not of the correct format.',
+  ),
   'username' => Array (
     'required' => 'The username cannot be blank.',
     'length' => 'The username must be between 7 and 30 letters in length.',
