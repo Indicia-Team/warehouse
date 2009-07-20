@@ -78,7 +78,7 @@ if ($_POST){
     <link rel='stylesheet' href='../../media/css/comments.css' />
     <script type="text/javascript" src="../../media/js/jquery.js"></script>
     <script type="text/javascript" src="../../media/js/jquery.form.js"></script>
-    <script type="text/javascript" src="../../media/js/ui.core.js"></script>
+    <script type="text/javascript" src="../../media/js/jquery-ui.custom.min.js"></script>
     <script type="text/javascript" src="../../media/js/json2.js"></script>
     <script type='text/javascript'>
     (function($){

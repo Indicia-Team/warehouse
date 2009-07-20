@@ -21,12 +21,13 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+// Output links for jquery ui datepicker.
 echo html::stylesheet(array(
-  'media/css/ui.datepicker.css'
+  'media/css/jquery-ui.custom.css'
 ), false);
 echo html::script(array(
   'media/js/jquery.js',
-  'media/js/ui.datepicker.js'
+  'media/js/jquery-ui.custom.min.js'
 ), false);
 ?>
 <script type='text/javascript'>
