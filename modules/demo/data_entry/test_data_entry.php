@@ -13,6 +13,7 @@ include '../data_entry_config.php';
 <div id="wrap">
 <h1>Indicia Data entry test</h1>
 <?php
+$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
 
 // PHP to catch and submit the POST data from the form - we need to wrap
 // some things manually in order to get the supermodel in.
@@ -36,10 +37,11 @@ else if ($_GET)
   if (array_key_exists('id', $_GET))
   {
     $url = 'http://localhost/indicia/index.php/services/data/occurrence/'.$_GET['id'];
-    $url .= "?mode=json&view=detail";
+    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $entity = json_decode(curl_exec($session), true);
+    print_r($entity);
     $entity_to_load = $entity[0];
   }
   else
@@ -57,7 +59,6 @@ $reload_post_data=true;
 <?php
 // Get authentication information
 echo data_entry_helper::get_auth($config['website_id'], $config['password']);
-$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
 ?>
 <input type='hidden' id='website_id' name='website_id' value='1' />
 <input type='hidden' id='record_status' name='record_status' value='C' />

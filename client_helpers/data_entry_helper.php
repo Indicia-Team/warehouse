@@ -362,7 +362,7 @@ class data_entry_helper extends helper_config {
   * @param string $default Optional. Date to display in this field by default.
   */
   public static function date_picker($id, $default = '') {
-    self::add_resource('datepicker');
+    self::add_resource('jquery_ui');
     global $javascript;
     $default = self::check_default_value($id, $default, lang::get('click here'));
     $escaped_id=str_replace(':','\\\\:',$id);
@@ -1227,8 +1227,7 @@ class data_entry_helper extends helper_config {
       'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
       'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
       'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.autocomplete.css"), 'javascript' => array("$base/media/js/jquery.autocomplete.js")),
-      'ui_core' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/ui.core.js")),
-      'datepicker' => array('deps' => array('ui_core'), 'stylesheets' => array("$base/media/css/ui.datepicker.css"), 'javascript' => array("$base/media/js/ui.datepicker.js")),
+      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js")),
       'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/json2.js")),
       'treeview' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.treeview.css"), 'javascript' => array("$base/media/js/jquery.treeview.js", "$base/media/js/jquery.treeview.async.js",
       "$base/media/js/jquery.treeview.edit.js")),

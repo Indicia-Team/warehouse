@@ -8,14 +8,14 @@ include 'data_entry/data_entry_config.php';
 <link rel="stylesheet" href="../../media/css/jquery.treeview.css" />
 
 <script type="text/javascript" src="../../media/js/jquery-1.3.1.js"></script>
-<script type="text/javascript" src="../../media/js/ui.core.js"></script>
+<script type="text/javascript" src="../../media/js/jquery-ui.custom.min.js"></script>
 <script type="text/javascript" src="../../media/js/json2.js"></script>
 
-	<script src="../../media/js/jquery.cookie.js" type="text/javascript"></script>
-	<script src="../../media/js/jquery.treeview.js" type="text/javascript"></script>
-	<script src="../../media/js/jquery.treeview.edit.js" type="text/javascript"></script>
-	<script src="../../media/js/jquery.treeview.async.js" type="text/javascript"></script>
-	
+  <script src="../../media/js/jquery.cookie.js" type="text/javascript"></script>
+  <script src="../../media/js/jquery.treeview.js" type="text/javascript"></script>
+  <script src="../../media/js/jquery.treeview.edit.js" type="text/javascript"></script>
+  <script src="../../media/js/jquery.treeview.async.js" type="text/javascript"></script>
+
 </head>
 <body>
 <h1>Treeview Test Page</h1>
@@ -42,4 +42,3 @@ include 'data_entry/data_entry_config.php';
  </body>
  <?php echo data_entry_helper::dump_javascript(); ?>
  </html>
- 
