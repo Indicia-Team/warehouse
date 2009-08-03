@@ -28,15 +28,7 @@ defined('SYSPATH') or die('No direct script access.');
  * then a full URL will be used, eg: http://localhost/kohana/. If it only includes
  * the path, and a site_protocol is specified, the domain will be auto-detected.
  */
-$config['site_domain'] = '*url_base_path*';
-
-/**
- * autodetect of the url base path
-rem*/
-include(dirname(dirname(dirname(__file__))) . '/modules/indicia_setup/libraries/Zend_Controller_Request_Http.php');
-$zend_http = new Zend_Controller_Request_Http;
-$config['site_domain'] = preg_replace("/index\.php.*$/","", $zend_http->getHttpHost() . $zend_http->getBaseUrl());
-/**/
+$config['site_domain'] = '*site_domain*';
 
 /**
  * Force a default protocol to be used by the site. If no site_protocol is
@@ -135,7 +127,6 @@ $config['modules'] = array
          MODPATH.'indicia_svc_security',  // Security services
          MODPATH.'indicia_svc_spatial',   // Spatial services
          MODPATH.'indicia_setup',         // Setup procedures
-         MODPATH.'indicia_setup_check',	  // Post-setup testing - disable this module once configured.
          MODPATH.'sref_osgb',             // OSGB grid notation
          MODPATH.'demo',                  // Demo and test pages
 );

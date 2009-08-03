@@ -4,7 +4,7 @@ $lang = array
 (
     'title'       => 'Indicia Setup',
     'description' => 'Before you start, please create a PostGIS database using the template, for example using the script: <br />' .
-        'CREATE DATABASE indicia TEMPLATE=template_postgis;<br />'.
+        '*code*'.
         'Then, create a user login with the required access to this database. The schema you define below will be auto-created by the '.
         'setup procedure. For more information, see <a href="http://code.google.com/p/indicia/wiki/Installation">the Installation Guide</a>.',
     'database'    => 'Database',
@@ -45,7 +45,12 @@ $lang = array
     'error_no_postgres_client_extension' => 'No php_pgsql extension found (postgresql). Check your php.ini file.',
     'error_no_php_curl_extension'        => 'No php_curl extension found. Check your php.ini file.',
     'error_upgrade_for_end_user'   => 'Fatal upgrade error. The system is in an unstable state. Please consult the error log file in /application/logs/. For further support, please refer to the <a href="http://forums.nbn.org.uk/viewforum.php?id=19">Indicia Forum</a>.',
-    'error_downgrade_not_possible' => 'Current indicia script version is lower than the database version. Downgrade not possible.'
+    'error_downgrade_not_possible' => 'Current indicia script version is lower than the database version. Downgrade not possible.',
+    'host_required' => 'Please specify the PopstgreSQL database host.',
+    'port_required' => 'Please specify the PopstgreSQL database port.',
+    'name_required' => 'Please specify the PopstgreSQL database name.',
+    'user_required' => 'Please specify the PopstgreSQL database user.',
+    'password_required' => 'Please specify the PopstgreSQL database password.',
 );
 
 ?>

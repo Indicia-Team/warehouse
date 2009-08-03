@@ -60,7 +60,7 @@
 
             <?php if ( ! empty($line) AND ! empty($file)): ?>
             <p><?php echo Kohana::lang('core.error_file_line', $file, $line) ?></p>
-            <?php endif ?>
+            <?php endif; ?>
 
             <pre><?php echo $message ?></pre>
 

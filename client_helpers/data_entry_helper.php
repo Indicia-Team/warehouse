@@ -1348,12 +1348,12 @@ class data_entry_helper extends helper_config {
    */
   public static function system_check($fullInfo) {
     // PHP_VERSION_ID is available as of PHP 5.2.7, if our
-  // version is lower than that, then emulate it
-  if(!defined('PHP_VERSION_ID'))
-  {
-      $version = PHP_VERSION;
-      define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
-  }
+    // version is lower than that, then emulate it
+    if(!defined('PHP_VERSION_ID'))
+    {
+        $version = PHP_VERSION;
+        define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
+    }
     $r = '<div class="info"><strong>System check</strong><ul>';
     // Test PHP version.
     if (PHP_VERSION_ID<50200) {

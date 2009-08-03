@@ -73,6 +73,10 @@ form.cmxform fieldset label.wide {
   width: 300px; /* Width of labels */
 }
 
+form.widelabels fieldset label {
+  width: 300px; /* Width of labels */
+}
+
 form.cmxform fieldset select.narrow {
   width: 150px;
 }
