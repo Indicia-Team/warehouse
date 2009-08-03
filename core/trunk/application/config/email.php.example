@@ -20,13 +20,14 @@ $config['driver'] = 'smtp';
  * @param   array   smtp: hostname, (username), (password), (port), (auth), (encryption)
  */
 $config['options'] = array(
-'hostname' => '[TBC]',
-'username' => '[TBC]',
-'password' => '[TBC]',
-'port' => '25',
+'hostname' => '*hostname*',
+'username' => '*username*',
+'password' => '*password*',
+'port' => '*port*',
 'auth' => '');
 
-$config['address'] = '[TBC]';
-$config['forgotten_passwd_title'] = 'Forgotten Password';
-$config['server_name'] = '[Indicia Default]';
+$config['address'] = '*address*';
+$config['forgotten_passwd_title'] = '*forgotten_passwd_title*';
+$config['server_name'] = '*server_name*';
+$config['test_result'] = '*test_result*';
 

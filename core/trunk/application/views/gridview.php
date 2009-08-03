@@ -43,8 +43,8 @@ in <select name='columns'>
 <input id='gvFilterButton' type='submit' value='Filter'/>
 </form>
 </div>
-<table id='pageGrid'>
-<thead>
+<table id="pageGrid" class="ui-widget ui-widget-content">
+<thead class="ui-widget-header">
 <tr class='headingRow'>
 <?php
 foreach ($columns as $name => $newname) {

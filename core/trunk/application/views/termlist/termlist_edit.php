@@ -21,14 +21,35 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-if ($model->parent_id != null) { ?>
+?>
+<script type="text/javascript">
+  $(document).ready(function(){
+    var $tabs=$("#tabs").tabs();
+    var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
+    if (initTab!='') {
+      $tabs.tabs('select', '#' + initTab);
+
+    }
+  });
+</script>
+
+<?php if ($model->parent_id != null) : ?>
 <h1>Subset of:
-<a href="<?php echo url::site() ?>termlist/edit/<?php echo $model->parent_id ?>" >
+<a href="<?php echo url::site(); ?>termlist/edit/<?php echo $model->parent_id ;?>" >
 <?php echo ORM::factory("termlist",$model->parent_id)->title ?>
 </a>
 </h1>
-<?php } ?>
-<form class="cmxform"  name='editList' action="<?php echo url::site().'termlist/save' ?>" method="POST">
+<?php endif; ?>
+<div id="tabs">
+  <ul>
+    <li><a href="#details"><span>List Details</span></a></li>
+<?php if ($model->id != null) : ?>
+    <li><a href="<?php echo url::site().'termlists_term/'.$model->id; ?>"><span>Terms</span></a></li>
+    <li><a href="#sublists"><span>Child Lists</span></a></li>
+<?php endif; ?>
+  </ul>
+<div id="details">
+<form class="cmxform"  name='editList' action="<?php echo url::site().'termlist/save'; ?>" method="POST">
 <?php echo $metadata ?>
 <fieldset>
 <legend>List Details</legend>
@@ -47,9 +68,9 @@ if ($model->parent_id != null) { ?>
 </li>
 <li>
 <label for="website">Owned by</label>
-<?php if ($model->parent_id != null && $model->parent->website_id != null) { ?>
+<?php if ($model->parent_id != null && $model->parent->website_id != null) : ?>
 <input type="hidden" id="website_id" name="website_id" value="<?php echo $model->parent->website_id; ?>" />
-<?php } ?>
+<?php endif; ?>
 <select id="website_id" name="website_id" <?php if ($model->parent_id != null && $model->parent->website_id != null) echo "disabled='disabled'"; ?>>
   <option value=''>&lt;Warehouse&gt;</option>
 <?php
@@ -73,19 +94,21 @@ if ($model->parent_id != null) { ?>
 <input type="submit" name="submit" value="Delete" />
 <?php echo html::error_message($model->getError('deleted')); ?>
 </form>
-<?php if ($model->id != '') { ?>
-<br/>
-<form class="cmxform" action="<?php echo url::site().'termlists_term/page/'.$model->id ?>" >
-<input type="submit" value="View Terms" />
-</form>
-<?php if ( $table != null) { ?>
-  <br />
+</div>
+<?php if (isset($table)) : ?>
   <div id="sublists">
-  <h2> Sublists </h2>
+  <p>Child lists are lists which contain the same type of information as their parents, but only contain a subset of the terms.
+  For example, a child list can be used to customise a termlist to a specific set of terms for use on a website.</p>
   <?php echo $table; ?>
-<form class="cmxform" action="<?php echo url::site(); ?>/termlist/create" method="post">
-  <input type="hidden" name="parent_id" value=<?php echo $model->id ?> />
-  <input type="submit" value="New Sublist" />
+<form class="cmxform" action="<?php echo url::site(); ?>termlist/create" method="post">
+  <input type="hidden" name="parent_id" value=<?php echo $model->id; ?> />
+  <input type="submit" value="New Child List" />
   </form>
   </div>
-<?php }} ?>
+<?php endif; ?>
+</div>
+<?php if ($model->id != '') : ?>
+<form class="cmxform" action="<?php echo url::site().'termlists_term/'.$model->id; ?>" >
+<input type="submit" value="View Terms" />
+</form>
+<?php endif; ?>

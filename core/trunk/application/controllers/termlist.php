@@ -45,9 +45,7 @@ class Termlist_Controller extends Gridview_Base_Controller {
     if (!$this->record_authorised($id))
     {
       $this->access_denied('record with ID='.$id);
-    }
-        else
-        {
+    } else {
       // Generate models
       $this->model->find($id);
       $gridmodel = ORM::factory('gv_termlist',$id);
@@ -63,7 +61,7 @@ class Termlist_Controller extends Gridview_Base_Controller {
         'title'=>'',
         'description'=>''));
       $grid->actionColumns = array(
-        'edit' => 'termlist/edit/£id£'
+        'edit' => "termlist/edit/£id£"
       );
 
       $vArgs = array('table' => $grid->display());
@@ -118,6 +116,18 @@ class Termlist_Controller extends Gridview_Base_Controller {
       return (in_array($termlist->website_id, $this->auth_filter['values']));
     }
     return true;
+  }
+
+  /**
+   * After a submission, override the default return page behaviour so that if the
+   * termlist has a parent id, the edit page for that record is returned to.
+   */
+  protected function get_return_page() {
+    if ($this->model->parent_id != null) {
+      return "termlist/edit/".$this->model->parent_id."?tab=sublists";
+    } else {
+      return $this->model->object_name;
+    }
   }
 }
 ?>

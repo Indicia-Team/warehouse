@@ -33,20 +33,29 @@
 <meta id="baseURI" name="baseURI" content="<?php echo url::site() ?>" />
 <meta id="routedURI" name="routedURI" content="<?php echo url::site().router::$routed_uri; ?>" />
 
-<?php echo html::stylesheet(array('media/css/site',),array('screen',)); ?>
-<?php echo html::stylesheet(array('media/css/forms',),array('screen',)); ?>
-<?php echo html::stylesheet(array('media/css/thickbox',),array('screen',)); ?>
-<?php echo html::stylesheet(array('media/css/jquery.autocomplete',),array('screen',)); ?>
+<?php
+echo html::stylesheet(
+  array(
+    'media/css/site',
+    'media/css/forms',
+    'media/css/thickbox',
+    'media/css/jquery.autocomplete',
+    'media/css/jquery-ui.custom'
+  ),
+  array('screen')
+); ?>
 
 <!-- BEGIN: jquery/superfish init -->
 <?php
     echo html::script(array(
       'media/js/json2.js',
-            'media/js/jquery.js',
-            'media/js/jquery.url.js',
-            'media/js/hasharray.js',
-            'media/js/superfish.js',
-        ), FALSE);
+      'media/js/jquery.js',
+      'media/js/jquery.url.js',
+      'media/js/jquery.url.js',
+      'media/js/hasharray.js',
+      'media/js/superfish.js',
+      'media/js/jquery-ui.custom.min.js'
+    ), FALSE);
 ?>
 
 <?php echo html::stylesheet(array('media/css/menus',),array('screen',)); ?>

@@ -60,40 +60,14 @@ table
 
 th
 {
-  border-right: 1px solid #C1DAD7;
-  border-bottom: 1px solid #C1DAD7;
-  border-top: 1px solid #C1DAD7;
   text-align: left;
   padding: 3px 6px 3px 6px;
-  background-color: #CAE8EA;
 }
 
 table#pageGrid thead tr th
 {
-  background-repeat: no-repeat;
-  background-position: center right;
   padding-right: 20px;
   cursor: pointer;
-}
-
-table#pageGrid thead tr th.gvColAsc, table#pageGrid thead tr th.gvColDesc
-{
-  background-color: #CAEFAB;
-}
-
-table#pageGrid thead tr th.gvCol
-{
-  background-image: url(../images/bg.gif);
-}
-
-table#pageGrid thead tr th.gvColAsc
-{
-  background-image: url(../images/asc.gif);
-}
-
-table#pageGrid thead tr th.gvColDesc
-{
-  background-image: url(../images/desc.gif);
 }
 
 td
@@ -144,6 +118,14 @@ h1
   letter-spacing:-1px;
 }
 
+h2
+{
+  color: #103A6A;
+  margin-bottom: 2px;
+  font-size: 1.2em;
+  letter-spacing:-1px;
+}
+
 #footer
 {
   clear:both;
@@ -169,8 +151,30 @@ p#metadata_toggle
   font-size: 90%;
 }
 
-#sublists
-{
-  border-top: 2px solid #C1DAD7;
-  margin-top: 16px;
+.error {
+  background-color: #FFEEEE;
+  border: solid red 1px;
+  padding: 1em;
+  width: 700px;
+}
+
+.error p {
+  background: url(../images/cross.png) top left no-repeat;
+  padding-left: 26px;
+}
+
+.success {
+  background-color: #EEFFEE;
+  border: solid green 1px;
+  padding: 1em;
+  width: 700px;
+}
+
+.success p {
+  background: url(../images/tick.png) top left no-repeat;
+  padding-left: 26px;
+}
+
+#tabs {
+  margin-bottom: 0.5em;
 }

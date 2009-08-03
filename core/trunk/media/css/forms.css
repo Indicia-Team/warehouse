@@ -4,7 +4,8 @@ form fieldset {
 
 form.cmxform fieldset {
   margin-bottom: 10px;
-  border: solid 1px black;
+  border: solid 1px #AAAAAA;
+  -moz-border-radius: 4px; -webkit-border-radius: 4px;
 }
 form.cmxform legend {
   padding: 0 2px;
@@ -46,7 +47,7 @@ form.cmxform fieldset fieldset label {
   margin-left: 123px; /* Width plus 3 (html space) */
 }
 form.cmxform fieldset textarea {
-  width: 560px;
+  width: 520px;
 }
 form.cmxform fieldset input, form.cmxform select {
   width: 300px;

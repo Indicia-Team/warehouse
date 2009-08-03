@@ -73,35 +73,35 @@ echo data_entry_helper::get_auth($config['website_id'], $config['password']);
 <br />
 <label for="sample:location_name">Locality Description:</label>
 <input name="sample:location_name" class="wide" value='<?php echo data_entry_helper::check_default_value('location_name'); ?>'/><br />
-<label for="sample:survey_id">Survey</label>
+<label for="sample:survey_id">Survey:</label>
 <?php echo data_entry_helper::select('sample:survey_id', 'survey', 'title', 'id', $readAuth); ?>
 <br />
-<label for='occurrence:determiner_id:caption'>Determiner</label>
+<label for='occurrence:determiner_id:caption'>Determiner:</label>
 <?php echo data_entry_helper::autocomplete('occurrence:determiner_id', 'person', 'caption', 'id', $readAuth); ?>
 <br />
-<label for='sample:comment'>Comment</label>
+<label for='sample:comment'>Comment:</label>
 <textarea name='sample:comment' class="wide"><?php echo data_entry_helper::check_default_value('comment'); ?></textarea>
 <br />
-<label for='occurrence_image'>Image Upload</label>
+<label for='occurrence_image'>Image Upload:</label>
 <?php echo data_entry_helper::image_upload('occurrence:image'); ?>
 <fieldset>
 <legend>Occurrence attributes</legend>
-<label for='<?php echo $config['dafor']; ?>'>Abundance DAFOR</label>
+<label for='<?php echo $config['dafor']; ?>'>Abundance DAFOR:</label>
 <?php echo data_entry_helper::select($config['dafor'], 'termlists_term', 'term', 'id', $readAuth + array('termlist_id' => $config['dafor_termlist'])); ?>
 <br />
-<label for='<?php echo $config['det_date']; ?>'>Determination Date</label>
+<label for='<?php echo $config['det_date']; ?>'>Determination Date:</label>
 <input type='text' name='<?php echo $config['det_date']; ?>' id='<?php echo $config['det_date']; ?>'/><br />
 </fieldset>
 <fieldset>
 <legend>Sample attributes</legend>
-<label for='<?php echo $config['weather']; ?>'>Weather</label>
+<label for='<?php echo $config['weather']; ?>'>Weather:</label>
 <input type='text' name='<?php echo $config['weather']; ?>' class="wide" id='<?php echo $config['weather']; ?>'/><br />
-<label for='<?php echo $config['temperature']; ?>'>Temperature (Celsius)</label>
+<label for='<?php echo $config['temperature']; ?>'>Temperature (Celsius):</label>
 <input type='text' name='<?php echo $config['temperature']; ?>' id='<?php echo $config['temperature']; ?>'/><br />
-<label for='<?php echo $config['surroundings']; ?>'>Surroundings</label>
+<label for='<?php echo $config['surroundings']; ?>'>Surroundings:</label>
 <div style="display: inline-block"><?php echo data_entry_helper::radio_group($config['surroundings'], 'termlists_term', 'term', 'id', $readAuth + array('termlist_id' => $config['surroundings_termlist']), '<br />'); ?></div>
 <br/>
-<label for='<?php echo $config['site_usage']; ?>[]'>Site Usage</label>
+<label for='<?php echo $config['site_usage']; ?>[]'>Site Usage:</label>
 <?php echo data_entry_helper::listbox($config['site_usage'].'[]', 'termlists_term', 'term', 4, true, 'id', $readAuth + array('termlist_id' => $config['site_usage_termlist'])); ?>
 </fieldset>
 <input type="submit" value="Save" />

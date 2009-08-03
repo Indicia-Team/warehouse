@@ -11,7 +11,7 @@ include '../data_entry_config.php';
 </head>
 <body>
 <div id="wrap">
-<h1>Occurrence Data Entry</h1>
+
 <?php
 // Catch a submission to the form and send it to Indicia
 if ($_POST)
@@ -24,8 +24,9 @@ if ($_POST)
 }
 
 ?>
-<form method="post" >
-<fieldset>
+<form method="post" class="ui-widget ui-widget-content ui-corner-all">
+<h1 class="ui-widget-header ui-corner-all">Occurrence Data Entry</h1>
+<fieldset class="ui-widget ui-widget-content ui-corner-all">
 <?php
 // Get authentication information
 echo data_entry_helper::get_auth($config['website_id'], $config['password']);

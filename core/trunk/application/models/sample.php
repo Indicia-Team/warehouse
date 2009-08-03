@@ -61,6 +61,7 @@ class Sample_Model extends ORM
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('date_type', 'required', 'length[1,2]');
+    $array->add_rules('date_start', 'date_in_past');
     $array->add_rules('entered_sref', "required");
     $array->add_rules('entered_sref_system', 'required');
     if (array_key_exists('entered_sref_system', $orig_values)) {

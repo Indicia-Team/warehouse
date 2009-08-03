@@ -41,6 +41,13 @@ class Valid extends Valid_Core {
   }
 
   /**
+  * Validates that a date is not in the future.
+  */
+  public static function date_in_past($date) {
+    return ($date == null || strtotime($date) <= time());
+  }
+
+  /**
    * Validates that a value is unique across a table column, NULLs are ignored.
    * When checking a new record, just count all records in DB. When Updating, count all
    * records excluding the one we are updating.
@@ -124,5 +131,7 @@ class Valid extends Valid_Core {
 
     return TRUE;
   }
+
+
 }
 ?>
