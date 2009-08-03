@@ -60,7 +60,6 @@ class Setup_Check_Controller extends Indicia_Controller {
    */
   public function config_email_save()
   {
-    // TODO: test the email settings by sending an email to the administrator.
     $source = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/email.php.example";
     $dest = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/email.php";
     try {
@@ -81,13 +80,33 @@ class Setup_Check_Controller extends Indicia_Controller {
 
     if(false === file_put_contents($dest, $_source_content))
     {
-        $this->error = "Email configuration failed as the file $file could not be written.";
+      $this->error = "Email configuration failed as the file $file could not be written.";
       Kohana::log("error", "Can't write file: $file");
       $this->config_email();
       return;
     }
-    //
-    url::redirect('setup_check');
+    try {
+      $swift = email::connect();
+      $message = new Swift_Message('Setup test',
+          'Email to test the Indicia server email configuration. Do not reply to this email.',
+          'text/html');
+      $person = ORM::factory('person', $_SESSION['auth_user']->person_id);
+      $recipients = new Swift_RecipientList();
+      $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
+      if ($swift->send($message, $recipients, $_POST['address'])==1) {
+         $_source_content = str_replace("*test_result*", 'pass', $_source_content);
+         file_put_contents($dest, $_source_content);
+         url::redirect('setup_check');
+      } else {
+        $this->error = "Please check your email configuration. The test email was not sent successfully.";
+        $this->config_email();
+      }
+    } catch (ErrorException $e) {
+      // Swift mailer messages tend to have the error message as the last part, with each part colon separated.
+      $msg = explode(':', $e->getMessage());
+      $this->error = $msg[count($msg)-1];
+      $this->config_email();
+    }
   }
 
 }

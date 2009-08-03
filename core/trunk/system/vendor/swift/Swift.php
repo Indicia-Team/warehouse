@@ -388,6 +388,7 @@ class Swift
       } catch (Swift_BadResponseException $e) {
         $failed++;
         $send_event->addFailedRecipient($address->getAddress());
+        kohana::log('debug', $e->getMessage());
         if ($log->hasLevel(Swift_Log::LOG_FAILURES)) $log->addfailedRecipient($address->getAddress());
       }
     }

@@ -81,7 +81,10 @@ class Sample_Controller extends Gridview_Base_Controller
       $grid->base_filter = array('sample_id' => $id, 'deleted' => 'f');
       $grid->columns = array('taxon' => '');
       $grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
-      $vArgs = array('occurrences' => $grid->display());
+      $vArgs = array(
+          'occurrences' => $grid->display(),
+          'method_terms' => $this->get_termlist_terms('indicia:sample_methods')
+      );
       $this->setView('sample/sample_edit', 'Sample', $vArgs);
     }
   }
@@ -95,5 +98,20 @@ class Sample_Controller extends Gridview_Base_Controller
     $grid->columns = array('taxon' => '');
 
     return $grid->display();
+  }
+
+  /**
+   * Returns a set of terms for a termlist.
+   *
+   * @param string $termlist Name of the termlist, from the termlist's external_key field.
+   */
+  protected function get_termlist_terms($termlist) {
+    $arr=array();
+    $sample_method_termlist = ORM::factory('termlist')->where('external_key', $termlist)->find();
+    $terms = ORM::factory('termlists_term')->where(array('termlist_id' => $sample_method_termlist, 'deleted' => 'f'))->find_all();
+    foreach ($terms as $term) {
+      $arr[$term->id] = $term->term->term;
+    }
+    return $arr;
   }
 }

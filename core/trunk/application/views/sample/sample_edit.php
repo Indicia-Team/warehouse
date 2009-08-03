@@ -85,12 +85,7 @@ onclick="enter_sref();"/>
  <li>
  <label for='sample_method_id'>Sample Method:</label>
  <?php
- $sm = Kohana::config('termlists.sample_methods');
- $terms = ORM::factory('termlists_term')->where(array('termlist_id' => $sm, 'deleted' => 'f'))->find_all();
- foreach ($terms as $term) {
-   $arr[$term->id] = $term->term->term;
- }
- print form::dropdown('sample_method_id', $arr, $model->sample_method_id);
+ print form::dropdown('sample_method_id', $method_terms, $model->sample_method_id);
  echo html::error_message($model->getError('sample_method_id'));
  ?>
  </li>
