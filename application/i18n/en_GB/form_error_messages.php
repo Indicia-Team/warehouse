@@ -81,6 +81,9 @@ $lang = array (
     'required' => 'The spatial reference must be supplied.',
     'sref' => 'The spatial reference is not recognised.',
   ),
+  'date_start' => Array (
+    'date_in_past' => 'Please specify a date that is not in the future.'
+  ),
   'date_type' => Array (
     'required' => 'Please supply a date for your observation.',
     'default' => 'Unrecognised vague date type',

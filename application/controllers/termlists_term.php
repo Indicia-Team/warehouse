@@ -28,11 +28,14 @@
  * @subpackage Controllers
  */
 class Termlists_term_Controller extends Gridview_Base_Controller {
+
   public function __construct() {
     parent::__construct(
       'termlists_term',
       'gv_termlists_term',
-             'termlists_term/index');
+      'termlists_term/index'
+    );
+
     $this->base_filter['parent_id']=null;
     $this->base_filter['preferred']='t';
     $this->columns = array(
@@ -115,7 +118,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     // Add items to view
     $vArgs = array(
       'termlist_id' => $this->model->termlist_id,
-      'table' => $grid->display(),
+      'table' => $grid->display(true),
       'synonomy' => $this->formatCommonSynonomy($this->
           getSynonomy($this->model->meaning_id)),
       );

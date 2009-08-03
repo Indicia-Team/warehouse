@@ -214,6 +214,9 @@ class Setup_Controller extends Template_Controller
                 return false;
             }
 
+            // If write termlist config fails, don't worry as the config test will help the user fix it.
+            // TODO: $this->write_termlist_config();
+
             return true;
         }
 

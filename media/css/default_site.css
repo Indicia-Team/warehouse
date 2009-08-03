@@ -53,9 +53,12 @@ table.speciesCheckList td, table.speciesCheckList th {
   z-index: 2000;
 }
 
-.error {
-  border: solid red 1px;
-  background-color: #FFCCCC;
+.inline-error {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  margin-left: 0.3em;
 }
 
 .error_message {
@@ -71,18 +74,18 @@ table.speciesCheckList td, table.speciesCheckList th {
 }
 
 label {
-  width: 200px;
+  width: 160px;
   display:-moz-inline-stack;
   display:inline-block;
   zoom:1;
   *display:inline;
-  line-height: 1.9em;
   vertical-align: top;
+  margin: 4px 0 4px 0;
 }
 
-input {
-  vertical-align: middle;
-  margin-bottom: 8px;
+input, select, textarea {
+  vertical-align: top;
+  margin: 4px 0 4px 0;
 }
 
 .auto {

@@ -980,7 +980,7 @@ class data_entry_helper extends helper_config {
   public static function build_sample_occurrence_submission($values) {
     return self::build_submission($values, array(
         'model' => 'sample',
-        'submodel' => array('model' => 'occurrence', fk => 'sample_id')
+        'submodel' => array('model' => 'occurrence', 'fk' => 'sample_id')
     ));
   }
 
@@ -1110,7 +1110,7 @@ class data_entry_helper extends helper_config {
           // And tell the helper to reload the existing data.
           $entity_to_load = $_POST;
         } else {
-          echo '<div class="error">';
+          echo '<div class="ui-state-error ui-corner-all">';
           echo '<p>An error occurred when the data was submitted.</p>';
           if (is_array($response['error'])) {
             echo '<ul>';
@@ -1141,7 +1141,7 @@ class data_entry_helper extends helper_config {
       }
     }
   else
-    echo "<div class=\"error\">$response</div>";
+    echo "<div class=\"ui-state-error ui-corner-all\">$response</div>";
   }
 
 
@@ -1295,7 +1295,9 @@ class data_entry_helper extends helper_config {
        }
     }
     if ($error!='') {
-       return '<span class="error">'.lang::get($error).'</span>';
+       return '<br/><div class="ui-state-error ui-corner-all inline-error">'.
+           '<span class="ui-icon ui-icon-alert" style="float: left; margin-left: 3px;"></span>'.
+           lang::get($error).'</div>';
     } else {
       return '';
     }

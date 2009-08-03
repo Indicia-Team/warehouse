@@ -38,6 +38,10 @@ class Indicia_Controller extends Template_Controller {
 
   public function __construct()
   {
+    // AJAX requests don't need an outer template
+    if (request::is_ajax()) {
+      $this->template = 'templates/blank';
+    }
     parent::__construct();
 
     // assign view array with system information
@@ -229,7 +233,7 @@ class Indicia_Controller extends Template_Controller {
   protected function submit_succ($id)
   {
     Kohana::log("info", "Submitted record ".$id." successfully.");
-    url::redirect($this->model->object_name);
+    url::redirect($this->get_return_page());
   }
 
   /**
@@ -355,6 +359,14 @@ class Indicia_Controller extends Template_Controller {
 
     // Fetch the output and close the buffer
     return ob_get_clean();
+  }
+
+  /**
+   * Return the page to redirect to after a submission. Normally the same as the model name
+   * (i.e. the controller's index page) but can be forced elsewhere by overriding this method.
+   */
+  protected function get_return_page() {
+    return $this->model->object_name;
   }
 
 }

@@ -12,15 +12,11 @@ class Indicia
      */
     public static function indicia_exception_handler($errno, $errstr, $errfile, $errline)
     {
-        try
-        {
-            throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-        }
-        catch (Exception $e)
-        {
-            print get_class($e)." thrown within the exception handler. Message: ".$e->getMessage().
-                    " on line ".$e->getLine()." in file ".$e->getFile();
-        }
+      kohana::log('error', "Error occurred");
+      kohana::log('error', $errno);
+      kohana::log('error', $errstr);
+      kohana::log('error', "In $errfile on line $errline");
+      throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
     }
 
     /**
@@ -60,7 +56,9 @@ class Indicia
             $db = Database::instance();
             $result = $db->query('SET search_path TO ' . $_schema . ', public, pg_catalog');
         }
+
     }
+
 
 }
 

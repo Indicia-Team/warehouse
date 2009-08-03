@@ -42,10 +42,16 @@ class Gridview_Controller extends Controller {
     $gridview->actionColumns = array();
     return $gridview;
   }
-  function display() {
-    /**
-     * Renders the grid with whatever parameters are supplied
-     */
+
+  /**
+   * Renders the grid with whatever parameters are supplied.
+   *
+   * @param boolean $forceFullTable Set to true to force the entire grid to be output,
+   * even if in an AJAX request. This allows an AJAX request to embed the grid into a tab,
+   * for example.
+   */
+  function display($forceFullTable=false) {
+
     $gridview = new View('gridview');
     $gridview_body = new View('gridview_body');
 
@@ -105,7 +111,7 @@ class Gridview_Controller extends Controller {
     $gridview_body->columns = $this->columns;
     $gridview_body->actionColumns = $this->actionColumns;
 
-    if(request::is_ajax()){
+    if(request::is_ajax() && !$forceFullTable){
       if ($this->input->get('type',null) == 'pager'){
         echo $pagination;
       } else {

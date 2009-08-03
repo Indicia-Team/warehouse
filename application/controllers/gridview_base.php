@@ -95,7 +95,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $grid->actionColumns = $this->actionColumns;
 
     // Add table to view
-    $this->view->table = $grid->display();
+    $this->view->table = $grid->display(true);
 
     // Templating
     $this->template->title = $this->pagetitle;
