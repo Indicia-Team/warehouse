@@ -27,16 +27,11 @@
  */
 foreach ($checks as $check) {
   if ($check['success']) {
-    echo '<div class="success">';
+    echo html::page_notice($check['title'], $check['description']);
   } else {
-    echo '<div class="error">';
+    echo html::page_error($check['title'], $check['description'],
+      'Fix '.strtolower($check['title']).'...', url::base(true).'setup_check/'.$check['action']);
   }
-  echo '<h2>'.$check['title'].'</h2>';
-  echo '<p>'.$check['description'];
-  if (array_key_exists('action', $check)) {
-    echo ' <a href="'.url::base(true).'setup_check/'.$check['action'].'">Fix '.strtolower($check['title']).'...</a></p>';
-  }
-  echo '</div>';
 }
 
 

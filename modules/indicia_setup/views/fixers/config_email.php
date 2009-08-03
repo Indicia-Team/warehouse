@@ -1,6 +1,6 @@
 <?php
 if ($error!=null) {
-  echo "<div class=\"error\">$error</div>";
+  echo html::page_error('Email configuration test failed', $error);
 }
 $current=kohana::config('email');
 // if first time email has been configured, set up some Indicia defaults that are not in the Kohana system version.
@@ -29,7 +29,7 @@ if (!array_key_exists('server_name', $current)) {
 <p> The following options configure the Indicia Warehouse to be able to access your email system to send emails.</p>
 <ol>
 <li>
-  <label for="hostname">Email server SMTP hostname:</label>
+  <label for="hostname">Outgoing mail server (SMTP):</label>
   <input name="hostname" type="text" value="<?php echo $current['options']['hostname']; ?>"/>
 </li>
 <li>
@@ -57,5 +57,6 @@ if (!array_key_exists('server_name', $current)) {
   <input name="server_name" type="text" value="<?php echo $current['server_name']; ?>" />
 </li>
 </ol>
-<input type="Submit" value="Save" class="default" />
+</fieldset>
+<input type="Submit" value="Test and Save" class="default" />
 </form>

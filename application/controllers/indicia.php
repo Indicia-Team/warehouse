@@ -369,4 +369,19 @@ class Indicia_Controller extends Template_Controller {
     return $this->model->object_name;
   }
 
+  /**
+   * Returns a set of terms for a termlist, which can be used to populate a termlist drop down.
+   *
+   * @param string $termlist Name of the termlist, from the termlist's external_key field.
+   */
+  protected function get_termlist_terms($termlist) {
+    $arr=array();
+    $sample_method_termlist = ORM::factory('termlist')->where('external_key', $termlist)->find();
+    $terms = ORM::factory('termlists_term')->where(array('termlist_id' => $sample_method_termlist, 'deleted' => 'f'))->find_all();
+    foreach ($terms as $term) {
+      $arr[$term->id] = $term->term->term;
+    }
+    return $arr;
+  }
+
 }

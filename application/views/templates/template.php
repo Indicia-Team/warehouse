@@ -40,7 +40,7 @@ echo html::stylesheet(
     'media/css/forms',
     'media/css/thickbox',
     'media/css/jquery.autocomplete',
-    'media/css/jquery-ui.custom'
+    'media/themes/default/jquery-ui.custom'
   ),
   array('screen')
 ); ?>

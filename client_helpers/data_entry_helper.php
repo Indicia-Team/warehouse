@@ -1219,6 +1219,17 @@ class data_entry_helper extends helper_config {
   private static function _RESOURCES()
   {
     $base = parent::$base_url;
+    global $theme;
+    global $theme_path;
+    if (!isset($theme)) {
+      // Use default theme if page does not specify it's own.
+      $theme="default";
+    }
+    if (!isset($theme_path)) {
+      // Use default theme path if page does not specify it's own.
+      $theme_path="$base/media/themes";
+    }
+
     return array (
       'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.js")),
       'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js")),
@@ -1227,7 +1238,7 @@ class data_entry_helper extends helper_config {
       'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
       'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
       'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.autocomplete.css"), 'javascript' => array("$base/media/js/jquery.autocomplete.js")),
-      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js")),
+      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$theme_path/$theme/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js")),
       'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/json2.js")),
       'treeview' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.treeview.css"), 'javascript' => array("$base/media/js/jquery.treeview.js", "$base/media/js/jquery.treeview.async.js",
       "$base/media/js/jquery.treeview.edit.js")),

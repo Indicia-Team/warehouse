@@ -65,5 +65,25 @@ class html extends html_Core {
       return inflector::humanize(ucwords(preg_replace('/[\s_]+/', ' ', $text)));
    }
 
+  public static function page_error($title, $description, $link_title=null, $link=null) {
+    $r = '<div class="ui-state-error ui-corner-all inline-error" style="padding: 0.5em">'.
+           '<span class="ui-icon ui-icon-alert" style="float: left; margin-left: 3px;"></span>';
+    $r .= "<strong>$title</strong>";
+    $r .= "<p>$description";
+    if ($link_title!=null) {
+      $r .= " <a href=\"$link\">$link_title</a></p>";
+    }
+    $r .= '</p></div>';
+    return $r;
+  }
+
+  public static function page_notice($title, $description) {
+    $r = '<div class="ui-state-highlight ui-corner-all inline-error" style="padding: 0.5em">'.
+           '<span class="ui-icon ui-icon-info" style="float: left; margin-left: 3px;"></span>';
+    $r .= "<strong>$title</strong>";
+    $r .= "<p>$description</p></div>";
+    return $r;
+   }
+
 }
 ?>
