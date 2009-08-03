@@ -33,11 +33,33 @@ class Setupdb_Model extends Model
      */
     public function dbConnect($host, $port, $name, $user, $password)
     {
+        $this->check($host, $port, $name, $user, $password);
         return $this->dbconn = pg_connect("host     = {$host}
                                            port     = {$port}
                                            dbname   = {$name}
                                            user     = {$user}
                                            password = {$password}");
+    }
+
+  /**
+   * Checks that each of the mandatory parameters are populated. Throws an exception if not.
+   */
+    private function check($host, $port, $name, $user, $password) {
+      if (!$host) {
+        throw new Exception(Kohana::lang('setup.host_required'));
+      }
+      if (!$port) {
+        throw new Exception(Kohana::lang('setup.port_required'));
+      }
+      if (!$name) {
+        throw new Exception(Kohana::lang('setup.name_required'));
+      }
+      if (!$user) {
+        throw new Exception(Kohana::lang('setup.user_required'));
+      }
+      if (!$password) {
+        throw new Exception(Kohana::lang('setup.password_required'));
+      }
     }
 
     /**
@@ -188,8 +210,10 @@ class Setupdb_Model extends Model
      */
     public function query( $content )
     {
-        if(false === pg_query($this->dbconn, $content))
-        {
+        try {
+          pg_query($this->dbconn, $content);
+        }
+        catch (Exception $e){
             return pg_last_error($this->dbconn);
         }
 

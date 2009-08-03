@@ -66,7 +66,7 @@ class html extends html_Core {
    }
 
   public static function page_error($title, $description, $link_title=null, $link=null) {
-    $r = '<div class="ui-state-error ui-corner-all inline-error" style="padding: 0.5em">'.
+    $r = '<div class="ui-state-error ui-corner-all inline-error" style="padding: 0.5em; margin: 0.5em;">'.
            '<span class="ui-icon ui-icon-alert" style="float: left; margin-left: 3px;"></span>';
     $r .= "<strong>$title</strong>";
     $r .= "<p>$description";
@@ -78,7 +78,7 @@ class html extends html_Core {
   }
 
   public static function page_notice($title, $description) {
-    $r = '<div class="ui-state-highlight ui-corner-all inline-error" style="padding: 0.5em">'.
+    $r = '<div class="ui-state-highlight ui-corner-all inline-error" style="padding: 0.5em; margin: 0.5em;">'.
            '<span class="ui-icon ui-icon-info" style="float: left; margin-left: 3px;"></span>';
     $r .= "<strong>$title</strong>";
     $r .= "<p>$description</p></div>";

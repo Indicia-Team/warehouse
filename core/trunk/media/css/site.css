@@ -178,3 +178,11 @@ p#metadata_toggle
 #tabs {
   margin-bottom: 0.5em;
 }
+
+.code {
+  margin: 4px;
+  padding: 0.5em 0 0.5em 1em;
+  border-left: solid silver 2px;
+  font-family: calibri;
+  display: block;
+}

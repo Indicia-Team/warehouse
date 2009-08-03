@@ -31,11 +31,13 @@ class Setup_Controller extends Template_Controller
 
         // init and default values of view vars
         //
-
         $this->view_var = array();
 
         $this->template->title       = Kohana::lang('setup.title');
-        $this->template->description = Kohana::lang('setup.description');
+        $this->template->description = str_replace('*code*',
+            '<span class="code">CREATE DATABASE indicia TEMPLATE=template_postgis;</span>',
+            Kohana::lang('setup.description'));
+
 
         $this->view_var['url']              = url::site() . 'setup/run';
         $this->view_var['dbhost']           = 'localhost';
@@ -208,12 +210,6 @@ class Setup_Controller extends Template_Controller
                 return false;
             }
 
-            if(false === $this->write_kohana_config())
-            {
-                $this->db->rollback();
-                return false;
-            }
-
             // If write termlist config fails, don't worry as the config test will help the user fix it.
             // TODO: $this->write_termlist_config();
 
@@ -253,18 +249,22 @@ class Setup_Controller extends Template_Controller
     private function db_connect()
     {
         $this->db = new Setupdb_Model;
-
-        if( false === $this->db->dbConnect($this->dbparam['host'],
-                                           $this->dbparam['port'],
-                                           $this->dbparam['name'],
-                                           $this->dbparam['user'],
-                                           $this->dbparam['password']))
-        {
+        try {
+          if( false === $this->db->dbConnect($this->dbparam['host'],
+              $this->dbparam['port'],
+              $this->dbparam['name'],
+              $this->dbparam['user'],
+              $this->dbparam['password'])) {
             $this->view_var['error_general'][] = Kohana::lang('setup.error_db_connect');
             Kohana::log("error", "Setup failed: database connection error");
             return false;
+          }
+        } catch (Exception $e) {
+          $this->view_var['error_general'][] = Kohana::lang('setup.error_db_connect').'<br/>'.$e->getMessage();
+          Kohana::log("error", "Setup failed: database connection error");
+          Kohana::log("error", "Error: ".$e->getMessage());
+          return false;
         }
-
         return true;
     }
 
@@ -478,35 +478,6 @@ class Setup_Controller extends Template_Controller
     private function get_url_base()
     {
         return Kohana::config('core.site_domain');
-    }
-
-    /**
-     * Write config.php config file
-     *
-     * @return bool
-     */
-    private function write_kohana_config()
-    {
-        $kohana_source_config = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/config.php.example";
-        $kohana_dest_config = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/config.php";
-
-        if(false === ($_source_content = file_get_contents($kohana_source_config)))
-        {
-            $this->view_var['error_general'][] = Kohana::lang('setup.error_db_setup');
-            Kohana::log("error", "Cant read file: ". $kohana_source_config);
-            return false;
-        }
-
-        $_source_content = str_replace("*url_base_path*", $this->get_url_base(), $_source_content);
-        $_source_content = str_replace("rem*/", "  -- autodetect disabled --", $_source_content);
-        $_source_content = str_replace("/**/", "*/", $_source_content);
-
-        if(false === file_put_contents($kohana_dest_config, $_source_content))
-        {
-            $this->view_var['error_general'][] = Kohana::lang('setup.error_db_setup');
-            Kohana::log("error", "Cant write file: ". $kohana_dest_config);
-            return false;
-        }
     }
 }
 

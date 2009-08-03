@@ -26,7 +26,7 @@ class setup_check {
   public static function _setup_check() {
     // Perform some system checks
     $uri = URI::instance();
-    $isOk = $uri->segment(1) == 'setup_check' || $uri->segment(1) == 'login' ||
+    $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' ||
         count(config_test::check_config(true))==0;
     if (!$isOk) {
       url::redirect('setup_check');
