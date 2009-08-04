@@ -58,11 +58,16 @@ echo html::stylesheet(
     ), FALSE);
 ?>
 
+
 <?php echo html::stylesheet(array('media/css/menus',),array('screen',)); ?>
 
 <script type="text/javascript">
       jQuery(document).ready(function() {
         jQuery('ul.sf-menu').superfish();
+        $('.ui-state-default').hover(
+          function() { $(this).addClass('ui-state-hover'); },
+          function() { $(this).removeClass('ui-state-hover'); }
+        );
     });
 </script>
 <!-- END: jquery/superfish init -->
@@ -82,23 +87,25 @@ echo html::stylesheet(
     <!-- END: banner -->
 
     <!-- BEGIN: main menu (jquery/superfish) -->
-    <ul class="sf-menu" role="menubar">
+    <?php if (isset($menu)) : ?>
+    <div id="menu" class="ui-widget ui-widget-content ui-corner-all">
+    <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all" role="menubar">
 
     <?php foreach ($menu as $toplevel => $submenu): ?>
 
         <!-- BEGIN: print the top level menu items -->
         <?php if(count($submenu)==0): ?>
             <!-- No submenu, so treat as link to the home page -->
-            <li role="menuitem"><?php echo html::anchor('home', $toplevel); ?>
+            <li role="menuitem" class="ui-state-default ui-corner-all"><?php echo html::anchor('home', $toplevel); ?>
         <?php else: ?>
-            <li role="menu"><a href="#"><?php echo $toplevel; ?></a>
+            <li role="menu" class="ui-state-default ui-corner-all"><a href="#"><?php echo $toplevel; ?></a>
         <?php endif; ?>
 
             <!-- BEGIN: print the sub menu items -->
             <?php if (count($submenu)>0): ?>
                 <ul>
                 <?php foreach ($submenu as $menuitem => $url): ?>
-                    <li role="menuitem"><?php echo html::anchor($url, $menuitem); ?></li>
+                    <li role="menuitem" class="ui-state-default ui-corner-all"><?php echo html::anchor($url, $menuitem); ?></li>
                 <?php endforeach; ?>
                 </ul>
             <?php endif; ?>
@@ -110,6 +117,8 @@ echo html::stylesheet(
     <?php endforeach; ?>
 
     </ul>
+    </div>
+    <?php endif; ?>
     <!-- END: main menu (jquery/superfish) -->
 
     <!-- BEGIN: page level content -->
@@ -124,7 +133,9 @@ echo html::stylesheet(
 
     <!-- BEGIN: footer -->
     <div id="footer">
+    <?php if (isset($system)) : ?>
         <p>Version <?php echo $system['version']; ?> - Release date <?php echo $system['release_date']; ?></p>
+    <?php endif; ?>
     </div>
     <!-- END: footer -->
 

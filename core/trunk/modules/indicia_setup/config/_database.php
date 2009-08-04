@@ -12,7 +12,7 @@ $config['default'] = array
         'host'     => '*host*',
         'port'     => *port*,
         'socket'   => FALSE,
-        'database' => '*name*'
+        'database' => '*database*'
     ),
     'character_set' => 'utf8',
     'table_prefix'  => '',

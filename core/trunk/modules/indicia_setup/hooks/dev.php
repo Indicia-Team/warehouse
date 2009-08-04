@@ -23,7 +23,7 @@ class Dev
     {
         $uri = URI::instance();
         // we havent to proceed futher if a setup call was made
-        if($uri->segment(1) == 'setup')
+        if($uri->segment(1) == 'setup_check')
         {
             return;
         }
@@ -69,15 +69,15 @@ class Dev
                     throw new  Exception("Couldnt write last executed file name: ". $_full_upgrade_folder_path . '/____' . str_replace(".sql", "", $upgrade->last_executed_file) . '____');
                 }
 
-	            // remove the previous last executed file name
-	            if(!empty($tmp_last_executed_sql_file))
-	            {
-	                if( false === @unlink($_full_upgrade_folder_path . '/' . $tmp_last_executed_sql_file))
-	                {
-	                    throw new  Exception("Couldnt delete previous executed file name: " . $_full_upgrade_folder_path . '/' . $tmp_last_executed_sql_file);
-	                }
-	            }
-        	}
+              // remove the previous last executed file name
+              if(!empty($tmp_last_executed_sql_file))
+              {
+                  if( false === @unlink($_full_upgrade_folder_path . '/' . $tmp_last_executed_sql_file))
+                  {
+                      throw new  Exception("Couldnt delete previous executed file name: " . $_full_upgrade_folder_path . '/' . $tmp_last_executed_sql_file);
+                  }
+              }
+          }
 
             $upgrade->commit();
         }

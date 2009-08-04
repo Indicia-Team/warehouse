@@ -29,7 +29,7 @@
 .sf-menu li:hover ul,
 .sf-menu li.sfHover ul {
   left:			0;
-  top:			2.1em; /* match top ul list item height */
+  top:			2.2em; /* match top ul list item height */
   z-index:		99;
 }
 ul.sf-menu li:hover li ul,
@@ -51,34 +51,15 @@ ul.sf-menu li li li.sfHover ul {
   top:			0;
 }
 
-/*** DEMO SKIN ***/
-.sf-menu {
+#menu {
   margin-bottom:	0.8em;
 }
+
 .sf-menu a {
   text-decoration:none;
 }
 .sf-menu ul li a {
-  border-left:	1px solid #fff;
-  border-top:		1px solid #CFDEFF;
   padding: 		.75em 1em;
-}
-.sf-menu a, .sf-menu a:visited  { /* visited pseudo selector so IE6 applies text colour*/
-  color:			#13a;
-}
-.sf-menu li {
-  background:		#BDD2FF;
-}
-.sf-menu li li {
-  background:		#AABDE6;
-}
-.sf-menu li li li {
-  background:		#9AAEDB;
-}
-.sf-menu li:hover, .sf-menu li.sfHover,
-.sf-menu a:focus, .sf-menu a:hover, .sf-menu a:active {
-  background:		#CFDEFF;
-  outline:		0;
 }
 
 /*** arrows **/

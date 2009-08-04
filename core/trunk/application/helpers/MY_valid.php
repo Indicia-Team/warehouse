@@ -92,7 +92,7 @@ class Valid extends Valid_Core {
   protected static function valid_term_or_taxon($value, $list_id, $list_id_field, $search_field, $view_name)
   {
     $found=	ORM::factory($view_name)
-        ->where(array($list_idi_field=>$list_id))
+        ->where(array($list_id_field=>$list_id))
         ->like(array($search_field=>$value))
         ->find_all();
     // TODO - proper handling of output XML.

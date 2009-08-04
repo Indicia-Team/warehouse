@@ -353,7 +353,7 @@ class Indicia_Controller extends Template_Controller {
     catch (Exception $e)
     {
       // Put the error out
-      echo '<pre>678'.print_r($e, TRUE).'</pre>';
+      echo '<pre>'.print_r($e, TRUE).'</pre>';
       throw $e;
     }
 
