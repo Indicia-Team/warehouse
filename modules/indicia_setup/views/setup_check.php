@@ -25,14 +25,33 @@
  * Dump out a list of the config checks as either passes or fails, including a link to the
  * repair action if specified.
  */
+
+// First grab a count of the failures.
+$failures=0;
 foreach ($checks as $check) {
-  if ($check['success']) {
-    echo html::page_notice($check['title'], $check['description']);
-  } else {
-    echo html::page_error($check['title'], $check['description'],
-      'Fix '.strtolower($check['title']).'...', url::base(true).'setup_check/'.$check['action']);
+  if (!$check['success']) {
+    $failures++;
   }
 }
+if ($failures>0) {
+  foreach ($checks as $check) {
+    if ($check['success']) {
+  echo html::page_notice($check['title'], $check['description'], 'check');
+    } else {
+      if (array_key_exists('action', $check)) {
+    echo html::page_error($check['title'], $check['description'],
+        $check['action']['title'], url::base(true).'setup_check/'.$check['action']['link']);
+  } else {
+    echo html::page_error($check['title'], $check['description']);
+      }
 
-
-
+    }
+  }
+} else { ?>
+<div class="page-notice ui-widget-content ui-corner-all">
+<div class="ui-widget-header ui-corner-all"><span class="ui-icon ui-icon-alert"></span>
+Installation Complete</div>
+<p>Congratulations! The Indicia Warehouse has been successfully installed.</p>
+<a href="<?php echo url::base(); ?>" class="button ui-state-default ui-corner-all">Proceed to the login page</a>
+</div>
+<?php } ?>

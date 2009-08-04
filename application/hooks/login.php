@@ -20,7 +20,7 @@ class login {
 
     // check for setup request
     //
-    if($uri->segment(1) == 'setup')
+    if($uri->segment(1) == 'setup_check')
     {
       // get kohana paths
       //

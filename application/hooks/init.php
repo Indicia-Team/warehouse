@@ -20,29 +20,15 @@ class Indicia
     }
 
     /**
-     * check if setup wasnt done
-     * and continue to set the database schema paths
+     * set the database schema paths
      */
-    public static function check_setup()
+    public static function set_search_path()
     {
         $uri = URI::instance();
         // we havent to proceed futher if a setup call was made
-        if($uri->segment(1) == 'setup')
+        if($uri->segment(1) == 'setup_check')
         {
             return;
-        }
-
-        // load indicia system information
-        //
-        $system = Kohana::config('indicia.system', false, false);
-
-        // check if the general system setup was done
-        // The setup wasnt done if the indicia.php config file dosent exists.
-        //
-        if($system === null)
-        {
-            unset($_COOKIE);
-            url::redirect('setup');
         }
 
         // continue to init the system
@@ -63,5 +49,5 @@ class Indicia
 }
 
 Event::add('system.ready',   array('Indicia', 'init'));
-Event::add('system.routing', array('Indicia', 'check_setup'));
+Event::add('system.routing', array('Indicia', 'set_search_path'));
 ?>

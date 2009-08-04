@@ -2,19 +2,18 @@
 
 $lang = array
 (
-    'title'       => 'Indicia Setup',
-    'description' => 'Before you start, please create a PostGIS database using the template, for example using the script: <br />' .
+    'database_setup' => 'Database Setup',
+    'description' => 'Before you start, please create a database using the PostGIS template, for example using the script: <br />' .
         '*code*'.
-        'Then, create a user login with the required access to this database. The schema you define below will be auto-created by the '.
-        'setup procedure. For more information, see <a href="http://code.google.com/p/indicia/wiki/Installation">the Installation Guide</a>.',
+        'Then, create a user login with full access to modify objects and data in this database. The schema you define below will be auto-created by the '.
+        'setup procedure. For more information, see the <a href="http://code.google.com/p/indicia/wiki/Installation">Installation Guide</a>.',
     'database'    => 'Database',
     'db_schema'   => 'Schema for Indicia tables',
     'db_host'     => 'Host',
     'db_port'     => 'Port',
-    'db_name'     => 'Database Name',
-    'db_user'     => 'User',
+    'db_name'     => 'Existing Database Name',
+    'db_user'     => 'Database Connection Username',
     'db_password' => 'Password',
-    'db_grant'    => 'Grant permission to additional users (comma separated)',
     'indicia_administrator'   => 'Create Indicia administrator',
     'indicia_login'           => 'Login',
     'indicia_password'        => 'Password',

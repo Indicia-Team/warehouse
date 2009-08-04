@@ -24,7 +24,6 @@ p
   text-align: left;
   background-color: #FFFFFF;
   padding: 6px;
-  float: left;
   border: solid #CCCCCC 1px;
 }
 
@@ -35,7 +34,6 @@ p
   padding: 16px;
   height: 94px;
   width: 716px;
-  float: left;
 }
 
 #sitetitle
@@ -105,9 +103,9 @@ tr.oddRow
 
 #content
 {
-  float: left;
-  clear: both;
   margin: 20px;
+  clear: left;
+  min-height: 400px;
 }
 
 h1
@@ -185,4 +183,38 @@ p#metadata_toggle
   border-left: solid silver 2px;
   font-family: calibri;
   display: block;
+}
+
+.button {
+  padding: 0.5em;
+  text-decoration: none;
+  color: #000000 !important;
+  margin: 0.5em 2em 0.5em 0;
+}
+
+.page-notice {
+  margin-bottom: 1em;
+  padding: 0.3em;
+  display: block;
+}
+
+.page-notice p {
+  margin: 0.5em 1.5em 0.5em 1.5em;
+}
+
+.page-notice span.ui-icon {
+  float: left;
+}
+
+.page-notice a.button {
+  position: relative;
+  display: inline-block;
+  zoom: 1;
+  *display: inline;
+  margin-left: 1.5em;
+}
+
+.page-notice a.button .ui-icon {
+  float: none;
+  display: inline-block;
 }
