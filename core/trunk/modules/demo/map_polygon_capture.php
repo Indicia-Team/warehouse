@@ -1,7 +1,7 @@
 <?php
 require '../../client_helpers/helper_config.php';
 require 'data_entry_config.php';
-$googleApiKey = $config['google_api_key'];
+$googleApiKey = helper_config::$google_api_key;
 $base_url = helper_config::$base_url;
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">

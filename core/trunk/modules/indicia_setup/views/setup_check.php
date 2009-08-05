@@ -39,12 +39,11 @@ if ($failures>0) {
   echo html::page_notice($check['title'], $check['description'], 'check');
     } else {
       if (array_key_exists('action', $check)) {
-    echo html::page_error($check['title'], $check['description'],
-        $check['action']['title'], url::base(true).'setup_check/'.$check['action']['link']);
-  } else {
-    echo html::page_error($check['title'], $check['description']);
+        echo html::page_error($check['title'], $check['description'],
+            $check['action']['title'], url::base(true).'setup_check/'.$check['action']['link']);
+      } else {
+        echo html::page_error($check['title'], $check['description']);
       }
-
     }
   }
 } else { ?>
@@ -52,6 +51,6 @@ if ($failures>0) {
 <div class="ui-widget-header ui-corner-all"><span class="ui-icon ui-icon-alert"></span>
 Installation Complete</div>
 <p>Congratulations! The Indicia Warehouse has been successfully installed.</p>
-<a href="<?php echo url::base(); ?>" class="button ui-state-default ui-corner-all">Proceed to the login page</a>
+<a href="<?php echo url::base(); ?>index.php" class="button ui-state-default ui-corner-all">Proceed to the login page</a>
 </div>
 <?php } ?>

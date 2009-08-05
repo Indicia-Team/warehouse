@@ -7,7 +7,7 @@ if ($error!=null) {
 <form class="cmxform widelabels" name="setup" action="config_db_save" method="post">
 <fieldset>
   <legend><?php echo Kohana::lang('setup.database'); ?></legend>
-  <ul>
+  <ol>
       <!-- DB host -->
       <li><label for="dbhost"><?php echo Kohana::lang('setup.db_host'); ?>:</label>
       <input type="text"
@@ -67,7 +67,7 @@ if ($error!=null) {
           maxlength="255"
           value="<?php echo html::specialchars($password); ?>"
       </li>
-  </ul>
+  </ol>
 </fieldset>
 
 <input name="start_setup_button"
@@ -75,7 +75,7 @@ if ($error!=null) {
     type="submit"
     tabindex="8"
     role="button"
-    value="<?php echo html::specialchars(Kohana::lang('setup.start_setup_button')); ?>"
+    value="<?php echo html::specialchars(Kohana::lang('setup.submit')); ?>"
     class="narrow" />
 
 </form>
