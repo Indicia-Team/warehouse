@@ -18,7 +18,7 @@ $lang = array
     'indicia_login'           => 'Login',
     'indicia_password'        => 'Password',
     'start_setup_title'       => 'Launch setup',
-    'start_setup_button'      => 'submit',
+    'submit'                  => 'Submit',
     'warning'                 => 'Warning!!!',
     'error'                   => 'Error',
     'error_config_folder'     => 'The config folder must be writeable by php scripts:',
@@ -50,6 +50,7 @@ $lang = array
     'name_required' => 'Please specify the PopstgreSQL database name.',
     'user_required' => 'Please specify the PopstgreSQL database user.',
     'password_required' => 'Please specify the PopstgreSQL database password.',
+    'demo_configuration' => 'Demo Configuration'
 );
 
 ?>

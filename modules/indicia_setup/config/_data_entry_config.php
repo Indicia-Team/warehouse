@@ -8,16 +8,11 @@
   $config['surroundings_termlist']=2;
   $config['site_usage']='smpAttr:4';
   $config['site_usage_termlist']=3;
-  $config['google_api_key']='ABQIAAAA7HA6ddfArSVixiSlTHrS1RT2yXp_ZAY8_ufC3CFXhHIE1NvwkxRGj3r9a4qCJPaGOYXIsi8AfXFPzQ';
-  $config['multimap_api_key']='OA09030216927391041';
-  $config['geoplanet_api_key']='QYAOqp3V34GihJbRI_QUbiAC.KYbWake8g8DXwpLgGlZliB5eTXyTGHQ0aJDBPLwFkfaaQ--';
   $config['species_checklist_taxon_list']='1';
   $config['species_checklist_alt_list']='2';
   $config['species_checklist_occ_attributes'] = array(2);
   $config['website_id'] = 1;
   $config['password'] = 'password';
   $config['survey_id'] = 1;
-  $config['geoserver_url'] = 'http://localhost:8080/geoserver/';
-  $config['feature_type'] = 'opal:indicia_samples';
-
+  $config['feature_type'] = '';
 ?>

@@ -23,10 +23,10 @@ if (!array_key_exists('server_name', $current)) {
   $current['server_name']='Indicia';
 }
 ?>
+<p> The following options configure the Indicia Warehouse to be able to access your email system to send emails.</p>
 <form class="cmxform" action="config_email_save" method="post">
 <fieldset>
 <legend>Email configuration</legend>
-<p> The following options configure the Indicia Warehouse to be able to access your email system to send emails.</p>
 <ol>
 <li>
   <label for="hostname">Outgoing mail server (SMTP):</label>

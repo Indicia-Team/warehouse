@@ -1,10 +1,10 @@
 <?php
-require 'data_entry_config.php';
-$geoplanetApiKey = $config['geoplanet_api_key'];;
-$googleApiKey = $config['google_api_key'];
-$multimapApiKey = $config['multimap_api_key'];
-$geoserverUrl = $config['geoserver_url'];
-$featureType = $config['feature_type'];
+require '../../client_helpers/data_entry_helper.php';
+$geoplanetApiKey = helper_config::$geoplanet_api_key;
+$googleApiKey = helper_config::$google_api_key;
+$multimapApiKey = helper_config::$multimap_api_key;
+$geoserverUrl = helper_config::$geoserver_url;
+$featureType = helper_config::$feature_type;
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">

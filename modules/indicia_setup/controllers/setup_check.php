@@ -44,7 +44,7 @@ public $template = 'templates/template';
   public function __construct()
   {
     parent::__construct();
-    $this->session = new Session;
+    $this->session = Session::instance();
   }
 
   /**
@@ -58,6 +58,54 @@ public $template = 'templates/template';
     $this->template->content = new View('setup_check');
     $this->template->content->checks = config_test::check_config();
   }
+
+  /**
+   * Load the configuration of the demo pages view.
+   */
+  public function config_demo()
+  {
+    $this->template->title = Kohana::lang('setup.demo_configuration');;
+    $this->template->content = new View('fixers/config_demo');
+    $this->template->content->error = $this->error;
+    $this->error=null;
+  }
+
+  /**
+   * Save the demo configuration settings.
+   */
+  public function config_demo_save() {
+    $source = dirname(dirname(__file__ )) . '/config/_helper_config.php';
+    $dest = dirname(dirname(dirname(dirname(__file__)))) . "/client_helpers/helper_config.php";
+    try {
+      unlink($dest);
+    } catch (Exception $e) {
+      // file doesn't exist?'
+    }
+    try {
+      $_source_content = file_get_contents($source);
+      // Now save the POST form values into the config file
+      foreach ($_POST as $field => $value) {
+        $_source_content = str_replace("*$field*", $value, $_source_content);
+      }
+      $base_url=kohana::config('config.site_domain');
+      if (substr($base_url, 0, 4)!='http') {
+        $base_url = "http://$base_url";
+      }
+      $_source_content = str_replace("*base_url*", $base_url, $_source_content);
+      file_put_contents($dest, $_source_content);
+      // To get the demo working, we also need to copy over the data_entry_config.php file.
+      $source = dirname(dirname(__file__ )) . '/config/_data_entry_config.php';
+      $dest = dirname(dirname(dirname(__file__))) . "/demo/data_entry_config.php";
+      copy($source, $dest);
+      url::redirect('setup_check');
+    } catch (Exception $e) {
+      kohana::log('error', $e->getMessage());
+      $this->error = $e->getMessage();
+      $this->config_demo();
+    }
+
+  }
+
 
   /**
    * Load the configuration of emails view.
@@ -79,32 +127,22 @@ public $template = 'templates/template';
     if ($_POST['skip']) {
       url::redirect('setup_check/skip_email');
     } else {
-      $source = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/email.php.example";
+      $source = dirname(dirname(__file__ )) . '/config/_email.php';
       $dest = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/email.php";
       try {
         unlink($dest);
       } catch (Exception $e) {
         // file doesn't exist?'
       }
-      if(false === ($_source_content = file_get_contents($source)))
-      {
-          $this->view_var['error_general'][] = Kohana::lang('setup.error_db_setup');
-          Kohana::log("error", "Cant read file: ". $source);
-          return false;
-      }
-      // Now save the POST form values into the config file
-      foreach ($_POST as $field => $value) {
-        $_source_content = str_replace("*$field*", $value, $_source_content);
-      }
-
-      if(false === file_put_contents($dest, $_source_content))
-      {
-        $this->error = "Email configuration failed as the file $file could not be written.";
-        Kohana::log("error", "Can't write file: $file");
-        $this->config_email();
-        return;
-      }
       try {
+        $_source_content = file_get_contents($source);
+        // Now save the POST form values into the config file
+        foreach ($_POST as $field => $value) {
+          $_source_content = str_replace("*$field*", $value, $_source_content);
+        }
+        file_put_contents($dest, $_source_content);
+
+        // Test the email config
         $swift = email::connect();
         $message = new Swift_Message('Setup test',
             'Email to test the Indicia server email configuration. Do not reply to this email.',
@@ -124,6 +162,7 @@ public $template = 'templates/template';
         // Swift mailer messages tend to have the error message as the last part, with each part colon separated.
         $msg = explode(':', $e->getMessage());
         $this->error = $msg[count($msg)-1];
+        kohana::log('error', $e->getMessage());
         $this->config_email();
       }
     }

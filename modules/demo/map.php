@@ -1,4 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<?php include '../../client_helpers/data_entry_helper.php'; ?>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
   <head>
     <title>OpenLayers Example</title>
@@ -6,8 +7,7 @@
     <link rel="stylesheet" href="style.css" type="text/css" />
     <script src="../../media/js/OpenLayers.js"></script>
     <script src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
-    <?php include 'data_entry_config.php'; ?>
-  <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=<?php echo $config['google_api_key'] ?>"
+    <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=<?php echo helper_config::$google_api_key; ?>"
       type="text/javascript"></script>
     <script type="text/javascript">
         // making this a global variable so that it is accessible for

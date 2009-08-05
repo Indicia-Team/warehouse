@@ -31,15 +31,17 @@ class config_test {
 
   public static function check_config($problems_only=false) {
     $result = array();
-    $indicia_config=kohana::config_load('indicia');
+    $indicia_config=kohana::config_load('indicia', false);
     // If the Indicia config is present, then everything has passed, so we can skip the tests.
     if ($indicia_config==null) {
       self::check_php_version($result, $problems_only);
       self::check_postgres($result, $problems_only);
       self::check_dir_permissions($result, $problems_only);
       self::check_curl($result, $problems_only);
-      self::check_db($result, $problems_only);
+      self::check_helper($result, $problems_only);
       self::check_email($result, $problems_only);
+      // Check db must be the last one
+      self::check_db($result, $problems_only);
     }
     return $result;
   }
@@ -57,13 +59,23 @@ class config_test {
     // The Indicia config file is only created after a successful db creation.
     $config=kohana::config_load('indicia', false);
     if (!$config) {
-      array_push($messages, array(
+      $problem = array(
         'title' => 'Database configuration',
         'description' => '<p>Database configuration options need to be set allowing the Indicia Warehouse to access your ' .
             'database. Indicia will then install the required database tables for you.</p>',
-        'success' => false,
-        'action' => array('title'=>'Configure database', 'link'=>'config_db')
-      ));
+        'success' => false
+      );
+      $other_problems=false;
+      for ($i=0; $i<count($messages); $i++) {
+        $other_problems = $other_problems || ($messages[$i]['success']==false);
+      }
+      if (!$other_problems) {
+        // No other problems, so can proceed to install the database.
+        $problem['action'] = array('title'=>'Configure database', 'link'=>'config_db');
+      }	else {
+        $problem['description'] .= '<p>Fix the other issues listed on this page before proceeding to configure and install the database.</p>';
+      }
+      array_push($messages, $problem);
     } elseif (!$problems_only) {
       array_push($messages, array(
         'title' => 'Database configuration',
@@ -251,6 +263,10 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db/indicia_data.sql',
           'the database initial data can be installed',
           'the database initial data cannot be installed');
+      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'configuration',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers',
+          'the settings for the data entry helper classes to be stored',
+          'the settings for the data entry helper classes cannot be stored');
 
       if (count($good_dirs)>0 && !$problems_only) {
         array_push($messages, array(
@@ -295,6 +311,31 @@ class config_test {
     } else {
       array_push($bad_dirs,
           "The $folder_name directory at $dir isn't writeable by PHP scripts. This means that $fail.");
+    }
+  }
+
+  /**
+   * Ensure that the client_helpers/helper_config file has been setup.
+   *
+   * @param array $messages List of messages that any information should be appended to.
+   * @param boolean $problems_only Set to true to report only the problems, not the successful
+   * checks. False reports both failures and successes.
+   */
+  private static function check_helper(&$messages, $problems_only) {
+    if (!file_exists(dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers/helper_config.php')) {
+      array_push($messages, array(
+        'title' => 'Demo configuration',
+        'description' => '<p>Configuration options need to be set to allow the demonstration pages provided with this ' .
+            'Warehouse installation to work.</p>',
+        'success' => false,
+        'action' => array('title'=>'Configure Demo Pages', 'link'=>'config_demo')
+      ));
+    } elseif (!$problems_only) {
+      array_push($messages, array(
+        'title' => 'Demo configuration',
+        'description' => '<p>The demonstration pages have been configured.</p>',
+        'success' => true
+      ));
     }
   }
 
