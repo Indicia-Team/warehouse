@@ -24,9 +24,8 @@
 $i = 0;
 foreach ($table as $item)
 {
-  echo "<tr class='";
-  echo ($i%2 == 0) ? "evenRow" : "oddRow";
-  echo "'>";
+  echo '<tr class="'.($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
+  $i++;
   $fields = array();
   $a = $item->as_array();
   foreach ($columns as $col => $name)
@@ -51,10 +50,9 @@ foreach ($table as $item)
   {
     echo "<td>";
     $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);
-    echo html::anchor($action, $name);
+    echo html::anchor($action, $name, array('class'=>'ui-state-default ui-corner-all grid-button'));
     echo "</td>";
   }
-  $i++;
   echo "</tr>";
 }
 ?>

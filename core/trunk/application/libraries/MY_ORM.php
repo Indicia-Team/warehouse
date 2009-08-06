@@ -104,7 +104,6 @@ abstract class ORM extends ORM_Core {
     }
     // Now the custom attribute errors
     $r = array_merge($r, $this->missingAttrs);
-
     foreach ($this->linkedModels as $m) {
       // Get the linked model's errors, ensuring array keys have prefixes identifying the entity
       foreach($m->errors as $key => $value) {
@@ -287,6 +286,8 @@ abstract class ORM extends ORM_Core {
     $return = $this->populateFkLookups();
     $return = $this->createParentRecords() && $return;
     $this->preSubmit();
+    // Validation will overwrite our errors array, so store it for later
+    $errors = $this->errors;
     // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
     Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
@@ -310,6 +311,7 @@ abstract class ORM extends ORM_Core {
       }
       $return = false;
     }
+    $this->errors=array_merge($errors, $this->errors);
     $return = $this->checkRequiredAttributes() && $return;
     $return = $this->createChildRecords() && $return;
     $return = $this->createAttributes() && $return;
@@ -334,6 +336,7 @@ abstract class ORM extends ORM_Core {
    * @return boolean True if all lookups populated successfully.
    */
   private function populateFkLookups() {
+    $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
         // Establish the correct model
@@ -345,15 +348,15 @@ abstract class ORM extends ORM_Core {
               $b['fkSearchField'] => $b['fkSearchValue']))
               ->find();
           if (!$fkRecord->id) {
-            $this->errors[$a] = "Could not find record for related record key search on ".$b['fkSearchValue'].
-                " in ".$b['fkTable'];
-            return false;
+            $this->errors[$a] = 'Could not find a '.ucwords($b['fkTable']).' by looking for "'.$b['fkSearchValue'].
+                '" in the '.ucwords($b['fkSearchField']).' field.';
+            $r=false;
           }
           $this->submission['fields'][$b['fkIdField']] = $fkRecord->id;
         }
       }
     }
-    return true;
+    return $r;
   }
 
   /**
@@ -375,7 +378,9 @@ abstract class ORM extends ORM_Core {
           Kohana::log("debug", "Setting field ".$a['fkId']." to ".$result);
           $this->submission['fields'][$a['fkId']]['value'] = $result;
         } else {
-          array_push($this->linkedModels, $m);
+          if (!in_array($m, $this->linkedModels)) {
+            array_push($this->linkedModels, $m);
+          }
           return false;
         }
         // We need to try attaching the model to get details back
@@ -410,7 +415,9 @@ abstract class ORM extends ORM_Core {
         $result = $m->inner_submit();
         if (!$result) {
           // Remember this model so that its errors can be reported
-          array_push($this->linkedModels, $m);
+          if (!in_array($m, $this->linkedModels)) {
+            array_push($this->linkedModels, $m);
+          }
           return false;
         }
       }
@@ -532,7 +539,9 @@ abstract class ORM extends ORM_Core {
               // For attribute value errors, we need to report e.g smpAttr:6 as the error key name, not
               // the table and field name as normal.
               $oam->forceErrorKey = $this->attrs_field_prefix.':'.$attrId;
-              array_push($this->linkedModels, $oam);
+              if (!in_array($oam, $this->linkedModels)) {
+                array_push($this->linkedModels, $oam);
+              }
               return false;
             }
           }
@@ -560,6 +569,14 @@ abstract class ORM extends ORM_Core {
     } else {
       return '';
     }
+  }
+
+  /**
+   * Override the clear method to force cleanup of linked models.
+   */
+  public function clear() {
+    $this->linkedModels=array();
+    parent::clear();
   }
 
 }

@@ -21,11 +21,13 @@ class html extends html_Core {
      if ($default) {
        $r .= '<option>'.html::specialchars($default).'</option>';
      }
-     foreach ($model->getSubmittableFields(true) as $name => $dbtype) {
+     foreach ($model->getSubmittableFields(true) as $name => $displayName) {
        if (!in_array($name, $skipped)) {
          $r .= '<option value="'.$name.'">';
          $fieldName = substr($name,3);
-         $displayName = self::leadingCaps($fieldName);
+         if ($displayName=='') {
+           $displayName = self::leadingCaps($fieldName);
+         }
          if (substr($name, 0, 3)=='fk_') {
            // if the foreign key name does not match its table, also output the table name
            if (array_key_exists($fieldName, $model->belongs_to)) {

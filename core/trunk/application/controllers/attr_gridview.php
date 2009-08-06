@@ -50,6 +50,7 @@ class Attr_Gridview_Controller extends Controller {
     $gridview->actionColumns = array();
     return $gridview;
   }
+
   function display() {
     /**
      * Renders the grid with whatever parameters are supplied

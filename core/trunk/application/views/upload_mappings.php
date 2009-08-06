@@ -24,11 +24,17 @@
 echo form::open($controllerpath.'/upload', array('class'=>'cmxform')); ?>
 <p>Please map each column in the CSV file you are uploading to the associated attribute in the destination list.</p>
 <br />
-<table><thead><th>Column in CSV File</th><th>Maps to attribute</th></thead>
+<table class="ui-widget ui-widget-content">
+<thead class="ui-widget-header">
+<tr><th>Column in CSV File</th><th>Maps to attribute</th></tr>
+</thead>
 <tbody>
 <?php $options = html::model_field_options($model, '<please select>');
-foreach ($columns as $col): ?>
-  <tr>
+$i=0;
+foreach ($columns as $col):
+  echo '<tr class="';
+  echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
+  $i++;  ?>
     <td><?php echo $col; ?></td>
     <td><select <?php echo 'id="'.$col.'" name="'.$col.'">'.$options; ?></select></td>
   </tr>
