@@ -52,9 +52,6 @@ class Indicia_Controller extends Template_Controller {
     $this->auth = new Auth;
     $this->session = new Session;
 
-    // upgrade check
-    $this->check_for_upgrade();
-
     if($this->auth->logged_in())
     {
       $menu = array
@@ -232,8 +229,12 @@ class Indicia_Controller extends Template_Controller {
   */
   protected function submit_succ($id)
   {
-    Kohana::log("info", "Submitted record ".$id." successfully.");
-    url::redirect($this->get_return_page());
+    Kohana::log("debug", "Submitted record ".$id." successfully.");
+    if(isset($_POST['return_url'])) {
+      url::redirect($_POST['return_url']);
+    } else {
+      url::redirect($this->get_return_page());
+    }
   }
 
   /**
@@ -271,47 +272,6 @@ class Indicia_Controller extends Template_Controller {
     // Wrap the post object and then submit it
     $this->submit($this->wrap($_POST));
 
-  }
-
-  /**
-  * Check version of the php scripts against the database version
-  */
-  private function check_for_upgrade()
-  {
-    // system file which is distributed with every indicia version
-    //
-    $new_system = Kohana::config('indicia_dist.system');
-
-    // get system info with the version number of the database
-    $db_system = new System_Model;
-
-    // compare the script version against the database version
-    // if both arent equal start the upgrade process
-    //
-    if(0 != version_compare($db_system->getVersion(), $new_system['version'] ))
-    {
-      $upgrade = new Upgrade_Model;
-
-      // upgrade to version $new_system['version']
-      //
-      if(true !== ($result = $upgrade->run($db_system->getVersion(), $new_system)))
-      {
-        // fatal error: the system stops here
-        //
-        if( false === Kohana::config('core.display_errors'))
-      {
-        die( Kohana::lang('setup.error_upgrade_for_end_user') );
-      }
-      else
-      {
-        die( 'UPGRADE ERROR: <pre>' . nl2br($result) . '</pre>' );
-      }
-      }
-
-      // if successful, reload the system
-      //
-      url::redirect();
-    }
   }
 
   protected function setError($title, $message)

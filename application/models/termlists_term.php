@@ -28,7 +28,7 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Termlists_term_Model extends ORM_Tree {
+class Termlists_term_Model extends Base_Name_Model {
   // TODO: this is a temporary placeholder. Need to think how we can get the term (from the terms table)
   // in as the search field in termlists_terms. Perhaps a view?
   protected $search_field='id';
@@ -69,4 +69,82 @@ class Termlists_term_Model extends ORM_Tree {
     }
   }
 
+  /**
+   * Overrides the post submit function to add in synonomies
+   */
+  protected function postSubmit($id){
+    try {
+      $arrSyn=$this->parseRelatedNames(
+      $this->model->submission['metaFields']['synonomy']['value'],
+        'set_synonym_sub_array'
+      );
+      Kohana::log("debug", "Number of synonyms is: ".count($arrSyn));
+
+      Kohana::log("info", "Looking for existing terms with meaning ".$this->model->meaning_id);
+      $existingSyn = $this->getSynonomy('meaning_id', $this->model->meaning_id);
+
+      // Iterate through existing synonomies, discarding those that have
+      // been deleted and removing existing ones from the list to add
+
+      foreach ($existingSyn as $syn) {
+        // Is the term from the db in the list of synonyms?
+        if (array_key_exists($syn->term->term, $arrSyn) &&
+            $arrSyn[$syn->term->term]['lang'] ==
+            $syn->term->language->iso ) {
+          $arrSyn = array_diff_key($arrSyn, array($syn->term->term => ''));
+          Kohana::log("debug", "Known synonym: ".$syn->term->term);
+        } else {
+          // Synonym has been deleted - remove it from the db
+          $syn->deleted = 't';
+          Kohana::log("debug", "Deleted synonym: ".$syn->term->term);
+          $syn->save();
+        }
+      }
+
+      // $arraySyn should now be left only with those synonyms
+      // we wish to add to the database
+
+      Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
+      $sm = ORM::factory('termlists_term');
+      foreach ($arrSyn as $term => $syn) {
+
+        $sm->clear();
+
+        $lang = $syn['lang'];
+
+        // Wrap a new submission
+        Kohana::log("info", "Wrapping submission for synonym ".$term);
+
+        $syn = $_POST;
+        $syn['term_id'] = null;
+        $syn['term'] = $term;
+        $syn['language_id'] = ORM::factory('language')->where(array(
+          'iso' => $lang))->find()->id;
+        $syn['id'] = '';
+        $syn['preferred'] = 'f';
+        $syn['meaning_id'] = $this->model->meaning_id;
+
+        $sub = $this->wrap($syn);
+
+        $sm->submission = $sub;
+        $sm->submit();
+      }
+      return true;
+    } catch (Exception $e) {
+      $this->errors['synonymy']=$e.getMessage();
+      kohana::log('error', $e->getMessage());
+      return false;
+    }
+  }
+
+  /**
+   * Build the array that stores the language attached to synonyms being submitted.
+   */
+  protected function set_synonym_sub_array($tokens, &$array) {
+    if (count($tokens) >= 2) {
+      $array[$tokens[0]] = array('lang' => trim($tokens[1]));
+    } else {
+      $array[$tokens[0]] = array('lang' => 'eng');
+    }
+  }
 }

@@ -92,4 +92,47 @@ class User_Model extends ORM {
     parent::__set($key, $value);
   }
 
+  /**
+   * After submitting a user record, we also need to preserve the users_websites settings.
+   */
+  public function postSubmit() {
+    try {
+      $websites = ORM::factory('website')->find_all();
+      foreach ($websites as $website) {
+        $users_websites = ORM::factory('users_website', array(
+          'user_id' => $this->model->id,
+          'website_id' => $website->id
+        ));
+        $save_array = array(
+          'id' => $users_websites->object_name,
+          'fields' => array(
+            'user_id' => array('value' => $this->model->id),
+            'website_id' => array('value' => $website->id)
+          ),
+          'fkFields' => array(),
+          'superModels' => array()
+        );
+        if ($users_websites->loaded || is_numeric($this->submission['fields']['website_'.$website->id]['value'])) {
+          // If this is an existing users_websites record, preserve the id.
+          if ($users_websites->loaded)
+              $save_array['fields']['id'] = array('value' => $users_websites->id);
+          $save_array['fields']['site_role_id'] = array(
+            'value' => (
+                is_numeric($this->submission['fields']['website_'.$website->id]['value']) ?
+                  $this->submission['fields']['website_'.$website->id]['value'] :
+                  null
+            )
+          );
+          $users_websites->submission = $save_array;
+          $users_websites->submit();
+        }
+      }
+      return true;
+    } catch (Exception $e) {
+      $this->errors['users_websites']=$e->getMessage();
+      kohana::log('error', $e->getMessage());
+      return false;
+    }
+  }
+
 }

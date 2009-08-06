@@ -28,7 +28,7 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Taxa_taxon_list_Model extends ORM_Tree {
+class Taxa_taxon_list_Model extends Base_Name_Model {
 
   protected $belongs_to = array('taxon', 'taxon_list',  'taxon_meaning',
     'created_by' => 'user',
@@ -95,6 +95,124 @@ class Taxa_taxon_list_Model extends ORM_Tree {
       'commonNames' => '',
       'synonymy' => ''
     ));
+  }
+
+    /**
+  * Overrides the postSubmit function to add in synonomies and common names
+  */
+  protected function postSubmit($id)
+  {
+    $arrCommonNames=$this->parseRelatedNames(
+      $this->model->submission['metaFields']['commonNames']['value'],
+      'set_common_name_sub_array'
+    );
+    Kohana::log("debug", "Number of common names is: ".count($arrCommonNames));
+
+    $arrSyn=$this->parseRelatedNames(
+      $this->model->submission['metaFields']['synonomy']['value'],
+      'set_synonym_sub_array'
+    );
+    Kohana::log("debug", "Number of synonyms is: ".count($arrSyn));
+
+    $arrSyn = array_merge($arrSyn, $arrCommonNames);
+
+    Kohana::log("debug", "Looking for existing terms with meaning ".$this->model->taxon_meaning_id);
+    $existingSyn = $this->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id);
+
+    // Iterate through existing synonomies, discarding those that have
+    // been deleted and removing existing ones from the list to add
+
+    foreach ($existingSyn as $syn)
+    {
+      // Is the taxon from the db in the list of synonyms?
+      if (array_key_exists($syn->taxon->taxon, $arrSyn) &&
+        $arrSyn[$syn->taxon->taxon]['lang'] ==
+        $syn->taxon->language->iso &&
+        $arrSyn[$syn->taxon->taxon]['auth'] ==
+        $syn->taxon->authority)
+      {
+        $arrSyn = array_diff_key($arrSyn, array($syn->taxon->taxon => ''));
+        Kohana::log("debug", "Known synonym: ".$syn->taxon->taxon);
+      }
+      else
+      {
+        // Synonym has been deleted - remove it from the db
+        $syn->deleted = 't';
+        Kohana::log("debug", "Deleting synonym: ".$syn->taxon->taxon);
+        $syn->save();
+      }
+    }
+
+    // $arraySyn should now be left only with those synonyms
+    // we wish to add to the database
+
+    Kohana::log("debug", "Synonyms remaining to add: ".count($arrSyn));
+    $sm = ORM::factory('taxa_taxon_list');
+    foreach ($arrSyn as $taxon => $syn)
+    {
+
+      $sm->clear();
+
+      $lang = $syn['lang'];
+      $auth = $syn['auth'];
+
+      // Wrap a new submission
+      Kohana::log("info", "Wrapping submission for synonym ".$taxon);
+
+      $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
+      // If language not found, use english as the default. Future versions may wish this to be
+      // user definable.
+      $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
+      $syn = $_POST;
+      $syn['taxon_id'] = null;
+      $syn['taxon'] = $taxon;
+      $syn['authority'] = $auth;
+      $syn['language_id'] = $lang_id;
+      $syn['id'] = '';
+      $syn['preferred'] = 'f';
+      $syn['taxon_meaning_id'] = $this->model->taxon_meaning_id;
+
+      $sub = $this->wrap($syn);
+
+      $sm->submission = $sub;
+      $sm->submit();
+    }
+
+    url::redirect('taxa_taxon_list/'.$this->model->taxon_list_id);
+  }
+
+  /**
+   * Build the array that stores the language attached to common names being submitted.
+   */
+  protected function set_common_name_sub_array($tokens, &$array) {
+    if (count($tokens) == 2) {
+      $array[$tokens[0]] = array(
+        'lang' => trim($tokens[1]),
+        'auth' => ''
+      );
+    } else {
+      $array[$tokens[0]] = array(
+        'lang' => config('indicia.default_lang'),
+        'auth' => ''
+      );
+    }
+  }
+
+  /**
+   * Build the array that stores the author attached to synonyms being submitted.
+   */
+  protected function set_synonym_sub_array($tokens, &$array) {
+    if (count($tokens) == 2) {
+      $array[$tokens[0]] = array(
+        'auth' => trim($tokens),
+        'lang' => 'lat'
+      );
+    } else {
+      $array[$tokens[0]] = array(
+        'auth' => '',
+        'lang' => 'lat'
+      );
+    }
   }
 
 }

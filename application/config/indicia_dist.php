@@ -64,6 +64,11 @@ $config['localReportDir'] = 'reports';
 $config['theme'] = 'default';
 
 /**
+ * Default language code for new common names, unless specified.
+ */
+$config['default_lang'] = 'eng';
+
+/**
  * For developers of indicia only!
  * In a production release this var must be set to bool false!!
  * During the development process each dev has to set this var

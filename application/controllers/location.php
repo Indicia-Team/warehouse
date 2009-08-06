@@ -63,58 +63,24 @@ class Location_Controller extends Gridview_Base_Controller {
      *
      * @todo auth and permission check
      */
-    public function edit($id = null)
-    {
-    if ($id == null)
-        {
-         $this->setError('Invocation error: missing argument', 'You cannot call edit location without an ID');
-        }
-        else if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
-    }
-        else
-        {
-            $this->model = new Location_Model($id);
-            $this->setView('location/location_edit', 'Location');
-        }
-    }
-
-  protected function submit($submission){
-        $this->model->submission = $submission;
-        if (($id = $this->model->submit()) != null) {
-            // Record has saved correctly
-            // now save the users_websites records.
-      if (!is_null($this->gen_auth_filter))
-        $websites = ORM::factory('website')->in('id',$this->gen_auth_filter['values'])->find_all();
+  public function edit($id = null)
+  {
+  if ($id == null)
+      {
+       $this->setError('Invocation error: missing argument', 'You cannot call edit location without an ID');
+      }
+      else if (!$this->record_authorised($id))
+  {
+    $this->access_denied('record with ID='.$id);
+  }
       else
-        $websites = ORM::factory('website')->find_all();
-          foreach ($websites as $website) {
-        $locations_website = ORM::factory('locations_website',
-            array('location_id' => $id, 'website_id' => $website->id));
-             if ($locations_website->loaded AND !isset($submission['fields']['website_'.$website->id])) {
-          $locations_website->delete();
-        } else if (!$locations_website->loaded AND isset($submission['fields']['website_'.$website->id])) {
-              $save_array = array(
-                'id' => $locations_website->object_name
-                ,'fields' => array('id' => array('value' => $locations_website->id)
-                          ,'location_id' => array('value' => $id)
-                          ,'website_id' => array('value' => $website->id)
-                          )
-                ,'fkFields' => array()
-                ,'superModels' => array());
-           $locations_website->submission = $save_array;
-          $locations_website->submit();
-        }
-          }
-            $this->submit_succ($id);
-        } else {
-            // Record has errors - now embedded in model
-            $this->submit_fail();
-        }
-    }
+      {
+          $this->model = new Location_Model($id);
+          $this->setView('location/location_edit', 'Location');
+      }
+  }
 
-    protected function record_authorised ($id)
+  protected function record_authorised ($id)
   {
     if (!is_null($id) AND !is_null($this->auth_filter))
     {

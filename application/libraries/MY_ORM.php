@@ -210,7 +210,7 @@ abstract class ORM extends ORM_Core {
    * this method should call this parent method after their changes to perform necessary
    * checks unless they really want to skip them.
    */
-  protected function preSubmit(){
+  protected function preSubmit() {
     kohana::log('debug','preSubmit start');
     // Grab the survey id and website id if they are in the submission, as they are used to check
     // attributes that apply and other permissions.
@@ -242,13 +242,6 @@ abstract class ORM extends ORM_Core {
   }
 
   /**
-   * Allow models to implement code that is called after submission by overriding this method.
-   */
-  protected function postSubmit() {
-    return true;
-  }
-
-  /**
    * Submits the data by:
    * - Calling the preSubmit function to clean data.
    * - Linking in any foreign fields specified in the "fk-fields" array.
@@ -267,7 +260,7 @@ abstract class ORM extends ORM_Core {
       $res = $this->inner_submit();
     } catch (Exception $e) {
       kohana::log('info', 'Exception occurred during inner_submit. '.$e->getMessage());
-      $res = false;
+      $res = null;
       $this->errors['record'] = $e->getMessage();
     }
     if ($res) {
@@ -309,18 +302,18 @@ abstract class ORM extends ORM_Core {
       foreach ($this->errors as $f => $e){
         Kohana::log("debug", "Field ".$f.": ".$e.".");
       }
-      $return = false;
+      $return = null;
     }
     $this->errors=array_merge($errors, $this->errors);
-    $return = $this->checkRequiredAttributes() && $return;
-    $return = $this->createChildRecords() && $return;
-    $return = $this->createAttributes() && $return;
+    $return = $this->checkRequiredAttributes() ? $return : null;
+    $return = $this->createChildRecords() ? $return : null;
+    $return = $this->createAttributes() ? $return : null;
 
     // Call postSubmit
     if ($return) {
       $ps = $this->postSubmit();
         if ($ps == null) {
-          $return = false;
+          $return = null;
         }
     }
     kohana::log('debug', 'done inner submit');
@@ -344,15 +337,15 @@ abstract class ORM extends ORM_Core {
 
         // Check that it has the required search field
         if (array_key_exists($b['fkSearchField'], $m->table_columns)) {
-          $fkRecord = $m->where(array(
+          $fkRecords = $m->like(array(
               $b['fkSearchField'] => $b['fkSearchValue']))
-              ->find();
-          if (!$fkRecord->id) {
+              ->find_all();
+          if (count($fkRecords)!=1) {
             $this->errors[$a] = 'Could not find a '.ucwords($b['fkTable']).' by looking for "'.$b['fkSearchValue'].
                 '" in the '.ucwords($b['fkSearchField']).' field.';
             $r=false;
           }
-          $this->submission['fields'][$b['fkIdField']] = $fkRecord->id;
+          $this->submission['fields'][$b['fkIdField']] = $fkRecords[0]->id;
         }
       }
     }
@@ -548,6 +541,14 @@ abstract class ORM extends ORM_Core {
         }
       }
     }
+    return true;
+  }
+
+  /**
+   * Overrideable function to allow some models to handle additional records created on submission.
+   * @return boolean True if successful.
+   */
+  protected function postSubmit() {
     return true;
   }
 

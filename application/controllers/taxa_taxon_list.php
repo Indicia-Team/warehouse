@@ -39,24 +39,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->base_filter['parent_id']=null;
     $this->base_filter['preferred']='t';
     $this->columns = array(
-    'taxon'=>'',
-    'authority'=>'',
-    'language'=>'',
+      'taxon'=>'',
+      'authority'=>'',
+      'language'=>'',
     );
     $this->pagetitle = "Species";
     $this->pageNoUriSegment = 4;
     $this->model = ORM::factory('taxa_taxon_list');
-  }
-
-  private function getSynonomy($taxon_meaning_id)
-  {
-    return ORM::factory('taxa_taxon_list')
-    ->where(array
-    (
-    'preferred' => 'f',
-    'deleted' => 'f',
-    'taxon_meaning_id' => $taxon_meaning_id
-    ))->find_all();
   }
 
   private function formatScientificSynonomy(ORM_Iterator $res)
@@ -102,6 +91,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       $this->access_denied('table to view records with a taxon list ID='.$taxon_list_id);
       return;
     }
+    parent::page($page_no, $limit);
     $this->base_filter['taxon_list_id'] = $taxon_list_id;
     $this->pagetitle = "Species in ".ORM::factory('taxon_list',$taxon_list_id)->title;
     $this->view->taxon_list_id = $taxon_list_id;
@@ -109,9 +99,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     (
       'taxon_list_id' => $taxon_list_id,
       'preferred' => 't'
-    );
-    $this->upload_csv_form->returnPage = $taxon_list_id;
-    parent::page($page_no, $limit);
+    );    $this->upload_csv_form->returnPage = $taxon_list_id;
+
   }
 
   public function page_gv($taxon_list_id, $page_no, $limit)
@@ -139,7 +128,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       $page_no,
       $limit,
       4
-  );
+    );
     $grid->base_filter = $this->base_filter;
     $grid->base_filter['parent_id'] = $id;
     $grid->columns = $this->columns;
@@ -148,18 +137,19 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     );
 
     // Add items to view
-    $vArgs = array
-    (
+    $vArgs = array(
       'taxon_list_id' => $this->model->taxon_list_id,
       'table' => $grid->display(),
-      'synonomy' => $this->formatScientificSynonomy($this->
-        getSynonomy($this->model->taxon_meaning_id)),
-      'commonNames' => $this->formatCommonSynonomy($this->
-        getSynonomy($this->model->taxon_meaning_id))
+      'synonomy' => $this->formatScientificSynonomy(
+        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
+      'commonNames' => $this->formatCommonSynonomy(
+        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id))
     );
     $this->setView('taxa_taxon_list/taxa_taxon_list_edit', 'Taxon', $vArgs);
 
   }
+
+
   // Auxilliary function for handling Ajax requests from the edit method gridview component
   public function edit_gv($id,$page_no,$limit)
   {
@@ -167,17 +157,17 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
     $gridmodel = ORM::factory('gv_taxon_taxon_list');
 
-    $grid =	Gridview_Controller::factory
-    (
-    $gridmodel,
-    $page_no,
-    $limit,
-    4);
+    $grid =	Gridview_Controller::factory(
+        $gridmodel,
+        $page_no,
+        $limit,
+        4
+    );
     $grid->base_filter = $this->base_filter;
     $grid->base_filter['parent_id'] = $id;
     $grid->columns =  $this->columns;
     $grid->actionColumns = array(
-    'edit' => 'taxa_taxon_list/edit/£id£'
+      'edit' => 'taxa_taxon_list/edit/£id£'
     );
     return $grid->display();
   }
@@ -254,8 +244,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     if (array_key_exists('taxon_meaning_id', $array) == false ||
       $array['taxon_meaning_id'] == '')
     {
-      $sa['superModels'][] = array
-      (
+      $sa['superModels'][] = array(
         'fkId' => 'taxon_meaning_id',
         'model' => parent::wrap(
           array_intersect_key($array, ORM::factory('taxon_meaning')->table_columns),
@@ -294,6 +283,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
     if (array_key_exists('commonNames', $array))
     {
+      echo "here";
       $sa['metaFields']['commonNames'] = array(
         'value' => $array['commonNames']
       );
@@ -308,127 +298,12 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   protected function submit_fail()
   {
     $mn = $this->model->object_name;
-    $vArgs = array
-    (
-    'taxon_list_id' => $this->model->taxon_list_id,
-     'synonomy' => null,
-     'commonNames' => null,
-     );
-     $this->setView($mn."/".$mn."_edit", ucfirst($mn), $vArgs);
-  }
-
-  /**
-  * Overrides the success function to add in synonomies
-  */
-  protected function submit_succ($id)
-  {
-    // Okay, the thing saved correctly - we now need to add the common names
-    $arrLine = explode("\n",trim($this
-    ->model->submission['metaFields']['commonNames']['value']));
-    $arrCommonNames = array();
-
-    foreach ($arrLine as $line)
-    {
-      if (trim($line) == '') break;
-      $b = preg_split("/(?<!\\\\ ),/",$line);
-      if (count($b) == 2) {
-      $arrCommonNames[$b[0]] = array('lang' => trim($b[1]),
-          'auth' => '');
-    }
-    else
-    {
-      $arrCommonNames[$b[0]] = array('lang' => 'eng', 'auth' => '');
-    }
-    }
-    Kohana::log("info", "Number of common names is: ".count($arrCommonNames));
-
-    // Now do the same thing for synonomy
-    $arrLine = explode("\n", trim($this
-    ->model->submission['metaFields']['synonomy']['value']));
-    $arrSyn = array();
-
-    foreach ($arrLine as $line)
-    {
-      if (trim($line) == '') break;
-      $b = preg_split("/(?<!\\\\ ),/",$line);
-      if (count($b) == 2) {
- $arrSyn[$b[0]] = array('auth' => trim($b[1]), 'lang' => 'lat');
- }
- else
- {
-   $arrSyn[$b[0]] = array
-   (
-   'auth' => '',
-    'lang' => 'lat');
- }
-    }
-    Kohana::log("info", "Number of synonyms is: ".count($arrSyn));
-
-    $arrSyn = array_merge($arrSyn, $arrCommonNames);
-
-    Kohana::log("info", "Looking for existing terms with meaning ".$this->model->taxon_meaning_id);
-    $existingSyn = $this->getSynonomy($this->model->taxon_meaning_id);
-
-    // Iterate through existing synonomies, discarding those that have
-    // been deleted and removing existing ones from the list to add
-
-    foreach ($existingSyn as $syn)
-    {
-      // Is the taxon from the db in the list of synonyms?
-      if (array_key_exists($syn->taxon->taxon, $arrSyn) &&
-  $arrSyn[$syn->taxon->taxon]['lang'] ==
-  $syn->taxon->language->iso &&
-  $arrSyn[$syn->taxon->taxon]['auth'] ==
-  $syn->taxon->authority)
-  {
-    $arrSyn = array_diff_key($arrSyn, array($syn->taxon->taxon => ''));
-    Kohana::log("info", "Known synonym: ".$syn->taxon->taxon);
-  }
-  else
-  {
-    // Synonym has been deleted - remove it from the db
-    $syn->deleted = 't';
-    Kohana::log("info", "Deleting synonym: ".$syn->taxon->taxon);
-    $syn->save();
-  }
-    }
-
-    // $arraySyn should now be left only with those synonyms
-    // we wish to add to the database
-
-    Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
-    $sm = ORM::factory('taxa_taxon_list');
-    foreach ($arrSyn as $taxon => $syn)
-    {
-
-      $sm->clear();
-
-      $lang = $syn['lang'];
-      $auth = $syn['auth'];
-
-      // Wrap a new submission
-      Kohana::log("info", "Wrapping submission for synonym ".$taxon);
-
-      $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
-      // If language not found, use english as the default. Future versions may wish this to be
-      // user definable.
-      $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
-      $syn = $_POST;
-      $syn['taxon_id'] = null;
-      $syn['taxon'] = $taxon;
-      $syn['authority'] = $auth;
-      $syn['language_id'] = $lang_id;
-      $syn['id'] = '';
-      $syn['preferred'] = 'f';
-      $syn['taxon_meaning_id'] = $this->model->taxon_meaning_id;
-
-      $sub = $this->wrap($syn);
-
-      $sm->submission = $sub;
-      $sm->submit();
-    }
-
-    url::redirect('taxa_taxon_list/'.$this->model->taxon_list_id);
+    $vArgs = array(
+      'taxon_list_id' => $this->model->taxon_list_id,
+      'synonomy' => null,
+      'commonNames' => null,
+    );
+    $this->setView($mn."/".$mn."_edit", ucfirst($mn), $vArgs);
   }
 
   protected function record_authorised ($id)

@@ -92,4 +92,39 @@ class Location_Model extends ORM_Tree {
     return $value;
   }
 
+  /**
+   * Override postSubmit to also store the list of location_website links
+   */
+  protected function postSubmit() {
+    try {
+      if (!is_null($this->gen_auth_filter))
+        $websites = ORM::factory('website')->in('id',$this->gen_auth_filter['values'])->find_all();
+      else
+        $websites = ORM::factory('website')->find_all();
+      foreach ($websites as $website) {
+        $locations_website = ORM::factory('locations_website',
+          array('location_id' => $this->id, 'website_id' => $website->id));
+        if ($locations_website->loaded AND !isset($this->submission['fields']['website_'.$website->id])) {
+          $locations_website->delete();
+        } else if (!$locations_website->loaded AND isset($this->submission['fields']['website_'.$website->id])) {
+          $save_array = array(
+                 'id' => $locations_website->object_name
+                ,'fields' => array('id' => array('value' => $locations_website->id)
+                          ,'location_id' => array('value' => $this->id)
+                          ,'website_id' => array('value' => $website->id)
+                          )
+                ,'fkFields' => array()
+                ,'superModels' => array());
+          $locations_website->submission = $save_array;
+          $locations_website->submit();
+        }
+      }
+      return true;
+    } catch (Exception $e) {
+      $this->errors['locations_websites']=$e->getMessage();
+      kohana::log('error', $e->getMessage());
+      return false;
+    }
+  }
+
 }

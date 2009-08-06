@@ -24,7 +24,8 @@
 $i = 0;
 foreach ($table as $item)
 {
-  echo '<tr class="'.($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
+  echo '<tr class="';
+  echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
   $i++;
   $fields = array();
   $a = $item->as_array();
@@ -40,19 +41,22 @@ foreach ($table as $item)
     if ($field!==NULL)
     {
       if (preg_match('/^http/', $field))
-      echo html::anchor($field, $field);
+        echo html::anchor($field, $field);
       else
-  echo $field;
+        echo $field;
     }
     echo "</td>";
   }
-  foreach ($actionColumns as $name => $action)
-  {
+  if (count($actionColumns)>0) {
     echo "<td>";
-    $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);
-    echo html::anchor($action, $name, array('class'=>'ui-state-default ui-corner-all grid-button'));
+    foreach ($actionColumns as $name => $action)
+    {
+      $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);
+      echo html::anchor($action, $name, array('class'=>'ui-state-default ui-corner-all grid-button'));
+    }
     echo "</td>";
   }
+
   echo "</tr>";
 }
 ?>

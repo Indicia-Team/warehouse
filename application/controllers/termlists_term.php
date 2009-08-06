@@ -47,15 +47,6 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $this->model = ORM::factory('termlists_term');
   }
 
-  private function getSynonomy($meaning_id) {
-    return ORM::factory('termlists_term')
-      ->where(array(
-        'preferred' => 'f',
-        'deleted' => 'f',
-        'meaning_id' => $meaning_id
-      ))->find_all();
-  }
-
   private function formatCommonSynonomy(ORM_Iterator $res){
     $syn = "";
     foreach ($res as $synonym) {
@@ -79,11 +70,11 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     {
       $this->access_denied('table to view records with a termlist ID='.$termlist_id);
       return;
-        }
+    }
+    parent::page($page_no, $limit);
     $this->base_filter['termlist_id'] = $termlist_id;
     $this->pagetitle = "Terms in ".ORM::factory('termlist',$termlist_id)->title;
     $this->view->termlist_id = $termlist_id;
-    parent::page($page_no, $limit);
   }
 
   public function page_gv($termlist_id, $page_no, $limit){
@@ -224,81 +215,6 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       'synonomy' => null,
     );
     $this->setView($mn."/".$mn."_edit", ucfirst($mn), $vArgs);
-  }
-
-  /**
-   * Overrides the success function to add in synonomies
-   */
-  protected function submit_succ($id){
-
-    // Now do the same thing for synonomy
-    $arrLine = split("\n", trim($this
-      ->model->submission['metaFields']['synonomy']['value']));
-    $arrSyn = array();
-
-    foreach ($arrLine as $line) {
-      if (trim($line) == '') break;
-      $b = preg_split("/(?<!\\\\ ),/",$line);
-      if (count($b) >= 2) {
-        $arrSyn[$b[0]] = array('lang' => trim($b[1]));
-      } else {
-        $arrSyn[$b[0]] = array('lang' => 'eng');
-      }
-    }
-    Kohana::log("info", "Number of synonyms is: ".count($arrSyn));
-
-    Kohana::log("info", "Looking for existing terms with meaning ".$this->model->meaning_id);
-    $existingSyn = $this->getSynonomy($this->model->meaning_id);
-
-    // Iterate through existing synonomies, discarding those that have
-    // been deleted and removing existing ones from the list to add
-
-    foreach ($existingSyn as $syn){
-      // Is the term from the db in the list of synonyms?
-      if (array_key_exists($syn->term->term, $arrSyn) &&
-        $arrSyn[$syn->term->term]['lang'] ==
-        $syn->term->language->iso )
-      {
-        $arrSyn = array_diff_key($arrSyn, array($syn->term->term => ''));
-        Kohana::log("info", "Known synonym: ".$syn->term->term);
-      } else {
-        // Synonym has been deleted - remove it from the db
-        $syn->deleted = 't';
-        Kohana::log("info", "New synonym: ".$syn->term->term);
-        $syn->save();
-      }
-    }
-
-    // $arraySyn should now be left only with those synonyms
-    // we wish to add to the database
-
-    Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
-    $sm = ORM::factory('termlists_term');
-    foreach ($arrSyn as $term => $syn) {
-
-      $sm->clear();
-
-      $lang = $syn['lang'];
-
-      // Wrap a new submission
-      Kohana::log("info", "Wrapping submission for synonym ".$term);
-
-      $syn = $_POST;
-      $syn['term_id'] = null;
-      $syn['term'] = $term;
-      $syn['language_id'] = ORM::factory('language')->where(array(
-        'iso' => $lang))->find()->id;
-      $syn['id'] = '';
-      $syn['preferred'] = 'f';
-      $syn['meaning_id'] = $this->model->meaning_id;
-
-      $sub = $this->wrap($syn);
-
-      $sm->submission = $sub;
-      $sm->submit();
-    }
-
-    url::redirect('termlists_term/'.$this->model->termlist_id);
   }
 
   protected function record_authorised ($id)

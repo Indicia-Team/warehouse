@@ -244,32 +244,32 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
   protected function submit($submission){
     // If the disabled_input field is set to YES, the data is being reused and no changes can have been made to the main record.
     // In this case submit only the *_websites records.
-        $this->model->submission = $submission;
+    $this->model->submission = $submission;
     if ($submission['fields']['disabled_input']['value'] == 'YES') {
       $id = $submission['fields']['id']['value'];
     } else {
       $id = $this->model->submit();
     }
-      if ($id != null) {
-            // Record has saved correctly or is being reused
+    if ($id != null) {
+      // Record has saved correctly or is being reused
       if(!is_null($this->gen_auth_filter))
         $websites = ORM::factory('website')->in('id', $this->gen_auth_filter['values'])->find_all();
       else
         $websites = ORM::factory('website')->find_all();
-         foreach ($websites as $website) {
+      foreach ($websites as $website) {
         // First check for non survey specific checkbox
         $this->set_attribute_website_record($id, $website->id, null, isset($submission['fields']['website_'.$website->id]));
         $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
-           foreach ($surveys as $survey) {
+        foreach ($surveys as $survey) {
           $this->set_attribute_website_record($id, $website->id, $survey->id, isset($submission['fields']['website_'.$website->id.'_'.$survey->id]));
         }
       }
-           $this->submit_succ($id);
-        } else {
-            // Record has errors - now embedded in model
-            $this->submit_fail();
-        }
+      $this->submit_succ($id);
+    } else {
+      // Record has errors - now embedded in model
+      $this->submit_fail();
     }
+  }
 
   private function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
   {
@@ -304,7 +304,7 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
      * Returns to the index view for this controller.
      */
     protected function submit_succ($id) {
-        Kohana::log("info", "Submitted record ".$id." successfully.");
+        Kohana::log("debug", "Submitted record ".$id." successfully.");
         url::redirect($this->model->object_name.'?filter_type='.$_POST['filter_type'].'&website_id='.$_POST['website_id'].'&survey_id='.$_POST['survey_id']);
     }
 

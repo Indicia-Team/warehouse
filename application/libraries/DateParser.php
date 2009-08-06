@@ -180,7 +180,7 @@ class DateParser_Core {
           }
           break;
         case '%e': // Day of the month as decimal number, single digit preceeded by a space.
-          sscanf($sDate, "%2d%[^\\n]", $nValue, $dateAfter);
+          sscanf($sDate, "%2d%[^\\n]", $nValue, $sDateAfter);
 
           if(($nValue < 1) || ($nValue > 31) || ($nValue == null)) return false;
           $this->aResult['tm_mday']  = $nValue;
