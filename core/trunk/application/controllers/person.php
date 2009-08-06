@@ -138,17 +138,6 @@ class Person_Controller extends Gridview_Base_Controller {
     }
   }
 
-  /**
-     * Returns to the index view for this controller.
-     */
-    protected function submit_succ($id) {
-        Kohana::log("info", "Submitted record ".$id." successfully.");
-    if(isset($_POST['return_url']))
-      url::redirect($_POST['return_url']);
-
-    url::redirect($this->model->object_name);
-    }
-
   protected function submit_fail() {
     $this->setView('person/person_edit', 'Person',
       array('return_url' => isset($_POST['return_url']) ? $this->return_url($_POST['return_url']) : ''));

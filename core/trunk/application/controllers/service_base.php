@@ -70,7 +70,7 @@ class Service_Base_Controller extends Controller {
     $mode = $this->get_input_mode();
     if ($mode=='xml') {
       $view = new View("services/error");
-      $view->message = $message;
+      $view->message = $e->getMessage();
       $view->render(true);
     } else {
       $response = array(

@@ -125,7 +125,19 @@ echo html::stylesheet(
     <div id="content" role="main">
 
         <h1><?php echo $title; ?></h1>
-
+<?php
+  $info = $this->session->get('flash_info', null);
+  if ($info) : ?>
+        <div class="ui-widget-content ui-corner-all ui-state-highlight page-notice" >
+        <?php echo $info; ?>
+        </div>
+<?php endif;
+  $error = $this->session->get('flash_error', null);
+  if ($error) : ?>
+        <div class="ui-widget-content ui-corner-all ui-state-error page-notice">
+        <?php echo $error; ?>
+        </div>
+<?php endif; ?>
         <?php echo $content; ?>
 
     </div>

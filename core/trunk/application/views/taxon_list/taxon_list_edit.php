@@ -20,14 +20,34 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+?>
+<script type="text/javascript">
+  $(document).ready(function(){
+    var $tabs=$("#tabs").tabs();
+    var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
+    if (initTab!='') {
+      $tabs.tabs('select', '#' + initTab);
 
-if ($model->parent_id != null) { ?>
+    }
+  });
+</script>
+
+<?php if ($model->parent_id != null) : ?>
 <h1>Subset of:
 <a href="<?php echo url::site() ?>taxon_list/edit/<?php echo $model->parent_id ?>" >
 <?php echo ORM::factory("taxon_list",$model->parent_id)->title ?>
 </a>
 </h1>
-<?php } ?>
+<?php endif; ?>
+<div id="tabs">
+  <ul>
+    <li><a href="#details"><span>List Details</span></a></li>
+<?php if ($model->id != null) : ?>
+    <li><a href="<?php echo url::site().'taxa_taxon_list/'.$model->id; ?>"><span>Taxa</span></a></li>
+    <li><a href="#sublists"><span>Child Lists</span></a></li>
+<?php endif; ?>
+  </ul>
+<div id="details">
 <form class="cmxform"  name='editList' action="<?php echo url::site().'taxon_list/save' ?>" method="POST">
 <?php echo $metadata ?>
 <fieldset>
@@ -72,11 +92,8 @@ if ($model->parent_id != null) { ?>
 <input type="submit" name="submit" value="Submit" />
 <input type="submit" name="submit" value="Delete" />
 </form>
-<?php if ($model->id != '') { ?>
-<br />
-<a href="<?php echo url::site().'taxa_taxon_list/page/'.$model->id ?>">View contents of this species list.</a>
-<?php if ($model->id != '' && $table != null) { ?>
-  <br />
+</div>
+<?php if ($model->id != '' && $table != null) : ?>
   <div id="sublists">
   <h2> Sublists </h2>
   <?php echo $table; ?>
@@ -85,4 +102,4 @@ if ($model->parent_id != null) { ?>
   <input type="submit" value="New Sublist" />
   </form>
   </div>
-<?php }} ?>
+<?php endif; ?>

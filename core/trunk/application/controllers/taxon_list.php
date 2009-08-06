@@ -90,9 +90,9 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     {
       if (!$this->record_authorised($parent))
       {
-        $this->access_denied('table to create a record with parent ID='.$id);
+        $this->access_denied('table to create a record with parent ID='.$parent);
         return;
-          }
+      }
       $this->model->website_id = $this->model->parent->website_id;
     }
 

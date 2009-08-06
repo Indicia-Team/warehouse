@@ -73,7 +73,7 @@ class Valid extends Valid_Core {
    */
   public static function valid_term($term, $id)
   {
-    $this->valid_term_or_taxon($taxon, $id,'termlist_id', 'term', 'gv_termlists_term');
+    $this->valid_term_or_taxon($term, $id,'termlist_id', 'term', 'gv_termlists_term');
   }
 
   /**

@@ -42,37 +42,13 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->gridmodelname=is_null($gridmodelname) ? $modelname : $gridmodelname;
     $this->viewname=is_null($viewname) ? $modelname : $viewname;
     $this->controllerpath=is_null($controllerpath) ? $modelname : $controllerpath;
-    $this->gridmodel = ORM::factory($this->gridmodelname);
     $this->pageNoUriSegment = 3;
     $this->base_filter = array('deleted' => 'f');
     $this->auth_filter = null;
     $this->gen_auth_filter = null;
-    $this->columns = $this->gridmodel->table_columns;
-    $this->actionColumns = array(
-      'edit' => $this->controllerpath."/edit/£id£"
-    );
     $this->pagetitle = "Abstract gridview class - override this title!";
-    $this->view = new View($this->viewname);
-    $this->upload_csv_form = new View('templates/upload_csv');
-    $this->upload_csv_form->returnPage = 1;
-    $this->upload_csv_form->staticFields = null;
-    $this->upload_csv_form->controllerpath = $this->controllerpath;
-    $this->view->upload_csv_form = $this->upload_csv_form;
+
     parent::__construct();
-
-    // If not logged in as a Core admin, restrict access to available websites.
-    if(!$this->auth->logged_in('CoreAdmin')){
-      $site_role = (new Site_role_Model('Admin'));
-      $websites=ORM::factory('users_website')->where(
-          array('user_id' => $_SESSION['auth_user']->id,
-              'site_role_id' => $site_role->id))->find_all();
-      $website_id_values = array();
-      foreach($websites as $website)
-        $website_id_values[] = $website->website_id;
-      $website_id_values[] = null;
-      $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
-    }
-
   }
 
   protected function page_authorised()
@@ -80,11 +56,16 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     return $this->auth->logged_in();
   }
 
+  /**
+   * This is the main controller action method for the index page of the grid.
+   */
   public function page($page_no, $limit) {
     if ($this->page_authorised() == false) {
       $this->access_denied();
       return;
     }
+    $this->prepare_grid_view();
+
     $grid =	Gridview_Controller::factory($this->gridmodel,
       $page_no,
       $limit,
@@ -102,6 +83,18 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->template->content = $this->view;
   }
 
+  protected function prepare_grid_view() {
+    $this->get_auth_websites();
+    $this->view = new View($this->viewname);
+    $this->gridmodel = ORM::factory($this->gridmodelname);
+    if (!$this->columns) {
+      // If the controller class has not defined the list of columns, use the entire list as a default
+      $this->columns = $this->gridmodel->table_columns;
+    }
+    $this->actionColumns = array('edit' => $this->controllerpath."/edit/£id£");
+    $this->add_upload_csv_form();
+  }
+
   public function page_gv($page_no, $limit) {
     $this->auto_render = false;
     $grid =	Gridview_Controller::factory($this->gridmodel,
@@ -113,6 +106,36 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $grid->columns = array_intersect_key($this->columns, $grid->columns);
     $grid->actionColumns = $this->actionColumns;
     return $grid->display();
+  }
+
+  /**
+   * Retrieve the list of websites the user has access to. The list is then stored in
+   * $this->gen_auth_filter.
+   */
+  protected function get_auth_websites() {
+    // If not logged in as a Core admin, restrict access to available websites.
+    if(!$this->auth->logged_in('CoreAdmin')){
+      $site_role = (new Site_role_Model('Admin'));
+      $websites=ORM::factory('users_website')->where(
+          array('user_id' => $_SESSION['auth_user']->id,
+              'site_role_id' => $site_role->id))->find_all();
+      $website_id_values = array();
+      foreach($websites as $website)
+        $website_id_values[] = $website->website_id;
+      $website_id_values[] = null;
+      $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
+    }
+  }
+
+  /**
+   * Adds the upload csv form to the view (which should then insert it at the bottom of the grid).
+   */
+  protected function add_upload_csv_form() {
+    $this->upload_csv_form = new View('templates/upload_csv');
+    $this->upload_csv_form->returnPage = 1;
+    $this->upload_csv_form->staticFields = null;
+    $this->upload_csv_form->controllerpath = $this->controllerpath;
+    $this->view->upload_csv_form = $this->upload_csv_form;
   }
 
   /**
@@ -159,7 +182,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       // skip the header row
       $headers = fgetcsv($handle, 1000, ",");
       $problems = array();
+      $count=0;
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        $count++;
         $index = 0;
         $saveArray = array();
         foreach ($_POST as $col=>$attr) {
@@ -183,9 +208,14 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         // Save the record
         $this->model->clear();
         $this->model->submission = $this->wrap($saveArray, true);
-        if (!$this->model->submit()) {
+        if (($id = $this->model->submit()) != null) {
+          // Record has saved correctly
+          $this->submit_succ($id);
+        } else {
+          // Record has errors - now embedded in model
+          $this->submit_fail();
           array_push($data, implode('<br/>', $this->model->getAllErrors()));
-          array_push($problems, $data);
+            array_push($problems, $data);
         }
       }
       fclose($handle);
@@ -199,7 +229,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $this->template->title = "Upload Problems";
         $this->template->content = $view;
       } else {
-        // TODO: need to flash a success message
+        $this->session->set_flash('flash_info', "The upload was successful. $count records were uploaded.");
         url::redirect($this->controllerpath);
       }
     }

@@ -51,8 +51,8 @@ foreach ($columns as $name => $newname) {
   if (!$newname) $newname = $name;
   echo "<th class='gvSortable gvCol' id='$name'>".ucwords($newname)."</th>";
 }
-foreach ($actionColumns as $name => $action) {
-  echo "<th class='gvAction'>".ucwords($name)."</th>";
+if (count($actionColumns)>0) {
+  echo "<th class='gvAction'>Task</th>";
 }
 ?>
 </tr>

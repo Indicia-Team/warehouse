@@ -32,10 +32,10 @@ class User_Controller extends Gridview_Base_Controller {
   public function __construct() {
     parent::__construct('user', 'gv_user', 'user/index');
     $this->columns = array(
-      'name'=>''
-      ,'username'=>''
-        ,'core_role'=>''
-      );
+      'name'=>'',
+      'username'=>'',
+      'core_role'=>''
+    );
     $this->pagetitle = "Users";
     $this->model = new User_Model();
     $this->actionColumns = array(
@@ -43,7 +43,13 @@ class User_Controller extends Gridview_Base_Controller {
       'Edit Person Details' => 'person/edit_from_user/£person_id£',
       'Send Forgotten Password Email' => 'forgotten_password/send_from_user/£person_id£',
     );
+  }
 
+  public function index() {
+    Session::instance()->set_flash('flash_info', "<strong>Notes:</strong>" .
+        "<p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>" .
+        "<p>In order to be on the list of potential users, the person must have an email address.</p>");
+    parent::index();
   }
 
   protected function password_fields($password = '', $password2 = '')
@@ -135,43 +141,13 @@ class User_Controller extends Gridview_Base_Controller {
     }
     return $username;
   }
-  protected function submit($submission){
-        $this->model->submission = $submission;
-        if (($id = $this->model->submit()) != null) {
-            // Record has saved correctly
-            // now save the users_websites records.
-        $websites = ORM::factory('website')->find_all();
-      foreach ($websites as $website) {
-        $users_websites = ORM::factory('users_website',
-            array('user_id' => $id, 'website_id' => $website->id));
-            $save_array = array(
-                'id' => $users_websites->object_name
-                ,'fields' => array('user_id' => array('value' => $id)
-                          ,'website_id' => array('value' => $website->id)
-                          )
-                ,'fkFields' => array()
-                ,'superModels' => array());
-        if ($users_websites->loaded || is_numeric($submission['fields']['website_'.$website->id]['value'])) {
-          if ($users_websites->loaded)
-              $save_array['fields']['id'] = array('value' => $users_websites->id);
-          $save_array['fields']['site_role_id'] = array('value' => (is_numeric($submission['fields']['website_'.$website->id]['value']) ? $submission['fields']['website_'.$website->id]['value'] : null));
-          $users_websites->submission = $save_array;
-          $users_websites->submit();
-        }
-      }
-            $this->submit_succ($id);
-        } else {
-            // Record has errors - now embedded in model
-            $this->submit_fail();
-        }
-    }
 
   protected function submit_fail() {
     $this->setView('user/user_edit', 'User',
-      array('password_field' => array_key_exists('password', $_POST) ? $this->password_fields($_POST['password'], $_POST['password2']) : ''));
+        array('password_field' => array_key_exists('password', $_POST) ? $this->password_fields($_POST['password'], $_POST['password2']) : ''));
 
     // copy the values of the websites into the users_websites array
-      $websites = ORM::factory('website')->find_all();
+    $websites = ORM::factory('website')->find_all();
     foreach ($websites as $website) {
       $this->model->users_websites[$website->id]=
         array('id' => $website->id
