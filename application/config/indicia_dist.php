@@ -34,17 +34,41 @@ $config['system'] = array
     'release_date' => '2009-01-15'
 );
 
-$config['private_key'] = 'Indicia'; // Change this to a unique value for each Indicia install
-$config['nonce_life'] = 1200;       // life span of an authentication token for services, in seconds
-$config['maxUploadSize'] = '1M'; // Maximum size of an upload
+/**
+ * Key used for generation of security tokens. For maximum security, change this
+ * to a unique value for each Indicia install.
+ * @todo Make this randomly generated during the installation procedure.
+ */
+$config['private_key'] = 'Indicia';
+
+/**
+ * Life span of an authentication token for services, in seconds.
+ */
+$config['nonce_life'] = 1200;
+
+/**
+ * Maximum size of an upload.
+ */
+$config['maxUploadSize'] = '1M';
+
 $config['defaultPersonId'] = 1;
+
+/**
+ * Directory containing reports on this server.
+ */
 $config['localReportDir'] = 'reports';
 
-// For developers of indicia only!
-// In a production release this var must be set to bool false!!
-// during the development process each dev has to set this var
-// to the version upgrade folder (string) of the setup module
-//
+/**
+ * Name of the theme folder in the media/themes directory used by this warehouse instance.
+ */
+$config['theme'] = 'default';
+
+/**
+ * For developers of indicia only!
+ * In a production release this var must be set to bool false!!
+ * During the development process each dev has to set this var
+ *  to the version upgrade folder (string) of the setup module
+ */
 $config['devUpgradeFolder'] = 'upgrade_0_1_to_0_2';
 
 ?>

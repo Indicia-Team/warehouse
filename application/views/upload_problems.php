@@ -23,7 +23,9 @@
 
 ?>
 The following records failed to import.
-<table><thead><tr>
+<table class="ui-widget ui-widget-content">
+<thead class="ui-widget-header">
+<tr>
 <?php
 foreach ($headers as $header) {
   echo "<th>$header</th>";
@@ -32,8 +34,11 @@ foreach ($headers as $header) {
 <th>Problem</th>
 </tr></thead><tbody>
 <?php
+$i=0;
 foreach ($problems as $record) {
-  echo "<tr>";
+  echo '<tr class="';
+  echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
+  $i++;
   foreach ($record as $attr) {
     echo "<td>$attr</td>";
   }

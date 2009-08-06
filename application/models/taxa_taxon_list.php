@@ -81,7 +81,8 @@ class Taxa_taxon_list_Model extends ORM_Tree {
    * taxon to also be imported.
    */
   public function getSubmittableFields() {
-    return array(
+    $arr = parent::getSubmittableFields();
+    return array_merge(array(
       'taxon' => '',
       'fk_language' => '',
       'language_id' => '',
@@ -91,8 +92,9 @@ class Taxa_taxon_list_Model extends ORM_Tree {
       'search_code' => '',
       'external_key' => '',
       'fk_parent' => '',
-      'taxonomic_sort_order' => '',
-    );
+      'commonNames' => '',
+      'synonymy' => ''
+    ));
   }
 
 }

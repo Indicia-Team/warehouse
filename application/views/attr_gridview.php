@@ -134,9 +134,9 @@ function filter_selection_changed(filtercombo)
 </form>
 </div>
 <?php echo $filter_summary ?>
-<table id='pageGrid'>
-<thead>
-<tr class='headingRow'>
+<table id="pageGrid" class="ui-widget ui-widget-content">
+<thead class="ui-widget-header">
+<tr class="headingRow">
 <?php
 foreach ($columns as $name => $dbtype) {
   echo "<th class='gvSortable gvCol'>".ucwords($name)."</th>";

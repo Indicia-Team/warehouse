@@ -56,13 +56,12 @@ class Taxon_Model extends ORM {
     // Call the parent preSubmit function
     parent::preSubmit();
 
-    // Set scientific as necessary
+    // Set scientific if latin
     $l = ORM::factory('language');
     $sci = 'f';
-    if ($l->find(
-      $this->submission['fields']['language_id']['value'])->iso == "lat") {
-        $sci = 't';
-      }
+    /*if ($l->find($this->submission['fields']['language_id']['value'])->iso == "lat") {
+      $sci = 't';
+    }*/
     $this->submission['fields']['scientific'] = array(
       'value' =>  $sci
     );

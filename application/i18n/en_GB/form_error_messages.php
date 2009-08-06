@@ -48,7 +48,7 @@ $lang = array (
     'default' => 'Invalid Input.',
   ),
   'taxon_id' => array (
-    'default' => 'Unable to create a valid taxon entry',
+    'default' => 'Unable to create a valid taxon entry.',
   ),
   'taxon_list_id' => array (
     'default' => 'Invalid input.',
@@ -57,6 +57,9 @@ $lang = array (
   'taxa_taxon_list_id' => array (
     'default' => 'Invalid input.',
     'required' => 'The taxon must be specified.',
+  ),
+  'taxon_group_id' => array (
+    'required' => 'The taxon group is required.',
   ),
   'text_value' => array (
     'regex' => 'The value is not of the correct format.',

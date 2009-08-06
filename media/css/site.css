@@ -8,7 +8,7 @@ body
 {
   margin: auto;
   width: 760px;
-  font-size: 80%;
+  font-size: 70%;
   background: #E5E0C3 url(../images/gradient.png) repeat-x top left;
   text-align: center;
   font-family: Trebuchet MS, Helvetica, sans-serif;
@@ -70,7 +70,8 @@ table#pageGrid thead tr th
 
 td
 {
-  padding: 0 6px 0 6px;
+  padding: 0.2em;
+  vertical-align: top;
 }
 
 td a
@@ -217,4 +218,10 @@ p#metadata_toggle
 .page-notice a.button .ui-icon {
   float: none;
   display: inline-block;
+}
+
+.grid-button {
+  padding: 1px;
+  margin: 1px;
+  font-size: 80%;
 }

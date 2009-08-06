@@ -80,14 +80,15 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     {
       if ($synonym->taxon->language->iso != "lat")
       {
-  $syn .= $synonym->taxon->taxon;
-  $syn .=	($synonym->taxon->language_id != null) ?
-  ",".$synonym->taxon->language->iso."\n" :
-  '';
+        $syn .= $synonym->taxon->taxon;
+        $syn .=	($synonym->taxon->language_id != null) ?
+        ",".$synonym->taxon->language->iso."\n" :
+        '';
       }
     }
     return $syn;
   }
+
   /**
   * Override the default page functionality to filter by taxon_list.
   */
@@ -106,11 +107,11 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->view->taxon_list_id = $taxon_list_id;
     $this->upload_csv_form->staticFields = array
     (
-    'taxon_list_id' => $taxon_list_id,
+      'taxon_list_id' => $taxon_list_id,
       'preferred' => 't'
-      );
-      $this->upload_csv_form->returnPage = $taxon_list_id;
-      parent::page($page_no, $limit);
+    );
+    $this->upload_csv_form->returnPage = $taxon_list_id;
+    parent::page($page_no, $limit);
   }
 
   public function page_gv($taxon_list_id, $page_no, $limit)
@@ -216,11 +217,9 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     // If we have an image, upload it and set the image path as required.
     $ups = Kohana::config('indicia.maxUploadSize');
     syslog(LOG_DEBUG, "Maximum upload size is $ups.");
-    $_FILES = Validation::factory($_FILES)
-    ->add_rules
-    (
-    'image_upload', 'upload::valid', 'upload::required',
-    'upload::type[png,gif,jpg]', "upload::size[$ups]"
+    $_FILES = Validation::factory($_FILES)->add_rules(
+      'image_upload', 'upload::valid', 'upload::required',
+      'upload::type[png,gif,jpg]', "upload::size[$ups]"
     );
     if ($_FILES->validate())
     {
@@ -237,14 +236,12 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
   protected function wrap($array, $linkFk = false)
   {
-
-    $sa = array
-    (
-    'id' => 'taxa_taxon_list',
-    'fields' => array(),
-    'fkFields' => array(),
-    'superModels' => array(),
-    'metaFields' => array()
+    $sa = array(
+      'id' => 'taxa_taxon_list',
+      'fields' => array(),
+      'fkFields' => array(),
+      'superModels' => array(),
+      'metaFields' => array()
     );
 
     // Declare which fields we consider as native to this model
@@ -259,10 +256,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     {
       $sa['superModels'][] = array
       (
-      'fkId' => 'taxon_meaning_id',
-       'model' => parent::wrap(
-       array_intersect_key($array, ORM::factory('taxon_meaning')
-       ->table_columns), $linkFk, 'taxon_meaning'));
+        'fkId' => 'taxon_meaning_id',
+        'model' => parent::wrap(
+          array_intersect_key($array, ORM::factory('taxon_meaning')->table_columns),
+          $linkFk,
+          'taxon_meaning'
+        )
+      );
     }
 
     $taxonFields = array_intersect_key($array, ORM::factory('taxon')

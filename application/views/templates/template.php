@@ -40,7 +40,7 @@ echo html::stylesheet(
     'media/css/forms',
     'media/css/thickbox',
     'media/css/jquery.autocomplete',
-    'media/themes/default/jquery-ui.custom'
+    'media/themes/'.kohana::config('indicia.theme').'/jquery-ui.custom'
   ),
   array('screen')
 ); ?>
@@ -77,7 +77,7 @@ echo html::stylesheet(
 </head>
 <body>
 
-<div id="wrapper">
+<div id="wrapper" class="ui-widget">
 
     <!-- BEGIN: banner -->
     <div id="banner" role="banner">
@@ -88,24 +88,24 @@ echo html::stylesheet(
 
     <!-- BEGIN: main menu (jquery/superfish) -->
     <?php if (isset($menu)) : ?>
-    <div id="menu" class="ui-widget ui-widget-content ui-corner-all">
-    <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all" role="menubar">
+    <div id="menu">
+    <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header" role="menubar">
 
     <?php foreach ($menu as $toplevel => $submenu): ?>
 
         <!-- BEGIN: print the top level menu items -->
         <?php if(count($submenu)==0): ?>
             <!-- No submenu, so treat as link to the home page -->
-            <li role="menuitem" class="ui-state-default ui-corner-all"><?php echo html::anchor('home', $toplevel); ?>
+            <li role="menuitem" class="ui-state-default"><?php echo html::anchor('home', $toplevel); ?>
         <?php else: ?>
-            <li role="menu" class="ui-state-default ui-corner-all"><a href="#"><?php echo $toplevel; ?></a>
+            <li role="menu" class="ui-state-default"><a href="#"><?php echo $toplevel; ?></a>
         <?php endif; ?>
 
             <!-- BEGIN: print the sub menu items -->
             <?php if (count($submenu)>0): ?>
                 <ul>
                 <?php foreach ($submenu as $menuitem => $url): ?>
-                    <li role="menuitem" class="ui-state-default ui-corner-all"><?php echo html::anchor($url, $menuitem); ?></li>
+                    <li role="menuitem" class="ui-state-default"><?php echo html::anchor($url, $menuitem); ?></li>
                 <?php endforeach; ?>
                 </ul>
             <?php endif; ?>

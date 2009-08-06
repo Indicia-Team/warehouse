@@ -184,7 +184,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $this->model->clear();
         $this->model->submission = $this->wrap($saveArray, true);
         if (!$this->model->submit()) {
-          array_push($data, implode(', ', $this->model->getAllErrors()));
+          array_push($data, implode('<br/>', $this->model->getAllErrors()));
           array_push($problems, $data);
         }
       }
@@ -205,7 +205,4 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     }
 
   }
-
-
-
 }

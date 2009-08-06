@@ -28,4 +28,6 @@
 <form action="<?php echo url::site().'termlists_term/create/'.$termlist_id; ?>" method="post">
 <input type="submit" value="New term" />
 </form>
+<br />
+<?php echo $upload_csv_form ?>
 </div>
