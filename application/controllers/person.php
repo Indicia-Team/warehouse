@@ -138,7 +138,7 @@ class Person_Controller extends Gridview_Base_Controller {
     }
   }
 
-  protected function submit_fail() {
+  protected function show_submit_fail() {
     $this->setView('person/person_edit', 'Person',
       array('return_url' => isset($_POST['return_url']) ? $this->return_url($_POST['return_url']) : ''));
     $this->set_warning();
@@ -167,7 +167,7 @@ class Person_Controller extends Gridview_Base_Controller {
       } else {
         // Core Admin user
         $users_websites=ORM::factory('users_website')->where('user_id', $this->model->id)->where('site_role_id IS NOT ', null)->find_all();
-        $this->template->content->warning_message='<li>Number of websites this person is a user on: '.$users_websites->count().'</li>';
+        $this->session->set_flash('flash_info', 'Number of websites this person is a user on: '.$users_websites->count());
       }
     }
   }

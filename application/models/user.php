@@ -100,13 +100,13 @@ class User_Model extends ORM {
       $websites = ORM::factory('website')->find_all();
       foreach ($websites as $website) {
         $users_websites = ORM::factory('users_website', array(
-          'user_id' => $this->model->id,
+          'user_id' => $this->id,
           'website_id' => $website->id
         ));
         $save_array = array(
           'id' => $users_websites->object_name,
           'fields' => array(
-            'user_id' => array('value' => $this->model->id),
+            'user_id' => array('value' => $this->id),
             'website_id' => array('value' => $website->id)
           ),
           'fkFields' => array(),
@@ -129,8 +129,8 @@ class User_Model extends ORM {
       }
       return true;
     } catch (Exception $e) {
-      $this->errors['users_websites']=$e->getMessage();
-      kohana::log('error', $e->getMessage());
+      $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
+      $this->log_error('Exception during postSubmit in user model.', $e);
       return false;
     }
   }

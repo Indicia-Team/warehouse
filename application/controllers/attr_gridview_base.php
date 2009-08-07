@@ -264,10 +264,10 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
           $this->set_attribute_website_record($id, $website->id, $survey->id, isset($submission['fields']['website_'.$website->id.'_'.$survey->id]));
         }
       }
-      $this->submit_succ($id);
+      $this->show_submit_succ($id);
     } else {
       // Record has errors - now embedded in model
-      $this->submit_fail();
+      $this->show_submit_fail();
     }
   }
 
@@ -301,30 +301,30 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
   }
 
   /**
-     * Returns to the index view for this controller.
-     */
-    protected function submit_succ($id) {
-        Kohana::log("debug", "Submitted record ".$id." successfully.");
-        url::redirect($this->model->object_name.'?filter_type='.$_POST['filter_type'].'&website_id='.$_POST['website_id'].'&survey_id='.$_POST['survey_id']);
-    }
+   * Returns to the index view for this controller.
+   */
+  protected function show_submit_succ($id) {
+    Kohana::log("debug", "Submitted record ".$id." successfully.");
+    url::redirect($this->model->object_name.'?filter_type='.$_POST['filter_type'].'&website_id='.$_POST['website_id'].'&survey_id='.$_POST['survey_id']);
+  }
 
-    /**
-     * Returns to the edit page to correct errors - now embedded in the model
-     */
-    protected function submit_fail() {
-        $mn = $this->model->object_name;
-        $this->setView("custom_attribute/custom_attribute_edit",
-                ucfirst($mn),
-                array('filter_type'=>$_POST['filter_type'],
-                    'website_id'=>$_POST['website_id'],
-                    'survey_id'=>$_POST['survey_id'],
-                    'enabled'=>'',
-                    'disabled_input'=>'NO',
-                    'attribute_load' => '',
-                    'name' => $this->name,
-                    'processpath' => $this->processpath));
+  /**
+   * Returns to the edit page to correct errors - now embedded in the model
+   */
+  protected function show_submit_fail() {
+    $mn = $this->model->object_name;
+    $this->setView("custom_attribute/custom_attribute_edit",
+            ucfirst($mn),
+            array('filter_type'=>$_POST['filter_type'],
+                'website_id'=>$_POST['website_id'],
+                'survey_id'=>$_POST['survey_id'],
+                'enabled'=>'',
+                'disabled_input'=>'NO',
+                'attribute_load' => '',
+                'name' => $this->name,
+              'processpath' => $this->processpath));
     $this->model->populate_validation_rules();
-    }
+  }
 
     protected function record_authorised ($id)
   {
