@@ -34,7 +34,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     'created_by' => 'user',
     'updated_by' => 'user');
 
-  protected $children = 'taxa_taxon_lists';
+  protected $ORM_Tree_children = 'taxa_taxon_lists';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');

@@ -30,7 +30,7 @@
  */
 class Termlist_Model extends ORM_Tree {
 
-  protected $children = "termlists";
+  protected $ORM_Tree_children = "termlists";
   protected $belongs_to = array('website', 'created_by'=>'user', 'updated_by'=>'user');
   protected $has_and_belongs_to_many = array('terms');
   protected $has_many = array('termlists_terms');

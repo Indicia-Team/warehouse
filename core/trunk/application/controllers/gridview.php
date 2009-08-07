@@ -95,7 +95,7 @@ class Gridview_Controller extends Controller {
     $offset = ($this->page -1) * $this->limit;
     $table = $lists->find_all($this->limit, $offset);
 
-    $pagination = Pagination::factory(array(
+    $pagination = new Pagination(array(
       'style' => 'extended',
       'items_per_page' => $this->limit,
       'uri_segment' => $this->uri_segment,
