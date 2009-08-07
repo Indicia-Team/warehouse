@@ -87,10 +87,10 @@ class Website_Controller extends Gridview_Base_Controller
         }
     }
 
-    protected function submit_fail() {
-        $this->model->password2 = $_POST['password2'];
+    protected function show_submit_fail() {
+      $this->model->password2 = $_POST['password2'];
       $mn = $this->model->object_name;
-        $this->setView($mn."/".$mn."_edit", ucfirst($mn));
+      $this->setView($mn."/".$mn."_edit", ucfirst($mn));
     }
 
   public function page_authorised ()

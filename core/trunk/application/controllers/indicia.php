@@ -211,25 +211,27 @@ class Indicia_Controller extends Template_Controller {
   /**
   * Sets the model submission, saves the submission array.
   */
-  protected function submit($submission)
+  protected function submit($submission, $deletion=false)
   {
     $this->model->submission = $submission;
     if (($id = $this->model->submit()) != null)
     {
       // Record has saved correctly
-      $this->submit_succ($id);
+      $this->show_submit_succ($id, $deletion);
     } else {
       // Record has errors - now embedded in model
-      $this->submit_fail();
+      $this->show_submit_fail();
     }
   }
 
   /**
   * Returns to the index view for this controller.
   */
-  protected function submit_succ($id)
+  protected function show_submit_succ($id, $deletion=false)
   {
     Kohana::log("debug", "Submitted record ".$id." successfully.");
+    $action = $deletion ? "deleted" : "saved";
+    $this->session->set_flash('flash_info', "The record was $action successfully.");
     if(isset($_POST['return_url'])) {
       url::redirect($_POST['return_url']);
     } else {
@@ -240,8 +242,12 @@ class Indicia_Controller extends Template_Controller {
   /**
   * Returns to the edit page to correct errors - now embedded in the model
   */
-  protected function submit_fail()
+  protected function show_submit_fail()
   {
+    $page_error=$this->model->getError('general');
+    if ($page_error) {
+      $this->session->set_flash('flash_error', $page_error);
+    }
     $mn = $this->model->object_name;
     $this->setView($mn."/".$mn."_edit", ucfirst($mn));
   }
@@ -270,7 +276,7 @@ class Indicia_Controller extends Template_Controller {
     }
 
     // Wrap the post object and then submit it
-    $this->submit($this->wrap($_POST));
+    $this->submit($this->wrap($_POST), $_POST['submit'] == 'Delete');
 
   }
 

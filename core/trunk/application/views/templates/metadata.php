@@ -25,13 +25,13 @@
 <script type='text/javascript'>
 $(document).ready(function(){
   $('div#metadata').hide();
-  $('p#metadata_toggle').show();
-  $('p#metadata_toggle').click(function(){
+  $('#metadata_toggle span').show();
+  $('#metadata_toggle span').click(function(){
     $('div#metadata').toggle('slow');
   });
 });
 </script>
-<p id='metadata_toggle'>Show/Hide Metadata</p>
+<div id='metadata_toggle'><span class="ui-state-default ui-corner-all">Show/Hide Metadata</span></div>
 <div id='metadata'>
 <fieldset>
 <legend>Metadata</legend>

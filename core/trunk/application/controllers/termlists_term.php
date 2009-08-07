@@ -71,9 +71,9 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       $this->access_denied('table to view records with a termlist ID='.$termlist_id);
       return;
     }
-    parent::page($page_no, $limit);
     $this->base_filter['termlist_id'] = $termlist_id;
     $this->pagetitle = "Terms in ".ORM::factory('termlist',$termlist_id)->title;
+    parent::page($page_no, $limit);
     $this->view->termlist_id = $termlist_id;
   }
 
@@ -208,7 +208,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
   /**
    * Overrides the fail functionality to add args to the view.
    */
-  protected function submit_fail(){
+  protected function show_submit_fail(){
     $mn = $this->model->object_name;
     $vArgs = array(
       'termlist_id' => $this->model->termlist_id,

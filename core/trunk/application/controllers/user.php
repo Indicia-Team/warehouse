@@ -30,7 +30,6 @@
 class User_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-    parent::__construct('user', 'gv_user', 'user/index');
     $this->columns = array(
       'name'=>'',
       'username'=>'',
@@ -38,23 +37,32 @@ class User_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Users";
     $this->model = new User_Model();
-    $this->actionColumns = array(
+    parent::__construct('user', 'gv_user', 'user/index');
+  }
+
+  public function page($page_no, $limit) {
+    Session::instance()->set_flash('flash_info', "<strong>Notes:</strong>" .
+        "<p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>" .
+        "<p>In order to be on the list of potential users, the person must have an email address.</p>");
+    parent::page($page_no, $limit);
+  }
+
+  /**
+   * Override the default action columns so we get Edit User, Edit Person and Send Forgotten Pwd Email links.
+   */
+  protected function get_action_columns() {
+    return array(
       'Edit User Details' => 'user/edit_from_person/£person_id£',
       'Edit Person Details' => 'person/edit_from_user/£person_id£',
       'Send Forgotten Password Email' => 'forgotten_password/send_from_user/£person_id£',
     );
   }
 
-  public function index() {
-    Session::instance()->set_flash('flash_info', "<strong>Notes:</strong>" .
-        "<p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>" .
-        "<p>In order to be on the list of potential users, the person must have an email address.</p>");
-    parent::index();
-  }
-
   protected function password_fields($password = '', $password2 = '')
   {
-    return '<li><label for="password">Password</label><input id="password" name="password" value="'.html::specialchars($password).'" /><span class="form_error">'.$this->model->getError('password').'</span></li><li><label for="password">Repeat Password</label><input id="password2" name="password2" value="'.html::specialchars($password2).'" /></li>';
+    return '<li><label for="password">Password</label><input id="password" name="password" value="'.html::specialchars($password).'" />' .
+        html::error_message($this->model->getError('password')) .
+        '</li><li><label for="password">Repeat Password</label><input id="password2" name="password2" value="'.html::specialchars($password2).'" /></li>';
   }
 
   // Due to the way the Users gridview is displayed (ie driven off the person table)
@@ -142,7 +150,11 @@ class User_Controller extends Gridview_Base_Controller {
     return $username;
   }
 
-  protected function submit_fail() {
+  protected function show_submit_fail() {
+    $page_error=$this->model->getError('general');
+    if ($page_error) {
+      $this->session->set_flash('flash_error', $page_error);
+    }
     $this->setView('user/user_edit', 'User',
         array('password_field' => array_key_exists('password', $_POST) ? $this->password_fields($_POST['password'], $_POST['password2']) : ''));
 

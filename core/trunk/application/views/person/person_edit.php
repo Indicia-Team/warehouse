@@ -29,7 +29,6 @@
 <fieldset>
 <legend>Person's Details</legend>
 <ol>
-<?php echo html::error_message($warning_message); ?>
 <li>
 <label for="title_id">Title</label>
 <select id="title_id" name="title_id">
@@ -72,8 +71,8 @@
 <?php echo html::error_message($model->getError('email_address')); ?>
 </li>
 <li>
-<label for="website_url">Personal Website URL</label>
-<textarea rows="3" id="website_url" name="website_url"><?php echo html::specialchars($model->website_url); ?></textarea>
+<label for="website_url">Personal Website</label>
+<input id="website_url" name="website_url" value="<?php echo html::specialchars($model->website_url); ?>" />
 <?php echo html::error_message($model->getError('website_url')); ?>
 </li>
 </ol>

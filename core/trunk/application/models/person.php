@@ -49,8 +49,8 @@ class Person_Model extends ORM {
         $array->add_rules('website_url', 'length[1,1000]', 'url[lax]');
         // Any fields that don't have a validation rule need to be copied into the model manually
     if (isset($array['title_id'])) $this->title_id = (is_numeric ($array['title_id']) ? $array['title_id'] : NULL);
-
-    return parent::validate($array, $save);
+    $extraFields = array('deleted');
+    return parent::validate($array, $save, $extraFields);
   }
 
   public function email_validate(Validation $array, $save = FALSE) {

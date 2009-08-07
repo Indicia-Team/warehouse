@@ -5,7 +5,7 @@ class html extends html_Core {
    /* Outputs an error message in a span, but only if there is something to output */
   public static function error_message($message)
   {
-    if ($message) echo '<span class="form_error">'.$message.'</span>';
+    if ($message) echo '<br/><span class="form-notice ui-state-error ui-corner-all">'.$message.'</span>';
   }
 
   /**

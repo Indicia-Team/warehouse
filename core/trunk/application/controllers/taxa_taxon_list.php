@@ -91,9 +91,9 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       $this->access_denied('table to view records with a taxon list ID='.$taxon_list_id);
       return;
     }
-    parent::page($page_no, $limit);
     $this->base_filter['taxon_list_id'] = $taxon_list_id;
     $this->pagetitle = "Species in ".ORM::factory('taxon_list',$taxon_list_id)->title;
+    parent::page($page_no, $limit);
     $this->view->taxon_list_id = $taxon_list_id;
     $this->upload_csv_form->staticFields = array
     (
@@ -295,7 +295,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   /**
   * Overrides the fail functionality to add args to the view.
   */
-  protected function submit_fail()
+  protected function show_submit_fail()
   {
     $mn = $this->model->object_name;
     $vArgs = array(

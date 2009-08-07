@@ -242,16 +242,23 @@ abstract class ORM extends ORM_Core {
   }
 
   /**
-   * Submits the data by:
-   * - Calling the preSubmit function to clean data.
-   * - Linking in any foreign fields specified in the "fk-fields" array.
-   * - For each entry in the "supermodels" array, calling the submit function
-   *   for that model and linking in the resultant object.
-   * - Checking (by a where clause for all set fields) that an existing
-   *   record does not exist. If it does, return that.
-   * - Calling the validate method for the "fields" array.
-   * If successful, returns the id of the created/found record.
-   * If not, returns null - errors are embedded in the model.
+   * Standardise the dumping of an exception message into the kohana log. Protected
+   * so available to all models.
+   *
+   * @param string $msg A description of where the error occurred.
+   * $param object $e The exception object.
+   */
+  protected function log_error($msg, $e) {
+    kohana::log('error', $msg.'. '.$e->getMessage() .' at line '.
+          $e->getLine().' in file '.$e->getFile());
+    if (kohana::config('config.log_threshold')==4) {
+      // Double check the log threshold to avoid unnecessary work.
+      kohana::log('debug', '<pre>'.print_r($e->getTrace(), true).'</pre>');
+    }
+  }
+
+  /**
+   * Wraps the process of submission in a transaction.
    */
   public function submit(){
     Kohana::log('debug', 'Commencing new transaction.');
@@ -259,7 +266,7 @@ abstract class ORM extends ORM_Core {
     try {
       $res = $this->inner_submit();
     } catch (Exception $e) {
-      kohana::log('info', 'Exception occurred during inner_submit. '.$e->getMessage());
+      $this->log_error('Exception during inner_submit.', $e);
       $res = null;
       $this->errors['record'] = $e->getMessage();
     }
@@ -273,6 +280,18 @@ abstract class ORM extends ORM_Core {
     return $res;
   }
 
+  /**
+   * Submits the data by:
+   * - Calling the preSubmit function to clean data.
+   * - Linking in any foreign fields specified in the "fk-fields" array.
+   * - For each entry in the "supermodels" array, calling the submit function
+   *   for that model and linking in the resultant object.
+   * - Checking (by a where clause for all set fields) that an existing
+   *   record does not exist. If it does, return that.
+   * - Calling the validate method for the "fields" array.
+   * If successful, returns the id of the created/found record.
+   * If not, returns null - errors are embedded in the model.
+   */
   public function inner_submit(){
     $mn = $this->object_name;
     $collapseVals = create_function('$arr', 'return $arr["value"];');

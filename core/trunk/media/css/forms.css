@@ -2,6 +2,13 @@ form fieldset {
   border: none;
 }
 
+.form-notice {
+  padding: 0.3em;
+  margin-left: 120px;
+  margin-bottom: 0.5em;
+  display: block;
+}
+
 form.cmxform fieldset {
   margin-bottom: 10px;
   border: solid 1px #AAAAAA;

@@ -65,6 +65,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       return;
     }
     $this->prepare_grid_view();
+    $this->add_upload_csv_form();
 
     $grid =	Gridview_Controller::factory($this->gridmodel,
       $page_no,
@@ -73,7 +74,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
     $grid->columns = array_intersect_key($this->columns, $grid->columns);
-    $grid->actionColumns = $this->actionColumns;
+    $grid->actionColumns = $this->get_action_columns();
 
     // Add table to view
     $this->view->table = $grid->display(true);
@@ -91,11 +92,18 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       // If the controller class has not defined the list of columns, use the entire list as a default
       $this->columns = $this->gridmodel->table_columns;
     }
-    $this->actionColumns = array('edit' => $this->controllerpath."/edit/£id£");
-    $this->add_upload_csv_form();
+  }
+
+  /**
+   * Return the default action columns for a grid - just an edit link. If required,
+   * override this in controllers to specify a different set of actions.
+   */
+  protected function get_action_columns() {
+    return array('edit' => $this->controllerpath."/edit/£id£");
   }
 
   public function page_gv($page_no, $limit) {
+    $this->prepare_grid_view();
     $this->auto_render = false;
     $grid =	Gridview_Controller::factory($this->gridmodel,
       $page_no,
@@ -104,7 +112,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
     $grid->columns = array_intersect_key($this->columns, $grid->columns);
-    $grid->actionColumns = $this->actionColumns;
+    $grid->actionColumns = $this->get_action_columns();
     return $grid->display();
   }
 
@@ -184,6 +192,8 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       $problems = array();
       $count=0;
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        kohana::log('debug', 'data');
+        kohana::log('debug', print_r($data, true));
         $count++;
         $index = 0;
         $saveArray = array();
@@ -208,14 +218,10 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         // Save the record
         $this->model->clear();
         $this->model->submission = $this->wrap($saveArray, true);
-        if (($id = $this->model->submit()) != null) {
-          // Record has saved correctly
-          $this->submit_succ($id);
-        } else {
+        if (($id = $this->model->submit()) == null) {
           // Record has errors - now embedded in model
-          $this->submit_fail();
           array_push($data, implode('<br/>', $this->model->getAllErrors()));
-            array_push($problems, $data);
+          array_push($problems, $data);
         }
       }
       fclose($handle);

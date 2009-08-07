@@ -96,12 +96,6 @@ tr.oddRow
   margin-bottom: 1em;
 }
 
-.form_error
-{
-  color: #FF0000;
-  vertical-align: top;
-}
-
 #content
 {
   margin: 20px;
@@ -135,9 +129,12 @@ h2
   font-size:1em;
 }
 
-p#metadata_toggle
+#metadata_toggle {
+text-align: right;
+}
+
+#metadata_toggle span
 {
-  text-align: right;
   color: #103A6A;
   display: none;
   cursor: pointer;

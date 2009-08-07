@@ -28,4 +28,6 @@
 <?php print form::open('title/create'); ?>
 <input type="submit" value="New title" />
 </form>
+<br />
+<?php echo $upload_csv_form ?>
 </div>
