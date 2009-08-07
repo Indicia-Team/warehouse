@@ -30,7 +30,7 @@
  */
 class Taxon_list_Model extends ORM_Tree {
 
-  protected $children = "taxon_lists";
+  protected $ORM_Tree_children = "taxon_lists";
   protected $belongs_to = array('website', 'created_by'=>'user', 'updated_by'=>'user');
   protected $has_many = array('taxon_lists_terms');
 

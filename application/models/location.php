@@ -30,7 +30,7 @@
  */
 class Location_Model extends ORM_Tree {
 
-  protected $children = "locations";
+  protected $ORM_Tree_children = "locations";
   protected $has_and_belongs_to_many = array('websites');
   protected $has_many = array('samples', 'location_attribute_values');
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user');

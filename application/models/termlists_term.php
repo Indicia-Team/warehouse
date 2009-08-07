@@ -39,7 +39,7 @@ class Termlists_term_Model extends Base_Name_Model {
     'updated_by' => 'user'
   );
 
-  protected $children = 'termlists_terms';
+  protected $ORM_Tree_children = 'termlists_terms';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
