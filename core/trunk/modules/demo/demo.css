@@ -27,12 +27,9 @@ ol.demolist {
 
 ol.demolist li h2 {
   margin-top: 24px;
-  border-bottom: 1px solid silver;
 }
 
 ol.demolist li ol li {
-  border: solid #DDDDDD 1px;
-  background-color: #f2f2f2;
   margin: 8px;
   display: -moz-inline-stack;
   display: inline-block;
@@ -50,13 +47,7 @@ h2 {
   font-size: 100%;
 }
 
-.info {
-  border: solid silver 1px;
-  margin: 8px;
-  padding: 8px;
-}
-
-.info ul {
+.ui-state-highlight ul {
   list-style-type: none;
 }
 

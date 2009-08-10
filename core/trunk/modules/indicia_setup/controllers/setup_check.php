@@ -240,6 +240,8 @@ public $template = 'templates/template';
       $this->template->content->port     = '5432';
       $this->template->content->user     = '';
       $this->template->content->password = '';
+      $this->template->content->reportuser     = '';
+      $this->template->content->reportpassword = '';
       $this->template->content->schema   = '';
       $this->template->content->database = '';
     } else {
@@ -247,6 +249,8 @@ public $template = 'templates/template';
       $this->template->content->port     = $db_config['default']['connection']['port'];
       $this->template->content->user     = $db_config['default']['connection']['user'];
       $this->template->content->password = $db_config['default']['connection']['pass'];
+      $this->template->content->reportuser     = $db_config['report']['connection']['user'];
+      $this->template->content->reportpassword = $db_config['report']['connection']['pass'];
       $this->template->content->schema   = $db_config['default']['schema'];
       $this->template->content->database = $db_config['default']['connection']['database'];
     }
@@ -468,10 +472,12 @@ public $template = 'templates/template';
     $_config = str_replace(
         array(
             "*host*",
-            "*port*",
+            "'*port*'",
             "*database*",
             "*user*",
             "*password*",
+            "*reportuser",
+            "*reportpassword*",
             "*schema*"
         ), array(
             trim($_POST['host']),
@@ -479,6 +485,8 @@ public $template = 'templates/template';
             trim($_POST['database']),
             trim($_POST['user']),
             trim($_POST['password']),
+            trim($_POST['reportuser']),
+            trim($_POST['reportpassword']),
             trim($_POST['schema'])
         ), $tmp_config);
 

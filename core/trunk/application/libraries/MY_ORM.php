@@ -73,7 +73,7 @@ abstract class ORM extends ORM_Core {
       // Vague date
       if (array_key_exists('date_type', $this->table_columns))
       {
-        $this->table_columns['vague_date'] = 'String';
+        $this->table_columns['vague_date']['type'] = 'String';
       }
     }
 
