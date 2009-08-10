@@ -31,7 +31,29 @@ $config['default'] = array
         'user'     => '*user*',
         'pass'     => '*password*',
         'host'     => '*host*',
-        'port'     => *port*,
+        'port'     => '*port*',
+        'socket'   => FALSE,
+        'database' => '*database*'
+    ),
+    'character_set' => 'utf8',
+    'table_prefix'  => '',
+    'schema'        => '*schema*',
+    'object'        => TRUE,
+    'cache'         => FALSE,
+    'escape'        => TRUE
+);
+
+$config['report'] = array
+(
+    'benchmark'     => TRUE,
+    'persistent'    => FALSE,
+    'connection'    => array
+    (
+        'type'     => 'pgsql',
+        'user'     => '*reportuser*',
+        'pass'     => '*reportpassword*',
+        'host'     => '*host*',
+        'port'     => '*port*',
         'socket'   => FALSE,
         'database' => '*database*'
     ),

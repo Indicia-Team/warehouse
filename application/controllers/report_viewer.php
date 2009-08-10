@@ -40,6 +40,7 @@ class Report_viewer_Controller extends Indicia_Controller
     $this->repServ = new ReportEngine();
     parent::__construct();
   }
+
   /**
   * <p> Index page - basically exists to let one pick a report to display. This can be in a number
   * of ways - firstly it lists the reports installed on the indicia Core. Secondly it should allow
@@ -116,7 +117,7 @@ class Report_viewer_Controller extends Indicia_Controller
     else
     {
       $view = new View('report/view');
-      $view->result = $srvResponse;
+      $view->report = $srvResponse;
       $this->template->title = "View Report";
     }
     $this->template->content = $view;

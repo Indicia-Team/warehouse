@@ -1,6 +1,28 @@
 <?php
 
-class Data_Controller extends Service_Base_Controller {
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Services
+ * @subpackage Data
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+
+class Data_Controller extends Data_Service_Base_Controller {
   protected $model;
   protected $entity;
   protected $viewname;
@@ -212,7 +234,7 @@ class Data_Controller extends Service_Base_Controller {
       }
       else
       {
-        $this->handle_request();
+        $this->handle_request($this->read_records());
       }
       // last thing we do is set the output
       if ($this->content_type)
@@ -267,63 +289,17 @@ class Data_Controller extends Service_Base_Controller {
   }
 
   /**
-  * Internal method to handle a generic request for either a single item from a model
-  * (when an argument representing the primary key is present in the URL), or a list
-  * of items (if no argunment is present in the URL).
-  */
-  protected function handle_request()
-  {
-    // Authenticate for a 'read' parameter
-    $this->authenticate('read');
-    // Store the entity in class member, so less recursion overhead when building XML.
+   * Retrieve the records for a read request. Also sets the list of columns into $this->columns.
+   *
+   * @return Array Query results array.
+   */
+  protected function read_records() {
+    // Store the entity in class member, so less recursion overhead when building XML
     $this->viewname = $this->get_view_name();
     $this->model=ORM::factory($this->entity);
     $this->db = new Database();
-    $this->view_columns = $this->db->list_fields($this->viewname);
-    $mode = $this->get_output_mode();
-    $records=$this->build_query_results();
-
-    switch ($mode)
-    {
-      case 'json':
-  $a =  json_encode($records);
-  $this->content_type = 'Content-Type: application/json';
-  if (array_key_exists('callback', $_GET))
-  {
-    $a = $_GET['callback']."(".$a.")";
-  }
-  echo $a;
-  break;
-      case 'xml':
-  if (array_key_exists('xsl', $_GET))
-  {
-    $xsl = $_GET['xsl'];
-    if (!strpos($xsl, '/'))
-    // xsl is not a fully qualified path, so point it to the media folder.
-    $xsl = url::base().'media/services/stylesheets/'.$xsl;
-  }
-  else
-  {
-    $xsl = '';
-  }
-  $this->response = $this->xml_encode($records, $xsl, TRUE);
-  $this->content_type = 'Content-Type: text/xml';
-  break;
-      case 'csv':
-  $this->response =  $this->csv_encode($records);
-  $this->content_type = 'Content-Type: text/comma-separated-values';
-  break;
-      default:
-  // Code to load from a view
-  if (file_exists('views',"services/data/$entity/$mode"))
-  {
-    $this->response = $this->view_encode($records, View::factory("services/data/$entity/$mode"));
-  }
-  else
-  {
-    throw new ServiceError("$this->entity data cannot be output using mode $mode.");
-  }
-    }
+    $this->view_columns=$this->db->list_fields($this->viewname);
+    return $this->build_query_results();
   }
 
   public function handle_media()
@@ -390,108 +366,18 @@ class Data_Controller extends Service_Base_Controller {
     switch ($mode)
     {
       case 'json':
-  $a = json_encode($return);
-  if (array_key_exists('callback', $_GET))
-  {
-    $a = $_GET['callback']."(".$a.")";
-  }
-  echo $a;
-  break;
+        $a = json_encode($return);
+        if (array_key_exists('callback', $_GET))
+        {
+          $a = $_GET['callback']."(".$a.")";
+        }
+        echo $a;
+        break;
       default:
-  echo json_encode($return);
+        echo json_encode($return);
     }
   }
 
-  /**
-  * Encodes an array as xml. Uses $this->entity to decide the name of the root element.
-  * Recurses into the array where array values are themselves arrays. Also inserts
-  * xlink paths to any foreign keys, and gets the caption of the foreign entity.
-  */
-  protected function xml_encode($array, $xsl, $indent=false, $recursion=0)
-  {
-    // Keep an array to track any elements that must be skipped. For example if an array contains
-    // {person_id=>1, person=>James Brown} then the xml output for the id is <person id="1">James Brown</person>.
-    // There is no need to output the person separately so it gets flagged in this array for skipping.
-    $to_skip=array();
-
-    if (!$recursion)
-    {
-      // if we are outputting a specific record, root is singular
-      if ($this->uri->total_arguments())
-      {
-  $root = $this->entity;
-  // We don't need to repeat the element for each record, as there is only 1.
-  $array = $array[0];
-      }
-      else
-      {
-  $root = inflector::plural($this->entity);
-      }
-      $data = '<?xml version="1.0"?>';
-      if ($xsl)
-      $data .= '<?xml-stylesheet type="text/xsl" href="'.$xsl.'"?>';
-      $data .= ($indent?"\r\n":'').
-      "<$root xmlns:xlink=\"http://www.w3.org/1999/xlink\">".
-      ($indent?"\r\n":'');
-    }
-    else
-    {
-      $data = '';
-    }
-
-    foreach ($array as $element => $value)
-    {
-      if (!in_array($element, $to_skip))
-      {
-  if ($value)
-  {
-    if (is_numeric($element))
-    {
-      $element = $this->entity;
-    }
-    if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)))
-    {
-      $element = substr($element, 0, -3);
-      // This is a foreign key described by another field, so create an xlink path
-      if (array_key_exists($element, $this->model->belongs_to))
-      {
-        // Belongs_to specifies a fk table that does not match the attribute name
-        $fk_entity=$this->model->belongs_to[$element];
-      }
-      elseif ($element=='parent')
-      {
-        $fk_entity=$this->entity;
-      } else {
-        // Belongs_to specifies a fk table that matches the attribute name
-        $fk_entity=$element;
-      }
-      $data .= ($indent?str_repeat("\t", $recursion):'');
-      $data .= "<$element id=\"$value\" xlink:href=\"".url::base(TRUE)."services/data/$fk_entity/$value\">";
-      $data .= $array[$element];
-      // We output the associated caption element already, so add it to the list to skip
-      $to_skip[count($to_skip)-1]=$element;
-    }
-    else
-    {
-      $data .= ($indent?str_repeat("\t", $recursion):'').'<'.$element.'>';
-      if (is_array($value)) {
- $data .= ($indent?"\r\n":'').$this->xml_encode($value, NULL, $indent, ($recursion + 1)).($indent?str_repeat("\t", $recursion):'');
- }
- else
- {
-   $data .= $value;
- }
-    }
-    $data .= '</'.$element.'>'.($indent?"\r\n":'');
-  }
-      }
-    }
-    if (!$recursion)
-    {
-      $data .= "</$root>";
-    }
-    return $data;
-  }
 
   /**
   * Builds a query to extract data from the requested entity, and also
@@ -502,6 +388,7 @@ class Data_Controller extends Service_Base_Controller {
   */
   protected function build_query_results()
   {
+    kohana::log('error', '5');
     $this->foreign_keys = array();
     $this->db->from($this->viewname);
     // Select all the table columns from the view
@@ -509,13 +396,13 @@ class Data_Controller extends Service_Base_Controller {
     $this->db->select($select);
     // Make sure that we're only showing items appropriate to the logged-in website
     if(!in_array ($this->entity, $this->allow_full_access)) {
-        if(array_key_exists ('website_id', $this->view_columns))
-        {
+      if(array_key_exists ('website_id', $this->view_columns))
+      {
         $this->db->in('website_id', array(null, $this->website_id));
-        } else {
-            Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-            throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
-        }
+      } else {
+        Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
+        throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
+      }
     }
      // if requesting a single item in the segment, filter for it, otherwise use GET parameters to control the list returned
     if ($this->uri->total_arguments()==0)
@@ -565,72 +452,72 @@ class Data_Controller extends Service_Base_Controller {
     {
       switch ($param)
       {
-  case 'sortdir':
-    $sortdir=strtoupper($value);
-    if ($sortdir != 'ASC' && $sortdir != 'DESC')
-    {
-      $sortdir='ASC';
-    }
-    break;
-  case 'orderby':
-    if (array_key_exists(strtolower($value), $this->view_columns))
-    $orderby=strtolower($value);
-    break;
-  case 'limit':
-    if (is_numeric($value))
-    $this->db->limit($value);
-    break;
-  case 'offset':
-    if (is_numeric($value))
-    $this->db->offset($value);
-    break;
-  case 'qfield':
-    if (array_key_exists(strtolower($value), $this->view_columns))
-    {
-      $qfield = strtolower($value);
-    }
-    break;
-  case 'q':
-    $q = strtolower($value);
-    break;
-  case 'attrs':
-    // Check that we're dealing with 'occurrence' or 'sample' here
-    switch($this->entity)
-    {
-      case 'sample':
-        Kohana::log('info', "Fetching attributes $value for sample");
-        $attrs = explode(',', $value);
-        break;
-      case 'occurrence':
-        Kohana::log('info', "Fetching attributes $value for occurrence");
-        $attrs = explode(',', $value);
-        break;
-      default:
-        Kohana::log('info', 'Trying to fetch attributes for non sample/occurrence table. Ignoring.');
-    }
-    break;
+        case 'sortdir':
+          $sortdir=strtoupper($value);
+          if ($sortdir != 'ASC' && $sortdir != 'DESC')
+          {
+            $sortdir='ASC';
+          }
+          break;
+        case 'orderby':
+          if (array_key_exists(strtolower($value), $this->view_columns))
+            $orderby=strtolower($value);
+          break;
+        case 'limit':
+          if (is_numeric($value))
+          $this->db->limit($value);
+          break;
+        case 'offset':
+          if (is_numeric($value))
+          $this->db->offset($value);
+          break;
+        case 'qfield':
+          if (array_key_exists(strtolower($value), $this->view_columns))
+          {
+            $qfield = strtolower($value);
+          }
+          break;
+        case 'q':
+          $q = strtolower($value);
+          break;
+        case 'attrs':
+          // Check that we're dealing with 'occurrence' or 'sample' here
+          switch($this->entity)
+          {
+            case 'sample':
+              Kohana::log('info', "Fetching attributes $value for sample");
+              $attrs = explode(',', $value);
+              break;
+            case 'occurrence':
+              Kohana::log('info', "Fetching attributes $value for occurrence");
+              $attrs = explode(',', $value);
+              break;
+            default:
+              Kohana::log('info', 'Trying to fetch attributes for non sample/occurrence table. Ignoring.');
+          }
+          break;
       default:
         if (array_key_exists(strtolower($param), $this->view_columns))
         {
-    // A parameter has been supplied which specifies the field name of a filter field
-      if ($value == 'NULL')
-        $value = NULL;
-      if ($this->view_columns[$param]=='int' || $this->view_columns[$param]=='bool')
-    $where[$param]=$value;
-    else
-      $like[$param]=$value;
+          // A parameter has been supplied which specifies the field name of a filter field
+          if ($value == 'NULL')
+            $value = NULL;
+          if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool')
+            $where[$param]=$value;
+          else
+            $like[$param]=$value;
         }
       }
     }
     if (isset($qfield) && isset($q))
     {
-      if ($this->view_columns[$qfield]=='int' || $this->view_columns[$qfield]=='bool')
+      if ($this->view_columns[$qfield]['type']=='int' || $this->view_columns[$qfield]['type']=='bool')
       {
-  $where[$qfield]=$q;
+        $where[$qfield]=$q;
       }
       else
       {
-  $like[$qfield]=$q;
+        $like[$qfield]=$q;
       }
     }
     if ($orderby)
@@ -639,63 +526,6 @@ class Data_Controller extends Service_Base_Controller {
       $this->db->like($like);
     if (count($where))
       $this->db->where($where);
-  }
-
-  /**
-  * Encode the results of a query array as a csv string
-  */
-  protected function csv_encode($array)
-  {
-    // Get the column titles in the first row
-    $result = $this->get_csv(array_keys($array[0]));
-    foreach ($array as $row) {
- $result .= $this->get_csv(array_values($row));
- }
- return $result;
-  }
-
-  /**
-  * Return a line of CSV from an array. This is instead of PHP's fputcsv because that
-  * function only writes straight to a file, whereas we need a string.
-  */
-  function get_csv($data,$delimiter=',',$enclose='"')
-  {
-    $newline="\n";
-    $output = '';
-    foreach ($data as $cell)
-    {
-      //Test if numeric
-      if (!is_numeric($cell))
-      {
-  //Escape the enclose
-  $cell = str_replace($enclose,$enclose.$enclose,$cell);
-  //Not numeric enclose
-  $cell = $enclose . $cell . $enclose;
-      }
-      if ($output=='')
-      {
-  $output = $cell;
-      }
-      else
-      {
-  $output.=  $delimiter . $cell;
-      }
-    }
-    $output.=$newline;
-    return $output;
-  }
-
-  /**
-  * Get the results of the query using the supplied view to render each row.
-  */
-  protected function view_encode($array, $view)
-  {
-    $output = '';
-    foreach ($array as $row)
-    {
-      $view->row= $row;
-      $output .= $view->render();
-    }
   }
 
   /**
@@ -774,47 +604,6 @@ class Data_Controller extends Service_Base_Controller {
     return true;
   }
 
-  /**
-  * Before a submission is accepted, this method ensures that the POST data contains the
-  * correct digest token so we know the request was from the website.
-  */
-  protected function authenticate($mode = 'write')
-  {
-    // Read calls are done using get values, so we merge the two arrays
-    $array = array_merge($_POST, $_GET);
-    $authentic = FALSE; // default
-    if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
-    {
-      $nonce = $array['nonce'];
-      $this->cache = new Cache;
-      $nonces = $this->cache->find($mode);
-      if (array_key_exists($nonce, $nonces))
-      {
-        $website_id = $nonces[$nonce];
-        $website = ORM::factory('website', $website_id);
-        if ($website->id) {
-          $password = ORM::factory('website', $website_id)->password;
-          if (sha1("$nonce:$password")==$array['auth_token'])
-          {
-            Kohana::log('info', "Authentication successful.");
-            $authentic=TRUE;
-            $this->website_id = $website_id;
-          }
-        }
-
-        // Refresh the nonce. If it's a write nonce, we'll delete it later when the data has been saved
-        $this->cache->delete($nonce);
-        $this->cache->set($nonce, $website_id, $mode);
-      }
-    }
-
-    if (!$authentic)
-    {
-      Kohana::log('info', "Unable to authenticate.");
-      throw new ServiceError("unauthorised");
-    };
-  }
-
   protected function check_record_access($entity, $id, $website_id)
   {
     // if $id is null, then we have a new record, so no need to check if we have access to the record
@@ -842,19 +631,6 @@ class Data_Controller extends Service_Base_Controller {
       }
     $number_rec = $db->count_records();
     return ($number_rec > 0 ? true : false);
-  }
-
-  /**
-  * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
-  */
-  protected function delete_nonce()
-  {
-    $array = array_merge($_POST, $_GET);
-    if (array_key_exists('nonce', $array))
-    {
-      $nonce = $array['nonce'];
-      $this->cache->delete($nonce);
-    }
   }
 }
 

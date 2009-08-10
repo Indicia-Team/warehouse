@@ -23,8 +23,8 @@
 
 ?>
 <div>
-<table>
-<thead>
+<table class="ui-widget ui-widget-content"">
+<thead class="ui-widget-header">
 <th>Report</th><th>Description</th>
 </thead>
 <tbody>

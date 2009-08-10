@@ -402,7 +402,7 @@ class data_entry_helper extends helper_config {
     $response = curl_exec($session);
     $response = json_decode(array_pop(explode("\r\n\r\n",$response)), true);
     $r = "";
-    if (!array_key_exists('error', $response)){
+    if (!array_key_exists('error', $response)) {
       $r .= "<select name='$id' id='$id' >";
       foreach ($response as $item){
         if (array_key_exists($captionField, $item) &&
@@ -709,7 +709,7 @@ class data_entry_helper extends helper_config {
       $type="checkbox";
     else
       $type="radio";
-  $defaultValue=self::check_default_value($id, $default);
+    $defaultValue=self::check_default_value($id, $default);
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
         if (array_key_exists($captionField, $item) && array_key_exists($valueField, $item)) {
@@ -1354,16 +1354,17 @@ class data_entry_helper extends helper_config {
         $version = PHP_VERSION;
         define('PHP_VERSION_ID', ($version{0} * 10000 + $version{2} * 100 + $version{4}));
     }
-    $r = '<div class="info"><strong>System check</strong><ul>';
+    $r = '<div class="ui-widget ui-widget-content ui-state-highlight ui-corner-all">' .
+        '<p class="ui-widget-header"><strong>System check</strong></p><ul>';
     // Test PHP version.
     if (PHP_VERSION_ID<50200) {
-      $r .= '<li class="warning">Warning: PHP version is '.phpversion().' which does not support JSON communication with the Indicia Warehouse.</li>';
+      $r .= '<li class="ui-state-error">Warning: PHP version is '.phpversion().' which does not support JSON communication with the Indicia Warehouse.</li>';
     } elseif ($fullInfo) {
       $r .= '<li>Success: PHP version is '.phpversion().'.</li>';
     }
     // Test cUrl library installed
     if (!function_exists('curl_exec')) {
-      $r .= '<li class="warning">Warning: The cUrl PHP library is not installed on the server and is required for communication with the Indicia Warehouse.</li>';
+      $r .= '<li class="ui-state-error">Warning: The cUrl PHP library is not installed on the server and is required for communication with the Indicia Warehouse.</li>';
     } else {
       if ($fullInfo) {
         $r .= '<li>Success: The cUrl PHP library is installed.</li>';
@@ -1378,12 +1379,12 @@ class data_entry_helper extends helper_config {
       } else {
         // Some sort of cUrl problem occurred
         if ($curl_check['errno']) {
-          $r .= '<li class="warning">Warning: The cUrl PHP library could not access the Indicia Warehouse. The error was reported as:';
+          $r .= '<li class="ui-state-error">Warning: The cUrl PHP library could not access the Indicia Warehouse. The error was reported as:';
           $r .= $curl_check['output'].'</br>';
           $r .= 'Please ensure that this web server is not prevented from accessing the server identified by the ' .
               'helper_config.php $base_url setting by a firewall. The current setting is '.parent::$base_url.'</li>';
         } else {
-          $r .= '<li class="warning">Warning: A request sent to the Indicia Warehouse URL did not respond as expected. ' .
+          $r .= '<li class="ui-widget ui-state-error">Warning: A request sent to the Indicia Warehouse URL did not respond as expected. ' .
                 'Please ensure that the helper_config.php $base_url setting is correct. ' .
                 'The current setting is '.parent::$base_url.'<br></li>';
         }

@@ -22,6 +22,25 @@
  */
 
 ?>
-<div>
-<?php echo print_r($result['formattedReport'], true); ?>
-</div>
+<table class="report ui-widget ui-widget-content\"><thead class="ui-widget-header">
+<?php
+foreach ($report['columns'] as $col => $det)
+{
+  $display = $det['display'] ? $det['display'] : $col;
+  echo "<th>$display</th>";
+}
+?>
+</thead><tbody>
+<?php
+foreach ($report['data'] as $row)
+{
+  echo "<tr>";
+  foreach ($report['columns'] as $col => $det)
+  {
+    $style = $det['style'];
+    echo "<td style='$style'>".$row[$col]."</td>";
+  }
+  echo "</tr>";
+}
+?>
+</tbody></table>

@@ -52,8 +52,8 @@ if ($error!=null) {
       <li><label for="dbuser"><?php echo Kohana::lang('setup.db_user'); ?>:</label>
       <input type="text"
           title="<?php echo html::specialchars(Kohana::lang('setup.db_user')); ?>"
-          id="user"
-          name="user"
+          id="dbuser"
+          name="dbuser"
           maxlength="255"
           value="<?php echo html::specialchars($user); ?>"
       </li>
@@ -62,10 +62,30 @@ if ($error!=null) {
       <li class="item_title"><label for="dbpassword"><?php echo Kohana::lang('setup.db_password'); ?>:</label>
       <input type="text"
           title="<?php echo html::specialchars(Kohana::lang('setup.db_password')); ?>"
-          id="password"
-          name="password"
+          id="dbpassword"
+          name="dbpassword"
           maxlength="255"
           value="<?php echo html::specialchars($password); ?>"
+      </li>
+
+      <!-- DB user for reports -->
+      <li><label for="reportuser"><?php echo Kohana::lang('setup.db_report_user'); ?>:</label>
+      <input type="text"
+          title="<?php echo html::specialchars(Kohana::lang('setup.db_report_user')); ?>"
+          id="reportuser"
+          name="reportuser"
+          maxlength="255"
+          value="<?php echo html::specialchars($reportuser); ?>"
+      </li>
+
+      <!-- DB password for reports -->
+      <li class="item_title"><label for="reportpassword"><?php echo Kohana::lang('setup.db_report_password'); ?>:</label>
+      <input type="text"
+          title="<?php echo html::specialchars(Kohana::lang('setup.db_report_password')); ?>"
+          id="reportpassword"
+          name="reportpassword"
+          maxlength="255"
+          value="<?php echo html::specialchars($reportpassword); ?>"
       </li>
   </ol>
 </fieldset>
