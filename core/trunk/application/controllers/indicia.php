@@ -319,8 +319,11 @@ class Indicia_Controller extends Template_Controller {
     catch (Exception $e)
     {
       // Put the error out
-      echo '<pre>'.print_r($e, TRUE).'</pre>';
-      throw $e;
+      error::log_error('Error occurred when loading view.', $e);
+      // Can't set a flash message here, as view has already failed to load.
+      echo "<div class=\"ui-widget-content ui-corner-all ui-state-error page-notice\">".
+          "<strong>Error occurred when loading page.</strong><br/>".$e->getMessage().
+          "<br/>For more information refer to the application log file.</div>";
     }
 
     // Fetch the output and close the buffer

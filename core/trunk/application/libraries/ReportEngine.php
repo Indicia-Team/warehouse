@@ -83,7 +83,7 @@ class ReportEngine {
   {
     $this->reportFormat = $reportFormat;
     $this->providedParams = $params;
-    Kohana::log('info', "Received request for report: $report, source: $reportSource");
+    Kohana::log('debug', "Received request for report: $report, source: $reportSource");
 
     if ($report == null || $reportSource == null)
     {
@@ -126,7 +126,10 @@ class ReportEngine {
     // What parameters do we expect?
     $this->expectedParams = $this->reportReader->getParams();
 
-    return $this->compileReport();
+    return array(
+      'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
+      'content' => $this->compileReport()
+    );
   }
 
   public function resumeReport($uid = null, $params = array())
@@ -154,7 +157,10 @@ class ReportEngine {
     // Merge the new parameters in
     $this->providedParams = array_merge($this->providedParams, $params);
 
-    return $this->compileReport();
+    return array(
+      'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
+      'content' => $this->compileReport()
+    );
   }
 
   public function listLocalReports($detail = ReportReader::REPORT_DESCRIPTION_DEFAULT)
@@ -233,10 +239,65 @@ class ReportEngine {
       // Okay, all the parameters have been provided.
       $this->mergeQuery();
       $this->executeQuery();
+      $data = $this->response->result_array(FALSE);
+      $columns = $this->reportReader->getColumns();
+      $this->add_vague_dates($data, $columns);
       return array(
-        'columns'=>$this->reportReader->getColumns(),
-        'data'=>$this->response->result_array(FALSE)
+        'columns'=>$columns,
+        'data'=>$data
       );
+    }
+  }
+
+  /**
+   * Takes the data and columns lists, and looks for a vague date column set.
+   * If one is found, inserts a new column for the processed date string.
+   */
+  private function add_vague_dates(&$data, &$columns) {
+    $col_sets=array();
+    $cols = array_keys($columns);
+    // First fine the additional plaintext columns we need to add
+    for ($i=0; $i<count($cols); $i++) {
+      if (substr(($cols[$i]), -10)=='date_start') {
+        $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
+        // check that the report includes date_end and type
+        if (in_array($prefix."date_end", $cols) && in_array($prefix."date_type", $cols)) {
+          array_push($col_sets, $prefix);
+          if (!in_array($prefix.'date', $cols)) {
+            $columns[$prefix.'date'] = array(
+              'display'=>'',
+              'style'=>''
+            );
+          }
+          // Hide the internal vague date columns, unless the report explicitly asks for them (in which case
+          // autodef will not be true).
+          if (!array_key_exists('autodef', $columns[$prefix.'date_start']) ||
+              $columns[$prefix.'date_start']['autodef']==true) {
+            $columns[$prefix.'date_start']['visible']='false';
+          }
+          if (!array_key_exists('autodef', $columns[$prefix.'date_end']) ||
+              $columns[$prefix.'date_end']['autodef']==true) {
+            $columns[$prefix.'date_end']['visible']='false';
+          }
+          if (!array_key_exists('autodef', $columns[$prefix.'date_type']) ||
+              $columns[$prefix.'date_type']['autodef']==true) {
+            $columns[$prefix.'date_type']['visible']='false';
+          }
+        }
+      }
+    }
+
+    // Now we have identified the vague date columns to add, create data columns with the processed date
+    // strings.
+    for ($i=0; $i<count($col_sets); $i++) {
+      for ($r=0; $r<count($data); $r++) {
+        $row=$data[$r];
+        $data[$r][$col_sets[$i].'date'] = vague_date::vague_date_to_string(array(
+          $row[$col_sets[$i].'date_start'],
+          $row[$col_sets[$i].'date_end'],
+          $row[$col_sets[$i].'date_type']
+        ));
+      }
     }
   }
 
@@ -335,10 +396,17 @@ class ReportEngine {
     // Replace each parameter in place
     foreach ($this->providedParams as $name => $value)
     {
-      $query = preg_replace("/#$name#%/", $value, $query);
+      $query = preg_replace("/#$name#/", $value, $query);
     }
-
-    $query .= ' ORDER BY '.$this->reportReader->getOrderClause();
+    $order_by=$this->reportReader->getOrderClause();
+    if ($order_by) {
+      // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
+      $count=0;
+      $query = preg_replace("/#order_by#/",  "ORDER BY $order_by", $query, -1, $count);
+      if ($count==0) {
+        $query .= " ORDER BY $order_by";
+      }
+    }
 
     $this->query = $query;
   }

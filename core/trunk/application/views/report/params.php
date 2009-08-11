@@ -29,6 +29,8 @@ echo html::script(array(
   'media/js/jquery.js',
   'media/js/jquery-ui.custom.min.js'
 ), false);
+
+$request=$report['content'];
 ?>
 <script type='text/javascript'>
 (function($) {
@@ -38,9 +40,10 @@ echo html::script(array(
 })(jQuery);
 </script>
 <div>
-<form class='cmxform' action='<?php echo url::site().'report/resume/'.$request['uid']; ?>' method='post'>
+<p><?php echo $report['description']['description']; ?></p>
+<form class='cmxform widelabels' action='<?php echo url::site().'report/resume/'.$request['uid']; ?>' method='post'>
 <fieldset>
-<legend>Parameters</legend>
+<legend>Parameters required:</legend>
 <ol>
 <?php
 foreach ($request['parameterRequest'] as $name => $det)
@@ -51,10 +54,20 @@ foreach ($request['parameterRequest'] as $name => $det)
   switch($datatype)
   {
     case 'date':
-       echo "<input class='date' type='text' name='$name' id='name' />";
-       break;
+      echo "<input class='date' type='text' name='$name' id='$name' title='$description'/>";
+      break;
+    case 'lookup':
+      echo "<select class='lookup' name='$name' id='$name' title='$description'>";
+      // output the possible values for this lookup
+      $values = $det['lookup_values'];
+
+      foreach ($values as $row=>$data) {
+        echo '<option value="'.$data->id.'">'.$data->caption.'</option>"';
+      }
+      echo "</select>";
+      break;
     default:
-      echo "<input type='text' name='$name' id='name' />";
+      echo "<input type='text' name='$name' id='$name' title='$description'/>";
   }
   echo "</li>";
 }

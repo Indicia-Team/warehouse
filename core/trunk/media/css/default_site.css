@@ -65,14 +65,6 @@ table.speciesCheckList td, table.speciesCheckList th {
   font-weight: bold;
 }
 
-.success {
-  border: dashed blue 1px;
-  background-color: #CCCCFF;
-  width: auto;
-  margin: 12px;
-  padding: 12px;
-}
-
 label {
   width: 160px;
   display:-moz-inline-stack;
@@ -90,4 +82,18 @@ input, select, textarea {
 
 .auto {
   width: auto
+}
+
+.page-notice {
+  margin-bottom: 1em;
+  padding: 0.3em;
+  display: block;
+}
+
+.page-notice p {
+  margin: 0.5em 1.5em 0.5em 1.5em;
+}
+
+.page-notice span.ui-icon {
+  float: left;
 }

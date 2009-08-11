@@ -34,8 +34,6 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected $response;
   protected $content_type;
 
-  protected $website_id = null;
-
   // Read/Write Access to entities: there are several options:
   // 1) Standard: Restricted read and write access dependant on website id.
   //    There is a public function with the name of the entity in this file, and the entity appears in $allow_updates.
@@ -234,14 +232,10 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
       else
       {
-        $this->handle_request($this->read_records());
+        $this->handle_request();
       }
-      // last thing we do is set the output
-      if ($this->content_type)
-      {
-        header($this->content_type);
-        echo $this->response;
-      }
+      kohana::log('debug', 'Sending reponse size '.count($this->response));
+      $this->send_response();
     }
     catch (Exception $e)
     {
@@ -299,7 +293,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->model=ORM::factory($this->entity);
     $this->db = new Database();
     $this->view_columns=$this->db->list_fields($this->viewname);
-    return $this->build_query_results();
+    $result=$this->build_query_results();
+    kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
+    return $result;
   }
 
   public function handle_media()
@@ -313,10 +309,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     // Upload size
     $ups = Kohana::config('indicia.maxUploadSize');
     syslog(LOG_DEBUG, "Maximum upload size is $ups.");
-    $_FILES = Validation::factory($_FILES)
-    ->add_rules(
-    'media_upload', 'upload::valid', 'upload::required',
-    'upload::type[png,gif,jpg]', "upload::size[$ups]"
+    $_FILES = Validation::factory($_FILES)->add_rules(
+      'media_upload', 'upload::valid', 'upload::required',
+      'upload::type[png,gif,jpg]', "upload::size[$ups]"
     );
     if ($_FILES->validate())
     {
@@ -344,24 +339,19 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->viewname = $this->get_view_name();
     $this->view_columns = $this->db->list_fields($this->viewname);
     $mode = $this->get_output_mode();
-
-    $this->db->from($this->viewname);
-    $select = '*';
-    $this->db->select($select);
     if(!in_array ($this->entity, $this->allow_full_access)) {
         if(array_key_exists ('website_id', $this->view_columns))
         {
-        $this->db->in('website_id', array(null, $this->website_id));
+          $this->db->in('website_id', array(null, $this->website_id));
         } else {
           Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
             throw new ServiceError('No access to '.$this->viewname.' allowed.');
         }
     }
 
-    $return = Array
-    (
-    'record_count' => $this->db->get()->count(),
-    'columns' => array_keys($this->db->list_fields($this->viewname))
+    $return = Array(
+      'record_count' => $this->db->count_records($this->viewname),
+      'columns' => array_keys($this->db->list_fields($this->viewname))
     );
     switch ($mode)
     {
@@ -388,7 +378,6 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   protected function build_query_results()
   {
-    kohana::log('error', '5');
     $this->foreign_keys = array();
     $this->db->from($this->viewname);
     // Select all the table columns from the view

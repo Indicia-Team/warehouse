@@ -130,7 +130,7 @@ class User_Model extends ORM {
       return true;
     } catch (Exception $e) {
       $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
-      $this->log_error('Exception during postSubmit in user model.', $e);
+      error::log_error('Exception during postSubmit in user model.', $e);
       return false;
     }
   }

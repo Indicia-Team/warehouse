@@ -242,22 +242,6 @@ abstract class ORM extends ORM_Core {
   }
 
   /**
-   * Standardise the dumping of an exception message into the kohana log. Protected
-   * so available to all models.
-   *
-   * @param string $msg A description of where the error occurred.
-   * $param object $e The exception object.
-   */
-  protected function log_error($msg, $e) {
-    kohana::log('error', $msg.'. '.$e->getMessage() .' at line '.
-          $e->getLine().' in file '.$e->getFile());
-    if (kohana::config('config.log_threshold')==4) {
-      // Double check the log threshold to avoid unnecessary work.
-      kohana::log('debug', '<pre>'.print_r($e->getTrace(), true).'</pre>');
-    }
-  }
-
-  /**
    * Wraps the process of submission in a transaction.
    */
   public function submit(){

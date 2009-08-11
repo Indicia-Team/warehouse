@@ -132,7 +132,7 @@ class Termlists_term_Model extends Base_Name_Model {
       return true;
     } catch (Exception $e) {
       $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
-      $this->log_error('Exception during postSubmit in termlists_term model.', $e);
+      error::log_error('Exception during postSubmit in termlists_term model.', $e);
       return false;
     }
   }

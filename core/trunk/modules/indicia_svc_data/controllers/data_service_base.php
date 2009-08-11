@@ -29,7 +29,13 @@
  */
 class Data_Service_Base_Controller extends Service_Base_Controller {
 
- /**
+  /**
+   * Id of the website calling the service. Obtained when performing read authentication and used
+   * to filter the response.
+   */
+  protected $website_id = null;
+
+  /**
   * Before a request is accepted, this method ensures that the POST data contains the
   * correct digest token so we know the request was from the website.
   *
@@ -88,15 +94,14 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   }
 
   /**
-  * Generic method to handle a request for data or a report.
-  *
-  * @param array $data Array containing columns and data entries.
+  * Generic method to handle a request for data or a report. Depends on the sub-class
+  * implementing a read_records method.
   */
-  protected function handle_request($records)
+  protected function handle_request()
   {
-    kohana::log('debug', 'base handle_request');
     // Authenticate for a 'read' parameter
     $this->authenticate('read');
+    $records=$this->read_records();
     $mode = $this->get_output_mode();
     switch ($mode)
     {
@@ -107,7 +112,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         {
           $a = $_GET['callback']."(".$a.")";
         }
-        echo $a;
+        $this->response = $a;
         break;
       case 'xml':
         if (array_key_exists('xsl', $_GET))
@@ -142,6 +147,19 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   }
 
   /**
+   * Set the content type and then issue the response.
+   */
+  protected function send_response()
+  {
+    // last thing we do is set the output
+    if ($this->content_type)
+    {
+      header($this->content_type);
+    }
+    echo $this->response;
+  }
+
+  /**
   * Encode the results of a query array as a csv string
   */
   protected function csv_encode($array)
@@ -151,6 +169,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     foreach ($array as $row) {
       $result .= $this->get_csv(array_values($row));
     }
+    kohana::log('info', $result);
     return $result;
   }
 
@@ -226,7 +245,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       }
       $data = '<?xml version="1.0"?>';
       if ($xsl)
-      $data .= '<?xml-stylesheet type="text/xsl" href="'.$xsl.'"?>';
+        $data .= '<?xml-stylesheet type="text/xsl" href="'.$xsl.'"?>';
       $data .= ($indent?"\r\n":'').
       "<$root xmlns:xlink=\"http://www.w3.org/1999/xlink\">".
       ($indent?"\r\n":'');

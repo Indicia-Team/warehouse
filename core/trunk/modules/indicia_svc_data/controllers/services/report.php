@@ -73,10 +73,26 @@ class Report_Controller extends Data_Service_Base_Controller {
   */
   public function requestReport()
   {
-    $src = $this->input->get('reportSource', null);
-    $params = json_decode($this->input->post('params', '{}'), true);
+    $this->entity = 'record';
+    $this->handle_request();
+    $this->send_response();
+  }
 
-    return $this->formatJSON($this->reportEngine->requestReport($rep, $src, 'xml', $params));
+  /**
+   * Actually perform the task of reading the records. Called by the base class handle_read
+   * method when it is ready to receive the data. As well as the returned records array, sets
+   * $this->view_columns to the list of columns.
+   *
+   * @return array Array of records.
+   */
+  protected function read_records() {
+    $src = $this->input->get('reportSource', null);
+    $rep = $this->input->get('report', null);
+    $params = json_decode($this->input->post('params', '{}'), true);
+    $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
+    kohana::log('debug', kohana::debug($data));
+    $this->view_columns = $data['columns'];
+    return $data['data'];
   }
 
   /**

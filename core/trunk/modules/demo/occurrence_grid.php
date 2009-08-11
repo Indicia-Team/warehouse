@@ -1,15 +1,17 @@
+<html>
 <?php
 include '../../client_helpers/data_entry_helper.php';
 include 'data_entry_config.php';
 $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
 $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 ?>
-<html>
+
 <head>
 <link rel='stylesheet' type='text/css' href='../../media/css/datagrid.css' />
+<link rel='stylesheet' type='text/css' href='../../media/themes/default/jquery-ui.custom.css' />
 <script type='text/javascript' src='../../media/js/jquery.js' ></script>
 <script type='text/javascript' src='../../media/js/hasharray.js' ></script>
-<script type='text/javascript' src='../../client_helpers/datagrid.js' ></script>
+<script type='text/javascript' src='../../media/js/jquery.datagrid.js' ></script>
 <script type='text/javascript'>
 (function($) {
 $(document).ready(function(){

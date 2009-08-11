@@ -122,7 +122,7 @@ class Location_Model extends ORM_Tree {
       return true;
     } catch (Exception $e) {
       $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
-      $this->log_error('Exception during postSubmit in location model.', $e);
+      error::log_error('Exception during postSubmit in location model.', $e);
       return false;
     }
   }
