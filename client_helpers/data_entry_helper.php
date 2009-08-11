@@ -1137,7 +1137,7 @@ class data_entry_helper extends helper_config {
         echo '<p class="error">'.$response['error'].'</p>';
       }
       elseif (array_key_exists('success',$response)) {
-        echo '<div class="success">Thank you for submitting your data.</div>';
+        echo '<div class="ui-widget ui-corner-all ui-state-highlight page-notice">Thank you for submitting your data.</div>';
       }
     }
   else
@@ -1397,7 +1397,7 @@ class data_entry_helper extends helper_config {
   /**
    * Sends a POST using the cUrl library
    */
-  private function http_post($url, $postargs, $output_errors=true) {
+  public function http_post($url, $postargs, $output_errors=true) {
     $session = curl_init($url);
     // Set the POST options.
     curl_setopt ($session, CURLOPT_POST, true);

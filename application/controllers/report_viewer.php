@@ -62,32 +62,7 @@ class Report_viewer_Controller extends Indicia_Controller
 
   public function resume($uid)
   {
-    $srvResponse = $this->repServ->resumeReport($uid, $_POST);
-
-    if (array_key_exists('error', $srvResponse))
-    {
-      $localReports = $this->repServ->listLocalReports(2);
-
-      $view = new View('report/index');
-      $view->localReports = $localReports;
-      $view->error = $srvResponse;
-
-      $this->template->title = "Report Browser";
-      $this->template->content = $view;
-    }
-    else if (array_key_exists('parameterRequest', $srvResponse))
-    {
-      $view = new View('report/params');
-      $view->request = $srvResponse;
-      $this->template->title = "Report Parameters";
-    }
-    else
-    {
-      $view = new View('report/view');
-      $view->result = $srvResponse;
-      $this->template->title = "View Report";
-    }
-    $this->template->content = $view;
+    $this->run(null, $uid);
   }
 
   /**
@@ -95,30 +70,53 @@ class Report_viewer_Controller extends Indicia_Controller
   */
   public function local($report)
   {
-    $srvResponse = $this->repServ->requestReport($report, 'local', 'xml');
+    $this->run($report);
+  }
 
-    if (array_key_exists('error', $srvResponse))
-    {
+  public function run($report, $uid=null)
+  {
+    try {
+      if ($uid) {
+        // Resume a report that has an existing identifier
+        $srvResponse = $this->repServ->resumeReport($uid, $_POST);
+      }	else {
+        $srvResponse = $this->repServ->requestReport($report, 'local', 'xml');
+      }
+    } catch (Exception $e) {
+      // Something went wrong, so back to the index page and flash the error.
       $localReports = $this->repServ->listLocalReports(2);
 
       $view = new View('report/index');
       $view->localReports = $localReports;
-      $view->error = $srvResponse;
+      $this->session->set_flash('flash_error', $e->getMessage());
+      error::log_error("Error occurred running report $report.", $e);
 
       $this->template->title = "Report Browser";
       $this->template->content = $view;
+      return;
     }
-    else if (array_key_exists('parameterRequest', $srvResponse))
+    if (array_key_exists('parameterRequest', $srvResponse['content']))
     {
       $view = new View('report/params');
-      $view->request = $srvResponse;
-      $this->template->title = "Report Parameters";
+      // Grab the lookup values for any lookup parameters
+      foreach ($srvResponse['content']['parameterRequest'] as $name => $det) {
+        if ($det['query']!='') {
+          // Report specifies a query for a lookup, so we need to grab the lookup data. Use the report connection so
+          // we are not exposed to injection attack (as this is hopefully a limited read only account).
+          if (!$this->db) {
+            $this->db = new Database('report');
+          }
+          $srvResponse['content']['parameterRequest'][$name]['lookup_values'] = $this->db->query($det['query'])->result_array();
+        }
+      }
+      $view->report = $srvResponse;
+      $this->template->title = $srvResponse['description']['title'];
     }
     else
     {
       $view = new View('report/view');
       $view->report = $srvResponse;
-      $this->template->title = "View Report";
+      $this->template->title = $srvResponse['description']['title'];
     }
     $this->template->content = $view;
   }

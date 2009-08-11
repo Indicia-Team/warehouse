@@ -16,8 +16,8 @@
             <order_by>survey ASC</order_by>
       </order_bys>
       <columns>
-            <column name="survey" display="Survey Name" />
-            <column name="website" display="Website Name" />
+            <column name="survey" display="Survey Name" style="background-color: #e7e7e7;" />
+            <column name="website" display="Website Name" style="background-color: #e7e7e7;" />
             <column name="count" display="Total no. of Occurrences" />
       </columns>
 </report>

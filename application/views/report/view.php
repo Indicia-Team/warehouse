@@ -22,23 +22,32 @@
  */
 
 ?>
-<table class="report ui-widget ui-widget-content\"><thead class="ui-widget-header">
+<p><?php echo $report['description']['description']; ?></p>
+<table class="report ui-widget ui-widget-content"><thead class="ui-widget-header">
 <?php
-foreach ($report['columns'] as $col => $det)
+$content = $report['content'];
+
+foreach ($content['columns'] as $col => $det)
 {
-  $display = $det['display'] ? $det['display'] : $col;
-  echo "<th>$display</th>";
+  if (!array_key_exists('visible', $det) || $det['visible']!='false') {
+    $display = $det['display'] ? $det['display'] : $col;
+    echo "<th>$display</th>";
+  }
 }
 ?>
 </thead><tbody>
 <?php
-foreach ($report['data'] as $row)
+$row_class= ($report['description']['row_class']!='') ? 'class="'.$report['description']['row_class'].'" ' : '';
+foreach ($content['data'] as $row)
 {
-  echo "<tr>";
-  foreach ($report['columns'] as $col => $det)
+  echo "<tr $row_class>";
+  foreach ($content['columns'] as $col => $det)
   {
-    $style = $det['style'];
-    echo "<td style='$style'>".$row[$col]."</td>";
+    if (!array_key_exists('visible', $det) || $det['visible']!='false') {
+      $style= ($det['style']!='') ? 'style="'.$det['style'].'" ' : '';
+      $class= ($det['class']!='') ? 'class="'.$det['class'].'" ' : '';
+      echo "<td $style $class>".$row[$col]."</td>";
+    }
   }
   echo "</tr>";
 }

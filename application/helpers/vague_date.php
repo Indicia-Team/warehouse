@@ -110,8 +110,11 @@ class vague_date {
 
   /**
    * Convert a vague date in the form of array(start, end, type) to a string
+   *
+   * @param array $date Vague date in the form array(start_date, end_date, date_type), where
+   * start_date and end_date are DateTime objects or strings.
    */
-  public static function vague_date_to_string($date)
+  public static function vague_date_to_string(array $date)
   {
     $start=NULL;
     $end=NULL;
@@ -120,6 +123,12 @@ class vague_date {
     if (!$date[1]==NULL)
       $end = $date[1];
     $type = $date[2];
+    if (is_string($start)) {
+      $start=new DateTime($start);
+    }
+    if (is_string($end)) {
+      $end=new DateTime($end);
+    }
     self::validate($start, $end, $type);
     switch ($type) {
     case 'D': 	return self::vague_date_to_day($start, $end);

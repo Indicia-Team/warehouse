@@ -23,6 +23,7 @@ class XMLReportReader_Core implements ReportReader
   private $name;
   private $title;
   private $description;
+  private $row_class;
   private $query;
   private $order_by;
   private $params = array();
@@ -50,6 +51,7 @@ class XMLReportReader_Core implements ReportReader
               case 'report':
                 $this->title = $reader->getAttribute('title');
                 $this->description = $reader->getAttribute('description');
+                $this->row_class = $reader->getAttribute('row_class');
                 break;
               case 'query':
                 $reader->read();
@@ -61,11 +63,22 @@ class XMLReportReader_Core implements ReportReader
                 $this->order_by[] = $reader->value;
                 break;
               case 'param':
-                $this->mergeParam($reader->getAttribute('name'), $reader->getAttribute('display'), $reader->getAttribute('datatype'), $reader->getAttribute('description'));
+                $this->mergeParam(
+                    $reader->getAttribute('name'),
+                    $reader->getAttribute('display'),
+                    $reader->getAttribute('datatype'),
+                    $reader->getAttribute('description'),
+                    $reader->getAttribute('query'));
                 break;
               case 'column':
-                $this->mergeColumn($reader->getAttribute('name'), $reader->getAttribute('display'),
-                $reader->getAttribute('style'));
+                $this->mergeColumn(
+                    $reader->getAttribute('name'),
+                    $reader->getAttribute('display'),
+                    $reader->getAttribute('style'),
+                    $reader->getAttribute('class'),
+                    $reader->getAttribute('visible'),
+                    false
+                );
                 break;
             }
             break;
@@ -96,6 +109,14 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
+   * Returns the css class to apply to rows in the report.
+   */
+  public function getRowClass()
+  {
+    return $this->row_class;
+  }
+
+  /**
   * <p> Returns the query specified. </p>
   */
   public function getQuery()
@@ -113,7 +134,9 @@ class XMLReportReader_Core implements ReportReader
   */
   public function getOrderClause()
   {
-    return implode(', ', $this->order_by);
+    if ($this->order_by) {
+      return implode(', ', $this->order_by);
+    }
   }
 
   /**
@@ -125,7 +148,7 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
-  * <p> Gets a list of the columns (name => array('display' => display, 'style' => style)) </p>
+  * <p> Gets a list of the columns (name => array('display' => display, 'style' => style, 'visible' => visible)) </p>
   */
   public function getColumns()
   {
@@ -140,7 +163,11 @@ class XMLReportReader_Core implements ReportReader
     switch ($descLevel)
     {
       case (ReportReader::REPORT_DESCRIPTION_BRIEF):
-        return array('name' => $this->name, 'title' => $this->getTitle(), 'description' => $this->getDescription());
+        return array(
+            'name' => $this->name,
+            'title' => $this->getTitle(),
+            'row_class' => $this->getRowClass(),
+            'description' => $this->getDescription());
         break;
       case (ReportReader::REPORT_DESCRIPTION_FULL):
         // Everything
@@ -149,6 +176,7 @@ class XMLReportReader_Core implements ReportReader
           'name' => $this->name,
           'title' => $this->getTitle(),
           'description' => $this->getDescription(),
+          'row_class' => $this->getRowClass(),
           'columnns' => $this->columns,
           'parameters' => $this->params,
           'query' => $this->query,
@@ -163,36 +191,46 @@ class XMLReportReader_Core implements ReportReader
           'name' => $this->name,
           'title' => $this->getTitle(),
           'description' => $this->getDescription(),
+          'row_class' => $this->getRowClass(),
           'columnns' => $this->columns,
           'parameters' => $this->params
         );
     }
   }
 
-  private function mergeParam($name, $display = '', $type = '', $description = '')
+  private function mergeParam($name, $display = '', $type = '', $description = '', $query='')
   {
     if (array_key_exists($name, $this->params))
     {
       if ($display != '') $this->params[$name]['display'] = $display;
       if ($type != '') $this->params[$name]['datatype'] = $type;
       if ($description != '') $this->params[$name]['description'] = $description;
+      if ($query != '') $this->params[$name]['query'] = $query;
     }
     else
     {
-      $this->params[$name] = array('datatype'=>$type, 'display'=>$display, 'description'=>$description);
+      $this->params[$name] = array('datatype'=>$type, 'display'=>$display, 'description'=>$description, 'query' => $query);
     }
   }
 
-  private function mergeColumn($name, $display = '', $style = '')
+  private function mergeColumn($name, $display = '', $style = '', $class='', $visible='', $autodef='true')
   {
     if (array_key_exists($name, $this->columns))
     {
       if ($display != '') $this->columns[$name]['display'] = $display;
       if ($style != '') $this->columns[$name]['style'] = $style;
+      if ($class != '') $this->columns[$name]['class'] = $class;
+      if ($visible != '') $this->columns[$name]['visible'] = $visible;
+      if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
     }
     else
     {
-      $this->columns[$name] = array('display' => $display, 'style' => $style);
+      $this->columns[$name] = array(
+          'display' => $display,
+          'style' => $style,
+          'class' => $class,
+          'visible' => $visible,
+          'autodef' => $autodef);
     }
   }
 

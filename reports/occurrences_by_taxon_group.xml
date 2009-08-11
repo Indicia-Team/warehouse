@@ -12,7 +12,7 @@
             <order_by>taxongroup ASC</order_by>
       </order_bys>
       <columns>
-            <column name="taxongroup" display="Taxon Group" />
+            <column name="taxongroup" display="Taxon Group" style="background-color: #e7e7e7;" />
             <column name="count" display="Total no. of Occurrences" />
       </columns>
 </report>

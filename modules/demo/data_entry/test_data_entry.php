@@ -41,7 +41,6 @@ else if ($_GET)
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $entity = json_decode(curl_exec($session), true);
-    print_r($entity);
     $entity_to_load = $entity[0];
   }
   else
