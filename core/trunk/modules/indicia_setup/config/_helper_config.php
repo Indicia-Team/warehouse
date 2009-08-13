@@ -25,12 +25,12 @@ class helper_config {
   static $base_url='*base_url*';
   static $upload_path = './upload/';
   static $geoserver_url = '*geoserver_url*';
-  // The following only need to be configured if using the data_entry_helper::map method, as it autogenerates the script links for you.
   static $geoplanet_api_key='*geoplanet_api_key*';
   static $google_search_api_key='*google_search_api_key*';
   static $google_api_key='*google_api_key*';
   static $multimap_api_key='*multimap_api_key*';
-  // end of items required by data_entry_helper::map
+  static $flickr_api_key='*flickr_api_key*';
+  static $flickr_api_secret='*flickr_api_secret*';
 }
 
 ?>
