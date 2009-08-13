@@ -197,7 +197,11 @@ text-align: right;
 }
 
 .page-notice p {
-  margin: 0.5em 1.5em 0.5em 1.5em;
+  margin: 0.7em 1.5em 0.7em 1.5em;
+}
+
+.page-notice label {
+  margin-left: 1.5em;
 }
 
 .page-notice span.ui-icon {

@@ -1,4 +1,24 @@
 /**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package	Media
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
+ * @link 	http://code.google.com/p/indicia/
+ */
+
+/**
 * jQuery datagrid that hooks up to Indicia data services.
 * We apply this to some sort of container - all elements will be dropped into this.
 * @requires jQuery v1.2.3
@@ -24,43 +44,43 @@
       };
 
       this.construct = function(entity, options){
-      // Set the default settings object
-      var settings = {};
-      // Extend with defaults and options
-      $.extend(settings, $.indiciaDataGrid.defaults, options);
-      return this.each(function(){
-        this.page = 1;
-        this.entity = entity;
-        this.settings = settings;
-        this.filter = new HashArray();
-        this.sort = new HashArray();
-        this.identifier = "idg" + Math.floor(Math.random()*10000);
-        this.recordCount = 0;
+        // Set the default settings object
+        var settings = {};
+        // Extend with defaults and options
+        $.extend(settings, $.indiciaDataGrid.defaults, options);
+        return this.each(function(){
+          this.page = 1;
+          this.entity = entity;
+          this.settings = settings;
+          this.filter = new HashArray();
+          this.sort = new HashArray();
+          this.identifier = "idg" + Math.floor(Math.random()*10000);
+          this.recordCount = 0;
 
-        // Build the basic html to drop in the container
-        var table = "<table class=\""+this.settings.cssTable+"\" id=\"" + this.identifier + "\" >";
-        table += "<thead class=\"ui-widget-header\"><tr>";
-        table += "</tr></thead>";
-        table += "<tbody>";
-        table += "</tbody>";
-        table += "</table>";
+          // Build the basic html to drop in the container
+          var table = "<table class=\""+this.settings.cssTable+"\" id=\"" + this.identifier + "\" >";
+          table += "<thead class=\"ui-widget-header\"><tr>";
+          table += "</tr></thead>";
+          table += "<tbody>";
+          table += "</tbody>";
+          table += "</table>";
 
-        // Build the basic pagination div
-        var paginationDiv = "<div class='pager' />";
+          // Build the basic pagination div
+          var paginationDiv = "<div class='pager' />";
 
-        // Build the basic filter div
-        var filterDiv = "<div class='filter' />";
+          // Build the basic filter div
+          var filterDiv = "<div class='filter' />";
 
-        // Drop the table into the container
-        $(this).html(table + paginationDiv + filterDiv);
+          // Drop the table into the container
+          $(this).html(table + paginationDiv + filterDiv);
 
-        if (this.entity.substring(0,4)!='rpt:') {
-          generateTableHeader(this);
-        }
-        apply_page(this, 1);
+          if (this.entity.substring(0,4)!='rpt:') {
+            generateTableHeader(this);
+          }
+          apply_page(this, 1);
 
-      });
-    };
+        });
+      };
 
     /**
     * Write the correct html into the header section of the table. Also generates the paginator.
