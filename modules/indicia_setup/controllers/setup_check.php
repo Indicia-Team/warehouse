@@ -285,8 +285,8 @@ public $template = 'templates/template';
     $this->dbparam['port']     = trim(preg_replace("/[^0-9]/","", $_POST['port']));
     $this->dbparam['database'] = trim($_POST['database']);
     $this->dbparam['schema']   = trim($_POST['schema']);
-    $this->dbparam['user']     = trim($_POST['user']);
-    $this->dbparam['password'] = trim($_POST['password']);
+    $this->dbparam['dbuser']     = trim($_POST['dbuser']);
+    $this->dbparam['dbpassword'] = trim($_POST['dbpassword']);
   }
 
   /**
@@ -432,8 +432,8 @@ public $template = 'templates/template';
           if( false === $this->db->dbConnect($this->dbparam['host'],
               $this->dbparam['port'],
               $this->dbparam['database'],
-              $this->dbparam['user'],
-              $this->dbparam['password'])) {
+              $this->dbparam['dbuser'],
+              $this->dbparam['dbpassword'])) {
             $this->error = Kohana::lang('setup.error_db_connect');
             Kohana::log("error", "Setup failed: database connection error");
             return false;
@@ -476,15 +476,15 @@ public $template = 'templates/template';
             "*database*",
             "*user*",
             "*password*",
-            "*reportuser",
+            "*reportuser*",
             "*reportpassword*",
             "*schema*"
         ), array(
             trim($_POST['host']),
             trim($_POST['port']),
             trim($_POST['database']),
-            trim($_POST['user']),
-            trim($_POST['password']),
+            trim($_POST['dbuser']),
+            trim($_POST['dbpassword']),
             trim($_POST['reportuser']),
             trim($_POST['reportpassword']),
             trim($_POST['schema'])
