@@ -34,13 +34,16 @@
 <meta id="routedURI" name="routedURI" content="<?php echo url::site().router::$routed_uri; ?>" />
 
 <?php
+// during setup, the indicia config file does not exist
+$indicia = kohana::config_load('indicia', false);
+$theme=$indicia ? $indicia['theme'] : 'default';
 echo html::stylesheet(
   array(
     'media/css/site',
     'media/css/forms',
     'media/css/thickbox',
     'media/css/jquery.autocomplete',
-    'media/themes/'.kohana::config('indicia.theme').'/jquery-ui.custom'
+    'media/themes/'.$theme.'/jquery-ui.custom'
   ),
   array('screen')
 ); ?>
