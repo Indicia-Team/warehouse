@@ -4,6 +4,7 @@
 
 require_once '../../client_helpers/data_entry_helper.php';
 require_once '../../client_helpers/flickr_helper.php';
+require_once 'data_entry_config.php';
 
 flickr_helper::auth('read');
 
@@ -37,7 +38,7 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 <label for="date">Date:</label>
 <?php echo data_entry_helper::date_picker('sample:date'); ?>
 <br />
-<?php echo data_entry_helper::map('map', array('google_physical'), true, false, null, true); ?>
+<?php echo data_entry_helper::map('map', array('multimap_landranger'), true, false, null, true); ?>
 <br />
 <input type="submit" value="Save" />
 </fieldset>
