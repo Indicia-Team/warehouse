@@ -59,20 +59,24 @@
 
         if (this.settings.wkt != null)
         {
-          showWktFeature(this, this.settings.wkt);
+          _showWktFeature(this, this.settings.wkt);
         }
 
         if (this.settings.placeControls)
         {
-          placeControls(this);
+          _placeControls(this);
         }
 
-        registerControls(this);
+        _registerControls(this);
 
       });
     };
 
-    this.showWktFeature = function(div, wkt) {
+    this.showWktFeature=_showWktFeature;
+
+    // Private functions
+
+    function _showWktFeature(div, wkt) {
       var editlayer = div.map.editLayer;
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
@@ -87,20 +91,19 @@
       bounds.bottom = bounds.bottom - dy;
       bounds.right = bounds.right + dx;
       bounds.left = bounds.left - dx;
-      // Set the default view to show something triple the size of the grid square
-      div.map.zoomToExtent(bounds);
       // if showing a point, don't zoom in too far
       if (dy==0 && dx==0) {
-        div.map.zoomTo(11);
+        div.map.setCenter(bounds.getCenterLonLat(), 13);
+      } else {
+        // Set the default view to show something triple the size of the grid square
+        div.map.zoomToExtent(bounds);
       }
     };
-
-    // Private functions
 
     /**
     * Adds controls into the div in the specified position.
     */
-    function placeControls(div)
+    function _placeControls(div)
     {
       var pos = div.settings.controlPosition;
       var systems = div.settings.systems;
@@ -135,7 +138,7 @@
     /**
     * Registers controls with the map - binds functions to them and places correct data in if wkt has been supplied.
     */
-    function registerControls(div)
+    function _registerControls(div)
     {
       // Get jQuery selectors, escaping any colons appropriately
       var inputFld = '#' + div.settings.input_field_name.replace(':', '\\:');
@@ -196,13 +199,14 @@
         $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/sref_to_wkt"+
           "?sref=" + $(this).val() +
           "&system=" + $(systemsFld).val() +
-          "&callback=?", function(data){
+          "&callback=?", function(data) {
             $(geomFld).attr('value', data.wkt);
-            showWktFeature(div, data.wkt);
+            _showWktFeature(div, data.wkt);
           }
         );
       });
     }
+
   }
   });
 

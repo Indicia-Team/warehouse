@@ -735,7 +735,7 @@ class data_entry_helper extends helper_config {
   * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
   */
   public static function map($div, $layers = array(
-      'google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'openlayers_wms', 'virtual_earth'
+      'google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'virtual_earth'
     ), $edit = false, $locate = false, $wkt = null, $defaultJs = true)
   {
     global $javascript;
@@ -1251,7 +1251,7 @@ class data_entry_helper extends helper_config {
             "$base/media/js/google_search.js"
           )
       ),
-      'flickr' => array('deps' => array('jquery'), stylesheets => '', 'javascript' => array("$base/media/js/jquery.flickr.js","$base/media/js/thickbox-compressed.js")),
+      'flickr' => array('deps' => array('jquery'), 'stylesheets' => '', 'javascript' => array("$base/media/js/jquery.flickr.js","$base/media/js/thickbox-compressed.js")),
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array("$base/media/css/default_site.css"), 'javascript' => array())
     );
   }

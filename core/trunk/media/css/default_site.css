@@ -127,10 +127,11 @@ input, select, textarea {
   margin: 3px 2em 0 1px;
 }
 
-.f-img p {
+.f-photo p {
   float: left;
 }
 
-.f-img button {
+.f-photo button {
+  margin-top: 5px;
   float: right;
 }

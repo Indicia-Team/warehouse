@@ -28,8 +28,8 @@
 
       this.defaults = {
         panelClass: "ui-widget ui-widget-content ui-corner-all flickr-panel",
-        headerClass: "ui-widget-content ui-corner-all",
-        photoClass: "ui-widget-content ui-corner-all ui-state-default photo",
+        headerClass: "",
+        photoClass: "ui-corner-all ui-widget-content photo",
         selectedClass: "ui-state-active",
         hoverClass: "ui-state-hover",
         buttonClass: "ui-corner-all ui-state-default indicia-button",
@@ -67,7 +67,7 @@
       *      be used to populate the date and spatial reference controls on the page.
       *   assocDate - id of the associated date control that will be populated.
       *   assocSref - id of the associated spatial reference control that will be populated.
-      *   assocSrefSystem - id of the associated spatial reference system control that will be populated. 
+      *   assocSrefSystem - id of the associated spatial reference system control that will be populated.
       */
       this.construct = function(options) {
         this.settings = {};
@@ -103,7 +103,10 @@
           function() { $(this).removeClass(div.settings.hoverClass); }
         );
         // Search button click runs search
-        $('#f-dosearch').click( function() { doSearch(div); } );
+        $('#f-dosearch').click( function() {
+          doSearch(div);
+          return false;
+        });
         // Enter in search box also runs search
         $('#f-search').keypress(function (e) {
           if (e.which == 13) {
@@ -140,7 +143,7 @@
         var searchText = $('#f-search').attr('value');
         makeRequest(div, 'photos', {
           "method": 'flickr.photos.search',
-          "arguments": '{"user_id":"me","extras":"date_taken","text":"' + searchText +
+          "arguments": '{"user_id":"me","extras":"date_taken,geo","text":"' + searchText +
                '","per_page":"'+div.settings.limit+'"}'
         });
       };
@@ -154,7 +157,7 @@
         if (setId!='-') {
           makeRequest(div, 'photoset', {
             "method": 'flickr.photosets.getPhotos',
-            "arguments": '{"photoset_id":"' + setId + '","extras":"date_taken","per_page":"'+div.settings.limit+'"}'
+            "arguments": '{"photoset_id":"' + setId + '","extras":"date_taken,geo","per_page":"'+div.settings.limit+'"}'
           });
         } else {
           clear();
@@ -177,39 +180,51 @@
               // this refers to the photo in the each loop. The div includes an anchored image, with thickbox applied,
               // plus a caption, date and select button. In addition, a hidden input contains the photo's data to use when
               // it is selected.
-              json="{'photo': {'farm':'"+this.farm+"','server':'"+this.server+
-                    "','id':'"+this.id+"','secret':'"+this.secret+"'}|"+
-                    this.datetaken;
-              $(div).append('<div class="f-img ' + div.settings.photoClass+'"><a class="thickbox" href="http://farm'+
+              $(div).append('<div class="f-photo ' + div.settings.photoClass+'"><a class="thickbox" href="http://farm'+
                     this.farm+'.static.flickr.com/'+this.server+'/'+ this.id+'_'+this.secret+div.settings.largePhotoSize + '.jpg">' +
                     '<img alt="'+this.title+'" src="http://farm'+this.farm+'.static.flickr.com/'+this.server+'/'+
                     this.id+'_'+this.secret+div.settings.photoSize+'.jpg" /></a><p>'+this.title+'<br/>' + this.datetaken + '</p>'+
                     '<button class="f-select ' + div.settings.buttonClass + '">Select</button>'+
-                    '<input type="hidden" value="'+json+'" />'+
+                    '<input type="hidden" />'+
                     '</div>');
+              json='{"flickr":{"farm":"'+this.farm+'","server":"'+this.server+
+                    '","id":"'+this.id+'","secret":"'+this.secret+'","title":"'+this.title+'"}}|'+
+                    this.datetaken+'|'+this.latitude+'|'+this.longitude;
+              $('div.f-photo input').attr('value',json);
             });
-            $('div.f-img').hover(
+            $('div.f-photo button').hover(
               function() { $(this).addClass(div.settings.hoverClass); },
               function() { $(this).removeClass(div.settings.hoverClass); }
             );
+            tb_init('a.thickbox');
             // Click event handler for selection of a photo
             $('button.f-select').click(
               function() {
-                // clear all the others
-                $('div.f-img').removeClass(div.settings.selectedClass);
-                $($(this).parent().get(0)).addClass(div.settings.selectedClass);
-                // grab the photo data, from the input that is a sibling of this button
-                var data=$(this).siblings('input').attr('value').split('|');
-                var photo=data[0]; // this is the JSON snippet describing the photo
-                $('#' + div.settings.inputName.replace(':','\\:')).attr('value', photo);
-                alert($('#' + div.settings.inputName.replace(':','\\:')).attr('value'));
-                if (div.settings.autoPopulateControls) {
-                  $('#' + div.settings.assocDate.replace(':','\\:')).attr('value', data[1]); // this is the date token
+                try {
+                  // grab the photo data, from the input that is a sibling of this button
+                  var data=$(this).siblings('input').attr('value').split('|');
+                  var photo=data[0]; // this is the JSON snippet describing the photo
+                  $('#' + div.settings.inputName.replace(':','\\:')).attr('value', photo);
+                  if (div.settings.autoPopulateControls) {
+                    $('#' + div.settings.assocDate.replace(':','\\:')).attr('value', data[1].substr(0,10)); // this is the date token
+                    $('#' + div.settings.assocSref.replace(':','\\:')).attr('value', data[2]+', '+data[3]); // this is the lat and long token
+                    $('#' + div.settings.assocSrefSystem.replace(':','\\:')).attr('value', '4326'); // this is the lat and long token
+                    $('#' + div.settings.assocSref.replace(':','\\:')).change();
+                  }
+                  clear(div);
+                  obj=eval("(" + photo + ")");
+                  $(div).append('<a class="f-photo thickbox" href="http://farm'+
+                      obj.flickr.farm+'.static.flickr.com/'+obj.flickr.server+'/'+ obj.flickr.id+'_'+obj.flickr.secret+
+                      '_'+div.settings.largePhotoSize+'.jpg">' +
+                      '<img alt="'+obj.flickr.title+'" src="http://farm'+obj.flickr.farm+'.static.flickr.com/'+obj.flickr.server+'/'+
+                      obj.flickr.id+'_'+obj.flickr.secret+'_t.jpg" />'+
+                      '</div>');
+                  tb_init('a.thickbox');
+                } finally {
+                  return false;
                 }
-
               }
             );
-            tb_init('a.thickbox');
           }
         );
       };
@@ -219,7 +234,7 @@
       * Reset the contents of the div.
       */
       function clear(div) {
-        $('.f-img').remove();
+        $('.f-photo').remove();
         $('input#'+div.settings.inputName).attr('value', '');
         $('select#f-set').attr('value', '-');
       };
