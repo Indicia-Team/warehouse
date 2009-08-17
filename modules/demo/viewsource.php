@@ -3,6 +3,7 @@ $allowed = array(
   'data_entry/simple_data_entry.php',
   'data_entry/test_data_entry.php',
   'data_entry/species_checklist.php',
+  'data_entry/flickr.php',
   'map_data_entry_helper.php',
   'map_javascript_classes.php',
   'occurrence_grid.php',

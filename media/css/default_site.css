@@ -25,6 +25,7 @@ table.speciesCheckList td, table.speciesCheckList th {
   background-color: #e7e7e7;
   padding: 1em;
   margin-left: 1em;
+  margin-bottom: 1em;
   font-size: 90%;
 }
 
@@ -37,12 +38,6 @@ table.speciesCheckList td, table.speciesCheckList th {
   list-style-type: none;
   padding-left: 2em;
   padding-bottom: 1em;
-}
-
-#place_close_button {
-  border: solid grey 1px;
-  background-color: #eeeeee;
-  padding: 0.5em;
 }
 
 #place_search_button {
@@ -58,7 +53,7 @@ table.speciesCheckList td, table.speciesCheckList th {
   display:inline-block;
   zoom:1;
   *display:inline;
-  margin-left: 0.3em;
+  margin-left: 160px;
 }
 
 .error_message {
@@ -121,6 +116,7 @@ input, select, textarea {
 
 .indicia-button {
   padding: 0em 0.3em;
+  text-decoration: none;
 }
 
 #f-dosearch {
@@ -135,3 +131,4 @@ input, select, textarea {
   margin-top: 5px;
   float: right;
 }
+

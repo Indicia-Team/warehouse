@@ -2,24 +2,37 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <?php
 
-require_once '../../client_helpers/data_entry_helper.php';
-require_once '../../client_helpers/flickr_helper.php';
-require_once 'data_entry_config.php';
+require_once '../../../client_helpers/data_entry_helper.php';
+require_once '../../../client_helpers/flickr_helper.php';
+require_once '../data_entry_config.php';
 
+// Obtain read access to the user's Flickr account
 flickr_helper::auth('read');
 
 ?>
-
 <head>
     <title>Indicia demonstrations</title>
+    <link rel="stylesheet" type="text/css" href="../../../media/css/thickbox.css" />
     <link rel="stylesheet" type="text/css" href="demo.css" />
-    <link rel="stylesheet" type="text/css" href="../../media/css/default_site.css" />
-    <link rel="stylesheet" type="text/css" href="../../media/css/thickbox.css" />
+    <link rel="stylesheet" type="text/css" href="../../../media/css/default_site.css" />
+
 
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 </head>
 <body>
 <div id="wrap"">
+<?php
+// Catch a submission to the form and send it to Indicia
+if ($_POST)
+{
+  $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
+  $response = data_entry_helper::forward_post_to(
+    'save', $submission
+  );
+  data_entry_helper::dump_errors($response);
+}
+
+?>
 <form method="post" class="ui-widget ui-widget-content ui-corner-all">
 <h1 class="ui-widget-header ui-corner-all">Flickr Integration Demo</h1>
 <fieldset class="ui-widget ui-widget-content ui-corner-all">

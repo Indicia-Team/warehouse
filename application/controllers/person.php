@@ -163,10 +163,10 @@ class Person_Controller extends Gridview_Base_Controller {
         $my_users_websites=ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->in('website_id', $this->gen_auth_filter['values'])->find_all();
         $all_users_websites=ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all();
         if($all_users_websites->count() > 0)
-          $this->template->content->warning_message='<li>Warning: This person is set up as a user on '.$all_users_websites->count().' websites, of which you have the Admin role for '.$my_users_websites->count().' website(s).</li>';
+          $this->session->set_flash('flash_info', '<li>Warning: This person is set up as a user on '.$all_users_websites->count().' websites, of which you have the Admin role for '.$my_users_websites->count().' website(s).</li>');
       } else {
         // Core Admin user
-        $users_websites=ORM::factory('users_website')->where('user_id', $this->model->id)->where('site_role_id IS NOT ', null)->find_all();
+        $users_websites=ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all();
         $this->session->set_flash('flash_info', 'Number of websites this person is a user on: '.$users_websites->count());
       }
     }

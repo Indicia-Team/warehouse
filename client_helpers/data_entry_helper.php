@@ -980,7 +980,14 @@ class data_entry_helper extends helper_config {
   public static function build_sample_occurrence_submission($values) {
     return self::build_submission($values, array(
         'model' => 'sample',
-        'submodel' => array('model' => 'occurrence', 'fk' => 'sample_id')
+        'submodel' => array(
+          'model' => 'occurrence',
+          'fk' => 'sample_id',
+          'submodel' => array(
+            'model' => 'occurrence_image',
+            'fk' => 'occurrence_id'
+          )
+        )
     ));
   }
 
@@ -991,15 +998,22 @@ class data_entry_helper extends helper_config {
    * @param array $structure Describes the structure of the submission. The form should be:
    * array(
    *     'model' => 'main model name',
-   *     'submodel' => array('model' => 'child model name', fk => 'foreign key name')
+   *     'submodel' => array('model' => 'child model name', fk => 'foreign key name', image_entity => 'name of image entity if present')
    * )
    */
   public static function build_submission($values, $structure) {
+    $modelWrapped = self::inner_build_submission($values, $structure);
+    return array('submission' => array('entries' => array(
+      array ( 'model' => $modelWrapped )
+    )));
+  }
+
+  private static function inner_build_submission($values, $structure) {
     // Wrap the main model and attrs into JSON
     $modelWrapped = self::wrap_with_attrs($values, $structure['model']);
     // Is there a child model?
     if (array_key_exists('submodel', $structure)) {
-      $submodelWrapped = self::wrap_with_attrs($values, $structure['submodel']['model']);
+      $submodelWrapped = self::inner_build_submission($values, $structure['submodel']);
       // Join the parent and child models together
       if (!array_key_exists('subModels', $modelWrapped)) {
         $modelWrapped['subModels']=array();
@@ -1009,11 +1023,9 @@ class data_entry_helper extends helper_config {
         'model' => $submodelWrapped
       ));
     }
-
-    return array('submission' => array('entries' => array(
-      array ( 'model' => $modelWrapped )
-    )));
+    return $modelWrapped;
   }
+
 
   /**
    * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,

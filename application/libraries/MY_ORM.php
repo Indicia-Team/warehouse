@@ -220,10 +220,11 @@ abstract class ORM extends ORM_Core {
     if (array_key_exists('survey_id', $this->submission['fields'])) {
       $this->identifiers['survey_id']=$this->submission['fields']['survey_id']['value'];
     }
-
-    // Ensure that the only fields being submitted are those present in the model.
     $this->submission['fields'] = array_intersect_key(
-        $this->submission['fields'], $this->table_columns);
+        $this->submission['fields'],
+        $this->table_columns
+    );
+
 
 
     // Where fields are numeric, ensure that we don't try to submit strings to
@@ -250,9 +251,9 @@ abstract class ORM extends ORM_Core {
     try {
       $res = $this->inner_submit();
     } catch (Exception $e) {
-      $this->log_error('Exception during inner_submit.', $e);
+      $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
+      error::log_error('Exception during inner_submit.', $e);
       $res = null;
-      $this->errors['record'] = $e->getMessage();
     }
     if ($res) {
       Kohana::log('debug', 'Committing transaction.');

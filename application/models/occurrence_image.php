@@ -41,7 +41,8 @@ class Occurrence_Image_Model extends ORM {
     $array->add_rules('occurrence_id', 'required');
     $array->add_rules('path', 'required');
 
-    return parent::validate($array, $save);
+    $extraFields = array('caption', 'external_details');
+    return parent::validate($array, $save, $extraFields);
   }
 
 }

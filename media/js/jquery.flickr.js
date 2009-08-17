@@ -36,7 +36,7 @@
         photoSize: "m",
         largePhotoSize: "b",
         limit: 10,
-        inputName: 'occurrence:image',
+        imageTableName: 'occurrence_image',
         autoPopulateControls: true,
         assocDate: 'sample:date',
         assocSref: 'sample:entered_sref',
@@ -61,7 +61,7 @@
       *      b	large, 1024 on longest side (only exists for very large original images)
       *   largePhotoSize - size of photo to display in zoom mode, defaults to b.
       *   limit - Maximum number of photos to return (sorted by date, most recent first).
-      *   inputName - name of the hidden control that stores the selected photo information (to be posted with
+      *   detailsInputName - name of the hidden control that stores the selected photo information (to be posted with
       *      the form).
       *   autoPopulateControls - true means that when a photo is selected, its attributes will
       *      be used to populate the date and spatial reference controls on the page.
@@ -71,8 +71,15 @@
       */
       this.construct = function(options) {
         this.settings = {};
+        // Build the caption names - the user can override these if required but would not be expected.
+        $.indiciaFlickr.defaults.pathInputName = $.indiciaFlickr.defaults.imageTableName + ':path';
+        $.indiciaFlickr.defaults.captionInputName = $.indiciaFlickr.defaults.imageTableName + ':caption';
+        $.indiciaFlickr.defaults.detailsInputName = $.indiciaFlickr.defaults.imageTableName + ':external_details';
+
         // Extend with defaults and options
         $.extend(this.settings, $.indiciaFlickr.defaults, options);
+
+
         var div=this;
         this.proxy_url = 'http://localhost/indicia/client_helpers/flickr_proxy.php';
 
@@ -95,7 +102,9 @@
         content += '<label for="f-set" class="auto">or browse photo set:</label>';
         content += '<select name="f-set" id="f-set"><option value="-">&lt;select photo set&gt;</option></select>';
         content += '</div>';
-        content += '<input type="hidden" name="' + this.settings.inputName + '" id="' + this.settings.inputName + '"  />';
+        content += '<input type="hidden" name="' + this.settings.detailsInputName + '" id="' + this.settings.detailsInputName + '"  />';
+        content += '<input type="hidden" name="' + this.settings.captionInputName + '" id="' + this.settings.captionInputName + '"  />';
+        content += '<input type="hidden" name="' + this.settings.pathInputName + '" id="' + this.settings.pathInputName + '"  />';
         $(this).html(content);
         // hover effect on search button
         $('#f-dosearch').hover(
@@ -187,10 +196,10 @@
                     '<button class="f-select ' + div.settings.buttonClass + '">Select</button>'+
                     '<input type="hidden" />'+
                     '</div>');
-              json='{"flickr":{"farm":"'+this.farm+'","server":"'+this.server+
-                    '","id":"'+this.id+'","secret":"'+this.secret+'","title":"'+this.title+'"}}|'+
-                    this.datetaken+'|'+this.latitude+'|'+this.longitude;
-              $('div.f-photo input').attr('value',json);
+              hidden='{"flickr":{"title":"'+this.title+'","farm":"'+this.farm+'","server":"'+this.server+
+                    '","id":"'+this.id+'","secret":"'+this.secret+'"}}|'+
+                    this.datetaken+'|'+this.latitude+'|'+this.longitude
+              $('div.f-photo input').attr('value',hidden);
             });
             $('div.f-photo button').hover(
               function() { $(this).addClass(div.settings.hoverClass); },
@@ -204,20 +213,26 @@
                   // grab the photo data, from the input that is a sibling of this button
                   var data=$(this).siblings('input').attr('value').split('|');
                   var photo=data[0]; // this is the JSON snippet describing the photo
-                  $('#' + div.settings.inputName.replace(':','\\:')).attr('value', photo);
+                  obj=eval("(" + photo + ")");
+
+                  $('#' + div.settings.detailsInputName.replace(':','\\:')).attr('value', photo);
+                  $('#' + div.settings.captionInputName.replace(':','\\:')).attr('value', obj.flickr.title);
+                  $('#' + div.settings.pathInputName.replace(':','\\:')).attr('value', 'http://farm'+obj.flickr.farm+
+                      '.static.flickr.com/'+obj.flickr.server+'/'+ obj.flickr.id+'_'+obj.flickr.secret+'.jpg');
                   if (div.settings.autoPopulateControls) {
                     $('#' + div.settings.assocDate.replace(':','\\:')).attr('value', data[1].substr(0,10)); // this is the date token
                     $('#' + div.settings.assocSref.replace(':','\\:')).attr('value', data[2]+', '+data[3]); // this is the lat and long token
                     $('#' + div.settings.assocSrefSystem.replace(':','\\:')).attr('value', '4326'); // this is the lat and long token
                     $('#' + div.settings.assocSref.replace(':','\\:')).change();
                   }
+
                   clear(div);
-                  obj=eval("(" + photo + ")");
+                  // Put a thumbnail for the selected image into the div.
                   $(div).append('<a class="f-photo thickbox" href="http://farm'+
                       obj.flickr.farm+'.static.flickr.com/'+obj.flickr.server+'/'+ obj.flickr.id+'_'+obj.flickr.secret+
-                      '_'+div.settings.largePhotoSize+'.jpg">' +
+                      div.settings.largePhotoSize+'.jpg">' +
                       '<img alt="'+obj.flickr.title+'" src="http://farm'+obj.flickr.farm+'.static.flickr.com/'+obj.flickr.server+'/'+
-                      obj.flickr.id+'_'+obj.flickr.secret+'_t.jpg" />'+
+                      obj.flickr.id+'_'+obj.flickr.secret + '_t.jpg" />'+
                       '</div>');
                   tb_init('a.thickbox');
                 } finally {
@@ -235,7 +250,7 @@
       */
       function clear(div) {
         $('.f-photo').remove();
-        $('input#'+div.settings.inputName).attr('value', '');
+        $('input#'+div.settings.detailsInputName).attr('value', '');
         $('select#f-set').attr('value', '-');
       };
 

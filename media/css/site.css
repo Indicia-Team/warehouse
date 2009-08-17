@@ -108,7 +108,8 @@ h1
   color: #103A6A;
   margin-bottom: 12px;
   font-size: 1.4em;
-  letter-spacing:-1px;
+  font-family: Verdana,Arial,sans-serif;
+  font-weight: normal;
 }
 
 h2
@@ -116,7 +117,8 @@ h2
   color: #103A6A;
   margin-bottom: 2px;
   font-size: 1.2em;
-  letter-spacing:-1px;
+  Verdana,Arial,sans-serif;
+
 }
 
 #footer
@@ -225,4 +227,12 @@ text-align: right;
   padding: 1px;
   margin: 1px;
   font-size: 80%;
+}
+
+.imagelist {
+  padding: 0.5em;
+}
+
+.imagelist a {
+  margin: 0.5em;
 }
