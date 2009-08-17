@@ -5,5 +5,5 @@ problems if the server is for a production environment.</p>
 <div class="page-notice ui-widget ui-state-error ui-corner-all">
 <?php echo $problems; ?>
 </div>
-<a href="http://localhost/indicia/index.php/setup_check/do_ack_permissions" class="button ui-state-default ui-corner-all">Acknowledge</a>
-<a href="http://localhost/indicia/index.php/setup_check" class="button ui-state-default ui-corner-all">Cancel</a>
+<a href="<?php echo url::site().'setup_check/do_ack_permissions'; ?>" class="button ui-state-default ui-corner-all">Acknowledge</a>
+<a href="<?php echo url::site().'setup_check'; ?>" class="button ui-state-default ui-corner-all">Cancel</a>
