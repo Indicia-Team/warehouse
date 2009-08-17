@@ -38,16 +38,16 @@ class Occurrence_controller extends Gridview_Base_Controller {
     $this->model = ORM::factory('occurrence');
     $this->actionColumns = array
     (
-    'Edit Occ' => 'occurrence/edit/£id£',
-    'Edit Smp' => 'sample/edit/£sample_id£'
+      'Edit Occ' => 'occurrence/edit/£id£',
+      'Edit Smp' => 'sample/edit/£sample_id£'
     );
     $this->columns = array
     (
-    'taxon' => 'Taxon',
-    'entered_sref' => 'Spatial Ref',
-    'entered_sref_system' => 'System',
-    'recorder_names' => 'Recorder Names',
-    'vague_date' => 'Date'
+      'taxon' => 'Taxon',
+      'entered_sref' => 'Spatial Ref',
+      'entered_sref_system' => 'System',
+      'recorder_names' => 'Recorder Names',
+      'vague_date' => 'Date'
     );
   }
 
@@ -88,7 +88,8 @@ class Occurrence_controller extends Gridview_Base_Controller {
       $grid = Gridview_Controller::factory($gridmodel,	$page_no,  $limit, 4);
       $grid->base_filter = array('occurrence_id' => $id, 'deleted' => 'f');
       $grid->columns = array('comment' => '', 'updated_on' => '');
-      $vArgs = array('comments' => $grid->display());
+      $images = ORM::factory('occurrence_image')->where('occurrence_id', $id)->find_all();
+      $vArgs = array('comments' => $grid->display(), 'images' => $images);
       $this->setView('occurrence/occurrence_edit', 'Occurrence', $vArgs);
     }
   }

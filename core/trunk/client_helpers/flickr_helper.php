@@ -40,15 +40,31 @@ class flickr_helper extends helper_config {
     $f->auth($permissions);
   }
 
-  public static function flickr_selector($id='flickr') {
+  /**
+   * Generates a flickr linked photo selector control. This requires a call to flickr_helper::auth
+   * to have been made first and the user to have followed the login process to Flickr, otherwise a
+   * normal image upload box will be displayed.
+   *
+   * @param string $div_id Name and id of the div element that is generated.
+   */
+  public static function flickr_selector($div_id='flickr') {
     global $javascript;
 
-    $javascript .= "(function($) {
-        $(document).ready(function(){
-          $('div#$id').indiciaFlickr();
-        });
-      })(jQuery);\n";
-    return '<div id="flickr"></div>';
+    if (array_key_exists('phpFlickr_auth_token', $_SESSION) &&
+        !empty($_SESSION['phpFlickr_auth_token'])) {
+      $javascript .= "(function($) {
+          $(document).ready(function(){
+            $('div#$div_id').indiciaFlickr();
+          });
+        })(jQuery);\n";
+      return '<div id="'.$div_id.'"></div>';
+    } else {
+      require_once('data_entry_helper.php');
+      // Flickr authentication failed. Output a normal image upload box.
+      return "<label for='occurrence_image'>Image Upload:</label>\n".
+        data_entry_helper::image_upload('occurrence:image').'<br/>';
+    }
+
   }
 
 }

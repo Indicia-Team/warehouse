@@ -34,6 +34,11 @@ for entering custom attributes. View the source code in <a href="viewsource.php?
 occurrences. The grid contains a custom attribute for the entry of DAFOR abundance data per occurrence.
 View the source code in <a href="viewsource.php?file=data_entry/species_checklist.php">species_checklist.php</a>.</p>
 </li>
+<li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="data_entry/flickr.php">Linking to Flickr photos</a></div>
+Simple data entry form, enhanced with a Flickr photo link tool allowing Flickr images to be tagged against occurrences. To use
+this page you must have a Flickr account and you will be asked to authenticate when you first access the page.
+View the source code in <a href="viewsource.php?file=data_entry/flickr.php">flickr.php</a>.</p>
+</li>
 <li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="advanced_data_entry/header.php">Data entry wizard</a></div>
 <p>A demonstration data entry "mini-site" which includes a wizard for entering a checklist of species found at a place and a distribution map
 as a reward after a record has been contributed. The map also has a toolbar to allow switching to a mode for capturing polygon shaped occurrences

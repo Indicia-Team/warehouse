@@ -40,6 +40,8 @@ class User_Model extends ORM {
 
   protected $search_field='username';
 
+  protected $droppedFields;
+
   public $users_websites = array();
 
   public function validate(Validation $array, $save = FALSE) {
@@ -69,7 +71,10 @@ class User_Model extends ORM {
 
     $this->submission['fields']['email_visible']	 = array('value' => (isset($this->submission['fields']['email_visible']) ? 't' : 'f'));
     $this->submission['fields']['view_common_names'] = array('value' => (isset($this->submission['fields']['view_common_names']) ? 't' : 'f'));
-
+    // Ensure that the website fields remain available (as they are not proper model columns so get
+    // stripped from the model).
+    $this->droppedFields = array_diff_key($this->submission['fields'],
+        $this->table_columns);
     return parent::preSubmit();
   }
 
@@ -112,14 +117,15 @@ class User_Model extends ORM {
           'fkFields' => array(),
           'superModels' => array()
         );
-        if ($users_websites->loaded || is_numeric($this->submission['fields']['website_'.$website->id]['value'])) {
+        echo kohana::debug($this->droppedFields);
+        if ($users_websites->loaded || is_numeric($this->droppedFields['website_'.$website->id]['value'])) {
           // If this is an existing users_websites record, preserve the id.
           if ($users_websites->loaded)
               $save_array['fields']['id'] = array('value' => $users_websites->id);
           $save_array['fields']['site_role_id'] = array(
             'value' => (
-                is_numeric($this->submission['fields']['website_'.$website->id]['value']) ?
-                  $this->submission['fields']['website_'.$website->id]['value'] :
+                is_numeric($this->droppedFields['website_'.$website->id]['value']) ?
+                  $this->droppedFields['website_'.$website->id]['value'] :
                   null
             )
           );

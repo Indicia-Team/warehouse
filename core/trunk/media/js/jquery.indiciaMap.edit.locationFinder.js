@@ -57,9 +57,9 @@
       var html = "<div class='locationFinderControls'>";
       html += "<label for='"+inputId+"'>Search for place on map:</label>\n";
       html += "<input type='text' name='"+inputId+"' id='"+inputId+"' />\n";
-      html += "<input type='button' name='"+buttonId+"' id='"+buttonId+"' style='margin-top: -2px' value='Search' />\n";
-      html += "<div id='"+searchDivId+"' style='display: none'><div id='"+outputDivId+"' />\n";
-      html += "<a href='#' id='"+closeId+"'>Close</a>\n";
+      html += "<input type='button' name='"+buttonId+"' id='"+buttonId+"' class='auto ui-corner-all ui-widget-content ui-state-default indicia-button' value='Search' />\n";
+      html += '<div id="'+searchDivId+'" class="ui-corner-all ui-widget-content" style="display: none"><div id="'+outputDivId+'" />\n';
+      html += '<a class="ui-corner-all ui-widget-content ui-state-default indicia-button" href="#" id="'+closeId+'">Close</a>\n';
       html += "</div></div>";
 
       if (pos == 0)
@@ -70,6 +70,11 @@
       {
         $(div).after(html);
       }
+
+      $('.locationFinderControls .indicia-button').hover(
+        function() { $(this).addClass('ui-state-hover'); },
+        function() { $(this).removeClass('ui-state-hover'); }
+      );
     }
 
     function registerControls(div)
@@ -147,10 +152,10 @@
         ol.append($("<li>").append($("<a href='#'>" + placename + "</a>").click((function(ref){return function() { displayLocation(div, ref); } })(ref))));
       });
       ol.appendTo(outputDivId);
-      $(searchDivId).show("slow");
+      $(searchDivId).show("fast");
     } else {
       $('<p>No locations found with that name. Try a nearby town name.</p>').appendTo(outputDivId);
-      $(searchDivId).show("slow");
+      $(searchDivId).show("fast");
     }
   });
       }

@@ -25,7 +25,7 @@
 <?php echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
-  'media/js/thickbox-compressd.js',
+  'media/js/thickbox-compressed.js',
   'media/js/jquery.autocomplete.js'
 ), FALSE); ?>
 <script type="text/javascript" >
@@ -91,10 +91,29 @@ $(document).ready(function() {
 });
 </script>
 <form class="cmxform"  name='editList' action="<?php echo url::site().'occurrence/save' ?>" method="POST">
-<?php print form::hidden('id', html::specialchars($model->id)); ?>
-<?php print form::hidden('website_id', $model->website_id); ?>
-<?php print form::hidden('sample_id', $model->sample_id); ?>
+<?php if (count($images)>0) : ?>
+  <fieldset class="imagelist">
+  <legend>Images</legend>
+  <?php
+  foreach ($images as $image) {
+    $obj = json_decode($image->external_details, true);
+
+    if (array_key_exists('flickr', $obj)) {
+      $photo = $obj['flickr'];
+      echo '<a class="thickbox" href="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
+                      $photo['id'].'_'.$photo['secret'].'.jpg"><img alt="'.$photo['title'].'" title="'.$photo['title'].'" src="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
+                      $photo['id'].'_'.$photo['secret'].'_t.jpg" /></a>';
+    }
+  }
+  ?>
+  </fieldset>
+<?php endif; ?>
 <fieldset>
+<?php
+print form::hidden('id', html::specialchars($model->id));
+print form::hidden('website_id', $model->website_id);
+print form::hidden('sample_id', $model->sample_id);
+?>
 <legend>Occurrence Details</legend>
 <ol>
 <li>
