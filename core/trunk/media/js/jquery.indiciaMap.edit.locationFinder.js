@@ -70,11 +70,6 @@
       {
         $(div).after(html);
       }
-
-      $('.locationFinderControls .indicia-button').hover(
-        function() { $(this).addClass('ui-state-hover'); },
-        function() { $(this).removeClass('ui-state-hover'); }
-      );
     }
 
     function registerControls(div)

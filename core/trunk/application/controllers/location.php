@@ -54,7 +54,10 @@ class Location_Controller extends Gridview_Base_Controller {
    * Displays a page allowing entry of a new location.
    */
   public function create() {
-    $this->setView('location/location_edit', 'Location');
+    $vArgs = array(
+      'type_terms' => $this->get_termlist_terms('indicia:location_types')
+    );
+    $this->setView('location/location_edit', 'Location', $vArgs);
   }
 
   /**
@@ -65,19 +68,19 @@ class Location_Controller extends Gridview_Base_Controller {
      */
   public function edit($id = null)
   {
-  if ($id == null)
-      {
-       $this->setError('Invocation error: missing argument', 'You cannot call edit location without an ID');
-      }
-      else if (!$this->record_authorised($id))
-  {
-    $this->access_denied('record with ID='.$id);
-  }
-      else
-      {
-          $this->model = new Location_Model($id);
-          $this->setView('location/location_edit', 'Location');
-      }
+    if ($id == null) {
+      $this->setError('Invocation error: missing argument', 'You cannot call edit location without an ID');
+    }
+    else if (!$this->record_authorised($id)) {
+      $this->access_denied('record with ID='.$id);
+    }
+    else {
+      $vArgs = array(
+        'type_terms' => $this->get_termlist_terms('indicia:location_types')
+      );
+      $this->model = new Location_Model($id);
+      $this->setView('location/location_edit', 'Location', $vArgs);
+    }
   }
 
   protected function record_authorised ($id)

@@ -19,8 +19,36 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+/**
+ * Link in other required php files.
+ */
 require_once('lang.php');
 require_once('helper_config.php');
+
+global $templates;
+
+/**
+ * Provides a control templates to define the output of the data entry helper class.
+ *
+ * @package	Client
+ */
+$templates = array(
+  'prefix' => '',
+  'label' => '<label for="{fieldname}">{label}:</label>'."\n",
+  'suffix' => '<br/>',
+  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif"/>'."\n",
+  'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}">{default}</textarea>'."\n",
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}">'."\n",
+  'date_picker' => '<input type="text" size="30" class="date {class}" id="{id}" name="fieldname" value="{default}"/>' .
+      '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ',
+  'select' => '<select id="{id}" name="{fieldname}" class="{class}">{options}</select>',
+  'select_option' => '<option value="{value}" {selected} >{caption}</option>',
+  'select_option_selected' => 'selected="selected"',
+  'listbox' => '<select id="{id}" name="{fieldname}" class="{class}" size="{size}" multiple="{multiple}">{options}</select>',
+  'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
+  'listbox_option_selected' => 'selected="selected"'
+);
+
 
 /**
  * Static helper class that provides automatic HTML and JavaScript generation for Indicia online
@@ -91,44 +119,130 @@ class data_entry_helper extends helper_config {
   }
 
   /**
+   * Internal method to handle the deprecated use of a list of arguments, for backwards compatibility.
+   * Converts the list of arguments to an options array unless the first argument is already
+   * an options array. The arguments are mapped to the array in the order specified by the mapping.
+   * Also checks that an Id is supplied, if not, uses the fieldname as the id.
+   */
+  private static function check_arguments(array $args, array $mapping=null) {
+    if (count($args)==0)
+      throw new Exception('No arguments supplied to method.');
+    if (is_array($args[0])) {
+      // First argument is an options array
+      $options = $args[0];
+    } elseif ($mapping) {
+      // arguments are passed individuall using deprecated method - so for backward compatibility we'll
+      // map them to an options array
+      $options=array();
+      $i=0;
+      foreach ($args as $arg) {
+        $options[$mapping[$i]]=$arg;
+        $i++;
+      }
+    }
+    // force some defaults to be present in the options
+    $options = array_merge(array(
+        'class'=>'',
+        'multiple'=>''
+        ), $options);
+    // If fieldname is supplied but not id, then use the fieldname as the id
+    if (!array_key_exists('id', $options) && array_key_exists('fieldname', $options)) {
+      $options['id']=$options['fieldname'];
+    }
+    $options['default'] = self::check_default_value($options['fieldname'], $options['default']);
+    return $options;
+  }
+
+  /**
+   * Internal method to build a control from its options array and its template. Outputs the
+   * prefix template, a label (if in the options), a control, the control's errors and a
+   * suffix template.
+   *
+   * @access private
+   * @param string $template Name of the control template, from the global $templates variable.
+   * @param array $options Options array containing the control replacement values for the templates.
+   */
+  private static function apply_template($template, $options) {
+    global $templates;
+    // Build an array of all the possible tags we could replace in the template.
+    $replaceTags=array();
+    foreach(array_keys($options) as $option) {
+      array_push($replaceTags, '{'.$option.'}');
+    }
+    $r = $templates['prefix'];
+    // Add a label only if specified in the options array.
+    if (array_key_exists('label', $options)) {
+      $r .= str_replace(
+          array('{label}', '{fieldname}'),
+          array($options['label'], $options['fieldname']),
+          $templates['label']
+      );
+    }
+    // Output the main control
+    $r .= str_replace($replaceTags, $options, $templates[$template]);
+    // output any errors identified for the control
+    $r .= self::check_errors($options['fieldname']);
+    $r .= $templates['suffix'];
+    return $r;
+  }
+
+  /**
   * Helper function to support image upload by inserting a file path upload control.
   *
-  * @param string $id Id of the control to generate.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * </ul>
   */
-  public static function image_upload($id){
-    $r = "<input type=\"file\" id=\"$id\" name=\"$id\" accept=\"png|jpg|gif\"/>";
-    $r .= self::check_errors($id);
-    return $r;
+  public static function image_upload() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    return self::apply_template('image_upload', $options);
   }
 
-  /**
-   * Helper function to output an HTML text input. This includes re-loading of existing values
-   * and displaying of validation error messages.
-   *
-   * @param string $id Id and name of the control generated, which should correspond to the database field this is
-   * being posted into.
-   */
-  public static function text_input($id) {
-    $r = "<input type=\"text\" id=\"$id\" name=\"$id\" value=\"".
-        data_entry_helper::check_default_value($id).
-        "\">";
-    $r .= self::check_errors($id);
-    return $r;
+ /**
+  * Helper function to output an HTML text input. This includes re-loading of existing values
+  * and displaying of validation error messages.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * </ul>
+  */
+  public static function text_input() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    return self::apply_template('text_input', $options);
   }
 
-  /**
-   * Helper function to output an HTML textarea. This includes re-loading of existing values
-   * and displaying of validation error messages.
-   *
-   * @param string $id Id and name of the control generated, which should correspond to the database field this is
-   * being posted into.
-   */
-  public static function textarea($id) {
-    $r = "<textarea id=\"$id\" name=\"$id\">".
-        data_entry_helper::check_default_value($id).
-        "</textarea>";
-    $r .= self::check_errors($id);
-    return $r;
+ /**
+  * Helper function to output an HTML textarea. This includes re-loading of existing values
+  * and displaying of validation error messages.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * </ul>
+  */
+  public static function textarea() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    return self::apply_template('textarea', $options);
   }
 
   /**
@@ -351,116 +465,152 @@ class data_entry_helper extends helper_config {
     return $tree;
   }
 
-
   /**
   * Helper function to insert a date picker control.
   *
-  * @param string $id Id and name of the control generated, which should correspond to the database field this is
-  * being posted into. If posting into a vague date field, then just the unique prefix for the field name should be
-  * specified. For example, if posting into sample.date_start, sample.date_end and sample.date_type, then the value
-  * for this parameter should be 'date'.
-  * @param string $default Optional. Date to display in this field by default.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * </ul>
   */
-  public static function date_picker($id, $default = '') {
+  public static function date_picker() {
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
+
     self::add_resource('jquery_ui');
     global $javascript;
-    $default = self::check_default_value($id, $default, lang::get('click here'));
-    $escaped_id=str_replace(':','\\\\:',$id);
+    $escaped_id=str_replace(':','\\\\:',$options['id']);
     $javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\r\n ";
-    $r =
-      "<input type='text' size='30' class='date' id='$id' name='$id' value='$default'/>" .
-      '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ';
-    $r .= self::check_errors($id);
-    return $r;
+
+    if (!array_key_exists('default', $options) || $options['default']='') {
+      $options['default']=lang::get('click here');
+    }
+    return self::apply_template('date_picker', $options);
+  }
+
+ /**
+  * Helper function to generate a select control from a Indicia core service query.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * </ul>
+  * <li><strong>table</strong><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><strong>captionField</strong><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><strong>valueField</strong><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><strong>extraParams</strong><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * </ul>
+  *
+  * @return string HTML code for a select control.
+  */
+  public static function select()
+  {
+    $options = self::check_arguments(func_get_args(), array(
+        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'default'
+    ));
+    return self::select_or_listbox($options, 'select', 'select_option', 'select_option_selected');
+  }
+
+ /**
+  * Helper function to generate a list box from a Indicia core service query.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * </ul>
+  * <li><strong>table</strong><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><strong>captionField</strong><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><strong>valueField</strong><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><strong>extraParams</strong><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><strong>size</strong><br/>
+  * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
+  * <li><strong>multiselect</strong><br/>
+  * Optional. Allow multi-select in the list box. Defaults to false.</li>
+  * </ul>
+  */
+  public static function listbox()
+  {
+    $options = self::check_arguments(func_get_args(), array(
+        'fieldname', 'table', 'captionField', 'size', 'multiselect', 'valueField', 'extraParams', 'default'
+    ));
+    if (!array_key_exists('size', $options)) {
+      $options['size']=3;
+    }
+    return self::select_or_listbox($options, 'listbox', 'listbox_option', 'listbox_option_selected');
   }
 
   /**
-   * Helper function to generate a select control from a Indicia core service query.
+   * Internal function to output either a select or listbox control depending on the templates
+   * passed.
    *
-   * @param int $id id attribute for the returned control.
-   * @param string $entity Name (Kohana-style) of the database entity to be queried.
-   * @param string $captionField Field to draw values to show in the control from.
-   * @param string $valueField Field to draw values to return from the control from. Defaults
-   * to the value of $captionField.
-   * @param map<string, string> $extraParams Associative array of items to pass via the query
-   * string to the service.
-   *
-   * @return string HTML code for a select control.
+   * @access private
    */
-  public static function select($id, $entity, $captionField, $valueField = null, $extraParams = null, $default = '')
-  {
+  private static function select_or_listbox($options, $outerTmpl, $itemTmpl, $selectTmpl) {
+    global $templates;
     self::add_resource('json');
-    $url = parent::$base_url."/index.php/services/data";
+    $url = parent::$base_url."index.php/services/data";
     // If valueField is null, set it to $captionField
-    if ($valueField == null) $valueField = $captionField;
+    if ($options['valueField'] == null) $options['valueField'] = $options['captionField'];
     // Execute a request to the service
-    $request = "$url/$entity?mode=json";
-    $request .= self::array_to_query_string($extraParams);
-    // Get the curl session object
-    $session = curl_init($request);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($session);
-    $response = json_decode(array_pop(explode("\r\n\r\n",$response)), true);
-    $r = "";
+    $request = "$url/".$options['table']."?mode=json";
+    if (array_key_exists('extraParams', $options)) {
+      $request .= self::array_to_query_string($options['extraParams']);
+    }
+    $response = self::http_post($request, null);
+    $response = json_decode($response['output'], true);
+
     if (!array_key_exists('error', $response)) {
-      $r .= "<select name='$id' id='$id' >";
+      $opts = "";
       foreach ($response as $item){
-        if (array_key_exists($captionField, $item) &&
-            array_key_exists($valueField, $item))
+        if (array_key_exists($options['captionField'], $item) &&
+            array_key_exists($options['valueField'], $item))
         {
-          $selected = ($default == $item[$valueField]) ? "selected = 'selected'" : '';
-          $r .= "<option value='$item[$valueField]' $selected >";
-          $r .= $item[$captionField];
-          $r .= "</option>";
+          $selected = ($options['default'] == $item[$options['valueField']]) ? $templates[$selectTmpl] : '';
+          $opts .= str_replace(
+              array('{value}', '{caption}', '{selected}'),
+              array($item[$options['valueField']], $item[$options['captionField']], $selected),
+              $templates[$itemTmpl]
+          );
         }
       }
-      $r .= "</select>";
+      $options['options'] = $opts;
+      return self::apply_template($outerTmpl, $options);
     }
     else
-      echo "Error loading control";
-  $r .= self::check_errors($id);
-    return $r;
+      echo $response['error'];
   }
-
-  /**
-   * Helper function to generate a list box from a Indicia core service query.
-   */
-  public static function listbox($id, $entity, $captionField, $size = 3, $multival = false, $valueField = null, $extraParams = null, $default = '')
-  {
-    $url = parent::$base_url."/index.php/services/data";
-    // If valueField is null, set it to $captionField
-    if ($valueField == null) $valueField = $captionField;
-    // Execute a request to the service
-    $request = "$url/$entity?mode=json";
-    $request .= self::array_to_query_string($extraParams);
-    // Get the curl session object
-    $session = curl_init($request);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($session);
-    $response = json_decode(array_pop(explode("\r\n\r\n",$response)), true);
-    $r = "";
-    if (!array_key_exists('error', $response))
-    {
-      $r .= "<select id='$id' name='$id' multiple='$multival' size='$size'>";
-      foreach ($response as $item)
-      {
-        if (array_key_exists($captionField, $item) &&
-            array_key_exists($valueField, $item))
-        {
-          $selected = ($default == $item[$valueField]) ? 'selected="selected"' : '';
-          $r .= "<option value='$item[$valueField]' $selected >";
-          $r .= $item[$captionField];
-          $r .= "</option>";
-        }
-      }
-      $r .= "</select>";
-    }
-    else
-      echo "Error loading control";
-  $r .= self::check_errors($id);
-    return $r;
-  }
-
 
   /**
   * Helper function to generate an autocomplete box from an Indicia core service query.
@@ -781,6 +931,168 @@ class data_entry_helper extends helper_config {
     $r = "<div id='$div'></div>";
     $r .= self::check_errors('sample:entered_sref');
     echo $r;
+  }
+
+  /**
+   * Outputs a map panel.
+   * The map panel can be augmented by adding any of the following controls which automatically link themselves
+   * to the map:
+   * <ul>
+   * <li>{@link sref_textbox()}</ul>
+   * </ul>{@link sref_system_select()}</ul>
+   * </ul>{@link sref_and_system()}</ul>
+   * </ul>{@link georeference_lookup()}</ul>
+   * </ul>{@link  location_select()}</ul>
+   * </ul>{@link location_autocomplete()}</li>
+   * </ul>
+   *
+   * @param string $id ID of the div that gets created to contain the map.
+   * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
+   */
+  public static function map_panel($id='map', $options=array(
+      'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+  )) {
+    global $javascript;
+    self::add_resource('indiciaMapPanel');
+
+    // Autogenerate the links to the various mapping libraries as required
+    if (array_key_exists('presetLayers', $options)) {
+      foreach ($options['presetLayers'] as $layer)
+      {
+        $a = explode('_', $layer);
+        $a = strtolower($a[0]);
+        switch($a)
+        {
+          case 'google':
+            self::add_resource('googlemaps');
+            break;
+          case 'multimap':
+            self::add_resource('multimap');
+            break;
+          case 'virtual':
+            self::add_resource('virtualearth');
+            break;
+        }
+      }
+    }
+    if (!array_key_exists('geoPlanetApiKey', $options)) {
+      $options['geoPlanetApiKey'] = parent::$geoplanet_api_key;
+    }
+
+    $javascript .= "jQuery('#$id').indiciaMapPanel(".json_encode($options).");";
+
+    $r = "<div id='$id'></div>";
+    echo $r;
+  }
+
+  /**
+   * Creates a textbox for entry of a spatial reference.
+   * Also generates the hidden geom field required to properly post spatial data. The
+   * box is automatically linked to a map_panel if one is added to the page.
+   *
+   * @param string $fieldname Name of the database field that data will be posted to. Defaults to
+   * sample:entered_sref.
+   */
+  public static function sref_textbox($fieldname="sample:entered_sref") {
+    $field_tokens = explode(':', $fieldname);
+    $r = '<input type="text" id="imp-sref" name="'.$fieldname.'" />';
+    $r .= '<input type="hidden" id="imp-geom" name="'.$field_tokens[0].':geom" />';
+    return $r;
+  }
+
+  /**
+   * Outputs a drop down select control populated with a list of spatial reference systems
+   * for the user to select from.
+   *
+   * @param string $fieldname Name of the database field that data will be posted to. Defaults to
+   * sample:entered_sref_system.
+   * @param array $systems List of spatial reference systems to display. Associative array with the key
+   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+   * the description to display.
+   */
+  public static function sref_system_select($fieldname="sample:entered_sref_system",
+        $systems=array('OSGB'=>'British National Grid', '4326'=>'Lat/Long (WGS84)')) {
+    $r = "<select id=\"imp-sref-system\" name=\"$fieldname\" >\n";
+    foreach ($systems as $system=>$caption) {
+      $r .= "<option value=\"$system\">$caption</option>\n";
+    }
+    $r .= "</select>\n";
+    return $r;
+  }
+
+  /**
+   * Outputs a spatial reference input box and a drop down select control populated with a list of
+   * spatial reference systems for the user to select from. If there is only 1 system available then
+   * the system drop down is ommitted since it is not required.
+   *
+   * @param string $fieldname Name of the database field that spatial reference will be posted to. Defaults to
+   * sample:entered_sref. The system field is automatically constructed from this.
+   * @param array $systems List of spatial reference systems to display. Associative array with the key
+   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+   * the description to display.
+   */
+  public static function sref_and_system($fieldname="sample:entered_sref",
+        $systems=array('OSGB'=>'British National Grid', '4326'=>'Lat/Long (WGS84)')) {
+    $r = self::sref_textbox($fieldname, $systems);
+    if (count($systems) == 1) {
+      // Hidden field for the system
+      $keys = array_keys($systems);
+      $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$fieldname."_system\" value=\"".$keys[0]."\" />\n";
+    }
+    else
+    {
+      $r .= self::sref_system_select($fieldname.'_system', $systems);
+    }
+    return $r;
+  }
+
+  public static function georeference_lookup() {
+    $r  = "<input id=\"imp-georef-search\" name=\"$fieldname\" \>\n";
+    $r .= "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"Search\" />\n";
+    $r .= "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden ui-state-highlight page-notice\" ><div id=\"imp-georef-output-div\" />\n";
+    $r .= "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">Close</a>\n";
+    $r .= "</div>";
+    return $r;
+  }
+
+ /**
+  * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
+  * added to the page. Although it is possible to set all the options of a normal select control, generally
+  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
+  * sample's location_id field so can normally also be left.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Optional. The name of the database field this control is bound to.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><strong>extraParams</strong><br/>
+  * Required. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * </ul>
+  */
+  public static function location_select() {
+    $options = self::check_arguments(func_get_args(), array());
+    // Apply location type filter if specified.
+    if (array_key_exists('location_type_id', $options)) {
+      $options['extraParams'] += array('location_type_id' => $options['location_type_id']);
+    }
+    $options = array_merge(array(
+        'table'=>'location',
+        'fieldname'=>'sample:location_id',
+        'valueField'=>'id',
+        'captionField'=>'name',
+        'id'=>'imp-location'
+        ), $options);
+    echo self::select($options);
+
+  }
+
+  public static function location_autocomplete() {
+
   }
 
 
@@ -1247,10 +1559,11 @@ class data_entry_helper extends helper_config {
       'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js")),
       'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/client_helpers/addRowToGrid.js")),
       'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.js")),
+      'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMapPanel.js")),
       'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
       'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
       'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.autocomplete.css"), 'javascript' => array("$base/media/js/jquery.autocomplete.js")),
-      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$theme_path/$theme/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js")),
+      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$theme_path/$theme/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js", "$base/media/js/jquery-ui.effects.js")),
       'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/json2.js")),
       'treeview' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.treeview.css"), 'javascript' => array("$base/media/js/jquery.treeview.js", "$base/media/js/jquery.treeview.async.js",
       "$base/media/js/jquery.treeview.edit.js")),
@@ -1288,6 +1601,7 @@ class data_entry_helper extends helper_config {
           self::add_resource($dep);
         }
         $res[] = $resource;
+
       }
     }
   }
@@ -1414,7 +1728,9 @@ class data_entry_helper extends helper_config {
     $session = curl_init($url);
     // Set the POST options.
     curl_setopt ($session, CURLOPT_POST, true);
-    curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+    if ($postargs!==null) {
+      curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
+    }
     curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 

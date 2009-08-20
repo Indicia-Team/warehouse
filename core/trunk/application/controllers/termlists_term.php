@@ -108,7 +108,6 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
 
     // Add items to view
     $vArgs = array(
-      'termlist_id' => $this->model->termlist_id,
       'table' => $grid->display(true),
       'synonomy' => $this->formatCommonSynonomy($this->
           getSynonomy($this->model->meaning_id)),

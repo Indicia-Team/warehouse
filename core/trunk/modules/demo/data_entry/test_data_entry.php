@@ -65,9 +65,7 @@ echo data_entry_helper::get_auth($config['website_id'], $config['password']);
 <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
 <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
 <br/>
-<label for="sample:date">Date:</label>
-<?php echo data_entry_helper::date_picker('sample:date'); ?>
-<br />
+<?php echo data_entry_helper::date_picker(array('label'=>'Date','fieldname'=>'sample:date')); ?>
 <?php echo data_entry_helper::map('map', array('multimap_landranger', 'google_physical', 'virtual_earth'), true, true, null, true); ?>
 <br />
 <label for="sample:location_name">Locality Description:</label>
@@ -78,9 +76,7 @@ echo data_entry_helper::get_auth($config['website_id'], $config['password']);
 <label for='occurrence:determiner_id:caption'>Determiner:</label>
 <?php echo data_entry_helper::autocomplete('occurrence:determiner_id', 'person', 'caption', 'id', $readAuth); ?>
 <br />
-<label for='sample:comment'>Comment:</label>
-<textarea name='sample:comment' class="wide"><?php echo data_entry_helper::check_default_value('comment'); ?></textarea>
-<br />
+<?php echo data_entry_helper::textarea(array('label'=>'Comment', 'fieldname'=>'sample:comment')); ?>
 <label for='occurrence_image'>Image Upload:</label>
 <?php echo data_entry_helper::image_upload('occurrence:image'); ?>
 <fieldset>
@@ -88,8 +84,7 @@ echo data_entry_helper::get_auth($config['website_id'], $config['password']);
 <label for='<?php echo $config['dafor']; ?>'>Abundance DAFOR:</label>
 <?php echo data_entry_helper::select($config['dafor'], 'termlists_term', 'term', 'id', $readAuth + array('termlist_id' => $config['dafor_termlist'])); ?>
 <br />
-<label for='<?php echo $config['det_date']; ?>'>Determination Date:</label>
-<input type='text' name='<?php echo $config['det_date']; ?>' id='<?php echo $config['det_date']; ?>'/><br />
+<?php echo data_entry_helper::text_input(array('label'=>'Determination Date', 'fieldname'=>$config['det_date'])); ?>
 </fieldset>
 <fieldset>
 <legend>Sample attributes</legend>
