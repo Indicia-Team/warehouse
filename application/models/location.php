@@ -42,6 +42,8 @@ class Location_Model extends ORM_Tree {
 
   protected $search_field='name';
 
+  protected $droppedFields;
+
   public function validate(Validation $array, $save = FALSE) {
     $orig_values = $array->as_array();
 
@@ -58,7 +60,8 @@ class Location_Model extends ORM_Tree {
       'parent_id',
       'deleted',
       'centroid_geom',
-      'boundary_geom'
+      'boundary_geom',
+      'location_type_id'
     );
     return parent::validate($array, $save, $extraFields);
   }
@@ -85,7 +88,7 @@ class Location_Model extends ORM_Tree {
   {
     $value = parent::__get($column);
 
-    if  (substr($column,-5) == '_geom') {
+    if  (substr($column,-5) == '_geom' && $value !== null) {
       $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
       $value = $row->wkt;
     }
@@ -93,20 +96,27 @@ class Location_Model extends ORM_Tree {
   }
 
   /**
+   * Override the preSubmit to grab the list of psuedo-fields (i.e. website id fields)
+   * otherwise the model will chuck them out.
+   */
+  protected function preSubmit() {
+    $this->droppedFields = array_diff_key($this->submission['fields'],
+        $this->table_columns);
+    return parent::preSubmit();
+  }
+
+  /**
    * Override postSubmit to also store the list of location_website links
    */
   protected function postSubmit() {
     try {
-      if (!is_null($this->gen_auth_filter))
-        $websites = ORM::factory('website')->in('id',$this->gen_auth_filter['values'])->find_all();
-      else
-        $websites = ORM::factory('website')->find_all();
+      $websites = ORM::factory('website')->find_all();
       foreach ($websites as $website) {
         $locations_website = ORM::factory('locations_website',
           array('location_id' => $this->id, 'website_id' => $website->id));
-        if ($locations_website->loaded AND !isset($this->submission['fields']['website_'.$website->id])) {
+        if ($locations_website->loaded AND !isset($this->droppedFields['website_'.$website->id])) {
           $locations_website->delete();
-        } else if (!$locations_website->loaded AND isset($this->submission['fields']['website_'.$website->id])) {
+        } else if (!$locations_website->loaded AND isset($this->droppedFields['website_'.$website->id])) {
           $save_array = array(
                  'id' => $locations_website->object_name
                 ,'fields' => array('id' => array('value' => $locations_website->id)

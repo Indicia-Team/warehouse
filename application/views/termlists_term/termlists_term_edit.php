@@ -26,7 +26,7 @@
 <?php echo $metadata ?>
 <fieldset>
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
-<input type="hidden" name="termlist_id" id="termlist_id" value="<?php echo html::specialchars($termlist_id); ?>" />
+<input type="hidden" name="termlist_id" id="termlist_id" value="<?php echo html::specialchars($model->termlist_id); ?>" />
 <legend>Term Details</legend>
 <ol>
 <li>
@@ -57,7 +57,7 @@
 <input id="parent" name="parent" readonly="readonly" value="<?php echo (($model->parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $model->parent_id)->term->term) : ''); ?>" />
 </li>
 <li>
-<input type="hidden" name="meaning_id" id="meaning_id" value="<?php echo html::specialchars($model->meaning_id); ?>" />
+<input type="hidden" name="meaning_id" id="meaning_id" value="<?php echo html::specialchars($model->term->meaning_id); ?>" />
 <label for="synonomy">Synonomy</label>
 <textarea rows=7 id="synonomy" name="synonomy"><?php echo html::specialchars($synonomy); ?></textarea>
 </li>

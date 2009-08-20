@@ -84,6 +84,13 @@ jQuery(document).ready(function() {
 <?php echo html::error_message($model->getError('code')); ?>
 </li>
 <li>
+ <label for='location_type_id'>Location Type:</label>
+ <?php
+ print form::dropdown('location_type_id', $type_terms, $model->location_type_id);
+ echo html::error_message($model->getError('location_type_id'));
+ ?>
+ </li>
+ <li>
 <label for="centroid_sref">Spatial Ref:</label>
 <input id="centroid_sref" class="narrow" name="centroid_sref"
   value="<?php echo html::specialchars($model->centroid_sref); ?>"
