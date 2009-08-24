@@ -225,8 +225,6 @@ abstract class ORM extends ORM_Core {
         $this->table_columns
     );
 
-
-
     // Where fields are numeric, ensure that we don't try to submit strings to
     // them.
     foreach ($this->submission['fields'] as $a => $b) {
@@ -279,7 +277,12 @@ abstract class ORM extends ORM_Core {
    */
   public function inner_submit(){
     $mn = $this->object_name;
-    $collapseVals = create_function('$arr', 'return $arr["value"];');
+    $collapseVals = create_function('$arr', 
+        'if (is_array($arr)) { 
+           return $arr["value"];
+         } else {
+           return $arr;
+         }');
     $return = $this->populateFkLookups();
     $return = $this->createParentRecords() && $return;
     $this->preSubmit();
@@ -289,7 +292,6 @@ abstract class ORM extends ORM_Core {
     $vArray = array_map($collapseVals, $this->submission['fields']);
     Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
     Kohana::log("debug", kohana::debug($vArray));
-
     // If we're editing an existing record.
     if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
       $this->find($vArray['id']);
@@ -320,7 +322,7 @@ abstract class ORM extends ORM_Core {
           $return = null;
         }
     }
-    kohana::log('debug', 'done inner submit');
+    kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
     return $return;
   }
 
@@ -380,8 +382,6 @@ abstract class ORM extends ORM_Core {
           }
           return false;
         }
-        // We need to try attaching the model to get details back
-        $this->add($m);
       }
     }
     return true;
@@ -569,8 +569,8 @@ abstract class ORM extends ORM_Core {
    * @return The children in this model or an empty string.
    */
   public function getChildren() {
-    if (isset($this->children)) {
-      return $this->children;
+    if (isset($this->ORM_Tree_children)) {
+      return $this->ORM_Tree_children;
     } else {
       return '';
     }
@@ -583,6 +583,76 @@ abstract class ORM extends ORM_Core {
     $this->linkedModels=array();
     parent::clear();
   }
+
+  /**
+   * Set the submission data for the model.
+   *
+   * @param array $array Associative array of data to submit.
+   * @param boolean $fklink
+   */
+  public function set_submission_data($array, $fklink=false) {
+    $this->submission = $this->wrap($array, $fklink);
+  }
+
+  /**
+  * Wraps a standard $_POST type array into a save array suitable for use in saving
+  * records.
+  *
+  * @param array $array Array to wrap
+  * @param bool $fkLink=false Link foreign keys?
+  *
+  * @return array Wrapped array
+  */
+  public function wrap($array, $fkLink = false)
+  {
+    // Initialise the wrapped array
+    $sa = array
+    (
+      'id' => $this->object_name,
+      'fields' => array(),
+      'fkFields' => array(),
+      'superModels' => array(),
+      'subModels' => array()
+    );
+
+    // Iterate through the array
+    foreach ($array as $a => $b)
+    {
+      $b = trim($b);
+      // Check whether this is a fk placeholder
+      if (substr($a,0,3) == 'fk_' && $fkLink)
+      {
+        $fieldName = substr($a,3);
+        if (array_key_exists($fieldName, $this->belongs_to)) {
+          $fkTable = $this->belongs_to[$fieldName];
+        } elseif ($this instanceof ORM_Tree && $fieldName == 'parent') {
+          $fkTable = inflector::singular($this->getChildren());
+        } else {
+           $fkTable = $fieldName;
+        }
+        // Generate a foreign key instance
+        $sa['fkFields'][$a] = array
+        (
+          // Foreign key id field is table_id
+          'fkIdField' => substr($a,3)."_id",
+          'fkTable' => $fkTable,
+          'fkSearchField' => ORM::factory($fkTable)->get_search_field(),
+          'fkSearchValue' => $b
+        );
+      }
+      else
+      {
+        // This should be a field in the model.
+        // Add a new field to the save array
+        $sa['fields'][$a] = array(
+          // Set the value
+          'value' => $b
+        );
+      }
+    }
+    return $sa;
+  }
+
 
 }
 

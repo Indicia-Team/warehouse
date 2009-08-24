@@ -148,72 +148,10 @@ class Indicia_Controller extends Template_Controller {
   }
 
   /**
-  * Wraps a standard $_POST type array into a save array suitable for use in saving
-  * records.
-  *
-  * @param array $array Array to wrap
-  * @param bool $fkLink=false Link foreign keys?
-  *
-  * @return array Wrapped array
-  */
-  protected function wrap( $array, $fkLink = false, $id = null)
-  {
-    if ($id == null) $id = $this->model->object_name;
-    // Initialise the wrapped array
-    $sa = array
-    (
-      'id' => $id,
-      'fields' => array(),
-      'fkFields' => array(),
-      'superModels' => array(),
-      'subModels' => array()
-    );
-
-    // Iterate through the array
-    foreach ($array as $a => $b)
-    {
-      $b = trim($b);
-      // Check whether this is a fk placeholder
-      if (substr($a,0,3) == 'fk_' && $fkLink)
-      {
-        $m = ORM::factory($id);
-        $fieldName = substr($a,3);
-        if (array_key_exists($fieldName, $m->belongs_to)) {
-          $fkTable = $m->belongs_to[$fieldName];
-        } elseif ($m instanceof ORM_Tree && $fieldName == 'parent') {
-          $fkTable = inflector::singular($model->getChildren());
-        } else {
-           $fkTable = $fieldName;
-        }
-        // Generate a foreign key instance
-        $sa['fkFields'][$a] = array
-        (
-          // Foreign key id field is table_id
-          'fkIdField' => substr($a,3)."_id",
-          'fkTable' => $fkTable,
-          'fkSearchField' => ORM::factory($fkTable)->get_search_field(),
-          'fkSearchValue' => $b
-        );
-      }
-      else
-      {
-        // This should be a field in the model.
-        // Add a new field to the save array
-        $sa['fields'][$a] = array(
-          // Set the value
-          'value' => $b
-        );
-      }
-    }
-    return $sa;
-  }
-
-  /**
   * Sets the model submission, saves the submission array.
   */
-  protected function submit($submission, $deletion=false)
+  protected function submit($deletion=false)
   {
-    $this->model->submission = $submission;
     if (($id = $this->model->submit()) != null)
     {
       // Record has saved correctly
@@ -276,7 +214,8 @@ class Indicia_Controller extends Template_Controller {
     }
 
     // Wrap the post object and then submit it
-    $this->submit($this->wrap($_POST), $_POST['submit'] == 'Delete');
+    $this->model->set_submission_data($_POST);
+    $this->submit($_POST['submit'] == 'Delete');
 
   }
 

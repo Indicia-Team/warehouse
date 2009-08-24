@@ -217,7 +217,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         }
         // Save the record
         $this->model->clear();
-        $this->model->submission = $this->wrap($saveArray, true);
+        $this->model->set_submission_data($saveArray, true);
         if (($id = $this->model->submit()) == null) {
           // Record has errors - now embedded in model
           array_push($data, implode('<br/>', $this->model->getAllErrors()));

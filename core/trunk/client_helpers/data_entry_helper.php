@@ -46,7 +46,50 @@ $templates = array(
   'select_option_selected' => 'selected="selected"',
   'listbox' => '<select id="{id}" name="{fieldname}" class="{class}" size="{size}" multiple="{multiple}">{options}</select>',
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
-  'listbox_option_selected' => 'selected="selected"'
+  'listbox_option_selected' => 'selected="selected"',
+  'georeference_lookup' => "<input id=\"imp-georef-search\" name=\"{fieldname}\" \>\n".
+      "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"Search\" />\n".
+      "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden ui-state-highlight page-notice\" ><div id=\"imp-georef-output-div\" />\n".
+      "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">Close</a>\n".
+      "</div>",
+  'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
+         '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" />'."\n",
+  'autocomplete_javascript' => "jQuery('input#{escaped_input_id}).autocomplete('{url}/{table}',
+      {
+        minChars : 1,
+        mustMatch : true,
+        extraParams :
+        {
+          orderby : '{captionField}',
+          mode : 'json',
+          qfield : '{captionField}',
+          {sParams}
+        },
+        dataType: 'jsonp',
+        parse: function(data)
+        {
+          var results = [];
+          jQuery.each(data, function(i, item) {
+            results[results.length] =
+            {
+              'data' : item,
+              'result' : item.{valueField},
+              'value' : item.{valueField}
+            };
+          });
+          return results;
+        },
+      formatItem: function(item)
+      {
+        return item.{captionField};
+      },
+      formatResult: function(item) {
+        return item.{valueField};
+      }
+    });
+    jQuery('input#{escaped_input_id}').result(function(event, data) {
+      jQuery('input#{escaped_id}').attr('value', data.id);
+    });\r\n"
 );
 
 
@@ -149,7 +192,12 @@ class data_entry_helper extends helper_config {
     if (!array_key_exists('id', $options) && array_key_exists('fieldname', $options)) {
       $options['id']=$options['fieldname'];
     }
-    $options['default'] = self::check_default_value($options['fieldname'], $options['default']);
+    // If captionField is supplied but not captionField, use the captionField as the valueField
+    if (!array_key_exists('valueField', $options) && array_key_exists('captionField', $options)) {
+      $options['valueField']=$options['captionField'];
+    }
+    $options['default'] = self::check_default_value($options['fieldname'],
+        array_key_exists('default', $options) ? $options['fieldname'] : '');
     return $options;
   }
 
@@ -161,12 +209,15 @@ class data_entry_helper extends helper_config {
    * @access private
    * @param string $template Name of the control template, from the global $templates variable.
    * @param array $options Options array containing the control replacement values for the templates.
+   * @param boolean $just_control Set to true to limit the output to just the main control, without prefix,
+   * label or suffix.
    */
-  private static function apply_template($template, $options) {
+  private static function apply_template($template, $options, $just_control=false) {
     global $templates;
+    $options['extraParams']=null;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
-    foreach(array_keys($options) as $option) {
+    foreach (array_keys($options) as $option) {
       array_push($replaceTags, '{'.$option.'}');
     }
     $r = $templates['prefix'];
@@ -572,6 +623,21 @@ class data_entry_helper extends helper_config {
   }
 
   /**
+   * Issue a post request to get the population data required for a control. Depends on the
+   * options' table and extraParams values what is requested.
+   */
+  private static function get_population_data($options) {
+    $url = parent::$base_url."index.php/services/data";
+    // Execute a request to the service
+    $request = "$url/".$options['table']."?mode=json";
+    if (array_key_exists('extraParams', $options)) {
+      $request .= self::array_to_query_string($options['extraParams']);
+    }
+    $response = self::http_post($request, null);
+    return json_decode($response['output'], true);
+  }
+
+  /**
    * Internal function to output either a select or listbox control depending on the templates
    * passed.
    *
@@ -580,16 +646,7 @@ class data_entry_helper extends helper_config {
   private static function select_or_listbox($options, $outerTmpl, $itemTmpl, $selectTmpl) {
     global $templates;
     self::add_resource('json');
-    $url = parent::$base_url."index.php/services/data";
-    // If valueField is null, set it to $captionField
-    if ($options['valueField'] == null) $options['valueField'] = $options['captionField'];
-    // Execute a request to the service
-    $request = "$url/".$options['table']."?mode=json";
-    if (array_key_exists('extraParams', $options)) {
-      $request .= self::array_to_query_string($options['extraParams']);
-    }
-    $response = self::http_post($request, null);
-    $response = json_decode($response['output'], true);
+    $response = self::get_population_data($options);
 
     if (!array_key_exists('error', $response)) {
       $opts = "";
@@ -656,67 +713,37 @@ class data_entry_helper extends helper_config {
   * @see get_read_auth()
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
-  public static function autocomplete($id, $entity, $captionField, $valueField = null, $extraParams = null, $defaultCaption = '', $defaultValue = '') {
-    self::add_resource('autocomplete');
+  public static function autocomplete($id, $entity, $captionField, $valueField = null, $extraParams = null, $defaultCaption = '', $default = '') {
+    global $templates;
     global $javascript;
-    $url = parent::$base_url."/index.php/services/data";
-    // If valueField is null, set it to $captionField
-    if ($valueField == null) $valueField = $captionField;
+    $options = self::check_arguments(func_get_args(), array(
+        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default'
+    ));
+    self::add_resource('autocomplete');
+    $options['url'] = parent::$base_url."/index.php/services/data";
     // Escape the id for jQuery selectors
-    $escaped_id=str_replace(':','\\\\:',$id);
+    $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Do stuff with extraParams
     $sParams = '';
-    foreach ($extraParams as $a => $b){
+    foreach ($options['extraParams'] as $a => $b){
       $sParams .= "$a : '$b',";
     }
     // lop the comma off the end
-    $sParams = substr($sParams, 0, -1);
-    $defaultValue = self::check_default_value($id, $defaultValue);
-    $defaultCaption = self::check_default_value($captionField, $defaultCaption);
-    $inputId = "$id:$captionField";
+    $options['sParams'] = substr($sParams, 0, -1);
+    $options['defaultCaption'] = self::check_default_value($options['captionField'],
+        array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : '');
+    $options['inputId'] = $options['id'].':'.$options['captionField'];
     // Escape the ids for jQuery selectors
-    $escaped_id=str_replace(':','\\\\:',$id);
-    $escaped_input_id=str_replace(':','\\\\:',$inputId);
-    $javascript .= "jQuery('input#$escaped_input_id').autocomplete('$url/$entity',
-      {
-        minChars : 1,
-        mustMatch : true,
-        extraParams :
-        {
-          orderby : '$captionField',
-          mode : 'json',
-          qfield : '$captionField',
-          $sParams
-        },
-        dataType: 'jsonp',
-        parse: function(data)
-        {
-          var results = [];
-          jQuery.each(data, function(i, item)
-        {
-          results[results.length] =
-          {
-            'data' : item,
-            'result' : item.$captionField,
-            'value' : item.$valueField
-          };
-        });
-        return results;
-      },
-      formatItem: function(item)
-      {
-        return item.$captionField;
-      },
-      formatResult: function(item) {
-        return item.$valueField;
-      }
-    });
-    jQuery('input#$escaped_input_id').result(function(event, data) {
-      jQuery('input#$escaped_id').attr('value', data.id);
-    });\r\n";
-    $r = "<input type='hidden' class='hidden' id='$id' name='$id' value='$defaultValue' />".
-         "<input id='$inputId' name='$inputId' value='$defaultCaption' />";
-    $r .= self::check_errors($id);
+    $options['escaped_id']=str_replace(':','\\\\:',$options['id']);
+    $options['escaped_input_id']=str_replace(':','\\\\:',$options['inputId']);
+    $replaceTags=array();
+    foreach(array_keys($options) as $option) {
+      array_push($replaceTags, '{'.$option.'}');
+    }
+    $options['extraParams']=null;
+    $javascript .= str_replace($replaceTags, $options, $templates['autocomplete_javascript']);
+
+    $r = self::apply_template('autocomplete', $options);
     return $r;
   }
 
@@ -1046,13 +1073,18 @@ class data_entry_helper extends helper_config {
     return $r;
   }
 
+ /**
+  * Generates a text input control with a search button that looks up an entered place against a georeferencing
+  * web service. At this point in time only the Yahoo! GeoPlanet service is supported. The control is automatically
+  * linked to any map panel added to the page.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to if any.</li>
+   */
   public static function georeference_lookup() {
-    $r  = "<input id=\"imp-georef-search\" name=\"$fieldname\" \>\n";
-    $r .= "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"Search\" />\n";
-    $r .= "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden ui-state-highlight page-notice\" ><div id=\"imp-georef-output-div\" />\n";
-    $r .= "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">Close</a>\n";
-    $r .= "</div>";
-    return $r;
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    return self::apply_template('georeference_lookup', $options);
   }
 
  /**

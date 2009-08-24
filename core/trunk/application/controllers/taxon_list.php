@@ -99,7 +99,7 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     $this->setView('taxon_list/taxon_list_edit', 'Species List');
   }
 
-    protected function record_authorised ($id)
+  protected function record_authorised ($id)
   {
     if (!is_null($id) AND !is_null($this->auth_filter))
     {
@@ -107,6 +107,18 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       return (in_array($taxon_list->website_id, $this->auth_filter['values']));
     }
     return true;
+  }
+
+  /**
+   * After a submission, override the default return page behaviour so that if the
+   * list has a parent id, the edit page for that record is returned to.
+   */
+  protected function get_return_page() {
+    if ($this->model->parent_id != null) {
+      return "taxon_list/edit/".$this->model->parent_id."?tab=sublists";
+    } else {
+      return $this->model->object_name;
+    }
   }
 }
 ?>
