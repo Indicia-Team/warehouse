@@ -28,26 +28,23 @@ google.load("search", "1");
 * geomField - Optional, the id of the control which receives the geometry (WKT).
 * addressField - Optional, the id of the control which receives the address locality information.
 */
-function decodePostcode(postcodeField, srefField, systemField, addressField) {
-  if (document.getElementById(postcodeField).value!='') {
+function decodePostcode(addressField) {
+  if ($('#imp-postcode').val()!='') {
     usePointFromPostcode(
-        document.getElementById(postcodeField).value,
+        $('#imp-postcode').val(),
         function(place) {
-          if (addressField) {
+          if (addressField!=='') {
             document.getElementById(addressField).value="\n" + place.city + "\n" + place.region;
           }
-          if (srefField) {
-            document.getElementById(srefField).value=place.lat + ', ' + place.lng;
-          }
-          if (systemField) {
-            document.getElementById(systemField).value='4326'; // SRID for WGS84 lat long
-          }
+          $('#imp-sref').attr('value', place.lat + ', ' + place.lng);
+          $('#imp-sref-system').attr('value', '4326'); // SRID for WGS84 lat long
+          $('#imp-sref').change();
         }
     );
   } else {
     // Postcode was cleared, so remove the geom info
-    document.getElementById(srefField).value='';
-    document.getElementById(systemField).value='';
+    $('#imp-sref').attr('value', '');
+    $('#imp-sref-system').attr('value', '');
   }
 };
 

@@ -35,7 +35,8 @@ global $templates;
 $templates = array(
   'prefix' => '',
   'label' => '<label for="{fieldname}">{label}:</label>'."\n",
-  'suffix' => '<br/>',
+  'suffix' => "<br/>\n",
+  'nosuffix' => " \n",
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif"/>'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}">{default}</textarea>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}">'."\n",
@@ -48,13 +49,13 @@ $templates = array(
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
   'georeference_lookup' => "<input id=\"imp-georef-search\" name=\"{fieldname}\" \>\n".
-      "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"Search\" />\n".
+      "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden ui-state-highlight page-notice\" ><div id=\"imp-georef-output-div\" />\n".
-      "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">Close</a>\n".
+      "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">".lang::get('close')."</a>\n".
       "</div>",
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
          '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" />'."\n",
-  'autocomplete_javascript' => "jQuery('input#{escaped_input_id}).autocomplete('{url}/{table}',
+  'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
       {
         minChars : 1,
         mustMatch : true,
@@ -89,7 +90,11 @@ $templates = array(
     });
     jQuery('input#{escaped_input_id}').result(function(event, data) {
       jQuery('input#{escaped_id}').attr('value', data.id);
-    });\r\n"
+    });\r\n",
+  'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}" class="{class}" value="{default}" '.
+        'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
+  'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" />' .
+        '<input type="hidden" id="imp-geom" name="{table}:geom" />'
 );
 
 
@@ -165,24 +170,31 @@ class data_entry_helper extends helper_config {
    * Internal method to handle the deprecated use of a list of arguments, for backwards compatibility.
    * Converts the list of arguments to an options array unless the first argument is already
    * an options array. The arguments are mapped to the array in the order specified by the mapping.
-   * Also checks that an Id is supplied, if not, uses the fieldname as the id.
    */
   private static function check_arguments(array $args, array $mapping=null) {
-    if (count($args)==0)
-      throw new Exception('No arguments supplied to method.');
-    if (is_array($args[0])) {
-      // First argument is an options array
-      $options = $args[0];
-    } elseif ($mapping) {
-      // arguments are passed individuall using deprecated method - so for backward compatibility we'll
-      // map them to an options array
-      $options=array();
-      $i=0;
-      foreach ($args as $arg) {
-        $options[$mapping[$i]]=$arg;
-        $i++;
+    if (count($args)>0) {
+      if (is_array($args[0])) {
+        // First argument is an options array
+        $options = $args[0];
+      } elseif ($mapping) {
+        // arguments are passed individuall using deprecated method - so for backward compatibility we'll
+        // map them to an options array
+        $options=array();
+        $i=0;
+        foreach ($args as $arg) {
+          $options[$mapping[$i]]=$arg;
+          $i++;
+        }
       }
     }
+    return self::check_options($options);
+  }
+
+  /**
+   * Checks that an Id is supplied, if not, uses the fieldname as the id. Also checks if a
+   * captionField is supplied, and if not uses a valueField if available.
+   */
+  private static function check_options($options) {
     // force some defaults to be present in the options
     $options = array_merge(array(
         'class'=>'',
@@ -196,8 +208,9 @@ class data_entry_helper extends helper_config {
     if (!array_key_exists('valueField', $options) && array_key_exists('captionField', $options)) {
       $options['valueField']=$options['captionField'];
     }
+    // Get a default value - either the supplied value in the options, or the loaded value, or nothing.
     $options['default'] = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['fieldname'] : '');
+        array_key_exists('default', $options) ? $options['default'] : '');
     return $options;
   }
 
@@ -209,18 +222,22 @@ class data_entry_helper extends helper_config {
    * @access private
    * @param string $template Name of the control template, from the global $templates variable.
    * @param array $options Options array containing the control replacement values for the templates.
-   * @param boolean $just_control Set to true to limit the output to just the main control, without prefix,
-   * label or suffix.
+   * Options can contain a setting for prefixTemplate or suffixTemplate to override the standard templates.
    */
-  private static function apply_template($template, $options, $just_control=false) {
+  private static function apply_template($template, $options) {
     global $templates;
+    // Don't need the extraParams - they are just for service communication.
     $options['extraParams']=null;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
     foreach (array_keys($options) as $option) {
       array_push($replaceTags, '{'.$option.'}');
     }
-    $r = $templates['prefix'];
+    if (array_key_exists('prefixTemplate', $options)) {
+      $r .= $templates[$options['prefixTemplate']];
+    } else {
+      $r .= $templates['prefix'];
+    }
     // Add a label only if specified in the options array.
     if (array_key_exists('label', $options)) {
       $r .= str_replace(
@@ -233,7 +250,11 @@ class data_entry_helper extends helper_config {
     $r .= str_replace($replaceTags, $options, $templates[$template]);
     // output any errors identified for the control
     $r .= self::check_errors($options['fieldname']);
-    $r .= $templates['suffix'];
+    if (array_key_exists('suffixTemplate', $options)) {
+      $r .= $templates[$options['suffixTemplate']];
+    } else {
+      $r .= $templates['suffix'];
+    }
     return $r;
   }
 
@@ -428,11 +449,11 @@ class data_entry_helper extends helper_config {
         jQuery('#addRowButton').click(addRowFn);\r\n";
 
         // Drop an autocomplete box against the parent termlist
-        $grid .= '<label for="addSpeciesBox">Enter additional species:</label>';
+        $grid .= '<label for="addSpeciesBox">'.lang::get('enter additional species').':</label>';
         $grid .= data_entry_helper::autocomplete('addSpeciesBox',
             'taxa_taxon_list', 'taxon', 'id', $readAuth +
             array('taxon_list_id' => $lookupList));
-        $grid .= "<button type='button' id='addRowButton'>Add Row</button>";
+        $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
       }
       return $grid;
     } else {
@@ -594,7 +615,6 @@ class data_entry_helper extends helper_config {
   * record with existing data for this control.</li>
   * <li><strong>class</strong><br/>
   * Optional. CSS class names to add to the control.</li>
-  * </ul>
   * <li><strong>table</strong><br/>
   * Required. Table name to get data from for the select options.</li>
   * <li><strong>captionField</strong><br/>
@@ -647,7 +667,6 @@ class data_entry_helper extends helper_config {
     global $templates;
     self::add_resource('json');
     $response = self::get_population_data($options);
-
     if (!array_key_exists('error', $response)) {
       $opts = "";
       foreach ($response as $item){
@@ -747,48 +766,71 @@ class data_entry_helper extends helper_config {
     return $r;
   }
 
-  /**
-   * Helper function to output a textbox for determining a locality from an entered postcode.
-   *
-   * <p>The textbox optionally includes hidden fields for the latitude and longitude and can
-   * link to an address control for automatic generation of address information. When the focus
-   * leaves the textbox, the Google AJAX Search API is used to obtain the latitude and longitude
-   * so they can be saved with the record.</p>
-   *
-   * <p>The following example displays a postcode box and an address box, which is auto-populated
-   * when a postcode is given. The spatial reference controls are "hidden" from the user but
-   * are available to post into the database.</p>
-   * <code>
-   * <label for="date">Postcode:</label>
-   * <?php echo data_entry_helper::postcode_textbox("postcode", "entered_sref", "entered_sref_system", "address"); ?>
-   * <br />
-   * <label for="date">Address:</label>
-   * <textarea id="address"></textarea>
-   * <br />
-   * </code>
-   *
-   * @param string $id Id and name of the postcode textbox this generates.
-   * @param string $sref_field Name of the field that the spatial reference is saved into. Defaults to entered_sref.
-   * @param string $system_field Name of the field that the spatial reference system is saved into. Defaults to entered_sref_system.
-   * @param string $geom_field Name of the field that the spatial reference geometry is saved into. Defaults to geom.
-   * @param string $linkedAddressBoxId Optional. ID of the control used to capture the other address lines. If specified,
-   * then when a postcode is captured, the address control is auto-populated with the town/city and region of the address.
-   * @param boolean $hiddenFields Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
-   * should be inputs with id set to $sref_field, $system_field and $geom_field already in existance. Defaults to true.
-   */
-  public static function postcode_textbox($id, $sref_field="entered_sref", $system_field="entered_sref_system",
-      $linkedAddressBoxId=null, $hiddenFields=true) {
+ /**
+  * Helper function to output a textbox for determining a locality from an entered postcode.
+  *
+  * <p>The textbox optionally includes hidden fields for the latitude and longitude and can
+  * link to an address control for automatic generation of address information. When the focus
+  * leaves the textbox, the Google AJAX Search API is used to obtain the latitude and longitude
+  * so they can be saved with the record.</p>
+  *
+  * <p>The following example displays a postcode box and an address box, which is auto-populated
+  * when a postcode is given. The spatial reference controls are "hidden" from the user but
+  * are available to post into the database.</p>
+  * <code>
+  * <?php echo data_entry_helper::postcode_textbox(array(
+  * 		'label'=>'Postcode',
+  * 		'fieldname'=>'smpAttr:8',
+  * 		'linkedAddressBoxId'=>'address'
+  * ); ?>
+  * <br />
+  * <label for="address">Address:</label>
+  * <textarea name="address" id="address"></textarea>
+  * <br />
+  * </code>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. This should be left to its default value for
+  * integration with other mapping controls to work correctly.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><strong>hiddenFields</strong><br/>
+  * Optional. Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
+  * should be separate sref_textbox and sref_system_textbox controls elsewhere on the page. Defaults to true.
+  * <li><strong>srefField</strong><br/>
+  * Optional. Name of the spatial reference hidden field that will be output by this control if hidddenFields is true.</li>
+  * <li><strong>systemField</strong><br/>
+  * Optional. Name of the spatial reference system hidden field that will be output by this control if hidddenFields is true.</li>
+  * <li><strong>linkedAddressBoxId</strong><br/>
+  * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
+  */
+  public static function postcode_textbox($options) {
+    $options = self::check_options($options);
+    // Merge in the defaults
+    $options = array_merge(array(
+        'srefField'=>'sample:entered_sref',
+        'systemfield'=>'sample:entered_sref_system',
+        'hiddenFields'=>true,
+        'id'=>'imp-postcode',
+        'linkedAddressBoxId'=>''
+        ), $options);
     self::add_resource('google_search');
-    $defaultValue=self::check_default_value($id);
-    $r = "<input type='text' name='$id' id='$id' value='$defaultValue' " .
-        "onblur='javascript:decodePostcode(\"$id\", \"$sref_field\", \"$system_field\", \"$linkedAddressBoxId\")' />";
-    if ($hiddenFields) {
-      $defaultSref=self::check_default_value($sref_field);
-      $defaultSystem=self::check_default_value($system_field, '4326');
-      $r .= "<input type='hidden' name='$sref_field' id='$sref_field' value='$defaultSref' />";
-      $r .= "<input type='hidden' name='$system_field' id='$system_field' value='$defaultSystem' />";
+    $options['default'] = self::check_default_value($options['fieldname'],
+        array_key_exists('default', $options) ? $options['default'] : '');
+    $r = self::apply_template('postcode_textbox', $options);
+    if ($options['hiddenFields']) {
+      $defaultSref=self::check_default_value($options['srefField']);
+      $defaultSystem=self::check_default_value($options['systemField'], '4326');
+      $r .= "<input type='hidden' name='".$options['srefField']."' id='imp-sref' value='$defaultSref' />";
+      $r .= "<input type='hidden' name='".$options['systemField']."' id='imp-sref-system' value='$defaultSystem' />";
     }
-    $r .= self::check_errors($id);
+    $r .= self::check_errors($options['fieldname']);
     return $r;
   }
 
@@ -829,7 +871,7 @@ class data_entry_helper extends helper_config {
       $r .= "</ul>";
     }
     else
-      echo "Error loading control";
+      echo lang::get("error loading control");
 
     return $r;
   }
@@ -837,73 +879,92 @@ class data_entry_helper extends helper_config {
   /**
   * Helper function to generate a radio group from a Indicia core service query.
   *
-  * @param string $id Name of the field that will be populated by this control.
-  * @param string $entity Name of the data entity that is being used to generate the list, e.g. termlists_term.
-  * @param string $captionField Name of the field used to generate the caption for each radio item.
-  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $captionField.
-  * @param array $extraParams Associative array of extra parameters appended to the web service request for the list of items. For example,
-  * specifying $readAuth + array('termlist_id' => 1) would filter the terms generated to termlist 1.
-  * @param string $sep Separator inserted betweeen each radio item, if required. For example,
-  * '<br/>' causes radio buttons to appear on separate lines.
-  * @param string $default Value of the radio button that should be selected when loaded. This can be used to specify a default, or to re-load
-  * a value from an existing record.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><strong>table</strong><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><strong>captionField</strong><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><strong>valueField</strong><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><strong>extraParams</strong><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * </ul>
   */
-  public static function radio_group($id, $entity, $captionField, $valueField = null, $extraParams = null, $sep='', $default = '') {
-    return self::check_or_radio_group(false, $id, $entity, $captionField, $valueField, $extraParams, $sep, $default);
+  public static function radio_group() {
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
+    return self::check_or_radio_group($options, 'radio');
   }
 
  /**
   * Helper function to generate a list of checkboxes from a Indicia core service query.
   *
-  * @param string $id Name of the field that will be populated by this control.
-  * @param string $entity Name of the data entity that is being used to generate the list, e.g. termlists_term.
-  * @param string $captionField Name of the field used to generate the caption for each radio item.
-  * @param string $valueField Name of the field used to generate the stored value for each radio item. Defaults to same as $captionField.
-  * @param array $extraParams Associative array of extra parameters appended to the web service request for the list of items. For example,
-  * specifying $readAuth + array('termlist_id' => 1) would filter the terms generated to termlist 1.
-  * @param string $sep Separator inserted betweeen each radio item, if required. For example,
-  * '<br/>' causes radio buttons to appear on separate lines.
-  * @param string $default Value of the radio button that should be selected when loaded. This can be used to specify a default, or to re-load
-  * a value from an existing record.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>fieldname</strong><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><strong>id</strong><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><strong>default</strong><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><strong>table</strong><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><strong>captionField</strong><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><strong>valueField</strong><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><strong>extraParams</strong><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * </ul>
   */
-  public static function checkbox_group($id, $entity, $captionField, $valueField = null, $extraParams = null, $sep='', $default = '') {
-    return self::check_or_radio_group(true, $id, $entity, $captionField, $valueField, $extraParams, $sep, $default);
+  public static function checkbox_group() {
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
+    return self::check_or_radio_group($options, 'checkbox');
   }
 
-  private static function check_or_radio_group($checkbox, $id, $entity, $captionField, $valueField, $extraParams, $sep, $default) {
+  /**
+   * Internal method to output either a checkbox group or a radio group.
+   */
+  private static function check_or_radio_group($options, $type) {
+    $options = array_merge(array('sep' => ''), $options);
     $url = parent::$base_url."/index.php/services/data";
-    // If valueField is null, set it to $captionField
-    if ($valueField == null) $valueField = $captionField;
     // Execute a request to the service
-    $request = "$url/$entity?mode=json";
-    $request .= self::array_to_query_string($extraParams);
-    // Get the curl session object
-    $session = curl_init($request);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $response = json_decode(curl_exec($session), true);
+    $response = self::get_population_data($options);
     $r = "";
-    if ($checkbox)
-      $type="checkbox";
-    else
-      $type="radio";
-    $defaultValue=self::check_default_value($id, $default);
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
-        if (array_key_exists($captionField, $item) && array_key_exists($valueField, $item)) {
-          $name = htmlspecialchars($item[$captionField], ENT_QUOTES);
-          $checked = ($default == $item[$valueField]) ? 'checked="checked" ' : '' ;
+        if (array_key_exists($options['captionField'], $item) && array_key_exists($options['valueField'], $item)) {
+
+          $name = htmlspecialchars($item[$options['captionField']], ENT_QUOTES);
+          $checked = ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '';
+
           $r .= "<span><input type='$type' id='$id' name='$id' value='$item[$valueField]' $checked/>";
           $r .= "$name</span>$sep";
         }
       }
     }
-    $r .= self::check_errors($id);
+    $r .= self::check_errors($options['fieldname']);
     return $r;
   }
 
   /**
   * Generates a map control, with optional data entry fields and location finder powered by the
-  * Yahoo! geoservices API.
+  * Yahoo! geoservices API. This is just a shortcut to building a control using a map_panel and the
+  * associated controls.
   *
   * @param string $div Id of a div to add the map into
   * @param array $layers Array of preset layers to include
@@ -911,54 +972,31 @@ class data_entry_helper extends helper_config {
   * @param bool $locate Include location finder
   * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
   */
-  public static function map($div, $layers = array(
-      'google_physical', 'google_satellite', 'google_hybrid', 'google_streets', 'virtual_earth'
-    ), $edit = false, $locate = false, $wkt = null, $defaultJs = true)
-  {
-    global $javascript;
-    self::add_resource('indiciaMap');
-    if ($edit) self::add_resource('indiciaMapEdit');
-    if ($locate) self::add_resource('locationFinder');
-
-    foreach ($layers as $layer)
-    {
-      $a = explode('_', $layer);
-      $a = strtolower($a[0]);
-      switch($a)
-      {
-        case 'google':
-          self::add_resource('googlemaps');
-          break;
-        case 'multimap':
-          self::add_resource('multimap');
-          break;
-        case 'virtual':
-          self::add_resource('virtualearth');
-          break;
-      }
+  public static function map() {
+    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
+    $options = array_merge(array(
+        'div'=>'map',
+        'presetLayers'=>array('multimap_landranger','google_physical','google_satellite'),
+        'edit'=>true,
+        'locate'=>true,
+        'wkt'=>null
+    ));
+    $r = '';
+    if ($options['edit']) {
+      $r .= self::sref_and_system(array(
+          'label'=>lang::get('spatial ref'),
+      ));
     }
-
-    if ($defaultJs)
-    {
-      $jsLayers = "[ '".implode('\', \'', $layers)."' ]";
-      $javascript .= "jQuery('#$div').indiciaMap({ presetLayers : $jsLayers })";
-      if ($edit)
-      {
-        $foo = ($wkt != null) ? "{ wkt : $wkt }" : '';
-        $javascript .= ".indiciaMapEdit($foo)";
-        if ($locate)
-        {
-          $api = parent::$geoplanet_api_key;
-          $indicia = parent::$base_url;
-          $javascript .= ".locationFinder( { indiciaSvc: '$indicia', apiKey : '$api' } )";
-        }
-      }
-      $javascript .= ";";
+    if ($options['locate']) {
+      $r .= self::georeference_lookup(array(
+          'label'=>lang::get('search for place on map')
+      ));
     }
-    $r = "<div id='$div'></div>";
-    $r .= self::check_errors('sample:entered_sref');
-    echo $r;
+    $r .= self::map_panel(array('initialFeatureWkt', $options['wkt']));
+    return $r;
   }
+
+
 
   /**
    * Outputs a map panel.
@@ -971,16 +1009,25 @@ class data_entry_helper extends helper_config {
    * </ul>{@link georeference_lookup()}</ul>
    * </ul>{@link  location_select()}</ul>
    * </ul>{@link location_autocomplete()}</li>
+   * </ul>{@link postcode_textbox()}</li>
    * </ul>
    *
-   * @param string $id ID of the div that gets created to contain the map.
    * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
+   * The div's id can be specified using the divId array entry.
    */
-  public static function map_panel($id='map', $options=array(
-      'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
-  )) {
+  public static function map_panel($options) {
     global $javascript;
     self::add_resource('indiciaMapPanel');
+    $options = array_merge(array(
+    'divId'=>'map',
+    'geoPlanetApiKey'=>parent::$geoplanet_api_key,
+    'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+  ), $options);
+
+    if (array_key_exists('readAuth', $options)) {
+      // Convert the readAuth into a query string so it can pass straight to the JS class.
+      $options['readAuth']=self::array_to_query_string($options['readAuth']);
+    }
 
     // Autogenerate the links to the various mapping libraries as required
     if (array_key_exists('presetLayers', $options)) {
@@ -1002,14 +1049,22 @@ class data_entry_helper extends helper_config {
         }
       }
     }
-    if (!array_key_exists('geoPlanetApiKey', $options)) {
-      $options['geoPlanetApiKey'] = parent::$geoplanet_api_key;
+    // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
+    // and controls, not the string class names.
+    $json_insert='';
+    if (array_key_exists('controls', $options)) {
+      $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
+      unset($options['controls']);
     }
+    if (array_key_exists('layers', $options)) {
+      $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
+      unset($options['layers']);
+    }
+    $json=substr(json_encode($options), 0, -1).$json_insert.'}';
+    $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);";
 
-    $javascript .= "jQuery('#$id').indiciaMapPanel(".json_encode($options).");";
-
-    $r = "<div id='$id'></div>";
-    echo $r;
+    $r = "<div id='".$options['divId']."'></div>";
+    return $r;
   }
 
   /**
@@ -1020,10 +1075,19 @@ class data_entry_helper extends helper_config {
    * @param string $fieldname Name of the database field that data will be posted to. Defaults to
    * sample:entered_sref.
    */
-  public static function sref_textbox($fieldname="sample:entered_sref") {
-    $field_tokens = explode(':', $fieldname);
-    $r = '<input type="text" id="imp-sref" name="'.$fieldname.'" />';
-    $r .= '<input type="hidden" id="imp-geom" name="'.$field_tokens[0].':geom" />';
+  public static function sref_textbox($options) {
+    // get the table and fieldname
+    $tokens=explode(':', $options['fieldname']);
+    // Merge the default parameters
+    $options = array_merge(array(
+        'srefField'=>'sample:entered_sref',
+        'systemfield'=>'sample:entered_sref_system',
+        'hiddenFields'=>true,
+        'id'=>'imp-sref',
+        'table'=>$tokens[0]
+    ), $options);
+    $options = self::check_options($options);
+    $r = self::apply_template('sref_textbox', $options);
     return $r;
   }
 
@@ -1037,14 +1101,25 @@ class data_entry_helper extends helper_config {
    * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
    * the description to display.
    */
-  public static function sref_system_select($fieldname="sample:entered_sref_system",
-        $systems=array('OSGB'=>'British National Grid', '4326'=>'Lat/Long (WGS84)')) {
-    $r = "<select id=\"imp-sref-system\" name=\"$fieldname\" >\n";
-    foreach ($systems as $system=>$caption) {
-      $r .= "<option value=\"$system\">$caption</option>\n";
+  public static function sref_system_select($options) {
+    global $templates;
+    $options = array_merge(array(
+        'fieldname'=>'sample:entered_sref_system',
+        'systems'=>array('OSGB'=>lang::get('british national grid'), '4326'=>lang::get('lat long 4326')),
+        'id'=>'imp-sref-system'
+    ), $options);
+    $options = self::check_options($options);
+    $opts = "";
+    foreach ($options['systems'] as $system=>$caption){
+      $selected = ($options['default'] == $system ? $templates['select_option_selected'] : '');
+      $opts .= str_replace(
+          array('{value}', '{caption}', '{selected}'),
+          array($system, $caption, $selected),
+          $templates['select_option']
+      );
     }
-    $r .= "</select>\n";
-    return $r;
+    $options['options'] = $opts;
+    return self::apply_template('select', $options);
   }
 
   /**
@@ -1058,17 +1133,27 @@ class data_entry_helper extends helper_config {
    * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
    * the description to display.
    */
-  public static function sref_and_system($fieldname="sample:entered_sref",
-        $systems=array('OSGB'=>'British National Grid', '4326'=>'Lat/Long (WGS84)')) {
-    $r = self::sref_textbox($fieldname, $systems);
-    if (count($systems) == 1) {
-      // Hidden field for the system
-      $keys = array_keys($systems);
-      $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$fieldname."_system\" value=\"".$keys[0]."\" />\n";
+  public static function sref_and_system($options) {
+    $options = array_merge(array(
+      'fieldname'=>'sample:entered_sref'
+    ), $options);
+    // Force no separate lines for the 2 controls
+    if (!array_key_exists('systems',$options) || count($options['systems'])!=1) {
+      $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
+    } else {
+      $srefOptions = $options;
     }
-    else
-    {
-      $r .= self::sref_system_select($fieldname.'_system', $systems);
+    $r = self::sref_textbox($srefOptions);
+    // tweak the options passed to the system selector
+    $options['fieldname']=$options['fieldname']."_system";
+    unset($options['label']);
+    if (count($options['systems']) == 1) {
+      // Hidden field for the system
+      $keys = array_keys($options['systems']);
+      $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
+    }
+    else {
+      $r .= self::sref_system_select($options);
     }
     return $r;
   }
@@ -1120,7 +1205,6 @@ class data_entry_helper extends helper_config {
         'id'=>'imp-location'
         ), $options);
     echo self::select($options);
-
   }
 
   public static function location_autocomplete() {

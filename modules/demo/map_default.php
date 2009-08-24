@@ -8,21 +8,16 @@
 </head>
 <body>
 <div id="wrap">
-<h1>Data Entry Helper Map</h1>
+<h1>Default Map</h1>
 <?php
 include '../../client_helpers/data_entry_helper.php';
 require 'data_entry_config.php';
-$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
-?>
-<label for="imp-sref">Spatial ref:</label>
-<?php
-echo data_entry_helper::sref_and_system();
-?><br/>
-<label for="imp-location_select">Select a known place:</label>
-<?php echo data_entry_helper::location_select(array('extraParams'=>$readAuth)); ?>
-<label for="imp-georef-lookup">Search for place:</label>
-<?php echo data_entry_helper::georeference_lookup();
-echo data_entry_helper::map_panel();
+
+/*
+ * This is the single line of code that is required to output a default map with a spatial reference entry
+ * control and place search box.
+ */
+echo data_entry_helper::map();
 
 echo data_entry_helper::dump_javascript();
 ?>
