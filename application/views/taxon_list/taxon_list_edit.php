@@ -27,7 +27,6 @@
     var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
     if (initTab!='') {
       $tabs.tabs('select', '#' + initTab);
-
     }
   });
 </script>
@@ -43,7 +42,7 @@
   <ul>
     <li><a href="#details"><span>List Details</span></a></li>
 <?php if ($model->id != null) : ?>
-    <li><a href="<?php echo url::site().'taxa_taxon_list/'.$model->id; ?>"><span>Taxa</span></a></li>
+    <li><a href="<?php echo url::site().'taxa_taxon_list/'.$model->id; ?>" title="taxa"><span>Taxa</span></a></li>
     <li><a href="#sublists"><span>Child Lists</span></a></li>
 <?php endif; ?>
   </ul>
@@ -93,6 +92,7 @@
 <input type="submit" name="submit" value="Delete" />
 </form>
 </div>
+<div id="taxa"></div>
 <?php if ($model->id != '' && $table != null) : ?>
   <div id="sublists">
   <h2> Sublists </h2>

@@ -973,7 +973,7 @@ class ORM_Core {
 
     // Add the new relation to the update
     $this->changed_relations[$column][] = $model->primary_key_value;
-
+try {throw new exception;} catch (Exception $e) { error::log_error('trace',$e); }
     if (isset($this->related[$column]))
     {
       // Force a reload of the relationships

@@ -68,6 +68,7 @@ if (array_key_exists('image_path', $model) && $model->image_path != null)
   echo html::image(array('src' => 'upload/'.$model->image_path, 'width' => 100));
   echo html::error_message($model->getError('image_path'));
 }
+echo html::error_message($model->getError('deleted'));
 ?>
 <form class="cmxform"  name='editList' action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="POST" enctype="multipart/form-data">
 <?php echo $metadata ?>
@@ -100,12 +101,14 @@ if (array_key_exists('image_path', $model) && $model->image_path != null)
 <?php echo html::error_message($model->getError('language_id')); ?>
 </li>
 <li>
-<label for="commonNames">Common Names<br/> (one per line)</label>
+<label for="commonNames">Common Names
+<span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter common names one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Lobworm | eng'.">?</span></label>
 <textarea rows="3" id="commonNames" name="commonNames"><?php echo html::specialchars($commonNames); ?></textarea>
 </li>
 <li>
-<label for="synonomy">Synonyms<br/> (one per line)</label>
-<textarea rows="3" id="synonomy" name="synonomy"><?php echo html::specialchars($synonomy); ?></textarea>
+<label for="synonyms" >Synonyms 
+<span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter synonyms one per line. Optionally follow each name by a | character then the taxon's authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.">?</span></label>
+<textarea rows="3" id="synonyms" name="synonyms"><?php echo html::specialchars($synonyms); ?></textarea>
 </li>
 <li>
 <?php
@@ -170,7 +173,6 @@ echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
 </fieldset>
 <input type="submit" name="submit" value="Submit" />
 <input type="submit" name="submit" value="Delete" />
-<?php echo html::error_message($model->getError('deleted')); ?>
 </form>
 
 <?php if ($model->id != '' && $table != null) { ?>

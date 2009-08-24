@@ -31,7 +31,7 @@
  */
 class Base_Name_Model extends ORM_Tree {
 
-  protected function parse_related_names($value, $parser) {
+  protected function parseRelatedNames($value, $parser) {
     $arrLine = explode("\n", trim($value));
     $arrNames = array();
 
@@ -39,9 +39,10 @@ class Base_Name_Model extends ORM_Tree {
     {
       if (trim($line) == '')
         break;
-      $b = preg_split("/(?<!\\\\ ),/",$line);
-      call_user_func(array($this, $parser), $b, $arrNames);
+      $b = preg_split("/(?<!\\\\ )\|/",$line);
+      call_user_func_array(array($this, $parser), array($b, &$arrNames));
     }
+    return $arrNames;
   }
 
   /**

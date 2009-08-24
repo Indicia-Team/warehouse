@@ -81,6 +81,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    * taxon to also be imported.
    */
   public function getSubmittableFields() {
+    $result = true;
     $arr = parent::getSubmittableFields();
     return array_merge(array(
       'taxon' => '',
@@ -97,88 +98,97 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     ));
   }
 
-    /**
-  * Overrides the postSubmit function to add in synonomies and common names
+  /**
+  * Overrides the postSubmit function to add in synonomies and common names. This only applies
+  * when adding a preferred name, not a synonym or common name.
   */
-  protected function postSubmit($id)
+  protected function postSubmit()
   {
-    $arrCommonNames=$this->parseRelatedNames(
-      $this->model->submission['metaFields']['commonNames']['value'],
-      'set_common_name_sub_array'
-    );
-    Kohana::log("debug", "Number of common names is: ".count($arrCommonNames));
+  	$result = true;
+    if ($this->submission['fields']['preferred']['value']=='t') {      
+      $arrCommonNames=$this->parseRelatedNames(
+        $this->submission['metaFields']['commonNames']['value'],
+        'set_common_name_sub_array'
+      );
+      Kohana::log("debug", "Number of common names is: ".count($arrCommonNames));
 
-    $arrSyn=$this->parseRelatedNames(
-      $this->model->submission['metaFields']['synonomy']['value'],
-      'set_synonym_sub_array'
-    );
-    Kohana::log("debug", "Number of synonyms is: ".count($arrSyn));
+      $arrSyn=$this->parseRelatedNames(
+        $this->submission['metaFields']['synonyms']['value'],
+        'set_synonym_sub_array'
+      );
+      Kohana::log("debug", "Number of synonyms is: ".count($arrSyn));
 
-    $arrSyn = array_merge($arrSyn, $arrCommonNames);
+      $arrSyn = array_merge($arrSyn, $arrCommonNames);
 
-    Kohana::log("debug", "Looking for existing terms with meaning ".$this->model->taxon_meaning_id);
-    $existingSyn = $this->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id);
+      Kohana::log("debug", "Looking for existing terms with meaning ".$this->taxon_meaning_id);
+      $existingSyn = $this->getSynonomy('taxon_meaning_id', $this->taxon_meaning_id);
 
-    // Iterate through existing synonomies, discarding those that have
-    // been deleted and removing existing ones from the list to add
-
-    foreach ($existingSyn as $syn)
-    {
-      // Is the taxon from the db in the list of synonyms?
-      if (array_key_exists($syn->taxon->taxon, $arrSyn) &&
-        $arrSyn[$syn->taxon->taxon]['lang'] ==
-        $syn->taxon->language->iso &&
-        $arrSyn[$syn->taxon->taxon]['auth'] ==
-        $syn->taxon->authority)
+      // Iterate through existing synonomies, discarding those that have
+      // been deleted and removing existing ones from the list to add
+      foreach ($existingSyn as $syn)
       {
-        $arrSyn = array_diff_key($arrSyn, array($syn->taxon->taxon => ''));
-        Kohana::log("debug", "Known synonym: ".$syn->taxon->taxon);
+        // Is the taxon from the db in the list of synonyms?
+        if (array_key_exists($syn->taxon->taxon, $arrSyn) &&
+          $arrSyn[$syn->taxon->taxon]['lang'] ==
+          $syn->taxon->language->iso &&
+          $arrSyn[$syn->taxon->taxon]['auth'] ==
+          $syn->taxon->authority)
+        {
+          $arrSyn = array_diff_key($arrSyn, array($syn->taxon->taxon => ''));
+          Kohana::log("debug", "Known synonym: ".$syn->taxon->taxon);
+        }
+        else
+        {
+          // Synonym has been deleted - remove it from the db
+          $syn->deleted = 't';
+          Kohana::log("debug", "Deleting synonym: ".$syn->taxon->taxon);
+          $syn->save();
+        }
       }
-      else
+
+      // $arraySyn should now be left only with those synonyms
+      // we wish to add to the database
+
+      Kohana::log("debug", "Synonyms remaining to add: ".count($arrSyn));
+      $sm = ORM::factory('taxa_taxon_list');
+      foreach ($arrSyn as $taxon => $syn)
       {
-        // Synonym has been deleted - remove it from the db
-        $syn->deleted = 't';
-        Kohana::log("debug", "Deleting synonym: ".$syn->taxon->taxon);
-        $syn->save();
-      }
+
+        $sm->clear();
+
+        $lang = $syn['lang'];
+        $auth = $syn['auth'];
+
+        // Wrap a new submission
+        Kohana::log("info", "Wrapping submission for synonym ".$taxon);
+
+        $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
+        // If language not found, use english as the default. Future versions may wish this to be
+        // user definable.
+        $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
+        $syn = $_POST;
+        $syn['taxon_id'] = null;
+        $syn['taxon'] = $taxon;
+        $syn['authority'] = $auth;
+        $syn['language_id'] = $lang_id;
+        $syn['id'] = '';
+        $syn['preferred'] = 'f';
+        $syn['taxon_meaning_id'] = $this->taxon_meaning_id;
+        $syn['taxon_group_id'] = $this->taxon->taxon_group_id;
+        // Prevent a recursion by not posting synonyms with a synonym
+        $syn['commonNames']='';
+        $syn['synonyms']='';
+
+        $sub = $this->wrap($syn);
+
+        $sm->submission = $sub;
+        if (!$sm->submit()) {
+          $result=false;
+          array_push($this->linkedModels, $sm);
+        }
+      }      
     }
-
-    // $arraySyn should now be left only with those synonyms
-    // we wish to add to the database
-
-    Kohana::log("debug", "Synonyms remaining to add: ".count($arrSyn));
-    $sm = ORM::factory('taxa_taxon_list');
-    foreach ($arrSyn as $taxon => $syn)
-    {
-
-      $sm->clear();
-
-      $lang = $syn['lang'];
-      $auth = $syn['auth'];
-
-      // Wrap a new submission
-      Kohana::log("info", "Wrapping submission for synonym ".$taxon);
-
-      $lang_id = ORM::factory('language')->where(array('iso' => $lang))->find()->id;
-      // If language not found, use english as the default. Future versions may wish this to be
-      // user definable.
-      $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
-      $syn = $_POST;
-      $syn['taxon_id'] = null;
-      $syn['taxon'] = $taxon;
-      $syn['authority'] = $auth;
-      $syn['language_id'] = $lang_id;
-      $syn['id'] = '';
-      $syn['preferred'] = 'f';
-      $syn['taxon_meaning_id'] = $this->model->taxon_meaning_id;
-
-      $sub = $this->wrap($syn);
-
-      $sm->submission = $sub;
-      $sm->submit();
-    }
-
-    url::redirect('taxa_taxon_list/'.$this->model->taxon_list_id);
+    return $result;
   }
 
   /**
@@ -192,7 +202,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       );
     } else {
       $array[$tokens[0]] = array(
-        'lang' => config('indicia.default_lang'),
+        'lang' => kohana::config('indicia.default_lang'),
         'auth' => ''
       );
     }
@@ -202,17 +212,67 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    * Build the array that stores the author attached to synonyms being submitted.
    */
   protected function set_synonym_sub_array($tokens, &$array) {
+    $array[$tokens[0]] = array(
+      'auth' => '',
+      'lang' => 'lat'
+    );
     if (count($tokens) == 2) {
-      $array[$tokens[0]] = array(
-        'auth' => trim($tokens),
-        'lang' => 'lat'
-      );
-    } else {
-      $array[$tokens[0]] = array(
-        'auth' => '',
-        'lang' => 'lat'
-      );
+      $array[$tokens[0]]['auth']=trim($tokens[1]);
     }
   }
+
+  public function wrap($array, $linkFk = false)
+  {
+    $sa = array(
+      'id' => 'taxa_taxon_list',
+      'fields' => array(),
+      'fkFields' => array(),
+      'superModels' => array(),
+      'metaFields' => array()
+    );
+    // Declare which fields we consider as native to this model
+    $nativeFields = array_intersect_key($array, $this->table_columns);
+
+    // Use the parent method to wrap these
+    $sa = parent::wrap($nativeFields, $linkFk);
+
+    // Declare parent models
+    if (array_key_exists('taxon_meaning_id', $array) == false ||
+      $array['taxon_meaning_id'] == '')
+    {
+      $meaningModel=ORM::factory('taxon_meaning');
+      $sa['superModels'][] = array(
+        'fkId' => 'taxon_meaning_id',
+        'model' => $meaningModel->wrap(
+          array_intersect_key($array, $meaningModel->table_columns),
+          $linkFk
+        )
+      );
+    }
+
+    $taxonFields = array_intersect_key($array, ORM::factory('taxon')->table_columns);
+    if (array_key_exists('fk_language', $array)) {
+      $taxonFields['fk_language'] = $array['fk_language'];
+    }
+    if (array_key_exists('fk_taxon_group', $array)) {
+      $taxonFields['fk_taxon_group'] = $array['fk_taxon_group'];
+    }
+    if (array_key_exists('taxon_id', $array) && $array['taxon_id'] != '') {
+      $taxonFields['id'] = $array['taxon_id'];
+    }
+    $sa['superModels'][] = array(
+      'fkId' => 'taxon_id',
+      'model' => ORM::factory('taxon')->wrap($taxonFields, $linkFk)
+    );
+
+    $sa['metaFields']['synonyms'] = array(
+        'value' => array_key_exists('synonyms', $array) ? $array['synonyms'] : ''
+    );
+    $sa['metaFields']['commonNames'] = array(
+        'value' => array_key_exists('commonNames', $array) ? $array['commonNames'] : ''
+    );
+    return $sa;
+  }
+
 
 }

@@ -72,69 +72,68 @@ class Termlists_term_Model extends Base_Name_Model {
   /**
    * Overrides the post submit function to add in synonomies
    */
-  protected function postSubmit($id){
-    try {
-      $arrSyn=$this->parseRelatedNames(
-      $this->model->submission['metaFields']['synonomy']['value'],
-        'set_synonym_sub_array'
-      );
-      Kohana::log("debug", "Number of synonyms is: ".count($arrSyn));
+  protected function postSubmit(){
+    $success = true;
+    if ($this->submission['fields']['preferred']['value']=='t') {
+      try {
+        $arrSyn=$this->parseRelatedNames(
+            $this->submission['metaFields']['synonyms']['value'], 'set_synonym_sub_array'
+        );
+        $existingSyn = $this->getSynonomy('meaning_id', $this->meaning_id);
 
-      Kohana::log("info", "Looking for existing terms with meaning ".$this->model->meaning_id);
-      $existingSyn = $this->getSynonomy('meaning_id', $this->model->meaning_id);
+        // Iterate through existing synonomies, discarding those that have
+        // been deleted and removing existing ones from the list to add
 
-      // Iterate through existing synonomies, discarding those that have
-      // been deleted and removing existing ones from the list to add
-
-      foreach ($existingSyn as $syn) {
-        // Is the term from the db in the list of synonyms?
-        if (array_key_exists($syn->term->term, $arrSyn) &&
-            $arrSyn[$syn->term->term]['lang'] ==
-            $syn->term->language->iso ) {
-          $arrSyn = array_diff_key($arrSyn, array($syn->term->term => ''));
-          Kohana::log("debug", "Known synonym: ".$syn->term->term);
-        } else {
-          // Synonym has been deleted - remove it from the db
-          $syn->deleted = 't';
-          Kohana::log("debug", "Deleted synonym: ".$syn->term->term);
-          $syn->save();
+        foreach ($existingSyn as $syn) {
+          // Is the term from the db in the list of synonyms?
+          if (array_key_exists($syn->term->term, $arrSyn) &&
+              $arrSyn[$syn->term->term]['lang'] ==
+              $syn->term->language->iso ) {
+            $arrSyn = array_diff_key($arrSyn, array($syn->term->term => ''));
+          } else {
+            // Synonym has been deleted - remove it from the db
+            $syn->deleted = 't';
+            $syn->save();
+          }
         }
+
+        // $arraySyn should now be left only with those synonyms
+        // we wish to add to the database
+
+        Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
+        $sm = ORM::factory('termlists_term');
+        kohana::log('debug', $arrSyn);
+        foreach ($arrSyn as $term => $syn) {
+          $sm->clear();
+          $lang = $syn['lang'];
+          // Wrap a new submission
+          Kohana::log("info", "Wrapping submission for synonym ".$term);
+          $syn = $_POST;
+          $syn['term_id'] = null;
+          $syn['term'] = $term;
+          $syn['language_id'] = ORM::factory('language')->where(array(
+            'iso' => $lang))->find()->id;
+          $syn['id'] = '';
+          $syn['preferred'] = 'f';
+          $syn['meaning_id'] = $this->meaning_id;
+          // Prevent a recursion by not posting synonyms with a synonym
+          $syn['synonyms']='';
+
+          $sub = $this->wrap($syn);
+
+          $sm->submission = $sub;
+          if (!$sm->submit()) {
+            $success=false;
+            array_push($this->linkedModels, $sm);
+          }
+        }
+      } catch (Exception $e) {
+        $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
+        error::log_error('Exception during postSubmit in termlists_term model.', $e);
+        $success = false;
       }
-
-      // $arraySyn should now be left only with those synonyms
-      // we wish to add to the database
-
-      Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
-      $sm = ORM::factory('termlists_term');
-      foreach ($arrSyn as $term => $syn) {
-
-        $sm->clear();
-
-        $lang = $syn['lang'];
-
-        // Wrap a new submission
-        Kohana::log("info", "Wrapping submission for synonym ".$term);
-
-        $syn = $_POST;
-        $syn['term_id'] = null;
-        $syn['term'] = $term;
-        $syn['language_id'] = ORM::factory('language')->where(array(
-          'iso' => $lang))->find()->id;
-        $syn['id'] = '';
-        $syn['preferred'] = 'f';
-        $syn['meaning_id'] = $this->model->meaning_id;
-
-        $sub = $this->wrap($syn);
-
-        $sm->submission = $sub;
-        $sm->submit();
-      }
-      return true;
-    } catch (Exception $e) {
-      $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
-      error::log_error('Exception during postSubmit in termlists_term model.', $e);
-      return false;
     }
+    return $success;
   }
 
   /**
@@ -144,7 +143,51 @@ class Termlists_term_Model extends Base_Name_Model {
     if (count($tokens) >= 2) {
       $array[$tokens[0]] = array('lang' => trim($tokens[1]));
     } else {
-      $array[$tokens[0]] = array('lang' => 'eng');
+      $array[$tokens[0]] = array('lang' => kohana::config('indicia.default_lang'));
     }
   }
+
+  public function wrap($array, $linkFk=false) {
+
+    $sa = array(
+      'id' => 'termlists_term',
+      'fields' => array(),
+      'fkFields' => array(),
+      'superModels' => array(),
+      'metaFields' => array()
+    );
+
+    // Declare which fields we consider as native to this model
+    $nativeFields = array_intersect_key($array, $this->table_columns);
+
+    // Use the parent method to wrap these
+    $sa = parent::wrap($nativeFields, $linkFk);
+
+    // Declare child models
+    if (array_key_exists('meaning_id', $array) == false ||
+      $array['meaning_id'] == '') {
+        $meaningModel = ORM::factory('meaning');
+        $sa['superModels'][] = array(
+          'fkId' => 'meaning_id',
+          'model' => $meaningModel->wrap(
+               array_intersect_key($array, $this->object_name, $meaningModel->table_columns
+          ), false, 'meaning'));
+      }
+
+    $termFields = array_intersect_key($array, ORM::factory('term')
+      ->table_columns);
+    if (array_key_exists('term_id', $array) && $array['term_id'] != ''){
+      $termFields['id'] = $array['term_id'];
+    }
+    $sa['superModels'][] = array(
+      'fkId' => 'term_id',
+      'model' => ORM::factory('term')->wrap($termFields, $linkFk));
+
+    $sa['metaFields']['synonyms'] = array(
+      'value' => $array['synonyms']
+    );
+
+    return $sa;
+  }
+
 }

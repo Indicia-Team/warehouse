@@ -47,15 +47,13 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $this->model = ORM::factory('termlists_term');
   }
 
-  private function formatCommonSynonomy(ORM_Iterator $res){
+  private function formatSynonomy(ORM_Iterator $res){
     $syn = "";
     foreach ($res as $synonym) {
-      if ($synonym->term->language->iso != "lat"){
-        $syn .= $synonym->term->term;
-        $syn .=	($synonym->term->language_id != null) ?
-          ",".$synonym->term->language->iso."\n" :
-          '';
-      }
+      $syn .= $synonym->term->term;
+      $syn .=	($synonym->term->language_id != null) ?
+        " | ".$synonym->term->language->iso."\n" :
+        '';
     }
     return $syn;
   }
@@ -89,11 +87,11 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     {
       $this->access_denied('record with ID='.$id);
       return;
-        }
+    }
+
     // Generate model
     $this->model->find($id);
     $gridmodel = ORM::factory('gv_termlists_term');
-
     // Add grid component
     $grid =	Gridview_Controller::factory($gridmodel,
         $page_no,
@@ -105,16 +103,14 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $grid->actionColumns = array(
       'edit' => 'termlists_term/edit/£id£'
     );
-
     // Add items to view
     $vArgs = array(
       'table' => $grid->display(true),
-      'synonomy' => $this->formatCommonSynonomy($this->
-          getSynonomy($this->model->meaning_id)),
-      );
+      'synonyms' => $this->formatSynonomy($this->model->getSynonomy('meaning_id', $this->model->meaning_id)),
+    );
     $this->setView('termlists_term/termlists_term_edit', 'Term', $vArgs);
-
   }
+
   // Auxilliary function for handling Ajax requests from the edit method gridview component
   public function edit_gv($id,$page_no,$limit) {
     $this->auto_render=false;
@@ -149,7 +145,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $vArgs = array(
       'table' => null,
       'termlist_id' => $termlist_id,
-      'synonomy' => null);
+      'synonyms' => null);
 
     $this->setView('termlists_term/termlists_term_edit', 'Term', $vArgs);
 
@@ -162,48 +158,6 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     parent::save();
   }
 
-  protected function wrap($array) {
-
-    $sa = array(
-      'id' => 'termlists_term',
-      'fields' => array(),
-      'fkFields' => array(),
-      'superModels' => array(),
-      'metaFields' => array()
-    );
-
-    // Declare which fields we consider as native to this model
-    $nativeFields = array_intersect_key($array, $this->model->table_columns);
-
-    // Use the parent method to wrap these
-    $sa = parent::wrap($nativeFields);
-
-    // Declare child models
-    if (array_key_exists('meaning_id', $array) == false ||
-      $array['meaning_id'] == '') {
-        $sa['superModels'][] = array(
-          'fkId' => 'meaning_id',
-          'model' => parent::wrap(
-            array_intersect_key($array, ORM::factory('meaning')
-            ->table_columns), false, 'meaning'));
-      }
-
-    $termFields = array_intersect_key($array, ORM::factory('term')
-      ->table_columns);
-    if (array_key_exists('term_id', $array) && $array['term_id'] != ''){
-      $termFields['id'] = $array['term_id'];
-    }
-    $sa['superModels'][] = array(
-      'fkId' => 'term_id',
-      'model' => parent::wrap($termFields, false, 'term'));
-
-    $sa['metaFields']['synonomy'] = array(
-      'value' => $array['synonomy']
-    );
-
-    return $sa;
-  }
-
   /**
    * Overrides the fail functionality to add args to the view.
    */
@@ -211,7 +165,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $mn = $this->model->object_name;
     $vArgs = array(
       'termlist_id' => $this->model->termlist_id,
-      'synonomy' => null,
+      'synonyms' => null,
     );
     $this->setView($mn."/".$mn."_edit", ucfirst($mn), $vArgs);
   }
@@ -240,6 +194,18 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       return (in_array($termlist->website_id, $this->gen_auth_filter['values']));
     }
     return true;
+  }
+
+  /**
+   * Override the default return page behaviour so that after saving a term you
+   * are returned to the list of terms on the sub-tab of the list.
+   */
+  protected function get_return_page() {
+    if ($this->model->termlist_id != null) {
+      return "termlist/edit/".$this->model->termlist_id."?tab=terms";
+    } else {
+      return $this->model->object_name;
+    }
   }
 }
 ?>

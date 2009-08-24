@@ -55,8 +55,11 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     {
       if ($synonym->taxon->language->iso == "lat")
       {
-  $syn .= $synonym->taxon->taxon;
-  $syn .=	",".$synonym->taxon->authority."\n";
+        $syn .= $synonym->taxon->taxon;
+        if ($synonym->taxon->authority) {
+          $syn .=	" | ".$synonym->taxon->authority;
+        }
+        $syn .= "\n";
       }
     }
     return $syn;
@@ -71,7 +74,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       {
         $syn .= $synonym->taxon->taxon;
         $syn .=	($synonym->taxon->language_id != null) ?
-        ",".$synonym->taxon->language->iso."\n" :
+        " | ".$synonym->taxon->language->iso."\n" :
         '';
       }
     }
@@ -140,7 +143,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $vArgs = array(
       'taxon_list_id' => $this->model->taxon_list_id,
       'table' => $grid->display(),
-      'synonomy' => $this->formatScientificSynonomy(
+      'synonyms' => $this->formatScientificSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
       'commonNames' => $this->formatCommonSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id))
@@ -190,10 +193,11 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
     $vArgs = array
     (
-    'table' => null,
-    'taxon_list_id' => $taxon_list_id,
-    'synonomy' => null,
-    'commonNames' => null);
+      'table' => null,
+      'taxon_list_id' => $taxon_list_id,
+      'synonyms' => null,
+      'commonNames' => null
+    );
 
     $this->setView('taxa_taxon_list/taxa_taxon_list_edit', 'Taxon', $vArgs);
 
@@ -224,74 +228,6 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     parent::save();
   }
 
-  protected function wrap($array, $linkFk = false)
-  {
-    $sa = array(
-      'id' => 'taxa_taxon_list',
-      'fields' => array(),
-      'fkFields' => array(),
-      'superModels' => array(),
-      'metaFields' => array()
-    );
-
-    // Declare which fields we consider as native to this model
-    $nativeFields = array_intersect_key($array, $this->model->table_columns);
-
-    // Use the parent method to wrap these
-    $sa = parent::wrap($nativeFields, $linkFk);
-
-    // Declare parent models
-    if (array_key_exists('taxon_meaning_id', $array) == false ||
-      $array['taxon_meaning_id'] == '')
-    {
-      $sa['superModels'][] = array(
-        'fkId' => 'taxon_meaning_id',
-        'model' => parent::wrap(
-          array_intersect_key($array, ORM::factory('taxon_meaning')->table_columns),
-          $linkFk,
-          'taxon_meaning'
-        )
-      );
-    }
-
-    $taxonFields = array_intersect_key($array, ORM::factory('taxon')
-    ->table_columns);
-    if (array_key_exists('fk_language', $array))
-    {
-      $taxonFields['fk_language'] = $array['fk_language'];
-    }
-    if (array_key_exists('fk_taxon_group', $array))
-    {
-      $taxonFields['fk_taxon_group'] = $array['fk_taxon_group'];
-    }
-    if (array_key_exists('taxon_id', $array) && $array['taxon_id'] != '')
-    {
-      $taxonFields['id'] = $array['taxon_id'];
-    }
-    $sa['superModels'][] = array
-    (
-      'fkId' => 'taxon_id',
-      'model' => parent::wrap($taxonFields, $linkFk, 'taxon')
-    );
-
-    if (array_key_exists('synonomy', $array))
-    {
-      $sa['metaFields']['synonomy'] = array(
-        'value' => $array['synonomy']
-      );
-    }
-
-    if (array_key_exists('commonNames', $array))
-    {
-      echo "here";
-      $sa['metaFields']['commonNames'] = array(
-        'value' => $array['commonNames']
-      );
-    }
-
-    return $sa;
-  }
-
   /**
   * Overrides the fail functionality to add args to the view.
   */
@@ -300,7 +236,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $mn = $this->model->object_name;
     $vArgs = array(
       'taxon_list_id' => $this->model->taxon_list_id,
-      'synonomy' => null,
+      'synonyms' => null,
       'commonNames' => null,
     );
     $this->setView($mn."/".$mn."_edit", ucfirst($mn), $vArgs);
@@ -330,6 +266,18 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       return (in_array($taxon_list->website_id, $this->gen_auth_filter['values']));
     }
     return true;
+  }
+
+  /**
+   * Override the default return page behaviour so that after saving a taxa you
+   * are returned to the list of taxa on the sub-tab of the list.
+   */
+  protected function get_return_page() {
+    if ($this->model->taxon_list_id != null) {
+      return "taxon_list/edit/".$this->model->taxon_list_id."?tab=taxa";
+    } else {
+      return $this->model->object_name;
+    }
   }
 
 }

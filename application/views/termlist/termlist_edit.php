@@ -44,7 +44,7 @@
   <ul>
     <li><a href="#details"><span>List Details</span></a></li>
 <?php if ($model->id != null) : ?>
-    <li><a href="<?php echo url::site().'termlists_term/'.$model->id; ?>"><span>Terms</span></a></li>
+    <li><a href="<?php echo url::site().'termlists_term/'.$model->id; ?>" title="terms"><span>Terms</span></a></li>
     <li><a href="#sublists"><span>Child Lists</span></a></li>
 <?php endif; ?>
   </ul>
@@ -95,6 +95,7 @@
 <?php echo html::error_message($model->getError('deleted')); ?>
 </form>
 </div>
+<div id="terms"></div>
 <?php if (isset($table)) : ?>
   <div id="sublists">
   <p>Child lists are lists which contain the same type of information as their parents, but only contain a subset of the terms.

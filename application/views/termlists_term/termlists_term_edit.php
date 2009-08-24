@@ -22,12 +22,13 @@
  */
 
 ?>
+<?php echo html::error_message($model->getError('termlist_id')); ?>
 <form class="cmxform"  name='editList' action="<?php echo url::site().'termlists_term/save' ?>" method="POST">
 <?php echo $metadata ?>
 <fieldset>
+<legend>Term Details</legend>
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
 <input type="hidden" name="termlist_id" id="termlist_id" value="<?php echo html::specialchars($model->termlist_id); ?>" />
-<legend>Term Details</legend>
 <ol>
 <li>
 <input type="hidden" name="term_id" id="term_id" value="<?php echo html::specialchars($model->term_id); ?>" />
@@ -57,9 +58,10 @@
 <input id="parent" name="parent" readonly="readonly" value="<?php echo (($model->parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $model->parent_id)->term->term) : ''); ?>" />
 </li>
 <li>
-<input type="hidden" name="meaning_id" id="meaning_id" value="<?php echo html::specialchars($model->term->meaning_id); ?>" />
-<label for="synonomy">Synonomy</label>
-<textarea rows=7 id="synonomy" name="synonomy"><?php echo html::specialchars($synonomy); ?></textarea>
+<input type="hidden" name="meaning_id" id="meaning_id" value="<?php echo html::specialchars($model->meaning_id); ?>" />
+<label for="synonyms">Synonyms
+<span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter synonyms one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Countryside | eng'.">?</span></label>
+<textarea rows=7 id="synonyms" name="synonyms"><?php echo html::specialchars($synonyms); ?></textarea>
 </li>
 <li>
 <label for="sort_order">Sort Order in List</label>
