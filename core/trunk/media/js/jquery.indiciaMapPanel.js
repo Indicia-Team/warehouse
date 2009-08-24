@@ -184,7 +184,6 @@
       div.map.addControl(click);
       click.activate();
 
-
       // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefId).change(function() {
         $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/sref_to_wkt"+
@@ -216,7 +215,15 @@
 
       $('#imp-location').change(function()
       {
-        alert('boom');
+        // Change the location control requests the location's geometry to place on the map.
+        $.getJSON(div.settings.indiciaSvc + "/index.php/services/data/location/"+this.value +
+          "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
+            // store value in saved field?
+            if (data.length>0) {
+              _showWktFeature(div, data[0].centroid_geom);
+            }
+          }
+        );
       });
     }
 
@@ -298,6 +305,7 @@
       }
     }
 
+
   };
 
 })(jQuery);
@@ -308,6 +316,7 @@
 $.fn.indiciaMapPanel.defaults = {
     indiciaSvc : "http://localhost/indicia",
     indiciaGeoSvc : "http://localhost:8080/geoserver",
+    readAuth : '',
     height: "450px",
     width: "600px",
     initial_lat: 7450000,

@@ -27,7 +27,16 @@ global $default_terms;
  * @package	Client
  */
 $default_terms = array(
+  'add row'=>'Add Row',
+  'british national grid'=>'British National Grid',
   'click here'=>'Click here',
+  'close'=>'Close',
+  'enter additional species'=>'Enter additional species',
+  'error loading control'=>'Error loading control',
+  'lat long 4326'=>'Lat/Long (WGS84)',
+  'search'=>'Search',
+  'search for place on map'=>'Search for place on map',
+  'spatial ref'=>'Spatial ref.',
   'species_checklist.species'=>'Species',
   'species_checklist.present'=>'Present (Y/N)'
 );

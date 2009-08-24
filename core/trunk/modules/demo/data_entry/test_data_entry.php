@@ -66,7 +66,7 @@ echo data_entry_helper::get_auth($config['website_id'], $config['password']);
 <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
 <br/>
 <?php echo data_entry_helper::date_picker(array('label'=>'Date','fieldname'=>'sample:date')); ?>
-<?php echo data_entry_helper::map('map', array('multimap_landranger', 'google_physical', 'virtual_earth'), true, true, null, true); ?>
+<?php echo data_entry_helper::map(); ?>
 <br />
 <label for="sample:location_name">Locality Description:</label>
 <input name="sample:location_name" class="wide" value='<?php echo data_entry_helper::check_default_value('location_name'); ?>'/><br />
