@@ -1606,7 +1606,7 @@ class data_entry_helper extends helper_config {
     global $errors;
     if (is_array($response)) {
       if (array_key_exists('error',$response)) {
-        if ($inline) {
+        if ($inline && array_key_exists('errors',$response)) {
           // Setup an errors array that the data_entry_helper can output alongside the controls
           $errors = $response['errors'];
           // And tell the helper to reload the existing data.
@@ -1793,7 +1793,7 @@ class data_entry_helper extends helper_config {
   public static function check_errors($id)
   {
     global $errors;
-    $error='';
+    $error='';    
     if (isset($errors)) {
        if (array_key_exists($id, $errors)) {
          $error = $errors[$id];
