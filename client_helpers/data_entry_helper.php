@@ -34,7 +34,7 @@ global $templates;
  */
 $templates = array(
   'prefix' => '',
-  'label' => '<label for="{fieldname}">{label}:</label>'."\n",
+  'label' => '<label for="{id}">{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif"/>'."\n",
@@ -50,7 +50,7 @@ $templates = array(
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul class="{class}">{items}</ul>',
   'map_panel' => "<div id=\"{divId}\"></div>\n<br/>\n",
-  'georeference_lookup' => "<input id=\"imp-georef-search\" name=\"{fieldname}\" \>\n".
+  'georeference_lookup' => "<input id=\"imp-georef-search\" \>\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden page-notice\" ><div id=\"imp-georef-output-div\" />\n".
       "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">".lang::get('close')."</a>\n".
@@ -189,7 +189,11 @@ class data_entry_helper extends helper_config {
         }
       }
     }
-    return self::check_options($options);
+    if (isset($options)) {
+      return self::check_options($options);
+    } else {
+    	return array();
+    }
   }
 
   /**
@@ -211,8 +215,10 @@ class data_entry_helper extends helper_config {
       $options['valueField']=$options['captionField'];
     }
     // Get a default value - either the supplied value in the options, or the loaded value, or nothing.
-    $options['default'] = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : '');
+    if (array_key_exists('fieldname', $options)) {
+      $options['default'] = self::check_default_value($options['fieldname'],
+          array_key_exists('default', $options) ? $options['default'] : '');
+    }
     return $options;
   }
 
@@ -232,9 +238,14 @@ class data_entry_helper extends helper_config {
     $options['extraParams']=null;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
+    $replaceValues=array();
     foreach (array_keys($options) as $option) {
-      array_push($replaceTags, '{'.$option.'}');
+    	if (!is_array($options[$option])) {
+        array_push($replaceTags, '{'.$option.'}');
+        array_push($replaceValues, $options[$option]);
+    	}
     }
+    $r = '';
     if (array_key_exists('prefixTemplate', $options)) {
       $r .= $templates[$options['prefixTemplate']];
     } else {
@@ -244,15 +255,17 @@ class data_entry_helper extends helper_config {
     // otherwise the fieldname (as the fieldname control could be a hidden control).
     if (array_key_exists('label', $options)) {
       $r .= str_replace(
-          array('{label}', '{fieldname}'),
-          array($options['label'], array_key_exists('inputId', $options) ? $options['inputId'] : $options['fieldname']),
+          array('{label}', '{id}'),
+          array($options['label'], array_key_exists('inputId', $options) ? $options['inputId'] : $options['id']),
           $templates['label']
       );
     }
     // Output the main control
-    $r .= str_replace($replaceTags, $options, $templates[$template]);
+    $r .= str_replace($replaceTags, $replaceValues, $templates[$template]);
     // output any errors identified for the control
-    $r .= self::check_errors($options['fieldname']);
+    if (array_key_exists('fieldname', $options)) {
+      $r .= self::check_errors($options['fieldname']);
+    }
     if (array_key_exists('suffixTemplate', $options)) {
       $r .= $templates[$options['suffixTemplate']];
     } else {
@@ -1190,7 +1203,7 @@ class data_entry_helper extends helper_config {
     // tweak the options passed to the system selector
     $options['fieldname']=$options['fieldname']."_system";
     unset($options['label']);
-    if (count($options['systems']) == 1) {
+    if (array_key_exists('systems', $options) && count($options['systems']) == 1) {
       // Hidden field for the system
       $keys = array_keys($options['systems']);
       $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
@@ -1212,6 +1225,7 @@ class data_entry_helper extends helper_config {
    */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
+    $options['id']='imp-georef-search';
     return self::apply_template('georeference_lookup', $options);
   }
 
@@ -1883,7 +1897,7 @@ class data_entry_helper extends helper_config {
   /**
    * Sends a POST using the cUrl library
    */
-  public function http_post($url, $postargs, $output_errors=true) {
+  public static function http_post($url, $postargs, $output_errors=true) {
     $session = curl_init($url);
     // Set the POST options.
     curl_setopt ($session, CURLOPT_POST, true);
