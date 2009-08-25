@@ -19,7 +19,6 @@
 if ($_POST) {
   $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
   $response = data_entry_helper::forward_post_to('save', $submission);
-  print_r($response);
   data_entry_helper::dump_errors($response);
 }
 ?>

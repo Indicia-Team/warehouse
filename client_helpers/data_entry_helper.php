@@ -192,7 +192,7 @@ class data_entry_helper extends helper_config {
     if (isset($options)) {
       return self::check_options($options);
     } else {
-    	return array();
+      return array();
     }
   }
 
@@ -240,10 +240,10 @@ class data_entry_helper extends helper_config {
     $replaceTags=array();
     $replaceValues=array();
     foreach (array_keys($options) as $option) {
-    	if (!is_array($options[$option])) {
+      if (!is_array($options[$option])) {
         array_push($replaceTags, '{'.$option.'}');
         array_push($replaceValues, $options[$option]);
-    	}
+      }
     }
     $r = '';
     if (array_key_exists('prefixTemplate', $options)) {
@@ -429,7 +429,7 @@ class data_entry_helper extends helper_config {
 
           default:
             $occAttrControls[$occAttr] =
-            "<input type='text' id='oa:$occAttr' name='oa:$occAttr'/>";
+                "<input type='text' id='oa:$occAttr' name='oa:$occAttr'/>";
             break;
         }
       }
@@ -440,7 +440,7 @@ class data_entry_helper extends helper_config {
     if (! array_key_exists('error', $taxalist))
     {
       $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>".
-      "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
+          "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
       foreach ($occAttrControls as $oc) {
         $grid .= "<td class='scOccAttrCell'>$oc</td>";
       }
@@ -1463,17 +1463,22 @@ class data_entry_helper extends helper_config {
    * identified.
    */
   public static function build_sample_occurrence_submission($values) {
-    return self::build_submission($values, array(
+    $structure = array(
         'model' => 'sample',
         'submodel' => array(
           'model' => 'occurrence',
-          'fk' => 'sample_id',
-          'submodel' => array(
-            'model' => 'occurrence_image',
-            'fk' => 'occurrence_id'
-          )
+          'fk' => 'sample_id'
         )
-    ));
+    );
+    // Either an uploadable file, or a link to a Flickr external detail means include the submodel for images
+    if ((array_key_exists('occurrence:image', $values) && $values['occurrence:image'])
+        || array_key_exists('occurrence_image:external_details', $values) && $values['occurrence_image:external_details']) {
+      $structure['submodel']['submodel'] = array(
+          'model' => 'occurrence_image',
+          'fk' => 'occurrence_id'
+      );
+    }
+    return self::build_submission($values, $structure);
   }
 
   /**

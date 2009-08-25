@@ -111,6 +111,9 @@ $lang = array (
   'caption' => Array (
     'required' => 'The caption cannot be blank.',
   ),
+  'path' => Array (
+    'required' => 'The image path must be supplied.',
+  )
 );
 
 ?>
