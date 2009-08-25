@@ -241,10 +241,10 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     return $grid->display();
   }
 
-  protected function submit($submission){
+  protected function submit() {
     // If the disabled_input field is set to YES, the data is being reused and no changes can have been made to the main record.
     // In this case submit only the *_websites records.
-    $this->model->submission = $submission;
+    $submission=$this->model->submission;
     if ($submission['fields']['disabled_input']['value'] == 'YES') {
       $id = $submission['fields']['id']['value'];
     } else {

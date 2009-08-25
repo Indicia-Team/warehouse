@@ -529,8 +529,6 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->authenticate();
       if (array_key_exists('submission', $_POST))
       {
-        echo $_POST['submission'];
-
         $mode = $this->get_input_mode();
         switch ($mode)
         {

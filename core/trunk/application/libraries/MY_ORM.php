@@ -100,24 +100,19 @@ abstract class ORM extends ORM_Core {
     $r = array();
     // Get this model's errors, ensuring array keys have prefixes identifying the entity
     foreach ($this->errors as $key => $value) {
-      $r[$this->object_name.':'.$key]=$value;
+      if ($this->forceErrorKey) {
+        $key = $this->forceErrorKey;
+      } else {
+        $key=$this->object_name.':'.$key;
+      }
+      $r[$key]=$value;
     }
     // Now the custom attribute errors
     $r = array_merge($r, $this->missingAttrs);
+    // Plus the errors for any linked records
     foreach ($this->linkedModels as $m) {
-      // Get the linked model's errors, ensuring array keys have prefixes identifying the entity
-      foreach($m->errors as $key => $value) {
-        if ($m->forceErrorKey) {
-          $key = $m->forceErrorKey;
-        } else {
-          $key = $m->object_name.':'.$key;
-        }
-        $r[$key]=$value;
-      }
-      // Now the linked model custom attribute errors
-      $r = array_merge($r, $m->missingAttrs);
+      $r = array_merge($m->getAllErrors(), $r);
     }
-
     return $r;
   }
 
@@ -243,7 +238,7 @@ abstract class ORM extends ORM_Core {
   /**
    * Wraps the process of submission in a transaction.
    */
-  public function submit(){
+  public function submit() {
     Kohana::log('debug', 'Commencing new transaction.');
     $this->db->query('BEGIN;');
     try {
@@ -277,8 +272,8 @@ abstract class ORM extends ORM_Core {
    */
   public function inner_submit(){
     $mn = $this->object_name;
-    $collapseVals = create_function('$arr', 
-        'if (is_array($arr)) { 
+    $collapseVals = create_function('$arr',
+        'if (is_array($arr)) {
            return $arr["value"];
          } else {
            return $arr;
@@ -305,7 +300,7 @@ abstract class ORM extends ORM_Core {
       // Errors.
       Kohana::log("debug", "Record did not validate.");
       // Log more detailed information on why
-      foreach ($this->errors as $f => $e){
+      foreach ($this->errors as $f => $e) {
         Kohana::log("debug", "Field ".$f.": ".$e.".");
       }
       $return = null;
@@ -410,6 +405,7 @@ abstract class ORM extends ORM_Core {
         // check whether it returns correctly
         $m->submission = $a['model'];
         $result = $m->inner_submit();
+
         if (!$result) {
           // Remember this model so that its errors can be reported
           if (!in_array($m, $this->linkedModels)) {
