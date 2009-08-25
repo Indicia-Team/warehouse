@@ -62,16 +62,33 @@ echo data_entry_helper::get_auth($config['website_id'], $config['password']);
 <input type='hidden' id='website_id' name='website_id' value='1' />
 <input type='hidden' id='record_status' name='record_status' value='C' />
 <input type='hidden' id='id' name='id' value='<?php echo data_entry_helper::check_default_value('id'); ?>' />
-<label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
-<?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
-<br/>
-<?php echo data_entry_helper::date_picker(array('label'=>'Date','fieldname'=>'sample:date')); ?>
-<?php echo data_entry_helper::map(); ?>
-<br />
-<label for="sample:location_name">Locality Description:</label>
-<input name="sample:location_name" class="wide" value='<?php echo data_entry_helper::check_default_value('location_name'); ?>'/><br />
-<label for="sample:survey_id">Survey:</label>
-<?php echo data_entry_helper::select('sample:survey_id', 'survey', 'title', 'id', $readAuth); ?>
+<?php
+echo data_entry_helper::autocomplete(array(
+    'label'=>'Taxon',
+    'fieldname'=>'occurrence:taxa_taxon_list_id',
+    'table'=>'taxa_taxon_list',
+    'captionField'=>'taxon',
+    'valueField'=>'id',
+    'extraParams'=>$readAuth
+));
+echo data_entry_helper::date_picker(array(
+    'label'=>'Date',
+    'fieldname'=>'sample:date'
+));
+echo data_entry_helper::map();
+echo data_entry_helper::text_input(array(
+    'label'=>'Locality Description',
+    'fieldname'=>'sample:location_name',
+    'class'=>'wide'
+));
+echo data_entry_helper::select(array(
+    'label'=>'Survey',
+    'fieldname'=>'sample:survey_id',
+    'table'=>'survey',
+    'captionField'=>'title',
+    'valueField'=>'id',
+    'extraParams' => $readAuth
+)); ?>
 <br />
 <label for='occurrence:determiner_id:caption'>Determiner:</label>
 <?php echo data_entry_helper::autocomplete('occurrence:determiner_id', 'person', 'caption', 'id', $readAuth); ?>

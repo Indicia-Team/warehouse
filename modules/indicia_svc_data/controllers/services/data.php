@@ -491,10 +491,12 @@ class Data_Controller extends Data_Service_Base_Controller {
           // A parameter has been supplied which specifies the field name of a filter field
           if ($value == 'NULL')
             $value = NULL;
-          if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool')
+          if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool') {
             $where[$param]=$value;
-          else
+          } else {
             $like[$param]=$value;
+          }
+
         }
       }
     }
@@ -527,6 +529,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->authenticate();
       if (array_key_exists('submission', $_POST))
       {
+        echo $_POST['submission'];
+
         $mode = $this->get_input_mode();
         switch ($mode)
         {

@@ -38,6 +38,6 @@ $default_terms = array(
   'search for place on map'=>'Search for place on map',
   'spatial ref'=>'Spatial ref.',
   'species_checklist.species'=>'Species',
-  'species_checklist.present'=>'Present (Y/N)'
+  'species_checklist.present'=>'Present'
 );
 

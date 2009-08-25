@@ -21,9 +21,9 @@
 <li>
 <h2>Data Entry Demonstrations</h2>
 <ol>
-<li class="ui-widget-content ui-corner-all"><div  class="ui-widget-header"><a href="data_entry/simple_data_entry.php" class="ui-widget-header">Data Entry 1</a></div>
-<p>A demonstration of a very simple data entry page, allowing entry of a single occurrence at a time.
-View the source code in <a href="viewsource.php?file=data_entry/simple_data_entry.php">simple_data_entry.php</a>.</p>
+<li class="ui-widget-content ui-corner-all"><div  class="ui-widget-header"><a href="data_entry/basic_data_entry_tutorial.php" class="ui-widget-header">Basic Data Entry Tutorial</a></div>
+<p>The data entry form which accompanies the <a href="http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage">Building a Basic Data Entry Page</a> tutorial.
+View the source code in <a href="viewsource.php?file=data_entry/basic_data_entry_tutorial.php">basic_data_entry_tutorial.php</a>.</p>
 </li>
 <li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="data_entry/test_data_entry.php">Data entry 2</a></div>
 <p>A demonstration of a data entry page, allowing entry of a single occurrence at a time. Also includes some fields

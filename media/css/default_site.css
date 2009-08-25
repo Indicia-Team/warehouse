@@ -1,23 +1,13 @@
-table.speciesCheckList {
-  border-collapse: collapse;
+.scTaxonCell {
+  padding-right: 1em;
 }
 
-table.speciesCheckList thead {
-  border: 1px solid #666666;
-  background-color: #c7c7d7;
+.scPresenceCell {
+  text-align: center;
 }
 
-table.speciesCheckList .scTaxonCell {
-  background-color: #d7d7e7;
-  border-right: solid 1px #666666;
-}
-
-table.speciesCheckList tr {
-  border: 1px solid #666666;
-}
-
-table.speciesCheckList td, table.speciesCheckList th {
-  padding: 0 6px 0 6px;
+.ui-widget-header th {
+  padding: 0.2em;
 }
 
 #imp-georef-output-div ol  {

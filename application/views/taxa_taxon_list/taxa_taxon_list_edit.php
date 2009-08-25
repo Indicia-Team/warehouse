@@ -79,12 +79,12 @@ echo html::error_message($model->getError('deleted'));
 <ol>
 <li>
 <input type="hidden" name="taxon_id" id="taxon_id" value="<?php echo html::specialchars($model->taxon_id); ?>" />
-<label for="taxon">Taxon Name</label>
+<label for="taxon">Taxon Name:</label>
 <input id="taxon" name="taxon" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->taxon) : ''); ?>"/>
 <?php echo html::error_message($model->getError('taxon_id')); ?>
 </li>
 <li>
-<label for="language_id">Language</label>
+<label for="language_id">Language:</label>
 <select id="language_id" name="language_id">
   <option value=''>&lt;Please select&gt;</option>
 <?php
@@ -101,24 +101,21 @@ echo html::error_message($model->getError('deleted'));
 <?php echo html::error_message($model->getError('language_id')); ?>
 </li>
 <li>
-<label for="commonNames">Common Names
+<label for="commonNames">Common Names:
 <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter common names one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Lobworm | eng'.">?</span></label>
 <textarea rows="3" id="commonNames" name="commonNames"><?php echo html::specialchars($commonNames); ?></textarea>
 </li>
 <li>
-<label for="synonyms" >Synonyms 
+<label for="synonyms" >Synonyms:
 <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter synonyms one per line. Optionally follow each name by a | character then the taxon's authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.">?</span></label>
 <textarea rows="3" id="synonyms" name="synonyms"><?php echo html::specialchars($synonyms); ?></textarea>
 </li>
 <li>
-<?php
-// Image upload
-echo "<label for='image_path'>Upload Image: </label>";
-echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
-?>
+<label for='image_path'>Upload Image: </label>";
+<input type='file' name='image_upload' accept='png|jpg|gif' />
 </li>
 <li>
-<label for="description">Description</label>
+<label for="description">Description:</label>
 <textarea rows="3" id="description" name="description"><?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->description) : ''); ?></textarea>
 </li>
 </ol>
@@ -127,7 +124,7 @@ echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
 <legend>Other Details</legend>
 <ol>
 <li>
-<label for="taxon_group_id">Taxon Group</label>
+<label for="taxon_group_id">Taxon Group:</label>
 <select id="taxon_group_id" name="taxon_group_id">
   <option value=''>&lt;Please select&gt;</option>
 <?php
@@ -143,27 +140,27 @@ echo "<input type='file' name='image_upload' accept='png|jpg|gif' />";
 </select>
 </li>
 <li>
-<label for="authority">Authority</label>
+<label for="authority">Authority:</label>
 <input id="authority" name="authority" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->authority) : ''); ?>"/>
 <?php echo html::error_message($model->getError('authority')); ?>
 </li>
 <li>
-<label for="external_key">External Key</label>
+<label for="external_key">External Key:</label>
 <input id="external_key" name="external_key" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->external_key) : ''); ?>"/>
 <?php echo html::error_message($model->getError('external_key')); ?>
 </li>
 <li>
 <input type="hidden" name="parent_id" id="parent_id" value="<?php echo html::specialchars($model->parent_id); ?>" />
-<label for="parent">Parent Taxon</label>
+<label for="parent">Parent Taxon:</label>
 <input id="parent" name="parent" value="<?php echo (($model->parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $model->parent_id)->taxon->taxon) : ''); ?>" />
 </li>
 <li>
-<label for="taxonomic_sort_order">Sort Order in List</label>
+<label for="taxonomic_sort_order">Sort Order in List:</label>
 <input id="taxonomic_sort_order" name="taxonomic_sort_order" class="narrow" value="<?php echo html::specialchars($model->taxonomic_sort_order); ?>" />
 <?php echo html::error_message($model->getError('taxonomic_sort_order')); ?>
 </li>
 <li>
-<label for="search_code">Search Code</label>
+<label for="search_code">Search Code:</label>
 <input id="search_code" name="search_code" class="narrow" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->search_code) : ''); ?>"/>
 <?php echo html::error_message($model->getError('search_code')); ?>
 </li>

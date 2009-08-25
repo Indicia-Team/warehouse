@@ -16,7 +16,7 @@ $config = array
   'bigint'			=> array('type' => 'int', 'max' => 9223372036854775807),
   'float'				=> array('type' => 'float'),
   'float unsigned'	=> array('type' => 'float', 'min' => 0),
-  'boolean'			=> array('type' => 'string'),
+  'boolean'			=> array('type' => 'bool'),
   'time'				=> array('type' => 'string', 'format' => '00:00:00'),
   'time with time zone' => array('type' => 'string'),
   'date'				=> array('type' => 'string', 'format' => '0000-00-00'),

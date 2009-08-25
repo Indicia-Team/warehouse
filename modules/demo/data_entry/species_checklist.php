@@ -25,6 +25,7 @@ if ($_POST){
   $submission = array('submission' => array('entries' => array(
   array ( 'model' => $sampleMod ))));
   $response = data_entry_helper::forward_post_to('save', $submission);
+  print_r($response);
   data_entry_helper::dump_errors($response);
 }
 
@@ -39,12 +40,19 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 <input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
 <input type='hidden' id='survey_id' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
 <input type='hidden' id='record_status' name='occurrence:record_status' value='C' />
-<label for="sample:date">Date:</label>
-<?php echo data_entry_helper::date_picker('sample:date'); ?>
-<br />
-<?php echo data_entry_helper::map('map', array('google_physical', 'virtual_earth'), true, true, null, true); ?>
-<br />
-<?php echo data_entry_helper::species_checklist($config['species_checklist_taxon_list'], $config['species_checklist_occ_attributes'], $readAuth); ?>
+<?php echo data_entry_helper::date_picker(array(
+    'label'=>'Date',
+    'fieldname'=>'sample:date'
+));
+echo data_entry_helper::map();
+echo data_entry_helper::species_checklist(array(
+    'listId'=>$config['species_checklist_taxon_list'],
+    'occAttrs'=>$config['species_checklist_occ_attributes'],
+    'extraParams'=>$readAuth,
+    'columns'=>2
+));
+?>
+
 
 <br />
 <input type='submit' value='Save' />
