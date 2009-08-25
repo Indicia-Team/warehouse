@@ -93,6 +93,20 @@ $templates = array(
     jQuery('input#{escaped_input_id}').result(function(event, data) {
       jQuery('input#{escaped_id}').attr('value', data.id);
     });\r\n",
+  'linked_list_javascript' => "
+{fn} = function() {
+  $('#{escapedId}').addClass('ui-state-disabled');
+  $('#{escapedId}').html('<option>Loading...</option>');
+  $.getJSON('{request}&{filterField}='+$(this).val(), function(data){
+    $('#{escapedId}').html('');
+    $('#{escapedId}').removeClass('ui-state-disabled');
+    $.each(data, function(i) {
+      $('#{escapedId}').append('<option value=\"'+this.{valueField}+'\">'+this.{captionField}+'</option>');
+    });
+  });
+}
+jQuery('#{parentControlId}').change({fn});
+jQuery('#{parentControlId}').change();\n",
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}" class="{class}" value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
   'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" />' .
@@ -345,24 +359,26 @@ class data_entry_helper extends helper_config {
    * control from the parent list of the one given. This will take the form of an autocomplete
    * box against the parent list which will add an extra row to the control upon selection.</p>
    *
-   * listId
-   * occAttrs
-   * extraParams
-   * lookupListId
-   * header,
-   * columns
-   *
-   * @param int $list_id Database id of the taxon list to lookup against.
-   * @param int[] $occ_attrs Integer array, where each entry corresponds to the id of the
-   * desired attribute in the occurrence_attributes table.
-   * @param string[] $readAuth The read authorisation key/value pair, needed for making
-   * queries to the data services.
-   * @param string[] $extraParams Array of key=>value pairs which will be passed to the service
-   * as GET parameters.
-   * @param int $lookupList Optional. ID of the taxon checklist which is available for the user to
-   * select additional taxa to add to the list from. If specified, then an autocomplete text box and
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><strong>listId</strong><br/>
+   * Required. The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
+   * <li><strong>occAttrs</strong><br/>
+   * Integer array, where each entry corresponds to the id of the desired attribute in the
+   * occurrence_attributes table.</li>
+   * <li><strong>extraParams</strong><br/>
+   * Optional. Associative array of items to pass via the query string to the service. This
+   * should at least contain the read authorisation array.</li>
+   * <li><strong>lookupListId</strong><br/>
+   * Required. The ID of the taxon_lists record which is to be used to select taxa from when adding
+   * rows to the grid. If specified, then an autocomplete text box and
    * Add Row button are generated automatically allowing the user to pick a species to add as an
-   * extra row.
+   * extra row.</li>
+   * <li><strong>header</strong><br/>
+   * Include a header row in the grid? Defaults to true.</li>
+   * <li><strong>columns</strong><br/>
+   * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
+   * Defaults to 1.</li>
+   * </ul>
    */
   public static function species_checklist()
   {
@@ -619,7 +635,9 @@ class data_entry_helper extends helper_config {
   }
 
  /**
-  * Helper function to generate a select control from a Indicia core service query.
+  * Helper function to generate a select control from a Indicia core service query. The select control can
+  * be linked to populate itself when an item is selected in another control by specifying the
+  * parentControlId and filterField options.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><strong>fieldname</strong><br/>
@@ -630,8 +648,7 @@ class data_entry_helper extends helper_config {
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
   * <li><strong>class</strong><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * </ul>
+  * Optional. CSS class names to add to the control.</li>  *
   * <li><strong>table</strong><br/>
   * Required. Table name to get data from for the select options.</li>
   * <li><strong>captionField</strong><br/>
@@ -642,6 +659,14 @@ class data_entry_helper extends helper_config {
   * <li><strong>extraParams</strong><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
+  * <li><strong>parentControlId</strong><br/>
+  * Optional. Specifies a parent control for linked lists. If specified then this control is not
+  * populated until the parent control's value is set. The parent control's value is used to
+  * filter this control's options against the field specified by filterField.</li>
+  * <li><strong>filterField</strong><br/>
+  * Optional. Specifies the field to filter this control's content against when using a parent
+  * control value to set up linked lists. Defaults to parent_id though this is not active
+  * unless a parentControlId is specified.</li>
   * </ul>
   *
   * @return string HTML code for a select control.
@@ -655,7 +680,9 @@ class data_entry_helper extends helper_config {
   }
 
  /**
-  * Helper function to generate a list box from a Indicia core service query.
+  * Helper function to generate a list box from a Indicia core service query. The list box can
+  * be linked to populate itself when an item is selected in another control by specifying the
+  * parentControlId and filterField options.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><strong>fieldname</strong><br/>
@@ -681,6 +708,14 @@ class data_entry_helper extends helper_config {
   * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
   * <li><strong>multiselect</strong><br/>
   * Optional. Allow multi-select in the list box. Defaults to false.</li>
+  * <li><strong>parentControlId</strong><br/>
+  * Optional. Specifies a parent control for linked lists. If specified then this control is not
+  * populated until the parent control's value is set. The parent control's value is used to
+  * filter this control's options against the field specified by filterField.</li>
+  * <li><strong>filterField</strong><br/>
+  * Optional. Specifies the field to filter this control's content against when using a parent
+  * control value to set up linked lists. Defaults to parent_id though this is not active
+  * unless a parentControlId is specified.</li>
   * </ul>
   */
   public static function listbox()
@@ -688,9 +723,6 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array(
         'fieldname', 'table', 'captionField', 'size', 'multiselect', 'valueField', 'extraParams', 'default'
     ));
-    if (!array_key_exists('size', $options)) {
-      $options['size']=3;
-    }
     return self::select_or_listbox($options, 'listbox', 'listbox_option', 'listbox_option_selected');
   }
 
@@ -718,26 +750,58 @@ class data_entry_helper extends helper_config {
   private static function select_or_listbox($options, $outerTmpl, $itemTmpl, $selectTmpl) {
     global $templates;
     self::add_resource('json');
-    $response = self::get_population_data($options);
-    if (!array_key_exists('error', $response)) {
-      $opts = "";
-      foreach ($response as $item){
-        if (array_key_exists($options['captionField'], $item) &&
-            array_key_exists($options['valueField'], $item))
-        {
-          $selected = ($options['default'] == $item[$options['valueField']]) ? $templates[$selectTmpl] : '';
-          $opts .= str_replace(
-              array('{value}', '{caption}', '{selected}'),
-              array($item[$options['valueField']], $item[$options['captionField']], $selected),
-              $templates[$itemTmpl]
-          );
+    $options = array_merge(array(
+      'filterField'=>'parent_id',
+      'size'=>3
+    ), $options);
+    if (array_key_exists('parentControlId', $options)) {
+      // no options for now
+      $options['options'] = '';
+      self::init_linked_lists($options);
+    } else {
+      $response = self::get_population_data($options);
+      if (!array_key_exists('error', $response)) {
+        $opts = "";
+        foreach ($response as $item){
+          if (array_key_exists($options['captionField'], $item) &&
+              array_key_exists($options['valueField'], $item))
+          {
+            $selected = ($options['default'] == $item[$options['valueField']]) ? $templates[$selectTmpl] : '';
+            $opts .= str_replace(
+                array('{value}', '{caption}', '{selected}'),
+                array($item[$options['valueField']], $item[$options['captionField']], $selected),
+                $templates[$itemTmpl]
+            );
+          }
         }
-      }
-      $options['options'] = $opts;
-      return self::apply_template($outerTmpl, $options);
+        $options['options'] = $opts;
+      } else
+        echo $response['error'];
     }
-    else
-      echo $response['error'];
+    return self::apply_template($outerTmpl, $options);
+  }
+
+ /**
+  * Where there are 2 linked lists on a page, initialise the JavaScript required to link the lists.
+  *
+  * @param array Options array of the child linked list.
+  */
+  private static function init_linked_lists($options) {
+    global $templates, $javascript;
+    // setup JavaScript to do the population when the parent control changes
+    $parentControlId = str_replace(':','\\\\:',$options['parentControlId']);
+    $escapedId = str_replace(':','\\\\:',$options['id']);
+    $fn = str_replace(':','',$options['id'])."_populate";
+    $url = parent::$base_url."index.php/services/data";
+    $request = "$url/".$options['table']."?mode=json";
+    if (array_key_exists('extraParams', $options)) {
+      $request .= self::array_to_query_string($options['extraParams']);
+    }
+    $javascript .= str_replace(
+        array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}'),
+        array($fn, $escapedId, $request,$options['filterField'],$options['valueField'],$options['captionField'],$parentControlId),
+        $templates['linked_list_javascript']
+    );
   }
 
   /**
@@ -1470,7 +1534,7 @@ class data_entry_helper extends helper_config {
           'fk' => 'sample_id'
         )
     );
-    // Either an uploadable file, or a link to a Flickr external detail means include the submodel for images
+    // Either an uploadable file, or a link to a Flickr external detail means include the submodel
     if ((array_key_exists('occurrence:image', $values) && $values['occurrence:image'])
         || array_key_exists('occurrence_image:external_details', $values) && $values['occurrence_image:external_details']) {
       $structure['submodel']['submodel'] = array(

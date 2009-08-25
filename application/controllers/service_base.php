@@ -82,25 +82,7 @@ class Service_Base_Controller extends Controller {
         $response['file']=$e->getFile();
         $response['line']=$e->getLine();
         $response['trace']=array();
-        $trace = $e->getTrace();
-        for ($i=0; $i<count($trace); $i++) {
-          if (array_key_exists('file', $trace[$i])) {
-            $file=$trace[$i]['file'];
-          } else {
-            $file='Unknown file';
-          }
-          if (array_key_exists('line', $trace[$i])) {
-            $line=$trace[$i]['line'];
-          } else {
-            $line='Unknown';
-          }
-          if (array_key_exists('function', $trace[$i])) {
-            $function=$trace[$i]['function'];
-          } else {
-            $function='Unknown function';
-          }
-          array_push($response['trace'], $file.' - line '.$line.' - '.$function);
-        }
+        error::log('Exception in service call', $e);
       }
       echo json_encode($response);
     }
