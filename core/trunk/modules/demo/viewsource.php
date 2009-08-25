@@ -1,8 +1,8 @@
 <?php
 $allowed = array(
-  'data_entry/simple_data_entry.php',
   'data_entry/test_data_entry.php',
   'data_entry/species_checklist.php',
+  'data_entry/basic_data_entry_tutorial.php',
   'data_entry/flickr.php',
   'map_default.php',
   'map_modular.php',

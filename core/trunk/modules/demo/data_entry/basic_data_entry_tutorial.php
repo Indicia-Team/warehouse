@@ -15,31 +15,54 @@
 <div id="wrap">
 <h1>Basic Data Entry Tutorial Code</h1>
 <body>
+<?php
+if ($_POST) {
+  $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
+  $response = data_entry_helper::forward_post_to('save', $submission);
+  print_r($response);
+  data_entry_helper::dump_errors($response);
+}
+?>
+<p>This data entry page illustrates the final results of a data entry page built using the
+<a href="http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage">Building a Basic Data Entry Page</a> tutorial.
 <form method="post">
 <?php
-  // Get authorisation tokens to update and read from the Core.
+  // Get authorisation tokens to update and read from the Warehouse.
   echo data_entry_helper::get_auth($config['website_id'], $config['password']);
   $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
 ?>
 <input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
 <input type='hidden' id='record_status' name='record_status' value='C' />
-<label for='occurrence:taxa_taxon_list_id:taxon'>Species:</label>
-<?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id',
-  $readAuth + array('taxon_list_id' => $config['species_checklist_taxon_list'])); ?>
-<br />
-<label for="date">Date:</label>
-<?php echo data_entry_helper::date_picker('sample:date'); ?>
-<br />
-<?php echo data_entry_helper::map('map', array('google_physical'), true, true, null, true); ?>
-<br/>
-<label for="survey_id">Survey</label>
-<?php echo data_entry_helper::select(
-        'survey_id', 'survey', 'title', 'id', $readAuth); ?>
-<br />
-<label for='sample:comment'>Comment</label>
-<textarea id='comment' name='sample:comment'></textarea>
-<br />
-<input type="submit" value="Save" />
+<?php
+echo data_entry_helper::autocomplete(array(
+    'label'=>'Species',
+    'fieldname'=>'occurrence:taxa_taxon_list_id',
+    'table'=>'taxa_taxon_list',
+    'captionField'=>'taxon',
+    'valueField'=>'id',
+    'extraParams'=>$readAuth + array('taxon_list_id' => $config['species_checklist_taxon_list'])
+));
+echo data_entry_helper::date_picker(array(
+    'label'=>'Date',
+    'fieldname'=>'sample:date'
+));
+echo data_entry_helper::map();
+echo data_entry_helper::select(array(
+    'label'=>'Survey',
+    'fieldname'=>'sample:survey_id',
+    'table'=>'survey',
+    'captionField'=>'title',
+    'valueField'=>'id',
+    'extraParams' => $readAuth
+));
+echo data_entry_helper::textarea(array(
+    'label'=>'Comment',
+    'fieldname'=>'sample:comment',
+    'class'=>'wide',
+));
+?>
+
+<input type="submit" class="ui-state-default ui-corner-all" value="Save" />
 </form>
 <?php echo data_entry_helper::dump_javascript(); ?>
 </html>

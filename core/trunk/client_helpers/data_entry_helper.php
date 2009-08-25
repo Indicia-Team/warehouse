@@ -40,7 +40,7 @@ $templates = array(
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif"/>'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}">{default}</textarea>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}">'."\n",
-  'date_picker' => '<input type="text" size="30" class="date {class}" id="{id}" name="fieldname" value="{default}"/>' .
+  'date_picker' => '<input type="text" size="30" class="date {class}" id="{id}" name="{fieldname}" value="{default}"/>' .
       '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ',
   'select' => '<select id="{id}" name="{fieldname}" class="{class}">{options}</select>',
   'select_option' => '<option value="{value}" {selected} >{caption}</option>',
@@ -48,9 +48,11 @@ $templates = array(
   'listbox' => '<select id="{id}" name="{fieldname}" class="{class}" size="{size}" multiple="{multiple}">{options}</select>',
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
+  'list_in_template' => '<ul class="{class}">{items}</ul>',
+  'map_panel' => "<div id=\"{divId}\"></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\" name=\"{fieldname}\" \>\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
-      "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden ui-state-highlight page-notice\" ><div id=\"imp-georef-output-div\" />\n".
+      "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden page-notice\" ><div id=\"imp-georef-output-div\" />\n".
       "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">".lang::get('close')."</a>\n".
       "</div>",
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
@@ -74,7 +76,7 @@ $templates = array(
             results[results.length] =
             {
               'data' : item,
-              'result' : item.{valueField},
+              'result' : item.{captionField},
               'value' : item.{valueField}
             };
           });
@@ -238,11 +240,12 @@ class data_entry_helper extends helper_config {
     } else {
       $r .= $templates['prefix'];
     }
-    // Add a label only if specified in the options array.
+    // Add a label only if specified in the options array. Link the label to the inputId if available,
+    // otherwise the fieldname (as the fieldname control could be a hidden control).
     if (array_key_exists('label', $options)) {
       $r .= str_replace(
           array('{label}', '{fieldname}'),
-          array($options['label'], $options['fieldname']),
+          array($options['label'], array_key_exists('inputId', $options) ? $options['inputId'] : $options['fieldname']),
           $templates['label']
       );
     }
@@ -329,6 +332,13 @@ class data_entry_helper extends helper_config {
    * control from the parent list of the one given. This will take the form of an autocomplete
    * box against the parent list which will add an extra row to the control upon selection.</p>
    *
+   * listId
+   * occAttrs
+   * extraParams
+   * lookupListId
+   * header,
+   * columns
+   *
    * @param int $list_id Database id of the taxon list to lookup against.
    * @param int[] $occ_attrs Integer array, where each entry corresponds to the id of the
    * desired attribute in the occurrence_attributes table.
@@ -341,34 +351,45 @@ class data_entry_helper extends helper_config {
    * Add Row button are generated automatically allowing the user to pick a species to add as an
    * extra row.
    */
-  public static function species_checklist($list_id, $occ_attrs, $readAuth, $extraParams = array(), $lookupList = null)
+  public static function species_checklist()
   {
+    global $javascript, $entity_to_load;
+    $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
+    $options = array_merge(array(
+        'header'=>'true',
+        'columns'=>1
+    ), $options);
     self::add_resource('json');
     self::add_resource('autocomplete');
     $occAttrControls = array();
     $occAttrs = array();
-    // Reference to the config file.
-    global $javascript;
-    // Declare the data service
-    $url = parent::$base_url."/index.php/services/data";
-    $termRequest = "$url/taxa_taxon_list?mode=json&taxon_list_id=$list_id";
-    $termRequest .= self::array_to_query_string($readAuth);
-    if ($extraParams)
-      $termRequest .= self::array_to_query_string($extraParams);
-    if (!array_key_exists('preferred', $extraParams)) {
-      // Default behaviour is to select preferred names
-      $termRequest .= '&preferred=t';
+    if (array_key_exists('listId', $options)) {
+      $options['extraParams']['taxon_list_id']=$options['listId'];
     }
-    // Get the curl session object
-    $session = curl_init($termRequest);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $taxalist = curl_exec($session);
-    $taxalist = json_decode(array_pop(explode("\r\n\r\n",$taxalist)), true);
+    if (!array_key_exists('preferred', $options['extraParams'])) {
+      // default to only preferred taxon names
+      $options['extraParams']['preferred']='t';
+    }
+    if (!array_key_exists('orderby', $options['extraParams'])) {
+      // default to only preferred taxon names
+      $options['extraParams']['orderby']='taxon';
+    }
+    if (array_key_exists('readAuth', $options)) {
+      $options['extraParams'] += $options['readAuth'];
+    } else {
+      $options['readAuth'] = array(
+          'auth_token' => $options['extraParams']['auth_token'],
+          'nonce' => $options['extraParams']['nonce']
+      );
+    }
+    $options['table']='taxa_taxon_list';
+    $taxalist = self::get_population_data($options);
+    $url = parent::$base_url."index.php/services/data";
     // Get the list of occurrence attributes
-    foreach ($occ_attrs as $occAttr)
+    foreach ($options['occAttrs'] as $occAttr)
     {
       $occAttrRequest = "$url/occurrence_attribute/$occAttr?mode=json";
-      $occAttrRequest .= self::array_to_query_string($readAuth);
+      $occAttrRequest .= self::array_to_query_string($options['readAuth']);
       $session = curl_init($occAttrRequest);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $a = json_decode(array_pop(explode("\n\n", curl_exec($session))), true);
@@ -384,13 +405,13 @@ class data_entry_helper extends helper_config {
             $occAttrControls[$occAttr] =
             data_entry_helper::select(
               'oa:'.$occAttr, 'termlists_term', 'term', 'id',
-              $readAuth + array('termlist_id' => $tlId)
+              $options['readAuth'] + array('termlist_id' => $tlId)
             );
             break;
           case 'D' || 'V':
             // Date-picker control
-            $occAttrControls[$occAttr] =
-            "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' value='".lang::get('click here')."'/>";
+            $occAttrControls[$occAttr] = "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' " .
+                "value='".lang::get('click here')."'/>";
             break;
 
           default:
@@ -401,6 +422,7 @@ class data_entry_helper extends helper_config {
       }
     }
 
+
     // Build the grid
     if (! array_key_exists('error', $taxalist))
     {
@@ -410,49 +432,66 @@ class data_entry_helper extends helper_config {
         $grid .= "<td class='scOccAttrCell'>$oc</td>";
       }
       $grid .= "</tr></tbody></table>";
-      $grid .= "<table class='speciesCheckList'>";
-      $grid .= "<thead><th>".lang::get('species_checklist.species')."</th><th>".lang::get('species_checklist.present')."</th>";
-      foreach ($occAttrs as $a) {
-        $grid .= "<th>$a</th>";
+      $grid .= "<table class='ui-widget ui-widget-content'>";
+      if ($options['header']) {
+        $grid .= "<thead class=\"ui-widget-header\">";
+        for ($i=0; $i<$options['columns']; $i++) {
+          $grid .= "<th>".lang::get('species_checklist.species')."</th><th>".lang::get('species_checklist.present')."</th>";
+          foreach ($occAttrs as $a) {
+            $grid .= "<th>$a</th>";
+          }
+        }
+        $grid .= '</thead>';
       }
-      $grid .= "</thead><tbody>";
+      $rows = array();
+      $rowIdx = 0;
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
-        $grid .= "<tr>";
-        $grid .= "<td class='scTaxonCell'>".$taxon['taxon']." ".$taxon['authority']."</td>";
-        $grid .= "<td class='scPresenceCell'><input type='checkbox' name='sc:$id:present' ".
-            "value='sc:$id:present' /></td>";
+        $row = "<td class='scTaxonCell ui-state-default'>".$taxon['taxon']." ".$taxon['authority']."</td>";
+        if (array_key_exists("sc:$id:present", $entity_to_load)) {
+          $checked = ' checked="checked"';
+        } else {
+          $checked='';
+        }
+        $row .= "<td class='scPresenceCell'><input type='checkbox' name='sc:$id:present' $checked /></td>";
         foreach ($occAttrControls as $oc) {
           $oc = preg_replace('/oa:(\d+)/', "sc:$id:occAttr:$1", $oc);
-          $grid .= "<td class='scOccAttrCell'>".$oc."</td>";
+          $row .= "<td class='scOccAttrCell'>".$oc."</td>";
         }
-        $grid .= "</tr>";
+        if ($rowIdx < count($taxalist)/$options['columns']) {
+          $rows[$rowIdx]=$row;
+        } else {
+          $rows[$rowIdx % (floor(count($taxalist)/$options['columns']))] .= $row;
+        }
+        $rowIdx++;
       }
-      $grid .= "</tbody></table>";
+      $grid .= '<tbody><tr>'.implode('</tr><tr>', $rows).'</tr></tbody';
+      $grid .= '</tbody></table>';
 
       // Insert an autocomplete box if the termlist has a parent or an alternate
       // termlist has been given in the parameter.
-      if ($lookupList == null) {
-        $tlRequest = "$url/taxon_list/$list_id?mode=json&view=detail";
+      if ($options['lookupListId'] == null) {
+
+        $tlRequest = "$url/taxon_list/".$options['listId']."?mode=json&view=detail";
         $session = curl_init($tlRequest);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $tl = json_decode(array_pop(explode("\r\n\r\n",curl_exec($session))), true);
         if (! array_key_exists('error', $tl)) {
-          $lookupList = $tl[0]['parent_id'];
+          $options['lookupListId'] = $tl[0]['parent_id'];
         }
       }
-      if ($lookupList != null) {
+      if ($options['lookupListId'] != null) {
         // Javascript to add further rows to the grid
         self::add_resource('addrowtogrid');
         $javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
-            $readAuth['auth_token']."', 'nonce' : '".$readAuth['nonce']."'});
+            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'});
         jQuery('#addRowButton').click(addRowFn);\r\n";
 
         // Drop an autocomplete box against the parent termlist
         $grid .= '<label for="addSpeciesBox">'.lang::get('enter additional species').':</label>';
         $grid .= data_entry_helper::autocomplete('addSpeciesBox',
-            'taxa_taxon_list', 'taxon', 'id', $readAuth +
-            array('taxon_list_id' => $lookupList));
+            'taxa_taxon_list', 'taxon', 'id', $options['readAuth'] +
+            array('taxon_list_id' => $options['lookupListId']));
         $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
       }
       return $grid;
@@ -530,7 +569,7 @@ class data_entry_helper extends helper_config {
         };
         return results;
       }
-    });";
+    });\n";
 
     $tree = '<input type="hidden" class="hidden" id="'.$id.'" name="'.$id.'" /><ul id="tr'.$id.'" class="'.$extraClass.'"></ul>';
     $r .= self::check_errors($id);
@@ -558,7 +597,7 @@ class data_entry_helper extends helper_config {
     self::add_resource('jquery_ui');
     global $javascript;
     $escaped_id=str_replace(':','\\\\:',$options['id']);
-    $javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\r\n ";
+    $javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\n";
 
     if (!array_key_exists('default', $options) || $options['default']='') {
       $options['default']=lang::get('click here');
@@ -732,9 +771,8 @@ class data_entry_helper extends helper_config {
   * @see get_read_auth()
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
-  public static function autocomplete($id, $entity, $captionField, $valueField = null, $extraParams = null, $defaultCaption = '', $default = '') {
-    global $templates;
-    global $javascript;
+  public static function autocomplete() {
+    global $templates, $javascript;
     $options = self::check_arguments(func_get_args(), array(
         'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default'
     ));
@@ -836,44 +874,47 @@ class data_entry_helper extends helper_config {
 
   /**
   * Helper function to list the output from a request against the data services, using an HTML template
-  * for each item.
+  * for each item. As an example, the following outputs an unordered list of surveys:
+  * <pre>echo data_entry_helper::list_in_template(array(
+  *     'label'=>'template',
+  *     'table'=>'survey',
+  *     'extraParams' => $readAuth,
+  *     'template'=>'<li>|title|</li>'
+  * ));</pre>
   *
-  * @param string $entity Name of the data entity that is being requested.
-  * @param array $extraParams Additional parameters passed to the data services in the URL request. For example, this
-  * can be used to specify the read authorisation, select only entries which match a certain field value, and
-  * select the details view by specifying: $readAuth + array('field to test' => value,'view' => 'details').
-  * @param string $template HTML template which will be emitted for each item. Fields from the data are identified
-  * by wrapping them in ||. For example, <li>|term|</li> would result in the field called term's value being placed inside
-  * <li> tags.
-  * @return string HTML code for the list of items.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>class</strong><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><strong>table</strong><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><strong>extraParams</strong><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><strong>template</strong><br/>
+  * Required. HTML template which will be emitted for each item. Fields from the data are identified
+  * by wrapping them in ||. For example, |term| would result in the field called term's value being placed inside
+  * the HTML.</li>
+  * </ul>
+  * @return String containing the output HTML.
   */
-  public static function list_in_template($entity, $extraParams = null, $template) {
-    $url = parent::$base_url."/index.php/services/data";
-    // Execute a request to the service
-    $request = "$url/$entity?mode=json";
-    $request .= self::array_to_query_string($extraParams);
-    // Get the curl session object
-    $session = curl_init($request);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $response = curl_exec($session);
-    $response = json_decode(array_pop(explode("\r\n\r\n",$response)), true);
-    $r = "";
+  public static function list_in_template() {
+    $options = self::check_arguments(func_get_args(), array('table', 'extraParams', 'template'));
+    $response = self::get_population_data($options);
+    $items = "";
     if (!array_key_exists('error', $response)){
-      $r .= "<ul>";
       foreach ($response as $row){
-        $item = $template;
+        $item = $options['template'];
         foreach ($row as $field => $value) {
           $value = htmlspecialchars($value, ENT_QUOTES);
           $item = str_replace("|$field|", $value, $item);
         }
-        $r .= $item;
+        $items .= $item;
       }
-      $r .= "</ul>";
+      $options['items']=$items;
+      return self::apply_template('list_in_template', $options);
     }
     else
-      echo lang::get("error loading control");
-
-    return $r;
+      return lang::get("error loading control");
   }
 
   /**
@@ -996,8 +1037,6 @@ class data_entry_helper extends helper_config {
     return $r;
   }
 
-
-
   /**
    * Outputs a map panel.
    * The map panel can be augmented by adding any of the following controls which automatically link themselves
@@ -1016,7 +1055,7 @@ class data_entry_helper extends helper_config {
    * The div's id can be specified using the divId array entry.
    */
   public static function map_panel($options) {
-    global $javascript;
+    global $javascript, $templates;
     self::add_resource('indiciaMapPanel');
     $options = array_merge(array(
     'divId'=>'map',
@@ -1061,9 +1100,13 @@ class data_entry_helper extends helper_config {
       unset($options['layers']);
     }
     $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-    $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);";
+    $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
-    $r = "<div id='".$options['divId']."'></div>";
+    $r = str_replace(
+          array('{divId}'),
+          array($options['divId']),
+          $templates['map_panel']
+      );
     return $r;
   }
 
@@ -1167,8 +1210,8 @@ class data_entry_helper extends helper_config {
   * <li><strong>fieldname</strong><br/>
   * Required. The name of the database field this control is bound to if any.</li>
    */
-  public static function georeference_lookup() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
+  public static function georeference_lookup($options) {
+    $options = self::check_options($options);
     return self::apply_template('georeference_lookup', $options);
   }
 
@@ -1191,8 +1234,8 @@ class data_entry_helper extends helper_config {
   * should at least contain the read authorisation array.</li>
   * </ul>
   */
-  public static function location_select() {
-    $options = self::check_arguments(func_get_args(), array());
+  public static function location_select($options) {
+    $options = self::check_options($options);
     // Apply location type filter if specified.
     if (array_key_exists('location_type_id', $options)) {
       $options['extraParams'] += array('location_type_id' => $options['location_type_id']);
