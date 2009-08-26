@@ -111,7 +111,7 @@ echo html::error_message($model->getError('deleted'));
 <textarea rows="3" id="synonyms" name="synonyms"><?php echo html::specialchars($synonyms); ?></textarea>
 </li>
 <li>
-<label for='image_path'>Upload Image: </label>";
+<label for='image_path'>Upload Image: </label>
 <input type='file' name='image_upload' accept='png|jpg|gif' />
 </li>
 <li>
