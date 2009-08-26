@@ -124,7 +124,7 @@ public $template = 'templates/template';
    */
   public function config_email_save()
   {
-    if ($_POST['skip']) {
+    if (isset($_POST['skip'])) {
       url::redirect('setup_check/skip_email');
     } else {
       $source = dirname(dirname(__file__ )) . '/config/_email.php';
