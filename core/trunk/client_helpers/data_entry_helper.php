@@ -726,18 +726,125 @@ class data_entry_helper extends helper_config {
     return self::select_or_listbox($options, 'listbox', 'listbox_option', 'listbox_option_selected');
   }
 
+
+  /**
+   * Private function to fetch a validated timeout value from passed in options array
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><strong>cachetimeout</strong><br/>
+   * Optional. The length in seconds before the cache times out and is refetched.</li></ul>
+   * @return Timeout in number of seconds, else FALSE if data is not to be cached.
+   */
+  private static function _getCacheTimeOut($options)
+  {
+    if (isset($options['cachetimeout'])) {
+      if (is_numeric($options['cachetimeout']) && $options['cachetimeout'] > 0) {
+        return $options['cachetimeout'];
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Private function to generate a filename to be used as the cache file for this data
+   * @param string $path directory path for file
+   * @param array $options Options array : contents are used along with md5 to generate the filename.
+   * If present 'auth_token' amd 'nonce' are ignored as these are session dependant.
+   * @param number $timeout - will be false if no caching to take place
+   * @return string filename, else FALSE if data is not to be cached.
+   */
+  private static function _getCacheFileName($path, $options, $timeout)
+  {
+    /* If timeout is not set, we're not caching */
+    if (!$timeout)
+      return false;
+    if(!is_dir($path) || !is_writeable($path))
+      return false;
+
+    if (array_key_exists('auth_token', $options)) {
+      unset($options['auth_token']);
+    }
+    if (array_key_exists('nonce', $options)) {
+      unset($options['nonce']);
+    }
+
+    $cacheFileName = $path;
+    $cacheFileName .= md5(self::array_to_query_string($options));
+
+    return $cacheFileName;
+  }
+
+  /**
+   * Private function to return the cached data stored in the specified local file.
+   * @param string $file Cache file to be used, includes path
+   * @param number $timeout - will be false if no caching to take place
+   * @return array equivalent of call to http_post, else FALSE if data is not to be cached.
+   */
+  private static function _getCachedResponse($file, $timeout)
+  {
+    if ($timeout && $file && is_file($file) && filemtime($file) >= (time() - $timeout)) {
+      $response = array();
+      $handle = fopen($file, 'rb');
+      $response['output'] = fread($handle, filesize($file));
+      fclose($handle);
+      return($response);
+    }
+    return false;
+  }
+
+  /**
+   * Private function to remove a cache file if it has timed out.
+   * @param string $file Cache file to be removed, includes path
+   * @param number $timeout - will be false if no caching to take place
+   */
+  private static function _timeOutCacheFile($file, $timeout)
+  {
+    if ($file && is_file($file) && filemtime($file) < (time() - $timeout)) {
+      unlink($file);
+    }
+  }
+
+  /**
+   * Private function to create a cache file provided it does not already exist.
+   * @param string $file Cache file to be removed, includes path - will be false if no caching to take place
+   * @param array $response http_post return value
+   */
+  private static function _cacheResponse($file, $response)
+  {
+    if ($file && !is_file($file)) {
+      $handle = fopen($file, 'wb');
+      fwrite($handle, $response['output']);
+      fclose($handle);
+    }
+  }
+
   /**
    * Issue a post request to get the population data required for a control. Depends on the
-   * options' table and extraParams values what is requested.
+   * options' table and extraParams values what is requested. This is now cacheable.
+   * NB that this function only uses the 'table' and 'extraParams' of $options
+   * When generating the cache for this data we need to use the table and
+   * any extra params, excluding the read_auth and the nonce. The cache should be 
+   * used by all accesses to the DB.
    */
   private static function get_population_data($options) {
+
     $url = parent::$base_url."index.php/services/data";
-    // Execute a request to the service
     $request = "$url/".$options['table']."?mode=json";
+
     if (array_key_exists('extraParams', $options)) {
+      $cacheOpts = $options['extraParams'];
       $request .= self::array_to_query_string($options['extraParams']);
-    }
-    $response = self::http_post($request, null);
+    } else
+      $cacheOpts = array();
+    
+    $cacheOpts['table'] = $options['table'];
+    $cacheTimeOut = self::_getCacheTimeOut($options);
+    /* TODO : confirm if upload directory is best place for cache files */
+    $cacheFile = self::_getCacheFileName(parent::$upload_path, $cacheOpts, $cacheTimeOut);
+    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut)))
+      $response = self::http_post($request, null);
+    self::_timeOutCacheFile($cacheFile, $cacheTimeOut);
+    self::_cacheResponse($cacheFile, $response);
+
     return json_decode($response['output'], true);
   }
 
