@@ -378,6 +378,12 @@ class data_entry_helper extends helper_config {
    * <li><strong>columns</strong><br/>
    * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
    * Defaults to 1.</li>
+   * <li><strong>cachetimeout</strong><br/>
+   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+   * if this is not specified then 1 hour.</li>
    * </ul>
    */
   public static function species_checklist()
@@ -667,6 +673,12 @@ class data_entry_helper extends helper_config {
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
   * unless a parentControlId is specified.</li>
+  * <li><strong>cachetimeout</strong><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
   * </ul>
   *
   * @return string HTML code for a select control.
@@ -716,6 +728,12 @@ class data_entry_helper extends helper_config {
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
   * unless a parentControlId is specified.</li>
+  * <li><strong>cachetimeout</strong><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
   * </ul>
   */
   public static function listbox()
@@ -736,19 +754,33 @@ class data_entry_helper extends helper_config {
    */
   private static function _getCacheTimeOut($options)
   {
-    if (isset($options['cachetimeout'])) {
-      if (is_numeric($options['cachetimeout']) && $options['cachetimeout'] > 0) {
-        return $options['cachetimeout'];
+    global $indicia_cachetimeout;
+    $ret_value = 3600; /* this is the default timeout period if none specified anywhere
+                          This should be red flagged to all users, so they know the consequences:
+                          by default changes to species lists etc will take up to 1 hour to be visible
+                          on the website */
+
+    if (isset($indicia_cachetimeout)) {
+      if (is_numeric($indicia_cachetimeout) && $indicia_cachetimeout > 0) {
+        $ret_value = $indicia_cachetimeout;
+      } else {
+        $ret_value = false;
       }
     }
-    return false;
+    if (isset($options['cachetimeout'])) {
+      if (is_numeric($options['cachetimeout']) && $options['cachetimeout'] > 0) {
+        $ret_value = $options['cachetimeout'];
+      } else {
+        $ret_value = false;
+      }
+  	}
+    return $ret_value;
   }
 
   /**
    * Private function to generate a filename to be used as the cache file for this data
    * @param string $path directory path for file
    * @param array $options Options array : contents are used along with md5 to generate the filename.
-   * If present 'auth_token' amd 'nonce' are ignored as these are session dependant.
    * @param number $timeout - will be false if no caching to take place
    * @return string filename, else FALSE if data is not to be cached.
    */
@@ -760,14 +792,7 @@ class data_entry_helper extends helper_config {
     if(!is_dir($path) || !is_writeable($path))
       return false;
 
-    if (array_key_exists('auth_token', $options)) {
-      unset($options['auth_token']);
-    }
-    if (array_key_exists('nonce', $options)) {
-      unset($options['nonce']);
-    }
-
-    $cacheFileName = $path;
+    $cacheFileName = $path.'cache_';
     $cacheFileName .= md5(self::array_to_query_string($options));
 
     return $cacheFileName;
@@ -777,16 +802,19 @@ class data_entry_helper extends helper_config {
    * Private function to return the cached data stored in the specified local file.
    * @param string $file Cache file to be used, includes path
    * @param number $timeout - will be false if no caching to take place
+   * @param array $options Options array : contents used to confirm what this data is.
    * @return array equivalent of call to http_post, else FALSE if data is not to be cached.
    */
-  private static function _getCachedResponse($file, $timeout)
+  private static function _getCachedResponse($file, $timeout, $options)
   {
     if ($timeout && $file && is_file($file) && filemtime($file) >= (time() - $timeout)) {
       $response = array();
       $handle = fopen($file, 'rb');
+      $tags = fgets($handle);
       $response['output'] = fread($handle, filesize($file));
       fclose($handle);
-      return($response);
+      if ($tags == self::array_to_query_string($options)."\n")
+        return($response);
     }
     return false;
   }
@@ -807,11 +835,13 @@ class data_entry_helper extends helper_config {
    * Private function to create a cache file provided it does not already exist.
    * @param string $file Cache file to be removed, includes path - will be false if no caching to take place
    * @param array $response http_post return value
+   * @param array $options Options array : contents used to tag what this data is.
    */
-  private static function _cacheResponse($file, $response)
+  private static function _cacheResponse($file, $response, $options)
   {
     if ($file && !is_file($file)) {
       $handle = fopen($file, 'wb');
+      fputs($handle, self::array_to_query_string($options)."\n");
       fwrite($handle, $response['output']);
       fclose($handle);
     }
@@ -837,13 +867,21 @@ class data_entry_helper extends helper_config {
       $cacheOpts = array();
     
     $cacheOpts['table'] = $options['table'];
+    /* If present 'auth_token' amd 'nonce' are ignored as these are session dependant. */
+    if (array_key_exists('auth_token', $cacheOpts)) {
+      unset($cacheOpts['auth_token']);
+    }
+    if (array_key_exists('nonce', $cacheOpts)) {
+      unset($cacheOpts['nonce']);
+    }
+
     $cacheTimeOut = self::_getCacheTimeOut($options);
     /* TODO : confirm if upload directory is best place for cache files */
     $cacheFile = self::_getCacheFileName(parent::$upload_path, $cacheOpts, $cacheTimeOut);
-    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut)))
+    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
       $response = self::http_post($request, null);
     self::_timeOutCacheFile($cacheFile, $cacheTimeOut);
-    self::_cacheResponse($cacheFile, $response);
+    self::_cacheResponse($cacheFile, $response, $cacheOpts);
 
     return json_decode($response['output'], true);
   }
@@ -1078,6 +1116,12 @@ class data_entry_helper extends helper_config {
   * Required. HTML template which will be emitted for each item. Fields from the data are identified
   * by wrapping them in ||. For example, |term| would result in the field called term's value being placed inside
   * the HTML.</li>
+  * <li><strong>cachetimeout</strong><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
   * </ul>
   * @return String containing the output HTML.
   */
@@ -1124,6 +1168,12 @@ class data_entry_helper extends helper_config {
   * <li><strong>extraParams</strong><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
+  * <li><strong>cachetimeout</strong><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
   * </ul>
   */
   public static function radio_group() {
@@ -1154,6 +1204,12 @@ class data_entry_helper extends helper_config {
   * <li><strong>extraParams</strong><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
+  * <li><strong>cachetimeout</strong><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
   * </ul>
   */
   public static function checkbox_group() {
@@ -1417,6 +1473,12 @@ class data_entry_helper extends helper_config {
   * <li><strong>extraParams</strong><br/>
   * Required. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
+  * <li><strong>cachetimeout</strong><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
   * </ul>
   */
   public static function location_select($options) {
@@ -1858,6 +1920,8 @@ class data_entry_helper extends helper_config {
    */
   private static function array_to_query_string($array) {
     $r = '';
+    if(is_array($array))
+      arsort($array);
     foreach ($array as $a => $b)
     {
       $r .= "&$a=$b";
