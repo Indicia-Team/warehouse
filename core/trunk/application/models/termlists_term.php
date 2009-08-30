@@ -170,7 +170,7 @@ class Termlists_term_Model extends Base_Name_Model {
         $sa['superModels'][] = array(
           'fkId' => 'meaning_id',
           'model' => $meaningModel->wrap(
-               array_intersect_key($array, $this->object_name, $meaningModel->table_columns
+               array_intersect_key($array, $meaningModel->table_columns
           ), false, 'meaning'));
       }
 
