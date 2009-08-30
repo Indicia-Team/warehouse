@@ -106,6 +106,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     // Add items to view
     $vArgs = array(
       'table' => $grid->display(true),
+      'termlist_id' => $this->model->termlist_id,
       'synonyms' => $this->formatSynonomy($this->model->getSynonomy('meaning_id', $this->model->meaning_id)),
     );
     $this->setView('termlists_term/termlists_term_edit', 'Term', $vArgs);

@@ -28,7 +28,7 @@
 <fieldset>
 <legend>Term Details</legend>
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
-<input type="hidden" name="termlist_id" id="termlist_id" value="<?php echo html::specialchars($model->termlist_id); ?>" />
+<input type="hidden" name="termlist_id" id="termlist_id" value="<?php echo html::specialchars($termlist_id); ?>" />
 <ol>
 <li>
 <input type="hidden" name="term_id" id="term_id" value="<?php echo html::specialchars($model->term_id); ?>" />
