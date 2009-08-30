@@ -786,13 +786,15 @@ class data_entry_helper extends helper_config {
    */
   private static function _getCacheFileName($path, $options, $timeout)
   {
+    global $indicia_website_id;
+
     /* If timeout is not set, we're not caching */
     if (!$timeout)
       return false;
     if(!is_dir($path) || !is_writeable($path))
       return false;
 
-    $cacheFileName = $path.'cache_';
+    $cacheFileName = $path.'cache_'.$indicia_website_id.'_';
     $cacheFileName .= md5(self::array_to_query_string($options));
 
     return $cacheFileName;
@@ -847,6 +849,8 @@ class data_entry_helper extends helper_config {
     }
   }
 
+  /* TODO could do with a function to provide a button to clear down the caches */
+
   /**
    * Issue a post request to get the population data required for a control. Depends on the
    * options' table and extraParams values what is requested. This is now cacheable.
@@ -857,6 +861,7 @@ class data_entry_helper extends helper_config {
    */
   private static function get_population_data($options) {
 
+    global $indicia_website_id;
     $url = parent::$base_url."index.php/services/data";
     $request = "$url/".$options['table']."?mode=json";
 
@@ -867,6 +872,7 @@ class data_entry_helper extends helper_config {
       $cacheOpts = array();
     
     $cacheOpts['table'] = $options['table'];
+    $cacheOpts['indicia_website_id'] = $indicia_website_id;
     /* If present 'auth_token' amd 'nonce' are ignored as these are session dependant. */
     if (array_key_exists('auth_token', $cacheOpts)) {
       unset($cacheOpts['auth_token']);
@@ -1906,6 +1912,9 @@ class data_entry_helper extends helper_config {
   * @param string $password Indicia password for the website.
   */
   public static function get_read_auth($website_id, $password) {
+    global $indicia_website_id;
+  	
+    $indicia_website_id = $website_id; /* Store this for use with data caching */
     $postargs = "website_id=$website_id";
     $response = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs);
     $nonce = $response['output'];
