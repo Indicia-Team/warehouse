@@ -1,11 +1,13 @@
 # Turn on URL rewriting
-RewriteEngine On
+Options +FollowSymLinks
+RewriteEngine on
 
 # Installation directory
 RewriteBase /kohana/
 
 # Protect application and system files from being viewed
 RewriteRule ^(application|modules|system) - [F,L]
+RewriteRule application/cache/.* - [F,L]
 
 # Allow any files or directories that exist to be displayed directly
 RewriteCond %{REQUEST_FILENAME} !-f
