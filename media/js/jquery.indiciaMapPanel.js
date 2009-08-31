@@ -38,9 +38,12 @@
       {
         OpenLayers.ProxyHost = this.settings.proxy;
       }
+      
+      // Keep a reference to this, to simplify scoping issues.
+      var div = this;
 
       // Constructs the map
-      var map = new OpenLayers.Map($(this)[0], olOpts);
+      div.map = new OpenLayers.Map($(this)[0], olOpts);      
 
       // Iterate over the preset layers, adding them to the map
       $.each(this.settings.presetLayers, function(i, item)
@@ -49,11 +52,11 @@
         if ($.fn.indiciaMapPanel.presetLayers.hasOwnProperty(item))
         {
           var layer = $.fn.indiciaMapPanel.presetLayers[item]();
-          map.addLayers([layer]);
+          div.map.addLayers([layer]);
         }
       });
 
-      var div = this;
+      
       // Convert indicia WMS/WFS layers into js objects
       $.each(this.settings.indiciaWMSLayers, function(key, value)
       {
@@ -64,43 +67,51 @@
         div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
       });
 
-      map.addLayers(this.settings.layers);
+      div.map.addLayers(this.settings.layers);
+      
+      // Centre the map
+      var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
+      proj=new OpenLayers.Projection("EPSG:4326");
+      center.transform(proj, div.map.getProjectionObject());
+      div.map.setCenter(center, this.settings.initial_zoom);
 
       if (this.settings.editLayer) {
         // Add an editable layer to the map
         var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true});
-        map.editLayer = editLayer;
-        map.addLayers([map.editLayer]);
+        div.map.editLayer = editLayer;
+        div.map.addLayers([div.map.editLayer]);
+        
+        if (this.settings.initialFeatureWkt == null ) {
+        	// if no initial feature specified, but there is a populated imp-geom hidden input, 
+        	// use the value from the hidden geom        	
+        	this.settings.initialFeatureWkt = $('#imp-geom').val();
+        }
 
         // Draw the feature to be loaded on startup, if present
-        if (this.settings.initialFeatureWkt !== null)
+        if (this.settings.initialFeatureWkt)
         {
-          this._showWktFeature(this, this.settings.initialFeatureWkt);
+          _showWktFeature(this, this.settings.initialFeatureWkt);
         }
       }
 
       // Add any map controls
       $.each(this.settings.controls, function(i, item) {
-        map.addControl(item);
+        div.map.addControl(item);
       });
 
       // Add a layer switcher if there are multiple layers
       if ((this.settings.presetLayers.length + this.settings.layers.length) > 1) {
-        map.addControl(new OpenLayers.Control.LayerSwitcher());
+        div.map.addControl(new OpenLayers.Control.LayerSwitcher());
       }
-
-      // Centre the map
-      map.setCenter(new OpenLayers.LonLat(this.settings.initial_long,this.settings.initial_lat),this.settings.initial_zoom);
 
       // Disable the scroll wheel from zooming if required
       if (!this.settings.scroll_wheel_zoom) {
-        $.each(map.controls, function(i, control) {
+        $.each(div.map.controls, function(i, control) {
           if (control instanceof OpenLayers.Control.Navigation) {
             control.disableZoomWheel();
           }
         });
-      }
-      this.map = map;
+      }      
       _bindControls(this);
     });
 
@@ -125,7 +136,7 @@
       bounds.left = bounds.left - dx;
       // if showing a point, don't zoom in too far
       if (dy===0 && dx===0) {
-        div.map.setCenter(bounds.getCenterLonLat(), 13);
+        div.map.setCenter(bounds.getCenterLonLat(), 13);        
       } else {
         // Set the default view to show something triple the size of the grid square
         div.map.zoomToExtent(bounds);
@@ -168,12 +179,12 @@
             "&precision=" + precision +
             "&callback=?", function(data)
             {
-              $('#'+opts.srefId).attr('value', data.sref);
+              $('#'+opts.srefId).val(data.sref);              
               div.map.editLayer.destroyFeatures();
-              $('#'+opts.geomId).attr('value', data.wkt);
+              $('#'+opts.geomId).val(data.wkt);
               var parser = new OpenLayers.Format.WKT();
               var feature = parser.read(data.wkt);
-              div.map.editLayer.addFeatures([feature]);
+              div.map.editLayer.addFeatures([feature]);              
             }
           );
         }
@@ -192,6 +203,7 @@
           "&callback=?", function(data) {
             // store value in saved field?
             _showWktFeature(div, data.wkt);
+            $('#'+opts.geomId).val(data.wkt);
           }
         );
       });
@@ -317,10 +329,10 @@ $.fn.indiciaMapPanel.defaults = {
     indiciaSvc : "http://localhost/indicia",
     indiciaGeoSvc : "http://localhost:8080/geoserver",
     readAuth : '',
-    height: "450px",
+    height: "470px",
     width: "600px",
-    initial_lat: 7450000,
-    initial_long: -410000,
+    initial_lat: 55.1,
+    initial_long: -2,
     initial_zoom: 5,
     scroll_wheel_zoom: true,
     proxy: "http://localhost/cgi-bin/proxy.cgi?url=",

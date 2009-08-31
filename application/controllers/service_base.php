@@ -81,8 +81,7 @@ class Service_Base_Controller extends Controller {
       } elseif (get_class($e)!='ServiceError') {
         $response['file']=$e->getFile();
         $response['line']=$e->getLine();
-        $response['trace']=array();
-        error::log('Exception in service call', $e);
+        $response['trace']=array();        
       }
       echo json_encode($response);
     }

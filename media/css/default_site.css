@@ -104,3 +104,7 @@ input, select, textarea {
   margin-top: 5px;
   float: right;
 }
+
+.wide {
+  width: 500px;
+}

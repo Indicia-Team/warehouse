@@ -29,7 +29,7 @@ if ($_POST)
   $response = data_entry_helper::forward_post_to(
     'save', $submission
   );
-  data_entry_helper::dump_errors($response);
+  echo data_entry_helper::dump_errors($response);
 }
 
 ?>
