@@ -1,0 +1,1 @@
+UPDATE sample_attributes AS oa SET validation_rules = 'numeric,min[-20],max[45]' WHERE oa.caption='Temperature (Celsius)';

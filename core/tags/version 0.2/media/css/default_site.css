@@ -1,0 +1,110 @@
+.scTaxonCell {
+  padding-right: 1em;
+}
+
+.scPresenceCell {
+  text-align: center;
+}
+
+.ui-widget-header th {
+  padding: 0.2em;
+}
+
+#imp-georef-output-div ol  {
+  list-style-type: none;
+  padding-left: 3em;
+  padding-bottom: 1em;
+}
+
+#ui-datepicker-div {
+  z-index: 2000;
+}
+
+.inline-error {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  margin-left: 160px;
+}
+
+.error_message {
+  font-weight: bold;
+}
+
+label {
+  width: 160px;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  vertical-align: top;
+  margin: 4px 0 4px 0;
+}
+
+input, select, textarea {
+  vertical-align: top;
+  margin: 4px 0 4px 0;
+}
+
+.auto {
+  width: auto
+}
+
+.page-notice {
+  margin-bottom: 1em;
+  padding: 0.3em;
+  display: block;
+}
+
+.page-notice p {
+  margin: 0.5em 1.5em 0.5em 1.5em;
+}
+
+.page-notice span.ui-icon {
+  float: left;
+}
+
+.flickr-panel {
+  padding: 0.5em;
+}
+
+.photo {
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  margin: 1em;
+  padding: 0.5em;
+}
+
+.photo img {
+  display: block;
+}
+
+.photo p {
+  text-align: center;
+}
+
+.indicia-button {
+  padding: 0em 0.3em;
+  text-decoration: none;
+  width: auto;
+}
+
+#f-dosearch {
+  margin: 3px 2em 0 1px;
+}
+
+.f-photo p {
+  float: left;
+}
+
+.f-photo button {
+  margin-top: 5px;
+  float: right;
+}
+
+.wide {
+  width: 500px;
+}

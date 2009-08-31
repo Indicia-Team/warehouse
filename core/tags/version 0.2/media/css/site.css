@@ -1,0 +1,238 @@
+*
+{
+  margin: 0;
+  padding: 0;
+}
+
+body
+{
+  margin: auto;
+  width: 760px;
+  font-size: 70%;
+  background: #E5E0C3 url(../images/gradient.png) repeat-x top left;
+  text-align: center;
+  font-family: Trebuchet MS, Helvetica, sans-serif;
+}
+
+p
+{
+  margin-bottom: 0.5em;
+}
+
+#wrapper
+{
+  text-align: left;
+  background-color: #FFFFFF;
+  padding: 6px;
+  border: solid #CCCCCC 1px;
+}
+
+#banner
+{
+  background: #2075C5 url(../images/banner.jpg) no-repeat top left;
+  color: #FEFEFE;
+  padding: 16px;
+  height: 94px;
+  width: 716px;
+}
+
+#sitetitle
+{
+  font-family: Tahoma, Geneva, sans-serif;
+  font-size: 2em;
+  margin-left: 70px;
+}
+
+#subtitle
+{
+  font-family: Tahoma, Geneva, sans-serif;
+  font-size: 1.2em;
+  margin-left: 70px;
+}
+
+
+table
+{
+  margin-bottom: 6px;
+}
+
+th
+{
+  text-align: left;
+  padding: 3px 6px 3px 6px;
+}
+
+table#pageGrid thead tr th
+{
+  padding-right: 20px;
+  cursor: pointer;
+}
+
+td
+{
+  padding: 0.2em;
+  vertical-align: top;
+}
+
+td a
+{
+  text-decoration: none;
+  color: #203080;
+}
+
+td a:hover
+{
+  text-decoration: underline;
+}
+
+
+tr.oddRow
+{
+  background: #F2F2F2;
+}
+
+#gvFilter
+{
+  margin-bottom: 1em;
+}
+
+#content
+{
+  margin: 20px;
+  clear: left;
+  min-height: 400px;
+}
+
+h1
+{
+  color: #103A6A;
+  margin-bottom: 12px;
+  font-size: 1.4em;
+  font-family: Verdana,Arial,sans-serif;
+  font-weight: normal;
+}
+
+h2
+{
+  color: #103A6A;
+  margin-bottom: 2px;
+  font-size: 1.2em;
+  Verdana,Arial,sans-serif;
+
+}
+
+#footer
+{
+  clear:both;
+  margin-top:1em;
+  border-top: 2px solid #C1DAD7;
+  padding: 1em;
+  color:#666666;
+  font-size:1em;
+}
+
+#metadata_toggle {
+text-align: right;
+}
+
+#metadata_toggle span
+{
+  color: #103A6A;
+  display: none;
+  cursor: pointer;
+}
+
+.instruct
+{
+  width: 600px;
+  color: #666666;
+  font-size: 90%;
+}
+
+.error {
+  background-color: #FFEEEE;
+  border: solid red 1px;
+  padding: 1em;
+  width: 700px;
+}
+
+.error p {
+  background: url(../images/cross.png) top left no-repeat;
+  padding-left: 26px;
+}
+
+.success {
+  background-color: #EEFFEE;
+  border: solid green 1px;
+  padding: 1em;
+  width: 700px;
+}
+
+.success p {
+  background: url(../images/tick.png) top left no-repeat;
+  padding-left: 26px;
+}
+
+#tabs {
+  margin-bottom: 0.5em;
+}
+
+.code {
+  margin: 4px;
+  padding: 0.5em 0 0.5em 1em;
+  border-left: solid silver 2px;
+  font-family: calibri;
+  display: block;
+}
+
+.button {
+  padding: 0.5em;
+  text-decoration: none;
+  color: #000000 !important;
+  margin: 0.5em 2em 0.5em 0;
+}
+
+.page-notice {
+  margin-bottom: 1em;
+  padding: 0.3em;
+  display: block;
+}
+
+.page-notice p {
+  margin: 0.7em 1.5em 0.7em 1.5em;
+}
+
+.page-notice label {
+  margin-left: 1.5em;
+}
+
+.page-notice span.ui-icon {
+  float: left;
+}
+
+.page-notice a.button {
+  position: relative;
+  display: inline-block;
+  zoom: 1;
+  *display: inline;
+  margin-left: 1.5em;
+}
+
+.page-notice a.button .ui-icon {
+  float: none;
+  display: inline-block;
+}
+
+.grid-button {
+  padding: 1px;
+  margin: 1px;
+  font-size: 80%;
+}
+
+.imagelist {
+  padding: 0.5em;
+}
+
+.imagelist a {
+  margin: 0.5em;
+}
