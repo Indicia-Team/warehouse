@@ -14,19 +14,9 @@ include '../data_entry_config.php';
 $javascript = '';
 // Catch and submit POST data.
 if ($_POST){
-  // We're mainly submitting to the sample model
-  $sampleMod = data_entry_helper::wrap($_POST, 'sample');
-  $occurrences = data_entry_helper::wrap_species_checklist($_POST);
-
-  // Add the occurrences in as submodels
-  $sampleMod['subModels'] = $occurrences;
-
-  // Wrap submission and submit
-  $submission = array('submission' => array('entries' => array(
-  array ( 'model' => $sampleMod ))));
+  $submission = build_sample_occurrences_list_submission($_POST);
   $response = data_entry_helper::forward_post_to('save', $submission);
-  print_r($response);
-  data_entry_helper::dump_errors($response);
+  echo data_entry_helper::dump_errors($response);
 }
 
 ?>
