@@ -25,14 +25,14 @@
 require_once('lang.php');
 require_once('helper_config.php');
 
-global $templates;
+global $indicia_templates;
 
 /**
  * Provides a control templates to define the output of the data entry helper class.
  *
  * @package	Client
  */
-$templates = array(
+$indicia_templates = array(
   'prefix' => '',
   'label' => '<label for="{id}">{label}:</label>'."\n",
   'suffix' => "<br/>\n",
@@ -242,12 +242,12 @@ class data_entry_helper extends helper_config {
    * suffix template.
    *
    * @access private
-   * @param string $template Name of the control template, from the global $templates variable.
+   * @param string $template Name of the control template, from the global $indicia_templates variable.
    * @param array $options Options array containing the control replacement values for the templates.
    * Options can contain a setting for prefixTemplate or suffixTemplate to override the standard templates.
    */
   private static function apply_template($template, $options) {
-    global $templates;
+    global $indicia_templates;
     // Don't need the extraParams - they are just for service communication.
     $options['extraParams']=null;
     // Build an array of all the possible tags we could replace in the template.
@@ -261,9 +261,9 @@ class data_entry_helper extends helper_config {
     }
     $r = '';
     if (array_key_exists('prefixTemplate', $options)) {
-      $r .= $templates[$options['prefixTemplate']];
+      $r .= $indicia_templates[$options['prefixTemplate']];
     } else {
-      $r .= $templates['prefix'];
+      $r .= $indicia_templates['prefix'];
     }
     // Add a label only if specified in the options array. Link the label to the inputId if available,
     // otherwise the fieldname (as the fieldname control could be a hidden control).
@@ -271,19 +271,19 @@ class data_entry_helper extends helper_config {
       $r .= str_replace(
           array('{label}', '{id}'),
           array($options['label'], array_key_exists('inputId', $options) ? $options['inputId'] : $options['id']),
-          $templates['label']
+          $indicia_templates['label']
       );
     }
     // Output the main control
-    $r .= str_replace($replaceTags, $replaceValues, $templates[$template]);
+    $r .= str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);
     // output any errors identified for the control
     if (array_key_exists('fieldname', $options)) {
       $r .= self::check_errors($options['fieldname']);
     }
     if (array_key_exists('suffixTemplate', $options)) {
-      $r .= $templates[$options['suffixTemplate']];
+      $r .= $indicia_templates[$options['suffixTemplate']];
     } else {
-      $r .= $templates['suffix'];
+      $r .= $indicia_templates['suffix'];
     }
     return $r;
   }
@@ -369,7 +369,7 @@ class data_entry_helper extends helper_config {
    * Optional. Associative array of items to pass via the query string to the service. This
    * should at least contain the read authorisation array.</li>
    * <li><strong>lookupListId</strong><br/>
-   * Required. The ID of the taxon_lists record which is to be used to select taxa from when adding
+   * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
    * rows to the grid. If specified, then an autocomplete text box and
    * Add Row button are generated automatically allowing the user to pick a species to add as an
    * extra row.</li>
@@ -388,7 +388,7 @@ class data_entry_helper extends helper_config {
    */
   public static function species_checklist()
   {
-    global $javascript, $entity_to_load;
+    global $indicia_javascript, $entity_to_load;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     $options = array_merge(array(
         'header'=>'true',
@@ -421,42 +421,43 @@ class data_entry_helper extends helper_config {
     $taxalist = self::get_population_data($options);
     $url = parent::$base_url."index.php/services/data";
     // Get the list of occurrence attributes
-    foreach ($options['occAttrs'] as $occAttr)
-    {
-      $occAttrRequest = "$url/occurrence_attribute/$occAttr?mode=json";
-      $occAttrRequest .= self::array_to_query_string($options['readAuth']);
-      $session = curl_init($occAttrRequest);
-      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-      $a = json_decode(array_pop(explode("\n\n", curl_exec($session))), true);
-      if (! array_key_exists('error', $a))
+    if (array_key_exists('occAttrs', $options)) {
+      foreach ($options['occAttrs'] as $occAttr)
       {
-        $b = $a[0];
-        $occAttrs[$occAttr] = $b['caption'];
-        // Build the correct control
-        switch ($b['data_type'])
+        $occAttrRequest = "$url/occurrence_attribute/$occAttr?mode=json";
+        $occAttrRequest .= self::array_to_query_string($options['readAuth']);
+        $session = curl_init($occAttrRequest);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $a = json_decode(array_pop(explode("\n\n", curl_exec($session))), true);
+        if (! array_key_exists('error', $a))
         {
-          case 'L':
-            $tlId = $b['termlist_id'];
-            $occAttrControls[$occAttr] =
-            data_entry_helper::select(
-              'oa:'.$occAttr, 'termlists_term', 'term', 'id',
-              $options['readAuth'] + array('termlist_id' => $tlId)
-            );
-            break;
-          case 'D' || 'V':
-            // Date-picker control
-            $occAttrControls[$occAttr] = "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' " .
-                "value='".lang::get('click here')."'/>";
-            break;
-
-          default:
-            $occAttrControls[$occAttr] =
-                "<input type='text' id='oa:$occAttr' name='oa:$occAttr'/>";
-            break;
+          $b = $a[0];
+          $occAttrs[$occAttr] = $b['caption'];
+          // Build the correct control
+          switch ($b['data_type'])
+          {
+            case 'L':
+              $tlId = $b['termlist_id'];
+              $occAttrControls[$occAttr] =
+              data_entry_helper::select(
+                'oa:'.$occAttr, 'termlists_term', 'term', 'id',
+                $options['readAuth'] + array('termlist_id' => $tlId)
+              );
+              break;
+            case 'D' || 'V':
+              // Date-picker control
+              $occAttrControls[$occAttr] = "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' " .
+                  "value='".lang::get('click here')."'/>";
+              break;
+  
+            default:
+              $occAttrControls[$occAttr] =
+                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr'/>";
+              break;
+          }
         }
       }
     }
-
 
     // Build the grid
     if (! array_key_exists('error', $taxalist))
@@ -483,7 +484,7 @@ class data_entry_helper extends helper_config {
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
         $row = "<td class='scTaxonCell ui-state-default'>".$taxon['taxon']." ".$taxon['authority']."</td>";
-        if (array_key_exists("sc:$id:present", $entity_to_load)) {
+        if (isset($entity_to_load) && array_key_exists("sc:$id:present", $entity_to_load)) {
           $checked = ' checked="checked"';
         } else {
           $checked='';
@@ -518,7 +519,7 @@ class data_entry_helper extends helper_config {
       if ($options['lookupListId'] != null) {
         // Javascript to add further rows to the grid
         self::add_resource('addrowtogrid');
-        $javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
+        $indicia_javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'});
         jQuery('#addRowButton').click(addRowFn);\r\n";
 
@@ -566,7 +567,7 @@ class data_entry_helper extends helper_config {
     {
       self::add_resource('treeview');
       // Reference to the config file.
-      global $javascript;
+      global $indicia_javascript;
       // Declare the data service
       $url = parent::$base_url."/index.php/services/data";
       // If valueField is null, set it to $captionField
@@ -580,7 +581,7 @@ class data_entry_helper extends helper_config {
       // lop the comma off the end
       $sParams = substr($sParams, 0, -1);
 
-      $javascript .= "jQuery('#tr$id').treeview(
+      $indicia_javascript .= "jQuery('#tr$id').treeview(
       {
         url: '$url/$entity',
         extraParams : {
@@ -630,9 +631,9 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
 
     self::add_resource('jquery_ui');
-    global $javascript;
+    global $indicia_javascript;
     $escaped_id=str_replace(':','\\\\:',$options['id']);
-    $javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\n";
+    $indicia_javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\n";
 
     if (!array_key_exists('default', $options) || $options['default']='') {
       $options['default']=lang::get('click here');
@@ -786,15 +787,13 @@ class data_entry_helper extends helper_config {
    */
   private static function _getCacheFileName($path, $options, $timeout)
   {
-    global $indicia_website_id;
-
     /* If timeout is not set, we're not caching */
     if (!$timeout)
       return false;
     if(!is_dir($path) || !is_writeable($path))
       return false;
 
-    $cacheFileName = $path.'cache_'.$indicia_website_id.'_';
+    $cacheFileName = $path.'cache_';
     $cacheFileName .= md5(self::array_to_query_string($options));
 
     return $cacheFileName;
@@ -849,8 +848,6 @@ class data_entry_helper extends helper_config {
     }
   }
 
-  /* TODO could do with a function to provide a button to clear down the caches */
-
   /**
    * Issue a post request to get the population data required for a control. Depends on the
    * options' table and extraParams values what is requested. This is now cacheable.
@@ -861,7 +858,6 @@ class data_entry_helper extends helper_config {
    */
   private static function get_population_data($options) {
 
-    global $indicia_website_id;
     $url = parent::$base_url."index.php/services/data";
     $request = "$url/".$options['table']."?mode=json";
 
@@ -872,7 +868,6 @@ class data_entry_helper extends helper_config {
       $cacheOpts = array();
     
     $cacheOpts['table'] = $options['table'];
-    $cacheOpts['indicia_website_id'] = $indicia_website_id;
     /* If present 'auth_token' amd 'nonce' are ignored as these are session dependant. */
     if (array_key_exists('auth_token', $cacheOpts)) {
       unset($cacheOpts['auth_token']);
@@ -899,7 +894,7 @@ class data_entry_helper extends helper_config {
    * @access private
    */
   private static function select_or_listbox($options, $outerTmpl, $itemTmpl, $selectTmpl) {
-    global $templates;
+    global $indicia_templates;
     self::add_resource('json');
     $options = array_merge(array(
       'filterField'=>'parent_id',
@@ -917,11 +912,11 @@ class data_entry_helper extends helper_config {
           if (array_key_exists($options['captionField'], $item) &&
               array_key_exists($options['valueField'], $item))
           {
-            $selected = ($options['default'] == $item[$options['valueField']]) ? $templates[$selectTmpl] : '';
+            $selected = ($options['default'] == $item[$options['valueField']]) ? $indicia_templates[$selectTmpl] : '';
             $opts .= str_replace(
                 array('{value}', '{caption}', '{selected}'),
                 array($item[$options['valueField']], $item[$options['captionField']], $selected),
-                $templates[$itemTmpl]
+                $indicia_templates[$itemTmpl]
             );
           }
         }
@@ -938,7 +933,7 @@ class data_entry_helper extends helper_config {
   * @param array Options array of the child linked list.
   */
   private static function init_linked_lists($options) {
-    global $templates, $javascript;
+    global $indicia_templates, $indicia_javascript;
     // setup JavaScript to do the population when the parent control changes
     $parentControlId = str_replace(':','\\\\:',$options['parentControlId']);
     $escapedId = str_replace(':','\\\\:',$options['id']);
@@ -948,10 +943,10 @@ class data_entry_helper extends helper_config {
     if (array_key_exists('extraParams', $options)) {
       $request .= self::array_to_query_string($options['extraParams']);
     }
-    $javascript .= str_replace(
+    $indicia_javascript .= str_replace(
         array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}'),
         array($fn, $escapedId, $request,$options['filterField'],$options['valueField'],$options['captionField'],$parentControlId),
-        $templates['linked_list_javascript']
+        $indicia_templates['linked_list_javascript']
     );
   }
 
@@ -1000,7 +995,7 @@ class data_entry_helper extends helper_config {
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
   public static function autocomplete() {
-    global $templates, $javascript;
+    global $indicia_templates, $indicia_javascript;
     $options = self::check_arguments(func_get_args(), array(
         'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default'
     ));
@@ -1026,7 +1021,7 @@ class data_entry_helper extends helper_config {
       array_push($replaceTags, '{'.$option.'}');
     }
     $options['extraParams']=null;
-    $javascript .= str_replace($replaceTags, $options, $templates['autocomplete_javascript']);
+    $indicia_javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
 
     $r = self::apply_template('autocomplete', $options);
     return $r;
@@ -1077,13 +1072,14 @@ class data_entry_helper extends helper_config {
   * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
   */
   public static function postcode_textbox($options) {
+    // The id field default must take precedence over using the fieldname as the id
+    $options = array_merge(array('id'=>'imp-postcode'), $options);
     $options = self::check_options($options);
     // Merge in the defaults
     $options = array_merge(array(
         'srefField'=>'sample:entered_sref',
         'systemfield'=>'sample:entered_sref_system',
         'hiddenFields'=>true,
-        'id'=>'imp-postcode',
         'linkedAddressBoxId'=>''
         ), $options);
     self::add_resource('google_search');
@@ -1301,7 +1297,7 @@ class data_entry_helper extends helper_config {
    * The div's id can be specified using the divId array entry.
    */
   public static function map_panel($options) {
-    global $javascript, $templates;
+    global $indicia_javascript, $indicia_templates;
     self::add_resource('indiciaMapPanel');
     $options = array_merge(array(
     'divId'=>'map',
@@ -1346,12 +1342,12 @@ class data_entry_helper extends helper_config {
       unset($options['layers']);
     }
     $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-    $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+    $indicia_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
     $r = str_replace(
           array('{divId}'),
           array($options['divId']),
-          $templates['map_panel']
+          $indicia_templates['map_panel']
       );
     return $r;
   }
@@ -1391,7 +1387,7 @@ class data_entry_helper extends helper_config {
    * the description to display.
    */
   public static function sref_system_select($options) {
-    global $templates;
+    global $indicia_templates;
     $options = array_merge(array(
         'fieldname'=>'sample:entered_sref_system',
         'systems'=>array('OSGB'=>lang::get('british national grid'), '4326'=>lang::get('lat long 4326')),
@@ -1400,11 +1396,11 @@ class data_entry_helper extends helper_config {
     $options = self::check_options($options);
     $opts = "";
     foreach ($options['systems'] as $system=>$caption){
-      $selected = ($options['default'] == $system ? $templates['select_option_selected'] : '');
+      $selected = ($options['default'] == $system ? $indicia_templates['select_option_selected'] : '');
       $opts .= str_replace(
           array('{value}', '{caption}', '{selected}'),
           array($system, $caption, $selected),
-          $templates['select_option']
+          $indicia_templates['select_option']
       );
     }
     $options['options'] = $opts;
@@ -1506,6 +1502,23 @@ class data_entry_helper extends helper_config {
   public static function location_autocomplete() {
 
   }
+  
+   /**
+  * Helper method to enable the support for tabbed interfaces for a div.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><strong>divId</strong><br/>
+  * Optional. The id of the div which will be tabbed. If not specified then the caller is 
+  * responsible for calling the jQuery tabs plugin - this method just links the appropriate
+  * jQuery files.</li>
+  */
+  public static function enable_tabs($options) {
+    global $indicia_javascript;
+    if (array_key_exists('divId', $options)) {
+      $indicia_javascript .= "$(\"#".$options['divId']."\").tabs();";
+    }
+    self::add_resource('jquery_ui');
+  }
+  
 
 
   /**
@@ -1804,13 +1817,13 @@ class data_entry_helper extends helper_config {
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
-    global $javascript;
-    global $res;
+    global $indicia_javascript;
+    global $indicia_resources;
     $libraries = '';
     $stylesheets = '';
-    if (isset($res)) {
+    if (isset($indicia_resources)) {
       $RESOURCES = self::_RESOURCES();
-      foreach ($res as $resource)
+      foreach ($indicia_resources as $resource)
       {
         foreach ($RESOURCES[$resource]['stylesheets'] as $s)
         {
@@ -1824,7 +1837,7 @@ class data_entry_helper extends helper_config {
     }
     $script = "<script type='text/javascript'>
     jQuery(document).ready(function() {
-    $javascript
+    $indicia_javascript
     });
     </script>";
     return $stylesheets.$libraries.$script;
@@ -1840,7 +1853,8 @@ class data_entry_helper extends helper_config {
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_errors($response, $inline=true)
-  {
+  { 
+    $r = "";
     global $entity_to_load;
     global $errors;
     if (is_array($response)) {
@@ -1851,38 +1865,39 @@ class data_entry_helper extends helper_config {
           // And tell the helper to reload the existing data.
           $entity_to_load = $_POST;
         } else {
-          echo '<div class="ui-state-error ui-corner-all">';
-          echo '<p>An error occurred when the data was submitted.</p>';
+          $r .= "<div class=\"ui-state-error ui-corner-all\">\n";
+          $r .= "<p>An error occurred when the data was submitted.</p>\n";
           if (is_array($response['error'])) {
-            echo '<ul>';
+            $r .=  "<ul>\n";
             foreach ($response['error'] as $field=>$message)
-              echo "<li>$field: $message</li>";
-            echo '</ul>';
+              $r .=  "<li>$field: $message</li>\n";
+            $r .=  "</ul>\n";
           } else {
-            echo '<p class="error_message">'.$response['error'].'</p>';
+            $r .= "<p class=\"error_message\">".$response['error']."</p>\n";
           }
           if (array_key_exists('file', $response) && array_key_exists('line', $response)) {
-            echo '<p>Error occurred in '.$response['file'].' at line '.$response['line'].'</p>';
+            $r .= "<p>Error occurred in ".$response['file']." at line ".$response['line']."</p>\n";
           }
           if (array_key_exists('errors', $response)) {
-            echo '<pre>'.print_r($response['errors'], true).'</pre>';
+            $r .= "<pre>".print_r($response['errors'], true)."</pre>\n";
           }
           if (array_key_exists('trace', $response)) {
-            echo '<pre>'.print_r($response['trace'], true).'</pre>';
+            $r .= "<pre>".print_r($response['trace'], true)."</pre>\n";
           }
-          echo '</div>';
+          $r .= "</div>\n";
         }
       }
       elseif (array_key_exists('warning',$response)) {
-        echo 'A warning occurred when the data was submitted.';
-        echo '<p class="error">'.$response['error'].'</p>';
+        $r .= 'A warning occurred when the data was submitted.';
+        $r .= '<p class="error">'.$response['error']."</p>\n";
       }
       elseif (array_key_exists('success',$response)) {
-        echo '<div class="ui-widget ui-corner-all ui-state-highlight page-notice">Thank you for submitting your data.</div>';
+        $r .= "<div class=\"ui-widget ui-corner-all ui-state-highlight page-notice\">Thank you for submitting your data.</div>\n";
       }
     }
-  else
-    echo "<div class=\"ui-state-error ui-corner-all\">$response</div>";
+    else
+      $r .= "<div class=\"ui-state-error ui-corner-all\">$response</div>\n";
+    return $r;
   }
 
 
@@ -1912,9 +1927,6 @@ class data_entry_helper extends helper_config {
   * @param string $password Indicia password for the website.
   */
   public static function get_read_auth($website_id, $password) {
-    global $indicia_website_id;
-  	
-    $indicia_website_id = $website_id; /* Store this for use with data caching */
     $postargs = "website_id=$website_id";
     $response = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs);
     $nonce = $response['output'];
@@ -1965,15 +1977,15 @@ class data_entry_helper extends helper_config {
   private static function _RESOURCES()
   {
     $base = parent::$base_url;
-    global $theme;
-    global $theme_path;
-    if (!isset($theme)) {
+    global $indicia_theme;
+    global $indicia_theme_path;
+    if (!isset($indicia_theme)) {
       // Use default theme if page does not specify it's own.
-      $theme="default";
+      $indicia_theme="default";
     }
-    if (!isset($theme_path)) {
+    if (!isset($indicia_theme_path)) {
       // Use default theme path if page does not specify it's own.
-      $theme_path="$base/media/themes";
+      $indicia_theme_path="$base/media/themes";
     }
 
     return array (
@@ -1985,7 +1997,7 @@ class data_entry_helper extends helper_config {
       'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
       'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
       'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.autocomplete.css"), 'javascript' => array("$base/media/js/jquery.autocomplete.js")),
-      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$theme_path/$theme/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js", "$base/media/js/jquery-ui.effects.js")),
+      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js", "$base/media/js/jquery-ui.effects.js")),
       'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/json2.js")),
       'treeview' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.treeview.css"), 'javascript' => array("$base/media/js/jquery.treeview.js", "$base/media/js/jquery.treeview.async.js",
       "$base/media/js/jquery.treeview.edit.js")),
@@ -2011,19 +2023,18 @@ class data_entry_helper extends helper_config {
    */
   private static function add_resource($resource)
   {
-    global $res;
-    if (!isset($res)) $res = array();
+    global $indicia_resources;
+    if (!isset($indicia_resources)) $indicia_resources = array();
     if (array_key_exists($resource, self::_RESOURCES()))
     {
-      if (!in_array($resource, $res))
+      if (!in_array($resource, $indicia_resources))
       {
         $RESOURCES = self::_RESOURCES();
         foreach ($RESOURCES[$resource]['deps'] as $dep)
         {
           self::add_resource($dep);
         }
-        $res[] = $resource;
-
+        $indicia_resources[] = $resource;
       }
     }
   }
