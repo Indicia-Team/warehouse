@@ -50,7 +50,7 @@ $indicia_templates = array(
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul class="{class}">{items}</ul>',
   'map_panel' => "<div id=\"{divId}\"></div>\n<br/>\n",
-  'georeference_lookup' => "<input id=\"imp-georef-search\" \>\n".
+  'georeference_lookup' => "<input id=\"imp-georef-search\" class=\"{class}\" \>\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden page-notice\" ><div id=\"imp-georef-output-div\" />\n".
       "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">".lang::get('close')."</a>\n".
@@ -292,13 +292,17 @@ class data_entry_helper extends helper_config {
   * Helper function to support image upload by inserting a file path upload control.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the file upload control.
   */
   public static function image_upload() {
     $options = self::check_arguments(func_get_args(), array('fieldname'));
@@ -310,16 +314,20 @@ class data_entry_helper extends helper_config {
   * and displaying of validation error messages.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the text input control.
   */
   public static function text_input() {
     $options = self::check_arguments(func_get_args(), array('fieldname'));
@@ -331,16 +339,20 @@ class data_entry_helper extends helper_config {
   * and displaying of validation error messages.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the textarea control.
   */
   public static function textarea() {
     $options = self::check_arguments(func_get_args(), array('fieldname'));
@@ -360,25 +372,25 @@ class data_entry_helper extends helper_config {
    * box against the parent list which will add an extra row to the control upon selection.</p>
    *
    * @param array $options Options array with the following possibilities:<ul>
-   * <li><strong>listId</strong><br/>
+   * <li><b>listId</b><br/>
    * Required. The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
-   * <li><strong>occAttrs</strong><br/>
+   * <li><b>occAttrs</b><br/>
    * Integer array, where each entry corresponds to the id of the desired attribute in the
    * occurrence_attributes table.</li>
-   * <li><strong>extraParams</strong><br/>
+   * <li><b>extraParams</b><br/>
    * Optional. Associative array of items to pass via the query string to the service. This
    * should at least contain the read authorisation array.</li>
-   * <li><strong>lookupListId</strong><br/>
+   * <li><b>lookupListId</b><br/>
    * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
    * rows to the grid. If specified, then an autocomplete text box and
    * Add Row button are generated automatically allowing the user to pick a species to add as an
    * extra row.</li>
-   * <li><strong>header</strong><br/>
+   * <li><b>header</b><br/>
    * Include a header row in the grid? Defaults to true.</li>
-   * <li><strong>columns</strong><br/>
+   * <li><b>columns</b><br/>
    * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
    * Defaults to 1.</li>
-   * <li><strong>cachetimeout</strong><br/>
+   * <li><b>cachetimeout</b><br/>
    * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
    * after a request for data to the Indicia Warehouse before a new request will refetch the data,
    * rather than use a locally stored (cached) copy of the previous request. This speeds things up
@@ -616,16 +628,20 @@ class data_entry_helper extends helper_config {
   * Helper function to insert a date picker control.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, for example 'sample:date'.</li>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the date picker control.
   */
   public static function date_picker() {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
@@ -647,39 +663,41 @@ class data_entry_helper extends helper_config {
   * parentControlId and filterField options.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>  *
-  * <li><strong>table</strong><br/>
+  * <li><b>table</b><br/>
   * Required. Table name to get data from for the select options.</li>
-  * <li><strong>captionField</strong><br/>
+  * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
-  * <li><strong>valueField</strong><br/>
+  * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
   * to the value of captionField.</li>
-  * <li><strong>extraParams</strong><br/>
+  * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
-  * <li><strong>parentControlId</strong><br/>
+  * <li><b>parentControlId</b><br/>
   * Optional. Specifies a parent control for linked lists. If specified then this control is not
   * populated until the parent control's value is set. The parent control's value is used to
   * filter this control's options against the field specified by filterField.</li>
-  * <li><strong>filterField</strong><br/>
+  * <li><b>filterField</b><br/>
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
   * unless a parentControlId is specified.</li>
-  * <li><strong>cachetimeout</strong><br/>
+  * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML code for a select control.
@@ -698,44 +716,48 @@ class data_entry_helper extends helper_config {
   * parentControlId and filterField options.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><strong>table</strong><br/>
+  * <li><b>table</b><br/>
   * Required. Table name to get data from for the select options.</li>
-  * <li><strong>captionField</strong><br/>
+  * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
-  * <li><strong>valueField</strong><br/>
+  * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
   * to the value of captionField.</li>
-  * <li><strong>extraParams</strong><br/>
+  * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
-  * <li><strong>size</strong><br/>
+  * <li><b>size</b><br/>
   * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
-  * <li><strong>multiselect</strong><br/>
+  * <li><b>multiselect</b><br/>
   * Optional. Allow multi-select in the list box. Defaults to false.</li>
-  * <li><strong>parentControlId</strong><br/>
+  * <li><b>parentControlId</b><br/>
   * Optional. Specifies a parent control for linked lists. If specified then this control is not
   * populated until the parent control's value is set. The parent control's value is used to
   * filter this control's options against the field specified by filterField.</li>
-  * <li><strong>filterField</strong><br/>
+  * <li><b>filterField</b><br/>
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
   * unless a parentControlId is specified.</li>
-  * <li><strong>cachetimeout</strong><br/>
+  * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the listbox control.
   */
   public static function listbox()
   {
@@ -749,7 +771,7 @@ class data_entry_helper extends helper_config {
   /**
    * Private function to fetch a validated timeout value from passed in options array
    * @param array $options Options array with the following possibilities:<ul>
-   * <li><strong>cachetimeout</strong><br/>
+   * <li><b>cachetimeout</b><br/>
    * Optional. The length in seconds before the cache times out and is refetched.</li></ul>
    * @return Timeout in number of seconds, else FALSE if data is not to be cached.
    */
@@ -961,40 +983,34 @@ class data_entry_helper extends helper_config {
   * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
   * <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
   * <br/>
-  *
-  * @param string $id Id and name of the HTML input generated, corresponding to the database field this posts the valueField into.
-  * @param string $entity Name of the Indicia entity being posted into. Possibilities are:
-  * <ul>
-  * <li>language</li>
-  * <li>location</li>
-  * <li>occurrence</li>
-  * <li>occurrence_attribute</li>
-  * <li>occurrence_comment</li>
-  * <li>person</li>
-  * <li>sample</li>
-  * <li>survey</li>
-  * <li>taxon_group</li>
-  * <li>taxa_taxon_list</li>
-  * <li>taxon_list</li>
-  * <li>term</li>
-  * <li>termlist</li>
-  * <li>termlists_term</li>
-  * <li>user</li>
-  * <li>website</li>
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. This should be left to its default value for
+  * integration with other mapping controls to work correctly.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the autocomplete options.</li>
+  * <li><b>captionField</b><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * @param $captionField string Name of the database field used to generate the display caption for each data item. This does
-  * not need to be prefixed with a table name and colon.
-  * @param $valueField string Name of the database field used to obtain the value which is stored into the database
-  * when this control is saved. Typically, $captionField is used to identify a caption, and $valueField is used to identify
-  * the ID stored in the database referring to that caption.
-  * @param array $extraParams List of name value pairs for extra parameters that are passed in the calls to the Indicia
-  * data services when populating this control. This should include the read authentication and
-  * any additional filters required when selecting the data. For example, the following value for this parameter causes
-  * the control's content to be filtered to a specific termlist.<br/>
-  * <CODE>$readAuth + array('termlist_id' => $config['surroundings_termlist'])</CODE>
-  * @param string $defaultCaption Default caption to display in the control on startup.
-  * @param string $defaultValue Default hidden value for the control on startup.
-  * @see get_read_auth()
+  * 
+  * @return string HTML to insert into the page for the autocomplete control.
+  * 
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
   public static function autocomplete() {
@@ -1054,25 +1070,30 @@ class data_entry_helper extends helper_config {
   * </code>
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. This should be left to its default value for
   * integration with other mapping controls to work correctly.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><strong>hiddenFields</strong><br/>
+  * <li><b>hiddenFields</b><br/>
   * Optional. Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
   * should be separate sref_textbox and sref_system_textbox controls elsewhere on the page. Defaults to true.
-  * <li><strong>srefField</strong><br/>
+  * <li><b>srefField</b><br/>
   * Optional. Name of the spatial reference hidden field that will be output by this control if hidddenFields is true.</li>
-  * <li><strong>systemField</strong><br/>
+  * <li><b>systemField</b><br/>
   * Optional. Name of the spatial reference system hidden field that will be output by this control if hidddenFields is true.</li>
-  * <li><strong>linkedAddressBoxId</strong><br/>
+  * <li><b>linkedAddressBoxId</b><br/>
   * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  * 
+  * @return string HTML to insert into the page for the postcode control.
   */
   public static function postcode_textbox($options) {
     // The id field default must take precedence over using the fieldname as the id
@@ -1110,25 +1131,28 @@ class data_entry_helper extends helper_config {
   * ));</pre>
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><strong>table</strong><br/>
+  * <li><b>table</b><br/>
   * Required. Table name to get data from for the select options.</li>
-  * <li><strong>extraParams</strong><br/>
+  * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
-  * <li><strong>template</strong><br/>
+  * <li><b>template</b><br/>
   * Required. HTML template which will be emitted for each item. Fields from the data are identified
   * by wrapping them in ||. For example, |term| would result in the field called term's value being placed inside
   * the HTML.</li>
-  * <li><strong>cachetimeout</strong><br/>
+  * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * @return String containing the output HTML.
+  * 
+  * @return string HTML to insert into the page for the generated list.
   */
   public static function list_in_template() {
     $options = self::check_arguments(func_get_args(), array('table', 'extraParams', 'template'));
@@ -1154,32 +1178,36 @@ class data_entry_helper extends helper_config {
   * Helper function to generate a radio group from a Indicia core service query.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><strong>table</strong><br/>
+  * <li><b>table</b><br/>
   * Required. Table name to get data from for the select options.</li>
-  * <li><strong>captionField</strong><br/>
+  * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
-  * <li><strong>valueField</strong><br/>
+  * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
   * to the value of captionField.</li>
-  * <li><strong>extraParams</strong><br/>
+  * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
-  * <li><strong>cachetimeout</strong><br/>
+  * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the group of radio buttons.
   */
   public static function radio_group() {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
@@ -1190,32 +1218,36 @@ class data_entry_helper extends helper_config {
   * Helper function to generate a list of checkboxes from a Indicia core service query.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
-  * <li><strong>id</strong><br/>
+  * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><strong>table</strong><br/>
+  * <li><b>table</b><br/>
   * Required. Table name to get data from for the select options.</li>
-  * <li><strong>captionField</strong><br/>
+  * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
-  * <li><strong>valueField</strong><br/>
+  * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
   * to the value of captionField.</li>
-  * <li><strong>extraParams</strong><br/>
+  * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
-  * <li><strong>cachetimeout</strong><br/>
+  * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the group of checkboxes.
   */
   public static function checkbox_group() {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
@@ -1355,14 +1387,27 @@ class data_entry_helper extends helper_config {
     return $r;
   }
 
-  /**
-   * Creates a textbox for entry of a spatial reference.
-   * Also generates the hidden geom field required to properly post spatial data. The
-   * box is automatically linked to a map_panel if one is added to the page.
-   *
-   * @param string $fieldname Name of the database field that data will be posted to. Defaults to
-   * sample:entered_sref.
-   */
+ /**
+  * Creates a textbox for entry of a spatial reference.
+  * Also generates the hidden geom field required to properly post spatial data. The
+  * box is automatically linked to a map_panel if one is added to the page.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>  
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  * 
+  * @return string HTML to insert into the page for the spatial reference control. 
+  */
   public static function sref_textbox($options) {
     // get the table and fieldname
     $tokens=explode(':', $options['fieldname']);
@@ -1380,16 +1425,32 @@ class data_entry_helper extends helper_config {
     return $r;
   }
 
-  /**
-   * Outputs a drop down select control populated with a list of spatial reference systems
-   * for the user to select from.
-   *
-   * @param string $fieldname Name of the database field that data will be posted to. Defaults to
-   * sample:entered_sref_system.
-   * @param array $systems List of spatial reference systems to display. Associative array with the key
-   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
-   * the description to display.
-   */
+ /**
+  * Outputs a drop down select control populated with a list of spatial reference systems
+  * for the user to select from.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref_system.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>  
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>systems</b>
+  * Optional. List of spatial reference systems to display. Associative array with the key
+  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+  * the description to display.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  * 
+  * @return string HTML to insert into the page for the spatial reference systems selection control. 
+  */
   public static function sref_system_select($options) {
     global $indicia_templates;
     $options = array_merge(array(
@@ -1411,17 +1472,25 @@ class data_entry_helper extends helper_config {
     return self::apply_template('select', $options);
   }
 
-  /**
-   * Outputs a spatial reference input box and a drop down select control populated with a list of
-   * spatial reference systems for the user to select from. If there is only 1 system available then
-   * the system drop down is ommitted since it is not required.
-   *
-   * @param string $fieldname Name of the database field that spatial reference will be posted to. Defaults to
-   * sample:entered_sref. The system field is automatically constructed from this.
-   * @param array $systems List of spatial reference systems to display. Associative array with the key
-   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
-   * the description to display.
-   */
+ /**
+  * Outputs a spatial reference input box and a drop down select control populated with a list of
+  * spatial reference systems for the user to select from. If there is only 1 system available then
+  * the system drop down is ommitted since it is not required.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. Name of the database field that spatial reference will be posted to. Defaults to
+  * sample:entered_sref. The system field is automatically constructed from this.</li>
+  * <li><b>systems</b>
+  * Optional. List of spatial reference systems to display. Associative array with the key
+  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+  * the description to display.</li>  
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  * 
+  * @return string HTML to insert into the page for the spatial reference and system selection control. 
+  */
   public static function sref_and_system($options) {
     $options = array_merge(array(
       'fieldname'=>'sample:entered_sref'
@@ -1453,9 +1522,16 @@ class data_entry_helper extends helper_config {
   * linked to any map panel added to the page.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
-  * Required. The name of the database field this control is bound to if any.</li>
-   */
+  * <li><b>fieldname</b><br/>
+  * Optional. The name of the database field this control is bound to if any.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  * 
+  * @return string HTML to insert into the page for the georeference lookup control.
+  */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
     $options['id']='imp-georef-search';
@@ -1469,23 +1545,27 @@ class data_entry_helper extends helper_config {
   * sample's location_id field so can normally also be left.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>fieldname</strong><br/>
+  * <li><b>fieldname</b><br/>
   * Optional. The name of the database field this control is bound to.</li>
-  * <li><strong>default</strong><br/>
+  * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><strong>class</strong><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><strong>extraParams</strong><br/>
+  * <li><b>extraParams</b><br/>
   * Required. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
-  * <li><strong>cachetimeout</strong><br/>
+  * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
+  * 
+  * @return string HTML to insert into the page for the location select control.
   */
   public static function location_select($options) {
     $options = self::check_options($options);
@@ -1503,18 +1583,15 @@ class data_entry_helper extends helper_config {
     echo self::select($options);
   }
 
-  public static function location_autocomplete() {
-
-  }
   
-   /**
+  /**
   * Helper method to enable the support for tabbed interfaces for a div. The jQuery documentation
   * describes how to specify a list within the div which defines the tabs that are present. This method
   * also automatically selects the first tab that contains validation errors if the form is being
   * reloaded after a validation attempt.
   * 
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><strong>divId</strong><br/>
+  * <li><b>divId</b><br/>
   * Optional. The id of the div which will be tabbed. If not specified then the caller is 
   * responsible for calling the jQuery tabs plugin - this method just links the appropriate
   * jQuery files.</li>
@@ -1849,6 +1926,8 @@ class data_entry_helper extends helper_config {
   /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
   * page which uses the data entry helper so output all JavaScript required by previous calls.
+  * 
+  * @return string JavaScript to insert into the page for all the controls added to the page so far.
   *
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
