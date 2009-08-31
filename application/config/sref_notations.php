@@ -52,6 +52,6 @@ $config['roundings'] = array
 //  Postfix_NSEW - use NSEW at end of number
 $config['lat_long_systems'] = array
 (
-  '4326' => array('default_output' => 'DMS', 'indicator' => 'Postfix_NSEW')
+  '4326' => array('default_output' => 'D', 'indicator' => 'Postfix_NSEW')
 );
 ?>
