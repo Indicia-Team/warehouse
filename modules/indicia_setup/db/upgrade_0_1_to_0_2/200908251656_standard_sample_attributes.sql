@@ -1,6 +1,6 @@
 ALTER TABLE sample_attributes ADD applies_to_recorder boolean NOT NULL DEFAULT 'f';
 
-COMMENT ON COLUMN indicia.sample_attributes.applies_to_recorder IS 'For attributes that are gathered which pertain to the person recording the sample rather than the specific sample, this flag is set to true.';
+COMMENT ON COLUMN sample_attributes.applies_to_recorder IS 'For attributes that are gathered which pertain to the person recording the sample rather than the specific sample, this flag is set to true.';
 
 INSERT INTO termlists (title, description, created_on, created_by_id, updated_on, updated_by_id, external_key)
 VALUES ('Titles', 'Lookup list of titles to attach to samples.', now(), 1, now(), 1, 'indicia:titles');
