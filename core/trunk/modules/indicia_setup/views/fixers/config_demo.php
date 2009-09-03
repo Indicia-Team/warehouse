@@ -56,6 +56,6 @@ if ($error!=null) {
 </fieldset>
 
 <input type="submit" role="button" value="<?php echo html::specialchars(Kohana::lang('setup.submit')); ?>"
-    class="narrow" />
+    class="button ui-state-default ui-corner-all" />
 
 </form>
