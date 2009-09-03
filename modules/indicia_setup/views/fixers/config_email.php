@@ -58,6 +58,6 @@ if (!array_key_exists('server_name', $current)) {
 </li>
 </ol>
 </fieldset>
-<input type="Submit" name="save" value="Test and save" class="default" />
-<input type="Submit" name="skip" value="Skip email configuration" class="default" />
+<input type="Submit" name="save" value="Test and save" class="button ui-state-default ui-corner-all" />
+<input type="Submit" name="skip" value="Skip email configuration" class="button ui-state-default ui-corner-all" />
 </form>
