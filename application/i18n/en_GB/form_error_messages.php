@@ -50,6 +50,9 @@ $lang = array (
   'taxon_id' => array (
     'default' => 'Unable to create a valid taxon entry.',
   ),
+  'taxon' => array (
+    'required' => 'The taxon name is required.',
+  ),
   'taxon_list_id' => array (
     'default' => 'Invalid input.',
     'required' => 'The taxon list must be specified.',
