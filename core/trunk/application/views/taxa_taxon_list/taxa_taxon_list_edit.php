@@ -81,7 +81,7 @@ echo html::error_message($model->getError('deleted'));
 <input type="hidden" name="taxon_id" id="taxon_id" value="<?php echo html::specialchars($model->taxon_id); ?>" />
 <label for="taxon">Taxon Name:</label>
 <input id="taxon" name="taxon" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->taxon) : ''); ?>"/>
-<?php echo html::error_message($model->getError('taxon_id')); ?>
+<?php echo html::error_message($model->getError('taxon:taxon')); ?>
 </li>
 <li>
 <label for="language_id">Language:</label>
@@ -98,7 +98,7 @@ echo html::error_message($model->getError('deleted'));
   }
 ?>
 </select>
-<?php echo html::error_message($model->getError('language_id')); ?>
+<?php echo html::error_message($model->getError('taxon:language_id')); ?>
 </li>
 <li>
 <label for="commonNames">Common Names:
@@ -138,6 +138,7 @@ echo html::error_message($model->getError('deleted'));
   }
 ?>
 </select>
+<?php echo html::error_message($model->getError('taxon:taxon_group_id')); ?>
 </li>
 <li>
 <label for="authority">Authority:</label>

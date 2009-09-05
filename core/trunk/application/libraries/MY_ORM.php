@@ -82,12 +82,22 @@ abstract class ORM extends ORM_Core {
 
   /**
    * Provide an accessor so that the view helper can retrieve the for the model by field name.
+   * Will also retrieve errors from linked models (models that were posted in the same submission
+   * if the field name is of the form model:fieldname.
+   * 
+   * @param string $fieldname Name of the field to retrieve errors for.
    */
   public function getError($fieldname) {
     if (array_key_exists($fieldname, $this->errors)) {
       return $this->errors[$fieldname];
     } else {
-      return '';
+      $tokens = explode(':', $fieldname); 
+      
+      if (count($tokens)>1 && array_key_exists($tokens[0], $this->linkedModels)) {
+    	  return $this->linkedModels[$tokens[0]]->getError($tokens[1]);
+      } else {
+      	return '';
+      }
     }
   }
 
@@ -110,7 +120,7 @@ abstract class ORM extends ORM_Core {
     // Now the custom attribute errors
     $r = array_merge($r, $this->missingAttrs);
     // Plus the errors for any linked records
-    foreach ($this->linkedModels as $m) {
+    foreach ($this->linkedModels as $key -> $m) {
       $r = array_merge($m->getAllErrors(), $r);
     }
     return $r;
@@ -279,46 +289,53 @@ abstract class ORM extends ORM_Core {
            return $arr;
          }');
     $return = $this->populateFkLookups();
-    $return = $this->createParentRecords() && $return;
-    $this->preSubmit();
-    // Validation will overwrite our errors array, so store it for later
-    $errors = $this->errors;
-    // Flatten the array to one that can be validated
-    $vArray = array_map($collapseVals, $this->submission['fields']);
-    Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
-    Kohana::log("debug", kohana::debug($vArray));
-    // If we're editing an existing record.
-    if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
-      $this->find($vArray['id']);
-    }
-    // Create a new record by calling the validate method
-    if ($this->validate(new Validation($vArray), true)) {
-      // Record has successfully validated. Return the id.
-      Kohana::log("debug", "Record ".$this->id." has validated successfully");
-      if ($return) $return = $this->id;
-    } else {
-      // Errors.
-      Kohana::log("debug", "Record did not validate.");
-      // Log more detailed information on why
-      foreach ($this->errors as $f => $e) {
-        Kohana::log("debug", "Field ".$f.": ".$e.".");
-      }
-      $return = null;
-    }
-    $this->errors=array_merge($errors, $this->errors);
-    $return = $this->checkRequiredAttributes() ? $return : null;
-    $return = $this->createChildRecords() ? $return : null;
-    $return = $this->createAttributes() ? $return : null;
-
-    // Call postSubmit
+    $return = $this->createParentRecords() && $return;    
+    // No point doing any more if the parent records did not post
     if ($return) {
-      $ps = $this->postSubmit();
-        if ($ps == null) {
-          $return = null;
-        }
+    	$this->preSubmit();
+	    // Flatten the array to one that can be validated
+	    $vArray = array_map($collapseVals, $this->submission['fields']);
+	    Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
+	    Kohana::log("debug", kohana::debug($vArray));
+	    // If we're editing an existing record.
+	    if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
+	      $this->find($vArray['id']);
+	    }
+	    try {
+	    	$v=$this->validate(new Validation($vArray), true);
+	    } catch (Exception $e) {
+	    	$v=false;
+	    	$this->errors['general']=$e->getMessage();
+	    	error::log_error('Exception during validation', $e);
+	    }
+	    // Create a new record by calling the validate method
+	    if ($v) {
+	      // Record has successfully validated. Return the id.
+	      Kohana::log("debug", "Record ".$this->id." has validated successfully");
+	      if ($return) $return = $this->id;
+	    } else {
+	      // Errors.
+	      Kohana::log("debug", "Record did not validate.");
+	      // Log more detailed information on why
+	      foreach ($this->errors as $f => $e) {
+	        Kohana::log("debug", "Field ".$f.": ".$e.".");
+	      }
+	      $return = null;
+	    }	    
+	    $return = $this->checkRequiredAttributes() ? $return : null;
+	    $return = $this->createChildRecords() ? $return : null;
+	    $return = $this->createAttributes() ? $return : null;
+	
+	    // Call postSubmit
+	    if ($return) {
+	      $ps = $this->postSubmit();
+	        if ($ps == null) {
+	          $return = null;
+	        }
+	    }
+	    kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
     }
-    kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
-    return $return;
+	  return $return;
   }
 
   /**
@@ -372,9 +389,7 @@ abstract class ORM extends ORM_Core {
           Kohana::log("debug", "Setting field ".$a['fkId']." to ".$result);
           $this->submission['fields'][$a['fkId']]['value'] = $result;
         } else {
-          if (!in_array($m, $this->linkedModels)) {
-            array_push($this->linkedModels, $m);
-          }
+          $this->linkedModels[$m->object_name]=$m;          
           return false;
         }
       }
@@ -407,10 +422,8 @@ abstract class ORM extends ORM_Core {
         $result = $m->inner_submit();
 
         if (!$result) {
-          // Remember this model so that its errors can be reported
-          if (!in_array($m, $this->linkedModels)) {
-            array_push($this->linkedModels, $m);
-          }
+          // Remember this model so that its errors can be reported      
+          $this->linkedModels[$m->object_name]=$m;        
           return false;
         }
       }
@@ -532,9 +545,7 @@ abstract class ORM extends ORM_Core {
               // For attribute value errors, we need to report e.g smpAttr:6 as the error key name, not
               // the table and field name as normal.
               $oam->forceErrorKey = $this->attrs_field_prefix.':'.$attrId;
-              if (!in_array($oam, $this->linkedModels)) {
-                array_push($this->linkedModels, $oam);
-              }
+              $this->linkedModels[$m->object_name]=$oam;
               return false;
             }
           }
