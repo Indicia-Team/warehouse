@@ -141,7 +141,6 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
     // Add items to view
     $vArgs = array(
-      'taxon_list_id' => $this->model->taxon_list_id,
       'table' => $grid->display(),
       'synonyms' => $this->formatScientificSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
@@ -185,9 +184,10 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       $this->access_denied('table to create records with a taxon list ID='.$taxon_list_id);
       return;
     }
-    $this->taxonListId = $taxon_list_id;
+    
     $this->taxonListName = ORM::factory('taxon_list', $taxon_list_id)->title;
     $this->model = ORM::factory('taxa_taxon_list');
+    $this->model->taxon_list_id = $taxon_list_id;
     $parent = $this->input->post('parent_id', null);
     $this->model->parent_id = $parent;
 
@@ -233,9 +233,12 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   */
   protected function show_submit_fail()
   {
+    $page_error=$this->model->getError('general');
+    if ($page_error) {
+      $this->session->set_flash('flash_error', $page_error);
+    }
     $mn = $this->model->object_name;
     $vArgs = array(
-      'taxon_list_id' => $this->model->taxon_list_id,
       'synonyms' => null,
       'commonNames' => null,
     );
