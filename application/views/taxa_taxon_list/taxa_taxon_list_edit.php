@@ -33,7 +33,7 @@ $(document).ready(function() {
     minChars : 1,
     mustMatch : true,
     extraParams : {
-      taxon_list_id : "<?php echo $taxon_list_id; ?>",
+      taxon_list_id : "<?php echo $model->taxon_list_id; ?>",
       orderby : "taxon",
       mode : "json",
       qfield : "taxon",
@@ -74,7 +74,7 @@ echo html::error_message($model->getError('deleted'));
 <?php echo $metadata ?>
 <fieldset>
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
-<input type="hidden" name="taxon_list_id" id="taxon_list_id" value="<?php echo html::specialchars($taxon_list_id); ?>" />
+<input type="hidden" name="taxon_list_id" id="taxon_list_id" value="<?php echo html::specialchars($model->taxon_list_id); ?>" />
 <legend>Naming</legend>
 <ol>
 <li>
