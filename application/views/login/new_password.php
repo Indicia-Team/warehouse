@@ -24,6 +24,7 @@
 ?>
 <form class="cmxform"  name = "new_password" action="<?php echo url::site(); ?>new_password/save" method="post">
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($user_model->id); ?>" />
+<input type="hidden" name="email_key" id="email_key" value="<?php echo html::specialchars($email_key); ?>" />
 <fieldset>
 <legend>Set Password</legend>
 <ol>
