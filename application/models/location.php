@@ -55,7 +55,7 @@ class Location_Model extends ORM_Tree {
     $array->add_rules('centroid_sref_system', 'required', 'sref_system');
 
     // Explicitly add those fields for which we don't do validation
-    $extraFields = array(
+    $this->unvalidatedFields = array(
       'code',
       'parent_id',
       'deleted',
@@ -63,7 +63,7 @@ class Location_Model extends ORM_Tree {
       'boundary_geom',
       'location_type_id'
     );
-    return parent::validate($array, $save, $extraFields);
+    return parent::validate($array, $save);
   }
 
   /**
@@ -96,45 +96,16 @@ class Location_Model extends ORM_Tree {
   }
 
   /**
-   * Override the preSubmit to grab the list of psuedo-fields (i.e. website id fields)
-   * otherwise the model will chuck them out.
+   * Return the submission structure, which includes defining the locations_websites table
+   * is a sub-model.
+   * 
+   * @return array Submission structure for a location entry.
    */
-  protected function preSubmit() {
-    $this->droppedFields = array_diff_key($this->submission['fields'],
-        $this->table_columns);
-    return parent::preSubmit();
-  }
-
-  /**
-   * Override postSubmit to also store the list of location_website links
-   */
-  protected function postSubmit() {
-    try {
-      $websites = ORM::factory('website')->find_all();
-      foreach ($websites as $website) {
-        $locations_website = ORM::factory('locations_website',
-          array('location_id' => $this->id, 'website_id' => $website->id));
-        if ($locations_website->loaded AND !isset($this->droppedFields['website_'.$website->id])) {
-          $locations_website->delete();
-        } else if (!$locations_website->loaded AND isset($this->droppedFields['website_'.$website->id])) {
-          $save_array = array(
-                 'id' => $locations_website->object_name
-                ,'fields' => array('id' => array('value' => $locations_website->id)
-                          ,'location_id' => array('value' => $this->id)
-                          ,'website_id' => array('value' => $website->id)
-                          )
-                ,'fkFields' => array()
-                ,'superModels' => array());
-          $locations_website->submission = $save_array;
-          $locations_website->submit();
-        }
-      }
-      return true;
-    } catch (Exception $e) {
-      $this->errors['general']='<strong>An error occurred</strong><br/>'.$e->getMessage();
-      error::log_error('Exception during postSubmit in location model.', $e);
-      return false;
-    }
-  }
+  public function get_submission_structure() {
+    return array(
+      'model' => 'location',
+      'joinsTo' => array('websites')        
+    );
+  } 
 
 }

@@ -34,7 +34,7 @@ class Occurrence_Attribute_Model extends ATTR_ORM {
 
   protected $has_many = array(
     'occurrence_attributes_values',
-    );
+  );
 
   protected $has_and_belongs_to_many = array('websites');
 

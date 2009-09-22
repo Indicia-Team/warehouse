@@ -37,18 +37,19 @@ class Taxon_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('taxon', 'required');
+    $array->add_rules('language_id', 'required');
     $array->add_rules('scientific', 'required');
     $array->add_rules('taxon_group_id', 'required');
 
     // Explicitly add those fields for which we don't do validation
-    $extraFields = array(
+    $this->unvalidatedFields = array(
       'language_id',
       'external_key',
       'authority',
       'deleted',
       'search_code'
     );
-    return parent::validate($array, $save, $extraFields);
+    return parent::validate($array, $save);
   }
 
   protected function preSubmit(){
@@ -66,6 +67,15 @@ class Taxon_Model extends ORM {
       'value' =>  $sci
     );
 
+  }
+  
+  /** 
+   * Set default values for a new taxon entry.   
+   */
+  public function getDefaults() {
+    return array(
+      'language_id'=>2 // latin
+    );  
   }
 }
 

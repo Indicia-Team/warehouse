@@ -14,13 +14,13 @@
 <body>
 <div id="wrap">
 <h1>Basic Data Entry Tutorial Code</h1>
-<body>
 <?php
 if ($_POST) {
   $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
   $response = data_entry_helper::forward_post_to('save', $submission);
   echo data_entry_helper::dump_errors($response);
 }
+echo data_entry_helper::loading_block_start();
 ?>
 <p>This data entry page illustrates the final results of a data entry page built using the
 <a href="http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage">Building a Basic Data Entry Page</a> tutorial.
@@ -63,5 +63,10 @@ echo data_entry_helper::textarea(array(
 
 <input type="submit" class="ui-state-default ui-corner-all" value="Save" />
 </form>
-<?php echo data_entry_helper::dump_javascript(); ?>
+<?php
+echo data_entry_helper::loading_block_end(); 
+echo data_entry_helper::dump_javascript(); 
+?>
+</div>
+</body>
 </html>

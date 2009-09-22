@@ -44,7 +44,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
 #		$array->add_callbacks('deleted', array($this, '__dependents'));
 
     // Explicitly add those fields for which we don't do validation
-    $extraFields = array(
+    $this->unvalidatedFields = array(
       'taxonomic_sort_order',
       'parent_id',
       'deleted',
@@ -52,9 +52,9 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'image_path',
       'description'
     );
-    return parent::validate($array, $save, $extraFields);
+    return parent::validate($array, $save);
   }
-
+  
   /**
    * If we want to delete the record, we need to check that no dependents exist.
    */
@@ -68,34 +68,15 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   }
 
   /**
-   * Return a displayable caption for the item.
-   * For People, this should be a combination of the Firstname and Surname.
+   * Return a displayable caption for the item.   
    */
   public function caption()
   {
-    return ($this->taxon_id != null ? $this->taxon->taxon : '');
-  }
-
-  /**
-   * Override the list of default submittable fields for CSV import. This allows details of the
-   * taxon to also be imported.
-   */
-  public function getSubmittableFields() {
-    $result = true;
-    $arr = parent::getSubmittableFields();
-    return array_merge(array(
-      'taxon' => '',
-      'fk_language' => '',
-      'language_id' => '',
-      'fk_taxon_group' => '',
-      'taxon_group_id' => '',
-      'authority' => '',
-      'search_code' => '',
-      'external_key' => '',
-      'fk_parent' => '',
-      'commonNames' => '',
-      'synonymy' => ''
-    ));
+    if ($this->id) {
+      return ($this->taxon_id != null ? $this->taxon->taxon : '');
+    } else {
+      return 'Taxon in List';
+    }    
   }
 
   /**
@@ -105,22 +86,25 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   protected function postSubmit()
   {
   	$result = true;
-    if ($this->submission['fields']['preferred']['value']=='t') {      
-      $arrCommonNames=$this->parseRelatedNames(
-        $this->submission['metaFields']['commonNames']['value'],
-        'set_common_name_sub_array'
-      );
+    if ($this->submission['fields']['preferred']['value']=='t' && array_key_exists('metaFields', $this->submission)) {      
+      if (array_key_exists('commonNames', $this->submission['metaFields'])) {
+        $arrCommonNames=$this->parseRelatedNames(
+            $this->submission['metaFields']['commonNames']['value'],
+            'set_common_name_sub_array'
+        ); 
+      } else $arrCommonNames=array();
       Kohana::log("debug", "Number of common names is: ".count($arrCommonNames));
-
-      $arrSyn=$this->parseRelatedNames(
-        $this->submission['metaFields']['synonyms']['value'],
-        'set_synonym_sub_array'
-      );
+      if (array_key_exists('synonyms', $this->submission['metaFields'])) {
+        $arrSyn=$this->parseRelatedNames(
+          $this->submission['metaFields']['synonyms']['value'],
+          'set_synonym_sub_array'
+        );
+      } else $arrSyn=array();
       Kohana::log("debug", "Number of synonyms is: ".count($arrSyn));
 
       $arrSyn = array_merge($arrSyn, $arrCommonNames);
 
-      Kohana::log("debug", "Looking for existing terms with meaning ".$this->taxon_meaning_id);
+      Kohana::log("debug", "Looking for existing taxa with meaning ".$this->taxon_meaning_id);
       $existingSyn = $this->getSynonomy('taxon_meaning_id', $this->taxon_meaning_id);
 
       // Iterate through existing synonomies, discarding those that have
@@ -153,12 +137,10 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       $sm = ORM::factory('taxa_taxon_list');
       foreach ($arrSyn as $taxon => $syn)
       {
-
         $sm->clear();
-
         $lang = $syn['lang'];
         $auth = $syn['auth'];
-
+        
         // Wrap a new submission
         Kohana::log("info", "Wrapping submission for synonym ".$taxon);
 
@@ -167,19 +149,22 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         // user definable.
         $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
         $syn = $_POST;
-        $syn['taxon_id'] = null;
-        $syn['taxon'] = $taxon;
-        $syn['authority'] = $auth;
-        $syn['language_id'] = $lang_id;
-        $syn['id'] = '';
-        $syn['preferred'] = 'f';
-        $syn['taxon_meaning_id'] = $this->taxon_meaning_id;
-        $syn['taxon_group_id'] = $this->taxon->taxon_group_id;
+        $syn['taxon:id'] = null;
+        $syn['taxon:taxon'] = $taxon;
+        $syn['taxon:authority'] = $auth;
+        $syn['taxon:language_id'] = $lang_id;
+        $syn['taxa_taxon_list:id'] = '';
+        $syn['taxa_taxon_list:preferred'] = 'f';
+        print_r($this->taxon_meaning_id); echo "here";
+        $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
+        $syn['taxon:taxon_group_id'] = $this->taxon->taxon_group_id;
         // Prevent a recursion by not posting synonyms with a synonym
-        $syn['commonNames']='';
-        $syn['synonyms']='';
+        $syn['metaFields:commonNames']='';
+        $syn['metaFields:synonyms']='';
 
         $sub = $this->wrap($syn);
+        // Don't resubmit the meaning record
+        unset($sub['superModels'][0]);
 
         $sm->submission = $sub;
         if (!$sm->submit()) {
@@ -221,58 +206,22 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     }
   }
 
-  public function wrap($array, $linkFk = false)
+  /**
+   * Return the submission structure, which includes defining taxon and taxon_meaning
+   * as the parent (super) models, and the synonyms and commonNames as metaFields which 
+   * are specially handled.
+   * 
+   * @return array Submission structure for a taxa_taxon_list entry.
+   */
+  public function get_submission_structure()
   {
-    $sa = array(
-      'id' => 'taxa_taxon_list',
-      'fields' => array(),
-      'fkFields' => array(),
-      'superModels' => array(),
-      'metaFields' => array()
+    return array(
+    	'model'=>$this->object_name,
+      'superModels'=>array(
+        'taxon_meaning'=>array('fk' => 'taxon_meaning_id'),
+        'taxon'=>array('fk' => 'taxon_id')
+      ),
+      'metaFields'=>array('synonyms', 'commonNames')      
     );
-    // Declare which fields we consider as native to this model
-    $nativeFields = array_intersect_key($array, $this->table_columns);
-
-    // Use the parent method to wrap these
-    $sa = parent::wrap($nativeFields, $linkFk);
-
-    // Declare parent models
-    if (array_key_exists('taxon_meaning_id', $array) == false ||
-      $array['taxon_meaning_id'] == '')
-    {
-      $meaningModel=ORM::factory('taxon_meaning');
-      $sa['superModels'][] = array(
-        'fkId' => 'taxon_meaning_id',
-        'model' => $meaningModel->wrap(
-          array_intersect_key($array, $meaningModel->table_columns),
-          $linkFk
-        )
-      );
-    }
-
-    $taxonFields = array_intersect_key($array, ORM::factory('taxon')->table_columns);
-    if (array_key_exists('fk_language', $array)) {
-      $taxonFields['fk_language'] = $array['fk_language'];
-    }
-    if (array_key_exists('fk_taxon_group', $array)) {
-      $taxonFields['fk_taxon_group'] = $array['fk_taxon_group'];
-    }
-    if (array_key_exists('taxon_id', $array) && $array['taxon_id'] != '') {
-      $taxonFields['id'] = $array['taxon_id'];
-    }
-    $sa['superModels'][] = array(
-      'fkId' => 'taxon_id',
-      'model' => ORM::factory('taxon')->wrap($taxonFields, $linkFk)
-    );
-
-    $sa['metaFields']['synonyms'] = array(
-        'value' => array_key_exists('synonyms', $array) ? $array['synonyms'] : ''
-    );
-    $sa['metaFields']['commonNames'] = array(
-        'value' => array_key_exists('commonNames', $array) ? $array['commonNames'] : ''
-    );
-    return $sa;
   }
-
-
 }

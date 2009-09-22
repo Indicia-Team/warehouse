@@ -69,6 +69,17 @@ $config['theme'] = 'default';
 $config['default_lang'] = 'eng';
 
 /**
+ * Default centre for the maps, using SRID 900913.
+ */
+$config['default_map_x']=-500000;
+$config['default_map_y']=7300000;
+
+/**
+ * Default zoom for the maps, using the OpenLayers zoom scale..
+ */
+$config['default_map_zoom']=4;
+
+/**
  * For developers of indicia only!
  * In a production release this var must be set to bool false!!
  * During the development process each dev has to set this var

@@ -30,12 +30,11 @@
  * @subpackage Controllers
  */
 class Gridview_Controller extends Controller {
-  public static function factory($model,$page,$limit,$uri_segment){
+  public static function factory($model,$page,$uri_segment){
     $gridview = new Gridview_Controller();
     $gridview->model = $model;
     $gridview->columns = array_combine(array_keys($model->table_columns), array_pad(array(), count($model->table_columns), null));
-    $gridview->page = $page;
-    $gridview->limit = $limit;
+    $gridview->page = $page;    
     $gridview->uri_segment = $uri_segment;
     $gridview->base_filter = null;
     $gridview->auth_filter = null;
@@ -92,12 +91,12 @@ class Gridview_Controller extends Controller {
         $lists = $lists->like($client_filter);
       }
     }
-    $offset = ($this->page -1) * $this->limit;
-    $table = $lists->find_all($this->limit, $offset);
+    $limit = kohana::config('pagination.default.items_per_page');
+    $offset = ($this->page -1) * $limit;
+    $table = $lists->find_all($limit, $offset);
 
     $pagination = new Pagination(array(
-      'style' => 'extended',
-      'items_per_page' => $this->limit,
+      'style' => 'extended',      
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
       'auto_hide' => true

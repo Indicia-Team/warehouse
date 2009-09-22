@@ -68,20 +68,21 @@ function filter_selection_changed(filtercombo)
   }
 }
 
-    function website_selection_changed(websitecombo)
-  {
-    // 1. get the selected value from websitecombo:
-    var websitecombo_value = websitecombo.value;
+function website_selection_changed(websitecombo)
+{
+  // 1. get the selected value from websitecombo:
+  var websitecombo_value = websitecombo.value;
 
-    // 2. make sure survey_id combo is empty:
-    document.forms["Filter"].elements["survey_id"].options.length=0;
+  // 2. make sure survey_id combo is empty:
+  document.forms["Filter"].elements["survey_id"].options.length=0;
+  if (websitecombo_value!=-1) {
     document.forms["Filter"].elements["survey_id"].disabled="";
-
+  
     var opt = document.createElement("option");
     opt.setAttribute('value', -1);
     opt.innerHTML = "Non Survey Specific Attributes";
     document.forms["Filter"].elements["survey_id"].appendChild(opt);
-
+  
     // 3. loop throught the hard-coded values:
     for (var i=0;i<hardcoded_values[websitecombo_value].length;i++)
     {
@@ -94,7 +95,19 @@ function filter_selection_changed(filtercombo)
       // append this option to survey_id:
       document.forms["Filter"].elements["survey_id"].appendChild(opt);
     }
+  } else {
+	  document.forms["Filter"].elements["survey_id"].disabled="disabled";
+	  var opt = document.createElement("option");
+    opt.setAttribute('value', -1);
+    opt.innerHTML = "&lt;Please select the website first&gt;";
+    document.forms["Filter"].elements["survey_id"].appendChild(opt);
   }
+}
+
+jQuery(document).ready(function() {
+	website_selection_changed($('#website_id')[0]);
+});
+
 // -->
 </script>
 
@@ -102,11 +115,17 @@ function filter_selection_changed(filtercombo)
 <div>
 <form id='Filter' action='' method='get'>
 <fieldset>
+<?php 
+$filter_type = array_key_exists('filter_type', $_GET) ? $_GET['filter_type'] : null;
+$website_id = array_key_exists('website_id', $_GET) ? $_GET['website_id'] : null;
+$survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
+?>
 <label for="filter_type">Filter Type</label>
+
 <select id="filter_type" name="filter_type" onchange="filter_selection_changed(this);">
-<option value="1">Filter by Website</option>
-<option value="2">Public Attributes</option>
-<option value="3">Created by me</option>
+<option value="1"<?php if ($filter_type=="1") echo ' selected="selected"'; ?>>Filter by Website</option>
+<option value="2"<?php if ($filter_type=="2") echo ' selected="selected"'; ?>>Public Attributes</option>
+<option value="3"<?php if ($filter_type=="3") echo ' selected="selected"'; ?>>Created by me</option>
 <?php
   if (is_null($this->auth_filter))
     echo '<option value="4">All Distinct Attributes</option>';
@@ -119,17 +138,22 @@ function filter_selection_changed(filtercombo)
     $websites = ORM::factory('website')->orderby('title','asc')->find_all();
 
   echo "<label for=\"website_id\">Website</label>\r\n";
-  echo '<select id="website_id" name="website_id" onchange="website_selection_changed(this);"><option value="-1">&lt;Please select&gt;</option>';
+  echo '<select id="website_id" name="website_id" ';
+  if ($filter_type && $filter_type!="1") {
+    echo 'disabled="disabled" ';
+  }
+  echo 'onchange="website_selection_changed(this);"><option value="-1">&lt;Please select&gt;</option>';
   foreach ($websites as $website) {
-    echo '	<option value="'.$website->id.'">'.$website->title.'</option>';
+    echo '	<option value="'.$website->id.'"';
+    if ($website_id==$website->id) echo ' selected="selected"';
+    echo '>'.$website->title.'</option>';
   }
   echo '</select>';
 ?>
 <br />
 <label for="survey_id">Survey</label>
-<select id="survey_id" name="survey_id" disabled="disabled"><option>&lt;Please select the website first&gt;</option></select>
-
-<input id='gvFilterButton' type='submit' value='Filter'/>
+<select id="survey_id" name="survey_id" disabled="disabled"><option>&lt;Please select the website first&gt;</option></select> 
+<input id="gvFilterButton" type="submit" value="Filter" class="ui-corner-all ui-state-default"/>
 </fieldset>
 </form>
 </div>
@@ -155,18 +179,9 @@ foreach ($actionColumns as $name => $action) {
 <?php echo $pagination ?>
 </div>
 <br/>
-<form action="<?php echo url::site().$createpath; ?>" method="post">
+<form action="<?php echo url::site().$createpath."?filter_type=$filter_type&amp;website_id=$website_id&amp;survey_id=$survey_id"; ?>" method="post">
 <fieldset>
-<?php if (isset($filter_type)) { ?>
-<input type="hidden" name="filter_type" value="<?php echo html::specialchars($filter_type); ?>" />
-<?php } ?>
-<?php if (isset($website_id)) { ?>
-<input type="hidden" name="website_id" value="<?php echo html::specialchars($website_id); ?>" />
-<?php } ?>
-<?php if (isset($survey_id)) { ?>
-<input type="hidden" name="survey_id" value="<?php echo html::specialchars($survey_id); ?>" />
-<?php } ?>
-<input type="submit" value="<?php echo $createbuttonname; ?>" class="default" />
+<input type="submit" value="<?php echo $createbuttonname; ?>" class="button ui-corner-all ui-state-default" />
 </fieldset>
 </form>
 <br />

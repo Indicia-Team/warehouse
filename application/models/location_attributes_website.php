@@ -42,8 +42,8 @@ class Location_Attributes_Website_Model extends ORM
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $extraFields = array('location_attribute_id', 'website_id', 'restrict_to_survey_id');
-    return parent::validate($array, $save, array(), $extraFields);
+    $this->unvalidatedFields = array('location_attribute_id', 'website_id', 'restrict_to_survey_id');
+    return parent::validate($array, $save, array());
   }
 
   public function set_metadata() {

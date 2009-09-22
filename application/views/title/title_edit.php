@@ -26,16 +26,17 @@
 <form class="cmxform" action="<?php echo url::site().'title/save'; ?>" method="post">
 <?php echo $metadata ?>
 <fieldset>
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
 <legend>Title details</legend>
+<input type="hidden" name="title:id" value="<?php echo html::initial_value($values, 'title:id'); ?>" />
 <ol>
 <li>
 <label for="title">Title</label>
-<input class="narrow" id="title" name="title" value="<?php echo html::specialchars($model->title); ?>" />
-<?php echo html::error_message($model->getError('title')); ?>
+<input class="narrow" id="title" name="title:title" value="<?php echo html::initial_value($values, 'title:title'); ?>" />
+<?php echo html::error_message($model->getError('title:title')); ?>
 </li>
 </ol>
-<input type="submit" value="Save" class="default" name="submit" />
-<input type="submit" value="Delete" class="default" name="submit" />
 </fieldset>
+<?php 
+echo html::form_buttons(html::initial_value($values, 'title:id')!==null);
+?>
 </form>

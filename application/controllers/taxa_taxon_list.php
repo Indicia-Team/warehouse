@@ -41,51 +41,19 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->columns = array(
       'taxon'=>'',
       'authority'=>'',
-      'language'=>'',
+      'taxon_group'=>'Taxon Group',
+      'language'=>'',    
     );
-    $this->pagetitle = "Species";
-    $this->pageNoUriSegment = 4;
+    $this->pagetitle = "Species";    
     $this->model = ORM::factory('taxa_taxon_list');
-  }
-
-  private function formatScientificSynonomy(ORM_Iterator $res)
-  {
-    $syn = "";
-    foreach ($res as $synonym)
-    {
-      if ($synonym->taxon->language->iso == "lat")
-      {
-        $syn .= $synonym->taxon->taxon;
-        if ($synonym->taxon->authority) {
-          $syn .=	" | ".$synonym->taxon->authority;
-        }
-        $syn .= "\n";
-      }
-    }
-    return $syn;
-  }
-
-  private function formatCommonSynonomy(ORM_Iterator $res)
-  {
-    $syn = "";
-    foreach ($res as $synonym)
-    {
-      if ($synonym->taxon->language->iso != "lat")
-      {
-        $syn .= $synonym->taxon->taxon;
-        $syn .=	($synonym->taxon->language_id != null) ?
-        " | ".$synonym->taxon->language->iso."\n" :
-        '';
-      }
-    }
-    return $syn;
   }
 
   /**
   * Override the default page functionality to filter by taxon_list.
   */
-  public function page($taxon_list_id, $page_no, $limit)
+  public function page($page_no, $filter=null)
   {
+    $taxon_list_id=$filter;
     // At this point, $taxon_list_id has a value - the framework will trap the other case.
     // No further filtering of the gridview required as the very fact you can access the parent taxon list
     // means you can access all the taxa for it.
@@ -96,165 +64,130 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     }
     $this->base_filter['taxon_list_id'] = $taxon_list_id;
     $this->pagetitle = "Species in ".ORM::factory('taxon_list',$taxon_list_id)->title;
-    parent::page($page_no, $limit);
+    parent::page($page_no);
     $this->view->taxon_list_id = $taxon_list_id;
     $this->upload_csv_form->staticFields = array
     (
-      'taxon_list_id' => $taxon_list_id,
-      'preferred' => 't'
-    );    $this->upload_csv_form->returnPage = $taxon_list_id;
-
+      'taxa_taxon_list:taxon_list_id' => $taxon_list_id,
+      'taxa_taxon_list:preferred' => 't'
+    );    
+    $this->upload_csv_form->returnPage = $taxon_list_id;
   }
 
-  public function page_gv($taxon_list_id, $page_no, $limit)
+  /**
+   * Method to retrieve pages for the index grid of taxa_taxon_list entries from an AJAX
+   * pagination call. Overrides the base class behaviour to enforce a filter on the 
+   * taxon list id.   
+   */
+  public function page_gv($page_no, $filter=null)
   {
+    $taxon_list_id=$filter;
     $this->base_filter['taxon_list_id'] = $taxon_list_id;
-    $this->view->taxon_list_id = $taxon_list_id;
-    parent::page_gv($page_no, $limit);
+    return parent::page_gv($page_no);
   }
 
-  public function edit($id,$page_no,$limit)
-  {
-    // At this point, $id is provided - the framework will trap the empty or null case.
-    if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
-      return;
-    }
-    // Generate model
-    $this->model->find($id);
-    $gridmodel = ORM::factory('gv_taxon_lists_taxon');
+  /**
+   * Returns an array of all values from this model and its super models ready to be 
+   * loaded into a form. For this controller, we need to also setup the child taxon grid 
+   * and the synonyms/common names.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();    
 
-    // Add grid component
-    $grid =	Gridview_Controller::factory(
-      $gridmodel,
-      $page_no,
-      $limit,
-      4
+    $child_grid_html = $this->get_child_grid($this->model->id, 
+       $this->uri->argument(3) || 1, // page number
+       4 // limit
     );
-    $grid->base_filter = $this->base_filter;
-    $grid->base_filter['parent_id'] = $id;
-    $grid->columns = $this->columns;
-    $grid->actionColumns = array(
-      'edit' => 'taxa_taxon_list/edit/£id£'
-    );
-
+    
     // Add items to view
-    $vArgs = array(
-      'table' => $grid->display(),
-      'synonyms' => $this->formatScientificSynonomy(
+    $r = array_merge($r, array(
+      'table' => $child_grid_html,
+      'metaFields:synonyms' => $this->formatScientificSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
-      'commonNames' => $this->formatCommonSynonomy(
+      'metaFields:commonNames' => $this->formatCommonSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id))
-    );
-    $this->setView('taxa_taxon_list/taxa_taxon_list_edit', 'Taxon', $vArgs);
-
+    ));
+    return $r;  
+  }
+  
+  /**
+   *  Setup the default values to use when loading this controller to edit a new page.   
+   */
+  protected function getDefaults() {    
+    $r = parent::getDefaults();    
+    if ($this->uri->method(false)=='create') {
+      // List id is passed as first argument in URL when creating
+      $r['taxa_taxon_list:taxon_list_id'] = $this->uri->argument(1);
+      // Parent id might be passed in $_POST if creating as child of another taxon.
+      if (array_key_exists('taxa_taxon_list:parent_id', $_POST)) {
+        $r['taxa_taxon_list:parent_id']=$_POST['taxa_taxon_list:parent_id'];
+      }
+    } else {      
+      if ($_POST['taxa_taxon_list:id']) {
+        $r['table'] = $this->get_child_grid($_POST['taxa_taxon_list:id'],      
+          $this->uri->argument(3) || 1, // page number
+          1 // limit
+        );
+      }
+    }   
+    return $r;    
   }
 
-
-  // Auxilliary function for handling Ajax requests from the edit method gridview component
-  public function edit_gv($id,$page_no,$limit)
+  /**
+   *  Auxilliary function for handling Ajax requests from the edit method child taxa
+   *  gridview component.
+   */
+  public function edit_gv($id,$page_no)
   {
     $this->auto_render=false;
+    return $this->get_child_grid($id,$page_no);
+  }
+  
+  /**
+   * Returns the HTML required for the grid of children of this taxon entry.
+   * 
+   * @return string HTML for the grid.
+   * @access private  
+   */
+  private function get_child_grid($id,$page_no)
+  {
+    $gridmodel = ORM::factory('gv_taxon_lists_taxon');
 
-    $gridmodel = ORM::factory('gv_taxon_taxon_list');
-
-    $grid =	Gridview_Controller::factory(
+    $child_grid =	Gridview_Controller::factory(
         $gridmodel,
-        $page_no,
-        $limit,
+        $page_no,        
         4
     );
-    $grid->base_filter = $this->base_filter;
-    $grid->base_filter['parent_id'] = $id;
-    $grid->columns =  $this->columns;
-    $grid->actionColumns = array(
+    $child_grid->base_filter = $this->base_filter;
+    $child_grid->base_filter['parent_id'] = $id;
+    $child_grid->columns =  $this->columns;
+    $child_grid->actionColumns = array(
       'edit' => 'taxa_taxon_list/edit/£id£'
     );
-    return $grid->display();
-  }
-  /**
-  * Creates a new taxon given the id of the taxon_list to initially attach it to
-  */
-  public function create($taxon_list_id)
-  {
-    // At this point, $taxon_list_id has a value - the framework will trap the other case.
-    if (!$this->taxon_list_authorised($taxon_list_id))
-    {
-      $this->access_denied('table to create records with a taxon list ID='.$taxon_list_id);
-      return;
-    }
-    
-    $this->taxonListName = ORM::factory('taxon_list', $taxon_list_id)->title;
-    $this->model = ORM::factory('taxa_taxon_list');
-    $this->model->taxon_list_id = $taxon_list_id;
-    $parent = $this->input->post('parent_id', null);
-    $this->model->parent_id = $parent;
-
-    $vArgs = array
-    (
-      'table' => null,
-      'taxon_list_id' => $taxon_list_id,
-      'synonyms' => null,
-      'commonNames' => null
-    );
-
-    $this->setView('taxa_taxon_list/taxa_taxon_list_edit', 'Taxon', $vArgs);
-
-  }
-
-  public function save()
-  {
-    $_POST['preferred'] = 't';
-    if (!array_key_exists('language_id', $_POST) || !is_numeric($_POST['language_id']))
-      $_POST['language_id']=2; // latin
-    // If we have an image, upload it and set the image path as required.
-    $ups = Kohana::config('indicia.maxUploadSize');
-    syslog(LOG_DEBUG, "Maximum upload size is $ups.");
-    $_FILES = Validation::factory($_FILES)->add_rules(
-      'image_upload', 'upload::valid', 'upload::required',
-      'upload::type[png,gif,jpg]', "upload::size[$ups]"
-    );
-    if ($_FILES->validate())
-    {
-      $fTmp = upload::save('image_upload');
-      syslog(LOG_DEBUG, "Media validated and saved as $fTmp.");
-      $_POST['image_path'] = array_pop(explode('/', $fTmp));
-    }
-    else
-    {
-      syslog(LOG_DEBUG, "Media did not validate.");
-    }
-    parent::save();
+    return $child_grid->display();
   }
 
   /**
-  * Overrides the fail functionality to add args to the view.
-  */
-  protected function show_submit_fail()
-  {
-    $page_error=$this->model->getError('general');
-    if ($page_error) {
-      $this->session->set_flash('flash_error', $page_error);
-    }
-    $mn = $this->model->object_name;
-    $vArgs = array(
-      'synonyms' => null,
-      'commonNames' => null,
-    );
-    $this->setView($mn."/".$mn."_edit", ucfirst($mn), $vArgs);
-  }
-
+   * Reports if editing a taxon in taxon list is authorised.
+   * 
+   * @param int $id Id of the taxa_taxon_list that is being checked, or null for a new record.
+   */
   protected function record_authorised ($id)
   {
-    // note this function is not accessed when creating a record
-    // for this controller, any null ID taxa_taxon_list can not be accessed
-    if (is_null($id)) return false;
-    $taxa = new Taxa_taxon_list_Model($id);
-    // for this controller, any taxon_list that does not exist can not be accessed.
-    // ie prevent sly creation using the edit function
-    if (!$taxa->loaded) return false;
-    return ($this->taxon_list_authorised($taxa->taxon_list_id));
+    if ($id===null) {
+      // Creating a new record, so the taxon list id is an argument
+      $list_id=$this->uri->argument(1);
+    } else {
+      $taxa = new Taxa_taxon_list_Model($id);
+      // The id should already exist, otherwise the user is attempting to create by passing 
+      // a param to the edit function.
+      if (!$taxa->loaded) {
+        return false;
+      } else {
+        $list_id=$taxa->taxon_list_id;        
+      }
+    }
+    return ($this->taxon_list_authorised($list_id));
   }
 
   protected function taxon_list_authorised ($id)
@@ -276,11 +209,56 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    * are returned to the list of taxa on the sub-tab of the list.
    */
   protected function get_return_page() {
-    if ($this->model->taxon_list_id != null) {
-      return "taxon_list/edit/".$this->model->taxon_list_id."?tab=taxa";
+    if (array_key_exists('taxa_taxon_list:taxon_list_id', $_POST)) {
+      return "taxon_list/edit/".$_POST['taxa_taxon_list:taxon_list_id']."?tab=taxa";
     } else {
       return $this->model->object_name;
     }
+  }
+  
+  /**
+   * Retrieves the value to display in the textarea for the scientific names.
+   * 
+   * @return string Value for scientific names
+   * @access private   
+   */
+  private function formatScientificSynonomy(ORM_Iterator $res)
+  {
+    $syn = "";
+    foreach ($res as $synonym)
+    {
+      if ($synonym->taxon->language->iso == "lat")
+      {
+        $syn .= $synonym->taxon->taxon;
+        if ($synonym->taxon->authority) {
+          $syn .=	" | ".$synonym->taxon->authority;
+        }
+        $syn .= "\n";
+      }
+    }
+    return $syn;
+  }
+
+  /**
+   * Retrieves the value to display in the textarea for the common names.
+   * 
+   * @return string Value for common names
+   * @access private   
+   */
+  private function formatCommonSynonomy(ORM_Iterator $res)
+  {
+    $syn = "";
+    foreach ($res as $synonym)
+    {
+      if ($synonym->taxon->language->iso != "lat")
+      {
+        $syn .= $synonym->taxon->taxon;
+        $syn .=	($synonym->taxon->language_id != null) ?
+        " | ".$synonym->taxon->language->iso."\n" :
+        '';
+      }
+    }
+    return $syn;
   }
 
 }

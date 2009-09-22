@@ -22,24 +22,26 @@
  */
 
 ?>
-<form class="cmxform"  name='editList' action="<?php echo url::site().'language/save' ?>" method="POST">
+<form class="cmxform" action="<?php echo url::site().'language/save' ?>" method="post">
+<?php echo $metadata; ?>
 <fieldset>
 <legend>Language Details</legend>
 <ol>
 <li>
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
+<input type="hidden" name="language:id" value="<?php echo html::initial_value($values, 'language:id'); ?>" />
 <label for="iso">ISO language code</label>
-<input id="iso" name="iso" class="narrow" value="<?php echo html::specialchars($model->iso); ?>"/>
-<?php echo html::error_message($model->getError('iso')); ?>
+<input id="iso" name="language:iso" class="narrow" value="<?php echo html::initial_value($values, 'language:iso'); ?>"/>
+<?php echo html::error_message($model->getError('language:iso')); ?>
 </li>
 <li>
 <label for="language">Language</label>
-<input id="language" name="language" value="<?php echo html::specialchars($model->language); ?>" />
-<?php echo html::error_message($model->getError('language')); ?>
+<input id="language" name="language:language" value="<?php echo html::initial_value($values, 'language:language'); ?>" />
+<?php echo html::error_message($model->getError('language:language')); ?>
 </li>
 </ol>
 </fieldset>
-<?php echo $metadata ?>
-<input type="submit" name="submit" value="Submit" />
-<input type="submit" name="submit" value="Delete" />
+<?php 
+echo html::form_buttons(html::initial_value($values, 'language:id')!==null)
+?>
+</form>
 

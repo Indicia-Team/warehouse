@@ -40,7 +40,7 @@ in <select name='columns'>
 }
 ?>
 </select>
-<input id='gvFilterButton' type='submit' value='Filter'/>
+<input id="gvFilterButton" type="submit" value="Filter" class="ui-corner-all ui-state-default"/>
 </form>
 </div>
 <table id="pageGrid" class="ui-widget ui-widget-content">
@@ -57,7 +57,7 @@ if (count($actionColumns)>0) {
 ?>
 </tr>
 </thead>
-<tbody id='gvBody'/>
+<tbody id='gvBody'>
 <?php echo $body ?>
 </tbody>
 </table>

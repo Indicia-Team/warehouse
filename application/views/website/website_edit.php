@@ -24,38 +24,38 @@
 ?>
 <p>This page allows you to specify the details of a website that will use the services provided by this Indicia Warehouse instance.</p>
 <form class="cmxform" action="<?php echo url::site().'website/save'; ?>" method="post">
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
+<?php echo $metadata; ?>
 <fieldset>
+<input type="hidden" name="website:id" value="<?php echo html::initial_value($values, 'website:id'); ?>" />
 <legend>Website details</legend>
+
 <ol>
 <li>
 <label for="title">Title</label>
-<input id="title" name="title" value="<?php echo html::specialchars($model->title); ?>" />
-<?php echo html::error_message($model->getError('title')); ?>
+<input id="title" name="website:title" value="<?php echo html::initial_value($values, 'website:title'); ?>" />
+<?php echo html::error_message($model->getError('website:title')); ?>
 </li>
 <li>
 <label for="url">URL</label>
-<input id="url" name="url" value="<?php echo html::specialchars($model->url); ?>" />
-<?php echo html::error_message($model->getError('url')); ?>
+<input id="url" name="website:url" value="<?php echo html::initial_value($values, 'website:url'); ?>" />
+<?php echo html::error_message($model->getError('website:url')); ?>
 </li>
 <li>
 <label for="description">Description</label>
-<textarea rows="7" id="description" name="description"><?php echo html::specialchars($model->description); ?></textarea>
-<?php echo html::error_message($model->getError('description')); ?>
+<textarea rows="7" id="description" name="website:description"><?php echo html::initial_value($values, 'website:description'); ?></textarea>
+<?php echo html::error_message($model->getError('website:description')); ?>
 </li>
 <li>
 <label for="password">Password</label>
-<input type="password" id="password" name="password" value="<?php echo html::specialchars($model->password); ?>" />
-<?php echo html::error_message($model->getError('password')); ?>
+<input type="password" id="password" name="website:password" value="<?php echo html::initial_value($values, 'website:password'); ?>" />
+<?php echo html::error_message($model->getError('website:password')); ?>
 </li>
 <li>
 <label for="password2">Retype Password</label>
-<input type="password" id="password2" name="password2" value="<?php echo html::specialchars($model->password2); ?>" />
-<?php echo html::error_message($model->getError('password2')); ?>
+<input type="password" id="password2" name="password2" value="<?php echo html::initial_value($values, 'password2'); ?>" />
+<?php echo html::error_message($model->getError('website:password2')); ?>
 </li>
 </ol>
 </fieldset>
-<?php echo $metadata ?>
-<input type="submit" name="submit" value="Save" />
-<input type="submit" name="submit" value="Delete" />
+<?php echo html::form_buttons(html::initial_value($values, 'website:id')!==null); ?>
 </form>

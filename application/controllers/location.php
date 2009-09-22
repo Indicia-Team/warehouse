@@ -40,6 +40,8 @@ class Location_Controller extends Gridview_Base_Controller {
                         'centroid_sref'=>'');
         $this->pagetitle = "Locations";
 
+    // Get the list of locations the user is allowed to see.
+    // @todo Is this a performance bottleneck with large lists of locations?
     if(!is_null($this->gen_auth_filter)){
       $locations=ORM::factory('locations_website')->in('website_id', $this->gen_auth_filter['values'])->find_all();
       $location_id_values = array();
@@ -50,37 +52,13 @@ class Location_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * Action for location/create page.
-   * Displays a page allowing entry of a new location.
+   * Get the list of terms ready for the location types list. 
    */
-  public function create() {
-    $vArgs = array(
-      'type_terms' => $this->get_termlist_terms('indicia:location_types')
-    );
-    $this->setView('location/location_edit', 'Location', $vArgs);
-  }
-
-  /**
-   * Action for location/edit page.
-   * Displays a page allowing editing of an existing location.
-     *
-     * @todo auth and permission check
-     */
-  public function edit($id = null)
-  {
-    if ($id == null) {
-      $this->setError('Invocation error: missing argument', 'You cannot call edit location without an ID');
-    }
-    else if (!$this->record_authorised($id)) {
-      $this->access_denied('record with ID='.$id);
-    }
-    else {
-      $vArgs = array(
-        'type_terms' => $this->get_termlist_terms('indicia:location_types')
-      );
-      $this->model = new Location_Model($id);
-      $this->setView('location/location_edit', 'Location', $vArgs);
-    }
+  protected function prepareOtherViewData()
+  {    
+    return array(
+      'type_terms' => $this->get_termlist_terms('indicia:location_types')    
+    );   
   }
 
   protected function record_authorised ($id)
@@ -91,6 +69,7 @@ class Location_Controller extends Gridview_Base_Controller {
     }
     return true;
   }
+  
 }
 
 ?>

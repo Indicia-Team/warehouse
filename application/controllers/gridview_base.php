@@ -59,7 +59,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   /**
    * This is the main controller action method for the index page of the grid.
    */
-  public function page($page_no, $limit) {
+  public function page($page_no, $filter=null) {
     if ($this->page_authorised() == false) {
       $this->access_denied();
       return;
@@ -69,7 +69,6 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
 
     $grid =	Gridview_Controller::factory($this->gridmodel,
       $page_no,
-      $limit,
       $this->pageNoUriSegment);
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
@@ -99,15 +98,19 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * override this in controllers to specify a different set of actions.
    */
   protected function get_action_columns() {
-    return array('edit' => $this->controllerpath."/edit/£id£");
+    return array('edit' => $this->controllerpath."/edit/Â£idÂ£");
   }
 
-  public function page_gv($page_no, $limit) {
+  /**
+   * Method to retrieve pages for the index grid of taxa_taxon_list entries from an AJAX
+   * pagination call. Overrides the base class behaviour to enforce a filter on the 
+   * taxon list id.   
+   */
+  public function page_gv($page_no, $filter=null) {
     $this->prepare_grid_view();
     $this->auto_render = false;
     $grid =	Gridview_Controller::factory($this->gridmodel,
       $page_no,
-      $limit,
       $this->pageNoUriSegment);
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
@@ -197,17 +200,11 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $count++;
         $index = 0;
         $saveArray = array();
-        foreach ($_POST as $col=>$attr) {
+        foreach ($_POST as $col=>$attr) {          
           if (isset($data[$index])) {
             if ($attr!='<please select>') {
-              if (strpos($attr, '.')!==false) {
-                // This is an attribute for another record, e.g. taxon.language_id
-                $tokens = explode('.', $attr);
-                $extraRecords[$tokens[0]][$tokens[1]]=$data[$index];
-              } else {
-                // Add the data to the main record save array
-                $saveArray[$attr] = $data[$index];
-              }
+              // Add the data to the record save array
+              $saveArray[$attr] = $data[$index];              
             }
           } else {
             // This is one of our static fields at the end
@@ -216,7 +213,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
           $index++;
         }
         // Save the record
-        $this->model->clear();
+        $this->model->clear();        
         $this->model->set_submission_data($saveArray, true);
         if (($id = $this->model->submit()) == null) {
           // Record has errors - now embedded in model
@@ -236,7 +233,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $this->template->content = $view;
       } else {
         $this->session->set_flash('flash_info', "The upload was successful. $count records were uploaded.");
-        url::redirect($this->controllerpath);
+        url::redirect($this->get_return_page());
       }
     }
 

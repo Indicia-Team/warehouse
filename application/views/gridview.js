@@ -30,8 +30,8 @@ var realUrl;
 /**
   * Refreshes everything - a shortcut
  */
-function refresh(){
-  buildQueryString();
+function refresh(overrideUrl) {  
+  buildQueryString(overrideUrl);  
   refreshGrid();
   refreshPager();
 };
@@ -67,20 +67,30 @@ function refreshPager(){
  * Adds new javascript links to the pager component
  */
 function pagerLinks(){
-  $('.pagination a').each(function(i){
-    $(this).click(function(e){
+  $('.pagination a').live('click',
+    function(e) {
       e.preventDefault();
-      page = $.url.setUrl($(this).attr('href')).segment(pageUrlSegmentNo);
-      refresh();
-    });
-  });
+      var url=$.url.setUrl($(this).attr('href')), urlStr;
+      page = url.segment(pageUrlSegmentNo); 
+      // Build a query string from the link that was clicked
+      urlStr=url.attr('protocol') + '://' + url.attr('host');
+      for (var i=0; i<pageUrlSegmentNo; i++) {
+    	  urlStr += '/' + url.segment(i)
+      }
+      if (urlStr.indexOf('_gv')!=urlStr.length-3) {
+        urlStr += '_gv';
+      }
+      urlStr += '/';
+      refresh(urlStr);      
+    }
+  );  
 };
 
 
 /**
   * Builds a new query string from the filter and sort arrays
  */
-function buildQueryString() {
+function buildQueryString(overrideUrl) {
   var sortCols = '';
   var sortDirs = '';
   var filterCols = '';
@@ -104,7 +114,7 @@ function buildQueryString() {
     filterStrings = filterStrings.substring(0,filterStrings.length -1);
   }
 
-  queryString = baseQueryString
+  queryString = (overrideUrl || baseQueryString)
     + page + '/'
     + realUrl.segment(pageUrlSegmentNo + 1) + '?'
     + ((sortCols != '') ? 'orderby=' + sortCols
@@ -118,11 +128,8 @@ $(document).ready(function(){
   // Get the real URL (in case of routing)
   realUrl = $.url.setUrl($('meta[name=routedURI]').attr('content'));
   baseUri = $('meta[name=baseURI]').attr('content');
-
-  // Determine the segment number used for the page - the gridview control will
-  // always use the last two segments for the page, and limit - number of items to
-  // show per page.
-  pageUrlSegmentNo = realUrl.attr('path').split('/').length - 3;
+  
+  pageUrlSegmentNo = 4;
 
   // Set the base query string
   baseQueryString = baseUri;
@@ -141,7 +148,7 @@ $(document).ready(function(){
   }
 
   //Set initial page
-  page = realUrl.segment(pageUrlSegmentNo);
+  page = realUrl.segment(pageUrlSegmentNo);  
 
   // Paging
   pagerLinks();

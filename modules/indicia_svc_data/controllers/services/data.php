@@ -422,7 +422,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     // Check for allowed view prefixes, and use 'list' as the default
     if ($prefix!='gv' && $prefix!='detail')
-    $prefix='list';
+      $prefix='list';
     return $prefix.'_'.$table;
   }
 
@@ -548,28 +548,39 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Takes a submission array and attempts to save to the database.
+  * Takes a submission array and attempts to save to the database. The submission array
+  * can either contain a submission list or a single submission.
   */
   protected function submit($s)
   {
     kohana::log('info', 'submit');
-    foreach ($s['submission']['entries'] as $m)
-    {
-      $m = $m['model'];
-      $model = ORM::factory($m['id']); // id is the entity.
-      $this->check_update_access($m['id'], $m);
-      $model->submission = $m;
-      $result = $model->submit();
-      $id = $model->id;
-      if (!$result)
+    if (array_key_exists('submission_list',$s)) {
+      foreach ($s['submission_list']['entries'] as $m)
       {
-        Throw new ArrayException('Validation error', $model->getAllErrors());
+        $id = $this->submit_single($m);
       }
-      // return the first model
-      if (!isset($this->model))
-        $id=$model->id;
+    } else {
+      $id = $this->submit_single($s);
     }
     return $id;
+  }
+  
+  /**
+  * Takes a single submission entry and attempts to save to the database.
+  */
+  protected function submit_single($item) {
+    $model = ORM::factory($item['id']); // id is the entity.
+    $this->check_update_access($item['id'], $item);
+    $model->submission = $item;
+    $result = $model->submit();
+    $id = $model->id;
+    if (!$result)
+    {
+      Throw new ArrayException('Validation error', $model->getAllErrors());
+    }
+    // return the first model
+    if (!isset($this->model))
+      return $model->id;
   }
 
  /**

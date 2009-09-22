@@ -34,6 +34,7 @@ $default_terms = array(
   'enter additional species'=>'Enter additional species',
   'error loading control'=>'Error loading control',
   'lat long 4326'=>'Lat/Long (WGS84)',
+  'loading'=>'Loading',
   'search'=>'Search',
   'search for place on map'=>'Search for place on map',
   'spatial ref'=>'Spatial ref.',

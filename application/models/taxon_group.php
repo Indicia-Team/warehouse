@@ -41,7 +41,8 @@ class Taxon_Group_Model extends ORM {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('title', 'required', 'length[1,100]');
-    return parent::validate($array, $save, array('deleted'));
+    $this->unvalidatedFields = array('deleted');
+    return parent::validate($array, $save);
   }
 }
 

@@ -39,12 +39,12 @@ class Occurrence_comment_model extends ORM {
     $array->add_rules('occurrence_id', 'required');
 
     // Explicitly add those fields for which we don't do validation
-    $extraFields = array(
+    $this->unvalidatedFields = array(
       'email_address',
       'person_name',
       'deleted'
     );
-    return parent::validate($array, $save, $extraFields);
+    return parent::validate($array, $save);
 
   }
 

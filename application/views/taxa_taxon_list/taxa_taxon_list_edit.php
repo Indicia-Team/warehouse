@@ -33,7 +33,7 @@ $(document).ready(function() {
     minChars : 1,
     mustMatch : true,
     extraParams : {
-      taxon_list_id : "<?php echo $model->taxon_list_id; ?>",
+      taxon_list_id : "<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>",
       orderby : "taxon",
       mode : "json",
       qfield : "taxon",
@@ -70,28 +70,36 @@ if (array_key_exists('image_path', $model) && $model->image_path != null)
 }
 echo html::error_message($model->getError('deleted'));
 ?>
-<form class="cmxform"  name='editList' action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="POST" enctype="multipart/form-data">
+<form class="cmxform" action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="post" enctype="multipart/form-data">
 <?php echo $metadata ?>
 <fieldset>
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
-<input type="hidden" name="taxon_list_id" id="taxon_list_id" value="<?php echo html::specialchars($model->taxon_list_id); ?>" />
+<input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
+<input type="hidden" name="taxa_taxon_list:taxon_list_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>" />
+<input type="hidden" name="taxon:id" value="<?php echo html::initial_value($values, 'taxon:id'); ?>" />
+<input type="hidden" name="taxon_meaning:id" value="<?php echo html::initial_value($values, 'taxon_meaning:id'); ?>" />
+<input type="hidden" name="taxa_taxon_list:preferred" value="t" />
 <legend>Naming</legend>
 <ol>
 <li>
-<input type="hidden" name="taxon_id" id="taxon_id" value="<?php echo html::specialchars($model->taxon_id); ?>" />
 <label for="taxon">Taxon Name:</label>
-<input id="taxon" name="taxon" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->taxon) : ''); ?>"/>
+<input name="taxon:taxon" id="taxon" value="<?php echo html::initial_value($values, 'taxon:taxon'); ?>"/>
 <?php echo html::error_message($model->getError('taxon:taxon')); ?>
 </li>
 <li>
+<label for="authority">Authority:</label>
+<input id="authority" name="taxon:authority" value="<?php echo html::initial_value($values, 'taxon:authority'); ?>"/>
+<?php echo html::error_message($model->getError('taxon:authority')); ?>
+</li>
+<li>
 <label for="language_id">Language:</label>
-<select id="language_id" name="language_id">
+<select name="taxon:language_id" id="language_id">
   <option value=''>&lt;Please select&gt;</option>
 <?php
   $languages = ORM::factory('language')->orderby('language','asc')->find_all();
+  $selected = html::initial_value($values, 'taxon:language_id');
   foreach ($languages as $lang) {
     echo '	<option value="'.$lang->id.'" ';
-    if ($model->taxon_id != null && $lang->id==$model->taxon->language_id) {
+    if ($lang->id==$selected) {
       echo 'selected="selected" ';
     }
     echo '>'.$lang->language.'</option>';
@@ -103,20 +111,12 @@ echo html::error_message($model->getError('deleted'));
 <li>
 <label for="commonNames">Common Names:
 <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter common names one per line. Optionally follow each name by a | character then the 3 character code for the language, e.g. 'Lobworm | eng'.">?</span></label>
-<textarea rows="3" id="commonNames" name="commonNames"><?php echo html::specialchars($commonNames); ?></textarea>
+<textarea rows="3" cols="40" id="commonNames" name="metaFields:commonNames"><?php echo html::initial_value($values, 'metaFields:commonNames'); ?></textarea>
 </li>
 <li>
 <label for="synonyms" >Synonyms:
 <span class="ui-state-highlight ui-widget-content ui-corner-all" title="Enter synonyms one per line. Optionally follow each name by a | character then the taxon's authority, e.g. 'Zygaena viciae argyllensis | Tremewan. 1967'.">?</span></label>
-<textarea rows="3" id="synonyms" name="synonyms"><?php echo html::specialchars($synonyms); ?></textarea>
-</li>
-<li>
-<label for='image_path'>Upload Image: </label>
-<input type='file' name='image_upload' accept='png|jpg|gif' />
-</li>
-<li>
-<label for="description">Description:</label>
-<textarea rows="3" id="description" name="description"><?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->description) : ''); ?></textarea>
+<textarea rows="3"  cols="40" id="synonyms" name="metaFields:synonyms"><?php echo html::initial_value($values, 'metaFields:synonyms'); ?></textarea>
 </li>
 </ol>
 </fieldset>
@@ -125,60 +125,66 @@ echo html::error_message($model->getError('deleted'));
 <ol>
 <li>
 <label for="taxon_group_id">Taxon Group:</label>
-<select id="taxon_group_id" name="taxon_group_id">
+<select id="taxon_group_id" name="taxon:taxon_group_id">
   <option value=''>&lt;Please select&gt;</option>
 <?php
   $taxon_groups = ORM::factory('taxon_group')->orderby('title','asc')->where('deleted', 'f')->find_all();
-  foreach ($taxon_groups as $lang) {
-    echo '	<option value="'.$lang->id.'" ';
-    if ($model->taxon_id != null && $lang->id==$model->taxon->taxon_group_id) {
+  $selected = html::initial_value($values, 'taxon:taxon_group_id');
+  foreach ($taxon_groups as $group) {
+    echo '	<option value="'.$group->id.'" ';
+    if ($group->id==$selected) {
       echo 'selected="selected" ';
     }
-    echo '>'.$lang->title.'</option>';
+    echo '>'.$group->title.'</option>';
   }
 ?>
 </select>
 <?php echo html::error_message($model->getError('taxon:taxon_group_id')); ?>
 </li>
 <li>
-<label for="authority">Authority:</label>
-<input id="authority" name="authority" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->authority) : ''); ?>"/>
-<?php echo html::error_message($model->getError('authority')); ?>
+<label for="description">Description:</label>
+<textarea rows="3"  cols="40" id="description" name="taxon:description"><?php echo html::initial_value($values, 'taxon:description'); ?></textarea>
+</li>
+<li>
+<label for='image_path'>Upload Image: </label>
+<input id="image_path" type='file' name='image_upload' accept='png|jpg|gif' />
 </li>
 <li>
 <label for="external_key">External Key:</label>
-<input id="external_key" name="external_key" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->external_key) : ''); ?>"/>
-<?php echo html::error_message($model->getError('external_key')); ?>
+<input id="external_key" name="taxon:external_key" value="<?php echo html::initial_value($values, 'taxon:external_key'); ?>"/>
+<?php echo html::error_message($model->getError('taxon:external_key')); ?>
 </li>
 <li>
-<input type="hidden" name="parent_id" id="parent_id" value="<?php echo html::specialchars($model->parent_id); ?>" />
+<input type="hidden" name="taxa_taxon_list:parent_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:parent_id'); ?>" />
 <label for="parent">Parent Taxon:</label>
-<input id="parent" name="parent" value="<?php echo (($model->parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $model->parent_id)->taxon->taxon) : ''); ?>" />
+<input id="parent" name="taxa_taxon_list:parent" value="<?php 
+$parent_id = html::initial_value($values, 'taxa_taxon_list:parent_id'); 
+echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $parent_id)->taxon->taxon) : ''; 
+?>" />
 </li>
 <li>
 <label for="taxonomic_sort_order">Sort Order in List:</label>
-<input id="taxonomic_sort_order" name="taxonomic_sort_order" class="narrow" value="<?php echo html::specialchars($model->taxonomic_sort_order); ?>" />
-<?php echo html::error_message($model->getError('taxonomic_sort_order')); ?>
+<input id="taxonomic_sort_order" name="taxa_taxon_list:taxonomic_sort_order" class="narrow" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxonomic_sort_order'); ?>" />
+<?php echo html::error_message($model->getError('taxa_taxon_list:taxonomic_sort_order')); ?>
 </li>
 <li>
 <label for="search_code">Search Code:</label>
-<input id="search_code" name="search_code" class="narrow" value="<?php echo (($model->taxon_id != null) ? html::specialchars($model->taxon->search_code) : ''); ?>"/>
-<?php echo html::error_message($model->getError('search_code')); ?>
+<input id="search_code" name="taxon:search_code" class="narrow" value="<?php echo html::initial_value($values, 'taxon:search_code'); ?>"/>
+<?php echo html::error_message($model->getError('taxon:search_code')); ?>
 </li>
-<li>
-<input type="hidden" name="taxon_meaning_id" id="taxon_meaning_id" value="<?php echo html::specialchars($model->taxon_meaning_id); ?>" />
-</li>
+</ol>
 </fieldset>
-<input type="submit" name="submit" value="Submit" />
-<input type="submit" name="submit" value="Delete" />
+<?php
+echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!==null); 
+?>
 </form>
-
-<?php if ($model->id != '' && $table != null) { ?>
+<?php 
+if (html::initial_value($values, 'taxa_taxon_list:id') && $values['table'] != null) { ?>
   <br />
   <h2> Child Taxa </h2>
-  <?php echo $table; ?>
-<form class="cmxform" action="<?php echo url::site(); ?>taxa_taxon_list/create/<?php echo $model->taxon_list_id; ?>" method="post">
-  <input type="hidden" name="parent_id" value=<?php echo $model->id ?> />
-  <input type="submit" value="New Child Taxon" />
+  <?php echo $values['table']; ?>
+<form class="cmxform" action="<?php echo url::site(); ?>taxa_taxon_list/create/<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id') ?>" method="post">
+  <input type="hidden" name="taxa_taxon_list:parent_id" value=<?php echo html::initial_value($values, 'taxa_taxon_list:id') ?> />
+  <input type="submit" value="New Child Taxon" class="ui-corner-all ui-state-default button" />
   </form>
 <?php } ?>

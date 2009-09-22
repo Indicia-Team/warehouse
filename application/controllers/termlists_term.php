@@ -42,8 +42,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       'term'=>'',
       'language'=>'',
       );
-    $this->pagetitle = "Terms";
-    $this->pageNoUriSegment = 4;
+    $this->pagetitle = "Terms";    
     $this->model = ORM::factory('termlists_term');
   }
 
@@ -57,130 +56,143 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     }
     return $syn;
   }
+  
   /**
-   * Override the default page functionality to filter by termlist.
-   */
-  public function page($termlist_id, $page_no, $limit){
+  * Override the default page functionality to filter by termlist.
+  */
+  public function page($page_no, $filter=null)
+  {
+    $termlist_id=$filter;
     // At this point, $termlist_id has a value - the framework will trap the other case.
-    // No further filtering of the gridview required as the very fact you can access the parent term list
-    // means you can access all the terms for it.
+    // No further filtering of the gridview required as the very fact you can access the parent termlist
+    // means you can access all the taxa for it.
     if (!$this->termlist_authorised($termlist_id))
     {
       $this->access_denied('table to view records with a termlist ID='.$termlist_id);
       return;
     }
     $this->base_filter['termlist_id'] = $termlist_id;
-    $this->pagetitle = "Terms in ".ORM::factory('termlist',$termlist_id)->title;
-    parent::page($page_no, $limit);
+    $this->pagetitle = "Species in ".ORM::factory('termlist',$termlist_id)->title;
+    parent::page($page_no);
     $this->view->termlist_id = $termlist_id;
+    $this->upload_csv_form->staticFields = array
+    (
+      'termlists_term:termlist_id' => $termlist_id,
+      'termlists_term:preferred' => 't'
+    );    
+    $this->upload_csv_form->returnPage = $termlist_id;
   }
 
-  public function page_gv($termlist_id, $page_no, $limit){
+  /**
+   * Method to retrieve pages for the index grid of termlists_term entries from an AJAX
+   * pagination call. Overrides the base class behaviour to enforce a filter on the 
+   * termlist id.   
+   */
+  public function page_gv($page_no, $filter=null) {
+    $termlist_id=$filter;
     $this->base_filter['termlist_id'] = $termlist_id;
-    $this->view->termlist_id = $termlist_id;
-    parent::page_gv($page_no, $limit);
+    parent::page_gv($page_no);
   }
+  
+ /**
+   * Returns an array of all values from this model and its super models ready to be 
+   * loaded into a form. For this controller, we need to also setup the child term grid 
+   * and the synonyms/common names.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
 
-  public function edit($id,$page_no,$limit) {
-    // At this point, $id is provided - the framework will trap the empty or null case.
-    if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
-      return;
-    }
-
-    // Generate model
-    $this->model->find($id);
-    $gridmodel = ORM::factory('gv_termlists_term');
-    // Add grid component
-    $grid =	Gridview_Controller::factory($gridmodel,
-        $page_no,
-        $limit,
-        4);
-    $grid->base_filter = $this->base_filter;
-    $grid->base_filter['parent_id'] = $id;
-    $grid->columns = $this->columns;
-    $grid->actionColumns = array(
-      'edit' => 'termlists_term/edit/£id£'
+    $child_grid_html = $this->get_child_grid($this->model->id, 
+       $this->uri->argument(3) || 1, // page number
+       1 // limit
     );
+    
     // Add items to view
-    $vArgs = array(
-      'table' => $grid->display(true),
-      'termlist_id' => $this->model->termlist_id,
-      'synonyms' => $this->formatSynonomy($this->model->getSynonomy('meaning_id', $this->model->meaning_id)),
-    );
-    $this->setView('termlists_term/termlists_term_edit', 'Term', $vArgs);
+    $r = array_merge($r, array(
+      'table' => $child_grid_html,
+      'metaFields:synonyms' => $this->formatSynonomy($this->model->getSynonomy('meaning_id', $this->model->meaning_id))
+    ));
+    return $r;  
   }
-
-  // Auxilliary function for handling Ajax requests from the edit method gridview component
-  public function edit_gv($id,$page_no,$limit) {
-    $this->auto_render=false;
-
-    $gridmodel = ORM::factory('gv_term_termlist');
-
-    $grid =	Gridview_Controller::factory($gridmodel,
-        $page_no,
-        $limit,
-        4);
-    $grid->base_filter = $this->base_filter;
-    $grid->base_filter['parent_id'] = $id;
-    $grid->columns =  $this->columns;
-    $grid->actionColumns = array(
-      'edit' => 'termlists_term/edit/£id£'
-    );
-    return $grid->display();
-  }
+  
   /**
-   * Creates a new term given the id of the termlist to initially attach it to
+   *  Setup the default values to use when loading this controller to edit a new page.   
    */
-  public function create($termlist_id){
-    // At this point, $termlist_id has a value - the framework will trap the other case.
-    if (!$this->termlist_authorised($termlist_id))
-    {
-      $this->access_denied('table to create records with a taxon list ID='.$termlist_id);
-      return;
-        }
-    $parent = $this->input->post('parent_id', null);
-    $this->model->parent_id = $parent;
-
-    $vArgs = array(
-      'table' => null,
-      'termlist_id' => $termlist_id,
-      'synonyms' => null);
-
-    $this->setView('termlists_term/termlists_term_edit', 'Term', $vArgs);
-
-  }
-
-  public function save(){
-    $_POST['preferred'] = 't';
-    if (!is_numeric($_POST['language_id']))
-          $_POST['language_id']=1; // English
-    parent::save();
-  }
+  protected function getDefaults() {
+    $r = parent::getDefaults();
+    if ($this->uri->method(false)=='create') {
+      // List id is passed as first argument in URL when creating
+      $r['termlists_term:termlist_id'] = $this->uri->argument(1);
+      // Parent id might be passed in $_POST if creating as child of another term.
+      if (array_key_exists('termlists_term:parent_id', $_POST)) {
+        $r['termlists_term:parent_id']=$_POST['termlists_term:parent_id'];
+      }
+    } else {       
+      if ($_POST['termlists_term:id']) {
+        $r['table'] = $this->get_child_grid($_POST['termlists_term:id'],      
+          $this->uri->argument(3) || 1, // page number
+          1 // limit
+        );
+      }
+    }    
+    return $r;    
+  } 
 
   /**
-   * Overrides the fail functionality to add args to the view.
+   *  Auxilliary function for handling Ajax requests from the edit method child taxa
+   *  gridview component.
    */
-  protected function show_submit_fail(){
-    $mn = $this->model->object_name;
-    $vArgs = array(
-      'termlist_id' => $this->model->termlist_id,
-      'synonyms' => null,
-    );
-    $this->setView($mn."/".$mn."_edit", ucfirst($mn), $vArgs);
-  }
-
-  protected function record_authorised ($id)
+  public function edit_gv($id,$page_no)
   {
-    // note this function is not accessed when creating a record
-    // for this controller, any null ID termlist_term can not be accessed
-    if (is_null($id)) return false;
-    $term = new Termlists_term_Model($id);
-    // for this controller, any termlist_term that does not exist can not be accessed.
-    // ie prevent sly creation using the edit function
-    if (!$term->loaded) return false;
-    return ($this->termlist_authorised($term->termlist_id));
+    $this->auto_render=false;
+    return $this->get_child_grid($id,$page_no);
+  }
+  
+  /**
+   * Returns the HTML required for the grid of children of this term entry.
+   * 
+   * @return string HTML for the grid.
+   * @access private  
+   */
+  private function get_child_grid($id,$page_no)
+  {
+    $gridmodel = ORM::factory('gv_termlists_term');
+
+    $child_grid =	Gridview_Controller::factory(
+        $gridmodel,
+        $page_no,        
+        4
+    );
+    $child_grid->base_filter = $this->base_filter;
+    $child_grid->base_filter['parent_id'] = $id;
+    $child_grid->columns =  $this->columns;
+    $child_grid->actionColumns = array(
+      'edit' => 'termlists_term/edit/Â£idÂ£'
+    );
+    return $child_grid->display();
+  }
+  
+  /**
+   * Reports if editing a term in term list is authorised.
+   * 
+   * @param int $id Id of the termlists_term that is being checked, or null for a new record.
+   */
+  protected function record_authorised($id)
+  {
+    if ($id===null) {
+      // Creating a new record, so the taxon list id is an argument
+      $list_id=$this->uri->argument(1);
+    } else {
+      $terms = new Termlists_Term_Model($id);
+      // The id should already exist, otherwise the user is attempting to create by passing 
+      // a param to the edit function.
+      if (!$terms->loaded) {
+        return false;
+      } else {
+        $list_id=$terms->termlist_id;        
+      }
+    }
+    return ($this->termlist_authorised($list_id));
   }
 
   protected function termlist_authorised ($id)
@@ -202,8 +214,8 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    * are returned to the list of terms on the sub-tab of the list.
    */
   protected function get_return_page() {
-    if ($this->model->termlist_id != null) {
-      return "termlist/edit/".$this->model->termlist_id."?tab=terms";
+    if (array_key_exists('termlists_term:termlist_id', $_POST)) {
+      return "termlist/edit/".$_POST['termlists_term:termlist_id']."?tab=terms";
     } else {
       return $this->model->object_name;
     }

@@ -24,6 +24,7 @@
 ?>
 <p>This page allows you to specify a users details.</p>
 <form class="cmxform" action="<?php echo url::site().'user/save'; ?>" method="post">
+<?php echo $metadata; ?>
 <input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
 <input type="hidden" name="person_id" id="person_id" value="<?php echo html::specialchars($model->person_id); ?>" />
 <fieldset>
@@ -91,7 +92,5 @@
 ?>
 </ol>
 </fieldset>
-<?php echo $metadata ?>
-<input type="submit" name="submit" value="Submit" />
-<input type="submit" name="submit" value="Delete" />
+<?php echo html::form_buttons(html::initial_value($values, 'user:id')!==null); ?>
 </form>

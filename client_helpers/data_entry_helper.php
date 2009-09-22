@@ -1,4 +1,4 @@
-<?php
+ <?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -24,17 +24,18 @@
  */
 require_once('lang.php');
 require_once('helper_config.php');
+require_once('submission_builder.php');
 
 global $indicia_templates;
 
 /**
- * Provides a control templates to define the output of the data entry helper class.
+ * Provides control templates to define the output of the data entry helper class.
  *
  * @package	Client
  */
 $indicia_templates = array(
   'prefix' => '',
-  'label' => '<label for="{id}">{label}:</label>'."\n",
+  'label' => '<label for="{id}" class="{labelClass}">{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif"/>'."\n",
@@ -55,6 +56,21 @@ $indicia_templates = array(
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden page-notice\" ><div id=\"imp-georef-output-div\" />\n".
       "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">".lang::get('close')."</a>\n".
       "</div>",
+  'tab_header' => '<script type="text/javascript">'.
+    'document.write(\'<ul class="ui-helper-hidden">\');'.
+    "</script>\n".
+    "<noscript><ul></noscript>".
+    "{tabs}".
+    "</ul>",
+  'loading_block_start' => '<script type="text/javascript">'.
+		'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
+		'<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
+		lang::get('loading').'...</div>\');'.
+    'document.write(\'<div class="loading-hide ui-helper-hidden">\');'.
+    '</script>',
+  'loading_block_end' => '</div>',
+	'taxon_label' => '<div class="biota"><span class="sci binomial"><em>{taxon}</em></span> {authority}'.
+    		'<span class="vernacular">{common}</span></div>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
          '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" />'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
@@ -269,8 +285,12 @@ class data_entry_helper extends helper_config {
     // otherwise the fieldname (as the fieldname control could be a hidden control).
     if (array_key_exists('label', $options)) {
       $r .= str_replace(
-          array('{label}', '{id}'),
-          array($options['label'], array_key_exists('inputId', $options) ? $options['inputId'] : $options['id']),
+          array('{label}', '{id}', '{labelClass}'),
+          array(
+              $options['label'], 
+              array_key_exists('inputId', $options) ? $options['inputId'] : $options['id'],
+              array_key_exists('labelClass', $options) ? $options['labelClass'] : '',
+          ),              
           $indicia_templates['label']
       );
     }
@@ -370,6 +390,10 @@ class data_entry_helper extends helper_config {
    * <p>Further, the control will incorporate the functionality to add extra terms to the
    * control from the parent list of the one given. This will take the form of an autocomplete
    * box against the parent list which will add an extra row to the control upon selection.</p>
+   * 
+   * <p>To change the format of the label displayed for each taxon, use the global $indicia_templates variable
+   * to set the value for the entry 'taxon_label'. The tags available in the template are {taxon},
+   * {authority} and {common}.</p>
    *
    * @param array $options Options array with the following possibilities:<ul>
    * <li><b>listId</b><br/>
@@ -377,6 +401,10 @@ class data_entry_helper extends helper_config {
    * <li><b>occAttrs</b><br/>
    * Integer array, where each entry corresponds to the id of the desired attribute in the
    * occurrence_attributes table.</li>
+   * <li><b>occAttrClasses</b><br/>
+   * String array, where each entry corresponds to the css class(es) to apply to the corresponding
+   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
+   * occAttrs then all remaining controls re-use the last class.</li>
    * <li><b>extraParams</b><br/>
    * Optional. Associative array of items to pass via the query string to the service. This
    * should at least contain the read authorisation array.</li>
@@ -399,7 +427,7 @@ class data_entry_helper extends helper_config {
    * </ul>
    */
   public static function species_checklist()
-  {
+  {  
     global $indicia_javascript, $entity_to_load;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     $options = array_merge(array(
@@ -429,48 +457,55 @@ class data_entry_helper extends helper_config {
           'nonce' => $options['extraParams']['nonce']
       );
     }
-    $options['table']='taxa_taxon_list';
+    $options['table']='taxa_taxon_list';    
     $taxalist = self::get_population_data($options);
     $url = parent::$base_url."index.php/services/data";
+    
     // Get the list of occurrence attributes
     if (array_key_exists('occAttrs', $options)) {
+      $idx=0;
+      $class='';
       foreach ($options['occAttrs'] as $occAttr)
       {
-        $occAttrRequest = "$url/occurrence_attribute/$occAttr?mode=json";
-        $occAttrRequest .= self::array_to_query_string($options['readAuth']);
-        $session = curl_init($occAttrRequest);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $a = json_decode(array_pop(explode("\n\n", curl_exec($session))), true);
+        $a = self::get_population_data(array(
+            'table'=>'occurrence_attribute',
+            'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
+        ));        
         if (! array_key_exists('error', $a))
         {
           $b = $a[0];
           $occAttrs[$occAttr] = $b['caption'];
+          // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
+          $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;          
           // Build the correct control
           switch ($b['data_type'])
           {
             case 'L':
               $tlId = $b['termlist_id'];
-              $occAttrControls[$occAttr] =
-              data_entry_helper::select(
-                'oa:'.$occAttr, 'termlists_term', 'term', 'id',
-                $options['readAuth'] + array('termlist_id' => $tlId)
-              );
+              $occAttrControls[$occAttr] = data_entry_helper::select(array(
+                  'fieldname' => 'oa:'.$occAttr, 
+                  'table'=>'termlists_term',
+                  'captionField'=>'term',
+                  'valueField'=>'id',
+                  'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
+                  'class' => $class
+              ));
               break;
-            case 'D' || 'V':
+            case 'D':
+            case 'V':              
               // Date-picker control
-              $occAttrControls[$occAttr] = "<input type='text' class='date' id='oa:$occAttr' name='oa:$occAttr' " .
+              $occAttrControls[$occAttr] = "<input type='text' class='date $class' id='oa:$occAttr' name='oa:$occAttr' " .
                   "value='".lang::get('click here')."'/>";
-              break;
-  
-            default:
+              break;  
+            default:              
               $occAttrControls[$occAttr] =
-                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr'/>";
+                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr' class='$class'/>";
               break;
           }
         }
+        $idx++;
       }
-    }
-
+    }    
     // Build the grid
     if (! array_key_exists('error', $taxalist))
     {
@@ -495,7 +530,7 @@ class data_entry_helper extends helper_config {
       $rowIdx = 0;
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
-        $row = "<td class='scTaxonCell ui-state-default'>".$taxon['taxon']." ".$taxon['authority']."</td>";
+        $row = "<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
         if (isset($entity_to_load) && array_key_exists("sc:$id:present", $entity_to_load)) {
           $checked = ' checked="checked"';
         } else {
@@ -541,12 +576,25 @@ class data_entry_helper extends helper_config {
             'taxa_taxon_list', 'taxon', 'id', $options['readAuth'] +
             array('taxon_list_id' => $options['lookupListId']));
         $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
-      }
+      }      
       return $grid;
     } else {
       return $taxalist['error'];
     }
+    
   }
+  
+  /**
+   * Applies a template to build the output label for each taxon in a taxon grid.
+   * 
+   * @access private
+   * @param $taxon Array holding the taxon attributes.
+   * @return string HTML for the taxon label
+   */
+  private static function getTaxonLabel($taxon) {
+    return self::apply_template('taxon_label', $taxon);
+  }
+  
 
   /**
   * Helper function to generate a treeview from a given list
@@ -698,6 +746,8 @@ class data_entry_helper extends helper_config {
   * if this is not specified then 1 hour.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>blankText</b><br/>
+  * Optional. If specified then the first option in the drop down is the blank text, used when there is no value.</li>
   * </ul>
   *
   * @return string HTML code for a select control.
@@ -764,6 +814,8 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array(
         'fieldname', 'table', 'captionField', 'size', 'multiselect', 'valueField', 'extraParams', 'default'
     ));
+    // blank text option not applicable to list box
+    unset($options['blankText']);
     return self::select_or_listbox($options, 'listbox', 'listbox_option', 'listbox_option_selected');
   }
 
@@ -904,8 +956,8 @@ class data_entry_helper extends helper_config {
     $cacheTimeOut = self::_getCacheTimeOut($options);
     /* TODO : confirm if upload directory is best place for cache files */
     $cacheFile = self::_getCacheFileName(parent::$upload_path, $cacheOpts, $cacheTimeOut);
-    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
-      $response = self::http_post($request, null);
+    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts))) 
+      $response = self::http_post($request, null);    
     self::_timeOutCacheFile($cacheFile, $cacheTimeOut);
     self::_cacheResponse($cacheFile, $response, $cacheOpts);
 
@@ -920,7 +972,7 @@ class data_entry_helper extends helper_config {
    */
   private static function select_or_listbox($options, $outerTmpl, $itemTmpl, $selectTmpl) {
     global $indicia_templates;
-    self::add_resource('json');
+    self::add_resource('json');    
     $options = array_merge(array(
       'filterField'=>'parent_id',
       'size'=>3
@@ -933,6 +985,13 @@ class data_entry_helper extends helper_config {
       $response = self::get_population_data($options);
       if (!array_key_exists('error', $response)) {
         $opts = "";
+        if (array_key_exists('blankText', $options)) {
+          $opts .= str_replace(
+              array('{value}', '{caption}', '{selected}'),
+              array('', $options['blankText']),
+              $indicia_templates[$itemTmpl]
+          );
+        }        
         foreach ($response as $item){
           if (array_key_exists($options['captionField'], $item) &&
               array_key_exists($options['valueField'], $item))
@@ -1102,7 +1161,7 @@ class data_entry_helper extends helper_config {
     // Merge in the defaults
     $options = array_merge(array(
         'srefField'=>'sample:entered_sref',
-        'systemfield'=>'sample:entered_sref_system',
+        'systemField'=>'sample:entered_sref_system',
         'hiddenFields'=>true,
         'linkedAddressBoxId'=>''
         ), $options);
@@ -1270,8 +1329,8 @@ class data_entry_helper extends helper_config {
           $name = htmlspecialchars($item[$options['captionField']], ENT_QUOTES);
           $checked = ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '';
 
-          $r .= "<span><input type='$type' id='$id' name='$id' value='$item[$valueField]' $checked/>";
-          $r .= "$name</span>$sep";
+          $r .= "<span><input type='$type' name='".$options['fieldname']."' value='".$item[$options['valueField']]."' $checked/>";
+          $r .= "$name</span>".$options['sep'];
         }
       }
     }
@@ -1418,6 +1477,7 @@ class data_entry_helper extends helper_config {
         'hiddenFields'=>true,
         'id'=>'imp-sref',
         'table'=>$tokens[0],
+        'default'=>self::check_default_value($options['fieldname']),
         'defaultGeom'=>self::check_default_value($tokens[0].':geom')
     ), $options);
     $options = self::check_options($options);
@@ -1613,7 +1673,47 @@ class data_entry_helper extends helper_config {
     self::add_resource('jquery_ui');
   }
   
-
+  public static function tab_header($options) {
+    $options = self::check_options($options);
+    // Convert the tabs array to a string of <li> elements
+    $tabs = "";
+    foreach($options['tabs'] as $link => $caption) {
+      $tabs .= "<li><a href=\"$link\"><span>$caption</span></a></li>";
+    }
+    $options['tabs'] = $tabs;
+    return self::apply_template('tab_header', $options);  
+  }
+  
+  /**
+   * Allows the demarcation of the start of a region of the page HTML to be declared which will be replaced by 
+   * a loading message whilst the page is loading. If JavaScript is disabled then this has no
+   * effect.
+   * 
+   * @return string HTML and JavaScript to insert into the page at the start of the block
+   * which is replaced by a loading panel while the page is loading.
+   */
+  public static function loading_block_start() {
+    global $indicia_templates, $indicia_theme_path, $indicia_theme;
+    self::add_resource('jquery_ui');
+    // Note that we have to load the ui theme css first as this needs to display immediately. A bit messy, ideally we 
+    // need a way to put stylesheets into the page header.
+    return "<link rel=\"stylesheet\" type=\"text/css\" href=\"$indicia_theme_path/$indicia_theme/jquery-ui.custom.css\" />\n".
+        $indicia_templates['loading_block_start'];
+  } 
+  
+  /**
+   * Allows the demarcation of the end of a region of the page HTML to be declared which will be replaced by 
+   * a loading message whilst the page is loading.
+   * 
+   * @return string HTML and JavaScript to insert into the page at the start of the block
+   * which is replaced by a loading panel while the page is loading.
+   */
+  public static function loading_block_end() {
+    global $indicia_javascript, $indicia_templates;
+    $indicia_javascript .= "$('.loading-panel').remove();\n";    
+    $indicia_javascript .= "$('.loading-hide').fadeIn('slow');\n";    
+    return $indicia_templates['loading_block_end'];
+  }
 
   /**
    * Either takes the passed in array, or the post data if this is null, and forwards it to the data services
@@ -1621,7 +1721,7 @@ class data_entry_helper extends helper_config {
    */
   public static function forward_post_to($entity, $array = null) {
     if ($array == null)
-      $array = self::wrap($_POST, $entity);
+      $array = submission_builder::wrap($_POST, $entity);
     $request = parent::$base_url."/index.php/services/data/$entity";
     $postargs = 'submission='.json_encode($array);
     // passthrough the authentication tokens as POST data
@@ -1639,36 +1739,7 @@ class data_entry_helper extends helper_config {
   }
 
   public static function handle_media($media_id) {
-    if (array_key_exists($media_id, $_FILES)) {
-      syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
-      $uploadpath = parent::$upload_path;
-      $target_url = parent::$base_url."/index.php/services/data/handle_media";
-
-      $name = $_FILES[$media_id]['name'];
-      $fname = $_FILES[$media_id]['tmp_name'];
-      $fext = array_pop(explode(".", $name));
-      $bname = basename($fname, ".$fext");
-
-      // Generate a file id to store the image as
-      $destination = time().rand(0,1000).".".$fext;
-
-      if (move_uploaded_file($fname, $uploadpath.$destination)) {
-        $postargs = array();
-        if (array_key_exists('auth_token', $_POST)) {
-               $postargs['auth_token'] = $_POST['auth_token'];
-        }
-        if (array_key_exists('nonce', $_POST)) {
-          $postargs['nonce'] = $_POST['nonce'];
-        }
-        $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
-        self::http_post($target_url, $file_to_upload + $postargs);
-        return $destination;
-
-      } else {
-        //TODO error messaging
-        return false;
-      }
-    }
+    return submission_builder::handle_media($media_id);
   }
 
   /**
@@ -1723,45 +1794,7 @@ class data_entry_helper extends helper_config {
   * @return array
   */
   public static function wrap_attributes($arr, $entity) {
-    $prefix=self::get_attr_entity_prefix($entity).'Attr';
-    $oap = array();
-    $occAttrs = array();
-    foreach ($arr as $key => $value) {
-      if (strpos($key, $prefix) !== false) {
-        $a = explode(':', $key);
-        // Attribute in the form occAttr:36 for attribute with attribute id
-        // of 36.
-        $oap[] = array(
-          $entity."_attribute_id" => $a[1], 'value' => $value
-        );
-      }
-    }
-    foreach ($oap as $oa) {
-      $occAttrs[] = data_entry_helper::wrap($oa, $entity."_attribute");
-    }
-    return $occAttrs;
-  }
-
-  /**
-   * Returns a 3 character prefix representing an entity name that can have
-   * custom attributes attached.
-   * @param string $entity Entity name (location, sample or occurrence).
-   */
-  private static function get_attr_entity_prefix($entity) {
-    switch ($entity) {
-      case 'occurrence':
-        $prefix = 'occ';
-        break;
-      case 'location':
-        $prefix = 'loc';
-        break;
-      case 'sample':
-        $prefix = 'smp';
-        break;
-      default:
-        throw new Exception('Unknown attribute type. ');
-    }
-    return $prefix;
+    return submission_builder::wrap_attributes($arr, $entity);
   }
 
   /**
@@ -1779,26 +1812,20 @@ class data_entry_helper extends helper_config {
    */
   public static function wrap($array, $entity)
   {
-    // Initialise the wrapped array
-    $sa = array(
-        'id' => $entity,
-        'fields' => array()
-    );
-
-    // Iterate through the array
-    foreach ($array as $a => $b)
-    {
-      // Don't wrap the authentication tokens, or any attributes tagged as belonging to another entity
-      if ($a!='auth_token' && $a!='nonce' && (!strpos($a, ':') || strpos($a, "$entity:")!==false))
-      {
-        // strip the entity name tag if present, as should not be in the submission attribute names
-        $a = str_replace("$entity:", '', $a);
-        // This should be a field in the model.
-        // Add a new field to the save array
-        $sa['fields'][$a] = array('value' => $b);
-      }
-    }
-    return $sa;
+    return submission_builder::wrap($array, $entity); 
+  }
+  
+   /**
+   * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,
+   * and also grabs the custom attributes (if there are any) and links them to the model.
+   *
+   * @param array $values Array of form data (e.g. $_POST).
+   * @param string $modelName Name of the model to wrap data for. If this is sample, occurrence or location
+   * then custom attributes will also be wrapped. Furthermore, any attribute called $modelName:image can
+   * contain an image upload (as long as a suitable entity is available to store the image in).
+   */
+  public static function wrap_with_attrs($values, $modelName) {
+    return submission_builder::wrap_with_attrs($values, $modelName);    
   }
 
   /**
@@ -1811,9 +1838,8 @@ class data_entry_helper extends helper_config {
   public static function build_sample_occurrence_submission($values) {
     $structure = array(
         'model' => 'sample',
-        'submodel' => array(
-          'model' => 'occurrence',
-          'fk' => 'sample_id'
+        'subModels' => array(
+          'occurrence' => array('fk' => 'sample_id')
         )
     );
     // Either an uploadable file, or a link to a Flickr external detail means include the submodel
@@ -1827,17 +1853,17 @@ class data_entry_helper extends helper_config {
     return self::build_submission($values, $structure);
   }
   
-/**
+  /**
    * Helper function to simplify building of a submission that contains a single sample
    * and multiple occurrences records generated by a species_checklist control.
    * @param array $values List of the posted values to create the submission from. 
    */
   public static function build_sample_occurrences_list_submission($values) {
     // We're mainly submitting to the sample model
-    $sampleMod = data_entry_helper::wrap($values, 'sample');
+    $sampleMod = data_entry_helper::wrap_with_attrs($values, 'sample');
     $occurrences = data_entry_helper::wrap_species_checklist($values);
   
-    // Add the occurrences in as submodels
+    // Add the occurrences in as subModels
     $sampleMod['subModels'] = $occurrences;
   
     // Wrap submission and return it
@@ -1853,74 +1879,13 @@ class data_entry_helper extends helper_config {
    * @param array $structure Describes the structure of the submission. The form should be:
    * array(
    *     'model' => 'main model name',
-   *     'submodel' => array('model' => 'child model name', fk => 'foreign key name', image_entity => 'name of image entity if present')
+   *     'submodel' => array('model' => 'child model name', fk => 'foreign key name', image_entity => 'name of image entity if present'),
+   *     'superModel' => array('parent model name' => array(fk => 'foreign key name', image_entity => 'name of image entity if present')),
+   *     'metaFields' => array('fieldname1', 'fieldname2', ...)
    * )
    */
   public static function build_submission($values, $structure) {
-    $modelWrapped = self::inner_build_submission($values, $structure);
-    return array('submission' => array('entries' => array(
-      array ( 'model' => $modelWrapped )
-    )));
-  }
-
-  private static function inner_build_submission($values, $structure) {
-    // Wrap the main model and attrs into JSON
-    $modelWrapped = self::wrap_with_attrs($values, $structure['model']);
-    // Is there a child model?
-    if (array_key_exists('submodel', $structure)) {
-      $submodelWrapped = self::inner_build_submission($values, $structure['submodel']);
-      // Join the parent and child models together
-      if (!array_key_exists('subModels', $modelWrapped)) {
-        $modelWrapped['subModels']=array();
-      }
-      array_push($modelWrapped['subModels'], array(
-        'fkId' => $structure['submodel']['fk'],
-        'model' => $submodelWrapped
-      ));
-    }
-    return $modelWrapped;
-  }
-
-
-  /**
-   * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,
-   * and also grabs the custom attributes (if there are any) and links them to the model.
-   *
-   * @param array $values Array of form data (e.g. $_POST).
-   * @param string $modelName Name of the model to wrap data for. If this is sample, occurrence or location
-   * then custom attributes will also be wrapped. Furthermore, any attribute called $modelName:image can
-   * contain an image upload (as long as a suitable entity is available to store the image in).
-   */
-  public static function wrap_with_attrs($values, $modelName) {
-    // Get the parent model into JSON
-    $modelWrapped = data_entry_helper::wrap($values, $modelName);
-    // Might it have custom attributes?
-    if (strcasecmp($modelName, 'occurrence')==0 ||
-        strcasecmp($modelName, 'sample')==0 ||
-        strcasecmp($modelName, 'location')==0) {
-      // Get the attributes
-      $attrs = self::wrap_attributes($values, $modelName);
-      // If any exist, then store them in the model
-      if (count($attrs)>0) {
-        $modelWrapped['metaFields'][self::get_attr_entity_prefix($modelName).'Attributes']['value']=$attrs;
-      }
-    }
-    // Does it have an image?
-    if ($name = data_entry_helper::handle_media("$modelName:image"))
-    {
-      // Add occurrence image model
-      // TODO Get a caption for the image
-      $oiFields = array(
-          'path' => $name,
-          'caption' => 'Default caption'
-      );
-      $oiMod = data_entry_helper::wrap($oiFields, $modelName.'_image');
-      $modelWrapped['subModels'][] = array(
-          'fkId' => 'occurrence_id',
-          'model' => $oiMod
-      );
-    }
-    return $modelWrapped;
+    return submission_builder::build_submission($values, $structure);
   }
 
   /**
@@ -1956,7 +1921,7 @@ $indicia_javascript
 $indicia_late_javascript
 });
 </script>";
-    return $stylesheets.$libraries.$script;
+    return "\n\n".$stylesheets.$libraries.$script;
   }
 
   /**

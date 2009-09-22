@@ -43,57 +43,27 @@ class Sample_Controller extends Gridview_Base_Controller
       'recorder_names' => 'Recorder Names',
     );
   }
-  /**
-  * Action for sample/create page/
-  * Displays a page allowing entry of a new sample.
-  */
-  public function create()
-  {
-    if (!$this->page_authorised())
-    {
-      $this->access_denied();
-    }
-    else
-    {
-      $this->setView('sample/sample_edit', 'Sample');
-    }
+
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    $gridmodel = ORM::factory('gv_occurrence');
+    $grid = Gridview_Controller::factory(
+        $gridmodel,
+        $this->uri->argument(3) || 1, // page number,
+        4
+     );
+    //$grid->base_filter = array('sample_id' => $this->model->id, 'deleted' => 'f');
+    $grid->columns = array('taxon' => '');
+    $grid->actionColumns = array('edit' => 'occurrence/edit/Â£idÂ£');
+    $r['occurrences'] = $grid->display();
+    return $r;      
   }
 
-  /**
-  * Action for sample/edit page
-  * Edit website data
-  */
-  public function edit($id  = null, $page_no, $limit)
-  {
-    if (!$this->page_authorised())
-    {
-      $this->access_denied();
-    }
-    else if ($id == null)
-    {
-      $this->setError('Invocation error: missing argument', 'You cannot call edit sample without an ID');
-    }
-    else
-    {
-      $this->model = ORM::factory('sample', $id);
-      $gridmodel = ORM::factory('gv_occurrence');
-      $grid = Gridview_Controller::factory($gridmodel,	$page_no,  $limit, 4);
-      $grid->base_filter = array('sample_id' => $id, 'deleted' => 'f');
-      $grid->columns = array('taxon' => '');
-      $grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
-      $vArgs = array(
-          'occurrences' => $grid->display(),
-          'method_terms' => $this->get_termlist_terms('indicia:sample_methods')
-      );
-      $this->setView('sample/sample_edit', 'Sample', $vArgs);
-    }
-  }
-
-  public function edit_gv($id = null, $page_no, $limit)
+  public function edit_gv($id = null, $page_no)
   {
     $this->auto_render = false;
     $gridmodel = ORM::factory('gv_occurrence');
-    $grid = Gridview_Controller::factory($gridmodel,	$page_no,  $limit, 4);
+    $grid = Gridview_Controller::factory($gridmodel, $page_no, 4);
     $grid->base_filter = array('sample_id' => $id, 'deleted' => 'f');
     $grid->columns = array('taxon' => '');
 
@@ -101,17 +71,12 @@ class Sample_Controller extends Gridview_Base_Controller
   }
 
   /**
-   * Returns a set of terms for a termlist.
-   *
-   * @param string $termlist Name of the termlist, from the termlist's external_key field.
+   * Get the list of terms ready for the sample methods list. 
    */
-  protected function get_termlist_terms($termlist) {
-    $arr=array();
-    $sample_method_termlist = ORM::factory('termlist')->where('external_key', $termlist)->find();
-    $terms = ORM::factory('termlists_term')->where(array('termlist_id' => $sample_method_termlist, 'deleted' => 'f'))->find_all();
-    foreach ($terms as $term) {
-      $arr[$term->id] = $term->term->term;
-    }
-    return $arr;
+  protected function prepareOtherViewData()
+  {    
+    return array(
+      'method_terms' => $this->get_termlist_terms('indicia:sample_methods')    
+    );   
   }
 }

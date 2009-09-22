@@ -4,6 +4,8 @@
 
 .scPresenceCell {
   text-align: center;
+  padding-left: 1em;
+  padding-right: 1em;
 }
 
 .ui-widget-header th {
@@ -47,8 +49,45 @@ input, select, textarea {
   margin: 4px 0 4px 0;
 }
 
+.control-width-0 {
+	width: 30px;
+}
+
+.control-width-1 {
+	width: 50px;
+}
+
+.control-width-2 {
+	width: 100px;
+}
+
+.control-width-3 {
+	width: 150px;
+}
+
+.control-width-4 {
+	width: 200px;
+}
+
+.control-width-5 {
+	width: 300px;
+}
+
 .auto {
   width: auto
+}
+
+.loading-panel {
+	text-align: center;
+	vertical-align: middle;
+	padding: 2em;
+	width: 200px;
+	margin: 5em auto 0 auto;
+}
+
+.loading-panel img {
+  margin-right: 2em;
+  vertical-align: middle;
 }
 
 .page-notice {

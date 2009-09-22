@@ -59,12 +59,12 @@ class Website_Model extends ORM
       // work in these circumstances, so a new "matches_post" has been inserted into MY_valid.php
       $array->add_rules('password', 'required', 'length[7,30]', 'matches_post[password2]');
       // Explicitly add those fields for which we don't do validation
-      $extraFields = array(
+      $this->unvalidatedFields = array(
         'description',
         'deleted'
       );
 
-      return parent::validate($array, $save, $extraFields);
+      return parent::validate($array, $save);
     }
 
 }

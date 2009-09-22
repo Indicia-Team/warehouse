@@ -73,45 +73,10 @@ class Person_Controller extends Gridview_Base_Controller {
    * Action for person/create page.
    * Displays a page allowing entry of a new person.
    */
-  public function create() {
-    $this->setView('person/person_edit', 'Person',
-          array('return_url' => '')); // will jump back to the gridview on submit
-    $this->set_warning();
-  }
-
-  /**
-   * Action for person/create page.
-   * Displays a page allowing entry of a new person.
-   */
   public function create_from_user() {
     $this->setView('person/person_edit', 'Person',
           array('return_url' => $this->return_url('user'))); // will jump back to the user gridview on submit
     $this->set_warning();
-  }
-
-  /**
-   * Action for person/edit page.
-   * Displays a page allowing modification of an existing person.
-   * This functrion is envoked in 2 different ways:
-   * 1) From the gridview
-   * 2) Direct URL
-   */
-  public function edit($id = NULL) {
-    if ($id == null)
-        {
-         $this->setError('Invocation error: missing argument', 'You cannot use the edit person functionality without an ID');
-        }
-        else if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
-    }
-        else
-    {
-      $this->model = new Person_Model($id);
-      $this->setView('person/person_edit', 'Person',
-          array('return_url' => '')); // will jump back to the gridview on submit
-      $this->set_warning();
-    }
   }
 
   /**
@@ -136,12 +101,6 @@ class Person_Controller extends Gridview_Base_Controller {
           array('return_url' => $this->return_url('user')));
       $this->set_warning();
     }
-  }
-
-  protected function show_submit_fail() {
-    $this->setView('person/person_edit', 'Person',
-      array('return_url' => isset($_POST['return_url']) ? $this->return_url($_POST['return_url']) : ''));
-    $this->set_warning();
   }
 
   protected function record_authorised ($id)

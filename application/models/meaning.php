@@ -39,11 +39,13 @@ class Meaning_Model extends ORM {
     $nextval = $this->db->query("SELECT nextval('meanings_id_seq'::regclass)")
       ->current()->nextval;
     $this->id = $nextval;
-     return $this->save();
+    return $this->save();
   }
 
   public function validate(Validation $array, $save = FALSE){
-    $this->insert();
+    if (!$this->id) {
+      $this->insert(); 
+    }
     return true;
   }
 

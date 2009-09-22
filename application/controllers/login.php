@@ -52,7 +52,7 @@ class Login_Controller extends Indicia_Controller {
     if (request::method() == 'post')
     {
       if ($this->auth->login(array('username' => $_POST['UserName']), $_POST['Password'], isset($_POST['remember_me'])))
-      {
+      {        
 // I don't trust the results!! There is something funny going on where the
 // number of rows in a query is not being reported correctly - an invalid username returns
 // a valid login with the first real user.
@@ -62,12 +62,21 @@ class Login_Controller extends Indicia_Controller {
           $user = new User_Model($_SESSION['auth_user']->id);
           $user->__set('forgotten_password_key', NULL);
           $user->save();
-          url::redirect(arr::remove('requested_page', $_SESSION));
-          return;
+          $url=arr::remove('requested_page', $_SESSION);
+          // Ensure that the session is being saved to the Cookie properly
+          $this->session->write_close();
+          if (!cookie::get('kohanasession')) {
+            $this->session->set_flash('flash_error', "Indicia could not log you in because cookies are not enabled on your browser. Please enable cookies then try again.");
+          } else {
+            url::redirect($url);
+            return;
+          }                  
+        } else {        
+          $this->auth->logout(TRUE);
         }
-        $this->auth->logout(TRUE);
+      } else {
+        $this->session->set_flash('flash_error', "<strong>Login failed.</strong><br/> Either your username or password was incorrect or your login does not have enough privileges to access this Indicia warehouse.");
       }
-      $this->template->content->error_message = 'Invalid Username/Password Combination, or insufficient privileges';
     }
   }
 

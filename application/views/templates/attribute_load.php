@@ -32,7 +32,7 @@
   <option value=''>&lt;Please Select&gt;</option>
 <?php
   $website_list = array();
-  if (!is_null($website_id)) {
+  if (!empty($website_id)) {
     $website_attrs = ORM::factory($model->object_name.'s_website')->where('website_id',$website_id)->find_all();
     foreach ($website_attrs as $website_attr) {
       $attr = ORM::factory($model->object_name, $website_attr->__get($model->object_name.'_id'));
@@ -47,9 +47,9 @@
   }
 ?>
 </select>
-<?php if ( ! empty($error_message) )
-{
-    echo html::error_message($error_message);
+<?php 
+if (!empty($error_message) ) {
+  echo html::error_message($error_message);
 }
 ?>
 </li>

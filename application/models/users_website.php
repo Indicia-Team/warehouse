@@ -45,7 +45,8 @@ class Users_website_Model extends ORM
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
 
-    return parent::validate($array, $save, array('user_id', 'website_id', 'site_role_id'));
+    $this->unvalidatedFields = array('user_id', 'website_id', 'site_role_id');
+    return parent::validate($array, $save);
   }
 }
 

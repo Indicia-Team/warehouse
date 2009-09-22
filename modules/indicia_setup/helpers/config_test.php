@@ -201,7 +201,7 @@ class config_test {
     if (!function_exists('curl_exec')) {
       array_push($messages, array(
         'title' => 'cUrl Library',
-        'description' => '<p>The cUrl library is installed not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
+        'description' => '<p>The cUrl library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_curl.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
             'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.</p>',
         'success' => false

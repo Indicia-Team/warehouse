@@ -38,8 +38,8 @@ class Occurrence_controller extends Gridview_Base_Controller {
     $this->model = ORM::factory('occurrence');
     $this->actionColumns = array
     (
-      'Edit Occ' => 'occurrence/edit/£id£',
-      'Edit Smp' => 'sample/edit/£sample_id£'
+      'Edit Occ' => 'occurrence/edit/Â£idÂ£',
+      'Edit Smp' => 'sample/edit/Â£sample_idÂ£'
     );
     $this->columns = array
     (
@@ -66,39 +66,32 @@ class Occurrence_controller extends Gridview_Base_Controller {
       $this->setView('occurrence/occurrence_edit', 'Occurrence');
     }
   }
-
-  /**
-  * Action for occurrence/edit page
-  * Edit website data
-  */
-  public function edit($id  = null, $page_no, $limit)
-  {
-    if (!$this->page_authorised())
-    {
-      $this->access_denied();
-    }
-    else if ($id == null)
-    {
-      $this->setError('Invocation error: missing argument', 'You cannot call edit occurrence without an ID');
-    }
-    else
-    {
-      $this->model = ORM::factory('occurrence', $id);
-      $gridmodel = ORM::factory('occurrence_comment');
-      $grid = Gridview_Controller::factory($gridmodel,	$page_no,  $limit, 4);
-      $grid->base_filter = array('occurrence_id' => $id, 'deleted' => 'f');
-      $grid->columns = array('comment' => '', 'updated_on' => '');
-      $images = ORM::factory('occurrence_image')->where('occurrence_id', $id)->find_all();
-      $vArgs = array('comments' => $grid->display(), 'images' => $images);
-      $this->setView('occurrence/occurrence_edit', 'Occurrence', $vArgs);
-    }
+  
+/**
+   * Returns an array of all values from this model and its super models ready to be 
+   * loaded into a form. For this controller, we need to also setup the grid of comments and
+   * list of images.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    $gridmodel = ORM::factory('occurrence_comment');
+    $grid = Gridview_Controller::factory(
+        $gridmodel,	
+        $this->uri->argument(3) || 1, // page number
+        4 // limit
+    );
+    $grid->base_filter = array('occurrence_id' => $this->model->id, 'deleted' => 'f');
+    $grid->columns = array('comment' => '', 'updated_on' => '');    
+    $r['comments']=$grid->display();
+    $r['images']=ORM::factory('occurrence_image')->where('occurrence_id', $this->model->id)->find_all();
+    return $r;  
   }
 
-  public function edit_gv($id = null, $page_no, $limit)
+  public function edit_gv($id = null, $page_no)
   {
     $this->auto_render = false;
     $gridmodel = ORM::factory('occurrence_comment');
-    $grid = Gridview_Controller::factory($gridmodel,	$page_no,  $limit, 4);
+    $grid = Gridview_Controller::factory($gridmodel,	$page_no, 4);
     $grid->base_filter = array('occurrence_id' => $id, 'deleted' => 'f');
     $grid->columns = array('comment' => '', 'updated_on' => '');
 
