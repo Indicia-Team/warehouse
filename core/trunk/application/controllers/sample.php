@@ -52,7 +52,7 @@ class Sample_Controller extends Gridview_Base_Controller
         $this->uri->argument(3) || 1, // page number,
         4
      );
-    //$grid->base_filter = array('sample_id' => $this->model->id, 'deleted' => 'f');
+    $grid->base_filter = array('sample_id' => $this->model->id, 'deleted' => 'f');
     $grid->columns = array('taxon' => '');
     $grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
     $r['occurrences'] = $grid->display();
