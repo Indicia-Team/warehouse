@@ -37,10 +37,13 @@ echo html::script(array(
   });
 })(jQuery);
 </script>
-<form class="cmxform"  name='editList' action="<?php echo url::site().'occurrence/save' ?>" method="POST">
-<?php print form::hidden('id', html::specialchars($model->id)); ?>
-<?php print form::hidden('survey_id', $model->survey_id); ?>
+<form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
+<?php echo $metadata; ?>
 <fieldset>
+<?php 
+print form::hidden('id', html::specialchars($model->id));
+print form::hidden('survey_id', $model->survey_id); 
+?>
 <legend>Sample Details</legend>
 <ol>
 <li>
@@ -85,13 +88,13 @@ onclick="enter_sref();"/>
  <li>
  <label for='sample_method_id'>Sample Method:</label>
  <?php
- print form::dropdown('sample_method_id', $method_terms, $model->sample_method_id);
+ print form::dropdown('sample_method_id', $other_data['method_terms'], $model->sample_method_id);
  echo html::error_message($model->getError('sample_method_id'));
  ?>
  </li>
  </ol>
  </fieldset>
- <?php echo $metadata ?>
- <?php echo $occurrences ?>
- <input type="submit" name="submit" value="Submit" />
- <input type="submit" name="submit" value="Delete" />
+ <?php 
+  echo $values['occurrences'];
+ echo html::form_buttons(html::initial_value($values, 'sample:id')!==null);
+ ?>

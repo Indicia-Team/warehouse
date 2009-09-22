@@ -57,7 +57,7 @@ class Occurrence_Model extends ORM
     $array->add_rules('website_id', 'required');
     $array->add_rules('taxa_taxon_list_id', 'required');
     // Explicitly add those fields for which we don't do validation
-    $extraFields = array(
+    $this->unvalidatedFields = array(
       'comment',
       'determiner_id',
       'deleted',
@@ -66,7 +66,7 @@ class Occurrence_Model extends ORM
       'verified_on',
       'confidential'
     );
-    return parent::validate($array, $save, $extraFields);
+    return parent::validate($array, $save);
   }
 
  // Overrides preSubmit to add in verifier status

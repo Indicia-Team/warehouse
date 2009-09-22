@@ -83,7 +83,7 @@ echo html::stylesheet(
 <div id="wrapper" class="ui-widget">
 
     <!-- BEGIN: banner -->
-    <div id="banner" role="banner">
+    <div id="banner">
         <span id="sitetitle">Indicia</span><br/>
         <span id="subtitle">The NBN OPAL Online Recording Toolkit</span>
     </div>
@@ -92,23 +92,23 @@ echo html::stylesheet(
     <!-- BEGIN: main menu (jquery/superfish) -->
     <?php if (isset($menu)) : ?>
     <div id="menu">
-    <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header" role="menubar">
+    <ul class="sf-menu ui-helper-reset ui-helper-clearfix ui-widget-header">
 
     <?php foreach ($menu as $toplevel => $submenu): ?>
 
         <!-- BEGIN: print the top level menu items -->
         <?php if(count($submenu)==0): ?>
             <!-- No submenu, so treat as link to the home page -->
-            <li role="menuitem" class="ui-state-default"><?php echo html::anchor('home', $toplevel); ?>
+            <li class="ui-state-default"><?php echo html::anchor('home', $toplevel); ?>
         <?php else: ?>
-            <li role="menu" class="ui-state-default"><a href="#"><?php echo $toplevel; ?></a>
+            <li class="ui-state-default"><a href="#"><?php echo $toplevel; ?></a>
         <?php endif; ?>
 
             <!-- BEGIN: print the sub menu items -->
             <?php if (count($submenu)>0): ?>
                 <ul>
                 <?php foreach ($submenu as $menuitem => $url): ?>
-                    <li role="menuitem" class="ui-state-default"><?php echo html::anchor($url, $menuitem); ?></li>
+                    <li class="ui-state-default"><?php echo html::anchor($url, $menuitem); ?></li>
                 <?php endforeach; ?>
                 </ul>
             <?php endif; ?>
@@ -125,7 +125,7 @@ echo html::stylesheet(
     <!-- END: main menu (jquery/superfish) -->
 
     <!-- BEGIN: page level content -->
-    <div id="content" role="main">
+    <div id="content">
 
         <h1><?php echo $title; ?></h1>
 <?php

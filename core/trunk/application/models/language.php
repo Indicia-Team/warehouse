@@ -44,8 +44,8 @@ class Language_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('iso', 'required', 'length[3]');
     $array->add_rules('language','required', 'length[1,100]');
-    $extraFields=array('deleted');
-    return parent::validate($array, $save, $extraFields);
+    $this->unvalidatedFields = array('deleted');
+    return parent::validate($array, $save);
   }
 
 }

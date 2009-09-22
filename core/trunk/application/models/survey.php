@@ -40,8 +40,8 @@ class Survey_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
     $array->add_rules('website_id', 'required');
-    $extraFields = array('description', 'deleted');
-    return parent::validate($array, $save, $extraFields);
+    $this->unvalidatedFields = array('description', 'deleted');
+    return parent::validate($array, $save);
   }
 
 }

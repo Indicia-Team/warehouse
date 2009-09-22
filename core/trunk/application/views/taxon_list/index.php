@@ -25,6 +25,6 @@
 <?php echo $table ?>
 <br/>
 <form action="<?php echo url::site().'taxon_list/create'; ?>" method="post">
-<input type="submit" value="New species list" />
+<input type="submit" value="New species list" class="ui-corner-all ui-state-default button" />
 </form>
 </div>

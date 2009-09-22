@@ -24,60 +24,62 @@
 ?>
 <p>This page allows you to specify a persons details.</p>
 <form class="cmxform" action="<?php echo url::site().'person/save'; ?>" method="post">
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
-<?php echo $return_url ?>
+<?php echo $metadata; ?>
 <fieldset>
+<?php if (isset($return_url)) echo $return_url; ?>
+<input type="hidden" name="person:id" value="<?php echo html::initial_value($values, 'person:id'); ?>" />
 <legend>Person's Details</legend>
 <ol>
 <li>
 <label for="title_id">Title</label>
-<select id="title_id" name="title_id">
+<select id="title_id" name="person:title_id">
   <option>&lt;Please select&gt;</option>
 <?php
   $titles = ORM::factory('title')->orderby('id','asc')->find_all();
+  $title_id = html::initial_value($values, 'person:title_id');
   foreach ($titles as $title) {
     echo '	<option value="'.$title->id.'" ';
-    if ($title->id==$model->title_id)
+    if ($title->id==$title_id)
       echo 'selected="selected" ';
     echo '>'.$title->title.'</option>';
   }
 ?>
 </select>
-<?php echo html::error_message($model->getError('title_id')); ?>
+<?php echo html::error_message($model->getError('person:title_id')); ?>
 </li>
 <li>
 <label for="first_name">First name</label>
-<input id="first_name" name="first_name" value="<?php echo html::specialchars($model->first_name); ?>" />
-<?php echo html::error_message($model->getError('first_name')); ?>
+<input id="first_name" name="person:first_name" value="<?php echo html::initial_value($values, 'person:first_name'); ?>" />
+<?php echo html::error_message($model->getError('person:first_name')); ?>
 </li>
 <li>
 <label for="surname">Surname</label>
-<input id="surname" name="surname" value="<?php echo html::specialchars($model->surname); ?>" />
-<?php echo html::error_message($model->getError('surname')); ?>
+<input id="surname" name="person:surname" value="<?php echo html::initial_value($values, 'person:surname'); ?>" />
+<?php echo html::error_message($model->getError('person:surname')); ?>
 </li>
 <li>
 <label for="initials">Initials</label>
-<input id="initials" name="initials" value="<?php echo html::specialchars($model->initials); ?>" />
-<?php echo html::error_message($model->getError('initials')); ?>
+<input id="initials" name="person:initials" value="<?php echo html::initial_value($values, 'person:initials'); ?>" />
+<?php echo html::error_message($model->getError('person:initials')); ?>
 </li>
 <li>
 <label for="address">Address</label>
-<textarea rows="4" id="address" name="address"><?php echo html::specialchars($model->address); ?></textarea>
-<?php echo html::error_message($model->getError('address')); ?>
+<textarea rows="4" id="address" name="person:address"><?php echo html::initial_value($values, 'person:address'); ?></textarea>
+<?php echo html::error_message($model->getError('person:address')); ?>
 </li>
 <li>
 <label for="email_address">Email Address</label>
-<input id="email_address" name="email_address" value="<?php echo html::specialchars($model->email_address); ?>" />
-<?php echo html::error_message($model->getError('email_address')); ?>
+<input id="email_address" name="person:email_address" value="<?php echo html::initial_value($values, 'person:email_address');?>" />
+<?php echo html::error_message($model->getError('person:email_address')); ?>
 </li>
 <li>
 <label for="website_url">Personal Website</label>
-<input id="website_url" name="website_url" value="<?php echo html::specialchars($model->website_url); ?>" />
-<?php echo html::error_message($model->getError('website_url')); ?>
+<input id="website_url" name="person:website_url" value="<?php echo html::initial_value($values, 'person:website_url');?>" />
+<?php echo html::error_message($model->getError('person:website_url')); ?>
 </li>
 </ol>
 </fieldset>
-<?php echo $metadata ?>
-<input type="submit" name="submit" value="Submit" />
-<input type="submit" name="submit" value="Delete" />
+<?php 
+echo html::form_buttons(html::initial_value($values, 'person:id')!==null)
+?>
 </form>

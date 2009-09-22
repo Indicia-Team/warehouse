@@ -186,10 +186,14 @@ text-align: right;
 }
 
 .button {
-  padding: 0.5em;
+  padding: 0.3em;
   text-decoration: none;
   color: #000000 !important;
-  margin: 0.5em 2em 0.5em 0;
+  width: auto !important;
+}
+
+fieldset.button-set {
+	border: none !important;
 }
 
 .page-notice {
@@ -221,6 +225,10 @@ text-align: right;
 .page-notice a.button .ui-icon {
   float: none;
   display: inline-block;
+}
+
+.auto {
+	width: auto;
 }
 
 .grid-button {

@@ -37,8 +37,8 @@ class Term_Model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('term', 'required');
-
-    return parent::validate($array, $save, array('language_id'));
+    $array->add_rules('language_id', 'required');
+    return parent::validate($array, $save);
   }
 }
 

@@ -57,13 +57,7 @@ class login {
     {
       $_SESSION['requested_page'] = $uri->string();
       url::redirect('new_password');
-    }
-    else if ($uri->segment(1) == 'login')
-    {
-      // Make sure they can read cookies.
-      if ( ! cookie::get('kohanasession', FALSE))
-        throw new Kohana_Exception('indicia.no_cookies');
-    }
+    }    
   }
 }
 

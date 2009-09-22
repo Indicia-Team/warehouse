@@ -24,17 +24,18 @@
 ?><p>This page allows you to specify the details of a taxon group..</p>
 <form class="cmxform" action="<?php echo url::site().'taxon_group/save'; ?>" method="post">
 <?php echo $metadata ?>
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
 <fieldset>
+<input type="hidden" name="taxon_group:id" value="<?php echo html::initial_value($values, 'taxon_group:id'); ?>" />
 <legend>Taxon Group details</legend>
 <ol>
 <li>
 <label for="title">Title</label>
-<input id="title" name="title" value="<?php echo html::specialchars($model->title); ?>" />
-<?php echo html::error_message($model->getError('title')); ?>
+<input id="title" name="taxon_group:title" value="<?php echo html::initial_value($values, 'taxon_group:title'); ?>" />
+<?php echo html::error_message($model->getError('taxon_group:title')); ?>
 </li>
 </ol>
-<input type="submit" value="Save" class="default" name="submit" />
-<input type="submit" value="Delete" class="default" name="submit" />
 </fieldset>
+<?php 
+echo html::form_buttons(html::initial_value($values, 'taxon_group:id')!==null);
+?>
 </form>

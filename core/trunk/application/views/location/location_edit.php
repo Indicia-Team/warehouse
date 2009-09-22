@@ -21,26 +21,33 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-?>
-<?php echo html::script(array(
+ echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
   'media/js/thickbox-compressd.js',
   'media/js/jquery.autocomplete.js',
   'media/js/OpenLayers.js',
   'media/js/spatial-ref.js'
-), FALSE); ?>
+), FALSE); 
+$id = html::initial_value($values, 'location:id');
+$parent_id = html::initial_value($values, 'location:parent_id');
+$boundary_geom = html::initial_value($values, 'location:boundary_geom');
+$centroid_geom = html::initial_value($values, 'location:centroid_geom');
+?>
 <script type="text/javascript" src="http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1"></script>
 <script type="text/javascript">
 
 jQuery(document).ready(function() {
   init_map('<?php echo url::base(); ?>', <?php 
-      if ($model->id && $model->boundary_geom) 
-        echo "'$model->boundary_geom'"; 
-      elseif ($model->id && $model->centroid_geom) 
-        echo "'$model->centroid_geom'";
+      if ($id && $boundary_geom) 
+        echo "'$boundary_geom'"; 
+      elseif ($id && $centroid_geom) 
+        echo "'$centroid_geom'";
       else echo 'null';
-    ?>, 'centroid_sref', 'centroid_geom', true);
+    ?>, 'centroid_sref', 'centroid_geom', true, null, null, <?php 
+      echo kohana::config('indicia.default_map_y').', '.kohana::config('indicia.default_map_x').', '.
+      kohana::config('indicia.default_map_zoom');
+    ?>);
 
   jQuery("input#parent").autocomplete("<?php echo url::site() ?>index.php/services/data/location", {
     minChars : 1,
@@ -74,53 +81,54 @@ jQuery(document).ready(function() {
 </script>
 <p>This page allows you to specify the details of a location.</p>
 <form class="cmxform" action="<?php echo url::site().'location/save'; ?>" method="post">
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
+<?php echo $metadata; ?>
 <fieldset>
+<input type="hidden" name="location:id" value="<?php echo html::initial_value($values, 'location:id'); ?>" />
 <legend>Location details</legend>
 <ol>
 <li>
 <label for="name">Name</label>
-<input id="name" name="name" value="<?php echo html::specialchars($model->name); ?>" />
-<?php echo html::error_message($model->getError('name')); ?>
+<input id="name" name="location:name" value="<?php echo html::initial_value($values, 'location:name'); ?>" />
+<?php echo html::error_message($model->getError('location:name')); ?>
 </li>
 <li>
 <label for="code">Code</label>
-<input id="code" name="code" value="<?php echo html::specialchars($model->code); ?>" />
-<?php echo html::error_message($model->getError('code')); ?>
+<input id="code" name="location:code" value="<?php echo html::initial_value($values, 'location:code'); ?>" />
+<?php echo html::error_message($model->getError('location:code')); ?>
 </li>
 <li>
- <label for='location_type_id'>Location Type:</label>
+ <label for='location:location_type_id'>Location Type:</label>
  <?php
- print form::dropdown('location_type_id', $type_terms, $model->location_type_id);
- echo html::error_message($model->getError('location_type_id'));
+ echo form::dropdown('location:location_type_id', $other_data['type_terms'], html::initial_value($values, 'location:location_type_id'));
+ echo html::error_message($model->getError('location:location_type_id'));
  ?>
  </li>
  <li>
 <label for="centroid_sref">Spatial Ref:</label>
-<input id="centroid_sref" class="narrow" name="centroid_sref"
-  value="<?php echo html::specialchars($model->centroid_sref); ?>"
+<input id="centroid_sref" class="narrow" name="location:centroid_sref"
+  value="<?php echo html::initial_value($values, 'location:centroid_sref'); ?>"
   onblur="exit_sref();"
   onclick="enter_sref();"/>
 <select class="narrow" id="centroid_sref_system" name="centroid_sref_system">
 <?php foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption) {
-  if ($model->centroid_sref_system==$notation)
+  if (html::initial_value($values, 'location:centroid_sref_system')==$notation)
     $selected=' selected="selected"';
   else
     $selected = '';
   echo "<option value=\"$notation\"$selected>$caption</option>";}
 ?>
 </select>
-<input type="hidden" name="centroid_geom" id="centroid_geom" />
-<?php echo html::error_message($model->getError('centroid_sref')); ?>
-<?php echo html::error_message($model->getError('centroid_sref_system')); ?>
+<input type="hidden" name="location:centroid_geom" id="centroid_geom" />
+<?php echo html::error_message($model->getError('location:centroid_sref')); ?>
+<?php echo html::error_message($model->getError('location:centroid_sref_system')); ?>
 <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
 spatial reference. The more you zoom in, the more accurate the reference will be.</p>
 <div id="map" class="smallmap" style="width: 600px; height: 350px;"></div>
 </li>
 <li>
-<input type="hidden" name="parent_id" id="parent_id" value="<?php echo html::specialchars($model->parent_id); ?>" />
+<input type="hidden" name="location:parent_id" value="<?php echo $parent_id; ?>" />
 <label for="parent">Parent Location</label>
-<input id="parent" name="parent" value="<?php echo (($model->parent_id != null) ? html::specialchars(ORM::factory('location', $model->parent_id)->name) : ''); ?>" />
+<input id="parent" name="location:parent" value="<?php echo (($parent_id != null) ? html::specialchars(ORM::factory('location', $parent_id)->name) : ''); ?>" />
 </li>
 </ol>
 </fieldset>
@@ -131,20 +139,19 @@ spatial reference. The more you zoom in, the more accurate the reference will be
   if (!is_null($this->gen_auth_filter))
     $websites = ORM::factory('website')->in('id',$this->gen_auth_filter['values'])->orderby('title','asc')->find_all();
   else
-    $websites = ORM::factory('website')->orderby('title','asc')->find_all();
+    $websites = ORM::factory('website')->orderby('title','asc')->find_all();        
   foreach ($websites as $website) {
-    echo '<li><label for="website_'.$website->id.'">'.$website->title.'</label>';
-    echo '<input type="checkbox" name="website_'.$website->id.'" ';
-    if(!is_null($model->id)){
-      $locations_website = ORM::factory('locations_website', array('website_id' => $website->id, 'location_id' => $model->id));
-      if(ORM::factory('locations_website', array('website_id' => $website->id, 'location_id' => $model->id))->loaded) echo "checked=\"checked\"";
+    echo '<li><label for="website_'.$website->id.'" class="wide">'.$website->title.'</label>';
+    echo '<input type="checkbox" name="joinsTo:website:'.$website->id.'" ';
+    if(!is_null($id)){      
+      if (array_key_exists('joinsTo:website:'.$website->id, $values)) echo "checked=\"checked\"";
     }
     echo '></li>';
-  }
+  }  
 ?>
 </ol>
 </fieldset>
-<?php echo $metadata ?>
-<input type="submit" value="Save" name="submit"/>
-<input type="submit" value="Delete" name="submit"/>
+<?php 
+echo html::form_buttons(html::initial_value($values, 'location:id')!==null);
+?>
 </form>

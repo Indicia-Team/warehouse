@@ -105,12 +105,12 @@ function show_wkt_feature(wkt) {
 // link in the header with a valid API key.
 function init_map(base_url, wkt, field_name, geom_name, virtual_earth, google, geoplanet_key,
 		init_lat, init_long, init_zoom, init_layer) {
-	// store a couple of globals for future use
+	// store a couple of globals for future use	
 	indicia_url=base_url;
 	input_field_name=field_name;
 	geom_field_name = geom_name;
 	geoplanet_api_key=geoplanet_key;
-
+	
 	var boundary_style = OpenLayers.Util.applyDefaults({
 		strokeWidth: 1,
 		strokeColor: "#ff0000",

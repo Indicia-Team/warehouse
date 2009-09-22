@@ -28,6 +28,7 @@
  * @subpackage Controllers
  */
 class Termlist_Controller extends Gridview_Base_Controller {
+  
   public function __construct() {
     parent::__construct('termlist','gv_termlist','termlist/index');
     $this->columns = array(
@@ -40,45 +41,16 @@ class Termlist_Controller extends Gridview_Base_Controller {
     $this->auth_filter = $this->gen_auth_filter;
   }
 
-  public function edit($id,$page_no,$limit)
-  {
-    if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
-    } else {
-      // Generate models
-      $this->model->find($id);
-      $gridmodel = ORM::factory('gv_termlist',$id);
-
-      // Add grid component
-      $grid =	Gridview_Controller::factory($gridmodel,
-          $page_no,
-          $limit,
-          4);
-      $grid->base_filter = $this->base_filter;
-      $grid->base_filter['parent_id'] = $id;
-      $grid->columns = array_intersect_key($grid->columns, array(
-        'title'=>'',
-        'description'=>''));
-      $grid->actionColumns = array(
-        'edit' => "termlist/edit/£id£"
-      );
-
-      $vArgs = array('table' => $grid->display());
-
-      $this->setView('termlist/termlist_edit', 'Termlist', $vArgs);
-    }
-  }
-
-  // Auxilliary function for handling Ajax requests from the edit method gridview component
-  public function edit_gv($id,$page_no,$limit) {
+  /**
+   *  Auxilliary function for handling Ajax requests from the edit method gridview component.
+   */
+  public function edit_gv($id,$page_no) {
     $this->auto_render=false;
 
     $gridmodel = ORM::factory('gv_termlist',$id);
 
     $grid =	Gridview_Controller::factory($gridmodel,
         $page_no,
-        $limit,
         4);
     $grid->base_filter = $this->base_filter;
     $grid->base_filter['parent_id'] = $id;
@@ -86,26 +58,47 @@ class Termlist_Controller extends Gridview_Base_Controller {
       'title'=>'',
       'description'=>''));
     $grid->actionColumns = array(
-      'edit' => 'termlist/edit/$id£'
+      'edit' => 'termlist/edit/$idÂ£'
     );
     return $grid->display();
   }
-
-  public function create(){
-    $parent = $this->input->post('parent_id', null);
-    $this->model->parent_id = $parent;
-    if ($parent != null)
-    {
-      if (!$this->record_authorised($parent))
-      {
-        $this->access_denied('table to create a record with parent ID='.$parent);
-        return;
-      }
-      $this->model->website_id = $this->model->parent->website_id;
-    }
-
-    $vArgs = array('table' => null);
-    $this->setView('termlist/termlist_edit', 'Termlist');
+  
+  /**
+   * Returns an array of all values from this model and its super models ready to be 
+   * loaded into a form. For this controller, we need to also setup the child taxon lists grid   
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    // Configure the grid
+    $grid =	Gridview_Controller::factory($this->model,
+        null, null,
+        4);
+    $grid->base_filter = array('deleted' => 'f', 'parent_id' => $this->model->id);
+    $grid->columns =  $this->columns;
+    $grid->actionColumns = array(
+      'edit' => 'termlist/edit/Â£idÂ£'
+    );
+    $r['table'] = $grid->display();
+    if ($this->model->parent_id) {
+      $r['parent_website_id']=$this->model->parent->website_id;
+    } 
+    return $r;    
+  }
+  
+  /**
+   *  Setup the default values to use when loading this controller to edit a new page.
+   *  In this case, the parent_id and website_id are passed as $_POST data if creating 
+   *  a new sublist.   
+   */
+  protected function getDefaults() {
+    $r = parent::getDefaults();
+    if ($this->uri->method(false)=='create' && array_key_exists('parent_id', $_POST)) {
+      // Parent_id and website_id are passed in as POST params for a new record.
+      $r['termlist:parent_id'] = $_POST['parent_id'];
+      $r['termlist:website_id'] = $_POST['website_id'];
+      $r['parent_website_id']=ORM::factory('termlist', $_POST['parent_id'])->website_id;
+    }   
+    return $r;    
   }
 
   protected function record_authorised ($id)

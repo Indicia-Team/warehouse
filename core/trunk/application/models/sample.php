@@ -55,9 +55,6 @@ class Sample_Model extends ORM
   public function validate(Validation $array, $save = FALSE)
   {
     $orig_values = $array->as_array();
-    kohana::log('info', $array['date_start']);
-    kohana::log('info', 'Array dumped');
-
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('date_type', 'required', 'length[1,2]');
@@ -72,7 +69,7 @@ class Sample_Model extends ORM
     $array->add_rules('geom', 'required');
 
     // Any fields that don't have a validation rule need to be copied into the model manually
-    $extraFields = array
+    $this->unvalidatedFields = array
     (
       'date_start',
       'date_end',
@@ -81,18 +78,20 @@ class Sample_Model extends ORM
       'deleted',
       'recorder_names'
     );
-    return parent::validate($array, $save, $extraFields);
+    return parent::validate($array, $save);
   }
 
   /**
   * Before submission, map vague dates to their underlying database fields.
   */
   protected function preSubmit()
-  {
-    $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
-    $this->submission['fields']['date_start']['value'] = $vague_date['start'];
-    $this->submission['fields']['date_end']['value'] = $vague_date['end'];
-    $this->submission['fields']['date_type']['value'] = $vague_date['type'];
+  {    
+    if (array_key_exists('date', $this->submission['fields'])) {
+      $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
+      $this->submission['fields']['date_start']['value'] = $vague_date['start'];
+      $this->submission['fields']['date_end']['value'] = $vague_date['end'];
+      $this->submission['fields']['date_type']['value'] = $vague_date['type'];
+    }
     // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
     // can work out the Geom
     if (array_key_exists('entered_sref', $this->submission['fields']) &&

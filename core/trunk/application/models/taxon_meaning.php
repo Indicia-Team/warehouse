@@ -43,7 +43,9 @@ class Taxon_meaning_Model extends ORM {
 	}
 
 	public function validate(Validation $array, $save = FALSE){
-		$this->insert();
+	  if (!$this->id) {
+		  $this->insert();
+	  }
 		return true;
 	}
 

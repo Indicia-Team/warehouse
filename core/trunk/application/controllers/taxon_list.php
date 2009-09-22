@@ -28,6 +28,7 @@
  * @subpackage Controllers
  */
 class Taxon_list_Controller extends Gridview_Base_Controller {
+  
   public function __construct() {
     parent::__construct('taxon_list','taxon_list','taxon_list/index');
     $this->columns = array(
@@ -37,73 +38,80 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     $this->model = ORM::factory('taxon_list');
     $this->auth_filter = $this->gen_auth_filter;
   }
-
-  public function edit($id,$page_no,$limit) {
-    $this->model->find($id);
-
-    if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
-      return;
-        }
-
+  
+  /**
+   * Returns an array of all values from this model and its super models ready to be 
+   * loaded into a form. For this controller, we need to also setup the child taxon lists grid   
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();
     // Configure the grid
     $grid =	Gridview_Controller::factory($this->model,
-        $page_no,
-        $limit,
+        null, null,
         4);
-    $grid->base_filter = array('deleted' => 'f', 'parent_id' => $id);
+    $grid->base_filter = array('deleted' => 'f', 'parent_id' => $this->model->id);
     $grid->columns =  $this->columns;
     $grid->actionColumns = array(
-      'edit' => 'taxon_list/edit/£id£'
+      'edit' => 'taxon_list/edit/Â£idÂ£'
     );
-
-    $vArgs = array(
-      'table' => $grid->display()
-    );
-
-    $this->setView('taxon_list/taxon_list_edit', 'Species List', $vArgs);
+    $r['table'] = $grid->display();
+    if ($this->model->parent_id) {
+      $r['parent_website_id']=$this->model->parent->website_id;
+    } 
+    return $r;    
+  }
+  
+  /**
+   *  Setup the default values to use when loading this controller to edit a new page.
+   *  In this case, the parent_id and website_id are passed as $_POST data if creating 
+   *  a new sublist.   
+   */
+  protected function getDefaults() {
+    $r = parent::getDefaults();
+    if ($this->uri->method(false)=='create' && array_key_exists('parent_id', $_POST)) {
+      // Parent_id and website_id are passed in as POST params for a new record.
+      $r['taxon_list:parent_id'] = $_POST['parent_id'];
+      $r['taxon_list:website_id'] = $_POST['website_id'];
+      $r['parent_website_id']=ORM::factory('taxon_list', $_POST['parent_id'])->website_id;
+    }   
+    return $r;    
   }
 
-  // Auxilliary function for handling Ajax requests from the edit method gridview component
-  public function edit_gv($id,$page_no,$limit) {
+  /**
+   * Auxilliary function for handling Ajax requests from the edit method child lists gridview component
+   */
+  public function edit_gv($id,$page_no) {
     $this->auto_render=false;
     $model = ORM::factory('taxon_list',$id);
     $grid =	Gridview_Controller::factory($model,
         $page_no,
-        $limit,
         4);
     $grid->base_filter = array('deleted' => 'f', 'parent_id' => $id);
     $grid->columns = array_intersect_key($grid->columns, array(
       'title'=>'',
       'description'=>''));
     $grid->actionColumns = array(
-      'edit' => 'taxon_list/edit/£id£'
+      'edit' => 'taxon_list/edit/Â£idÂ£'
     );
     return $grid->display();
   }
 
-  public function create(){
-    $parent = $this->input->post('parent_id', null);
-    $this->model->parent_id = $parent;
-    if ($parent != null)
+  /**
+   * Reports if editing a taxon list is authorised based on the website id. If a new list,
+   * then the parent list's website is used to check authorisation.
+   * 
+   * @param int $id Id of the taxon list that is being checked, or null for a new record.
+   */
+  protected function record_authorised($id)
+  {    
+    if (!$id && array_key_exists('parent_id', $_POST)) {
+      $idToCheck=$_POST['parent_id'];
+    } else {
+      $idToCheck=$id;
+    }    
+    if (!is_null($idToCheck) AND !is_null($this->auth_filter))
     {
-      if (!$this->record_authorised($parent))
-      {
-        $this->access_denied('table to create a record with parent ID='.$parent);
-        return;
-      }
-      $this->model->website_id = $this->model->parent->website_id;
-    }
-
-    $this->setView('taxon_list/taxon_list_edit', 'Species List');
-  }
-
-  protected function record_authorised ($id)
-  {
-    if (!is_null($id) AND !is_null($this->auth_filter))
-    {
-      $taxon_list = new Taxon_list_Model($id);
+      $taxon_list = new Taxon_list_Model($idToCheck);
       return (in_array($taxon_list->website_id, $this->auth_filter['values']));
     }
     return true;
@@ -111,7 +119,8 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
 
   /**
    * After a submission, override the default return page behaviour so that if the
-   * list has a parent id, the edit page for that record is returned to.
+   * list has a parent id, the edit page for that record is returned to with the sublists
+   * tab selected.
    */
   protected function get_return_page() {
     if ($this->model->parent_id != null) {

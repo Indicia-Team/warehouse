@@ -97,6 +97,144 @@ class Indicia_Controller extends Template_Controller {
     } else
       $this->template->menu = array();
   }
+  
+  /**
+   * Handler for the Create action on all controllers. Creates the default data required
+   * when instantiating a new record and loads it into the edit form view.    
+   */
+  public function create() {
+    if (!$this->record_authorised(null)) {
+      $this->access_denied();
+      return;
+    }
+    $values = $this->getDefaults();
+    $this->showEditPage($values);
+  }
+  
+  /**
+   * Handler for the Edit action on all controllers. Loads the values required from the model
+   * and any attached supermodels.    
+   */
+  public function edit($id) {
+    if (!$this->record_authorised($id)) {
+      $this->access_denied();
+      return;
+    }
+    $this->model = ORM::Factory($this->model->object_name, $id);        
+    $values = $this->getModelValues();
+    $this->showEditPage($values);     
+  }
+  
+  /**
+   * Code that is run when showing a controller's edit page - either from the create action
+   * or the edit action.
+   * 
+   * @param int $id The record id (for editing) or null (for create).
+   * @param array $valuse Associative array of valuse to populate into the form.   * 
+   * @access private   
+   */
+  protected function showEditPage($values) {    
+    $other = $this->prepareOtherViewData();            
+    $mn = $this->model->object_name;      
+    $this->setView($mn."/".$mn."_edit", $this->model->caption(), array(
+    	'values'=>$values,
+      'other_data'=>$other
+    )); 
+  }
+  
+  /**
+   * Provide an overridable method for preparing any additional data required by a view that does
+   * not depend on the specific record. This includes preparing the list of terms to preload 
+   * into lookup lists or combo boxes. 
+   * 
+   * @return array Array of additional data items required, or null.
+   */
+  protected function prepareOtherViewData()
+  {    
+    return null;   
+  }
+  
+  /**
+   * Default behaviour is to allow access to records if logged in.   
+   */   
+  protected function record_authorised($id) {
+    return $this->auth->logged_in();
+  }
+  
+  /**
+   * Returns an array of all values from this model and its super models ready to be 
+   * loaded into a form.   
+   */
+  protected function getModelValues() {    
+    $struct = $this->model->get_submission_structure();             
+    $r = $this->model->getPrefixedValuesArray();    
+    if (array_key_exists('superModels', $struct)) {
+      foreach ($struct['superModels'] as $super=>$content) {         
+        $r = array_merge($r, $this->model->$super->getPrefixedValuesArray());
+      } 
+    }
+    // Output a list of values for each joined record in the joinsTo links.
+    if (array_key_exists('joinsTo', $struct)) {
+      foreach ($struct['joinsTo'] as $joinsTo) {        
+        $ids = array();    
+        foreach ($this->model->$joinsTo as $joinedModel) {
+          $r['joinsTo:'.inflector::singular($joinsTo).':'.$joinedModel->id] = 'on';          
+        }                 
+      }      
+    }
+    return $r;
+  }
+  
+  /**
+   * Constructs an array of the default values required when loading a new edit form. 
+   * Each entry is of the form "model.field => value". Loads both the defaults from this 
+   * controller's main model, and any supermodels it has.
+   */
+  protected function getDefaults() {    
+    $struct = $this->model->get_submission_structure();
+    $r = $this->model->getDefaults();    
+    if (array_key_exists('superModels', $struct)) {
+      foreach ($struct['superModels'] as $super=>$content) {         
+        $r = array_merge($r, ORM::Factory($super)->getDefaults());
+      } 
+    }
+    if (array_key_exists('metaFields', $struct)) {
+      foreach ($struct['metaFields'] as $m) {
+        $r["metaField:$m"]='';
+      } 
+    } 
+    
+    return $r;
+  }
+  
+  /**
+  * Handler for the Save action on all controllers. Saves the post array by 
+  * passing it into the model and then submitting it. If the post array was 
+  * sent by a submit button with value Delete, then the record is marked for 
+  * deletion. 
+  */
+  public function save()
+  {
+    if ($_POST['submit']=='Cancel') {
+      $this->redirectToIndex();
+    } else {
+      // Are we editing an existing record? If so, load it.
+      if (array_key_exists('id', $_POST)) {
+        $this->model = ORM::factory($this->model->object_name, $_POST['id']);
+      } else {
+        $this->model = ORM::factory($this->model->object_name);
+      }
+      
+      // Were we instructed to delete the post?
+      $deletion = $_POST['submit'] == 'Delete';    
+      $_POST['deleted'] = $deletion ? 't' : 'f';
+  
+      // Pass the post object to the model and then submit it
+      $this->model->set_submission_data($_POST);       
+      $this->submit($deletion);
+    }
+  }
+  
 
   /**
   * Retrieve a suitable title for the edit page, depending on whether it is a new record
@@ -105,9 +243,9 @@ class Indicia_Controller extends Template_Controller {
   protected function GetEditPageTitle($model, $name)
   {
     if ($model->id)
-    return "Edit $name ".$model->caption();
+      return "Edit ".$model->caption();
     else
-      return "New $name";
+      return "New ".$model->caption();
   }
 
   /**
@@ -170,6 +308,14 @@ class Indicia_Controller extends Template_Controller {
     Kohana::log("debug", "Submitted record ".$id." successfully.");
     $action = $deletion ? "deleted" : "saved";
     $this->session->set_flash('flash_info', "The record was $action successfully.");
+    $this->redirectToIndex();
+  }
+  
+  /**
+   * Redirects the browser to the relevant index page which this came from (e.g. after saving an edit).   *
+   * @access private   
+   */
+  private function redirectToIndex() {
     if(isset($_POST['return_url'])) {
       url::redirect($_POST['return_url']);
     } else {
@@ -182,41 +328,13 @@ class Indicia_Controller extends Template_Controller {
   */
   protected function show_submit_fail()
   {
-    $page_error=$this->model->getError('general');
-    if ($page_error) {
-      $this->session->set_flash('flash_error', $page_error);
+    $page_errors=$this->model->getPageErrors();
+    if (count($page_errors)!=0) {
+      $this->session->set_flash('flash_error', implode('<br/>',$page_errors));
     }
-    $mn = $this->model->object_name;
-    $this->setView($mn."/".$mn."_edit", ucfirst($mn));
-  }
-
-
-  /**
-  * Saves the post array by wrapping it and then submitting it.
-  */
-  public function save()
-  {
-    if (! empty($_POST['id']))
-    {
-      $this->model = ORM::factory($this->model->object_name, $_POST['id']);
-    }
-
-    /**
-    * Were we instructed to delete the post?
-    */
-    if ($_POST['submit'] == 'Delete')
-    {
-      $_POST['deleted'] = 't';
-    }
-    else
-    {
-      $_POST['deleted'] = 'f';
-    }
-
-    // Wrap the post object and then submit it
-    $this->model->set_submission_data($_POST);
-    $this->submit($_POST['submit'] == 'Delete');
-
+    $values = $this->getDefaults();
+    $values = array_merge($values, $_POST);
+    $this->showEditPage($values);
   }
 
   protected function setError($title, $message)
@@ -281,6 +399,7 @@ class Indicia_Controller extends Template_Controller {
    * Returns a set of terms for a termlist, which can be used to populate a termlist drop down.
    *
    * @param string $termlist Name of the termlist, from the termlist's external_key field.
+   * @return array Associative array of terms, with each entry being id => term.
    */
   protected function get_termlist_terms($termlist) {
     $arr=array();
@@ -291,5 +410,5 @@ class Indicia_Controller extends Template_Controller {
     }
     return $arr;
   }
-
+  
 }

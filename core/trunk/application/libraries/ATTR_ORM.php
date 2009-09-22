@@ -47,90 +47,72 @@ abstract class ATTR_ORM extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-
+    $this->unvalidatedFields = array('validation_rules', 'public', 'multi_value', 'deleted');
     $array->add_rules('caption', 'required');
-    $array->add_rules('data_type', 'required');
-    if ($array['data_type'] == 'L') {
-      if (empty($array['termlist_id'])) {
-        $this->errors['termlist_id']='A lookup (term) list must be provided when the data type is "Lookup List"';
-        $save=false;
+    $array->add_rules('data_type', 'required');       
+    if (array_key_exists('data_type', $array->as_array()) && $array['data_type'] == 'L') {      
+      if (empty($array['termlist_id'])) {        
+        $array->add_rules('termlist_id', 'required');
       } else
-        $this->termlist_id = $array['termlist_id'];
-    }
-    $this->multi_value = array_key_exists('multi_value', $array) ? $array['multi_value'] : 'f';
-    $this->public = array_key_exists('public', $array) ? $array['public'] : 'f';
-    $this->validation_rules = $array['validation_rules'];
+        array_push($this->unvalidatedFields, 'termlist_id');
+    }    
+    if (array_key_exists('validation_rules', $array->as_array())) {
+      $this->validation_rules = $array['validation_rules'];      
+      $save = $save && $this->validateValidationRules();
+    }    
+    $parent_valid = parent::validate($array, $save);   
+    return $save && $parent_valid;
+  }
+  
+  /** 
+   * Applies validation logic to the loaded validation rules - e.g. for min validation we must have a min value to 
+   * check against.
+   * 
+   * @return boolean Returns true if successful.
+   */
+  private function validateValidationRules() {
+    $r = true;     
     // do validation for validation_rules here
     $this->populate_validation_rules();
     // do validation for validation_rules here
     if ($this->valid_length == true){
       if (!empty($this->valid_length_min) AND !is_numeric($this->valid_length_min)) {
         $this->errors['valid_length']='Minimum length must be empty or a number';
-        $save=false;
+        $r=false;
       }
       else if (!empty($this->valid_length_max) AND !is_numeric($this->valid_length_max)) {
         $this->errors['valid_length']='Maximum length must be empty or a number';
-        $save=false;
+        $r=false;
       } else if (empty($this->valid_length_min) AND empty($this->valid_length_max)) {
         $this->errors['valid_length']='One or both minimum length and/or maximum length must be provided';
-        $save=false;
+        $r=false;
       }
     }
     if ($this->valid_decimal == true){
       if (empty($this->valid_dec_format)) {
         $this->errors['valid_decimal']='Format String must be provided';
-        $save=false;
+        $r=false;
       }
     }
-    if ($this->valid_regex == true){
+    if ($this->valid_regex == true){      
       if (empty($this->valid_regex_format)) {
         $this->errors['valid_regex']='Format String must be provided';
-        $save=false;
+        $r=false;
       }
     }
     if ($this->valid_min == true){
       if (empty($this->valid_min_value)) {
         $this->errors['valid_min']='Minimum value must be provided';
-        $save=false;
+        $r=false;
       }
     }
     if ($this->valid_max == true){
       if (empty($this->valid_max_value)) {
         $this->errors['valid_max']='Maximum value must be provided';
-        $save=false;
+        $r=false;
       }
-    }
-    $parent_valid = parent::validate($array, $save);
-    return $save AND $parent_valid;
-  }
-
-  public function preSubmit() {
-    if (!is_numeric($this->submission['fields']['survey_id']['value']))
-      $this->submission['fields']['survey_id']['value'] = NULL;
-    if ($this->submission['fields']['disabled_input']['value'] == 'NO') {
-      $this->checkSubmitNumericField('termlist_id');
-      $this->checkSubmitBoolField('multi_value');
-      $this->checkSubmitBoolField('public');
-
-      $rules = array();
-      foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text') as $rule) {
-        if (isset($this->submission['fields']['valid_'.$rule]))
-          $rules[] = $rule;
-      }
-
-      if (isset($this->submission['fields']['valid_length']))		$rules[] = 'length['.$this->submission['fields']['valid_length_min']['value'].','.$this->submission['fields']['valid_length_max']['value'].']';
-      if (isset($this->submission['fields']['valid_decimal']))	$rules[] = 'decimal['.$this->submission['fields']['valid_dec_format']['value'].']';
-      if (isset($this->submission['fields']['valid_regex']))		$rules[] = 'regex['.$this->submission['fields']['valid_regex_format']['value'].']';
-      if (isset($this->submission['fields']['valid_min']))		$rules[] = 'min['.$this->submission['fields']['valid_min_value']['value'].']';
-      if (isset($this->submission['fields']['valid_max']))		$rules[] = 'max['.$this->submission['fields']['valid_max_value']['value'].']';
-
-      if (!empty($rules))
-        $this->submission['fields']['validation_rules'] = array('value' => implode("\r\n", $rules));
-      else
-        $this->submission['fields']['validation_rules'] = array('value' => NULL);
-      kohana::log('info', 'Posted rules '.$this->submission['fields']['validation_rules']);
-    }
-    return parent::preSubmit();
+    }    
+    return $r;
   }
 
   /**
@@ -165,7 +147,10 @@ abstract class ATTR_ORM extends ORM {
     $rules_list = explode("\r\n", $this->validation_rules);
     foreach($rules_list as $rule) {
       // argument extraction is complicated by fact that for regex holds a regular expression.
-
+      if (substr($rule, -2)=='[]') {
+        // Remove the empty params as this breaks the regex  
+        $rule = substr($rule, 0, -2);
+      }
       // Use the same method as the validation object
       $args = NULL;
       if (preg_match('/^([^\[]++)\[(.+)\]$/', $rule, $matches))
@@ -173,8 +158,7 @@ abstract class ATTR_ORM extends ORM {
         // Split the rule into the function and args
         $rule = $matches[1];
         $args = $matches[2];
-      }
-
+      }      
       switch ($rule) {
         case 'required' :	$this->valid_required = true;
                 break;
@@ -193,7 +177,7 @@ abstract class ATTR_ORM extends ORM {
         case 'decimal' :	$this->valid_decimal = true;
                 $this->valid_dec_format = $args;
                 break;
-        case 'regex' :	$this->valid_regex = true;
+        case 'regex' :	$this->valid_regex = true;        
                 $this->valid_regex_format = $args;
                 break;
         case 'min' :	$this->valid_min = true;
@@ -208,6 +192,78 @@ abstract class ATTR_ORM extends ORM {
                 $this->valid_length_max = $args[1];
                 break;
       }
+    }
+  }
+  
+  /**
+   * As we share a generic form, the submission structure is generic to all custom attributes.   *
+   */
+  public function get_submission_structure() {
+    return array(
+    	'model'=>'custom_attribute',
+      'fieldPrefix'=>'custom_attribute',
+      'metaFields' => array('disabled_input')      
+    );
+  }
+  
+  /**
+   * If saving a re-used attribute, then don't bother posting the main record data as it can't be changed. The postSubmit
+   * can still occur though to link it to websites and surveys.
+   *   
+   * @return integer Id of the attribute.
+   */
+  protected function validateAndSubmit() {
+    if ($this->submission['metaFields']['disabled_input']['value']=='YES') {      
+      $this->find($this->submission['fields']['id']['value']);
+      return $this->id;
+    } else {     
+      return parent::validateAndSubmit();
+    }
+  }
+  
+  protected function postSubmit() {
+    // Record has saved correctly or is being reused
+    /*if(!is_null($this->gen_auth_filter))
+      $websites = ORM::factory('website')->in('id', $this->gen_auth_filter['values'])->find_all();
+    else*/
+      $websites = ORM::factory('website')->find_all();
+    foreach ($websites as $website) {
+      // First check for non survey specific checkbox
+      $this->set_attribute_website_record($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
+      $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
+      foreach ($surveys as $survey) {
+        $this->set_attribute_website_record($this->id, $website->id, $survey->id, isset($_POST['website_'.$website->id.'_'.$survey->id]));
+      }
+    }          
+    return true;
+  }
+  
+  private function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
+  {    
+    $attributes_website = ORM::factory(inflector::plural($this->object_name).'_website',
+            array($this->object_name.'_id' => $attr_id
+                , 'website_id' => $website_id
+                , 'restrict_to_survey_id' => $survey_id));
+    if($attributes_website->loaded) {
+      // existing record
+      if($checked == true and $attributes_website->deleted == 't') {
+        $attributes_website->__set('deleted', 'f');
+        $attributes_website->save();
+      } else if ($checked == false and $attributes_website->deleted == 'f')  {
+        $attributes_website->__set('deleted', 't');
+        $attributes_website->save();
+      }
+    } else if ($checked == true) {
+           $save_array = array(
+                'id' => $attributes_website->object_name
+                ,'fields' => array($this->object_name.'_id' => array('value' => $attr_id)
+                          ,'website_id' => array('value' => $website_id)
+                           ,'restrict_to_survey_id' => array('value' => $survey_id)
+                          ,'deleted' => array('value' => 'f'))
+                ,'fkFields' => array()
+                ,'superModels' => array());
+      $attributes_website->submission = $save_array;
+      $attributes_website->submit();
     }
   }
 

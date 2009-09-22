@@ -33,45 +33,52 @@
   });
 </script>
 
-<?php if ($model->parent_id != null) : ?>
+<?php
+$id = html::initial_value($values, 'termlist:id');
+$parent_id = html::initial_value($values, 'termlist:parent_id');
+
+if ($parent_id != null) : ?>
 <h1>Subset of:
-<a href="<?php echo url::site(); ?>termlist/edit/<?php echo $model->parent_id ;?>" >
-<?php echo ORM::factory("termlist",$model->parent_id)->title ?>
+<a href="<?php echo url::site(); ?>termlist/edit/<?php echo $parent_id ;?>" >
+<?php echo ORM::factory("termlist",$parent_id)->title ?>
 </a>
 </h1>
 <?php endif; ?>
 <div id="tabs">
   <ul>
     <li><a href="#details"><span>List Details</span></a></li>
-<?php if ($model->id != null) : ?>
-    <li><a href="<?php echo url::site().'termlists_term/'.$model->id; ?>" title="terms"><span>Terms</span></a></li>
+<?php if ($id != null) : ?>
+    <li><a href="<?php echo url::site().'termlists_term/'.$id; ?>" title="terms"><span>Terms</span></a></li>
     <li><a href="#sublists"><span>Child Lists</span></a></li>
 <?php endif; ?>
   </ul>
 <div id="details">
-<form class="cmxform"  name='editList' action="<?php echo url::site().'termlist/save'; ?>" method="POST">
+<form class="cmxform" action="<?php echo url::site().'termlist/save'; ?>" method="post">
 <?php echo $metadata ?>
 <fieldset>
 <legend>List Details</legend>
+<input type="hidden" name="termlist:id" value="<?php echo $id; ?>" />
+<input type="hidden" name="termlist:parent_id" value="<?php echo $parent_id; ?>" />
 <ol>
 <li>
-<input type="hidden" name="id" id="id" value="<?php echo html::specialchars($model->id); ?>" />
-<input type="hidden" name="parent_id" id="parent_id" value="<?php echo html::specialchars($model->parent_id); ?>" />
 <label for="title">Title</label>
-<input id="title" name="title" value="<?php echo html::specialchars($model->title); ?>"/>
-<?php echo html::error_message($model->getError('title')); ?>
+<input id="title" name="termlist:title" value="<?php echo html::initial_value($values, 'termlist:title'); ?>"/>
+<?php echo html::error_message($model->getError('termlist:title')); ?>
 </li>
 <li>
 <label for="description">Description</label>
-<textarea rows=7 id="description" name="description"><?php echo html::specialchars($model->description); ?></textarea>
-<?php echo html::error_message($model->getError('description')); ?>
+<textarea rows=7 id="description" name="termlist:description"><?php echo html::initial_value($values, 'termlist:description'); ?></textarea>
+<?php echo html::error_message($model->getError('termlist:description')); ?>
 </li>
 <li>
 <label for="website">Owned by</label>
-<?php if ($model->parent_id != null && $model->parent->website_id != null) : ?>
-<input type="hidden" id="website_id" name="website_id" value="<?php echo $model->parent->website_id; ?>" />
-<?php endif; ?>
-<select id="website_id" name="website_id" <?php if ($model->parent_id != null && $model->parent->website_id != null) echo "disabled='disabled'"; ?>>
+<select id="website_id" name="termlist:website_id" 
+<?php if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
+  echo "disabled='disabled'";
+  $website_id=$values['parent_website_id']; 
+} else {
+  $website_id = html::initial_value($values, 'termlist:website_id');
+} ?> >
   <option value=''>&lt;Warehouse&gt;</option>
 <?php
   if (!is_null($this->auth_filter))
@@ -80,19 +87,20 @@
     $websites = ORM::factory('website')->orderby('title','asc')->find_all();
   foreach ($websites as $website) {
     echo '	<option value="'.$website->id.'" ';
-    if ($website->id==$model->website_id)
+    if ($website->id==$website_id)
       echo 'selected="selected" ';
     echo '>'.$website->title.'</option>';
   }
 ?>
 </select>
-<?php echo html::error_message($model->getError('website_id')); ?>
+<?php echo html::error_message($model->getError('termlist:website_id')); ?>
 </li>
 </ol>
 </fieldset>
-<input type="submit" name="submit" value="Submit" />
-<input type="submit" name="submit" value="Delete" />
-<?php echo html::error_message($model->getError('deleted')); ?>
+<?php
+echo html::form_buttons(html::initial_value($values, 'termlist:id')!==null && html::initial_value($values, 'termlist:id')!=='');  
+echo html::error_message($model->getError('deleted')); 
+?>
 </form>
 </div>
 <div id="terms"></div>
@@ -108,8 +116,3 @@
   </div>
 <?php endif; ?>
 </div>
-<?php if ($model->id != '') : ?>
-<form class="cmxform" action="<?php echo url::site().'termlists_term/'.$model->id; ?>" >
-<input type="submit" value="View Terms" />
-</form>
-<?php endif; ?>

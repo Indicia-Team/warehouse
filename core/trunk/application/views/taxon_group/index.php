@@ -25,7 +25,7 @@
 <?php echo $table ?>
 <br />
 <?php print form::open('taxon_group/create'); ?>
-<input type="submit" value="New taxon group" />
+<input type="submit" value="New taxon group" class="ui-corner-all ui-state-default button" />
 </form>
 <br />
 <?php echo $upload_csv_form ?>

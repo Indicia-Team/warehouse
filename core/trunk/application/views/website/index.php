@@ -26,6 +26,6 @@
 <?php echo $table ?>
 <br />
 <form action="<?php echo url::site(); ?>website/create">
-<input type="submit" value="New website" />
+<input type="submit" value="New website" class="ui-corner-all ui-state-default button" />
 </form>
 </div>

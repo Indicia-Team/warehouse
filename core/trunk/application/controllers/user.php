@@ -40,11 +40,15 @@ class User_Controller extends Gridview_Base_Controller {
     parent::__construct('user', 'gv_user', 'user/index');
   }
 
-  public function page($page_no, $limit) {
-    Session::instance()->set_flash('flash_info', "<strong>Notes:</strong>" .
+  /**
+   * Override the default page action (which loads the main grid of users) to add notes to the page as
+   * a flash.
+   */
+  public function page($page_no, $filter=null) {
+    $this->session->set_flash('flash_info', "<strong>Notes:</strong>" .
         "<p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>" .
         "<p>In order to be on the list of potential users, the person must have an email address.</p>");
-    parent::page($page_no, $limit);
+    parent::page($page_no, $filter);
   }
 
   /**
@@ -52,9 +56,9 @@ class User_Controller extends Gridview_Base_Controller {
    */
   protected function get_action_columns() {
     return array(
-      'Edit User Details' => 'user/edit_from_person/£person_id£',
-      'Edit Person Details' => 'person/edit_from_user/£person_id£',
-      'Send Forgotten Password Email' => 'forgotten_password/send_from_user/£person_id£',
+      'Edit User Details' => 'user/edit_from_person/Â£person_idÂ£',
+      'Edit Person Details' => 'person/edit_from_user/Â£person_idÂ£',
+      'Send Forgotten Password Email' => 'forgotten_password/send_from_user/Â£person_idÂ£',
     );
   }
 

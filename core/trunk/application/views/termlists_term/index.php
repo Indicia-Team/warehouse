@@ -26,7 +26,7 @@
 <?php echo $table ?>
 <br/>
 <form action="<?php echo url::site().'termlists_term/create/'.$termlist_id; ?>" method="post">
-<input type="submit" value="New term" />
+<input type="submit" value="New term" class="ui-corner-all ui-state-default button" />
 </form>
 <br />
 <?php echo $upload_csv_form ?>

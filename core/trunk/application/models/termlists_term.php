@@ -34,7 +34,7 @@ class Termlists_term_Model extends Base_Name_Model {
   protected $search_field='id';
 
   protected $belongs_to = array(
-    'term', 'termlist',
+    'term', 'termlist', 'meaning',
     'created_by' => 'user',
     'updated_by' => 'user'
   );
@@ -49,13 +49,13 @@ class Termlists_term_Model extends Base_Name_Model {
     // $array->add_callbacks('deleted', array($this, '__dependents'));
 
     // Explicitly add those fields for which we don't do validation
-    $extraFields = array(
+    $this->unvalidatedFields = array(
       'parent_id',
       'preferred',
       'deleted',
       'sort_order'
     );
-    return parent::validate($array, $save, $extraFields);
+    return parent::validate($array, $save);
   }
   /**
    * If we want to delete the record, we need to check that no dependents exist.
@@ -79,7 +79,8 @@ class Termlists_term_Model extends Base_Name_Model {
         $arrSyn=$this->parseRelatedNames(
             $this->submission['metaFields']['synonyms']['value'], 'set_synonym_sub_array'
         );
-        $existingSyn = $this->getSynonomy('meaning_id', $this->meaning_id);
+        $meaning_id=$this->submission['fields']['meaning_id']['value'];
+        $existingSyn = $this->getSynonomy('meaning_id', $meaning_id);
 
         // Iterate through existing synonomies, discarding those that have
         // been deleted and removing existing ones from the list to add
@@ -109,18 +110,20 @@ class Termlists_term_Model extends Base_Name_Model {
           // Wrap a new submission
           Kohana::log("info", "Wrapping submission for synonym ".$term);
           $syn = $_POST;
-          $syn['term_id'] = null;
-          $syn['term'] = $term;
-          $syn['language_id'] = ORM::factory('language')->where(array(
+          $syn['term:id'] = null;
+          $syn['term:term'] = $term;
+          $syn['term:language_id'] = ORM::factory('language')->where(array(
             'iso' => $lang))->find()->id;
-          $syn['id'] = '';
-          $syn['preferred'] = 'f';
-          $syn['meaning_id'] = $this->meaning_id;
+          $syn['termlists_term:id'] = '';
+          $syn['termlists_term:preferred'] = 'f';
+          $syn['termlists_term:meaning_id'] = $meaning_id;
           // Prevent a recursion by not posting synonyms with a synonym
-          $syn['synonyms']='';
+          $syn['metaFields:synonyms']='';
 
           $sub = $this->wrap($syn);
-
+          // Don't resubmit the meaning record
+          unset($sub['superModels'][0]);
+          
           $sm->submission = $sub;
           if (!$sm->submit()) {
             $success=false;
@@ -146,48 +149,35 @@ class Termlists_term_Model extends Base_Name_Model {
       $array[$tokens[0]] = array('lang' => kohana::config('indicia.default_lang'));
     }
   }
+  
+  /**
+   * Return a displayable caption for the item.   
+   */
+  public function caption()
+  {
+    if ($this->id) {
+      return ($this->term_id != null ? $this->term->term : '');
+    } else {
+      return 'Term in List';
+    }    
+  }
 
-  public function wrap($array, $linkFk=false) {
-
-    $sa = array(
-      'id' => 'termlists_term',
-      'fields' => array(),
-      'fkFields' => array(),
-      'superModels' => array(),
-      'metaFields' => array()
+  /**
+   * Return the submission structure, which includes defining term and meaning as the parent
+   * (super) models, and the synonyms as metaFields which are specially handled.
+   * 
+   * @return array Submission structure for a termlists_term entry.
+   */
+  public function get_submission_structure()
+  {
+    return array(
+    	'model'=>$this->object_name,
+      'superModels'=>array(
+        'meaning'=>array('fk' => 'meaning_id'),
+        'term'=>array('fk' => 'term_id')
+      ),
+      'metaFields'=>array('synonyms')      
     );
-
-    // Declare which fields we consider as native to this model
-    $nativeFields = array_intersect_key($array, $this->table_columns);
-
-    // Use the parent method to wrap these
-    $sa = parent::wrap($nativeFields, $linkFk);
-
-    // Declare child models
-    if (array_key_exists('meaning_id', $array) == false ||
-      $array['meaning_id'] == '') {
-        $meaningModel = ORM::factory('meaning');
-        $sa['superModels'][] = array(
-          'fkId' => 'meaning_id',
-          'model' => $meaningModel->wrap(
-               array_intersect_key($array, $meaningModel->table_columns
-          ), false, 'meaning'));
-      }
-
-    $termFields = array_intersect_key($array, ORM::factory('term')
-      ->table_columns);
-    if (array_key_exists('term_id', $array) && $array['term_id'] != ''){
-      $termFields['id'] = $array['term_id'];
-    }
-    $sa['superModels'][] = array(
-      'fkId' => 'term_id',
-      'model' => ORM::factory('term')->wrap($termFields, $linkFk));
-
-    $sa['metaFields']['synonyms'] = array(
-      'value' => $array['synonyms']
-    );
-
-    return $sa;
   }
 
 }

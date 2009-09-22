@@ -41,8 +41,8 @@ class Termlist_Model extends ORM_Tree {
     $array->add_callbacks('deleted', array($this, '_dependents'));
 
     // Explicitly add those fields for which we don't do validation
-    $extraFields = array('description', 'website_id', 'parent_id', 'deleted');
-    return parent::validate($array, $save, $extraFields);
+    $this->unvalidatedFields = array('description', 'website_id', 'parent_id', 'deleted');
+    return parent::validate($array, $save);
   }
   /**
    * If we want to delete the record, we need to check that no dependents exist.

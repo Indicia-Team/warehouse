@@ -31,7 +31,7 @@ $(document).ready(function(){
   });
 });
 </script>
-<div id='metadata_toggle'><span class="ui-state-default ui-corner-all">Show/Hide Metadata</span></div>
+<div id='metadata_toggle'><span class="ui-state-default ui-corner-all button">Show/Hide Metadata</span></div>
 <div id='metadata'>
 <fieldset>
 <legend>Metadata</legend>

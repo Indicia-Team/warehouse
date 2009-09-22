@@ -26,6 +26,6 @@
 <?php echo $table ?>
 <br />
 <form action="<?php echo url::site(); ?>person/create_from_user">
-<input type="submit" value="New person" />
+<input type="submit" value="New person" class="ui-corner-all ui-state-default button" />
 </form>
 </div>

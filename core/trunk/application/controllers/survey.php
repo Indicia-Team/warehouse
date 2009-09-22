@@ -41,30 +41,10 @@ class Survey_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * Action for survey/create page.
-   * Displays a page allowing entry of a new survey.
+   * Check access to a survey when editing. The survey's website must be in the list
+   * of websites the user is authorised to administer.   
    */
-  public function create() {
-    $this->setView('survey/survey_edit', 'Survey');
-  }
-
-  public function edit($id = null) {
-    if ($id == null)
-        {
-         $this->setError('Invocation error: missing argument', 'You cannot call edit survey without an ID');
-        }
-        else if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
-    }
-        else
-    {
-      $this->model = new Survey_Model($id);
-            $this->setView('survey/survey_edit', 'Survey');
-    }
-  }
-
-    protected function record_authorised ($id)
+  protected function record_authorised ($id)
   {
     if (!is_null($id) AND !is_null($this->auth_filter))
     {

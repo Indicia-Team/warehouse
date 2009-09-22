@@ -42,15 +42,15 @@ class Person_Model extends ORM {
     $array->add_rules('surname', 'required', 'length[1,30]');
     $array->add_rules('initials', 'length[1,6]');
     $array->add_rules('address', 'length[1,200]');
-    if($array['email_address'] == NULL)
-      $this->email_address = NULL;
-    else
-      $array->add_rules('email_address', 'email', 'length[1,50]', 'unique[people,email_address,'.$array->id.']');
-        $array->add_rules('website_url', 'length[1,1000]', 'url[lax]');
-        // Any fields that don't have a validation rule need to be copied into the model manually
+    // If this person is new, then setting id to -1 causes uniqueness check to include all existing records.
+    $id = array_key_exists('id', $array) ? $array['id'] : -1; 
+    $array->add_rules('email_address', 'email', 'length[1,50]', 'unique[people,email_address,'.$id.']');    
+    $array->add_rules('website_url', 'length[1,1000]', 'url[lax]');  
+    
+    // Any fields that don't have a validation rule need to be copied into the model manually
     if (isset($array['title_id'])) $this->title_id = (is_numeric ($array['title_id']) ? $array['title_id'] : NULL);
-    $extraFields = array('deleted');
-    return parent::validate($array, $save, $extraFields);
+    $this->unvalidatedFields = array('deleted');
+    return parent::validate($array, $save);
   }
 
   public function email_validate(Validation $array, $save = FALSE) {

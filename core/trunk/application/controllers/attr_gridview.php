@@ -36,12 +36,11 @@ class Attr_Gridview_Controller extends Controller {
    * @param ATTR_ORM @model 1Instance of a model for the correct attribute type.
    * @param integer @page Page number to display in the grid.
    */
-  public static function factory($model,$page,$limit,$uri_segment,$createpath,$createbutton){
+  public static function factory($model,$page,$uri_segment,$createpath,$createbutton){
     $gridview = new Attr_Gridview_Controller();
     $gridview->model = $model;
     $gridview->columns = $model->table_columns;
-    $gridview->page = $page;
-    $gridview->limit = $limit;
+    $gridview->page = $page;    
     $gridview->createpath = $createpath;
     $gridview->createbutton = $createbutton;
     $gridview->uri_segment = $uri_segment;
@@ -138,13 +137,13 @@ class Attr_Gridview_Controller extends Controller {
         break;
     }
 
-
-    $offset = ($this->page -1) * $this->limit;
-    $table = $lists->find_all($this->limit, $offset);
+    $limit = kohana::config('pagination.default.items_per_page');
+    $offset = ($this->page -1) * $limit;
+    $table = $lists->find_all($limit, $offset);
 
     $pagination = new Pagination(array(
       'style' => 'extended',
-      'items_per_page' => $this->limit,
+      'items_per_page' => $limit,
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
       'auto_hide' => true

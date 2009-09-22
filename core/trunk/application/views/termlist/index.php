@@ -26,6 +26,6 @@
 <?php echo $table ?>
 <br/>
 <form action="<?php echo url::site().'termlist/create'; ?>" method="post">
-<input type="submit" value="New termlist" />
+<input type="submit" value="New termlist" class="ui-corner-all ui-state-default button" />
 </form>
 </div>
