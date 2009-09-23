@@ -617,7 +617,7 @@ class data_entry_helper extends helper_config {
     $replaceTags=array();
     $replaceValues=array();
     foreach (array_keys($taxon) as $option) {
-      if (!is_array($options[$option])) {
+      if (!is_array($taxon[$option])) {
         array_push($replaceTags, '{'.$option.'}');
         array_push($replaceValues, $taxon[$option]);
       }
