@@ -39,7 +39,7 @@ $indicia_templates = array(
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif"/>'."\n",
-  'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}">{default}</textarea>'."\n",
+  'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}" cols="{cols}" rows="{rows}">{default}</textarea>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}">'."\n",
   'date_picker' => '<input type="text" size="30" class="date {class}" id="{id}" name="{fieldname}" value="{default}"/>' .
       '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ',
@@ -50,7 +50,7 @@ $indicia_templates = array(
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul class="{class}">{items}</ul>',
-  'map_panel' => "<div id=\"{divId}\"></div>\n<br/>\n",
+  'map_panel' => "<div id=\"{divId}\" class=\"{class}\"></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\" class=\"{class}\" \>\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden page-notice\" ><div id=\"imp-georef-output-div\" />\n".
@@ -69,8 +69,8 @@ $indicia_templates = array(
     'document.write(\'<div class="loading-hide ui-helper-hidden">\');'.
     '</script>',
   'loading_block_end' => '</div>',
-	'taxon_label' => '<div class="biota"><span class="sci binomial"><em>{taxon}</em></span> {authority}'.
-    		'<span class="vernacular">{common}</span></div>',
+	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
+    		'<span class="nobreak vernacular">{common}</span></div>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
          '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" />'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
@@ -368,6 +368,10 @@ class data_entry_helper extends helper_config {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
+  * <li><b>rows</b><br/>
+  * Optional. HTML rows attribute. Defaults to 4.</li>
+  * <li><b>cols</b><br/>
+  * Optional. HTML cols attribute. Defaults to 80.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
@@ -376,6 +380,10 @@ class data_entry_helper extends helper_config {
   */
   public static function textarea() {
     $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options = array_merge(array(
+        'cols'=>'80',
+        'rows'=>'4'
+    ), $options);
     return self::apply_template('textarea', $options);
   }
 
@@ -418,6 +426,9 @@ class data_entry_helper extends helper_config {
    * <li><b>columns</b><br/>
    * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
    * Defaults to 1.</li>
+   * <li><b>checkboxCol</b><br/>
+   * Include a presence checkbox column in the grid. If present, then this contains a checkbox for each row which must be ticked for the 
+   * row to be saved. Otherwise any row containing data in an attribute gets saved.</li>
    * <li><b>cachetimeout</b><br/>
    * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
    * after a request for data to the Indicia Warehouse before a new request will refetch the data,
@@ -430,9 +441,11 @@ class data_entry_helper extends helper_config {
   {  
     global $indicia_javascript, $entity_to_load;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
+    // Apply default values
     $options = array_merge(array(
         'header'=>'true',
-        'columns'=>1
+        'columns'=>1,
+        'checkboxCol'=>'true'
     ), $options);
     self::add_resource('json');
     self::add_resource('autocomplete');
@@ -509,8 +522,10 @@ class data_entry_helper extends helper_config {
     // Build the grid
     if (! array_key_exists('error', $taxalist))
     {
-      $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>".
-          "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
+      $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>";
+      if ($options['checkboxCol']=='true') {
+        $grid .= "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
+      }
       foreach ($occAttrControls as $oc) {
         $grid .= "<td class='scOccAttrCell'>$oc</td>";
       }
@@ -519,7 +534,10 @@ class data_entry_helper extends helper_config {
       if ($options['header']) {
         $grid .= "<thead class=\"ui-widget-header\">";
         for ($i=0; $i<$options['columns']; $i++) {
-          $grid .= "<th>".lang::get('species_checklist.species')."</th><th>".lang::get('species_checklist.present')."</th>";
+          $grid .= "<th>".lang::get('species_checklist.species')."</th>";
+          if ($options['checkboxCol']=='true') {
+            $grid .= "<th>".lang::get('species_checklist.present')."</th>";
+          }
           foreach ($occAttrs as $a) {
             $grid .= "<th>$a</th>";
           }
@@ -531,20 +549,22 @@ class data_entry_helper extends helper_config {
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
         $row = "<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
-        if (isset($entity_to_load) && array_key_exists("sc:$id:present", $entity_to_load)) {
-          $checked = ' checked="checked"';
-        } else {
-          $checked='';
+        if ($options['checkboxCol']=='true') {
+          if (isset($entity_to_load) && array_key_exists("sc:$id:present", $entity_to_load)) {
+            $checked = ' checked="checked"';
+          } else {
+            $checked='';
+          }
+          $row .= "<td class='scPresenceCell'><input type='checkbox' name='sc:$id:present' $checked /></td>";
         }
-        $row .= "<td class='scPresenceCell'><input type='checkbox' name='sc:$id:present' $checked /></td>";
         foreach ($occAttrControls as $oc) {
           $oc = preg_replace('/oa:(\d+)/', "sc:$id:occAttr:$1", $oc);
-          $row .= "<td class='scOccAttrCell'>".$oc."</td>";
+          $row .= "<td class='scOccAttrCell ui-widget-content'>".$oc."</td>";
         }
         if ($rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
         } else {
-          $rows[$rowIdx % (floor(count($taxalist)/$options['columns']))] .= $row;
+          $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
         }
         $rowIdx++;
       }
@@ -592,7 +612,17 @@ class data_entry_helper extends helper_config {
    * @return string HTML for the taxon label
    */
   private static function getTaxonLabel($taxon) {
-    return self::apply_template('taxon_label', $taxon);
+    global $indicia_templates;
+    // Build an array of all the possible tags we could replace in the template.
+    $replaceTags=array();
+    $replaceValues=array();
+    foreach (array_keys($taxon) as $option) {
+      if (!is_array($options[$option])) {
+        array_push($replaceTags, '{'.$option.'}');
+        array_push($replaceValues, $taxon[$option]);
+      }
+    }    
+    return str_replace($replaceTags, $replaceValues, $indicia_templates['taxon_label']);    
   }
   
 
@@ -1394,10 +1424,11 @@ class data_entry_helper extends helper_config {
     global $indicia_javascript, $indicia_templates;
     self::add_resource('indiciaMapPanel');
     $options = array_merge(array(
-    'divId'=>'map',
-    'geoPlanetApiKey'=>parent::$geoplanet_api_key,
-    'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
-  ), $options);
+      'divId'=>'map',
+      'class'=>'',
+      'geoPlanetApiKey'=>parent::$geoplanet_api_key,
+      'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+    ), $options);
 
     if (array_key_exists('readAuth', $options)) {
       // Convert the readAuth into a query string so it can pass straight to the JS class.
@@ -1439,8 +1470,8 @@ class data_entry_helper extends helper_config {
     $indicia_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
     $r = str_replace(
-          array('{divId}'),
-          array($options['divId']),
+          array('{divId}','{class}'),
+          array($options['divId'], $options['class']),
           $indicia_templates['map_panel']
       );
     return $r;
@@ -1867,9 +1898,7 @@ class data_entry_helper extends helper_config {
     $sampleMod['subModels'] = $occurrences;
   
     // Wrap submission and return it
-    return array('submission' => 
-        array('entries' => array(array ('model' => $sampleMod)))
-    );
+    return $sampleMod;   
   }
 
   /**

@@ -43,7 +43,6 @@ class Taxon_Model extends ORM {
 
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
-      'language_id',
       'external_key',
       'authority',
       'deleted',

@@ -85,9 +85,12 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
    * *_attribute_website record after the *_attribute   
    */
   protected function getDefaults() {
-    $r = parent::getDefaults();
+    $r = parent::getDefaults();    
     $r['metaFields:disabled_input']='NO';
-    $r['attribute_load'] = new View('templates/attribute_load', array('website_id'=>$r['website_id'], 'model' => $this->model));
+    $r['attribute_load'] = new View(
+    		'templates/attribute_load', 
+        array('website_id'=>$this->input->get('website_id', null), 'model' => $this->model)
+    );
     $r['enabled'] = '';
     $r['webrec_key'] = $this->model->object_name.'_id';
     return $r;

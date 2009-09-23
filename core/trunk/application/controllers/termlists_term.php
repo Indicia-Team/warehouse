@@ -75,10 +75,8 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Species in ".ORM::factory('termlist',$termlist_id)->title;
     parent::page($page_no);
     $this->view->termlist_id = $termlist_id;
-    $this->upload_csv_form->staticFields = array
-    (
-      'termlists_term:termlist_id' => $termlist_id,
-      'termlists_term:preferred' => 't'
+    $this->upload_csv_form->staticFields = array(
+      'termlists_term:termlist_id' => $termlist_id
     );    
     $this->upload_csv_form->returnPage = $termlist_id;
   }

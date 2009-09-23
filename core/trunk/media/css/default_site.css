@@ -50,7 +50,7 @@ input, select, textarea {
 }
 
 .control-width-0 {
-	width: 30px;
+	width: 25px;
 }
 
 .control-width-1 {
@@ -147,3 +147,7 @@ input, select, textarea {
 .wide {
   width: 500px;
 }
+
+.nobreak {
+  white-space: nowrap;
+} 
