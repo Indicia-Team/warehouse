@@ -740,7 +740,7 @@ abstract class ORM extends ORM_Core {
               // For attribute value errors, we need to report e.g smpAttr:6 as the error key name, not
               // the table and field name as normal.
               $oam->forceErrorKey = $this->attrs_field_prefix.':'.$attrId;
-              $this->linkedModels[$m->object_name]=$oam;
+              $this->linkedModels[$oam->object_name]=$oam;
               return false;
             }
           }
