@@ -573,8 +573,7 @@ class data_entry_helper extends helper_config {
 
       // Insert an autocomplete box if the termlist has a parent or an alternate
       // termlist has been given in the parameter.
-      if ($options['lookupListId'] == null) {
-
+      if (!isset($options['lookupListId'])) {
         $tlRequest = "$url/taxon_list/".$options['listId']."?mode=json&view=detail";
         $session = curl_init($tlRequest);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -583,7 +582,7 @@ class data_entry_helper extends helper_config {
           $options['lookupListId'] = $tl[0]['parent_id'];
         }
       }
-      if ($options['lookupListId'] != null) {
+      if (isset($options['lookupListId'])) {
         // Javascript to add further rows to the grid
         self::add_resource('addrowtogrid');
         $indicia_javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
