@@ -125,6 +125,9 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         {
           // Synonym has been deleted - remove it from the db
           $syn->deleted = 't';
+          if ($this->common_taxon_id==$syn->taxon->id) {
+            $this->common_taxon_id=null;
+          }
           Kohana::log("debug", "Deleting synonym: ".$syn->taxon->taxon);
           $syn->save();
         }
@@ -154,8 +157,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $syn['taxon:authority'] = $auth;
         $syn['taxon:language_id'] = $lang_id;
         $syn['taxa_taxon_list:id'] = '';
-        $syn['taxa_taxon_list:preferred'] = 'f';
-        print_r($this->taxon_meaning_id); echo "here";
+        $syn['taxa_taxon_list:preferred'] = 'f';        
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
         $syn['taxon:taxon_group_id'] = $this->taxon->taxon_group_id;
         // Prevent a recursion by not posting synonyms with a synonym
@@ -170,7 +172,16 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         if (!$sm->submit()) {
           $result=false;
           array_push($this->linkedModels, $sm);
-        }
+        } else {
+          // If synonym is not latin (a common name), and we have no common name for this object, use it.
+          if ($this->common_taxon_id==null && $syn['taxon:language_id']!=2) {
+            $this->common_taxon_id=$sm->taxon->id;             
+          }
+        }        
+      }
+      // post the common name id change if required.
+      if (isset($this->changed['common_taxon_id'])) {
+        $this->save();        
       }      
     }
     return $result;
@@ -223,5 +234,14 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       ),
       'metaFields'=>array('synonyms', 'commonNames')      
     );
+  }
+  
+  /** 
+   * Set default values for a new entry.   
+   */
+  public function getDefaults() {
+    return array(
+      'preferred'=>'t'
+    );  
   }
 }

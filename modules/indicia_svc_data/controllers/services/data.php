@@ -568,7 +568,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
   * Takes a single submission entry and attempts to save to the database.
   */
-  protected function submit_single($item) {
+  protected function submit_single($item) {        
     $model = ORM::factory($item['id']); // id is the entity.
     $this->check_update_access($item['id'], $item);
     $model->submission = $item;

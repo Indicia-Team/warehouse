@@ -166,11 +166,17 @@ class Indicia_Controller extends Template_Controller {
    * loaded into a form.   
    */
   protected function getModelValues() {    
-    $struct = $this->model->get_submission_structure();             
-    $r = $this->model->getPrefixedValuesArray();    
+    $struct = $this->model->get_submission_structure();
+    // Get this model's values. If the structure needs a specified field prefix then use it, otherwise it will default to the model name.    
+    $r = $this->model->getPrefixedValuesArray(
+        array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : null
+    );    
     if (array_key_exists('superModels', $struct)) {
-      foreach ($struct['superModels'] as $super=>$content) {         
-        $r = array_merge($r, $this->model->$super->getPrefixedValuesArray());
+      foreach ($struct['superModels'] as $super=>$content) {
+        // Merge the supermodel's values into the main array. Use a specified fieldPrefix if there is one.         
+        $r = array_merge($r, $this->model->$super->getPrefixedValuesArray(
+            array_key_exists('fieldPrefix', $content) ? $content['fieldPrefix'] : null
+        ));
       } 
     }
     // Output a list of values for each joined record in the joinsTo links.

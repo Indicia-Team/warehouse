@@ -66,10 +66,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->pagetitle = "Species in ".ORM::factory('taxon_list',$taxon_list_id)->title;
     parent::page($page_no);
     $this->view->taxon_list_id = $taxon_list_id;
-    $this->upload_csv_form->staticFields = array
-    (
-      'taxa_taxon_list:taxon_list_id' => $taxon_list_id,
-      'taxa_taxon_list:preferred' => 't'
+    $this->upload_csv_form->staticFields = array(
+      'taxa_taxon_list:taxon_list_id' => $taxon_list_id
     );    
     $this->upload_csv_form->returnPage = $taxon_list_id;
   }
@@ -122,7 +120,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       if (array_key_exists('taxa_taxon_list:parent_id', $_POST)) {
         $r['taxa_taxon_list:parent_id']=$_POST['taxa_taxon_list:parent_id'];
       }
-    } else {      
+    } elseif ($this->uri->method(false)=='edit') {      
       if ($_POST['taxa_taxon_list:id']) {
         $r['table'] = $this->get_child_grid($_POST['taxa_taxon_list:id'],      
           $this->uri->argument(3) || 1, // page number

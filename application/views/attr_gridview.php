@@ -35,13 +35,13 @@
   hardcoded_values[-1] = "";
 <?php
       if (!is_null($this->auth_filter))
-        $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('id','asc')->find_all();
+        $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('id','asc')->find_all();
       else
         $websites = ORM::factory('website')->orderby('id','asc')->find_all();
 
       foreach ($websites as $website) {
         echo '	hardcoded_values['.$website->id.'] = new Array(';
-        $surveys = ORM::factory('survey')->where('website_id', $website->id)->orderby('title','asc')->find_all();
+        $surveys = ORM::factory('survey')->where('website_id', $website->id)->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
         $option_list = array();
         foreach ($surveys as $survey) {
           $option_list[] = 'new Array('.$survey->id.', "'.$survey->title.'")';
@@ -106,6 +106,9 @@ function website_selection_changed(websitecombo)
 
 jQuery(document).ready(function() {
 	website_selection_changed($('#website_id')[0]);
+	<?php if (array_key_exists('survey_id', $_GET)) : ?>
+	$('#survey_id').val('<?php echo $_GET['survey_id'];?>');
+	<?php endif; ?>
 });
 
 // -->

@@ -602,6 +602,7 @@ abstract class ORM extends ORM_Core {
       $db->select($attr_entity.'s.id', $attr_entity.'s.caption');
       $db->like('validation_rules','required');
       $db->where($attr_entity.'s.deleted', 'f');
+      $db->where($attr_entity.'s_websites.deleted', 'f');      
       $db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
       $db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       $result=$db->get();
@@ -653,11 +654,15 @@ abstract class ORM extends ORM_Core {
   /**
    * Returns the array of values, with each key prefixed by the model name then :.
    * 
+   * @param string $prefix Optional prefix, only required when overriding the model name
+   * being used as a prefix.
    * @return array Prefixed key value pairs.
    */
-  public function getPrefixedValuesArray() {
+  public function getPrefixedValuesArray($prefix=null) {
     $r = array();
-    $prefix=$this->object_name;
+    if (!$prefix) {
+      $prefix=$this->object_name;
+    }
     foreach ($this->as_array() as $key=>$val) {
       $r["$prefix:$key"]=$val;
     }

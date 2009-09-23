@@ -194,12 +194,11 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       $headers = fgetcsv($handle, 1000, ",");
       $problems = array();
       $count=0;
-      while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-        kohana::log('debug', 'data');
-        kohana::log('debug', print_r($data, true));
+      while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {        
+        kohana::log('debug', 'Importing row data: '.implode(' | ', $data));
         $count++;
         $index = 0;
-        $saveArray = array();
+        $saveArray = $this->getDefaults();
         foreach ($_POST as $col=>$attr) {          
           if (isset($data[$index])) {
             if ($attr!='<please select>') {
