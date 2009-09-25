@@ -28,7 +28,6 @@
   *  $body - gridview_table object.
   */
 ?>
-<script type="text/javascript" src="<?php echo url::base() ?>application/views/gridview.js" ></script>
 <div class="gvFilter">
 <form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
 Filter for
@@ -61,6 +60,6 @@ if (count($actionColumns)>0) {
 <?php echo $body ?>
 </tbody>
 </table>
-<div class='pager'>
+<div id="pager-<?php echo $id; ?>">
 <?php echo $pagination ?>
 </div>
