@@ -2243,7 +2243,7 @@ $indicia_late_javascript
       }
       // Test we have full access to the server - it doesn't matter what website id we pass here.'
       $postargs = "website_id=0";
-      $curl_check = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs, false);
+      $curl_check = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs, false);
       if ($curl_check['result']) {
         if ($fullInfo) {
           $r .= '<li>Success: Indicia Warehouse URL responded to a POST request.</li>';
