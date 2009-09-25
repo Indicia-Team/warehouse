@@ -41,39 +41,10 @@ echo data_entry_helper::autocomplete(array(
     'valueField'=>'id',
     'extraParams'=>$readAuth + array('taxon_list_id' => $config['species_checklist_taxon_list'])
 ));
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
 echo data_entry_helper::date_picker(array(
     'label'=>'Date',
     'fieldname'=>'sample:date'
 ));
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
-echo "<br/>";
 echo data_entry_helper::map();
 echo data_entry_helper::select(array(
     'label'=>'Survey',
