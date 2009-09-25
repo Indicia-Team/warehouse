@@ -91,7 +91,7 @@ tr.oddRow
   background: #F2F2F2;
 }
 
-#gvFilter
+.gvFilter
 {
   margin-bottom: 1em;
 }

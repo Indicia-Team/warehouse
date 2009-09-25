@@ -12,6 +12,12 @@
 class Pagination extends Pagination_Core {
 
 	/**
+	 * Each pagination bar has a unique id assigned in case there are several grids on 
+	 * the page
+	 */
+	protected $id;
+	
+	/**
 	 * Sets config values.
 	 *
 	 * @throws  Kohana_Exception

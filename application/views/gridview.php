@@ -28,22 +28,22 @@
   *  $body - gridview_table object.
   */
 ?>
-<script type="text/javascript" src='<?php echo url::base() ?>application/views/gridview.js' ></script>
-<div id='gvFilter'>
-<form name='Filter' action='' method='get'>
+<script type="text/javascript" src="<?php echo url::base() ?>application/views/gridview.js" ></script>
+<div class="gvFilter">
+<form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
 Filter for
-<input type='text' name='filters'/>
-in <select name='columns'>
+<input type="text" name="filters" class="filterInput"/>
+in <select name="columns" class="filterSelect">
 <?php foreach ($columns as $name => $newname) {
   if (!$newname) $newname = $name;
   echo "<option value='".$name."'>".$newname."</option>";
 }
 ?>
 </select>
-<input id="gvFilterButton" type="submit" value="Filter" class="ui-corner-all ui-state-default"/>
+<input type="submit" value="Filter" class="ui-corner-all ui-state-default"/>
 </form>
 </div>
-<table id="pageGrid" class="ui-widget ui-widget-content">
+<table id="pageGrid-<?php echo $id; ?>" class="ui-widget ui-widget-content">
 <thead class="ui-widget-header">
 <tr class='headingRow'>
 <?php
@@ -57,7 +57,7 @@ if (count($actionColumns)>0) {
 ?>
 </tr>
 </thead>
-<tbody id='gvBody'>
+<tbody id="gridBody-<?php echo $id; ?>">
 <?php echo $body ?>
 </tbody>
 </table>

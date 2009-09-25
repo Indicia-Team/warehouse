@@ -53,6 +53,8 @@ class Gridview_Controller extends Controller {
 
     $gridview = new View('gridview');
     $gridview_body = new View('gridview_body');
+    // create a unique id for our grid
+    $id = md5(time().rand());
 
     # 2 things we could be up to here - filtering or table sort.
     // Get all the parameters
@@ -94,28 +96,30 @@ class Gridview_Controller extends Controller {
     $limit = kohana::config('pagination.default.items_per_page');
     $offset = ($this->page -1) * $limit;
     $table = $lists->find_all($limit, $offset);
-
     $pagination = new Pagination(array(
-      'style' => 'extended',      
+      'style' => 'indicia',      
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
-      'auto_hide' => true
+      'auto_hide' => true,
+      'id'=>$id
     ));
 
     $gridview_body->table = $table;
     $gridview->body = $gridview_body;
+    $gridview->id = $id;
     $gridview->pagination = $pagination;
     $gridview->columns = $this->columns;
     $gridview->actionColumns = $this->actionColumns;
     $gridview_body->columns = $this->columns;
     $gridview_body->actionColumns = $this->actionColumns;
-
-    if(request::is_ajax() && !$forceFullTable){
+kohana::log('debug','AJAX '.(request::is_ajax() ? 'yes' : 'no'));
+kohana::log('debug','Full table '.($forceFullTable ? 'yes' : 'no'));
+    if(request::is_ajax() && !$forceFullTable) {
+    	$this->auto_render=false;
       if ($this->input->get('type',null) == 'pager'){
-        echo $pagination;
-      } else {
-        $this->auto_render=false;
-        $gridview_body->render(true);
+        return $pagination;
+      } else {        
+        return $gridview_body->render(true);
       }
     } else {
       return $gridview->render();

@@ -47,27 +47,27 @@ class Occurrence_Attribute_Value_Model extends ORM {
       $id = $id['occurrence_attribute_id'];
       $oam = ORM::factory('occurrence_attribute', $id);
       switch ($oam->data_type) {
-      case 'T':
-      $vf = 'text_value';
-      break;
-      case 'F':
-      $vf = 'float_value';
-      break;
-      case 'D':
-        $array->add_rules('date_start_value', 'required');
-        $array->add_rules('date_end_value', 'required');
-        $array->add_rules('date_type_value', 'required');
-        $vf = null;
-      break;
-      case 'V':
-      // Vague date - presumably already validated?
-        $array->add_rules('date_start_value', 'required');
-        $array->add_rules('date_end_value', 'required');
-        $array->add_rules('date_type_value', 'required');
-        $vf = null;
-      break;
-      default:
-      $vf = 'int_value';
+	      case 'T':
+	        $vf = 'text_value';
+	        break;
+	      case 'F':
+	        $vf = 'float_value';
+	        break;
+	      case 'D':
+	        $array->add_rules('date_start_value', 'required');
+	        $array->add_rules('date_end_value', 'required');
+	        $array->add_rules('date_type_value', 'required');
+	        $vf = null;
+	        break;
+	      case 'V':
+	        // Vague date - presumably already validated?
+	        $array->add_rules('date_start_value', 'required');
+	        $array->add_rules('date_end_value', 'required');
+	        $array->add_rules('date_type_value', 'required');
+	        $vf = null;
+	        break;
+	      default:
+	        $vf = 'int_value';
       }
       // Require the field with the value in
       if ($vf != null) $array->add_rules($vf, 'required');

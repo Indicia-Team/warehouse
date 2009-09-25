@@ -156,7 +156,7 @@ $survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
 <br />
 <label for="survey_id">Survey</label>
 <select id="survey_id" name="survey_id" disabled="disabled"><option>&lt;Please select the website first&gt;</option></select> 
-<input id="gvFilterButton" type="submit" value="Filter" class="ui-corner-all ui-state-default"/>
+<input type="submit" value="Filter" class="ui-corner-all ui-state-default"/>
 </fieldset>
 </form>
 </div>
@@ -174,7 +174,7 @@ foreach ($actionColumns as $name => $action) {
 ?>
 </tr>
 </thead>
-<tbody id='gvBody'>
+<tbody>
 <?php echo $body ?>
 </tbody>
 </table>

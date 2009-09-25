@@ -142,7 +142,7 @@ class Attr_Gridview_Controller extends Controller {
     $table = $lists->find_all($limit, $offset);
 
     $pagination = new Pagination(array(
-      'style' => 'extended',
+      'style' => 'indicia',
       'items_per_page' => $limit,
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
