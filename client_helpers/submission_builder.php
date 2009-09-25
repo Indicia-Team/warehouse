@@ -19,6 +19,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+require_once('lang.php');
+
 /**
  * Provides a helper to build submissions.
  *
@@ -155,6 +157,10 @@ class submission_builder {
     $oap = array();
     $occAttrs = array();
     foreach ($arr as $key => $value) {
+    	// Null out any blank dates
+    	if ($value==lang::get('click here')) {
+    		$value='';
+    	}
       if (strpos($key, $prefix) !== false) {
         $a = explode(':', $key);
         // Attribute in the form occAttr:36 for attribute with attribute id

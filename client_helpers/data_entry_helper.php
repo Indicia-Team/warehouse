@@ -1,4 +1,4 @@
- <?php
+<?php
 /**
  * Indicia, the OPAL Online Recording Toolkit.
  *
@@ -484,8 +484,8 @@ class data_entry_helper extends helper_config {
             'table'=>'occurrence_attribute',
             'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
         ));        
-        if (! array_key_exists('error', $a))
-        {
+        if (count($a)>0 && !array_key_exists('error', $a))
+        { 
           $b = $a[0];
           $occAttrs[$occAttr] = $b['caption'];
           // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
@@ -1786,8 +1786,8 @@ class data_entry_helper extends helper_config {
     } else {
       throw new Exception('Cannot find website id in POST array!');
     }
-    if (array_key_exists('determiner_id', $arr)){
-      $determiner_id = $arr['determiner_id'];
+    if (array_key_exists('occurrence:determiner_id', $arr)){
+      $determiner_id = $arr['occurrence:determiner_id'];
     }
     $records = array();
     $subModels = array();
@@ -1799,22 +1799,22 @@ class data_entry_helper extends helper_config {
       }
     }
     foreach ($records as $id => $record){
-      if (! array_key_exists('present', $record) || !$record['present']){
-        unset ($records[$id]);
-        break;
+      if ((array_key_exists('present', $record) && $record['present']) ||
+          !(array_key_exists('present', $record) || implode('',array_values($record))=='')) {
+        $record['taxa_taxon_list_id'] = $id;
+	      $record['website_id'] = $website_id;
+	      if (isset($determiner_id)) {
+	        $record['determiner_id'] = $determiner_id;
+	      }
+	      $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
+	      $occ = data_entry_helper::wrap($record, 'occurrence');
+	      $occ['metaFields']['occAttributes']['value'] = $occAttrs;
+	      $subModels[] = array(
+	        'fkId' => 'sample_id',
+	        'model' => $occ
+	      );
       }
-      $record['taxa_taxon_list_id'] = $id;
-      $record['website_id'] = $website_id;
-      $record['determiner_id'] = $determiner_id;
-      $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
-      $occ = data_entry_helper::wrap($record, 'occurrence');
-      $occ['metaFields']['occAttributes']['value'] = $occAttrs;
-      $subModels[] = array(
-        'fkId' => 'sample_id',
-        'model' => $occ
-      );
     }
-
     return $subModels;
   }
 
