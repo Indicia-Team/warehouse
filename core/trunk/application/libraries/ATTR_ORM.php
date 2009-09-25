@@ -101,7 +101,7 @@ abstract class ATTR_ORM extends ORM {
       }
     }
     if ($this->valid_min == true){
-      if (empty($this->valid_min_value)) {
+      if (empty($this->valid_min_value) && $this->valid_min_value!=0) {
         $this->errors['valid_min']='Minimum value must be provided';
         $r=false;
       }

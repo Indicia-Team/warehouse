@@ -30,23 +30,23 @@ var realUrl;
 /**
   * Refreshes everything - a shortcut
  */
-function refresh(overrideUrl) {  
+function refresh(gridId, overrideUrl) {  
   buildQueryString(overrideUrl);  
-  refreshGrid();
-  refreshPager();
+  refreshGrid(gridId);
+  refreshPager(gridId);
 };
 
 /**
 * Refreshes the grid controller from the querystring variable.
  */
-function refreshGrid(){
-  $("#gvBody").load(queryString);
+function refreshGrid(gridId){
+  $("#gridBody-" + gridId).load(queryString);
 };
 
 /**
-  * Refreshes the pager.
+ * Refreshes the pager.
  */
-function refreshPager(){
+function refreshPager(gridId){
   var pagerString = queryString;
   if (pagerString.charAt(pagerString.length) == '?'){
     pagerString = pagerString + 'type=pager';
@@ -81,7 +81,9 @@ function pagerLinks(){
         urlStr += '_gv';
       }
       urlStr += '/';
-      refresh(urlStr);      
+      // find the unique ID for this grid so we refresh the correct one.
+      var gridId = $(this).attr('id').split('-')[1];
+      refresh(gridId, urlStr);      
     }
   );  
 };
@@ -174,15 +176,20 @@ $(document).ready(function(){
         $(this).removeClass('gvCol');
         $(this).addClass('gvColAsc');
       }
+      // TODO
+      alert('Need to obtain the gridID');
       refresh();
     });
   });
 
   // Filtration
-  $('#gvFilter form').submit(function(e){
+  $('.gvFilter form').submit(function(e) {
     e.preventDefault();
+    // find the unique ID for this grid so we refresh the correct one.
+    var gridId = $(this).attr('id').split('-')[1];
+    var url = $(this).attr('action');
     filter.clear();
-    filter.unshift($('select').val(), $('div#gvFilter input:first').val());
-    refresh();
+    filter.unshift($('#filterForm-' + gridId + ' select').val(), $('#filterForm-' + gridId + ' input:first').val());
+    refresh(gridId, url);
   });
 });
