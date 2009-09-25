@@ -50,12 +50,6 @@ class Gridview_Controller extends Controller {
    * for example.
    */
   function display($forceFullTable=false) {
-
-    $gridview = new View('gridview');
-    $gridview_body = new View('gridview_body');
-    // create a unique id for our grid
-    $id = md5(time().rand());
-
     # 2 things we could be up to here - filtering or table sort.
     // Get all the parameters
     $filtercol = $this->input->get('columns',null);
@@ -97,32 +91,36 @@ class Gridview_Controller extends Controller {
     $offset = ($this->page -1) * $limit;
     $table = $lists->find_all($limit, $offset);
     $pagination = new Pagination(array(
-      'style' => 'indicia',      
+      'style' => 'extended',      
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
-      'auto_hide' => true,
-      'id'=>$id
+      'auto_hide' => true
     ));
-
-    $gridview_body->table = $table;
-    $gridview->body = $gridview_body;
-    $gridview->id = $id;
-    $gridview->pagination = $pagination;
-    $gridview->columns = $this->columns;
-    $gridview->actionColumns = $this->actionColumns;
-    $gridview_body->columns = $this->columns;
-    $gridview_body->actionColumns = $this->actionColumns;
-kohana::log('debug','AJAX '.(request::is_ajax() ? 'yes' : 'no'));
-kohana::log('debug','Full table '.($forceFullTable ? 'yes' : 'no'));
-    if(request::is_ajax() && !$forceFullTable) {
-    	$this->auto_render=false;
-      if ($this->input->get('type',null) == 'pager'){
-        return $pagination;
-      } else {        
-        return $gridview_body->render(true);
+    if ($this->input->get('type',null) == 'pager' && request::is_ajax()) {
+      // request for just the pagination below the grid
+      $this->auto_render=false;    
+      echo $pagination; // This DOES need to be echoed        
+    } else {    
+      $gridview_body = new View('gridview_body');    
+      $gridview_body->table = $table;    
+      $gridview_body->columns = $this->columns;
+      $gridview_body->actionColumns = $this->actionColumns;
+      if(request::is_ajax() && !$forceFullTable) {
+        // request for just the grid body
+      	$this->auto_render=false;
+        return $gridview_body->render(true);       
+      } else {
+        $gridview = new View('gridview');
+        // We are outputting the whole grid, pagination and all
+        $gridview->body = $gridview_body;
+        // create a unique id for our grid
+        $id = md5(time().rand());
+        $gridview->id = $id;
+        $gridview->pagination = $pagination;
+        $gridview->columns = $this->columns;
+        $gridview->actionColumns = $this->actionColumns;
+        return $gridview->render();
       }
-    } else {
-      return $gridview->render();
     }
   }
 }

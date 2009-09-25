@@ -28,7 +28,6 @@
   *  $body - gridview_table object.
   */
 ?>
-<script type="text/javascript" src='<?php echo url::base() ?>application/views/gridview.js' ></script>
 <script type="text/javascript">
 <!--
   var hardcoded_values = new Array();

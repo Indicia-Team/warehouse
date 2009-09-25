@@ -22,7 +22,7 @@
  */
 
 ?>
-<div class="termlist">
+<div class="taxa_taxon_lists">
 <?php echo $table ?>
 <br/>
 <form action="<?php echo url::site().'taxa_taxon_list/create/'.$taxon_list_id; ?>" method="post">

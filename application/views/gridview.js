@@ -23,15 +23,14 @@ var filter = new HashArray();
 var sort = new HashArray();
 var page;
 var queryString;
-var baseQueryString;
 var pageUrlSegmentNo;
 var realUrl;
 
 /**
   * Refreshes everything - a shortcut
  */
-function refresh(gridId, overrideUrl) {  
-  buildQueryString(overrideUrl);  
+function refresh(gridId, url) {
+  buildQueryString(url);  
   refreshGrid(gridId);
   refreshPager(gridId);
 };
@@ -53,12 +52,12 @@ function refreshPager(gridId){
   } else {
     pagerString = pagerString + '&type=pager';
   }
+  // Make an AJAX call to get the updated pager text.
   $.ajax({
     url: pagerString,
     cache: false,
-    success: function(a){
-      $('.pager').html(a);
-      pagerLinks();
+    success: function(a){	  
+      $('#pager-'+gridId).html(a);      
     }
   });
 };
@@ -70,29 +69,32 @@ function pagerLinks(){
   $('.pagination a').live('click',
     function(e) {
       e.preventDefault();
-      var url=$.url.setUrl($(this).attr('href')), urlStr;
-      page = url.segment(pageUrlSegmentNo); 
-      // Build a query string from the link that was clicked
-      urlStr=url.attr('protocol') + '://' + url.attr('host');
-      for (var i=0; i<pageUrlSegmentNo; i++) {
-    	  urlStr += '/' + url.segment(i)
-      }
-      if (urlStr.indexOf('_gv')!=urlStr.length-3) {
-        urlStr += '_gv';
-      }
-      urlStr += '/';
       // find the unique ID for this grid so we refresh the correct one.
-      var gridId = $(this).attr('id').split('-')[1];
-      refresh(gridId, urlStr);      
+      var gridId = $(this).parent().parent().attr('id').split('-')[1];      
+      url = buildAjaxUrl($(this).attr('href'));       
+      refresh(gridId, url);      
     }
   );  
 };
 
+function buildAjaxUrl(urlStr) {
+	var url=$.url.setUrl(urlStr), urlStr;
+	page = url.segment(pageUrlSegmentNo); 
+	// Build a query string from the link that was clicked
+	urlStr=url.attr('protocol') + '://' + url.attr('host');
+	for (var i=0; i<pageUrlSegmentNo; i++) {
+	  urlStr += '/' + url.segment(i)
+	}
+	if (urlStr.indexOf('_gv')!=urlStr.length-3) {
+	  urlStr += '_gv';
+	}
+    return urlStr + '/';
+}
 
 /**
   * Builds a new query string from the filter and sort arrays
  */
-function buildQueryString(overrideUrl) {
+function buildQueryString(url) {
   var sortCols = '';
   var sortDirs = '';
   var filterCols = '';
@@ -116,7 +118,7 @@ function buildQueryString(overrideUrl) {
     filterStrings = filterStrings.substring(0,filterStrings.length -1);
   }
 
-  queryString = (overrideUrl || baseQueryString)
+  queryString = url
     + page + '/'
     + realUrl.segment(pageUrlSegmentNo + 1) + '?'
     + ((sortCols != '') ? 'orderby=' + sortCols
@@ -129,25 +131,8 @@ $(document).ready(function(){
 
   // Get the real URL (in case of routing)
   realUrl = $.url.setUrl($('meta[name=routedURI]').attr('content'));
-  baseUri = $('meta[name=baseURI]').attr('content');
   
   pageUrlSegmentNo = 4;
-
-  // Set the base query string
-  baseQueryString = baseUri;
-  var afterIndex = 0;
-  for (var i = 0; i < pageUrlSegmentNo; i++) {
-    if (afterIndex > 0) {
-      if (afterIndex == 2) {
-        baseQueryString += realUrl.segment(i) + '_gv/';
-      } else {
-        baseQueryString += realUrl.segment(i) + '/';
-      }
-      afterIndex++;
-    }
-    if (realUrl.segment(i)=='index.php')
-      afterIndex=1;
-  }
 
   //Set initial page
   page = realUrl.segment(pageUrlSegmentNo);  
@@ -156,38 +141,37 @@ $(document).ready(function(){
   pagerLinks();
 
   // Sorting
-  $('#pageGrid thead th.gvSortable').each(function(i){
-    $(this).click(function(e){
-      e.preventDefault();
-      var h = $(this).attr('id').toLowerCase();
-      var a = sort.get(h);
-      if (a != undefined) {
-        if (a == 'asc') {
-          sort.unshift(h,'desc');
-          $(this).removeClass('gvColAsc');
-          $(this).addClass('gvColDesc');
-        } else {
-          sort.remove(h);
-          $(this).removeClass('gvColDesc');
-          $(this).addClass('gvCol');
-        }
-      } else {
-        sort.unshift(h, 'asc');
-        $(this).removeClass('gvCol');
-        $(this).addClass('gvColAsc');
-      }
-      // TODO
-      alert('Need to obtain the gridID');
-      refresh();
-    });
-  });
+  $('thead th.gvSortable').live('click', function(e) {
+	e.preventDefault();
+	var h = $(this).attr('id').toLowerCase();
+	var a = sort.get(h);
+	if (a != undefined) {
+	  if (a == 'asc') {
+	    sort.unshift(h,'desc');
+	    $(this).removeClass('gvColAsc');
+	    $(this).addClass('gvColDesc');
+	  } else {
+	    sort.remove(h);
+	    $(this).removeClass('gvColDesc');
+	    $(this).addClass('gvCol');
+	  }
+	} else {
+	  sort.unshift(h, 'asc');
+	  $(this).removeClass('gvCol');
+	  $(this).addClass('gvColAsc');
+	}
+	var gridId = $(this).parent().parent().parent().attr('id').split('-')[1];
+	// Because the column header is not a link, we don't know the URL to go to. So we use the filterForm's action to get the URL.
+	url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
+	refresh(gridId, url);
+  });  
 
   // Filtration
-  $('.gvFilter form').submit(function(e) {
+  $('.gvFilter form').live('submit', function(e) {
     e.preventDefault();
     // find the unique ID for this grid so we refresh the correct one.
     var gridId = $(this).attr('id').split('-')[1];
-    var url = $(this).attr('action');
+    url = buildAjaxUrl($(this).attr('action'));    
     filter.clear();
     filter.unshift($('#filterForm-' + gridId + ' select').val(), $('#filterForm-' + gridId + ' input:first').val());
     refresh(gridId, url);
