@@ -21,10 +21,7 @@
 
 var filter = new HashArray();
 var sort = new HashArray();
-var page;
 var queryString;
-var pageUrlSegmentNo;
-var realUrl;
 
 /**
   * Refreshes everything - a shortcut
@@ -78,17 +75,18 @@ function pagerLinks(){
 };
 
 function buildAjaxUrl(urlStr) {
-	var url=$.url.setUrl(urlStr), urlStr;
-	page = url.segment(pageUrlSegmentNo); 
-	// Build a query string from the link that was clicked
-	urlStr=url.attr('protocol') + '://' + url.attr('host');
-	for (var i=0; i<pageUrlSegmentNo; i++) {
-	  urlStr += '/' + url.segment(i)
-	}
-	if (urlStr.indexOf('_gv')!=urlStr.length-3) {
-	  urlStr += '_gv';
-	}
-    return urlStr + '/';
+  var url=$.url.setUrl(urlStr), urlStr;   
+  // Build a query string from the link that was clicked
+  urlStr=url.attr('protocol') + '://' + url.attr('host');
+  var i=0;
+  while (url.segment(i)!=null) {
+    urlStr += '/' + url.segment(i);
+    if (url.segment(i)=='page') {
+    	urlStr += '_gv'
+    }
+    i++;	  
+  }    
+  return urlStr;
 }
 
 /**
@@ -118,9 +116,7 @@ function buildQueryString(url) {
     filterStrings = filterStrings.substring(0,filterStrings.length -1);
   }
 
-  queryString = url
-    + page + '/'
-    + realUrl.segment(pageUrlSegmentNo + 1) + '?'
+  queryString = url + '?'
     + ((sortCols != '') ? 'orderby=' + sortCols
       + '&direction=' + sortDirs + '&': '')
     + ((filterCols != '') ?	'columns=' + filterCols
@@ -128,14 +124,6 @@ function buildQueryString(url) {
 };
 
 $(document).ready(function(){
-
-  // Get the real URL (in case of routing)
-  realUrl = $.url.setUrl($('meta[name=routedURI]').attr('content'));
-  
-  pageUrlSegmentNo = 4;
-
-  //Set initial page
-  page = realUrl.segment(pageUrlSegmentNo);  
 
   // Paging
   pagerLinks();
