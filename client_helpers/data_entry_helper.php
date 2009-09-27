@@ -1011,7 +1011,7 @@ class data_entry_helper extends helper_config {
       $options['options'] = '';
       self::init_linked_lists($options);
     } else {
-      $response = self::get_population_data($options);
+      $response = self::get_population_data($options);      
       if (!array_key_exists('error', $response)) {
         $opts = "";
         if (array_key_exists('blankText', $options)) {
