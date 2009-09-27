@@ -142,6 +142,7 @@ class Attr_Gridview_Controller extends Controller {
     $table = $lists->find_all($limit, $offset);
 
     $pagination = new Pagination(array(
+      'style' => 'extended',
       'items_per_page' => $limit,
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
@@ -149,6 +150,9 @@ class Attr_Gridview_Controller extends Controller {
     ));
 
     $gridview_body->table = $table;
+    // create a unique id for our grid
+    $id = md5(time().rand());
+    $gridview->id = $id;
     $gridview->body = $gridview_body;
     $gridview->pagination = $pagination;
     $gridview->columns = $this->columns;
