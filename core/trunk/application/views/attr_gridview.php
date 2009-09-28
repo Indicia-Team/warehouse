@@ -160,7 +160,7 @@ $survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
 </form>
 </div>
 <?php echo $filter_summary ?>
-<table id="pageGrid" class="ui-widget ui-widget-content">
+<table id="pageGrid-<?php echo $id; ?>" class="ui-widget ui-widget-content">
 <thead class="ui-widget-header">
 <tr class="headingRow">
 <?php
@@ -173,11 +173,11 @@ foreach ($actionColumns as $name => $action) {
 ?>
 </tr>
 </thead>
-<tbody>
+<tbody id="gridBody-<?php echo $id; ?>">
 <?php echo $body ?>
 </tbody>
 </table>
-<div class='pager'>
+<div id="pager-<?php echo $id; ?>">
 <?php echo $pagination ?>
 </div>
 <br/>
