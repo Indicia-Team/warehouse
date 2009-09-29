@@ -20,7 +20,7 @@
  */
 
 require_once('lang.php');
-
+ 
 /**
  * Provides a helper to build submissions.
  *
