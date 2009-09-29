@@ -66,9 +66,9 @@ $indicia_templates = array(
 		'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
 		'<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
 		lang::get('loading').'...</div>\');'.
-    'document.write(\'<div class="loading-hide ui-helper-hidden">\');'.
+    'document.write(\'<div class="loading-hide" style="left:-999em; position: relative;">\');'.
     '</script>',
-  'loading_block_end' => '</div>',
+  'loading_block_end' => '<script type="text/javascript">document.write(\'</div>\');</script>',
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
     		'<span class="nobreak vernacular">{common}</span></div>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
@@ -1011,7 +1011,7 @@ class data_entry_helper extends helper_config {
       $options['options'] = '';
       self::init_linked_lists($options);
     } else {
-      $response = self::get_population_data($options);      
+      $response = self::get_population_data($options);
       if (!array_key_exists('error', $response)) {
         $opts = "";
         if (array_key_exists('blankText', $options)) {
@@ -1698,7 +1698,13 @@ class data_entry_helper extends helper_config {
       // find any errors on the tabs.
       $indicia_late_javascript .= "var errors=$(\"#".$options['divId']." .ui-state-error\");\n";
       // select the tab containing the first error, if validation errors are present
-      $indicia_late_javascript .= "if (errors.length>0) {\n  tabs.tabs('select',$(errors[0]).parent()[0].id);\n}\n";
+      $indicia_late_javascript .= "if (errors.length>0) {\n".
+          "  tabs.tabs('select',$(errors[0]).parents('.ui-tabs-panel')[0].id);\n".
+          "  var tab;\n".
+          "  for (var i=0; i<errors.length; i++) {\n".
+          "    panel = $(errors[0]).parents('.ui-tabs-panel')[0];\n".
+          "    $('#'+panel.id+'-tab').addClass('ui-state-error');\n".
+          "}}\n";
     }
     self::add_resource('jquery_ui');
   }
@@ -1708,7 +1714,8 @@ class data_entry_helper extends helper_config {
     // Convert the tabs array to a string of <li> elements
     $tabs = "";
     foreach($options['tabs'] as $link => $caption) {
-      $tabs .= "<li><a href=\"$link\"><span>$caption</span></a></li>";
+      $tabId=substr("$link-tab",1);
+      $tabs .= "<li id=\"$tabId\"><a href=\"$link\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);  
@@ -1718,6 +1725,8 @@ class data_entry_helper extends helper_config {
    * Allows the demarcation of the start of a region of the page HTML to be declared which will be replaced by 
    * a loading message whilst the page is loading. If JavaScript is disabled then this has no
    * effect.
+   * Note that hiding the block is achieved by setting it's left to move it off the page, rather than display: none.
+   * This is because OpenLayers won't initialise properly on a div that is display none.
    * 
    * @return string HTML and JavaScript to insert into the page at the start of the block
    * which is replaced by a loading panel while the page is loading.
@@ -1740,8 +1749,12 @@ class data_entry_helper extends helper_config {
    */
   public static function loading_block_end() {
     global $indicia_javascript, $indicia_templates;
-    $indicia_javascript .= "$('.loading-panel').remove();\n";    
-    $indicia_javascript .= "$('.loading-hide').fadeIn('slow');\n";    
+    // First hide the message, then hide the form, slide it into view, then show it.
+    $indicia_javascript .= "$('.loading-panel').remove();\n".
+        "$('.loading-hide').hide();\n".    
+        "$('.loading-hide').css('left',0);\n".
+        "$('.loading-hide').css('position','');\n".
+        "$('.loading-hide').fadeIn('slow');\n";    
     return $indicia_templates['loading_block_end'];
   }
 
@@ -2102,7 +2115,7 @@ $indicia_late_javascript
 
     return array (
       'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.js")),
-      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js", "$base/media/js/Proj4js.js")),
+      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js", "$base/media/js/Proj4js.js")),          
       'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/client_helpers/addRowToGrid.js")),
       'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.js")),
       'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMapPanel.js")),
@@ -2243,7 +2256,7 @@ $indicia_late_javascript
       }
       // Test we have full access to the server - it doesn't matter what website id we pass here.'
       $postargs = "website_id=0";
-      $curl_check = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs, false);
+      $curl_check = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs, false);
       if ($curl_check['result']) {
         if ($fullInfo) {
           $r .= '<li>Success: Indicia Warehouse URL responded to a POST request.</li>';
