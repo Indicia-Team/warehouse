@@ -29,17 +29,8 @@ abstract class ORM extends ORM_Core {
    */
   protected $search_field='title';
 
-  protected $errors = array();
-  protected $linkedModels = array();
-  protected $missingAttrs = array();
+  protected $errors = array();  
   protected $identifiers = array('website_id'=>null,'survey_id'=>null);
-  
-  /**
-   * This field allows the errors from this model to be reported against a predefined key,
-   * not always table:fieldname. This is handy when reporting errors for custom attribute values,
-   * when the key needs to be the custom attribute type and id, not the table and fieldname.
-   */
-  protected $forceErrorKey = '';
   
   /**
    * unvalidatedFields allows a list of fields which are not validated in anyway to be declared
@@ -112,39 +103,7 @@ abstract class ORM extends ORM_Core {
         if (array_key_exists($field, $this->errors)) {
           $r=$this->errors[$field];
         }
-      } else {
-        // The error is from a linked model. Because the field prefix might not match the model name, the 
-        // first job is to lookup the prefix if there is one specified.
-        $assocModels = array();
-        // First examine any submodels for a matching prefix.
-        if (array_key_exists('subModels', $struct)) {
-          foreach ($struct['subModels'] as $key=>$def) {
-            if (array_key_exists('fieldPrefix', $def) && $def['fieldPrefix']==$model) {              
-              $linkedModel=$key;
-              break;
-            }
-          }
-        }
-        // Then examine any supermodels for a matching prefix.
-        if (!isset($linkedModel)) {
-          if (array_key_exists('superModels', $struct)) {        
-            foreach ($struct['superModels'] as $key=>$def) {
-              if (array_key_exists('fieldPrefix', $def) && $def['fieldPrefix']==$model) {              
-                $linkedModel=$key;
-                break;
-              }
-            }
-          }
-        }
-        if (!isset($linkedModel)) {
-          // We didn't find a specified prefix that matches, so just use the model name.
-          $linkedModel=$model;
-        }   
-        // Now look in the appropriate linked model to see if it can report on this error field.
-        if (array_key_exists($linkedModel, $this->linkedModels)) {
-          $r = $this->linkedModels[$linkedModel]->getError($field);
-        }
-      }      
+      } 
     }
     return $r;
   }
@@ -154,24 +113,16 @@ abstract class ORM extends ORM_Core {
    * The array entries are of the form 'entity:field => value'.
    */
   public function getAllErrors()
-  {
-    $r = array();
+  {     
     // Get this model's errors, ensuring array keys have prefixes identifying the entity
     foreach ($this->errors as $key => $value) {
-      if ($this->forceErrorKey) {
-        $key = $this->forceErrorKey;
-      } else {
-        $key=$this->object_name.':'.$key;
-      }
-      $r[$key]=$value;
+      if (strpos($key, ':')===false) {
+        $this->errors[$this->object_name.':'.$key]=$value;
+        unset($this->errors[$key]);
+      }      
     }
-    // Now the custom attribute errors
-    $r = array_merge($r, $this->missingAttrs);
-    // Plus the errors for any linked records
-    foreach ($this->linkedModels as $key => $m) {
-      $r = array_merge($m->getAllErrors(), $r);
-    }
-    return $r;
+    kohana::log('debug', 'getting errors '.kohana::debug($this->errors));
+    return $this->errors;
   }
 
   /**
@@ -181,11 +132,6 @@ abstract class ORM extends ORM_Core {
     $r = array();
     if (array_key_exists('general', $this->errors)) {
       array_push($r, $this->errors['general']);
-    }
-    foreach ($this->linkedModels as $key => $m) {      
-      if (array_key_exists('general', $m->errors)) {
-        array_push($r, $m->errors['general']);      
-      }
     }
     return $r;
   }
@@ -363,14 +309,14 @@ abstract class ORM extends ORM_Core {
     if ($return) {
     	$this->preSubmit();
     	$this->removeUnwantedFields();
-	    $return = $this->validateAndSubmit();	    
-	    $return = $this->checkRequiredAttributes() ? $return : null;	    
+	    $return = $this->validateAndSubmit();	       
+	    $return = $this->checkRequiredAttributes() ? $return : null;    
 	    if ($this->id) {
 	      // Make sure we got a record to save against before attempting to post children
 	      $return = $this->createChildRecords() ? $return : null;
 	      $return = $this->createJoinRecords() ? $return : null;
 	      $return = $this->createAttributes() ? $return : null;	
-	    }	    
+	    }	        
 	    // Call postSubmit
 	    if ($return) {
 	      $ps = $this->postSubmit();
@@ -511,7 +457,10 @@ abstract class ORM extends ORM_Core {
           Kohana::log("debug", "Setting field ".$a['fkId']." to ".$result);
           $this->submission['fields'][$a['fkId']]['value'] = $result;
         } else {
-          $this->linkedModels[$m->object_name]=$m;          
+          $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
+          foreach($m->errors as $key=>$value) {
+            $this->errors[$fieldPrefix.$m->object_name.':'.$key]=$value;            
+          }                    
           return false;
         }
       }
@@ -544,8 +493,11 @@ abstract class ORM extends ORM_Core {
         $result = $m->inner_submit();
 
         if (!$result) {
+          $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
           // Remember this model so that its errors can be reported      
-          $this->linkedModels[$m->object_name]=$m;        
+          foreach($m->errors as $key=>$value) {            
+            $this->errors[$fieldPrefix.$m->object_name.':'.$key]=$value;            
+          }        
           return false;
         }
       }
@@ -591,8 +543,6 @@ abstract class ORM extends ORM_Core {
    * ensures that each of them has a submodel in the submission.
    */
   private function checkRequiredAttributes() {
-    $this->missingAttrs = array();
-
     // Test if this model has an attributes sub-table.
     if (isset($this->has_attributes) && $this->has_attributes) {
       $db = new Database();
@@ -610,16 +560,17 @@ abstract class ORM extends ORM_Core {
       // Attributes are stored in a metafield. Find the ones we actually have a value for
       if (array_key_exists('metaFields', $this->submission) &&
           array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
-      {
+      {        
         foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr) {
-          if ($attr['fields']['value']['value']) {
-            array_push($got_values, $attr['fields'][$this->object_name.'_attribute_id']['value']);
+          if ($attr['fields']['value']) {
+            array_push($got_values, $attr['fields'][$this->object_name.'_attribute_id']);
           }
         }
       }
+      $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
-          $this->missingAttrs[$this->attrs_field_prefix.':'.$row->id]='Please specify a value for the '.$row->caption;
+          $this->errors[$fieldPrefix.$this->attrs_field_prefix.':'.$row->id]='Please specify a value for the '.$row->caption;          
           return false;
         }
       }
@@ -698,9 +649,12 @@ abstract class ORM extends ORM_Core {
       {
         foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr)
         {
-          $value = $attr['fields']['value'];
+          $value = $attr['fields'];
           if ($value['value'] != '') {
-            $attrId = $attr['fields'][$this->object_name.'_attribute_id']['value'];
+            $attrId = $attr['fields'][$this->object_name.'_attribute_id'];
+            if ($attrId=="smpAttr") {
+              kohana::log('debug',kohana::debug($attr));
+            }
             $oa = ORM::factory($this->object_name.'_attribute', $attrId);
             $vf = null;
             switch ($oa->data_type) {
@@ -712,7 +666,7 @@ abstract class ORM extends ORM_Core {
                 break;
               case 'D':
                 // Date
-                $vd=vague_date::string_to_vague_date($value['value']);
+                $vd=vague_date::string_to_vague_date($value['value']);                
                 $attr['fields']['date_start_value']['value'] = $vd['start'];
                 $attr['fields']['date_end_value']['value'] = $vd['end'];
                 $attr['fields']['date_type_value']['value'] = $vd['type'];
@@ -737,10 +691,12 @@ abstract class ORM extends ORM_Core {
             $oam = ORM::factory($this->object_name.'_attribute_value');
             $oam->submission = $attr;
             if (!$oam->inner_submit()) {
+              $fieldPrefix = (array_key_exists('field_prefix',$this->submission['model'])) ? $this->submission['model']['field_prefix'].':' : '';              
               // For attribute value errors, we need to report e.g smpAttr:6 as the error key name, not
-              // the table and field name as normal.
-              $oam->forceErrorKey = $this->attrs_field_prefix.':'.$attrId;
-              $this->linkedModels[$oam->object_name]=$oam;
+              // the table and field name as normal.              
+              foreach($oam->errors as $key->$value) {
+                $this->errors[$fieldPrefix.$this->attrs_field_prefix.':'.$attrId]=$value.'';
+              }                    
               return false;
             }
           }
@@ -776,14 +732,6 @@ abstract class ORM extends ORM_Core {
     } else {
       return '';
     }
-  }
-
-  /**
-   * Override the clear method to force cleanup of linked models.
-   */
-  public function clear() {
-    $this->linkedModels=array();
-    parent::clear();
   }
 
   /**

@@ -50,19 +50,20 @@ class Attr_Gridview_Controller extends Controller {
     return $gridview;
   }
 
-  function display() {
-    /**
-     * Renders the grid with whatever parameters are supplied
-     */
-    $gridview = new View('attr_gridview');
-    $gridview_body = new View('gridview_body');
-
+  /**
+   * Renders the grid with whatever parameters are supplied.
+   *
+   * @param boolean $forceFullTable Set to true to force the entire grid to be output,
+   * even if in an AJAX request. This allows an AJAX request to embed the grid into a tab,
+   * for example.
+   */
+  function display($forceFullTable=false) {
     # 2 things we could be up to here - filtering or table sort.
+    $gridview = new View('attr_gridview');
     // Get all the parameters
     $filter_type = $this->input->get('filter_type',null);
     $filter_website = $this->input->get('website_id',null);
-    $filter_survey = $this->input->get('survey_id',null);
-
+    $filter_survey = $this->input->get('survey_id',null);    
     // because of the pants way that database connections are handled (ie one at a time)
     // it is impossible to create a new specific ID model whilst building a where clause on another table.
     // Do it here, now, rather than in the case statement.
@@ -135,44 +136,47 @@ class Attr_Gridview_Controller extends Controller {
                       'public' => 't'));
         $gridview->filter_summary = "Filter: Public Attributes.";
         break;
-    }
-
+    }    
     $limit = kohana::config('pagination.default.items_per_page');
     $offset = ($this->page -1) * $limit;
     $table = $lists->find_all($limit, $offset);
-
     $pagination = new Pagination(array(
       'style' => 'extended',
       'items_per_page' => $limit,
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
       'auto_hide' => true
-    ));
-
-    $gridview_body->table = $table;
-    // create a unique id for our grid
-    $id = md5(time().rand());
-    $gridview->id = $id;
-    $gridview->body = $gridview_body;
-    $gridview->pagination = $pagination;
-    $gridview->columns = $this->columns;
-    $gridview->actionColumns = $this->actionColumns;
-    $gridview->createpath = $this->createpath;
-    $gridview->createbuttonname = $this->createbutton;
-    $gridview_body->columns = $this->columns;
-    $gridview_body->actionColumns = $this->actionColumns;
-    $gridview->filter_summary = '<br /><p>'.$gridview->filter_summary.'</p>';
-
-    if(request::is_ajax()){
-      if ($this->input->get('type',null) == 'pager'){
-        echo $pagination;
-      } else {
-        $this->auto_render=false;
-        $gridview_body->render(true);
-      }
-
+    ));    
+    
+    if ($this->input->get('type',null) == 'pager' && request::is_ajax()) {
+      // request for just the pagination below the grid
+      $this->auto_render=false;    
+      echo $pagination; // This DOES need to be echoed        
     } else {
-      return $gridview->render();
+      // Request for the grid. This could be an AJAX request for just the table body, or a 
+      // normal request for the entire grid inc pagination.    
+      $gridview_body = new View('gridview_body');
+      $gridview_body->table = $table;
+      $gridview_body->columns = $this->columns;
+      $gridview_body->actionColumns = $this->actionColumns;
+      if(request::is_ajax() && !$forceFullTable) {
+        // request for just the grid body
+        $this->auto_render=false;
+        return $gridview_body->render(true);       
+      } else {
+        // We are outputting the whole grid, pagination and all        
+        $gridview->body = $gridview_body;
+        // create a unique id for our grid
+        $id = md5(time().rand());
+        $gridview->id = $id;
+        $gridview->pagination = $pagination;
+        $gridview->columns = $this->columns;
+        $gridview->actionColumns = $this->actionColumns;
+        $gridview->createpath = $this->createpath;
+        $gridview->createbuttonname = $this->createbutton;
+        $gridview->filter_summary = '<br /><p>'.$gridview->filter_summary.'</p>';
+        return $gridview->render();        
+      }
     }
   }
 }

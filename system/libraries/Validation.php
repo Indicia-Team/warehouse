@@ -114,7 +114,7 @@ class Validation_Core extends ArrayObject {
 			$this->rules,
 			$this->callbacks,
 			$this->post_filters
-		));
+		)); 		
 
 		// Remove wildcard fields
 		$fields = array_diff($fields, array('*'));

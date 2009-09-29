@@ -20,6 +20,7 @@
 * and can be used in a chainable way. Likewise, another plugin will provide support for finding places.
 */
 
+
 (function($) {
   $.fn.indiciaMapPanel = function(options, olOptions) {
     // Extend our default options with those provided, basing this on an empty object
@@ -43,8 +44,8 @@
       var div = this;
 
       // Constructs the map
-      div.map = new OpenLayers.Map($(this)[0], olOpts);      
-
+      div.map = new OpenLayers.Map($(this)[0], olOpts);
+      
       // Iterate over the preset layers, adding them to the map
       $.each(this.settings.presetLayers, function(i, item)
       {
@@ -53,9 +54,12 @@
         {
           var layer = $.fn.indiciaMapPanel.presetLayers[item]();
           div.map.addLayers([layer]);
+          if (item=='multimap_landranger') {
+        	  // Landranger is not just a simple layer - need to set a Multimap option
+        	  _enableMMLandranger();
+          }
         }
       });
-
       
       // Convert indicia WMS/WFS layers into js objects
       $.each(this.settings.indiciaWMSLayers, function(key, value)
@@ -67,12 +71,11 @@
         div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
       });
 
-      div.map.addLayers(this.settings.layers);
+      div.map.addLayers(this.settings.layers); 
       
-      // Centre the map
-      var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
-      proj=new OpenLayers.Projection("EPSG:4326");
-      center.transform(proj, div.map.getProjectionObject());
+      // Centre the map      
+      var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);      
+      center.transform(div.map.displayProjection, div.map.projection);      
       div.map.setCenter(center, this.settings.initial_zoom);
 
       if (this.settings.editLayer) {
@@ -112,8 +115,26 @@
           }
         });
       }      
-      _bindControls(this);
+      _bindControls(this);   
     });
+    
+    /**
+     * Enable a multimap landranger preference.
+     */
+    function _enableMMLandranger() {
+	  var landrangerData = 904;
+	  var prefs = MMDataResolver.getDataPreferences(MM_WORLD_MAP);
+	
+	  // Remove the landranger data where it is present
+	  for (i=0; i<prefs.length; i++) {
+	    if (landrangerData == prefs[i]) prefs.splice(i, 1);
+	  }
+	
+	  // Add to beginning of array (highest priority)
+	  prefs.unshift(landrangerData);
+ 
+      MMDataResolver.setDataPreferences( MM_WORLD_MAP, prefs );
+    }
 
     /**
      * Add a well known text definition of a feature to the map.
@@ -384,5 +405,5 @@ $.fn.indiciaMapPanel.presetLayers = {
     nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true}); },
     virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
     multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
-    multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true, dataSource: 904}); }
+    multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
 };

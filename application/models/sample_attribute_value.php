@@ -53,18 +53,16 @@ class Sample_Attribute_Value_Model extends ORM {
       case 'F':
         $vf = 'float_value';
         break;
-      case 'D':
-        $array->add_rules('date_start_value', 'required');
+      case 'D':        
         $array->add_rules('date_end_value', 'required');
         $array->add_rules('date_type_value', 'required');
-        $vf = null;
+        $vf = 'date_start_value';
       break;
       case 'V':
-      // Vague date - presumably already validated?
-        $array->add_rules('date_start_value', 'required');
+        // Vague date - presumably already validated?
         $array->add_rules('date_end_value', 'required');
         $array->add_rules('date_type_value', 'required');
-        $vf = null;
+        $vf = 'date_start_value';
       break;
       default:
         $vf = 'int_value';

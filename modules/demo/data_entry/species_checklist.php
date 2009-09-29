@@ -14,7 +14,7 @@ include '../data_entry_config.php';
 $javascript = '';
 // Catch and submit POST data.
 if ($_POST){
-  $submission = build_sample_occurrences_list_submission($_POST);
+  $submission = data_entry_helper::build_sample_occurrences_list_submission($_POST);
   $response = data_entry_helper::forward_post_to('save', $submission);
   echo data_entry_helper::dump_errors($response);
 }
@@ -35,6 +35,9 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
     'fieldname'=>'sample:date'
 ));
 echo data_entry_helper::map();
+?>
+<div class="smaller">
+<?php 
 echo data_entry_helper::species_checklist(array(
     'listId'=>$config['species_checklist_taxon_list'],
     'occAttrs'=>$config['species_checklist_occ_attributes'],
@@ -42,7 +45,7 @@ echo data_entry_helper::species_checklist(array(
     'columns'=>2
 ));
 ?>
-
+</div>
 
 <br />
 <input type='submit' value='Save' />
