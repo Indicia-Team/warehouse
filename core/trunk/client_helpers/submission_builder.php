@@ -124,23 +124,26 @@ class submission_builder {
    */
   public static function wrap($array, $entity)
   {
+    if (!$prefix) {
+      $prefix=$entity;
+    }
     // Initialise the wrapped array
     $sa = array(
         'id' => $entity,
         'fields' => array()
     );
-
+    
     // Iterate through the array
-    foreach ($array as $a => $b)
+    foreach ($array as $key => $value)
     {
       // Don't wrap the authentication tokens, or any attributes tagged as belonging to another entity
-      if ($a!='auth_token' && $a!='nonce' && (!strpos($a, ':') || strpos($a, "$entity:")!==false))
-      {
+      if ($key!='auth_token' && $key!='nonce' && strpos($key, ':') && strpos($key, "$prefix:")===0)
+      {        
         // strip the entity name tag if present, as should not be in the submission attribute names
-        $a = str_replace("$entity:", '', $a);
+        $key = str_replace("$prefix:", '', $key);
         // This should be a field in the model.
         // Add a new field to the save array
-        $sa['fields'][$a] = array('value' => $b);
+        $sa['fields'][$key] = array('value' => $value);
       }
     }
     return $sa;
@@ -155,13 +158,13 @@ class submission_builder {
   public static function wrap_attributes($arr, $entity) {
     $prefix=self::get_attr_entity_prefix($entity).'Attr';
     $oap = array();
-    $occAttrs = array();
+    $occAttrs = array();    
     foreach ($arr as $key => $value) {
     	// Null out any blank dates
     	if ($value==lang::get('click here')) {
     		$value='';
     	}
-      if (strpos($key, $prefix) !== false) {
+      if (strpos($key, $prefix) !== false) {        
         $a = explode(':', $key);
         // Attribute in the form occAttr:36 for attribute with attribute id
         // of 36.
@@ -171,7 +174,10 @@ class submission_builder {
       }
     }
     foreach ($oap as $oa) {
-      $occAttrs[] = self::wrap($oa, $entity."_attribute");
+      $occAttrs[] = array(
+        'id' => $entity,
+        'fields' => $oa
+      );    
     }
     return $occAttrs;
   }
