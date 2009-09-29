@@ -121,26 +121,28 @@ class submission_builder {
    *
    * @param array $array Array of data generated from data entry controls.
    * @param string $entity Name of the entity to wrap data for.
+   * @param string $field_prefix Name of the prefix each field on the form has. Used to construct an error
+   * message array that can be linked back to the source fields easily.
    */
-  public static function wrap($array, $entity)
+  public static function wrap($array, $entity, $field_prefix=null)
   {
-    if (!$prefix) {
-      $prefix=$entity;
-    }
     // Initialise the wrapped array
     $sa = array(
         'id' => $entity,
         'fields' => array()
     );
+    if ($field_prefix) {
+      $sa['field_prefix']=$field_prefix;
+    }
     
     // Iterate through the array
     foreach ($array as $key => $value)
     {
       // Don't wrap the authentication tokens, or any attributes tagged as belonging to another entity
-      if ($key!='auth_token' && $key!='nonce' && strpos($key, ':') && strpos($key, "$prefix:")===0)
+      if ($key!='auth_token' && $key!='nonce' && (strpos($key, "$entity:")===0 || !strpos($key, ':')))
       {        
         // strip the entity name tag if present, as should not be in the submission attribute names
-        $key = str_replace("$prefix:", '', $key);
+        $key = str_replace("$entity:", '', $key);
         // This should be a field in the model.
         // Add a new field to the save array
         $sa['fields'][$key] = array('value' => $value);
@@ -191,9 +193,9 @@ class submission_builder {
    * then custom attributes will also be wrapped. Furthermore, any attribute called $modelName:image can
    * contain an image upload (as long as a suitable entity is available to store the image in).
    */
-  public static function wrap_with_attrs($values, $modelName) {
+  public static function wrap_with_attrs($values, $modelName, $field_prefix=null) {
     // Get the parent model into JSON
-    $modelWrapped = self::wrap($values, $modelName);
+    $modelWrapped = self::wrap($values, $modelName, $field_prefix);
     // Might it have custom attributes?
     if (strcasecmp($modelName, 'occurrence')==0 ||
         strcasecmp($modelName, 'sample')==0 ||
