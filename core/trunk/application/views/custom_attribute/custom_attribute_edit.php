@@ -123,7 +123,7 @@ $(document).ready(function() {
 		if (!is_null($this->auth_filter))
 		$termlists = ORM::factory('termlist')->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
 		else
-		$termlists = ORM::factory('termlist')->orderby('title','asc')->find_all();
+		$termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();
 		foreach ($termlists as $termlist) {
 		  echo '	<option value="'.$termlist->id.'" ';
 		  if ($termlist->id==html::initial_value($values, 'custom_attribute:termlist_id'))

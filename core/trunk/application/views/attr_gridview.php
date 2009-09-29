@@ -57,13 +57,13 @@ function filter_selection_changed(filtercombo)
   // 2. make sure survey_id combo is empty:
   if ( filtercombo_value == 1 )
   {
-    document.forms["Filter"].elements["website_id"].disabled="";
-    document.forms["Filter"].elements["survey_id"].disabled="";
+    document.forms["filterForm-<?php echo $id; ?>"].elements["website_id"].disabled="";
+    document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].disabled="";
   }
   else
   {
-    document.forms["Filter"].elements["website_id"].disabled="disabled";
-    document.forms["Filter"].elements["survey_id"].disabled="disabled";
+    document.forms["filterForm-<?php echo $id; ?>"].elements["website_id"].disabled="disabled";
+    document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].disabled="disabled";
   }
 }
 
@@ -73,14 +73,14 @@ function website_selection_changed(websitecombo)
   var websitecombo_value = websitecombo.value;
 
   // 2. make sure survey_id combo is empty:
-  document.forms["Filter"].elements["survey_id"].options.length=0;
+  document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].options.length=0;
   if (websitecombo_value!=-1) {
-    document.forms["Filter"].elements["survey_id"].disabled="";
+    document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].disabled="";
   
     var opt = document.createElement("option");
     opt.setAttribute('value', -1);
     opt.innerHTML = "Non Survey Specific Attributes";
-    document.forms["Filter"].elements["survey_id"].appendChild(opt);
+    document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].appendChild(opt);
   
     // 3. loop throught the hard-coded values:
     for (var i=0;i<hardcoded_values[websitecombo_value].length;i++)
@@ -92,14 +92,14 @@ function website_selection_changed(websitecombo)
       // set the displayed value:
       opt.innerHTML = hardcoded_values[websitecombo_value][i][1];
       // append this option to survey_id:
-      document.forms["Filter"].elements["survey_id"].appendChild(opt);
+      document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].appendChild(opt);
     }
   } else {
-	  document.forms["Filter"].elements["survey_id"].disabled="disabled";
+	  document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].disabled="disabled";
 	  var opt = document.createElement("option");
     opt.setAttribute('value', -1);
     opt.innerHTML = "&lt;Please select the website first&gt;";
-    document.forms["Filter"].elements["survey_id"].appendChild(opt);
+    document.forms["filterForm-<?php echo $id; ?>"].elements["survey_id"].appendChild(opt);
   }
 }
 
@@ -115,7 +115,7 @@ jQuery(document).ready(function() {
 
 
 <div>
-<form id='Filter' action='' method='get'>
+<form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
 <fieldset>
 <?php 
 $filter_type = array_key_exists('filter_type', $_GET) ? $_GET['filter_type'] : null;
@@ -135,9 +135,9 @@ $survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
 </select><br />
 <?php
   if (!is_null($this->auth_filter))
-    $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
+    $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where('deleted','f')->orderby('title','asc')->find_all();
   else
-    $websites = ORM::factory('website')->orderby('title','asc')->find_all();
+    $websites = ORM::factory('website')->where('deleted','f')->orderby('title','asc')->find_all();
 
   echo "<label for=\"website_id\">Website</label>\r\n";
   echo '<select id="website_id" name="website_id" ';

@@ -20,6 +20,7 @@
  */
 
 require_once('lang.php');
+require_once('helper_config.php');
  
 /**
  * Provides a helper to build submissions.
@@ -27,7 +28,7 @@ require_once('lang.php');
  * @package	Client
  */
 
-class submission_builder {
+class submission_builder extends helper_config {
   
   /**
    * Helper function to simplify building of a submission. Does simple submissions that do not involve

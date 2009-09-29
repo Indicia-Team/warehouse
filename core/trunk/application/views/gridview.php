@@ -28,6 +28,7 @@
   *  $body - gridview_table object.
   */
 ?>
+<script src="<?php echo url::base(); ?>application/views/gridview.js" type="text/javascript"></script>
 <div class="gvFilter">
 <form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
 Filter for

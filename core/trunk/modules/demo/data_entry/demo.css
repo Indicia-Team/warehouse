@@ -85,3 +85,7 @@ div#occAttr0 {
   margin-bottom: 8px;
   padding: 8px;
 }
+
+.smaller {
+  font-size: 0.8em;
+}
