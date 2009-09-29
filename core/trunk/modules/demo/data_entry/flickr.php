@@ -1,27 +1,29 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <?php
 
 require_once '../../../client_helpers/data_entry_helper.php';
 require_once '../../../client_helpers/flickr_helper.php';
 require_once '../data_entry_config.php';
 
-// Obtain read access to the user's Flickr account
-flickr_helper::auth('read');
+if (flickr_helper::$flickr_api_key!='') {{
+  // Obtain read access to the user's Flickr account
+  flickr_helper::auth('read');
+}
 
-?>
+?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
     <title>Indicia demonstrations</title>
     <link rel="stylesheet" type="text/css" href="../../../media/css/thickbox.css" />
     <link rel="stylesheet" type="text/css" href="demo.css" />
     <link rel="stylesheet" type="text/css" href="../../../media/css/default_site.css" />
-
-
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 </head>
 <body>
 <div id="wrap"">
 <?php
+if (flickr_helper::$flickr_api_key=='') {
+  echo '<div class="ui-widget-content ui-corner-all ui-state-error">Please ensure your Flickr API key is set up in helper_config.php.</div>';
+} 
 // Catch a submission to the form and send it to Indicia
 if ($_POST)
 {
@@ -62,6 +64,5 @@ echo data_entry_helper::dump_javascript();
 ?>
     <script type='text/javascript' src='http://localhost/indicia/media/js/jquery.flickr.js'></script>
     <script type='text/javascript' src='http://localhost/indicia/media/js/thickbox.js'></script>
-
 </body>
 </html>
