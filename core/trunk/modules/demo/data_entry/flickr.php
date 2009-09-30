@@ -4,7 +4,7 @@ require_once '../../../client_helpers/data_entry_helper.php';
 require_once '../../../client_helpers/flickr_helper.php';
 require_once '../data_entry_config.php';
 
-if (flickr_helper::$flickr_api_key!='') {{
+if (flickr_helper::$flickr_api_key!='') {
   // Obtain read access to the user's Flickr account
   flickr_helper::auth('read');
 }
