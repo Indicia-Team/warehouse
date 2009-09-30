@@ -156,7 +156,7 @@ class New_Password_Controller extends Indicia_Controller {
       // have to reset passord as it gets encrypted
       $view->password = $password;
       $view->password2 = $password2;
-      $view->email_key = $key;
+      $view->email_key = $email_key;
       $view->user_model = $user;
       $view->person_model = $person;
       $this->template->title = 'Enter New Password';
