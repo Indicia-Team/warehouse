@@ -1,6 +1,3 @@
-DROP VIEW list_occurrence_attribute_values;
-
-DROP VIEW list_sample_attribute_values;
 
 CREATE OR REPLACE VIEW list_occurrence_attribute_values AS 
 SELECT oav.id, o.id AS occurrence_id, oa.id as occurrence_attribute_id,
