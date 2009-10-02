@@ -74,8 +74,13 @@ class Person_Controller extends Gridview_Base_Controller {
    * Displays a page allowing entry of a new person.
    */
   public function create_from_user() {
-    $this->setView('person/person_edit', 'Person',
-          array('return_url' => $this->return_url('user'))); // will jump back to the user gridview on submit
+  	if (!$this->record_authorised(null)) {
+      $this->access_denied();
+      return;
+    }
+    $values = $this->getDefaults();
+    $values['return_url']=$this->return_url('user');
+    $this->showEditPage($values);
     $this->set_warning();
   }
 

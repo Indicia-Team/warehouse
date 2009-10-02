@@ -22,7 +22,7 @@
  */
 
 /**
- * Declares a model simply to expose the gv_sample_attribute view to ORM.
+ * Declares a model simply to expose the gv_sample_attributes view to ORM.
  *
  * @package	Core
  * @subpackage GridModels

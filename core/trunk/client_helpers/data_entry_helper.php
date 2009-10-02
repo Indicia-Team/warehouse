@@ -2281,9 +2281,39 @@ $indicia_late_javascript
                 'The current setting is '.parent::$base_url.'<br></li>';
         }
       }
+      $missing_configs = array();
+      $blank_configs = array();
+      // Run through the expected configuration settings, checking they are present and not empty
+      self::check_config('$base_url', isset(self::$base_url), empty(self::$base_url), $missing_configs, $blank_configs);
+      self::check_config('$upload_path', isset(self::$upload_path), empty(self::$upload_path), $missing_configs, $blank_configs);
+      self::check_config('$geoserver_url', isset(self::$geoserver_url), empty(self::$geoserver_url), $missing_configs, $blank_configs);
+      self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
+      self::check_config('$google_search_api_key', isset(self::$google_search_api_key), empty(self::$google_search_api_key), $missing_configs, $blank_configs);
+      self::check_config('$google_api_key', isset(self::$google_api_key), empty(self::$google_api_key), $missing_configs, $blank_configs);
+      self::check_config('$multimap_api_key', isset(self::$multimap_api_key), empty(self::$multimap_api_key), $missing_configs, $blank_configs);
+      self::check_config('$flickr_api_key', isset(self::$flickr_api_key), empty(self::$flickr_api_key), $missing_configs, $blank_configs);
+      self::check_config('$flickr_api_secret', isset(self::$flickr_api_secret), empty(self::$flickr_api_secret), $missing_configs, $blank_configs);
+      // Warn the user of the missing ones - the important bit.
+      if (count($missing_configs)>0) {
+      	$r .= '<li class="ui-widget ui-state-error">Error: The following configuration entries are missing from helper_config.php : '.
+      	    implode(', ', $missing_configs).'. This may prevent the data_entry_helper class from functioning normally.</li>';
+      }
+      // Also warn them of blank ones - not so important as it should only affect the one area of functionality
+      if (count($blank_configs)>0) {
+      	$r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
+      	    implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
+      }     
     }
     $r .= '</ul></div>';
     return $r;
+  }
+  
+  private static function check_config($name, $isset, $empty, &$missing_configs, &$blank_configs) {
+    if (!$isset) {
+      array_push($missing_configs, $name);
+    } else if ($empty) {
+      array_push($blank_configs, $name);
+    }
   }
 
   /**

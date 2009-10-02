@@ -28,73 +28,113 @@ echo html::script(array(
   'media/js/jquery.autocomplete.js',
   'media/js/OpenLayers.js',
   'media/js/spatial-ref.js'
-), FALSE); ?>
+), FALSE); 
+$id = html::initial_value($values, 'sample:id');
+?>
 <script type='text/javascript' src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
 <script type='text/javascript'>
 (function($){
   $(document).ready(function() {
-    init_map('<?php echo url::base(); ?>', <?php echo ($model->id) ? "'$model->geom'" : 'null'; ?>, 'entered_sref', 'entered_geom', true);
+	  init_map('<?php echo url::base()."', '".html::initial_value($values, 'sample:geom'); ?>', 'entered_sref', 'entered_geom', true);
+    jQuery('.vague-date-picker').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});    
+    jQuery('.date-picker').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});
   });
 })(jQuery);
 </script>
-<form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
+<form class="cmxform" action="<?php echo url::site().'sample/save' ?>" method="post">
 <?php echo $metadata; ?>
 <fieldset>
 <?php 
-print form::hidden('id', html::specialchars($model->id));
-print form::hidden('survey_id', $model->survey_id); 
+print form::hidden('sample:id', html::specialchars($id));
+print form::hidden('sample:survey_id', html::initial_value($values, 'sample:survey_id')); 
 ?>
 <legend>Sample Details</legend>
 <ol>
 <li>
-<label for='vague_date'>Date:</label>
-<?php print form::input('vague_date', $model->vague_date);  ?>
+<label for='survey'>Survey:</label>
+<input readonly="readonly" class="ui-state-disabled" id="survey" value="<?php echo $model->survey->title; ?>" />
 </li>
 <li>
-<label for="entered_sref">Spatial Ref:</label>
-<input id="entered_sref" class="narrow" name="entered_sref"
-value="<?php echo html::specialchars($model->entered_sref); ?>"
+<label for='sample:date'>Date:</label>
+<?php print form::input('sample:date', html::initial_value($values, 'sample:date'), 'class="date-picker"');  ?>
+</li>
+<li>
+<label for="sample:entered_sref">Spatial Ref:</label>
+<input id="sample:entered_sref" class="narrow" name="sample:entered_sref"
+value="<?php echo html::initial_value($values, 'sample:entered_sref'); ?>"
 onblur="exit_sref();"
 onclick="enter_sref();"/>
-<select class="narrow" id="entered_sref_system" name="entered_sref_system">
-<?php foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption) {
- if ($model->entered_sref_system==$notation)
- $selected=' selected="selected"';
+<select class="narrow" id="sample:entered_sref_system" name="sample:entered_sref_system">
+<?php
+$entered_sref_system=html::initial_value($values, 'sample:entered_sref_system'); 
+foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption) {
+ if ($entered_sref_system==$notation)
+   $selected=' selected="selected"';
  else
    $selected = '';
- echo "<option value=\"$notation\"$selected>$caption</option>";}
+ echo "<option value=\"$notation\"$selected>$caption</option>";
+}
  ?>
  </select>
- <input type="hidden" name="entered_geom" id="entered_geom" />
- <?php echo html::error_message($model->getError('entered_sref')); ?>
- <?php echo html::error_message($model->getError('entered_sref_system')); ?>
+ <input type="hidden" name="sample:entered_geom" value="<?php echo html::initial_value($values, 'sample:entered_geom'); ?>" />
+ <?php echo html::error_message($model->getError('sample:entered_sref')); ?>
+ <?php echo html::error_message($model->getError('sample:entered_sref_system')); ?>
  <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
  spatial reference. The more you zoom in, the more accurate the reference will be.</p>
  <div id="map" class="smallmap" style="width: 600px; height: 350px;"></div>
  </li>
  <li>
- <label for='location_name'>Location Name:</label>
+ <label for='sample:location_name'>Location Name:</label>
  <?php
- print form::input('location_name', $model->location_name);
- echo html::error_message($model->getError('location_name'));
+ print form::input('sample:location_name', html::initial_value($values, 'sample:location_name'));
+ echo html::error_message($model->getError('sample:location_name'));
  ?>
  </li>
  <li>
- <label for="recorder_names">Recorder Names:<br />(one per line)</label>
+ <label for="sample:recorder_names">Recorder Names:<br />(one per line)</label>
  <?php
- print form::textarea('recorder_names', $model->recorder_names);
- echo html::error_message($model->getError('recorder_names'));
+ print form::textarea('sample:recorder_names', html::initial_value($values, 'sample:recorder_names'));
+ echo html::error_message($model->getError('sample:recorder_names'));
  ?>
  <li>
- <label for='sample_method_id'>Sample Method:</label>
+ <label for='sample:sample_method_id'>Sample Method:</label>
  <?php
- print form::dropdown('sample_method_id', $other_data['method_terms'], $model->sample_method_id);
- echo html::error_message($model->getError('sample_method_id'));
+ print form::dropdown('sample:sample_method_id', $other_data['method_terms'], html::initial_value($values, 'sample:sample_method_id'));
+ echo html::error_message($model->getError('sample:sample_method_id'));
  ?>
  </li>
  </ol>
  </fieldset>
+ <fieldset>
+ <legend>Survey Specific Attributes</legend>
+ <ol>
+ <?php
+foreach ($values['attributes'] as $attr) {
+	$name = 'smpAttr:'.$attr['sample_attribute_id'];
+	echo '<li><label for="">'.$attr['caption']."</label>\n";
+	switch ($attr['data_type']) {
+	  case 'Specific Date':
+	  	echo form::input($name, $attr['value'], 'class="date-picker"');
+	    break;
+	  case 'Vague Date':
+	    echo form::input($name, $attr['value'], 'class="vague-date-picker"');
+	    break;
+	  case 'Lookup List':
+	  	echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['value']);
+	  	break;
+	  default:
+	  	echo form::input($name, $attr['value']);
+	}
+	echo '<br/>'.html::error_message($model->getError($name)).'</li>';
+	
+}
+ ?>
+ </ol>
+ </fieldset>
+ <?php if ($id!==null) : ?>
+ <h2>Occurrences</h2>
  <?php 
-  echo $values['occurrences'];
- echo html::form_buttons(html::initial_value($values, 'sample:id')!==null);
+   echo $values['occurrences']; 
+ endif;
+ echo html::form_buttons($id!==null); 
  ?>

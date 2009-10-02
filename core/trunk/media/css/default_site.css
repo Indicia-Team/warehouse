@@ -150,4 +150,8 @@ input, select, textarea {
 
 .nobreak {
   white-space: nowrap;
+}
+
+li.ui-state-error {
+	margin: 0.5em;
 } 

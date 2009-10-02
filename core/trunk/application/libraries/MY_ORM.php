@@ -46,16 +46,16 @@ abstract class ORM extends ORM_Core {
   {
     parent::load_values($values);
     // Add in field
-    if (array_key_exists('date_type', $this->object))
+    if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type']))
     {
       $vd = vague_date::vague_date_to_string(array
-      (
+      ( 
         date_create($this->object['date_start']),
         date_create($this->object['date_end']),
         $this->object['date_type']
       ));
 
-      $this->object['vague_date'] = $vd;
+      $this->object['date'] = $vd;
     }
     return $this;
   }
@@ -121,7 +121,6 @@ abstract class ORM extends ORM_Core {
         unset($this->errors[$key]);
       }      
     }
-    kohana::log('debug', 'getting errors '.kohana::debug($this->errors));
     return $this->errors;
   }
 
@@ -242,7 +241,6 @@ abstract class ORM extends ORM_Core {
    * checks unless they really want to skip them.
    */
   protected function preSubmit() {
-    kohana::log('debug','preSubmit start');
     // Grab the survey id and website id if they are in the submission, as they are used to check
     // attributes that apply and other permissions.
     if (array_key_exists('website_id', $this->submission['fields'])) {
@@ -264,7 +262,6 @@ abstract class ORM extends ORM_Core {
           }
       }
     }
-    kohana::log('debug','preSubmit end');
   }
 
   /**
@@ -323,8 +320,11 @@ abstract class ORM extends ORM_Core {
 	        if ($ps == null) {
 	          $return = null;
 	        }
+	    }	    
+	    if (kohana::config('config.log_threshold')=='4') {
+	    	kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
+	    	if (!$return) kohana::log('debug', kohana::debug($this->getAllErrors()));
 	    }
-	    kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
     }
 	  return $return;
   }
@@ -545,17 +545,18 @@ abstract class ORM extends ORM_Core {
   private function checkRequiredAttributes() {
     // Test if this model has an attributes sub-table.
     if (isset($this->has_attributes) && $this->has_attributes) {
-      $db = new Database();
       $attr_entity = $this->object_name.'_attribute';
-      $db->from($attr_entity.'s_websites');
-      $db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
-      $db->select($attr_entity.'s.id', $attr_entity.'s.caption');
-      $db->like('validation_rules','required');
-      $db->where($attr_entity.'s.deleted', 'f');
-      $db->where($attr_entity.'s_websites.deleted', 'f');      
-      $db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
-      $db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
-      $result=$db->get();
+      $this->db->from($attr_entity.'s_websites');
+      $this->db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
+      $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
+      $this->db->like('validation_rules','required');
+      $this->db->where($attr_entity.'s.deleted', 'f');
+      $this->db->where($attr_entity.'s_websites.deleted', 'f');
+      if ($this->identifiers['website_id']) {
+        $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
+      }
+      $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
+      $result=$this->db->get();
       $got_values=array();
       // Attributes are stored in a metafield. Find the ones we actually have a value for
       if (array_key_exists('metaFields', $this->submission) &&

@@ -85,12 +85,13 @@ class Sample_Model extends ORM
   * Before submission, map vague dates to their underlying database fields.
   */
   protected function preSubmit()
-  {    
+  {    kohana::log('debug','presubmit');
     if (array_key_exists('date', $this->submission['fields'])) {
       $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
       $this->submission['fields']['date_start']['value'] = $vague_date['start'];
       $this->submission['fields']['date_end']['value'] = $vague_date['end'];
       $this->submission['fields']['date_type']['value'] = $vague_date['type'];
+      kohana::log('debug','here');
     }
     // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
     // can work out the Geom
