@@ -4,6 +4,7 @@
 <head>
     <title>Indicia demonstrations</title>
     <link rel="stylesheet" type="text/css" href="demo.css" />
+    <link rel="stylesheet" type="text/css" href="../../media/css/default_site.css" />
     <link rel="stylesheet" type="text/css" href="../../media/themes/default/jquery-ui.custom.css" />
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 </head>

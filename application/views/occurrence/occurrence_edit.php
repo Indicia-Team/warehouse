@@ -126,7 +126,7 @@ echo html::error_message($model->getError('occurrence:taxa_taxon_list_id')); ?>
 </li>
 <li>
 <label for='date'>Date:</label>
-<?php print form::input('date', $model->sample->vague_date);
+<?php print form::input('date', $model->sample->date);
 echo html::error_message($model->taxa_taxon_list->taxon->getError('occurrence:date_start')); ?>
 </li>
 <li>

@@ -30,6 +30,7 @@
 class User_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
+  	parent::__construct('user', 'gv_user', 'user/index');
     $this->columns = array(
       'name'=>'',
       'username'=>'',
@@ -37,7 +38,6 @@ class User_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Users";
     $this->model = new User_Model();
-    parent::__construct('user', 'gv_user', 'user/index');
   }
 
   /**

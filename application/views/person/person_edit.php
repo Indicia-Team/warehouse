@@ -26,7 +26,7 @@
 <form class="cmxform" action="<?php echo url::site().'person/save'; ?>" method="post">
 <?php echo $metadata; ?>
 <fieldset>
-<?php if (isset($return_url)) echo $return_url; ?>
+<?php if (isset($values['return_url'])) echo $values['return_url']; ?>
 <input type="hidden" name="person:id" value="<?php echo html::initial_value($values, 'person:id'); ?>" />
 <legend>Person's Details</legend>
 <ol>

@@ -36,27 +36,66 @@ class Sample_Controller extends Gridview_Base_Controller
     $this->model = ORM::factory('sample');
     $this->columns = array
     (
-      'entered_sref' => 'Spatial Ref.',
+      'title' => 'Survey',
+    	'entered_sref' => 'Spatial Ref.',
       'location' => 'Location',
-      'location_name' => 'Location Name',
-      'vague_date' => 'Date',
+      'date' => 'Date',
       'recorder_names' => 'Recorder Names',
     );
   }
 
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $gridmodel = ORM::factory('gv_occurrence');
-    $grid = Gridview_Controller::factory(
-        $gridmodel,
+    $this->loadOccurrences($r);
+    $this->loadAttributes($r);
+    return $r;      
+  }
+  
+  /**
+   * Load default values either when creating a sample new or reloading after a validation failure.
+   * This adds the custome attributes list to the data available for the view. 
+   */
+  protected function getDefaults() {
+  	$r = parent::getDefaults();
+  	if (array_key_exists('sample:id', $_POST)) { 
+  	  $this->loadOccurrences($r);
+  	}
+  	$this->loadAttributes($r);
+  	return $r;
+  }
+  
+  /** 
+   * Loads the list of occurrences for the sample into a grid.
+   */
+  private function loadOccurrences(&$r) {
+  	$occ_gridmodel = ORM::factory('gv_occurrence');
+    $occ_grid = Gridview_Controller::factory(
+        $occ_gridmodel,
         $this->uri->argument(3) || 1, // page number,
         4
      );
-    $grid->base_filter = array('sample_id' => $this->model->id, 'deleted' => 'f');
-    $grid->columns = array('taxon' => '');
-    $grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
-    $r['occurrences'] = $grid->display();
-    return $r;      
+    $occ_grid->base_filter = array('sample_id' => $this->model->id, 'deleted' => 'f');
+    $occ_grid->columns = array('taxon' => '');
+    $occ_grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
+    $r['occurrences'] = $occ_grid->display();
+  }
+  
+  private function loadAttributes(&$r) {
+    // Grab all the custom attribute data
+    $attrs = $this->db->
+    		from('list_sample_attribute_values')->
+    		where('sample_id', $this->model->id)->
+    		get()->as_array(false);
+    $r['attributes'] = $attrs;
+    foreach ($attrs as $attr) {
+      // if there are any lookup lists in the attributes, preload the options    	
+    	if (!empty($attr['termlist_id'])) {
+    		$r['terms_'.$attr['termlist_id']]=array_merge(
+    				array(''=>'<no value>'), 
+    				$this->get_termlist_terms($attr['termlist_id'])
+    	  );
+    	} 
+    }
   }
 
   public function edit_gv($id = null, $page_no)

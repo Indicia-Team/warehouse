@@ -30,8 +30,8 @@
 class Language_Controller extends Gridview_Base_Controller {
 
   /**
-     * Constructor
-     */
+   * Constructor
+   */
   public function __construct()
   {
     parent::__construct('language', 'language', 'language/index');
