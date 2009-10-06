@@ -42,8 +42,6 @@ class Location_Model extends ORM_Tree {
 
   protected $search_field='name';
 
-  protected $droppedFields;
-
   public function validate(Validation $array, $save = FALSE) {
     $orig_values = $array->as_array();
 

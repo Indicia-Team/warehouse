@@ -146,8 +146,7 @@ abstract class ORM extends ORM_Core {
     if (count($this->unvalidatedFields)>0) {
       foreach ($this->unvalidatedFields as $a)
       {
-        if (array_key_exists($a, $array->as_array()))
-        {
+        if (array_key_exists($a, $array->as_array())) {
           $this->__set($a, $array[$a]);
         }
       }
@@ -459,7 +458,7 @@ abstract class ORM extends ORM_Core {
         } else {
           $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
           foreach($m->errors as $key=>$value) {
-            $this->errors[$fieldPrefix.$m->object_name.':'.$key]=$value;            
+            $this->errors[$fieldPrefix.$key]=$value;            
           }                    
           return false;
         }
@@ -473,6 +472,7 @@ abstract class ORM extends ORM_Core {
    * submission.
    */
   private function createChildRecords() {
+    $r=true;
     if (array_key_exists('subModels', $this->submission)) {
       // Iterate through the subModel array, linking them to this model
       foreach ($this->submission['subModels'] as $a) {
@@ -496,13 +496,13 @@ abstract class ORM extends ORM_Core {
           $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
           // Remember this model so that its errors can be reported      
           foreach($m->errors as $key=>$value) {            
-            $this->errors[$fieldPrefix.$m->object_name.':'.$key]=$value;            
+            $this->errors[$fieldPrefix.$key]=$value;            
           }        
-          return false;
+          $r=false;
         }
       }
     }
-    return true;
+    return $r;
   }
   
   /**
@@ -543,6 +543,7 @@ abstract class ORM extends ORM_Core {
    * ensures that each of them has a submodel in the submission.
    */
   private function checkRequiredAttributes() {
+    $r = true;
     // Test if this model has an attributes sub-table.
     if (isset($this->has_attributes) && $this->has_attributes) {
       $attr_entity = $this->object_name.'_attribute';
@@ -572,11 +573,11 @@ abstract class ORM extends ORM_Core {
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
           $this->errors[$fieldPrefix.$this->attrs_field_prefix.':'.$row->id]='Please specify a value for the '.$row->caption;          
-          return false;
+          $r=false;
         }
       }
     }
-    return true;
+    return $r;
   }
 
   /**
@@ -692,11 +693,12 @@ abstract class ORM extends ORM_Core {
             $oam = ORM::factory($this->object_name.'_attribute_value');
             $oam->submission = $attr;
             if (!$oam->inner_submit()) {
-              $fieldPrefix = (array_key_exists('field_prefix',$this->submission['model'])) ? $this->submission['model']['field_prefix'].':' : '';              
+              kohana::log('debug', kohana::debug($this->submission));
+              $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';              
               // For attribute value errors, we need to report e.g smpAttr:6 as the error key name, not
               // the table and field name as normal.              
-              foreach($oam->errors as $key->$value) {
-                $this->errors[$fieldPrefix.$this->attrs_field_prefix.':'.$attrId]=$value.'';
+              foreach($oam->errors as $key=>$value) {
+                $this->errors[$fieldPrefix.$this->attrs_field_prefix.':'.$attrId]=$value;
               }                    
               return false;
             }

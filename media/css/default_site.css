@@ -30,6 +30,14 @@
   margin-left: 160px;
 }
 
+.validation-icon {
+	display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+  margin: 4px;
+}
+
 .error_message {
   font-weight: bold;
 }

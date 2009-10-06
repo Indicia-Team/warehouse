@@ -59,7 +59,9 @@ abstract class ATTR_ORM extends ORM {
     if (array_key_exists('validation_rules', $array->as_array())) {
       $this->validation_rules = $array['validation_rules'];      
       $save = $save && $this->validateValidationRules();
-    }    
+    } else {
+      $this->validation_rules = null;
+    }  
     $parent_valid = parent::validate($array, $save);   
     return $save && $parent_valid;
   }
