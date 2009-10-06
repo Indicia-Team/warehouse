@@ -28,8 +28,9 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Sample_Model extends ORM
+class Sample_Model extends ORM_Tree
 {
+  protected $ORM_Tree_children = "samples";
   protected $has_many=array('occurrences', 'sample_attribute_values');
   protected $belongs_to=array
   (
@@ -76,7 +77,8 @@ class Sample_Model extends ORM
       'location_name',
       'survey_id',
       'deleted',
-      'recorder_names'
+      'recorder_names',
+      'parent_id'
     );
     return parent::validate($array, $save);
   }
@@ -90,8 +92,7 @@ class Sample_Model extends ORM
       $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
       $this->submission['fields']['date_start']['value'] = $vague_date['start'];
       $this->submission['fields']['date_end']['value'] = $vague_date['end'];
-      $this->submission['fields']['date_type']['value'] = $vague_date['type'];
-      kohana::log('debug','here');
+      $this->submission['fields']['date_type']['value'] = $vague_date['type'];      
     }
     // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
     // can work out the Geom

@@ -153,7 +153,7 @@ echo html::error_message($model->getError('occurrence:external_key'));
 ?>
 </li>
 <li>
-<label for='occurrence:record_status'>Verified:</label>
+<label for='occurrence:record_status'>Record Status:</label>
 <?php
 print form::dropdown('occurrence:record_status', array('I' => 'In Progress', 'C' => 'Completed', 'V' => 'Verified'), 
     html::initial_value($values, 'occurrence:record_status'));

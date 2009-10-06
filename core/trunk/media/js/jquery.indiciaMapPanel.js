@@ -183,16 +183,23 @@
         {
           var lonlat = div.map.getLonLatFromViewPortPx(e.xy);
           // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-          var precision = div.map.getScale()/200;
+          var precision, metres = div.map.getScale()/200;
           // now round to find appropriate square size
-          if (precision<30) {
+          if (metres<30) {
             precision=8;
-          } else if (precision<300) {
+          } else if (metres<300) {
             precision=6;
-          } else if (precision<3000) {
+          } else if (metres<3000) {
             precision=4;
           } else {
             precision=2;
+          }          
+          // enforce precision limits if specifid in the settings
+          if (div.settings.clickedSrefPrecisionMin!=='') {
+        	precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+          }
+          if (div.settings.clickedSrefPrecisionMax!=='') { 
+          	precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
           }
           $.getJSON(opts.indiciaSvc + "/index.php/services/spatial/wkt_to_sref"+
             "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
@@ -378,7 +385,12 @@ $.fn.indiciaMapPanel.defaults = {
     georefSearchBtnId: 'imp-georef-search-btn',
     georefCloseBtnId: 'imp-georef-close-btn',
     georefOutputDivId: 'imp-georef-output-div',
-    georefDivId: 'imp-georef-div'
+    georefDivId: 'imp-georef-div',
+    clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
+    clickedSrefPrecisionMax: ''
+    /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a 
+     * displayedSrefPrecisionMin and Mx for a square size output into a list box as you hover. Both of these could either be
+     * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
 };
 
 /**
