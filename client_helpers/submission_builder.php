@@ -167,7 +167,7 @@ class submission_builder extends helper_config {
     	if ($value==lang::get('click here')) {
     		$value='';
     	}
-      if (strpos($key, $prefix) !== false) {        
+      if (strpos($key, $prefix) === 0) {                
         $a = explode(':', $key);
         // Attribute in the form occAttr:36 for attribute with attribute id
         // of 36.

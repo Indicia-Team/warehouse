@@ -38,19 +38,23 @@ $indicia_templates = array(
   'label' => '<label for="{id}" class="{labelClass}">{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
-  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif"/>'."\n",
-  'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}" cols="{cols}" rows="{rows}">{default}</textarea>'."\n",
-  'text_input' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}">'."\n",
-  'date_picker' => '<input type="text" size="30" class="date {class}" id="{id}" name="{fieldname}" value="{default}"/>' .
+  'validation_message' => '<br/><div class="ui-state-error ui-corner-all inline-error">'.
+      '<span class="ui-icon ui-icon-alert" style="float: left; margin-left: 3px;"></span>{error}</div>'."\n",
+  'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
+      '<span class="ui-icon ui-icon-alert"></span></span>',
+  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n",
+  'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}" cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}" {title}>'."\n",
+  'date_picker' => '<input type="text" size="30" class="date {class}" id="{id}" name="{fieldname}" value="{default}" {title}/>' .
       '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ',
-  'select' => '<select id="{id}" name="{fieldname}" class="{class}">{options}</select>',
+  'select' => '<select id="{id}" name="{fieldname}" class="{class}" {title}>{options}</select>',
   'select_option' => '<option value="{value}" {selected} >{caption}</option>',
   'select_option_selected' => 'selected="selected"',
-  'listbox' => '<select id="{id}" name="{fieldname}" class="{class}" size="{size}" multiple="{multiple}">{options}</select>',
+  'listbox' => '<select id="{id}" name="{fieldname}" class="{class}" size="{size}" multiple="{multiple}" {title}>{options}</select>',
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
-  'list_in_template' => '<ul class="{class}">{items}</ul>',
-  'map_panel' => "<div id=\"{divId}\" class=\"{class}\"></div>\n<br/>\n",
+  'list_in_template' => '<ul class="{class}" {title}>{items}</ul>',
+  'map_panel' => "<div id=\"{divId}\" class=\"{class}\" {title}></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\" class=\"{class}\" \>\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden page-notice\" ><div id=\"imp-georef-output-div\" />\n".
@@ -72,7 +76,7 @@ $indicia_templates = array(
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
     		'<span class="nobreak vernacular">{common}</span></div>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
-         '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" />'."\n",
+         '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
       {
         minChars : 1,
@@ -138,7 +142,9 @@ jQuery('#{parentControlId}').change();\n",
  * @package	Client
  */
 class data_entry_helper extends helper_config {
-
+  
+  public static $validation_mode=array('message');
+  
  /**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
  *
@@ -263,9 +269,29 @@ class data_entry_helper extends helper_config {
    * Options can contain a setting for prefixTemplate or suffixTemplate to override the standard templates.
    */
   private static function apply_template($template, $options) {
-    global $indicia_templates;
+    global $indicia_templates, $indicia_errors;
     // Don't need the extraParams - they are just for service communication.
     $options['extraParams']=null;
+    // Set default validation error output mode
+    if (!array_key_exists('validation_mode', $options)) {
+      $options['validation_mode']=self::$validation_mode;
+    }
+    // Decide if the main control has an error. If so, highlight with the error class and set it's title.
+    if (isset($indicia_errors)) {      
+      if (array_key_exists('fieldname', $options) && array_key_exists($options['fieldname'], $indicia_errors)) {
+        $error = $indicia_errors[$options['fieldname']];
+      }
+    }
+    // Add a hint to the control if there is an error and this option is set
+    if (isset($error) && in_array('hint', $options['validation_mode'])) {        
+      $options['title'] = 'title="'.$error.'"';
+    } else {
+      $options['title'] = '';
+    }
+    // Add an error class to colour the control if there is an error and this option is set
+    if (isset($error) && in_array('colour', $options['validation_mode'])) {
+      $options['class'] .= ' ui-state-error';
+    }    
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
     $replaceValues=array();
@@ -293,13 +319,17 @@ class data_entry_helper extends helper_config {
           ),              
           $indicia_templates['label']
       );
-    }
+    }    
     // Output the main control
     $r .= str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);
-    // output any errors identified for the control
-    if (array_key_exists('fieldname', $options)) {
+    // Add an error icon to the control if there is an error and this option is set
+    if (isset($error) && in_array('icon', $options['validation_mode'])) {
+      $r .= $indicia_templates['validation_icon'];
+    }    
+    // Add a message to the control if there is an error and this option is set
+    if (isset($error) && in_array('message', $options['validation_mode'])) {
       $r .= self::check_errors($options['fieldname']);
-    }
+    }    
     if (array_key_exists('suffixTemplate', $options)) {
       $r .= $indicia_templates[$options['suffixTemplate']];
     } else {
@@ -429,6 +459,8 @@ class data_entry_helper extends helper_config {
    * <li><b>checkboxCol</b><br/>
    * Include a presence checkbox column in the grid. If present, then this contains a checkbox for each row which must be ticked for the 
    * row to be saved. Otherwise any row containing data in an attribute gets saved.</li>
+   * <li><b>class</b><br/>
+   * Optional. CSS class names to add to the control.</li> 
    * <li><b>cachetimeout</b><br/>
    * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
    * after a request for data to the Indicia Warehouse before a new request will refetch the data,
@@ -530,7 +562,7 @@ class data_entry_helper extends helper_config {
         $grid .= "<td class='scOccAttrCell'>$oc</td>";
       }
       $grid .= "</tr></tbody></table>";
-      $grid .= "<table class='ui-widget ui-widget-content'>";
+      $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'">';
       if ($options['header']) {
         $grid .= "<thead class=\"ui-widget-header\">";
         for ($i=0; $i<$options['columns']; $i++) {
@@ -577,7 +609,8 @@ class data_entry_helper extends helper_config {
         $tlRequest = "$url/taxon_list/".$options['listId']."?mode=json&view=detail";
         $session = curl_init($tlRequest);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $tl = json_decode(array_pop(explode("\r\n\r\n",curl_exec($session))), true);
+        $arr = explode("\r\n\r\n",curl_exec($session));        
+        $tl = json_decode(array_pop($arr), true);
         if (! array_key_exists('error', $tl)) {
           $options['lookupListId'] = $tl[0]['parent_id'];
         }
@@ -1700,9 +1733,9 @@ class data_entry_helper extends helper_config {
       // select the tab containing the first error, if validation errors are present
       $indicia_late_javascript .= "if (errors.length>0) {\n".
           "  tabs.tabs('select',$(errors[0]).parents('.ui-tabs-panel')[0].id);\n".
-          "  var tab;\n".
+          "  var panel;\n".
           "  for (var i=0; i<errors.length; i++) {\n".
-          "    panel = $(errors[0]).parents('.ui-tabs-panel')[0];\n".
+          "    panel = $(errors[i]).parents('.ui-tabs-panel')[0];\n".
           "    $('#'+panel.id+'-tab').addClass('ui-state-error');\n".
           "}}\n";
     }
@@ -1789,7 +1822,11 @@ class data_entry_helper extends helper_config {
   * Wraps data from a species checklist grid (generated by
   * data_entry_helper::species_checklist) into a suitable format for submission. This will
   * return an array of submodel entries which can be dropped directly into the subModel
-  * section of the submission array.
+  * section of the submission array. If there is a field occurrence:determiner_id or 
+  * occurrence:record_status in the main form data, then these values are applied to each 
+  * occurrence created from the grid. For example, place a hidden field in the form named 
+  * "occurrence:record_status" with a value "C" to set all occurrence records to completed
+  * as soon as they are entered. 
   *
   * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
   * @param boolean $include_if_any_data If true, then any list entry which has any data 
@@ -1804,6 +1841,9 @@ class data_entry_helper extends helper_config {
     }
     if (array_key_exists('occurrence:determiner_id', $arr)){
       $determiner_id = $arr['occurrence:determiner_id'];
+    }
+    if (array_key_exists('occurrence:record_status', $arr)){
+      $determiner_id = $arr['occurrence:record_status'];
     }
     $records = array();
     $subModels = array();
@@ -1822,6 +1862,9 @@ class data_entry_helper extends helper_config {
 	      if (isset($determiner_id)) {
 	        $record['determiner_id'] = $determiner_id;
 	      }
+        if (isset($record_status)) {
+          $record['record_status'] = $determiner_id;
+        }
 	      $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
 	      $occ = data_entry_helper::wrap($record, 'occurrence');
 	      $occ['metaFields']['occAttributes']['value'] = $occAttrs;
@@ -1912,7 +1955,7 @@ class data_entry_helper extends helper_config {
   public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false) {
     // We're mainly submitting to the sample model
     $sampleMod = data_entry_helper::wrap_with_attrs($values, 'sample');
-    $occurrences = data_entry_helper::wrap_species_checklist($values);
+    $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data);
   
     // Add the occurrences in as subModels
     $sampleMod['subModels'] = $occurrences;
@@ -2179,7 +2222,7 @@ $indicia_late_javascript
    */
   public static function check_errors($id)
   {
-    global $indicia_errors;
+    global $indicia_errors, $indicia_templates;
     $error='';    
     if (isset($indicia_errors)) {
        if (array_key_exists($id, $indicia_errors)) {
@@ -2198,9 +2241,7 @@ $indicia_late_javascript
        }
     }
     if ($error!='') {
-       return '<br/><div class="ui-state-error ui-corner-all inline-error">'.
-           '<span class="ui-icon ui-icon-alert" style="float: left; margin-left: 3px;"></span>'.
-           lang::get($error).'</div>';
+       return str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
     } else {
       return '';
     }
