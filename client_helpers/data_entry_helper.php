@@ -35,7 +35,7 @@ global $indicia_templates;
  */
 $indicia_templates = array(
   'prefix' => '',
-  'label' => '<label for="{id}" class="{labelClass}">{label}:</label>'."\n",
+  'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
   'validation_message' => '<br/><div class="ui-state-error ui-corner-all inline-error">'.
@@ -43,40 +43,39 @@ $indicia_templates = array(
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n",
-  'textarea' => '<textarea id="{id}" name="{fieldname}" class="{class}" cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
-  'text_input' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}" {title}>'."\n",
-  'date_picker' => '<input type="text" size="30" class="date {class}" id="{id}" name="{fieldname}" value="{default}" {title}/>' .
-      '<style type="text/css">.embed + img { position: relative; left: -21px; top: -1px; }</style> ',
-  'select' => '<select id="{id}" name="{fieldname}" class="{class}" {title}>{options}</select>',
+  'textarea' => '<textarea id="{id}" name="{fieldname}"{class} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} value="{default}" {title} />'."\n",
+  'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
+  'select' => '<select id="{id}" name="{fieldname}"{class} {title}>{options}</select>',
   'select_option' => '<option value="{value}" {selected} >{caption}</option>',
   'select_option_selected' => 'selected="selected"',
-  'listbox' => '<select id="{id}" name="{fieldname}" class="{class}" size="{size}" multiple="{multiple}" {title}>{options}</select>',
+  'listbox' => '<select id="{id}" name="{fieldname}"{class} size="{size}" multiple="{multiple}" {title}>{options}</select>',
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
-  'list_in_template' => '<ul class="{class}" {title}>{items}</ul>',
-  'map_panel' => "<div id=\"{divId}\" class=\"{class}\" {title}></div>\n<br/>\n",
-  'georeference_lookup' => "<input id=\"imp-georef-search\" class=\"{class}\" \>\n".
+  'list_in_template' => '<ul{class} {title}>{items}</ul>',
+  'map_panel' => "<div id=\"{divId}\"{class}></div>\n<br/>\n",
+  'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
-      "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden page-notice\" ><div id=\"imp-georef-output-div\" />\n".
+      "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\"><div id=\"imp-georef-output-div\">\n".
       "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">".lang::get('close')."</a>\n".
       "</div>",
-  'tab_header' => '<script type="text/javascript">'.
-    'document.write(\'<ul class="ui-helper-hidden">\');'.
-    "</script>\n".
-    "<noscript><ul></noscript>".
-    "{tabs}".
-    "</ul>",
-  'loading_block_start' => '<script type="text/javascript">'.
-		'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
-		'<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
-		lang::get('loading').'...</div>\');'.
-    'document.write(\'<div class="loading-hide" style="left:-999em; position: relative;">\');'.
-    '</script>',
-  'loading_block_end' => '<script type="text/javascript">document.write(\'</div>\');</script>',
+  'tab_header' => '<script type="text/javascript">/* <![CDATA[ */'."\n".
+      'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
+      "\n/* ]]> */</script>\n".
+      "<noscript><ul>{tabs}</ul></noscript>\n",
+  'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+      'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
+      '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
+      lang::get('loading')."...</div>');\n".
+      'document.write(\'<div class="loading-hide">\');'.
+      "\n/* ]]> */</script>\n",
+  'loading_block_end' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+      "document.write('</div>');\n".
+      "/* ]]> */</script>",
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
-    		'<span class="nobreak vernacular">{common}</span></div>',
+    	'<span class="nobreak vernacular">{common}</span></div>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
-         '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
+      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
       {
         minChars : 1,
@@ -127,9 +126,9 @@ $indicia_templates = array(
 }
 jQuery('#{parentControlId}').change({fn});
 jQuery('#{parentControlId}').change();\n",
-  'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}" class="{class}" value="{default}" '.
+  'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
-  'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" class="{class}" value="{default}" />' .
+  'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} value="{default}" />' .
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'
 );
 
@@ -143,7 +142,25 @@ jQuery('#{parentControlId}').change();\n",
  */
 class data_entry_helper extends helper_config {
   
+  /**
+   * @var array When reloading a form, this can be populated with the list of values to load into the controls. E.g. set it to the 
+   * content of $_POST after submitting a form that needs to reload.
+   */
+  public static $entity_to_load=null;
+  
+  /**
+   * @var array List of methods used to report a validation failure. Options are
+   * message, hint, icon, colour.
+   */
   public static $validation_mode=array('message');
+  
+  /**
+   * @var array List of resources that have already been dumped out, so we don't duplicate them.
+   */
+  private static $dumped_resources=array();
+  
+  
+  
   
  /**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
@@ -291,6 +308,9 @@ class data_entry_helper extends helper_config {
     // Add an error class to colour the control if there is an error and this option is set
     if (isset($error) && in_array('colour', $options['validation_mode'])) {
       $options['class'] .= ' ui-state-error';
+    }
+    if (!empty($options['class'])) {
+      $options['class']=' class="'.$options['class'].'"';
     }    
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -315,7 +335,7 @@ class data_entry_helper extends helper_config {
           array(
               $options['label'], 
               array_key_exists('inputId', $options) ? $options['inputId'] : $options['id'],
-              array_key_exists('labelClass', $options) ? $options['labelClass'] : '',
+              array_key_exists('labelClass', $options) ? ' class="'.$options['labelClass'].'"' : '',
           ),              
           $indicia_templates['label']
       );
@@ -471,7 +491,7 @@ class data_entry_helper extends helper_config {
    */
   public static function species_checklist()
   {  
-    global $indicia_javascript, $entity_to_load;
+    global $indicia_javascript;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     // Apply default values
     $options = array_merge(array(
@@ -533,7 +553,8 @@ class data_entry_helper extends helper_config {
                   'captionField'=>'term',
                   'valueField'=>'id',
                   'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
-                  'class' => $class
+                  'class' => $class,
+                  'blankText' => ''
               ));
               break;
             case 'D':
@@ -564,7 +585,7 @@ class data_entry_helper extends helper_config {
       $grid .= "</tr></tbody></table>";
       $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'">';
       if ($options['header']) {
-        $grid .= "<thead class=\"ui-widget-header\">";
+        $grid .= "<thead class=\"ui-widget-header\"><tr>";
         for ($i=0; $i<$options['columns']; $i++) {
           $grid .= "<th>".lang::get('species_checklist.species')."</th>";
           if ($options['checkboxCol']=='true') {
@@ -574,7 +595,7 @@ class data_entry_helper extends helper_config {
             $grid .= "<th>$a</th>";
           }
         }
-        $grid .= '</thead>';
+        $grid .= '</tr></thead>';
       }
       $rows = array();
       $rowIdx = 0;
@@ -582,7 +603,7 @@ class data_entry_helper extends helper_config {
         $id = $taxon['id'];
         $row = "<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
         if ($options['checkboxCol']=='true') {
-          if (isset($entity_to_load) && array_key_exists("sc:$id:present", $entity_to_load)) {
+          if (self::$entity_to_load!=null && array_key_exists("sc:$id:present", self::$entity_to_load)) {
             $checked = ' checked="checked"';
           } else {
             $checked='';
@@ -600,7 +621,7 @@ class data_entry_helper extends helper_config {
         }
         $rowIdx++;
       }
-      $grid .= '<tbody><tr>'.implode('</tr><tr>', $rows).'</tr></tbody';
+      $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
       $grid .= '</tbody></table>';
 
       // Insert an autocomplete box if the termlist has a parent or an alternate
@@ -764,6 +785,11 @@ class data_entry_helper extends helper_config {
     if (!array_key_exists('default', $options) || $options['default']=='') {
       $options['default']=lang::get('click here');
     }
+    // Enforce a class on the control called date
+    if (!array_key_exists('class', $options)) {
+      $options['class']='';
+    }
+    $options['class'] .= ' date';
     return self::apply_template('date_picker', $options);
   }
 
@@ -1465,6 +1491,7 @@ class data_entry_helper extends helper_config {
     if (array_key_exists('readAuth', $options)) {
       // Convert the readAuth into a query string so it can pass straight to the JS class.
       $options['readAuth']=self::array_to_query_string($options['readAuth']);
+      str_replace('&', '&amp;', $options['readAuth']);
     }
 
     // Autogenerate the links to the various mapping libraries as required
@@ -1503,7 +1530,7 @@ class data_entry_helper extends helper_config {
 
     $r = str_replace(
           array('{divId}','{class}'),
-          array($options['divId'], $options['class']),
+          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"'),
           $indicia_templates['map_panel']
       );
     return $r;
@@ -1755,11 +1782,13 @@ class data_entry_helper extends helper_config {
   }
   
   /**
-   * Allows the demarcation of the start of a region of the page HTML to be declared which will be replaced by 
-   * a loading message whilst the page is loading. If JavaScript is disabled then this has no
-   * effect.
-   * Note that hiding the block is achieved by setting it's left to move it off the page, rather than display: none.
-   * This is because OpenLayers won't initialise properly on a div that is display none.
+   * <p>Allows the demarcation of the start of a region of the page HTML to be declared which will be replaced by 
+   * a loading message whilst the page is loading.</p>
+   * <p>If JavaScript is disabled then this has no effect. Note that hiding the block is achieved by setting 
+   * it's left to move it off the page, rather than display: none. This is because OpenLayers won't initialise 
+   * properly on a div that is display none.</p>
+   * <p><b>Warning.</b> To use this function, always insert a call to dump_header in the <head> element of your
+   * HTML page to ensure that JQuery is loaded first. Otherwise this will not work.</p>
    * 
    * @return string HTML and JavaScript to insert into the page at the start of the block
    * which is replaced by a loading panel while the page is loading.
@@ -1767,10 +1796,15 @@ class data_entry_helper extends helper_config {
   public static function loading_block_start() {
     global $indicia_templates, $indicia_theme_path, $indicia_theme;
     self::add_resource('jquery_ui');
-    // Note that we have to load the ui theme css first as this needs to display immediately. A bit messy, ideally we 
-    // need a way to put stylesheets into the page header.
-    return "<link rel=\"stylesheet\" type=\"text/css\" href=\"$indicia_theme_path/$indicia_theme/jquery-ui.custom.css\" />\n".
-        $indicia_templates['loading_block_start'];
+    // For clean code, the jquery_ui stuff should have gone out in the page header, but just in case...
+    if (!in_array('jquery_ui', self::$dumped_resources)) {
+      $r = self::internal_dump_javascript('', '', array('jquery_ui'));
+      array_push(self::$dumped_resources, 'jquery_ui');
+    } else {
+      $r = '';
+    }
+    $r .= $indicia_templates['loading_block_start'];
+    return $r;        
   } 
   
   /**
@@ -1784,10 +1818,10 @@ class data_entry_helper extends helper_config {
     global $indicia_javascript, $indicia_templates;
     // First hide the message, then hide the form, slide it into view, then show it.
     $indicia_javascript .= "$('.loading-panel').remove();\n".
-        "$('.loading-hide').hide();\n".    
-        "$('.loading-hide').css('left',0);\n".
-        "$('.loading-hide').css('position','');\n".
-        "$('.loading-hide').fadeIn('slow');\n";    
+        "var panel=$('.loading-hide')[0];\n".
+        "$(panel).hide();\n".    
+        "$(panel).removeClass('loading-hide');\n".
+        "$(panel).fadeIn('slow');\n";    
     return $indicia_templates['loading_block_end'];
   }
 
@@ -1978,6 +2012,49 @@ class data_entry_helper extends helper_config {
   public static function build_submission($values, $structure) {
     return submission_builder::build_submission($values, $structure);
   }
+  
+  /**
+   * This method allows JavaScript and CSS links to be created and placed in the <head> of the 
+   * HTML file rather than using dump_javascript which must be called after the form is built. 
+   * The advantage of dump_javascript is that it intelligently builds the required links 
+   * depending on what is on your form. dump_header is not intelligent because the form is not
+   * built yet, but placing links in the header leads to cleaner code which validates better. 
+   * @param $resources List of resources to include in the header. The available options are:
+   * <ul>
+   * <li>jquery<li>
+   * <li>openlayers<li>
+   * <li>addrowtogrid<li>
+   * <li>indiciaMap<li>
+   * <li>indiciaMapPanel<li>
+   * <li>indiciaMapEdit<li>
+   * <li>locationFinder<li>
+   * <li>autocomplete<li>
+   * <li>jquery_ui<li>
+   * <li>json<li>
+   * <li>treeview<li>
+   * <li>googlemaps<li>
+   * <li>multimap<li>
+   * <li>virtualearth<li>
+   * <li>google_search<li>
+   * <li>flickr<li>
+   * <li>defaultStylesheet<li>
+   * </ul>
+   * The default for this is jquery_ui and defaultStylesheet.
+   * 
+   * @return string Text to place in the head section of the html file.
+   */
+  public static function dump_header($resources=null) {
+    if (!$resources) {
+      $resources = array('jquery_ui',  'defaultStylesheet');
+    }
+    foreach ($resources as $resource) {
+      self::add_resource($resource);
+    }
+    global $indicia_javascript;
+    // place a css class on the body if JavaScript enabled
+    $indicia_javascript .= '$("body").addClass("js");';
+    return self::dump_javascript();
+  }
 
   /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
@@ -1988,31 +2065,51 @@ class data_entry_helper extends helper_config {
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
-    global $indicia_javascript, $indicia_late_javascript, $indicia_resources;;
-    
+    global $indicia_javascript, $indicia_late_javascript, $indicia_resources;    
+    $dump = self::internal_dump_javascript($indicia_javascript, $indicia_late_javascript, $indicia_resources);
+    // ensure scripted JS does not output again if recalled.
+    $indicia_javascript = "";
+    $indicia_late_javascript = "";
+    return "\n\n".$dump;
+  }
+  
+  /**
+   * Internal implementation of the dump_javascript method which takes the javascript and resources list
+   * as flexible parameters, rather that using the globals.
+   * @access private
+   */
+  private static function internal_dump_javascript($javascript, $late_javascript, $resources) {
     $libraries = '';
     $stylesheets = '';
-    if (isset($indicia_resources)) {
+    if (isset($resources)) {
       $RESOURCES = self::_RESOURCES();
-      foreach ($indicia_resources as $resource)
+      foreach ($resources as $resource)
       {
-        foreach ($RESOURCES[$resource]['stylesheets'] as $s)
-        {
-          $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
-        }
-        foreach ($RESOURCES[$resource]['javascript'] as $j)
-        {
-          $libraries .= "<script type='text/javascript' src='$j'></script>\n";
+        if (!in_array($resource, self::$dumped_resources)) {
+          foreach ($RESOURCES[$resource]['stylesheets'] as $s)
+          {
+            $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
+          }
+          foreach ($RESOURCES[$resource]['javascript'] as $j)
+          {
+            $libraries .= "<script type='text/javascript' src='$j'></script>\n";
+          }
+          // Record the resource as being dumped, so we don't do it again.
+          array_push(self::$dumped_resources, $resource);
         }
       }
     }
-    $script = "<script type='text/javascript'>
+    if (!empty($javascript) || !empty($late_javascript)) {
+      $script = "<script type='text/javascript'>/* <![CDATA[ */
 jQuery(document).ready(function() {
-$indicia_javascript
-$indicia_late_javascript
+$javascript
+$late_javascript
 });
-</script>";
-    return "\n\n".$stylesheets.$libraries.$script;
+/* ]]> */</script>";
+    } else {
+      $script='';
+    }
+    return $stylesheets.$libraries.$script;    
   }
 
   /**
@@ -2026,8 +2123,7 @@ $indicia_late_javascript
   */
   public static function dump_errors($response, $inline=true)
   { 
-    $r = "";
-    global $entity_to_load;
+    $r = "";    
     global $indicia_errors;
     if (is_array($response)) {
       if (array_key_exists('error',$response)) {
@@ -2035,7 +2131,7 @@ $indicia_late_javascript
           // Setup an errors array that the data_entry_helper can output alongside the controls
           $indicia_errors = $response['errors'];
           // And tell the helper to reload the existing data.
-          $entity_to_load = $_POST;                    
+          self::$entity_to_load = $_POST;                    
         } else {
           $r .= "<div class=\"ui-state-error ui-corner-all\">\n";
           $r .= "<p>An error occurred when the data was submitted.</p>\n";
@@ -2256,11 +2352,10 @@ $indicia_late_javascript
    * $param [string, [string ...]] Variable list of possible default values. The first that is
    * not empty is used.
    */
-  public static function check_default_value($id) {
-    global $entity_to_load;
+  public static function check_default_value($id) {    
     $return = null;
-    if ($entity_to_load && array_key_exists($id, $entity_to_load)) {
-      $return = $entity_to_load[$id];
+    if (self::$entity_to_load!=null && array_key_exists($id, self::$entity_to_load)) {
+      $return = self::$entity_to_load[$id];
     }
     if (!$return) {
       // iterate the variable arguments and use the first one with a real value
