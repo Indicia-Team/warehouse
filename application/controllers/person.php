@@ -91,20 +91,15 @@ class Person_Controller extends Gridview_Base_Controller {
    * When called from User we want to return back to the User gridview on submission for that person
    */
   public function edit_from_user($id = NULL) {
-    if ($id == null)
-        {
-         $this->setError('Invocation error: missing argument', 'You cannot edit a person through edit_from_user() without a Person ID');
-        }
-        else if (!$this->record_authorised($id))
-    {
-      $this->access_denied('record with ID='.$id);
+    if ($id == null) {
+      $this->setError('Invocation error: missing argument', 'You cannot edit a person through edit_from_user() without a Person ID');
     }
-        else
-        {
-          $this->model = new Person_Model($id);
-      $this->setView('person/person_edit', 'Person',
-          array('return_url' => $this->return_url('user')));
-      $this->set_warning();
+    else if (!$this->record_authorised($id)) {
+      $this->access_denied('record with ID='.$id);
+    } else {
+      $this->model = new Person_Model($id);
+      $values = $this->getModelValues();
+      $this->showEditPage($values);
     }
   }
 
