@@ -179,7 +179,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   */
   function get_csv($data,$delimiter=',',$enclose='"')
   {
-    $newline="\n";
+    $newline="\r\n";
     $output = '';
     foreach ($data as $cell)
     {
