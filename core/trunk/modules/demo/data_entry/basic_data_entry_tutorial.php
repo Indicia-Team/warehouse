@@ -10,6 +10,7 @@
 <title>Basic Data Entry Tutorial Code</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
 <link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
+<?php echo data_entry_helper::dump_header(); ?>
 </head>
 <body>
 <div id="wrap">
