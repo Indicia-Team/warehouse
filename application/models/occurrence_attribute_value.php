@@ -72,6 +72,7 @@ class Occurrence_Attribute_Value_Model extends ORM {
       // Now get the custom attributes
       if ($oam->validation_rules != '') {
         $rules = explode("\r\n", $oam->validation_rules);
+        kohana::log('debug', 'rules '.kohana::debug($rules));
         foreach ($rules as $a){
           $array->add_rules($vf, $a);
         }

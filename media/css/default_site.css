@@ -163,3 +163,12 @@ input, select, textarea {
 li.ui-state-error {
 	margin: 0.5em;
 } 
+
+.loading-hide {
+  left:-999em; position: relative;
+}
+
+#imp-georef-div {
+	margin-bottom: 1em;
+	padding: 0.5em;
+}
