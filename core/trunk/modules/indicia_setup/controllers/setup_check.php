@@ -64,7 +64,7 @@ public $template = 'templates/template';
    */
   public function config_demo()
   {
-    $this->template->title = Kohana::lang('setup.demo_configuration');;
+    $this->template->title = Kohana::lang('setup.demo_configuration');
     $this->template->content = new View('fixers/config_demo');
     $this->template->content->error = $this->error;
     $this->error=null;
@@ -145,7 +145,7 @@ public $template = 'templates/template';
         // Test the email config
         $swift = email::connect();
         $message = new Swift_Message('Setup test',
-            'Email to test the Indicia server email configuration. Do not reply to this email.',
+            Kohana::lang('setup.test_email_title'),            
             'text/html');
         $person = ORM::factory('person', $_SESSION['auth_user']->person_id);
         $recipients = new Swift_RecipientList();
@@ -155,7 +155,7 @@ public $template = 'templates/template';
            file_put_contents($dest, $_source_content);
            url::redirect('setup_check');
         } else {
-          $this->error = "Please check your email configuration. The test email was not sent successfully.";
+          $this->error = Kohana::lang('setup.test_email_failed');
           $this->config_email();
         }
       } catch (ErrorException $e) {
@@ -172,7 +172,7 @@ public $template = 'templates/template';
    * Action to display the acknowledge permissions page.
    */
   public function skip_email() {
-    $this->template->title = 'Skip email configuration';
+    $this->template->title = Kohana::lang('setup.skip_email_config');
     $this->template->content = new View('fixers/skip_email');
   }
 
@@ -189,7 +189,7 @@ public $template = 'templates/template';
    * Action to display the acknowledge permissions page.
    */
   public function ack_permissions() {
-    $this->template->title = 'Acknowledge Permissions Problems';
+    $this->template->title = Kohana::lang('ack_perm_problems');
     $this->template->content = new View('fixers/ack_permissions');
     $messages=array();
     config_test::check_dir_permissions($messages, true);

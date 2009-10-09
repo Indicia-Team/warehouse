@@ -176,8 +176,9 @@ class config_test {
     if(!function_exists('pg_version')) {
       array_push($messages, array(
         'title' => 'PostgreSQL PHP Extensions',
-        'description' => 'The PostgreSQL extensions are not available on this installation of PHP. Please enable them ' .
-            'in your php.ini file and restart the server.',
+        'description' => 'The PostgreSQL extensions are not available on this installation of PHP. To fix this, find your php.ini file in the PHP installation folder and ' .
+            'find the line <strong>;extension=php_pgsql.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
+            'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.',
         'success' => false
       ));
     } elseif (!$problems_only) {

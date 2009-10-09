@@ -37,7 +37,6 @@ class Taxon_list_Model extends ORM_Tree {
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
     $array->add_rules('title', 'required');
-
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array('description', 'website_id', 'parent_id', 'deleted');
     return parent::validate($array, $save);

@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Valid extends Valid_Core {
+class Valid extends valid_Core {
 
   /**
    * Validate a spatial reference system is recognised, either an EPSG code or a notation.
@@ -23,7 +23,7 @@ class Valid extends Valid_Core {
    * $todo Should we consider caching the system?
    */
   public static function sref($sref, $system)
-  {
+  { 
     $system = $system[0];
     return spatial_ref::is_valid($sref, $system);
   }
@@ -34,7 +34,7 @@ class Valid extends Valid_Core {
    * @param	string	SDate
    */
   public static function vague_date($sDate){
-    if (vague_date::string_to_vague_date != false){
+    if (vague_date::string_to_vague_date($sDate) != false){
       return true;
     }
     return false;
@@ -130,6 +130,31 @@ class Valid extends Valid_Core {
     }
 
     return TRUE;
+  }
+  
+  /**
+   * Validate that a value is at least as high as a specified minimum value.
+   *
+   * @param string $value Value to validate
+   * @param int $min Minimum value accepted
+   * @return  bool
+   */
+  public static function min($value, $min)
+  {    
+    return (bool) $value >= $min;
+    throw new Exception;
+  }
+  
+/**
+   * Validate that a value is at least as high as a specified minimum value.
+   *
+   * @param string $value Value to validate
+   * @param int $min Maximum value accepted
+   * @return  bool  
+   */
+  public static function max($value, $max)
+  {
+    return (bool) $value <= $max;
   }
 
 
