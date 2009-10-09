@@ -21,7 +21,7 @@ $(document).ready(function(){
 });
 })(jQuery);
 </script>
-<title>Occurrence Grid Demo</title>
+<title>Report Grid Demo</title>
 </head>
 <body>
 <div id='grid'>

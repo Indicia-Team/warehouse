@@ -15,6 +15,8 @@ $allowed = array(
   'advanced_data_entry/save.php',
   'advanced_data_entry/success.php',
   'advanced_data_entry/map.php',
+  'reports/accessing_report_data.php',
+  'reports/report_1.php'
 );
 
 if ($_GET['file']) {

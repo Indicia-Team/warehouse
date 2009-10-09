@@ -79,17 +79,20 @@ class ReportEngine {
   * @param string $reportFormat Format of the report file. Currently only xml report file formats are supported.
   * @param array $params Associative array of report parameters.
   */
-  public function requestReport($report = null, $reportSource = null, $reportFormat = null,  $params = array())
+  public function requestReport($report = null, $reportSource = 'local', $reportFormat = null,  $params = array())
   {
     $this->reportFormat = $reportFormat;
     $this->providedParams = $params;
     Kohana::log('debug', "Received request for report: $report, source: $reportSource");
 
-    if ($report == null || $reportSource == null)
+    if ($reportSource == null) {    	
+    	$reportSource='local';
+    }
+    if ($report == null)
     {
       return array
       (
-      'error' => 'Either report or report source is null',
+      'error' => 'Report parameter is null',
       'report' => $report,
       'source' => $reportSource
       );
