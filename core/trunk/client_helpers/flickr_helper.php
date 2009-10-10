@@ -48,11 +48,11 @@ class flickr_helper extends helper_config {
    * @param string $div_id Name and id of the div element that is generated.
    */
   public static function flickr_selector($div_id='flickr') {
-    global $javascript;
+    global $indicia_javascript;
 
     if (array_key_exists('phpFlickr_auth_token', $_SESSION) &&
         !empty($_SESSION['phpFlickr_auth_token'])) {
-      $javascript .= "(function($) {
+      $indicia_javascript .= "(function($) {
           $(document).ready(function(){
             $('div#$div_id').indiciaFlickr();
           });

@@ -49,12 +49,9 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 <?php echo flickr_helper::flickr_selector(); ?>
 <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
 <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
-<br/>
 <label for="date">Date:</label>
 <?php echo data_entry_helper::date_picker('sample:date'); ?>
-<br />
-<?php echo data_entry_helper::map('map', array('multimap_landranger'), true, false, null, true); ?>
-<br />
+<?php echo data_entry_helper::map(); ?>
 <input type="submit" value="Save" />
 </fieldset>
 
