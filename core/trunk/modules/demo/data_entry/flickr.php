@@ -5,7 +5,7 @@ require_once '../../../client_helpers/flickr_helper.php';
 require_once '../data_entry_config.php';
 
 if (flickr_helper::$flickr_api_key!='') {
-  // Obtain read access to the user's Flickr account
+  // Obtain read access to the user's Flickr account. This will redirect to the flickr login page if required.
   flickr_helper::auth('read');
 }
 
