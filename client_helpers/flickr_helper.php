@@ -41,11 +41,25 @@ class flickr_helper extends helper_config {
   }
 
   /**
-   * Generates a flickr linked photo selector control. This requires a call to flickr_helper::auth
+   * <p>Generates a flickr linked photo selector control. This requires a call to flickr_helper::auth
    * to have been made first and the user to have followed the login process to Flickr, otherwise a
-   * normal image upload box will be displayed.
+   * normal image upload box will be displayed.<p>
+   * <p>In order to get the flickr_select control working, you need to first obtain a Flickr API key from 
+   * http://www.flickr.com/services/api/. When you register for the key you will also be given a 
+   * "secret" - a second code that you need to supply to the Indicia data entry helpers. Once you 
+   * have the keys, go to your client_helpers/helper_config.php file and enter them into the $flickr_api_key 
+   * and $flickr_api_secret values.</p>
+   * <p>In addition to specifying the api key and secret, you also need to tell Flickr where to 
+   * link to on your website after authenticating the user (the callback URL). There is a ready-made 
+   * PHP script in the Indicia code which you can use - client_helpers/flickr_auth.php. So, if your 
+   * code is running on a page at http://www.example.com/data_entry.php, with your client helpers 
+   * in a sub-folder, you will have a callback URL of http://www.example.com/client_helpers/flickr_auth.php. 
+   * You can list your API keys at http://www.flickr.com/services/api/keys/, then click the Edit key 
+   * details for the key you have registered. Now enter your callback URL in the respective field and 
+   * then save the key.</p>
    *
-   * @param string $div_id Name and id of the div element that is generated.
+   * @param string $div_id Name and id of the div element that is generated. Defaults to Flickr.
+   * @return string HTML to insert into the web-page for the Flickr control.
    */
   public static function flickr_selector($div_id='flickr') {
     global $indicia_javascript;
