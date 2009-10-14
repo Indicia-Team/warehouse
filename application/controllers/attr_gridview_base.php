@@ -190,8 +190,8 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
           kohana::log('debug', 'Posted rules '.$_POST['custom_attribute:validation_rules']);
         }
         // Make sure checkboxes have a value
-        if (!array_key_exists('public', $_POST)) $_POST['public'] = '0'; 
-        if (!array_key_exists('multi_value', $_POST)) $_POST['multi_value'] = '0';
+        if (!array_key_exists('custom_attribute:public', $_POST)) $_POST['custom_attribute:public'] = '0'; 
+        if (!array_key_exists('custom_attribute:multi_value', $_POST)) $_POST['custom_attribute:multi_value'] = '0';
       }       
       parent::save();
     }
