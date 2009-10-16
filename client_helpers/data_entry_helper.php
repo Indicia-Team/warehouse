@@ -401,6 +401,9 @@ class data_entry_helper extends helper_config {
   */
   public static function text_input() {
     $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options = array_merge(array(
+      'default'=>''
+    ), $options);
     return self::apply_template('text_input', $options);
   }
 
