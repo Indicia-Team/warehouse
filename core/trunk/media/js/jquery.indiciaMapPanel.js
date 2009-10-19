@@ -58,6 +58,8 @@
         	  // Landranger is not just a simple layer - need to set a Multimap option
         	  _enableMMLandranger();
           }
+        } else {
+          alert('Requested preset layer ' + item + ' is not recognised.');
         }
       });
       
