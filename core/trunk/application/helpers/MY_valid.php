@@ -44,6 +44,7 @@ class Valid extends valid_Core {
   * Validates that a date is not in the future.
   */
   public static function date_in_past($date) {
+  	kohana::log('debug', 'date in past being checked');
     return ($date == null || strtotime($date) <= time());
   }
 
@@ -139,22 +140,21 @@ class Valid extends valid_Core {
    * @param int $min Minimum value accepted
    * @return  bool
    */
-  public static function min($value, $min)
-  {    
-    return (bool) $value >= $min;
-    throw new Exception;
+  public static function minimum($value, $min)
+  {
+    return $value >= $min[0];
   }
   
-/**
+  /**
    * Validate that a value is at least as high as a specified minimum value.
    *
    * @param string $value Value to validate
    * @param int $min Maximum value accepted
    * @return  bool  
    */
-  public static function max($value, $max)
+  public static function maximum($value, $max)
   {
-    return (bool) $value <= $max;
+    return $value <= $max[0];
   }
 
 

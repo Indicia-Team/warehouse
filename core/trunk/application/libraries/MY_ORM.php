@@ -559,6 +559,8 @@ abstract class ORM extends ORM_Core {
       $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       $result=$this->db->get();
       $got_values=array();
+      kohana::debug('debug', 'result:');
+      kohana::debug('debug', $result);
       // Attributes are stored in a metafield. Find the ones we actually have a value for
       if (array_key_exists('metaFields', $this->submission) &&
           array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
@@ -654,9 +656,6 @@ abstract class ORM extends ORM_Core {
           $value = $attr['fields'];
           if ($value['value'] != '') {
             $attrId = $attr['fields'][$this->object_name.'_attribute_id'];
-            if ($attrId=="smpAttr") {
-              kohana::log('debug',kohana::debug($attr));
-            }
             $oa = ORM::factory($this->object_name.'_attribute', $attrId);
             $vf = null;
             switch ($oa->data_type) {
@@ -681,7 +680,7 @@ abstract class ORM extends ORM_Core {
                 $attr['fields']['date_type_value']['value'] = $vd['type'];
                 break;
               default:
-                // Lookup in list
+                // Lookup in list, int or boolean
                 $vf = 'int_value';
                 break;
             }
@@ -693,7 +692,6 @@ abstract class ORM extends ORM_Core {
             $oam = ORM::factory($this->object_name.'_attribute_value');
             $oam->submission = $attr;
             if (!$oam->inner_submit()) {
-              kohana::log('debug', kohana::debug($this->submission));
               $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';              
               // For attribute value errors, we need to report e.g smpAttr:6 as the error key name, not
               // the table and field name as normal.              

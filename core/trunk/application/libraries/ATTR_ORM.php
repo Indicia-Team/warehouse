@@ -41,6 +41,7 @@ abstract class ATTR_ORM extends ORM {
   public $valid_min_value;
   public $valid_max;
   public $valid_max_value;
+  public $valid_date_in_past;
 
   protected $search_field='caption';
 
@@ -156,10 +157,10 @@ abstract class ATTR_ORM extends ORM {
         case 'regex' :	$this->valid_regex = true;        
                 $this->valid_regex_format = $args;
                 break;
-        case 'min' :	$this->valid_min = true;
+        case 'minimum' :	$this->valid_min = true;
                 $this->valid_min_value = $args;
                 break;
-        case 'max' :	$this->valid_max = true;
+        case 'maximum' :	$this->valid_max = true;
                 $this->valid_max_value = $args;
                 break;
         case 'length' :	$this->valid_length = true;
@@ -167,6 +168,8 @@ abstract class ATTR_ORM extends ORM {
                 $this->valid_length_min = $args[0];
                 $this->valid_length_max = $args[1];
                 break;
+        case 'date_in_past' : $this->valid_date_in_past=true;
+        				break;
       }
     }
   }

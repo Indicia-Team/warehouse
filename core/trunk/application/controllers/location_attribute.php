@@ -43,7 +43,7 @@ class Location_attribute_Controller extends Attr_Gridview_Base_Controller {
       'survey'=>'',
       'caption'=>'',
       'data_type'=>'');
-    $this->pagetitle = "Location Attribute";
+    $this->pagetitle = "Location Attributes List";
     $this->model = ORM::factory('location_attribute');
     $this->auth_filter = $this->gen_auth_filter;
   }

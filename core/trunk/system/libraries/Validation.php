@@ -486,6 +486,7 @@ class Validation_Core extends ArrayObject {
 
 		foreach ($this->rules as $field => $callbacks)
 		{
+			
 			foreach ($callbacks as $callback)
 			{
 				// Separate the callback and arguments

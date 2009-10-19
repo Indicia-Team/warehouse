@@ -122,6 +122,9 @@ foreach ($values['attributes'] as $attr) {
 	  case 'Lookup List':
 	  	echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['value']);
 	  	break;
+	  case 'Boolean':
+	  	echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);
+	  	break;
 	  default:
 	  	echo form::input($name, $attr['value']);
 	}

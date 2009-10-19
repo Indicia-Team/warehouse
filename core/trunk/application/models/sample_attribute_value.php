@@ -39,6 +39,7 @@ class Sample_Attribute_Value_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('sample_attribute_id', 'required');
     $array->add_rules('sample_id', 'required');
+    kohana::log('debug', 'validating attribute');
 
     // We apply the validation rules specified in the sample attribute
     // table to the value given.
@@ -63,7 +64,13 @@ class Sample_Attribute_Value_Model extends ORM {
         $array->add_rules('date_end_value', 'required');
         $array->add_rules('date_type_value', 'required');
         $vf = 'date_start_value';
-      break;
+        break;
+      case 'B':
+      	// Boolean
+      	$array->add_rules('int_value', 'minimum[0]');
+      	$array->add_rules('int_value', 'maximum[1]');
+      	$vf = 'int_value';
+      	break;
       default:
         $vf = 'int_value';
       }

@@ -53,7 +53,7 @@ $indicia_templates = array(
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
-  'map_panel' => "<div id=\"{divId}\"{class}></div>\n<br/>\n",
+  'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px; border: solid red 1px;\"{class}>Loading map...</div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\"><div id=\"imp-georef-output-div\">\n".
@@ -153,6 +153,17 @@ class data_entry_helper extends helper_config {
    * message, hint, icon, colour.
    */
   public static $validation_mode=array('message');
+  
+  /**
+   * @var string JavaScript text to be emitted after the data entry form. Each control that
+   * needs custom JavaScript can append the script to this variable.
+   */
+  public static $javascript = '';
+  
+  /**
+   * @var string JavaScript text to be emitted after the data entry form and all other JavaScript.
+   */
+  public static $late_javascript = '';
   
   /**
    * @var array List of resources that have already been dumped out, so we don't duplicate them.
@@ -494,7 +505,6 @@ class data_entry_helper extends helper_config {
    */
   public static function species_checklist()
   {  
-    global $indicia_javascript;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     // Apply default values
     $options = array_merge(array(
@@ -642,7 +652,7 @@ class data_entry_helper extends helper_config {
       if (isset($options['lookupListId'])) {
         // Javascript to add further rows to the grid
         self::add_resource('addrowtogrid');
-        $indicia_javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
+        self::$javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'});
         jQuery('#addRowButton').click(addRowFn);\r\n";
 
@@ -712,8 +722,6 @@ class data_entry_helper extends helper_config {
     $extraClass = 'treeview')
     {
       self::add_resource('treeview');
-      // Reference to the config file.
-      global $indicia_javascript;
       // Declare the data service
       $url = parent::$base_url."/index.php/services/data";
       // If valueField is null, set it to $captionField
@@ -727,7 +735,7 @@ class data_entry_helper extends helper_config {
       // lop the comma off the end
       $sParams = substr($sParams, 0, -1);
 
-      $indicia_javascript .= "jQuery('#tr$id').treeview(
+      self::$javascript .= "jQuery('#tr$id').treeview(
       {
         url: '$url/$entity',
         extraParams : {
@@ -781,9 +789,8 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
 
     self::add_resource('jquery_ui');
-    global $indicia_javascript;
     $escaped_id=str_replace(':','\\\\:',$options['id']);
-    $indicia_javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\n";
+    self::$javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\n";
 
     if (!array_key_exists('default', $options) || $options['default']=='') {
       $options['default']=lang::get('click here');
@@ -1108,7 +1115,7 @@ class data_entry_helper extends helper_config {
   * @param array Options array of the child linked list.
   */
   private static function init_linked_lists($options) {
-    global $indicia_templates, $indicia_javascript;
+    global $indicia_templates;
     // setup JavaScript to do the population when the parent control changes
     $parentControlId = str_replace(':','\\\\:',$options['parentControlId']);
     $escapedId = str_replace(':','\\\\:',$options['id']);
@@ -1118,7 +1125,7 @@ class data_entry_helper extends helper_config {
     if (array_key_exists('extraParams', $options)) {
       $request .= self::array_to_query_string($options['extraParams']);
     }
-    $indicia_javascript .= str_replace(
+    self::$javascript .= str_replace(
         array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}'),
         array($fn, $escapedId, $request,$options['filterField'],$options['valueField'],$options['captionField'],$parentControlId),
         $indicia_templates['linked_list_javascript']
@@ -1164,7 +1171,7 @@ class data_entry_helper extends helper_config {
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
   public static function autocomplete() {
-    global $indicia_templates, $indicia_javascript;
+    global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array(
         'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default'
     ));
@@ -1190,7 +1197,7 @@ class data_entry_helper extends helper_config {
       array_push($replaceTags, '{'.$option.'}');
     }
     $options['extraParams']=null;
-    $indicia_javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
+    self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
 
     $r = self::apply_template('autocomplete', $options);
     return $r;
@@ -1473,7 +1480,7 @@ class data_entry_helper extends helper_config {
    * </ul>{@link sref_system_select()}</ul>
    * </ul>{@link sref_and_system()}</ul>
    * </ul>{@link georeference_lookup()}</ul>
-   * </ul>{@link  location_select()}</ul>
+   * </ul>{@link location_select()}</ul>
    * </ul>{@link location_autocomplete()}</li>
    * </ul>{@link postcode_textbox()}</li>
    * </ul>
@@ -1482,11 +1489,13 @@ class data_entry_helper extends helper_config {
    * The div's id can be specified using the divId array entry.
    */
   public static function map_panel($options) {
-    global $indicia_javascript, $indicia_templates;
+    global $indicia_templates;
     self::add_resource('indiciaMapPanel');
     $options = array_merge(array(
       'divId'=>'map',
       'class'=>'',
+      'width'=>600,
+      'height'=>470,
       'geoPlanetApiKey'=>parent::$geoplanet_api_key,
       'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
     ), $options);
@@ -1529,10 +1538,10 @@ class data_entry_helper extends helper_config {
       unset($options['layers']);
     }
     $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-    $indicia_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+    self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
     $r = str_replace(
-          array('{divId}','{class}'),
+          array('{divId}','{class},{width},{height}'),
           array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"'),
           $indicia_templates['map_panel']
       );
@@ -1688,6 +1697,7 @@ class data_entry_helper extends helper_config {
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
     $options['id']='imp-georef-search';
+    self::$javascript .= "indicia_url='".self::$base_url."';\n";
     return self::apply_template('georeference_lookup', $options);
   }
 
@@ -1752,16 +1762,15 @@ class data_entry_helper extends helper_config {
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function enable_tabs($options) {
-    global $indicia_late_javascript;
     if (array_key_exists('divId', $options)) {
-      // We put this javascript into $indicia_late_javascript so that it can come after the other controls.
+      // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
       // tabs because they have no size.
-      $indicia_late_javascript .= "var tabs = $(\"#".$options['divId']."\").tabs();\n";
+      self::$late_javascript .= "var tabs = $(\"#".$options['divId']."\").tabs();\n";
       // find any errors on the tabs.
-      $indicia_late_javascript .= "var errors=$(\"#".$options['divId']." .ui-state-error\");\n";
+      self::$late_javascript .= "var errors=$(\"#".$options['divId']." .ui-state-error\");\n";
       // select the tab containing the first error, if validation errors are present
-      $indicia_late_javascript .= "if (errors.length>0) {\n".
+      self::$late_javascript .= "if (errors.length>0) {\n".
           "  tabs.tabs('select',$(errors[0]).parents('.ui-tabs-panel')[0].id);\n".
           "  var panel;\n".
           "  for (var i=0; i<errors.length; i++) {\n".
@@ -1818,9 +1827,9 @@ class data_entry_helper extends helper_config {
    * which is replaced by a loading panel while the page is loading.
    */
   public static function loading_block_end() {
-    global $indicia_javascript, $indicia_templates;
+    global $indicia_templates;
     // First hide the message, then hide the form, slide it into view, then show it.
-    $indicia_javascript .= "$('.loading-panel').remove();\n".
+    self::$javascript .= "$('.loading-panel').remove();\n".
         "var panel=$('.loading-hide')[0];\n".
         "$(panel).hide();\n".    
         "$(panel).removeClass('loading-hide');\n".
@@ -2053,9 +2062,8 @@ class data_entry_helper extends helper_config {
     foreach ($resources as $resource) {
       self::add_resource($resource);
     }
-    global $indicia_javascript;
     // place a css class on the body if JavaScript enabled
-    $indicia_javascript .= '$("body").addClass("js");';
+    self::$javascript .= '$("body").addClass("js");';
     return self::dump_javascript();
   }
 
@@ -2068,11 +2076,11 @@ class data_entry_helper extends helper_config {
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
-    global $indicia_javascript, $indicia_late_javascript, $indicia_resources;    
-    $dump = self::internal_dump_javascript($indicia_javascript, $indicia_late_javascript, $indicia_resources);
+    global $indicia_resources;    
+    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, $indicia_resources);
     // ensure scripted JS does not output again if recalled.
-    $indicia_javascript = "";
-    $indicia_late_javascript = "";
+    self::$javascript = "";
+    self::$late_javascript = "";
     return "\n\n".$dump;
   }
   

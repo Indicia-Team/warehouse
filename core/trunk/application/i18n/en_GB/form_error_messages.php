@@ -18,6 +18,9 @@ $lang = array (
   'date_start' => Array (
     'date_in_past' => 'Please specify a date that is not in the future.'
   ),
+  'date_start_value' => Array (
+    'date_in_past' => 'Please specify a date that is not in the future.'
+  ),
   'date_type' => Array (
     'required' => 'Please supply a date for your observation.',
     'default' => 'Unrecognised vague date type',
@@ -60,6 +63,10 @@ $lang = array (
   'initials' => Array (
     'length' => 'The initials must be a maximum of 6 characters in length.',
     'default' => 'Invalid Input.',
+  ),
+  'int_value' => Array (
+    'maximum' => 'The value specified for this number is too high',
+    'minumum' => 'The value specified for this number is too low',
   ),
   'iso' => Array (
     'default' => 'Invalid ISO 639-2 language code.',
