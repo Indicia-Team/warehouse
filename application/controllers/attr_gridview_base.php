@@ -87,11 +87,6 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
   protected function getDefaults() {
     $r = parent::getDefaults();    
     $r['metaFields:disabled_input']='NO';
-    $r['attribute_load'] = new View(
-    		'templates/attribute_load', 
-        array('website_id'=>$this->input->get('website_id', null), 'model' => $this->model)
-    );
-    $r['enabled'] = '';
     $r['webrec_key'] = $this->model->object_name.'_id';
     return $r;
   }
@@ -101,11 +96,14 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    // We need to know if this attribute is unique to the website
-    $count = ORM::factory($this->websitemodelname)->where($this->model->object_name.'_id',$this->model->id)->find_all()->count();    
-    $r['metaFields:disabled_input']=$count<=1 ? 'NO' : 'YES';
-    $r['attribute_load'] = '';
-    $r['enabled'] = $count<=1 ? '' : 'disabled="disabled"';    
+    // Can the user edit the actual attribute? If not they can still assign it to their surveys.
+    if ($this->auth->logged_in('CoreAdmin')) {
+    	$r['metaFields:disabled_input']='NO';
+    } else {
+ 	    // We need to know if this attribute is unique to the website
+ 	    $count = ORM::factory($this->websitemodelname)->where($this->model->object_name.'_id',$this->model->id)->find_all()->count();    
+      $r['metaFields:disabled_input']=$count<=1 ? 'NO' : 'YES';
+    }    
     $r['webrec_key'] = $this->model->object_name.'_id';
     $this->model->populate_validation_rules();
     return $r;  
@@ -154,47 +152,29 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
   }
   
   public function save() {       
-    if ($_POST['submit']=='Reuse' ) {      
-      if (is_numeric($_POST['load_attr_id'])) {
-        $this->model = ORM::factory($this->model->object_name, $_POST['load_attr_id']);
-        $values = $this->getModelValues();
-        $values['attribute_load'] = '';
-        $values['enabled']='disabled="disabled"';
-        $values['metaFields:disabled_input']='YES';        
-      } else {
-        $values = $this->getDefaults();
-        $values['attribute_load'] = new View('templates/attribute_load', array(
-            'website_id'=>$this->input->post('website_id', null),
-            'model' => $this->model,
-            'error_message' => 'The attribute must be selected before the Reuse button is pressed'
-        ));        
+    if ($_POST['metaFields:disabled_input'] == 'NO') {
+      // Build the validation_rules field from the set of controls that are associated with it.
+      $rules = array();
+      foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past') as $rule) {          
+        if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {            
+          array_push($rules, $rule);
+        }
       }
-      $this->showEditPage($values);     
-    } else {
-      if ($_POST['metaFields:disabled_input'] == 'NO') {
-        // Build the validation_rules field from the set of controls that are associated with it.
-        $rules = array();
-        foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text') as $rule) {          
-          if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {            
-            array_push($rules, $rule);
-          }
-        }
-        if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1)   $rules[] = 'length['.$_POST['valid_length_min'].','.$_POST['valid_length_max'].']';
-        if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1) $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
-        if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)		 $rules[] = 'regex['.$_POST['valid_regex_format'].']';
-        if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)		     $rules[] = 'min['.$_POST['valid_min_value'].']';
-        if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)		     $rules[] = 'max['.$_POST['valid_max_value'].']';
-  
-        if (!empty($rules)) {
-          $_POST['custom_attribute:validation_rules'] = implode("\r\n", $rules);        
-          kohana::log('debug', 'Posted rules '.$_POST['custom_attribute:validation_rules']);
-        }
-        // Make sure checkboxes have a value
-        if (!array_key_exists('custom_attribute:public', $_POST)) $_POST['custom_attribute:public'] = '0'; 
-        if (!array_key_exists('custom_attribute:multi_value', $_POST)) $_POST['custom_attribute:multi_value'] = '0';
-      }       
-      parent::save();
-    }
+      if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1)   $rules[] = 'length['.$_POST['valid_length_min'].','.$_POST['valid_length_max'].']';
+      if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1) $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
+      if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)		 $rules[] = 'regex['.$_POST['valid_regex_format'].']';
+      if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)		     $rules[] = 'minimum['.$_POST['valid_min_value'].']';
+      if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)		     $rules[] = 'maximum['.$_POST['valid_max_value'].']';
+
+      if (!empty($rules)) {
+        $_POST['custom_attribute:validation_rules'] = implode("\r\n", $rules);        
+        kohana::log('debug', 'Posted rules '.$_POST['custom_attribute:validation_rules']);
+      }
+      // Make sure checkboxes have a value
+      if (!array_key_exists('custom_attribute:public', $_POST)) $_POST['custom_attribute:public'] = '0'; 
+      if (!array_key_exists('custom_attribute:multi_value', $_POST)) $_POST['custom_attribute:multi_value'] = '0';
+    }       
+    parent::save();    
   }
 
   protected function page_authorised()
@@ -221,7 +201,7 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     $this->view->table = $grid->display();
 
     // Templating
-    $this->template->title = $this->GetEditPageTitle($this->gridmodel, $this->pagetitle);
+    $this->template->title = $this->pagetitle;
     $this->template->content = $this->view;
   }
 

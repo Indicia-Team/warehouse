@@ -66,7 +66,7 @@ class flickr_helper extends helper_config {
 
     if (array_key_exists('phpFlickr_auth_token', $_SESSION) &&
         !empty($_SESSION['phpFlickr_auth_token'])) {
-      $indicia_javascript .= "(function($) {
+      data_entry_helper::$javascript .= "(function($) {
           $(document).ready(function(){
             $('div#$div_id').indiciaFlickr();
           });

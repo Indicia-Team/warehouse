@@ -41,7 +41,7 @@ class Occurrence_attribute_Controller extends Attr_Gridview_Base_Controller {
       'survey'=>'',
       'caption'=>'',
       'data_type'=>'');
-    $this->pagetitle = "Occurrence Attribute";
+    $this->pagetitle = "Occurrence Attributes List";
     $this->model = ORM::factory('occurrence_attribute');
     $this->auth_filter = $this->gen_auth_filter;
   }

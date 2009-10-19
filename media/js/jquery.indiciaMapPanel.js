@@ -32,7 +32,7 @@
       this.settings = opts;
 
       // Sizes the div
-      $(this).css('height', this.settings.height).css('width', this.settings.width);
+      $(this).css('height', this.settings.height+'px').css('width', this.settings.width+'px');
 
       // If we're using a proxy
       if (this.settings.proxy)
@@ -357,8 +357,8 @@ $.fn.indiciaMapPanel.defaults = {
     indiciaSvc : "http://localhost/indicia",
     indiciaGeoSvc : "http://localhost:8080/geoserver",
     readAuth : '',
-    height: "470px",
-    width: "600px",
+    height: "600",
+    width: "470",
     initial_lat: 55.1,
     initial_long: -2,
     initial_zoom: 5,
