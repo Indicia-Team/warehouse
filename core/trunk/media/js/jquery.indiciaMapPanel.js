@@ -328,7 +328,7 @@
     function _displayLocation(div, ref)
     {
       $.getJSON(
-        opts.indiciaSvc + "/index.php/services/spatial/sref_to_wkt" + "?sref=" + ref + "&system=4326" + "&callback=?", function(data) {
+        opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + ref + "&system=4326" + "&callback=?", function(data) {
           _showWktFeature(div, data.wkt);
         }
       );
