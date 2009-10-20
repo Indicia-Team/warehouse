@@ -66,11 +66,11 @@
       // Convert indicia WMS/WFS layers into js objects
       $.each(this.settings.indiciaWMSLayers, function(key, value)
       {
-        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + '/wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
+        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + 'wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
       });
       $.each(this.settings.indiciaWFSLayers, function(key, value)
       {
-        div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + '/wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
+        div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + 'wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
       });
 
       div.map.addLayers(this.settings.layers); 
@@ -203,7 +203,7 @@
           if (div.settings.clickedSrefPrecisionMax!=='') { 
           	precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
           }
-          $.getJSON(opts.indiciaSvc + "/index.php/services/spatial/wkt_to_sref"+
+          $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
             "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
             "&system=" + _getSystem() +
             "&precision=" + precision +
@@ -227,7 +227,7 @@
 
       // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefId).change(function() {
-        $.getJSON(div.settings.indiciaSvc + "/index.php/services/spatial/sref_to_wkt"+
+        $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
           "?sref=" + $(this).val() +
           "&system=" + _getSystem() +
           "&callback=?", function(data) {
@@ -258,7 +258,7 @@
       $('#imp-location').change(function()
       {
         // Change the location control requests the location's geometry to place on the map.
-        $.getJSON(div.settings.indiciaSvc + "/index.php/services/data/location/"+this.value +
+        $.getJSON(div.settings.indiciaSvc + "index.php/services/data/location/"+this.value +
           "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
             // store value in saved field?
             if (data.length>0) {
@@ -356,8 +356,8 @@
  * Main default options for the map
  */
 $.fn.indiciaMapPanel.defaults = {
-    indiciaSvc : "http://localhost/indicia",
-    indiciaGeoSvc : "http://localhost:8080/geoserver",
+    indiciaSvc : '',
+    indiciaGeoSvc : '',
     readAuth : '',
     height: "600",
     width: "470",

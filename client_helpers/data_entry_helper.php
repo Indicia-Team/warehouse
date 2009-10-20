@@ -1492,6 +1492,8 @@ class data_entry_helper extends helper_config {
     global $indicia_templates;
     self::add_resource('indiciaMapPanel');
     $options = array_merge(array(
+      'indiciaSvc'=>self::$base_url,
+      'indiciaGeoSvc'=>self::$geoserver_url,
       'divId'=>'map',
       'class'=>'',
       'width'=>600,
