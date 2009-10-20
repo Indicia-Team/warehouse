@@ -186,7 +186,7 @@ INSERT INTO sample_attributes (
 --Parent the UK countries under UK
 UPDATE termlists_terms
 SET parent_id=(SELECT id FROM list_termlists_terms WHERE term='United Kingdom' AND termlist_external_key='indicia:countries')
-WHERE id IN (SELECT id FROM list_termlists_terms WHERE termlist_external_key='indicia:countries' AND term!='United Kingdom')
+WHERE id IN (SELECT id FROM list_termlists_terms WHERE termlist_external_key='indicia:countries' AND term!='United Kingdom');
 
 INSERT INTO sample_attributes (
 	caption,
