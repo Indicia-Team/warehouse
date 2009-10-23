@@ -53,6 +53,8 @@ $indicia_templates = array(
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
+  'check_or_radio_group' => '{items}',
+  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} >{caption}</span>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px;\"{class}></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
@@ -1415,11 +1417,12 @@ class data_entry_helper extends helper_config {
    * Internal method to output either a checkbox group or a radio group.
    */
   private static function check_or_radio_group($options, $type) {
+    global $indicia_templates;
     $options = array_merge(array('sep' => ''), $options);
     $url = parent::$base_url."/index.php/services/data";
     // Execute a request to the service
     $response = self::get_population_data($options);
-    $r = "";
+    $items = "";
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
         if (array_key_exists($options['captionField'], $item) && array_key_exists($options['valueField'], $item)) {
@@ -1427,13 +1430,16 @@ class data_entry_helper extends helper_config {
           $name = htmlspecialchars($item[$options['captionField']], ENT_QUOTES);
           $checked = ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '';
 
-          $r .= "<span><input type='$type' name='".$options['fieldname']."' value='".$item[$options['valueField']]."' $checked/>";
-          $r .= "$name</span>".$options['sep'];
+          $items .= str_replace(
+              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}'),
+              array($type, $options['fieldname'], $item[$options['valueField']], $checked, $name, $options['sep']),
+              $indicia_templates['check_or_radio_group_item']
+          );
         }
       }
     }
-    $r .= self::check_errors($options['fieldname']);
-    return $r;
+    $options['items']=$items;
+    return self::apply_template('check_or_radio_group', $options);
   }
 
   /**
