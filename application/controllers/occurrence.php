@@ -78,7 +78,7 @@ class Occurrence_controller extends Gridview_Base_Controller {
     $grid = Gridview_Controller::factory(
         $gridmodel,	
         $this->uri->argument(3) || 1, // page number
-        4 // limit
+        4 // uri segment
     );
     $grid->base_filter = array('occurrence_id' => $this->model->id, 'deleted' => 'f');
     $grid->columns = array('comment' => '', 'updated_on' => '');    

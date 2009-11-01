@@ -49,9 +49,7 @@ class Termlist_Controller extends Gridview_Base_Controller {
 
     $gridmodel = ORM::factory('gv_termlist',$id);
 
-    $grid =	Gridview_Controller::factory($gridmodel,
-        $page_no,
-        4);
+    $grid =	Gridview_Controller::factory($gridmodel, $page_no, 4);
     $grid->base_filter = $this->base_filter;
     $grid->base_filter['parent_id'] = $id;
     $grid->columns = array_intersect_key($grid->columns, array(
@@ -70,9 +68,7 @@ class Termlist_Controller extends Gridview_Base_Controller {
   protected function getModelValues() {
     $r = parent::getModelValues();
     // Configure the grid
-    $grid =	Gridview_Controller::factory($this->model,
-        null, null,
-        4);
+    $grid =	Gridview_Controller::factory($this->model, 1, 4);
     $grid->base_filter = array('deleted' => 'f', 'parent_id' => $this->model->id);
     $grid->columns =  $this->columns;
     $grid->actionColumns = array(

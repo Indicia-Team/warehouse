@@ -46,9 +46,7 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   protected function getModelValues() {
     $r = parent::getModelValues();
     // Configure the grid
-    $grid =	Gridview_Controller::factory($this->model,
-        null, null,
-        4);
+    $grid =	Gridview_Controller::factory($this->model, 1, 4);
     $grid->base_filter = array('deleted' => 'f', 'parent_id' => $this->model->id);
     $grid->columns =  $this->columns;
     $grid->actionColumns = array(
@@ -83,9 +81,7 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   public function edit_gv($id,$page_no) {
     $this->auto_render=false;
     $model = ORM::factory('taxon_list',$id);
-    $grid =	Gridview_Controller::factory($model,
-        $page_no,
-        4);
+    $grid =	Gridview_Controller::factory($model, $page_no, 4);
     $grid->base_filter = array('deleted' => 'f', 'parent_id' => $id);
     $grid->columns = array_intersect_key($grid->columns, array(
       'title'=>'',
