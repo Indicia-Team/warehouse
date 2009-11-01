@@ -88,6 +88,8 @@ class Gridview_Controller extends Controller {
       }
     }    
     $limit = kohana::config('pagination.default.items_per_page');
+    kohana::log('debug', 'page '.$this->page);
+    kohana::log('debug', 'limit '.$limit);
     $offset = ($this->page -1) * $limit;
     $table = $lists->find_all($limit, $offset);  
     $pagination = new Pagination(array(
