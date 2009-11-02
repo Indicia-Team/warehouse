@@ -76,9 +76,12 @@ class Termlists_term_Model extends Base_Name_Model {
     $success = true;
     if ($this->submission['fields']['preferred']['value']=='t') {
       try {
-        $arrSyn=$this->parseRelatedNames(
-            $this->submission['metaFields']['synonyms']['value'], 'set_synonym_sub_array'
-        );
+        if (array_key_exists('synonyms', $this->submission['metaFields'])) {
+          $arrSyn=$this->parseRelatedNames(
+            $this->submission['metaFields']['synonyms']['value'],
+            'set_synonym_sub_array'
+          );
+        } else $arrSyn=array();
         $meaning_id=$this->submission['fields']['meaning_id']['value'];
         $existingSyn = $this->getSynonomy('meaning_id', $meaning_id);
 
@@ -178,6 +181,15 @@ class Termlists_term_Model extends Base_Name_Model {
       ),
       'metaFields'=>array('synonyms')      
     );
+  }
+  
+  /** 
+   * Set default values for a new entry.   
+   */
+  public function getDefaults() {
+    return array(
+      'preferred'=>'t'
+    );  
   }
 
 }
