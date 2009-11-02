@@ -126,7 +126,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
         $r['termlists_term:parent_id']=$_POST['termlists_term:parent_id'];
       }
     } else {       
-      if ($_POST['termlists_term:id']) {
+      if (array_key_exists('termlists_term:id', $_POST) && $_POST['termlists_term:id']) {
         $r['table'] = $this->get_child_grid($_POST['termlists_term:id'],      
           $this->uri->argument(3) || 1, // page number
           1 // limit

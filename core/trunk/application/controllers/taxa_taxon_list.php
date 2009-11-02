@@ -121,7 +121,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
         $r['taxa_taxon_list:parent_id']=$_POST['taxa_taxon_list:parent_id'];
       }
     } elseif ($this->uri->method(false)=='edit') {      
-      if ($_POST['taxa_taxon_list:id']) {
+      if (array_key_exists('taxa_taxon_list:id', $_POST) && $_POST['taxa_taxon_list:id']) {
         $r['table'] = $this->get_child_grid($_POST['taxa_taxon_list:id'],      
           $this->uri->argument(3) || 1, // page number
           1 // limit
