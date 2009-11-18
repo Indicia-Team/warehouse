@@ -66,6 +66,12 @@ class iform_basic_1 {
         'description'=>'The Indicia ID for the species list that species can be selected from.',
         'type'=>'string'
       ),
+	  array(
+      	'name'=>'preferred',
+        'caption'=>'Preferred species only?',
+        'description'=>'Should the selection of species be limited to preferred names only?',
+        'type'=>'boolean'
+      ),
       array(
       	'name'=>'tabs',
         'caption'=>'Use Tabbed Interface',
@@ -107,6 +113,10 @@ class iform_basic_1 {
     }   
     
     $r .= "<div id=\"species\">\n";
+	$extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
+	if ($args['preferred']) {
+	  $extraParams += array('preferred' => 't');
+	}
     $species_list_args=array(
         'label'=>'Species',
         'fieldname'=>'occurrence:taxa_taxon_list_id',
@@ -114,7 +124,7 @@ class iform_basic_1 {
         'captionField'=>'taxon',
         'valueField'=>'id',
         'columns'=>2,
-        'extraParams'=>$readAuth + array('taxon_list_id' => $args['list_id'], 'preferred' => 't')
+        'extraParams'=>$extraParams
     );
     // Dynamically generate the species selection control required.        
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
