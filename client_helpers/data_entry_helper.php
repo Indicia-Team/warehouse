@@ -81,7 +81,6 @@ $indicia_templates = array(
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
       {
         minChars : 1,
-        mustMatch : true,
         extraParams :
         {
           orderby : '{captionField}',
@@ -154,7 +153,7 @@ class data_entry_helper extends helper_config {
    * @var array List of methods used to report a validation failure. Options are
    * message, hint, icon, colour.
    */
-  public static $validation_mode=array('message');
+  public static $validation_mode=array('message', 'colour');
   
   /**
    * @var string JavaScript text to be emitted after the data entry form. Each control that
@@ -1549,8 +1548,8 @@ class data_entry_helper extends helper_config {
     self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
     $r = str_replace(
-          array('{divId}','{class},{width},{height}'),
-          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"'),
+          array('{divId}','{class}','{width}','{height}'),
+          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'], $options['height']),
           $indicia_templates['map_panel']
       );
     return $r;
