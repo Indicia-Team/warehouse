@@ -483,9 +483,8 @@ class data_entry_helper extends helper_config {
    * should at least contain the read authorisation array.</li>
    * <li><b>lookupListId</b><br/>
    * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
-   * rows to the grid. If specified, then an autocomplete text box and
-   * Add Row button are generated automatically allowing the user to pick a species to add as an
-   * extra row.</li>
+   * rows to the grid. If specified, then an autocomplete text box and Add Row button are generated 
+   * automatically allowing the user to pick a species to add as an extra row.</li>
    * <li><b>header</b><br/>
    * Include a header row in the grid? Defaults to true.</li>
    * <li><b>columns</b><br/>
@@ -638,18 +637,8 @@ class data_entry_helper extends helper_config {
       $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
       $grid .= '</tbody></table>';
 
-      // Insert an autocomplete box if the termlist has a parent or an alternate
-      // termlist has been given in the parameter.
-      if (!isset($options['lookupListId'])) {
-        $tlRequest = "$url/taxon_list/".$options['listId']."?mode=json&view=detail";
-        $session = curl_init($tlRequest);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $arr = explode("\r\n\r\n",curl_exec($session));        
-        $tl = json_decode(array_pop($arr), true);
-        if (! array_key_exists('error', $tl)) {
-          $options['lookupListId'] = $tl[0]['parent_id'];
-        }
-      }
+      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid, 
+      // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
         // Javascript to add further rows to the grid
         self::add_resource('addrowtogrid');
