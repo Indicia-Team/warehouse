@@ -504,7 +504,8 @@ class data_entry_helper extends helper_config {
    * </ul>
    */
   public static function species_checklist()
-  {  
+  { 
+    global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     // Apply default values
     $options = array_merge(array(
@@ -614,18 +615,30 @@ class data_entry_helper extends helper_config {
       $rowIdx = 0;
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
-        $row = "<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
+        $row = "\n<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
         if ($options['checkboxCol']=='true') {
           if (self::$entity_to_load!=null && array_key_exists("sc:$id:present", self::$entity_to_load)) {
             $checked = ' checked="checked"';
           } else {
             $checked='';
           }
-          $row .= "<td class='scPresenceCell'><input type='checkbox' name='sc:$id:present' $checked /></td>";
+          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:present' $checked /></td>";
         }
         foreach ($occAttrControls as $oc) {
-          $oc = preg_replace('/oa:(\d+)/', "sc:$id:occAttr:$1", $oc);
-          $row .= "<td class='scOccAttrCell ui-widget-content'>".$oc."</td>";
+          preg_match('/oa:(\d+)/', $oc, $matches);
+          $ctrlId = "sc:$id:occAttr:".$matches[1];
+          $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
+          
+          // If there is an existing value to load for this control, we need to put the value in the control.
+          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load) 
+              && !empty(self::$entity_to_load[$ctrlId])) {
+            // For select controls, specify which option is selected from the existing value    
+            if (substr($oc, 0, 7)=='<select') {              
+              $oc = str_replace('value="'.self::$entity_to_load[$ctrlId].'"', 
+                  'value="'.self::$entity_to_load[$ctrlId].' '.$indicia_templates['select_option_selected'], $oc);
+            }
+          }
+          $row .= "\n<td class='scOccAttrCell ui-widget-content'>".$oc."</td>";
         }
         if ($rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
@@ -1087,7 +1100,7 @@ class data_entry_helper extends helper_config {
             $selected = ($options['default'] == $item[$options['valueField']]) ? $indicia_templates[$selectTmpl] : '';
             $opts .= str_replace(
                 array('{value}', '{caption}', '{selected}'),
-                array($item[$options['valueField']], $item[$options['captionField']], $selected),
+                array($item[$options['valueField']], htmlspecialchars($item[$options['captionField']]), $selected),
                 $indicia_templates[$itemTmpl]
             );
           }
