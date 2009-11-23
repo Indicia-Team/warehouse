@@ -2144,7 +2144,7 @@ $late_javascript
     $r = "";    
     global $indicia_errors;
     if (is_array($response)) {
-      if (array_key_exists('error',$response)) {
+      if (array_key_exists('error',$response) || array_key_exists('errors',$response)) {
         if ($inline && array_key_exists('errors',$response)) {
           // Setup an errors array that the data_entry_helper can output alongside the controls
           $indicia_errors = $response['errors'];
