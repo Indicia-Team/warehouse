@@ -363,7 +363,10 @@ class data_entry_helper extends helper_config {
       $r .= self::check_errors($options['fieldname']);
     }    
     if (array_key_exists('suffixTemplate', $options)) {
-      $r .= $indicia_templates[$options['suffixTemplate']];
+      if (array_key_exists($options['suffixTemplate'], $indicia_templates)) 
+        $r .= $indicia_templates[$options['suffixTemplate']];
+      else
+        $r .= $indicia_templates['suffix'].'<span class="ui-state-error">Code error: suffix template '.$options['suffixTemplate'].' not in list of known templates.</span>';
     } else {
       $r .= $indicia_templates['suffix'];
     }
