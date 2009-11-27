@@ -62,12 +62,12 @@ class Sample_Model extends ORM_Tree
     $array->add_rules('date_start', 'date_in_past');
     $array->add_rules('entered_sref', "required");
     $array->add_rules('entered_sref_system', 'required');
+    $array->add_rules('geom', 'required');
     if (array_key_exists('entered_sref_system', $orig_values)) {
       $system = $orig_values['entered_sref_system'];
       $array->add_rules('entered_sref', "sref[$system]");
       $array->add_rules('entered_sref_system', 'sref_system');
-    }
-    $array->add_rules('geom', 'required');
+    }    
 
     // Any fields that don't have a validation rule need to be copied into the model manually
     $this->unvalidatedFields = array
@@ -87,7 +87,7 @@ class Sample_Model extends ORM_Tree
   * Before submission, map vague dates to their underlying database fields.
   */
   protected function preSubmit()
-  {    kohana::log('debug','presubmit');
+  { 
     if (array_key_exists('date', $this->submission['fields'])) {
       $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
       $this->submission['fields']['date_start']['value'] = $vague_date['start'];
@@ -95,12 +95,12 @@ class Sample_Model extends ORM_Tree
       $this->submission['fields']['date_type']['value'] = $vague_date['type'];      
     }
     // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
-    // can work out the Geom
+    // can work out the Geom    
     if (array_key_exists('entered_sref', $this->submission['fields']) &&
         array_key_exists('entered_sref_system', $this->submission['fields']) &&
-        !array_key_exists('geom', $this->submission['fields']) &&
+        !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
         $this->submission['fields']['entered_sref']['value'] &&
-        $this->submission['fields']['entered_sref_system']['value']) {
+        $this->submission['fields']['entered_sref_system']['value']) {                    
       $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
           $this->submission['fields']['entered_sref']['value'],
           $this->submission['fields']['entered_sref_system']['value']
