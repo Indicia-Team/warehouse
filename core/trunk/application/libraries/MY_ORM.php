@@ -758,7 +758,7 @@ abstract class ORM extends ORM_Core {
   protected function wrap($array, $fkLink = false)
   {     
     // share the wrapping library with the client helpers
-    require_once('client_helpers\submission_builder.php');    
+    require_once(DOCROOT.'client_helpers\submission_builder.php');        
     $r = submission_builder::build_submission($array, $this->get_submission_structure(), $fkLink);
       // Map fk_* fields to the looked up id
     if ($fkLink) {
