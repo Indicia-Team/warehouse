@@ -152,6 +152,6 @@ spatial reference. The more you zoom in, the more accurate the reference will be
 </ol>
 </fieldset>
 <?php 
-echo html::form_buttons(html::initial_value($values, 'location:id')!==null);
+echo html::form_buttons(html::initial_value($values, 'location:id')!=null);
 ?>
 </form>

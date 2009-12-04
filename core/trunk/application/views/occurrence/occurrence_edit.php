@@ -169,5 +169,5 @@ Verified on <?php echo html::initial_value($values, 'occurrence:verified_on') ?>
 </fieldset>
 <?php
 echo $values['comments'];
-echo html::form_buttons(html::initial_value($values, 'occurrence:id')!==null);
+echo html::form_buttons(html::initial_value($values, 'occurrence:id')!=null);
 ?>

@@ -175,7 +175,7 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
 </ol>
 </fieldset>
 <?php
-echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!==null); 
+echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null); 
 ?>
 </form>
 <?php 

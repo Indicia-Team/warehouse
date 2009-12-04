@@ -230,5 +230,5 @@ foreach ($websites as $website) {
 </ol>
 </fieldset>
 <?php echo $metadata;
-echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!==null);
+echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null);
 ?></form>

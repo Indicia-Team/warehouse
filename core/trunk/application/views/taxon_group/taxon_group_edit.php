@@ -36,6 +36,6 @@
 </ol>
 </fieldset>
 <?php 
-echo html::form_buttons(html::initial_value($values, 'taxon_group:id')!==null);
+echo html::form_buttons(html::initial_value($values, 'taxon_group:id')!=null);
 ?>
 </form>
