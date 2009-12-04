@@ -80,7 +80,7 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('termlists_term', $p
 </li>
 </fieldset>
 <?php 
-echo html::form_buttons(html::initial_value($values, 'termlists_term:id')!==null);
+echo html::form_buttons(html::initial_value($values, 'termlists_term:id')!=null);
 echo html::error_message($model->getError('deleted')); 
 ?>
 </form>

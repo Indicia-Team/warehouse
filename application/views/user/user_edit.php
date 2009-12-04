@@ -92,5 +92,5 @@
 ?>
 </ol>
 </fieldset>
-<?php echo html::form_buttons($model->id!==null); ?>
+<?php echo html::form_buttons($model->id!=null); ?>
 </form>

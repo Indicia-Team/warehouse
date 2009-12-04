@@ -57,5 +57,5 @@
 </li>
 </ol>
 </fieldset>
-<?php echo html::form_buttons(html::initial_value($values, 'website:id')!==null); ?>
+<?php echo html::form_buttons(html::initial_value($values, 'website:id')!=null); ?>
 </form>

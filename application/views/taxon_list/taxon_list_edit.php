@@ -96,7 +96,7 @@ if ($parent_id != null) : ?>
 </ol>
 </fieldset>
 <?php 
-echo html::form_buttons(html::initial_value($values, 'taxon_list:id')!==null);
+echo html::form_buttons(html::initial_value($values, 'taxon_list:id')!=null);
 ?>
 </form>
 </div>

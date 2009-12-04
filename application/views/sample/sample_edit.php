@@ -139,5 +139,5 @@ foreach ($values['attributes'] as $attr) {
  <?php 
    echo $values['occurrences']; 
  endif;
- echo html::form_buttons($id!==null); 
+ echo html::form_buttons($id!=null); 
  ?>

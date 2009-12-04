@@ -41,7 +41,7 @@
 </ol>
 </fieldset>
 <?php 
-echo html::form_buttons(html::initial_value($values, 'language:id')!==null)
+echo html::form_buttons(html::initial_value($values, 'language:id')!=null)
 ?>
 </form>
 
