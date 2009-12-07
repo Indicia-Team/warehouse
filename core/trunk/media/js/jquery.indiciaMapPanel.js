@@ -124,18 +124,22 @@
      * Enable a multimap landranger preference.
      */
     function _enableMMLandranger() {
-	  var landrangerData = 904;
-	  var prefs = MMDataResolver.getDataPreferences(MM_WORLD_MAP);
-	
-	  // Remove the landranger data where it is present
-	  for (i=0; i<prefs.length; i++) {
-	    if (landrangerData == prefs[i]) prefs.splice(i, 1);
-	  }
-	
-	  // Add to beginning of array (highest priority)
-	  prefs.unshift(landrangerData);
- 
-      MMDataResolver.setDataPreferences( MM_WORLD_MAP, prefs );
+      // Don't do this if the MM script is not linked up properly, otherwise we get a JS 
+      // exception and the other scripts stop running
+      if (typeof MMDataResolver != "undefined") {
+        var landrangerData = 904;
+        var prefs = MMDataResolver.getDataPreferences(MM_WORLD_MAP);
+      
+        // Remove the landranger data where it is present
+        for (i=0; i<prefs.length; i++) {
+        if (landrangerData == prefs[i]) prefs.splice(i, 1);
+        }
+      
+        // Add to beginning of array (highest priority)
+        prefs.unshift(landrangerData);
+     
+        MMDataResolver.setDataPreferences( MM_WORLD_MAP, prefs );
+      }
     }
 
     /**
@@ -411,13 +415,21 @@ $.fn.indiciaMapPanel.openLayersDefaults = {
  * Some pre-configured layers that can be added to the map.
  */
 $.fn.indiciaMapPanel.presetLayers = {
-    google_physical : function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': 'true'}); },
-    google_streets : function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); },
-    google_hybrid : function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); },
-    google_satellite : function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); },
-    openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true}); },
-    nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true}); },
-    virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
-    multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
-    multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
+  openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true}); },
+  nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true}); },
+  virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
+  multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
+  multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
 };
+// To protect ourselves against exceptions because the Google script would not link up, we
+// only enable these layers if the Google constants are available.
+if (typeof G_PHYSICAL_MAP != "undefined") {
+  $.fn.indiciaMapPanel.presetLayers.google_physical = 
+      function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': 'true'}); };
+  $.fn.indiciaMapPanel.presetLayers.google_streets =
+      function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
+  $.fn.indiciaMapPanel.presetLayers.google_hybrid = 
+      function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+  $.fn.indiciaMapPanel.presetLayers.google_satellite = 
+      function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+}        
