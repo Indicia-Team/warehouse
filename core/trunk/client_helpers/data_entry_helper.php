@@ -1451,21 +1451,26 @@ class data_entry_helper extends helper_config {
   * Yahoo! geoservices API. This is just a shortcut to building a control using a map_panel and the
   * associated controls.
   *
-  * @param string $div Id of a div to add the map into
-  * @param array $layers Array of preset layers to include
-  * @param bool $edit Include editable controls
-  * @param bool $locate Include location finder
-  * @param bool $defaultJs Automatically generate default javascript - otherwise leaves you to do this.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>layers</b><br/>
+  * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
+  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth', 'multimap_default', 'multimap_landranger'</li> 
+  * <li><b>edit</b><br/>
+  * True or false to include the edit controls for picking spatial references.</li> 
+  * <li><b>locate</b><br/>
+  * True or false to include the geolocate controls.</li> 
+  * <li><b>wkt</b><br/>
+  * Well Known Text of a spatial object to add to the map at startup.</li>
   */
   public static function map() {
-    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
+    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));    
     $options = array_merge(array(
         'div'=>'map',
         'presetLayers'=>array('multimap_landranger','google_physical','google_satellite'),
         'edit'=>true,
         'locate'=>true,
         'wkt'=>null
-    ));
+    ), $options);        
     $r = '';
     if ($options['edit']) {
       $r .= self::sref_and_system(array(
@@ -1477,7 +1482,7 @@ class data_entry_helper extends helper_config {
           'label'=>lang::get('search for place on map')
       ));
     }
-    $r .= self::map_panel(array('initialFeatureWkt', $options['wkt']));
+    $r .= self::map_panel(array('presetLayers' => $options['presetLayers'], 'initialFeatureWkt' => $options['wkt']));
     return $r;
   }
 
