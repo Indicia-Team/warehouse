@@ -2402,7 +2402,7 @@ $late_javascript
    *
    * @param boolean $fullInfo If true, then successful checks are also output.
    */
-  public static function system_check($fullInfo) {
+  public static function system_check($fullInfo=true) {
     // PHP_VERSION_ID is available as of PHP 5.2.7, if our
     // version is lower than that, then emulate it
     if(!defined('PHP_VERSION_ID'))
