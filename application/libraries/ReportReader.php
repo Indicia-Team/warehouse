@@ -67,4 +67,16 @@ interface ReportReader
   * <p> Gets a list of the columns (name => array('display' => display, 'style' => style)) </p>
   */
   public function getColumns();
+  /**
+  * <p> Gets a list of the attribute subquery definitions </p>
+  */
+  public function getAttributeDefns();
+  /**
+  * <p> Gets a text flag describing where vague date processing is active : 'true'/'false' </p>
+  */
+  public function getVagueDateProcessing();
+  /**
+  * <p> Gets an object describing the download processing: stdClass(enabled->'true'/'false'/'#paramValue#', id->name of PK in main query) </p>
+  */
+  public function getDownloadDetails();
 }
