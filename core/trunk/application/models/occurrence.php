@@ -66,6 +66,14 @@ class Occurrence_Model extends ORM
       'verified_on',
       'confidential'
     );
+    if(array_key_exists('id', $array)) {
+      $existingRecord = ORM::factory('occurrence', $array['id']);
+      if($existingRecord->downloaded_flag == 'F'){
+      	// downloaded_flag set to 'F' - this record has been downloaded out of the system, so now read only.
+        $this->errors['downloaded_flag']='Download flag set: record is now read only';
+       	$save = false;
+      }
+    }
     return parent::validate($array, $save);
   }
 

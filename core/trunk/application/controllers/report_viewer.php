@@ -107,6 +107,16 @@ class Report_viewer_Controller extends Indicia_Controller
             $this->db = new Database('report');
           }
           $srvResponse['content']['parameterRequest'][$name]['lookup_values'] = $this->db->query($det['query'])->result_array();
+        } else if (isset($det['lookup_values']) && is_string($det['lookup_values'])) {
+        	$options = array();
+        	foreach(explode(',', $det['lookup_values']) as $option) {
+        		$parts=explode(':', $option);
+        		$optionObj = new stdClass;
+        		$optionObj->id = $parts[0];
+        		$optionObj->caption = $parts[1];
+        		$options[]=$optionObj;
+        	}
+        	$srvResponse['content']['parameterRequest'][$name]['lookup_values'] = $options;
         }
       }
       $view->report = $srvResponse;
