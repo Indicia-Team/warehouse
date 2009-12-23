@@ -171,6 +171,12 @@ class data_entry_helper extends helper_config {
    */
   private static $dumped_resources=array();
   
+  /**
+   * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
+   * remaining ones at the end.
+   */
+  private static $displayed_errors=array();
+  
   
   
   
@@ -703,12 +709,11 @@ class data_entry_helper extends helper_config {
   *
   * @param string $id id attribute for the returned hidden input control.
   * NB the tree itself will have an id of "tr$id"
-  * @param string $entity Name (Kohana-style) of the database entity to be queried.
+  * @param string $tableName Name (Kohana-style) of the database entity to be queried.
+  * @param string $view Name of the view of the table required (list, detail).
   * @param string $captionField Field to draw values to show in the control from.
   * @param string $valueField Field to draw values to return from the control from. Defaults
-  * to the value of $captionField.
-  * @param string $topField Field used in filter to define top level entries
-  * @param string $topValue Value of $topField used in filter to define top level entries
+  * to the value of $captionField.    
   * @param string $parentField Field used to indicate parent within tree for a record.
   * to the value of $captionField.
   * @param string $defaultValue initial value to set the control to (not currently used).
@@ -722,53 +727,53 @@ class data_entry_helper extends helper_config {
   * Need to do initial value.
   * Need to look at how the filetree can be implemented.
   */
-  public static function treeview($id, $entity,
-    $captionField, $valueField, $topField, $topValue, $parentField,
-    $defaultValue, $extraParams,
-    $extraClass = 'treeview')
-    {
-      self::add_resource('treeview');
-      // Declare the data service
-      $url = parent::$base_url."/index.php/services/data";
-      // If valueField is null, set it to $captionField
-      if ($valueField == null) $valueField = $captionField;
-      $defaultValue = $default = self::check_default_value($id, $defaultValue);
-      // Do stuff with extraParams
-      $sParams = '';
-      foreach ($extraParams as $a => $b){
-        $sParams .= "$a : '$b',";
-      }
-      // lop the comma off the end
-      $sParams = substr($sParams, 0, -1);
-
-      self::$javascript .= "jQuery('#tr$id').treeview(
+  public static function treeview()
+  {
+    $options = self::check_arguments(func_get_args(), array('id', 'tableName', 'captionField', 'valueField',
+        'topField', 'topValue', 'parentField', 'defaultValue', 'extraParams', 'class'));
+    self::add_resource('treeview');
+    // Declare the data service
+    $url = parent::$base_url."/index.php/services/data";
+    // If valueField is null, set it to $captionField
+    if ($options['valueField'] == null) $options['valueField'] = $options['captionField'];
+    if ($options['class'] == null) $options['class'] = 'treeview';
+    $defaultValue = $default = self::check_default_value($options['id'], 
+        array_key_exists('defaultValue', $options) ? $options['defaultValue'] : null);
+    // Do stuff with extraParams
+    $sParams = '';
+    foreach ($options['extraParams'] as $a => $b){
+      $sParams .= "$a : '$b',";
+    }
+    // lop the comma off the end
+    $sParams = substr($sParams, 0, -1);
+    extract($options, EXTR_PREFIX_ALL, 'o');
+    self::$javascript .= "jQuery('#tr$o_id').treeview(
       {
-        url: '$url/$entity',
+        url: '$url/$o_tableName',
         extraParams : {
-          orderby : '$captionField',
+          orderby : '$0_captionField',
           mode : 'json',
           $sParams
         },
-        valueControl: '$id',
-        nameField: '$captionField',
-        valueField: '$valueField',
-        topField: '$topField',
-        topValue: '$topValue',
-        parentField: '$parentField',
+        valueControl: '$o_id',
+        nameField: '$o_captionField',
+        valueField: '$o_valueField',
+        view: '$o_view',
+        parentField: '$o_parentField',
         dataType: 'jsonp',
         parse: function(data) {
         var results =
         {
           'data' : data,
-          'caption' : data.$captionField,
-          'value' : data.$valueField
+          'caption' : data.$o_captionField,
+          'value' : data.$o_valueField
         };
         return results;
       }
     });\n";
 
-    $tree = '<input type="hidden" class="hidden" id="'.$id.'" name="'.$id.'" /><ul id="tr'.$id.'" class="'.$extraClass.'"></ul>';
-    $r .= self::check_errors($id);
+    $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_id.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
+    $tree .= self::check_errors($o_id);
     return $tree;
   }
 
@@ -2195,6 +2200,16 @@ $late_javascript
       $r .= "<div class=\"ui-state-error ui-corner-all\">$response</div>\n";
     return $r;
   }
+  
+  public static function dump_remaining_errors()
+  { 
+    global $indicia_errors;
+    foreach ($indicia_errors as $error) {
+      if (!in_array($error, self::$displayed_errors)) {
+        echo $error."<br/>";
+      }
+    }
+  }
 
 
   /**
@@ -2350,18 +2365,23 @@ $late_javascript
     $error='';    
     if (isset($indicia_errors)) {
        if (array_key_exists($id, $indicia_errors)) {
-         $error = $indicia_errors[$id];
+         $errorKey = $id;
        } elseif (substr($id, -4)=='date') {
           // For date fields, we also include the type, start and end validation problems
           if (array_key_exists($id.'_start', $indicia_errors)) {
-            $error = $indicia_errors[$id.'_start'];
+            $errorKey = $id.'_start';
           }
           if (array_key_exists($id.'_end', $indicia_errors)) {
-            $error = $indicia_errors[$id.'_end'];
+            $errorKey = $id.'_end';
           }
           if (array_key_exists($id.'_type', $indicia_errors)) {
-            $error = $indicia_errors[$id.'_type'];
+            $errorKey = $id.'_type';
           }
+       }
+       if (isset($errorKey)) {
+         $error = $indicia_errors[$errorKey];
+         // Track errors that were displayed, so we can tell the user about any others.
+         self::$displayed_errors[] = $error;
        }
     }
     if ($error!='') {

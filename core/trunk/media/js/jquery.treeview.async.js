@@ -16,11 +16,18 @@
 ;(function($) {
 	var CLASSES = $.treeview.classes;
 
-function load(settings, qfield, qvalue, qnullfield, child, container) {
+function load(settings, qfield, qvalue, child, container) {
 	var parent=child.parent();
 	var hitarea = parent.find("div." + CLASSES.hitarea);
-	var filter = "&qfield="+qfield+"&q="+qvalue+((qnullfield == null) ? "" : "&"+qnullfield+"=NULL");
-	$.getJSON(settings.url+"?mode=json&callback=?&view="+settings.extraParams.view+filter,
+	if (qvalue==null) {
+	  qvalue='NULL';
+	}
+	var filter = '&'+qfield+'='+qvalue;
+	var extras = '';
+	for (var p in settings.extraParams) {
+	  extras += '&' + p + '=' + settings.extraParams[p];
+	}	
+	$.getJSON(settings.url+"?callback=?&view="+settings.view+filter+extras,			
 			null,
 		function(response) {
 		  function createNode(parent) {
@@ -29,14 +36,14 @@ function load(settings, qfield, qvalue, qnullfield, child, container) {
 			if (this.classes) {
 				current.children("span").addClass(this.classes);
 			}
-			if (! this.nochildren ) { 
+			if (! this.nochildren ) {				
 				var branch = $("<ul/>").appendTo(current);
 				current.addClass("hasChildren");
-				createNode.call({
+				/*createNode.call({
 					classes: "placeholder",
 					caption: "&nbsp;",
 					nochildren:[]
-				}, branch);
+				}, branch);*/
 			} 
 		  }
 		child.empty();
@@ -66,7 +73,7 @@ $.fn.treeview = function(settings) {
 	}
 	var container = this;
 	if (!container.children().size())
-		load(settings, settings.topField, settings.topValue, settings.parentField, this, container);
+		load(settings, settings.parentField, null, this, container);
 	var userToggle = settings.toggle;
 	return proxied.call(this, $.extend({}, settings, {
 		collapsed: true,
@@ -85,7 +92,7 @@ $.fn.treeview = function(settings) {
 				$("input#"+settings.valueControl).val($this.attr("id"));
 			if ($this.hasClass("hasChildren")) {
 				var childList = $this.removeClass("hasChildren").find("ul");
-				load(settings, settings.parentField, this.id, null, childList, container);
+				load(settings, settings.parentField, this.id, childList, container);
 			}
 			if (userToggle) {
 				userToggle.apply(this, arguments);
