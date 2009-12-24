@@ -76,6 +76,7 @@ $indicia_templates = array(
       "/* ]]> */</script>",
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
     	'<span class="nobreak vernacular">{common}</span></div>',
+  'treeview_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
       '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
@@ -707,29 +708,39 @@ class data_entry_helper extends helper_config {
   /**
   * Helper function to generate a treeview from a given list
   *
-  * @param string $id id attribute for the returned hidden input control.
-  * NB the tree itself will have an id of "tr$id"
-  * @param string $tableName Name (Kohana-style) of the database entity to be queried.
-  * @param string $view Name of the view of the table required (list, detail).
-  * @param string $captionField Field to draw values to show in the control from.
-  * @param string $valueField Field to draw values to return from the control from. Defaults
-  * to the value of $captionField.    
-  * @param string $parentField Field used to indicate parent within tree for a record.
-  * to the value of $captionField.
-  * @param string $defaultValue initial value to set the control to (not currently used).
-  * @param string[] extraParams Array of key=>value pairs which will be passed to the service
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
+  * NB the tree itself will have an id of "tr$fieldname".</li>
+  * <li><b>tableName</b><br/>
+  * Required. Name (Kohana-style) of the database entity to be queried.</li>
+  * <li><b>view</b><br/>
+  * Name of the view of the table required (list, detail).</li>
+  * <li><b>captionField</b><br/>
+  * Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Field to draw values to return from the control from. Defaults
+  * to the value of $captionField.</li>
+  * <li><b>parentField</b><br/>
+  * Field used to indicate parent within tree for a record.</li>
+  * <li><b>defaultValue</b><br/>
+  * Initial value to set the control to (not currently used).</li>
+  * <li><b>extraParams</b><br/>
+  * Array of key=>value pairs which will be passed to the service
   * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
-  * queries to the data services. Can also be used to specify the "view" type e.g. "detail"
-  * @param string extraClass : main class to be added to UL tag - currently can be treeview, treeview-red,
-  * treeview_black, treeview-gray. The filetree class although present, does not work properly.
-  *
-  * TO DO
-  * Need to do initial value.
-  * Need to look at how the filetree can be implemented.
+  * queries to the data services.</li>
+  * <li><b>extraClass</b><br/>
+  * main class to be added to UL tag - currently can be treeview, treeview-red,
+  * treeview_black, treeview-gray. The filetree class although present, does not work properly.</li>
+  * </ul>
+  * 
+  * TODO
+  * Need to do initial value.  
   */
   public static function treeview()
   {
-    $options = self::check_arguments(func_get_args(), array('id', 'tableName', 'captionField', 'valueField',
+    global $indicia_templates; 
+    $options = self::check_arguments(func_get_args(), array('fieldName', 'tableName', 'captionField', 'valueField',
         'topField', 'topValue', 'parentField', 'defaultValue', 'extraParams', 'class'));
     self::add_resource('treeview');
     // Declare the data service
@@ -737,7 +748,7 @@ class data_entry_helper extends helper_config {
     // If valueField is null, set it to $captionField
     if ($options['valueField'] == null) $options['valueField'] = $options['captionField'];
     if ($options['class'] == null) $options['class'] = 'treeview';
-    $defaultValue = $default = self::check_default_value($options['id'], 
+    $defaultValue = $default = self::check_default_value($options['fieldName'], 
         array_key_exists('defaultValue', $options) ? $options['defaultValue'] : null);
     // Do stuff with extraParams
     $sParams = '';
@@ -747,33 +758,24 @@ class data_entry_helper extends helper_config {
     // lop the comma off the end
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
-    self::$javascript .= "jQuery('#tr$o_id').treeview(
-      {
-        url: '$url/$o_tableName',
-        extraParams : {
-          orderby : '$0_captionField',
-          mode : 'json',
-          $sParams
-        },
-        valueControl: '$o_id',
-        nameField: '$o_captionField',
-        valueField: '$o_valueField',
-        view: '$o_view',
-        parentField: '$o_parentField',
-        dataType: 'jsonp',
-        parse: function(data) {
-        var results =
-        {
-          'data' : data,
-          'caption' : data.$o_captionField,
-          'value' : data.$o_valueField
-        };
-        return results;
-      }
+    self::$javascript .= "jQuery('#tr$o_fieldName').treeview({
+      url: '$url/$o_tableName',
+      extraParams : {
+        orderby : '$0_captionField',
+        mode : 'json',
+        $sParams
+      },
+      valueControl: '$o_fieldName',      
+      valueField: '$o_valueField',
+      captionField: '$o_captionField',
+      view: '$o_view',
+      parentField: '$o_parentField',
+      dataType: 'jsonp',
+      nodeTmpl: '".$indicia_templates['treeview_node']."' 
     });\n";
 
-    $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_id.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
-    $tree .= self::check_errors($o_id);
+    $tree = '<input type="hidden" class="hidden" id="'.$o_fieldName.'" name="'.$o_fieldName.'" /><ul id="tr'.$o_fieldName.'" class="'.$o_class.'"></ul>';
+    $tree .= self::check_errors($o_fieldName);
     return $tree;
   }
 
