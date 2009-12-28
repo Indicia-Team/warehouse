@@ -17,8 +17,7 @@
 class Upgrade_Model extends Model
 {
 
-    public $last_executed_file = '';
-    private $upgarde_error = array();
+    private $upgrade_error = array();
 
     public function __construct()
     {
@@ -46,7 +45,6 @@ class Upgrade_Model extends Model
 
         // start transaction
         $this->begin();
-
         try
         {
 
@@ -231,12 +229,18 @@ class Upgrade_Model extends Model
      * execute all sql srips from the upgrade folder
      *
      * @param string $upgrade_folder folder name
-     * @param string $last_executed_file last executed sql file name
      */
-    public function execute_sql_scripts( $upgrade_folder, $last_executed_file = false )
+    public function execute_sql_scripts($upgrade_folder)
     {
+        $this->begin();        
         $file_name = array();
         $full_upgrade_folder = $this->base_dir . "/modules/indicia_setup/db/" . $upgrade_folder;
+        
+        // get last executed sql file name
+        $orig_last_executed_file = $this->get_last_executed_sql_file_name($full_upgrade_folder);
+
+        $orig_last_executed_file = str_replace("____", "", $orig_last_executed_file).".sql";
+        $last_executed_file=$orig_last_executed_file;
 
         if ( (($handle = @opendir( $full_upgrade_folder ))) != FALSE )
         {
@@ -256,44 +260,20 @@ class Upgrade_Model extends Model
             throw new  Exception("Cant open dir " . $full_upgrade_folder);
         }
 
-        sort( $file_name );
-
+        sort($file_name);
+        kohana::log('debug', implode(', ',$file_name));
         try
         {
-            $_switch = false;
-            if($last_executed_file !== false)
-            {
-                $_switch = true;
-
-                if(strcmp($last_executed_file, '') == 0)
-                {
-                    $_switch = false;
+            foreach($file_name as $name) {             
+              kohana::log('debug', $name);
+              if (strcmp($name, $last_executed_file)>0 || empty($last_executed_file)) {
+                if(false === ($_db_file = file_get_contents( $full_upgrade_folder . '/' . $name ))) {
+                  throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
                 }
-                else
-                {
-                    $last_executed_file = $last_executed_file . '.sql';
-                }
-            }
-
-            foreach($file_name as $name)
-            {
-                if(($last_executed_file !== false) && ($_switch === true))
-                {
-                    if($name != $last_executed_file)
-                    {
-                        continue;
-                    }
-
-                    $_switch = false;
-                    continue;
-                }
-
-                if(false === ($_db_file = file_get_contents( $full_upgrade_folder . '/' . $name )))
-                {
-                    throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
-                }
-                $result = $this->db->query( $_db_file );
-                $this->last_executed_file = $name;
+                kohana::log('debug', "Upgrading file $name");
+                $result = $this->db->query($_db_file);
+                $last_executed_file = $name;
+              }
             }
         }
         catch(Kohana_Database_Exception $e)
@@ -301,10 +281,52 @@ class Upgrade_Model extends Model
             $_error = "Error in file: " . $full_upgrade_folder . '/' . $name . "\n\n" . $e->getMessage();
             throw new Exception($_error);
         }
-
+        $this->commit();
+        $this->update_last_executed_sql_file($full_upgrade_folder, $orig_last_executed_file, $last_executed_file);        
         return true;
     }
 
+  /**
+   * Updates the last executed sql file name after each successful script run.
+   */
+  private function update_last_executed_sql_file($full_upgrade_folder, $prev, $next) {
+    if ($prev!=$next) {
+      if (false === @file_put_contents( $full_upgrade_folder . '/____' . str_replace('.sql', '', $next) . '____', 'nop' ))
+      {
+        throw new  Exception("Couldnt write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
+      }
+  
+      // remove the previous last executed file name
+      if ($prev!=".sql")
+      {
+        if( false === @unlink($full_upgrade_folder . '/____' . str_replace('.sql', '', $prev) .'____'))
+        {
+          throw new  Exception("Couldnt delete previous executed file name: " . $full_upgrade_folder . '/' . $prev);
+        }
+      }
+    }  
+  }
+  
+  /**
+   * Find the file in the directory which is prefixed ____, if it exists. This denotes the last run script from a 
+   * previous upgrade.   
+   */
+  private  function get_last_executed_sql_file_name( $_full_upgrade_folder_path) {
+    if ( (($handle = @opendir( $_full_upgrade_folder_path ))) != FALSE ) {
+      while ( (( $file = readdir( $handle ) )) != false ) {
+        if ( !preg_match("/^____.*____$/", $file) ) {
+          continue;
+        }
+        return $file;
+      }
+      @closedir( $handle );
+
+      return '';
+    }
+    else {
+      throw new  Exception("Cant open dir " . $_full_upgrade_folder_path);
+    }
+  }
 
 }
 
