@@ -4,8 +4,10 @@ class login {
 
   public function __construct()
   {
-    // Hook into routing
-    Event::add('system.routing', array($this, 'check'));
+    // Hook into routing, but not if running unit tests
+    if (!in_array(MODPATH.'phpUnit', kohana::config('config.modules'))) {
+      Event::add('system.routing', array($this, 'check'));      
+    }
   }
 
   /**
