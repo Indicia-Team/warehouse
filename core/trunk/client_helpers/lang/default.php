@@ -28,6 +28,7 @@ global $default_terms;
  */
 $default_terms = array(
   'add row'=>'Add Row',
+  'back'=>'Back',
   'british national grid'=>'British National Grid',
   'click here'=>'Click here',
   'close'=>'Close',
