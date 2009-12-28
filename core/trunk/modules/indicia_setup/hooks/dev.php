@@ -50,36 +50,9 @@ class Dev
             if(!is_writeable($_full_upgrade_folder_path))
             {
                 throw new  Exception("The folder isn't writeable: " . $_full_upgrade_folder_path);
-            }
-
-            // get last executed sql file name
-            $tmp_last_executed_sql_file = Dev::get_last_executed_sql_file_name( $_full_upgrade_folder_path );
-
-            $last_executed_sql_file = str_replace("____", "", $tmp_last_executed_sql_file);
-
-            $upgrade->begin();
-
-            $upgrade->execute_sql_scripts( $dev_version_upgrade_folder, $last_executed_sql_file );
-
-            // write the new last executed file name
-            if(!empty($upgrade->last_executed_file))
-            {
-                if( false === @file_put_contents( $_full_upgrade_folder_path . '/____' . str_replace(".sql", "", $upgrade->last_executed_file) . '____', 'nop' ))
-                {
-                    throw new  Exception("Couldnt write last executed file name: ". $_full_upgrade_folder_path . '/____' . str_replace(".sql", "", $upgrade->last_executed_file) . '____');
-                }
-
-              // remove the previous last executed file name
-              if(!empty($tmp_last_executed_sql_file))
-              {
-                  if( false === @unlink($_full_upgrade_folder_path . '/' . $tmp_last_executed_sql_file))
-                  {
-                      throw new  Exception("Couldnt delete previous executed file name: " . $_full_upgrade_folder_path . '/' . $tmp_last_executed_sql_file);
-                  }
-              }
-          }
-
-            $upgrade->commit();
+            }           
+                                    
+            $upgrade->execute_sql_scripts( $dev_version_upgrade_folder );            
         }
         catch(Kohana_Database_Exception $e)
         {
@@ -88,29 +61,6 @@ class Dev
         catch(Exception $e)
         {
             $upgrade->log($e);
-        }
-    }
-
-    private static function get_last_executed_sql_file_name( $_full_upgrade_folder_path )
-    {
-        if ( (($handle = @opendir( $_full_upgrade_folder_path ))) != FALSE )
-        {
-            while ( (( $file = readdir( $handle ) )) != false )
-            {
-                if ( !preg_match("/^____.*____$/", $file) )
-                {
-                    continue;
-                }
-
-                return $file;
-            }
-            @closedir( $handle );
-
-            return '';
-        }
-        else
-        {
-            throw new  Exception("Cant open dir " . $_full_upgrade_folder_path);
         }
     }
 }
