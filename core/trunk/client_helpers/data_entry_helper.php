@@ -77,6 +77,7 @@ $indicia_templates = array(
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
     	'<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
+  'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
       '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
@@ -712,6 +713,8 @@ class data_entry_helper extends helper_config {
   * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
   * NB the tree itself will have an id of "tr$fieldname".</li>
+  * <li><b>id</b><br/>
+  * Optional. ID of the control. Defaults to the fieldname.</li> 
   * <li><b>tableName</b><br/>
   * Required. Name (Kohana-style) of the database entity to be queried.</li>
   * <li><b>view</b><br/>
@@ -744,10 +747,11 @@ class data_entry_helper extends helper_config {
         'topField', 'topValue', 'parentField', 'defaultValue', 'extraParams', 'class'));
     self::add_resource('treeview');
     // Declare the data service
-    $url = parent::$base_url."/index.php/services/data";
+    $url = parent::$base_url."index.php/services/data";
     // If valueField is null, set it to $captionField
-    if ($options['valueField'] == null) $options['valueField'] = $options['captionField'];
-    if ($options['class'] == null) $options['class'] = 'treeview';
+    if (!array_key_exists('valueField', $options))  $options['valueField'] = $options['captionField'];
+    if (!array_key_exists('class', $options)) $options['class'] = 'treebrowser';
+    if (!array_key_exists('id', $options)) $options['id'] = $options['fieldName'];
     $defaultValue = $default = self::check_default_value($options['fieldName'], 
         array_key_exists('defaultValue', $options) ? $options['defaultValue'] : null);
     // Do stuff with extraParams
@@ -761,7 +765,7 @@ class data_entry_helper extends helper_config {
     self::$javascript .= "jQuery('#tr$o_fieldName').treeview({
       url: '$url/$o_tableName',
       extraParams : {
-        orderby : '$0_captionField',
+        orderby : '$o_captionField',
         mode : 'json',
         $sParams
       },
@@ -771,12 +775,93 @@ class data_entry_helper extends helper_config {
       view: '$o_view',
       parentField: '$o_parentField',
       dataType: 'jsonp',
-      nodeTmpl: '".$indicia_templates['treeview_node']."' 
+      nodeTmpl: '".$indicia_templates['treeview_node']."'      
     });\n";
 
-    $tree = '<input type="hidden" class="hidden" id="'.$o_fieldName.'" name="'.$o_fieldName.'" /><ul id="tr'.$o_fieldName.'" class="'.$o_class.'"></ul>';
+    $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_fieldName.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
     $tree .= self::check_errors($o_fieldName);
     return $tree;
+  }
+  
+  /**
+  * Helper function to generate a browser control from a given list. The browser
+  * behaves similarly to a treeview, except that the child lists are appended to the control
+  * rather than inserted as list children. This allows controls to be created which allow
+  * selection of an item, then the control is updated with the new list of options after each
+  * item is clicked.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
+  * NB the tree itself will have an id of "tr$fieldname".</li>
+  * <li><b>id</b><br/>
+  * Optional. ID of the control. Defaults to the fieldname.</li> 
+  * <li><b>tableName</b><br/>
+  * Required. Name (Kohana-style) of the database entity to be queried.</li>
+  * <li><b>view</b><br/>
+  * Name of the view of the table required (list, detail).</li>
+  * <li><b>captionField</b><br/>
+  * Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Field to draw values to return from the control from. Defaults
+  * to the value of $captionField.</li>
+  * <li><b>parentField</b><br/>
+  * Field used to indicate parent within tree for a record.</li>
+  * <li><b>defaultValue</b><br/>
+  * Initial value to set the control to (not currently used).</li>
+  * <li><b>extraParams</b><br/>
+  * Array of key=>value pairs which will be passed to the service
+  * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
+  * queries to the data services.</li>
+  * <li><b>class</b><br/>
+  * Class to be added to the control's outer div.</li>
+  * </ul>
+  * 
+  * TODO
+  * Need to do initial value.  
+  */
+  public static function tree_browser($options) {
+    global $indicia_templates;
+    self::add_resource('treeBrowser');
+    // Declare the data service
+    $url = parent::$base_url."index.php/services/data";
+    // Apply some defaults to the options
+    $options = array_merge(array(
+      'valueField' => $options['captionField'],
+      'class' => 'treebrowser',
+      'id' => $options['fieldName'],
+      'singleLayer' => true,
+      'class' => 'ui-widget ui-corner-all ui-content'
+    ), $options);    
+    // Do stuff with extraParams
+    $sParams = '';
+    foreach ($options['extraParams'] as $a => $b){
+      $sParams .= "$a : '$b',";
+    }
+    // lop the comma off the end
+    $sParams = substr($sParams, 0, -1);
+    extract($options, EXTR_PREFIX_ALL, 'o');
+    self::$javascript .= "(function($) {
+        $(document).ready(function(){
+          $('div#$o_id').indiciaTreeBrowser({
+            url: '$url/$o_tableName',
+            extraParams : {
+              orderby : '$o_captionField',
+              mode : 'json',
+              $sParams
+            },
+            valueControl: '$o_id',
+            valueField: '$o_valueField',
+            captionField: '$o_captionField',
+            view: '$o_view',
+            parentField: '$o_parentField',
+            nodeTmpl: '".$indicia_templates['tree_browser_node']."',
+            singleLayer: '$o_singleLayer',
+            backCaption: '".lang::get('back')."' 
+          });
+        });
+      })(jQuery);\n";
+    return "<div id=\"$o_id\" class=\"$o_class\"><input type=\"hidden\" name=\"$o_fieldName\"/></div>";
   }
 
   /**
@@ -2326,7 +2411,8 @@ $late_javascript
             "$base/media/js/google_search.js"
           )
       ),
-      'flickr' => array('deps' => array('jquery'), 'stylesheets' => '', 'javascript' => array("$base/media/js/jquery.flickr.js","$base/media/js/thickbox-compressed.js")),
+      'flickr' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.flickr.js","$base/media/js/thickbox-compressed.js")),
+      'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.treebrowser.js")),
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array("$base/media/css/default_site.css"), 'javascript' => array())
     );
   }
