@@ -65,7 +65,8 @@ echo data_entry_helper::textarea(array(
 <input type="submit" class="ui-state-default ui-corner-all" value="Save" />
 </form>
 <?php
-echo data_entry_helper::loading_block_end(); 
+echo data_entry_helper::loading_block_end();
+echo data_entry_helper::dump_remaining_errors(); 
 echo data_entry_helper::dump_javascript(); 
 ?>
 </div>
