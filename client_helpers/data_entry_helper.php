@@ -65,6 +65,9 @@ $indicia_templates = array(
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
       "\n/* ]]> */</script>\n".
       "<noscript><ul>{tabs}</ul></noscript>\n",
+  'tab_next_button' => '<p {class} '. 
+      'onclick="var $tabs=$(\'#tabs\').tabs(); $tabs.tabs(\'select\', $tabs.tabs(\'option\', \'selected\')+1);" />'.
+      '{caption} <span class="ui-icon ui-icon-circle-arrow-e" style="float: right"></span></p>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
@@ -1157,7 +1160,11 @@ class data_entry_helper extends helper_config {
     self::_timeOutCacheFile($cacheFile, $cacheTimeOut);
     self::_cacheResponse($cacheFile, $response, $cacheOpts);
 
-    return json_decode($response['output'], true);
+    $r = json_decode($response['output'], true);
+    if (!is_array($r)) {
+      echo '<div class="ui-state-error"><strong>Invalid response received from Indicia Warehouse.</strong><br/>'.print_r($response, true).'</div>';            
+    }
+    return $r;
   }
 
   /**
@@ -1900,6 +1907,27 @@ class data_entry_helper extends helper_config {
     }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);  
+  }
+  
+  /**
+  * Insert a button which, when clicked, displays the next tab. Insert this inside the tab divs 
+  * on each tab you want to have a next button, excluding the last tab.
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>divId</b><br/>
+  * The id of the div which is tabbed and whose next tab should be selected.</li>
+  * <li><b>caption</b><br/>
+  * Optional. The untranslated caption of the button. Defaults to next step.</li>
+  * 
+  * @link http://docs.jquery.com/UI/Tabs
+  */
+  public static function tab_next_button($options) {
+    if (!array_key_exists('caption', $options)) $options['caption'] = 'next step';
+    $options['caption'] = lang::get($options['caption']);
+    if (!array_key_exists('class', $options)) $options['class'] = 'ui-widget-content ui-state-default ui-corner-all indicia-button';
+    if (array_key_exists('divId', $options)) {
+      return self::apply_template('tab_next_button', $options);     
+    }
   }
   
   /**

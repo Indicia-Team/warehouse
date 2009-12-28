@@ -36,6 +36,7 @@ $default_terms = array(
   'error loading control'=>'Error loading control',
   'lat long 4326'=>'Lat/Long (WGS84)',
   'loading'=>'Loading',
+  'next step'=>'Next Step',
   'search'=>'Search',
   'search for place on map'=>'Search for place on map',
   'spatial ref'=>'Spatial ref.',
