@@ -172,3 +172,12 @@ li.ui-state-error {
 	margin-bottom: 1em;
 	padding: 0.5em;
 }
+
+.control-box {
+  display: inline-block;
+}
+
+.control-box span {
+  margin-left: 1em;
+  margin-top: 2px;
+}
