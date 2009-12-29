@@ -10,7 +10,7 @@
 .ac_results ul {
   width: 100%;
   list-style-position: outside;
-  list-style: none;
+  list-style-type: none;
   padding: 0;
   margin: 0;
 }
@@ -20,6 +20,7 @@
   padding: 2px 5px;
   cursor: default;
   display: block;
+  background-image: none;
   /*
   if width will be 100% horizontal scrollbar will apear
   when scroll mode will be used
