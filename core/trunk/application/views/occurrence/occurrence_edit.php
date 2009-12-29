@@ -98,14 +98,21 @@ if (count($values['images'])>0) : ?>
   <legend>Images</legend>
   <?php
   foreach ($values['images'] as $image) {
-    $obj = json_decode($image->external_details, true);
-
-    if (array_key_exists('flickr', $obj)) {
-      $photo = $obj['flickr'];
-      echo '<a class="thickbox" href="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
-                      $photo['id'].'_'.$photo['secret'].'.jpg"><img alt="'.$photo['title'].'" title="'.$photo['title'].'" src="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
-                      $photo['id'].'_'.$photo['secret'].'_t.jpg" /></a>';
+    if (empty($image->external_details)) {
+    	// Got an internal image
+    	$image_path=url::base().'upload/'.$image->path;
+    	echo '<a class="thickbox" href="'.$image_path.'"><img src="'.$image_path.'" height="100"/></a>';
+    } else {
+    	// Got an external image - for now only FlickR is supported
+    	$obj = json_decode($image->external_details, true);
+	    if (array_key_exists('flickr', $obj)) {
+	      $photo = $obj['flickr'];
+	      echo '<a class="thickbox" href="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
+	                      $photo['id'].'_'.$photo['secret'].'.jpg"><img alt="'.$photo['title'].'" title="'.$photo['title'].'" src="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
+	                      $photo['id'].'_'.$photo['secret'].'_t.jpg" /></a>';
+	    }
     }
+    
   }
   ?>
   </fieldset>

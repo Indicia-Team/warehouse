@@ -135,7 +135,7 @@ class Indicia_Controller extends Template_Controller {
    */
   protected function showEditPage($values) {    
     $other = $this->prepareOtherViewData();            
-    $mn = $this->model->object_name;      
+    $mn = $this->model->object_name;
     $this->setView($mn."/".$mn."_edit", $this->model->caption(), array(
     	'values'=>$values,
       'other_data'=>$other
