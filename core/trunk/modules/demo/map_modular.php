@@ -26,11 +26,24 @@ echo data_entry_helper::georeference_lookup(array(
 ));
 echo data_entry_helper::postcode_textbox(array(
     'label'=>'Enter postcode',
-    'hiddenFields'=>false
+    'hiddenFields'=>false,
+	'fieldname'=>'sample:location_name'
 ));
 echo data_entry_helper::map_panel(array(
     'readAuth' => $readAuth
 ));
+/*
+
+If you have a GeoServer instance set up and running with your Indicia data as a data source, you can add WMS layers
+to the map_panel. In this example the GeoServer instance has a feature type setup to point to the grids_osgb_100k table 
+as well as a second one setup to point to the samples table. The namespace the feature types are in is called indicia.
+
+echo data_entry_helper::map_panel(array(
+    'readAuth' => $readAuth,
+    'indiciaWMSLayers' => array('indicia:grids_osgb_100k', 'indicia:samples')
+));
+
+*/
 
 echo data_entry_helper::dump_javascript();
 ?>

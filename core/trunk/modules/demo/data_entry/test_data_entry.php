@@ -109,8 +109,18 @@ echo data_entry_helper::select(array(
 <input type='text' name='<?php echo $config['weather']; ?>' class="wide" id='<?php echo $config['weather']; ?>'/><br />
 <label for='<?php echo $config['temperature']; ?>'>Temperature (Celsius):</label>
 <input type='text' name='<?php echo $config['temperature']; ?>' id='<?php echo $config['temperature']; ?>'/><br />
-<label for='<?php echo $config['surroundings']; ?>'>Surroundings:</label>
-<div style="display: inline-block"><?php echo data_entry_helper::radio_group($config['surroundings'], 'termlists_term', 'term', 'id', $readAuth + array('termlist_id' => $config['surroundings_termlist']), '<br />'); ?></div>
+<?php 
+echo data_entry_helper::radio_group(array(
+  'label' => 'Surroundings',
+	'fieldname' => $config['surroundings'], 
+	'table' => 'termlists_term', 
+	'captionField' => 'term', 
+	'valueField' => 'id', 
+	'extraParams' => $readAuth + array('termlist_id' => $config['surroundings_termlist']), 
+	'sep' => '<br />'
+)); 
+?>
+	
 <br/>
 <label for='<?php echo $config['site_usage']; ?>[]'>Site Usage:</label>
 <?php echo data_entry_helper::listbox($config['site_usage'].'[]', 'termlists_term', 'term', 4, true, 'id', $readAuth + array('termlist_id' => $config['site_usage_termlist'])); ?>
