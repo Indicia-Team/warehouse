@@ -21,6 +21,7 @@
 
 require_once('lang.php');
 require_once('helper_config.php');
+require_once('data_entry_helper.php');
  
 /**
  * Provides a helper to build submissions.
@@ -211,7 +212,7 @@ class submission_builder extends helper_config {
     // Does it have an image?
     if ($name = self::handle_media("$modelName:image"))
     {
-      // Add occurrence image model
+      // Add image model for a detail table record to be created.
       // TODO Get a caption for the image
       $oiFields = array(
           'path' => $name,
@@ -222,36 +223,46 @@ class submission_builder extends helper_config {
           'fkId' => 'occurrence_id',
           'model' => $oiMod
       );
+    } else if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
+    	// link image path attribute direct to record. 
+    	$modelWrapped['fields']['image_path'] = array('value'=>self::handle_media('image_upload'));    	
     }
     return $modelWrapped;
   }
   
+  /**
+   * Takes an uploaded file and sends it to Kohana via the data services handle_media method.
+   * Returns the final filename of the uploaded file so that it can be inserted in a field
+   * which stores the file path.
+   * 
+   * @param String $media_id Name of the file entry in the $_FILES array.
+   * @return String Final name of the uploaded file.
+   */
   public static function handle_media($media_id) {
     if (array_key_exists($media_id, $_FILES)) {
       syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
       $uploadpath = parent::$upload_path;
       $target_url = parent::$base_url."/index.php/services/data/handle_media";
-
+      
       $name = $_FILES[$media_id]['name'];
       $fname = $_FILES[$media_id]['tmp_name'];
-      $fext = array_pop(explode(".", $name));
+      $parts = explode(".",$name);
+      $fext = array_pop($parts);      
       $bname = basename($fname, ".$fext");
-
       // Generate a file id to store the image as
-      $destination = time().rand(0,1000).".".$fext;
+      $destination = time().rand(0,1000).".".$fext;      
 
-      if (move_uploaded_file($fname, $uploadpath.$destination)) {
+      if (move_uploaded_file($fname, $uploadpath.$destination)) {      
         $postargs = array();
         if (array_key_exists('auth_token', $_POST)) {
-               $postargs['auth_token'] = $_POST['auth_token'];
+          $postargs['auth_token'] = $_POST['auth_token'];
         }
         if (array_key_exists('nonce', $_POST)) {
           $postargs['nonce'] = $_POST['nonce'];
         }
         $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
-        self::http_post($target_url, $file_to_upload + $postargs);
-        return $destination;
-
+        $result = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
+        return $result['output'];
       } else {
         //TODO error messaging
         return false;
