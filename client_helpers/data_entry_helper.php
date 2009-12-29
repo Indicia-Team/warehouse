@@ -80,6 +80,7 @@ $indicia_templates = array(
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
     	'<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
+  'tree_browser' => '<div id="{id}" {class}><input type="hidden" name="{fieldname}"/></div>',
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
       '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
@@ -828,6 +829,8 @@ class data_entry_helper extends helper_config {
   * queries to the data services.</li>
   * <li><b>class</b><br/>
   * Class to be added to the control's outer div.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   * 
   * TODO
@@ -844,7 +847,7 @@ class data_entry_helper extends helper_config {
       'class' => 'treebrowser',
       'id' => $options['fieldname'],
       'singleLayer' => true,
-      'class' => 'ui-widget ui-corner-all ui-content'
+      'class' => 'ui-widget ui-corner-all ui-widget-content tree-browser'
     ), $options);    
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Do stuff with extraParams
@@ -856,8 +859,7 @@ class data_entry_helper extends helper_config {
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
     self::$javascript .= "(function($) {
-        $(document).ready(function(){
-          $('div').indiciaTreeBrowser();
+        $(document).ready(function(){          
           $('div#$escaped_id').indiciaTreeBrowser({
             url: '$url/$o_table',
             extraParams : {
@@ -876,7 +878,7 @@ class data_entry_helper extends helper_config {
           });
         });
       })(jQuery);\n";
-    return "<div id=\"$o_id\" class=\"$o_class\"><input type=\"hidden\" name=\"$o_fieldname\"/></div>";
+    return self::apply_template('tree_browser', $options);
   }
 
   /**
