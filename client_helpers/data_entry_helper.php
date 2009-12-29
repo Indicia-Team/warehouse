@@ -53,7 +53,7 @@ $indicia_templates = array(
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
-  'check_or_radio_group' => '{items}',
+  'check_or_radio_group' => '<div {class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} >{caption}</span>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px;\"{class}></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
@@ -1522,6 +1522,10 @@ class data_entry_helper extends helper_config {
   private static function check_or_radio_group($options, $type) {
     global $indicia_templates;
     $options = array_merge(array('sep' => ''), $options);
+    if ($options['class']=='') {
+    	// default class is control-box
+    	$options['class']='control-box';
+    }
     $url = parent::$base_url."/index.php/services/data";
     // Execute a request to the service
     $response = self::get_population_data($options);
@@ -1603,65 +1607,69 @@ class data_entry_helper extends helper_config {
    * The div's id can be specified using the divId array entry.
    */
   public static function map_panel($options) {
-    global $indicia_templates;
-    self::add_resource('indiciaMapPanel');
-    $options = array_merge(array(
-      'indiciaSvc'=>self::$base_url,
-      'indiciaGeoSvc'=>self::$geoserver_url,
-      'divId'=>'map',
-      'class'=>'',
-      'width'=>600,
-      'height'=>470,
-      'geoPlanetApiKey'=>parent::$geoplanet_api_key,
-      'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
-    ), $options);
-
-    if (array_key_exists('readAuth', $options)) {
-      // Convert the readAuth into a query string so it can pass straight to the JS class.
-      $options['readAuth']=self::array_to_query_string($options['readAuth']);
-      str_replace('&', '&amp;', $options['readAuth']);
-    }
-
-    // Autogenerate the links to the various mapping libraries as required
-    if (array_key_exists('presetLayers', $options)) {
-      foreach ($options['presetLayers'] as $layer)
-      {
-        $a = explode('_', $layer);
-        $a = strtolower($a[0]);
-        switch($a)
-        {
-          case 'google':
-            self::add_resource('googlemaps');
-            break;
-          case 'multimap':
-            self::add_resource('multimap');
-            break;
-          case 'virtual':
-            self::add_resource('virtualearth');
-            break;
-        }
-      }
-    }
-    // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
-    // and controls, not the string class names.
-    $json_insert='';
-    if (array_key_exists('controls', $options)) {
-      $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
-      unset($options['controls']);
-    }
-    if (array_key_exists('layers', $options)) {
-      $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
-      unset($options['layers']);
-    }
-    $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-    self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-
-    $r = str_replace(
-          array('{divId}','{class}','{width}','{height}'),
-          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'], $options['height']),
-          $indicia_templates['map_panel']
-      );
-    return $r;
+  	if (!$options) {
+  		return '<div class="error">Form error. No options supplied to the map_panel method.</div>';  
+  	} else {
+	    global $indicia_templates;
+	    self::add_resource('indiciaMapPanel');
+	    $options = array_merge(array(
+	      'indiciaSvc'=>self::$base_url,
+	      'indiciaGeoSvc'=>self::$geoserver_url,
+	      'divId'=>'map',
+	      'class'=>'',
+	      'width'=>600,
+	      'height'=>470,
+	      'geoPlanetApiKey'=>parent::$geoplanet_api_key,
+	      'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+	    ), $options);
+	
+	    if (array_key_exists('readAuth', $options)) {
+	      // Convert the readAuth into a query string so it can pass straight to the JS class.
+	      $options['readAuth']=self::array_to_query_string($options['readAuth']);
+	      str_replace('&', '&amp;', $options['readAuth']);
+	    }
+	
+	    // Autogenerate the links to the various mapping libraries as required
+	    if (array_key_exists('presetLayers', $options)) {
+	      foreach ($options['presetLayers'] as $layer)
+	      {
+	        $a = explode('_', $layer);
+	        $a = strtolower($a[0]);
+	        switch($a)
+	        {
+	          case 'google':
+	            self::add_resource('googlemaps');
+	            break;
+	          case 'multimap':
+	            self::add_resource('multimap');
+	            break;
+	          case 'virtual':
+	            self::add_resource('virtualearth');
+	            break;
+	        }
+	      }
+	    }
+	    // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
+	    // and controls, not the string class names.
+	    $json_insert='';
+	    if (array_key_exists('controls', $options)) {
+	      $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
+	      unset($options['controls']);
+	    }
+	    if (array_key_exists('layers', $options)) {
+	      $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
+	      unset($options['layers']);
+	    }
+	    $json=substr(json_encode($options), 0, -1).$json_insert.'}';
+	    self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+	
+	    $r = str_replace(
+	          array('{divId}','{class}','{width}','{height}'),
+	          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'], $options['height']),
+	          $indicia_templates['map_panel']
+	      );
+	    return $r;
+  	}
   }
 
  /**
