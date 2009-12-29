@@ -718,7 +718,7 @@ class data_entry_helper extends helper_config {
   * NB the tree itself will have an id of "tr$fieldname".</li>
   * <li><b>id</b><br/>
   * Optional. ID of the control. Defaults to the fieldname.</li> 
-  * <li><b>tableName</b><br/>
+  * <li><b>table</b><br/>
   * Required. Name (Kohana-style) of the database entity to be queried.</li>
   * <li><b>view</b><br/>
   * Name of the view of the table required (list, detail).</li>
@@ -746,7 +746,7 @@ class data_entry_helper extends helper_config {
   public static function treeview()
   {
     global $indicia_templates; 
-    $options = self::check_arguments(func_get_args(), array('fieldName', 'tableName', 'captionField', 'valueField',
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField',
         'topField', 'topValue', 'parentField', 'defaultValue', 'extraParams', 'class'));
     self::add_resource('treeview');
     // Declare the data service
@@ -754,8 +754,8 @@ class data_entry_helper extends helper_config {
     // If valueField is null, set it to $captionField
     if (!array_key_exists('valueField', $options))  $options['valueField'] = $options['captionField'];
     if (!array_key_exists('class', $options)) $options['class'] = 'treebrowser';
-    if (!array_key_exists('id', $options)) $options['id'] = $options['fieldName'];
-    $defaultValue = $default = self::check_default_value($options['fieldName'], 
+    if (!array_key_exists('id', $options)) $options['id'] = $options['fieldname'];
+    $defaultValue = $default = self::check_default_value($options['fieldname'], 
         array_key_exists('defaultValue', $options) ? $options['defaultValue'] : null);
     // Do stuff with extraParams
     $sParams = '';
@@ -765,14 +765,14 @@ class data_entry_helper extends helper_config {
     // lop the comma off the end
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
-    self::$javascript .= "jQuery('#tr$o_fieldName').treeview({
-      url: '$url/$o_tableName',
+    self::$javascript .= "jQuery('#tr$o_fieldname').treeview({
+      url: '$url/$o_table',
       extraParams : {
         orderby : '$o_captionField',
         mode : 'json',
         $sParams
       },
-      valueControl: '$o_fieldName',      
+      valueControl: '$o_fieldname',      
       valueField: '$o_valueField',
       captionField: '$o_captionField',
       view: '$o_view',
@@ -781,8 +781,8 @@ class data_entry_helper extends helper_config {
       nodeTmpl: '".$indicia_templates['treeview_node']."'      
     });\n";
 
-    $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_fieldName.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
-    $tree .= self::check_errors($o_fieldName);
+    $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_fieldname.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
+    $tree .= self::check_errors($o_fieldname);
     return $tree;
   }
   
@@ -799,7 +799,7 @@ class data_entry_helper extends helper_config {
   * NB the tree itself will have an id of "tr$fieldname".</li>
   * <li><b>id</b><br/>
   * Optional. ID of the control. Defaults to the fieldname.</li> 
-  * <li><b>tableName</b><br/>
+  * <li><b>table</b><br/>
   * Required. Name (Kohana-style) of the database entity to be queried.</li>
   * <li><b>view</b><br/>
   * Name of the view of the table required (list, detail).</li>
@@ -832,10 +832,11 @@ class data_entry_helper extends helper_config {
     $options = array_merge(array(
       'valueField' => $options['captionField'],
       'class' => 'treebrowser',
-      'id' => $options['fieldName'],
+      'id' => $options['fieldname'],
       'singleLayer' => true,
       'class' => 'ui-widget ui-corner-all ui-content'
     ), $options);    
+    $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Do stuff with extraParams
     $sParams = '';
     foreach ($options['extraParams'] as $a => $b){
@@ -846,8 +847,9 @@ class data_entry_helper extends helper_config {
     extract($options, EXTR_PREFIX_ALL, 'o');
     self::$javascript .= "(function($) {
         $(document).ready(function(){
-          $('div#$o_id').indiciaTreeBrowser({
-            url: '$url/$o_tableName',
+          $('div').indiciaTreeBrowser();
+          $('div#$escaped_id').indiciaTreeBrowser({
+            url: '$url/$o_table',
             extraParams : {
               orderby : '$o_captionField',
               mode : 'json',
@@ -864,7 +866,7 @@ class data_entry_helper extends helper_config {
           });
         });
       })(jQuery);\n";
-    return "<div id=\"$o_id\" class=\"$o_class\"><input type=\"hidden\" name=\"$o_fieldName\"/></div>";
+    return "<div id=\"$o_id\" class=\"$o_class\"><input type=\"hidden\" name=\"$o_fieldname\"/></div>";
   }
 
   /**
@@ -2207,9 +2209,8 @@ class data_entry_helper extends helper_config {
     foreach ($resources as $resource) {
       self::add_resource($resource);
     }
-    // place a css class on the body if JavaScript enabled
-    self::$javascript .= '$("body").addClass("js");';
-    return self::dump_javascript();
+    // place a css class on the body if JavaScript enabled. And output the resources
+    return self::internal_dump_javascript('$("body").addClass("js");', '', $resources);
   }
 
   /**
