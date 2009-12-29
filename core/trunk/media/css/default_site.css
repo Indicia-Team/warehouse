@@ -181,3 +181,19 @@ li.ui-state-error {
   margin-left: 1em;
   margin-top: 2px;
 }
+
+.tree-browser {
+	padding: 0.5em;
+	display:inline-block;
+  zoom:1;
+  *display:inline;
+  min-width: 400px;
+  min-height: 100px;
+}
+
+.tree-browser li {
+	padding: 0.25em;  
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+}
