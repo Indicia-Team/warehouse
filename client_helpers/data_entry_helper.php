@@ -172,6 +172,16 @@ class data_entry_helper extends helper_config {
   public static $late_javascript = '';
   
   /**
+   * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
+   */
+  public static $js_path = null;
+  
+  /**
+   * @var string Path to Indicia CSS folder. If not specified, then it is calculated from the Warehouse $base_url.
+   */
+  public static $css_path = null;
+  
+  /**
    * @var array List of resources that have already been dumped out, so we don't duplicate them.
    */
   private static $dumped_resources=array();
@@ -2239,15 +2249,15 @@ class data_entry_helper extends helper_config {
     $libraries = '';
     $stylesheets = '';
     if (isset($resources)) {
-      $RESOURCES = self::_RESOURCES();
+      $resourceList = self::_RESOURCES();
       foreach ($resources as $resource)
       {
         if (!in_array($resource, self::$dumped_resources)) {
-          foreach ($RESOURCES[$resource]['stylesheets'] as $s)
+          foreach ($resourceList[$resource]['stylesheets'] as $s)
           {
             $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
           }
-          foreach ($RESOURCES[$resource]['javascript'] as $j)
+          foreach ($resourceList[$resource]['javascript'] as $j)
           {
             $libraries .= "<script type='text/javascript' src='$j'></script>\n";
           }
@@ -2412,9 +2422,21 @@ $late_javascript
   /**
    * List of external resources including stylesheets and js files used by the data entry helper class.
    */
-  private static function _RESOURCES()
-  {
+  public static function _RESOURCES()
+  {    
     $base = parent::$base_url;
+    if (!self::$js_path) {
+      self::$js_path =$base.'media/js/';
+    } else if (substr(self::$js_path,-1)!="/") {
+      // ensure a trailing slash
+      self::$js_path .= "/";
+    }
+    if (!self::$css_path) {
+      self::$css_path =$base.'media/css/';
+    } else if (substr(self::$css_path,-1)!="/") {
+      // ensure a trailing slash
+      self::$css_path .= "/";
+    }
     global $indicia_theme;
     global $indicia_theme_path;
     if (!isset($indicia_theme)) {
@@ -2427,30 +2449,30 @@ $late_javascript
     }
 
     return array (
-      'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.js")),
-      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/OpenLayers.js", "$base/media/js/Proj4js.js")),          
-      'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/client_helpers/addRowToGrid.js")),
-      'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.js")),
-      'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMapPanel.js")),
-      'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.js")),
-      'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.indiciaMap.edit.locationFinder.js")),
-      'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.autocomplete.css"), 'javascript' => array("$base/media/js/jquery.autocomplete.js")),
-      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array("$base/media/js/jquery-ui.custom.min.js", "$base/media/js/jquery-ui.effects.js")),
-      'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("$base/media/js/json2.js")),
-      'treeview' => array('deps' => array('jquery'), 'stylesheets' => array("$base/media/css/jquery.treeview.css"), 'javascript' => array("$base/media/js/jquery.treeview.js", "$base/media/js/jquery.treeview.async.js",
-      "$base/media/js/jquery.treeview.edit.js")),
+      'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.js")),
+      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js")),          
+      'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."addRowToGrid.js")),
+      'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
+      'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
+      'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
+      'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
+      'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
+      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
+      'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."json2.js")),
+      'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
+      self::$js_path."jquery.treeview.edit.js")),
       'googlemaps' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://maps.google.com/maps?file=api&v=2&key=".parent::$google_api_key)),
       'multimap' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
       'virtualearth' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
       'google_search' => array('deps' => array(), 'stylesheets' => array(),
           'javascript' => array(
             "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
-            "$base/media/js/google_search.js"
+            self::$js_path."google_search.js"
           )
       ),
-      'flickr' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.flickr.js","$base/media/js/thickbox-compressed.js")),
-      'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array("$base/media/js/jquery.treebrowser.js")),
-      'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array("$base/media/css/default_site.css"), 'javascript' => array())
+      'flickr' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.flickr.js",self::$js_path."thickbox-compressed.js")),
+      'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
+      'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array())
     );
   }
 
