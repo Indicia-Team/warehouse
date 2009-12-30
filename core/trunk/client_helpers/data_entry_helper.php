@@ -65,9 +65,9 @@ $indicia_templates = array(
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
       "\n/* ]]> */</script>\n".
       "<noscript><ul>{tabs}</ul></noscript>\n",
-  'tab_next_button' => '<p {class} '. 
+  'tab_next_button' => '<div {class} '. 
       'onclick="var $tabs=$(\'#tabs\').tabs(); $tabs.tabs(\'select\', $tabs.tabs(\'option\', \'selected\')+1);" />'.
-      '{caption} <span class="ui-icon ui-icon-circle-arrow-e" style="float: right"></span></p>',
+      '{caption} <span class="ui-icon ui-icon-circle-arrow-e" style="float: right"></span></div>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
@@ -1896,17 +1896,22 @@ class data_entry_helper extends helper_config {
   * Optional. The id of the div which will be tabbed. If not specified then the caller is 
   * responsible for calling the jQuery tabs plugin - this method just links the appropriate
   * jQuery files.</li>
+  * <li><b>style</b><br/>
+  * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
+  * is not displayed and the navigation should be provided by tab_next_button and tab_previous_button
+  * controls. These must be manually added to each tab page div.</li>
   * 
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function enable_tabs($options) {
     if (array_key_exists('divId', $options)) {
+    	$divId = $options['divId'];
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
       // tabs because they have no size.
-      self::$late_javascript .= "var tabs = $(\"#".$options['divId']."\").tabs();\n";
+      self::$late_javascript .= "var tabs = $(\"#$divId\").tabs();\n";
       // find any errors on the tabs.
-      self::$late_javascript .= "var errors=$(\"#".$options['divId']." .ui-state-error\");\n";
+      self::$late_javascript .= "var errors=$(\"#$divId .ui-state-error\");\n";
       // select the tab containing the first error, if validation errors are present
       self::$late_javascript .= "if (errors.length>0) {\n".
           "  tabs.tabs('select',$(errors[0]).parents('.ui-tabs-panel')[0].id);\n".
@@ -1915,6 +1920,9 @@ class data_entry_helper extends helper_config {
           "    panel = $(errors[i]).parents('.ui-tabs-panel')[0];\n".
           "    $('#'+panel.id+'-tab').addClass('ui-state-error');\n".
           "}}\n";
+      if (array_key_exists('style', $options) && $options['style']=='wizard') {      	
+      	self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
+      }
     }
     self::add_resource('jquery_ui');
   }
@@ -2416,8 +2424,17 @@ $late_javascript
   /**
    * Causes the default_site.css stylesheet to be included in the list of resources on the
    * page. This gives a basic form layout.
+   * This also adds default JavaScript to the page to cause buttons to highlight when you
+   * hover the mouse over them.
    */
   public static function link_default_stylesheet() {
+  	// make buttons highlight when hovering over them
+  	self::$javascript .= "$('.ui-state-default').live('mouseover', function() { 
+  			$(this).addClass('ui-state-hover'); 
+      });
+      $('.ui-state-default').live('mouseout', function() { 
+        $(this).removeClass('ui-state-hover'); 
+      });\n";
     self::add_resource('defaultStylesheet');
   }
 
