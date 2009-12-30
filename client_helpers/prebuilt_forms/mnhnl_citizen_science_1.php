@@ -74,10 +74,16 @@ class iform_mnhnl_citizen_science_1 {
         'type'=>'boolean'
       ),
       array(
-      	'name'=>'tabs',
-        'caption'=>'Use Tabbed Interface',
-        'description'=>'If checked, then the page will be built using a tabbed interface style.',
-        'type'=>'boolean'
+      	'name'=>'interface',
+        'caption'=>'Interface Style Option',
+        'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
+            'wizard pages or having all controls on a single page.',
+        'type'=>'select',
+        'options' => array(
+          'tabs' => 'Tabs',
+          'wizard' => 'Wizard',
+          'one_page' => 'All One Page'
+        )
       ),
       array(
         'name'=>'uid_attr_id',
@@ -155,7 +161,11 @@ class iform_mnhnl_citizen_science_1 {
     }
     $r .= "<div id=\"controls\">\n";
     
-    if ($args['tabs']) {
+    if ($args['interface']!='one_page') {
+    	if ($args['interface']=='wizard') {
+    		// need to hide the tabs header bar as navigation is controlled via buttons.
+    		
+    	}
       $r .= "<ul>\n";
       if (!$logged_in) {
         $r .= '  <li><a href="#about_you"><span>'.lang::get('about you')."</span></a></li>\n";      
@@ -163,9 +173,11 @@ class iform_mnhnl_citizen_science_1 {
       $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";
       $r .= '  <li><a href="#other"><span>'.lang::get('other information')."</span></a></li>\n";
       $r .= '  <li><a href="#place"><span>'.lang::get('where was it')."</span></a></li>\n";
-      $r .= "</ul>\n";
+      $r .= "</ul>\n";    
+      //throw new Exception($args['interface']);  
       data_entry_helper::enable_tabs(array(
-          'divId'=>'controls'
+          'divId'=>'controls',
+          'style'=>$args['interface']
       ));
     }   
     if ($user->uid==0) {
@@ -190,6 +202,7 @@ class iform_mnhnl_citizen_science_1 {
         'fieldname'=>'smpAttr:'.$args['phone_attr_id'],
         'class'=>'control-width-4'
       ));     
+      $r .= data_entry_helper::tab_next_button();
       $r .= "</div>\n";      
     }
     $r .= "<div id=\"species\">\n";
@@ -210,6 +223,9 @@ class iform_mnhnl_citizen_science_1 {
     );
     // Dynamically generate the species selection control required.        
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+    if ($args['interface']=='wizard') {
+      $r .= data_entry_helper::tab_next_button(array('divId'=>'controls'));
+    }
     $r .= "</div>\n";    
     $r .= "<div id=\"other\">\n";
     $r .= data_entry_helper::date_picker(array(
@@ -259,7 +275,7 @@ class iform_mnhnl_citizen_science_1 {
    * @return array List of css files to include for this form.
    */
   public static function get_css() {
-    return 'mnhnl_citizen_science_1.css';
+    return array('mnhnl_citizen_science_1.css');
   }  
   
 }
