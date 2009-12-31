@@ -137,7 +137,15 @@ input, select, textarea {
   padding: 0em 0.3em;
   text-decoration: none;
   width: auto;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
 }
+
+.next-tab, .prev-tab {
+	float: right;
+}
+	
 
 #f-dosearch {
   margin: 3px 2em 0 1px;

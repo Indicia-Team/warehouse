@@ -81,7 +81,10 @@
     		        container.children().show('fast');
     		      }).appendTo(list);
     		    }
-  			    list.slideDown('fast');    		        		    
+    		    if (id!='NULL')
+  			      list.slideDown('fast');    		    
+    		    else
+    		      list.fadeIn('slow');    		    
     		  }
     		  container.find("li").removeClass('ui-state-highlight');
     		  $("li#"+id).addClass('ui-state-highlight');    		  
