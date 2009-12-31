@@ -43,8 +43,9 @@ $indicia_templates = array(
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n",
-  'textarea' => '<textarea id="{id}" name="{fieldname}"{class} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} value="{default}" {title} />'."\n",
+  'textarea' => '<textarea id="{id}" name="{fieldname}"{class} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
+  'checkbox' => '<input type="checkbox" id="{id}" name="{fieldname}"{class}{checked}{title} />'."\n",
   'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
   'select' => '<select id="{id}" name="{fieldname}"{class} {title}>{options}</select>',
   'select_option' => '<option value="{value}" {selected} >{caption}</option>',
@@ -53,7 +54,7 @@ $indicia_templates = array(
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
-  'check_or_radio_group' => '<div {class}>{items}</div>',
+  'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} >{caption}</span>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px;\"{class}></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
@@ -65,9 +66,11 @@ $indicia_templates = array(
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
       "\n/* ]]> */</script>\n".
       "<noscript><ul>{tabs}</ul></noscript>\n",
-  'tab_next_button' => '<div {class} '. 
-      'onclick="var $tabs=$(\'#tabs\').tabs(); $tabs.tabs(\'select\', $tabs.tabs(\'option\', \'selected\')+1);" />'.
-      '{caption} <span class="ui-icon ui-icon-circle-arrow-e" style="float: right"></span></div>',
+  'tab_next_button' => '<div{class}/>'.
+      '{captionNext} <span class="ui-icon ui-icon-circle-arrow-e" style="float: right"></span></div>',
+  'tab_prev_button' => '<div{class}/>'.
+      '{captionPrev} <span class="ui-icon ui-icon-circle-arrow-w" style="float: left"></span></div>',
+  'submit_button' => '<input type="submit"{class}/>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
@@ -80,7 +83,7 @@ $indicia_templates = array(
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
     	'<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
-  'tree_browser' => '<div id="{id}" {class}><input type="hidden" name="{fieldname}"/></div>',
+  'tree_browser' => '<div id="{id}"{class}><input type="hidden" name="{fieldname}"/></div>',
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
       '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
@@ -193,8 +196,10 @@ class data_entry_helper extends helper_config {
    */
   private static $displayed_errors=array();
   
-  
-  
+  /**
+   * @var array Website ID, stored here to assist with caching.
+   */
+  private static $website_id = null;  
   
  /**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
@@ -476,6 +481,35 @@ class data_entry_helper extends helper_config {
     ), $options);
     return self::apply_template('textarea', $options);
   }
+  
+  /**
+  * Helper function to output an HTML checkbox control. This includes re-loading of existing values
+  * and displaying of validation error messages.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  * 
+  * @return string HTML to insert into the page for the checkbox control.
+  */
+  public static function checkbox($options) {
+    $default = self::check_default_value($options['fieldname'], 
+        array_key_exists('default', $options) ? $options['default'] : null);    
+    if ($default=='on') {
+      $options['checked']==' checked="checked"';
+    }
+    return self::apply_template('checkbox', $options);
+  }
 
   /**
    * Helper function to generate a species checklist from a given taxon list.
@@ -740,7 +774,7 @@ class data_entry_helper extends helper_config {
   * to the value of $captionField.</li>
   * <li><b>parentField</b><br/>
   * Field used to indicate parent within tree for a record.</li>
-  * <li><b>defaultValue</b><br/>
+  * <li><b>default</b><br/>
   * Initial value to set the control to (not currently used).</li>
   * <li><b>extraParams</b><br/>
   * Array of key=>value pairs which will be passed to the service
@@ -758,7 +792,7 @@ class data_entry_helper extends helper_config {
   {
     global $indicia_templates; 
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField',
-        'topField', 'topValue', 'parentField', 'defaultValue', 'extraParams', 'class'));
+        'topField', 'topValue', 'parentField', 'default', 'extraParams', 'class'));
     self::add_resource('treeview');
     // Declare the data service
     $url = parent::$base_url."index.php/services/data";
@@ -766,8 +800,8 @@ class data_entry_helper extends helper_config {
     if (!array_key_exists('valueField', $options))  $options['valueField'] = $options['captionField'];
     if (!array_key_exists('class', $options)) $options['class'] = 'treebrowser';
     if (!array_key_exists('id', $options)) $options['id'] = $options['fieldname'];
-    $defaultValue = $default = self::check_default_value($options['fieldname'], 
-        array_key_exists('defaultValue', $options) ? $options['defaultValue'] : null);
+    $default = self::check_default_value($options['fieldname'], 
+        array_key_exists('default', $options) ? $options['default'] : null);
     // Do stuff with extraParams
     $sParams = '';
     foreach ($options['extraParams'] as $a => $b){
@@ -821,7 +855,7 @@ class data_entry_helper extends helper_config {
   * to the value of $captionField.</li>
   * <li><b>parentField</b><br/>
   * Field used to indicate parent within tree for a record.</li>
-  * <li><b>defaultValue</b><br/>
+  * <li><b>default</b><br/>
   * Initial value to set the control to (not currently used).</li>
   * <li><b>extraParams</b><br/>
   * Array of key=>value pairs which will be passed to the service
@@ -858,26 +892,23 @@ class data_entry_helper extends helper_config {
     // lop the comma off the end
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
-    self::$javascript .= "(function($) {
-        $(document).ready(function(){          
-          $('div#$escaped_id').indiciaTreeBrowser({
-            url: '$url/$o_table',
-            extraParams : {
-              orderby : '$o_captionField',
-              mode : 'json',
-              $sParams
-            },
-            valueControl: '$o_id',
-            valueField: '$o_valueField',
-            captionField: '$o_captionField',
-            view: '$o_view',
-            parentField: '$o_parentField',
-            nodeTmpl: '".$indicia_templates['tree_browser_node']."',
-            singleLayer: '$o_singleLayer',
-            backCaption: '".lang::get('back')."' 
-          });
-        });
-      })(jQuery);\n";
+    self::$javascript .= "       
+$('div#$escaped_id').indiciaTreeBrowser({
+  url: '$url/$o_table',
+  extraParams : {
+    orderby : '$o_captionField',
+    mode : 'json',
+    $sParams
+  },
+  valueControl: '$o_id',
+  valueField: '$o_valueField',
+  captionField: '$o_captionField',
+  view: '$o_view',
+  parentField: '$o_parentField',
+  nodeTmpl: '".$indicia_templates['tree_browser_node']."',
+  singleLayer: '$o_singleLayer',
+  backCaption: '".lang::get('back')."' 
+});\n";
     return self::apply_template('tree_browser', $options);
   }
 
@@ -1074,15 +1105,13 @@ class data_entry_helper extends helper_config {
    */
   private static function _getCacheFileName($path, $options, $timeout)
   {
-    global $indicia_website_id;
-    
     /* If timeout is not set, we're not caching */
     if (!$timeout)
       return false;
     if(!is_dir($path) || !is_writeable($path))
       return false;
 
-    $cacheFileName = $path.'cache_'.$indicia_website_id.'_';
+    $cacheFileName = $path.'cache_'.self::$website_id.'_';
     $cacheFileName .= md5(self::array_to_query_string($options));
 
     return $cacheFileName;
@@ -1145,8 +1174,7 @@ class data_entry_helper extends helper_config {
    * any extra params, excluding the read_auth and the nonce. The cache should be 
    * used by all accesses to the DB.
    */
-  private static function get_population_data($options) {
-    global $indicia_website_id;
+  private static function get_population_data($options) {    
     $url = parent::$base_url."index.php/services/data";
     $request = "$url/".$options['table']."?mode=json";
 
@@ -1157,7 +1185,7 @@ class data_entry_helper extends helper_config {
       $cacheOpts = array();
     
     $cacheOpts['table'] = $options['table'];
-    $cacheOpts['indicia_website_id'] = $indicia_website_id;
+    $cacheOpts['indicia_website_id'] = self::$website_id;
     /* If present 'auth_token' amd 'nonce' are ignored as these are session dependant. */
     if (array_key_exists('auth_token', $cacheOpts)) {
       unset($cacheOpts['auth_token']);
@@ -1898,14 +1926,23 @@ class data_entry_helper extends helper_config {
   * jQuery files.</li>
   * <li><b>style</b><br/>
   * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
-  * is not displayed and the navigation should be provided by tab_next_button and tab_previous_button
-  * controls. These must be manually added to each tab page div.</li>
+  * is not displayed and the navigation should be provided by the tab_button control. This
+  * must be manually added to each tab page div.</li>
   * 
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function enable_tabs($options) {
     if (array_key_exists('divId', $options)) {
     	$divId = $options['divId'];
+    	self::$javascript .= "
+$('.next-tab').click(function() {
+  var obj=$('#$divId').tabs(); 
+  obj.tabs('select', obj.tabs('option', 'selected')+1);
+});
+$('.prev-tab').click(function() {
+  var obj=$('#$divId').tabs(); 
+  obj.tabs('select', obj.tabs('option', 'selected')-1);
+});\n";
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
       // tabs because they have no size.
@@ -1913,13 +1950,15 @@ class data_entry_helper extends helper_config {
       // find any errors on the tabs.
       self::$late_javascript .= "var errors=$(\"#$divId .ui-state-error\");\n";
       // select the tab containing the first error, if validation errors are present
-      self::$late_javascript .= "if (errors.length>0) {\n".
-          "  tabs.tabs('select',$(errors[0]).parents('.ui-tabs-panel')[0].id);\n".
-          "  var panel;\n".
-          "  for (var i=0; i<errors.length; i++) {\n".
-          "    panel = $(errors[i]).parents('.ui-tabs-panel')[0];\n".
-          "    $('#'+panel.id+'-tab').addClass('ui-state-error');\n".
-          "}}\n";
+      self::$late_javascript .= "
+if (errors.length>0) {
+  tabs.tabs('select',$(errors[0]).parents('.ui-tabs-panel')[0].id);
+  var panel;
+  for (var i=0; i<errors.length; i++) {
+    panel = $(errors[i]).parents('.ui-tabs-panel')[0];
+    $('#'+panel.id+'-tab').addClass('ui-state-error');
+  }
+}\n";
       if (array_key_exists('style', $options) && $options['style']=='wizard') {      	
       	self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
       }
@@ -1951,12 +1990,53 @@ class data_entry_helper extends helper_config {
   * 
   * @link http://docs.jquery.com/UI/Tabs
   */
-  public static function tab_next_button($options) {
-    if (!array_key_exists('caption', $options)) $options['caption'] = 'next step';
-    $options['caption'] = lang::get($options['caption']);
-    if (!array_key_exists('class', $options)) $options['class'] = 'ui-widget-content ui-state-default ui-corner-all indicia-button';
+  public static function wizard_buttons($options=array()) {
+    // Default captions
+    $options = array_merge(array(
+      'captionNext' => 'next step',   
+      'captionPrev' => 'prevous step',
+      'buttonClass' => 'ui-widget-content ui-state-default ui-corner-all indicia-button',
+      'page' => 'middle'
+    ), $options);
+    // translate the captions
+    $options['captionNext'] = lang::get($options['captionNext']);
+    $options['captionPrev'] = lang::get($options['captionPrev']);
+    // Output the buttons
+    $r = '<div>';   
     if (array_key_exists('divId', $options)) {
-      return self::apply_template('tab_next_button', $options);     
+      if ($options['page']!='first') {
+        $options['class']="$class tab-prev";
+        $r .= self::apply_template('tab_prev_button', $options);  
+      }
+      if ($options['page']!='last') {
+        $options['class']="$class tab-next";
+        $r .= self::apply_template('tab_next_button', $options);  
+      } else {        
+        $options['class']=$class;
+        $r .= self::apply_template('submit_button', $options);     
+      }
+    }
+    $r .= '</div>';
+    return $r;
+  }
+  
+  /* Insert a button which, when clicked, displays the previous tab. Insert this inside the tab divs 
+  * on each tab you want to have a next button, excluding the first tab.
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>divId</b><br/>
+  * The id of the div which is tabbed and whose next tab should be selected.</li>
+  * <li><b>caption</b><br/>
+  * Optional. The untranslated caption of the button. Defaults to previous step.</li>
+  * 
+  * @link http://docs.jquery.com/UI/Tabs
+  */
+  public static function tab_prev_button($options) {
+    if (!array_key_exists('caption', $options)) $options['caption'] = 'previous step';
+    $options['caption'] = lang::get($options['caption']);
+    if (!array_key_exists('class', $options)) $options['class'] = 'ui-widget-content ui-state-default ui-corner-all indicia-button prev-tab';
+    if (array_key_exists('divId', $options)) {
+      return self::apply_template('tab_prev_button', $options);     
     }
   }
   
@@ -2382,9 +2462,7 @@ $late_javascript
   * @param string $password Indicia password for the website.
   */
   public static function get_read_auth($website_id, $password) {
-    global $indicia_website_id;
-    
-    $indicia_website_id = $website_id; /* Store this for use with data caching */
+    self::$website_id = $website_id; /* Store this for use with data caching */
     $postargs = "website_id=$website_id";
     $response = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs);
     $nonce = $response['output'];
@@ -2429,12 +2507,13 @@ $late_javascript
    */
   public static function link_default_stylesheet() {
   	// make buttons highlight when hovering over them
-  	self::$javascript .= "$('.ui-state-default').live('mouseover', function() { 
-  			$(this).addClass('ui-state-hover'); 
-      });
-      $('.ui-state-default').live('mouseout', function() { 
-        $(this).removeClass('ui-state-hover'); 
-      });\n";
+  	self::$javascript .= "
+$('.ui-state-default').live('mouseover', function() { 
+  $(this).addClass('ui-state-hover'); 
+});
+$('.ui-state-default').live('mouseout', function() { 
+  $(this).removeClass('ui-state-hover'); 
+});\n";
     self::add_resource('defaultStylesheet');
   }
 

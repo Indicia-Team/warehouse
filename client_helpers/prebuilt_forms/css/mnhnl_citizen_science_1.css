@@ -1,0 +1,14 @@
+.footer {
+  font-size: 0.9em;
+}
+
+.tree-browser {
+  width: 500px;  
+}
+
+.tree-browser li {
+  width: 100px;
+  height: 100px;
+  vertical-align: middle;	
+  font-size: 0.9em;
+}

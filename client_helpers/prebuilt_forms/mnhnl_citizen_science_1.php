@@ -120,7 +120,19 @@ class iform_mnhnl_citizen_science_1 {
         'caption'=>'Phone Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s phone.',
         'type'=>'string'
-      )   
+      ),
+      array(
+        'name'=>'contact_attr_id',
+        'caption'=>'Contactable Attribute ID',      
+        'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
+        'type'=>'string'
+      ),
+      array(
+        'name'=>'spatial_systems',
+        'caption'=>'Allowed Spatial Ref Systems',      
+        'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code).',
+        'type'=>'string'
+      )     
     );
   }
   
@@ -170,9 +182,9 @@ class iform_mnhnl_citizen_science_1 {
       if (!$logged_in) {
         $r .= '  <li><a href="#about_you"><span>'.lang::get('about you')."</span></a></li>\n";      
       }
-      $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";
-      $r .= '  <li><a href="#other"><span>'.lang::get('other information')."</span></a></li>\n";
+      $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";      
       $r .= '  <li><a href="#place"><span>'.lang::get('where was it')."</span></a></li>\n";
+      $r .= '  <li><a href="#other"><span>'.lang::get('other information')."</span></a></li>\n";
       $r .= "</ul>\n";    
       //throw new Exception($args['interface']);  
       data_entry_helper::enable_tabs(array(
@@ -202,7 +214,17 @@ class iform_mnhnl_citizen_science_1 {
         'fieldname'=>'smpAttr:'.$args['phone_attr_id'],
         'class'=>'control-width-4'
       ));     
-      $r .= data_entry_helper::tab_next_button();
+      if ($args['interface']=='wizard') {
+        $r .= data_entry_helper::tab_next_button(array(
+          'divId'=>'controls'
+        ));
+      }
+      if ($args['interface']=='wizard') {
+        $r .= data_entry_helper::wizard_buttons(array(
+          'divId'=>'controls',
+          'page'=>'first'
+        ));      
+      }
       $r .= "</div>\n";      
     }
     $r .= "<div id=\"species\">\n";
@@ -224,35 +246,54 @@ class iform_mnhnl_citizen_science_1 {
     // Dynamically generate the species selection control required.        
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     if ($args['interface']=='wizard') {
-      $r .= data_entry_helper::tab_next_button(array('divId'=>'controls'));
+      $r .= data_entry_helper::wizard_buttons(array(
+        'divId'=>'controls'        
+      ));
+    }    
+    $r .= "</div>\n";
+    $r .= "<div id=\"place\">\n";
+    // Build the array of spatial reference systems into a format Indicia can use.
+    $systems=array();
+    $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
+    foreach($list as $system) {
+      $systems[$system] = lang::get($system);
+    }    
+    $r .= data_entry_helper::sref_and_system(array(
+      'label' => lang::get('spatial ref'),
+      'systems' => $systems
+    ));
+    $r .= data_entry_helper::map_panel(array(
+      'presetLayers'=>array('multimap_landranger')
+    ));
+    if ($args['interface']=='wizard') {
+      $r .= data_entry_helper::wizard_buttons();      
     }
     $r .= "</div>\n";    
     $r .= "<div id=\"other\">\n";
     $r .= data_entry_helper::date_picker(array(
         'label'=>'Date',
         'fieldname'=>'sample:date'
-    ));
-    $r .= data_entry_helper::select(array(
-        'label'=>'Survey',
-        'fieldname'=>'sample:survey_id',
-        'table'=>'survey',
-        'captionField'=>'title',
-        'valueField'=>'id',
-        'extraParams' => $readAuth
-    ));
+    ));    
     $r .= data_entry_helper::textarea(array(
         'label'=>'Comment',
         'fieldname'=>'sample:comment',
         'class'=>'wide',
     ));
-    $r .= "</div>\n";
-    $r .= "<div id=\"place\">\n";
-    $r .= data_entry_helper::map_panel(array(
-      'presetLayers'=>array('multimap_landranger')
-    ));
+    $r .= '<div class="footer">'.data_entry_helper::checkbox(array(
+        'label'=>lang::get('happy for contact'),
+        'labelClass'=>'auto',
+        'fieldname'=>'smpAttr:'.$args['contact_attr_id']
+    )).'</div>';
+    if ($args['interface']=='wizard') {
+      $r .= data_entry_helper::wizard_buttons(array(
+        'divId'=>'controls',
+        'page'=>'last'
+      ));
+    } else { 
+      $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save\" />\n";
+    }
+    $r .= "</div>\n";        
     $r .= "</div>\n";    
-    $r .= "</div>\n";
-    $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save\" />\n";    
     $r .= "</form>";
         
     return $r;
