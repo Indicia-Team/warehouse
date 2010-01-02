@@ -49,7 +49,6 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'parent_id',
       'deleted',
       'preferred',
-      'image_path',
       'description'
     );
     return parent::validate($array, $save);

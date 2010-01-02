@@ -54,7 +54,6 @@ echo html::stylesheet(
       'media/js/json2.js',
       'media/js/jquery.js',
       'media/js/jquery.url.js',
-      'media/js/jquery.url.js',
       'media/js/hasharray.js',
       'media/js/superfish.js',
       'media/js/jquery-ui.custom.min.js'
