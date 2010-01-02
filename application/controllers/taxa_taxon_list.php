@@ -87,7 +87,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   /**
    * Returns an array of all values from this model and its super models ready to be 
    * loaded into a form. For this controller, we need to also setup the child taxon grid 
-   * and the synonyms/common names.
+   * and the synonyms/common names plus the list of images.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();    
@@ -103,7 +103,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'metaFields:synonyms' => $this->formatScientificSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
       'metaFields:commonNames' => $this->formatCommonSynonomy(
-        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id))
+        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
+      'images'=>ORM::factory('taxon_image')->where('taxon_meaning_id', $this->model->taxon_meaning_id)->find_all()
     ));
     return $r;  
   }

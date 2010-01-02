@@ -211,7 +211,7 @@ class submission_builder extends helper_config {
     }
     // Does it have an image?
     if ($name = self::handle_media("$modelName:image"))
-    {
+    {      
       // Add image model for a detail table record to be created.
       // TODO Get a caption for the image
       $oiFields = array(
@@ -236,9 +236,12 @@ class submission_builder extends helper_config {
    * which stores the file path.
    * 
    * @param String $media_id Name of the file entry in the $_FILES array.
+   * @param Boolean $submit If true (default), then the file is uploaded first into the local
+   * server's directory structure, then sent to the Indicia Warehouse using the data services.
+   * If false, then it is uploaded to the local server only.
    * @return String Final name of the uploaded file.
    */
-  public static function handle_media($media_id) {
+  public static function handle_media($media_id, $submit=true) {
     if (array_key_exists($media_id, $_FILES)) {
       syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
       $uploadpath = parent::$upload_path;
@@ -252,17 +255,21 @@ class submission_builder extends helper_config {
       // Generate a file id to store the image as
       $destination = time().rand(0,1000).".".$fext;      
 
-      if (move_uploaded_file($fname, $uploadpath.$destination)) {      
-        $postargs = array();
-        if (array_key_exists('auth_token', $_POST)) {
-          $postargs['auth_token'] = $_POST['auth_token'];
+      if (move_uploaded_file($fname, $uploadpath.$destination)) {
+        if ($submit) {      
+          $postargs = array();
+          if (array_key_exists('auth_token', $_POST)) {
+            $postargs['auth_token'] = $_POST['auth_token'];
+          }
+          if (array_key_exists('nonce', $_POST)) {
+            $postargs['nonce'] = $_POST['nonce'];
+          }
+          $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
+          $result = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
+          return $result['output'];
+        } else {
+          return $destination;
         }
-        if (array_key_exists('nonce', $_POST)) {
-          $postargs['nonce'] = $_POST['nonce'];
-        }
-        $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
-        $result = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
-        return $result['output'];
       } else {
         //TODO error messaging
         return false;

@@ -24,7 +24,7 @@
 echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
-  'media/js/thickbox-compressd.js',
+  'media/js/thickbox-compressed.js',
   'media/js/jquery.autocomplete.js'
 ), FALSE); ?>
 <script type="text/javascript" >
@@ -63,15 +63,32 @@ $(document).ready(function() {
 });
 </script>
 <?php
-if (array_key_exists('image_path', $model) && $model->image_path != null)
-{
-  echo html::image(array('src' => 'upload/'.$model->image_path, 'width' => 100));
-  echo html::error_message($model->getError('image_path'));
-}
 echo html::error_message($model->getError('deleted'));
 ?>
 <form class="cmxform" action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="post" enctype="multipart/form-data">
-<?php echo $metadata ?>
+<?php 
+echo $metadata;
+if (count($values['images'])>0) : ?>
+  <fieldset class="imagelist">
+  <legend>Images</legend>
+  <?php
+  
+  foreach ($values['images'] as $image) {
+    if ($image->external_details) {    
+      $obj = json_decode($image->external_details, true);
+      if (array_key_exists('flickr', $obj)) {
+        $photo = $obj['flickr'];
+        echo '<a class="thickbox" href="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
+                        $photo['id'].'_'.$photo['secret'].'.jpg"><img alt="'.$photo['title'].'" title="'.$photo['title'].'" src="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
+                        $photo['id'].'_'.$photo['secret'].'_t.jpg" /></a>';
+      }
+    } else {
+      echo '<a class="thickbox" href="'.url::base().'upload/'.$image->path.'"><img src="'.url::base().'upload/'.$image->path.'" width="100"/></a>';
+    }
+  }
+  ?>
+  </fieldset>
+<?php endif; ?>
 <fieldset>
 <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
 <input type="hidden" name="taxa_taxon_list:taxon_list_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>" />
@@ -147,7 +164,7 @@ echo html::error_message($model->getError('deleted'));
 </li>
 <li>
 <label for='image_path'>Upload Image: </label>
-<input id="image_path" type='file' name='image_upload' accept='png|jpg|gif' />
+<input id="image_path" type='file' name='taxa_taxon_list:image' accept='png|jpg|gif' />
 </li>
 <li>
 <label for="external_key">External Key:</label>
