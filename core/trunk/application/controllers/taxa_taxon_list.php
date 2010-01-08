@@ -103,8 +103,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'metaFields:synonyms' => $this->formatScientificSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
       'metaFields:commonNames' => $this->formatCommonSynonomy(
-        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
-      'images'=>ORM::factory('taxon_image')->where('taxon_meaning_id', $this->model->taxon_meaning_id)->find_all()
+        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id))
     ));
     return $r;  
   }

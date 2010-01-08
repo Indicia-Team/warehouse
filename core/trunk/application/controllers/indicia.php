@@ -108,6 +108,10 @@ class Indicia_Controller extends Template_Controller {
       return;
     }
     $values = $this->getDefaults();
+    if (!isset($values)) {
+      throw new Exception('Internal error. getDefaults method did not return an array of values for '.
+          $this->model->object_name.'. Please ensure the getDefaults method returns a value in the controller.');
+    }
     $this->showEditPage($values);
   }
   

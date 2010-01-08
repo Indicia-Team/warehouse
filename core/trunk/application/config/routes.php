@@ -52,6 +52,7 @@ $config['user'] = 'user/page/1';
 // Taxa_taxon_list
 $config['taxa_taxon_list/([0-9]+)'] = 'taxa_taxon_list/page/1/$1';
 $config['taxa_taxon_list/page/([0-9]+)'] = 'taxa_taxon_list/page/1/$1';
+$config['taxon_image/([0-9]+)'] = 'taxon_image/page/1/$1';
 // Custom Attribute
 $config['occurrence_attribute'] = 'occurrence_attribute/page/1';
 $config['sample_attribute'] = 'sample_attribute/page/1';

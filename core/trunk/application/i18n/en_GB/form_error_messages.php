@@ -88,7 +88,7 @@ $lang = array (
       'default' => 'Invalid Input.',
   ),
   'path' => Array (
-    'required' => 'The image path must be supplied.',
+    'required' => 'The image file must be supplied.',
   ),
   'surname' => Array (
     'required' => 'The surname cannot be blank.',

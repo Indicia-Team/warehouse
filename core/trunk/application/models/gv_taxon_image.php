@@ -15,35 +15,18 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
- * @subpackage Models
+ * @subpackage GridModels
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
 
 /**
- * Model class for the Taxon_Images table.
+ * Declares a model simply to expose the gv_taxon_images view to ORM.
  *
  * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @subpackage GridModels
  */
-class Taxon_Image_Model extends ORM {
-
-  protected $belongs_to = array(
-    'created_by' => 'user', 
-    'updated_by' => 'user',
-    'taxon_meaning');
-
-  protected $search_field = 'caption';
-
-  public function validate(Validation $array, $save = false) {
-    $array->pre_filter('trim');
-    $array->add_rules('taxon_meaning_id', 'required');
-    $array->add_rules('path', 'required');
-
-    $this->unvalidatedFields = array('caption', 'external_details');
-    return parent::validate($array, $save);
-  }
+class Gv_taxon_image_Model extends ORM {
 
 }
