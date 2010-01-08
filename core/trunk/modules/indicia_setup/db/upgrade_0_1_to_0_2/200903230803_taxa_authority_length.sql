@@ -1,6 +1,6 @@
-DROP VIEW list_taxa_taxon_lists;
-DROP VIEW detail_taxa_taxon_lists;
-DROP VIEW gv_taxon_lists_taxa;
+DROP VIEW IF EXISTS list_taxa_taxon_lists;
+DROP VIEW IF EXISTS detail_taxa_taxon_lists;
+DROP VIEW IF EXISTS gv_taxon_lists_taxa;
 
 
 ALTER TABLE taxa ALTER authority TYPE character varying(100);
@@ -23,7 +23,7 @@ CREATE OR REPLACE VIEW detail_taxa_taxon_lists AS
    JOIN languages l ON l.id = t.language_id
    LEFT JOIN taxa_taxon_lists ttlp ON ttlp.id = ttl.parent_id
    LEFT JOIN taxa tp ON tp.id = ttlp.taxon_id
-  WHERE ttl.deleted = false;
+  WHERE ttl.deleted = false; 
 
 CREATE OR REPLACE VIEW gv_taxon_lists_taxa AS 
  SELECT tt.id, tt.taxon_list_id, tt.taxon_id, tt.created_on, tt.created_by_id, tt.parent_id, tt.taxon_meaning_id, tt.taxonomic_sort_order, tt.preferred, tt.deleted, t.taxon, t.taxon_group_id, t.language_id, t.authority, t.search_code, t.scientific, l.language
