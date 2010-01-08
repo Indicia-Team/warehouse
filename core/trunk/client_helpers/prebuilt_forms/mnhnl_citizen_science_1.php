@@ -166,7 +166,7 @@ class iform_mnhnl_citizen_science_1 {
     $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
     // request automatic JS validation
-    data_entry_helper::init_validation('entry_form');
+    data_entry_helper::enable_validation('entry_form');
 
     if ($logged_in) {
       // If logged in, output some hidden data about the user
