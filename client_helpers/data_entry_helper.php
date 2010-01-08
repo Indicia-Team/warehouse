@@ -234,14 +234,14 @@ class data_entry_helper extends helper_config {
   );
   
   /**
-   * Call the init_validation method to turn on client-side validation for any controls with
+   * Call the enable_validation method to turn on client-side validation for any controls with
    * validation rules defined. To specify validation on each control, set the control's options array
    * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
    * validation format. For example, 'validation' => array('required', 'email').
    * @param string @form_id Id of the form the validation is being attached to.
    * 
    */
-  public static function init_validation($form_id) {
+  public static function enable_validation($form_id) {
   	self::$validated_form_id = $form_id;
   	self::add_resource('validation');
   }
