@@ -128,6 +128,13 @@ class iform_mnhnl_citizen_science_1 {
         'type'=>'string'
       ),
       array(
+        'name'=>'map_layers',
+        'caption'=>'Available Map Layers',      
+        'description'=>'List of available map background layers, comma separated. Options are '. 
+            'openlayers_wms, nasa_mosaic, virtual_earth, multimap_default, multimap_landranger, google_physical, google_streets, google_hybrid or google_satellite.',
+        'type'=>'string'
+      ),
+      array(
         'name'=>'spatial_systems',
         'caption'=>'Allowed Spatial Ref Systems',      
         'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code).',
@@ -152,12 +159,14 @@ class iform_mnhnl_citizen_science_1 {
     global $user;
     $logged_in = $user->uid>0;
     
-    $r = "<form method=\"post\">\n";
+    $r = "<form method=\"post\" id=\"entry_form\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
     $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
+    // request automatic JS validation
+    data_entry_helper::init_validation('entry_form');
 
     if ($logged_in) {
       // If logged in, output some hidden data about the user
@@ -173,11 +182,7 @@ class iform_mnhnl_citizen_science_1 {
     }
     $r .= "<div id=\"controls\">\n";
     
-    if ($args['interface']!='one_page') {
-    	if ($args['interface']=='wizard') {
-    		// need to hide the tabs header bar as navigation is controlled via buttons.
-    		
-    	}
+    if ($args['interface']!='one_page') {    	
       $r .= "<ul>\n";
       if (!$logged_in) {
         $r .= '  <li><a href="#about_you"><span>'.lang::get('about you')."</span></a></li>\n";      
@@ -185,8 +190,7 @@ class iform_mnhnl_citizen_science_1 {
       $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";      
       $r .= '  <li><a href="#place"><span>'.lang::get('where was it')."</span></a></li>\n";
       $r .= '  <li><a href="#other"><span>'.lang::get('other information')."</span></a></li>\n";
-      $r .= "</ul>\n";    
-      //throw new Exception($args['interface']);  
+      $r .= "</ul>\n";      
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
           'style'=>$args['interface']
@@ -228,12 +232,13 @@ class iform_mnhnl_citizen_science_1 {
       $r .= "</div>\n";      
     }
     $r .= "<div id=\"species\">\n";
+    $r .= '<p class="page-notice ui-widget-header ui-corner-all">'.lang::get('species tab instructions')."</p>";
 	  $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
 	  if ($args['preferred']) {
 	    $extraParams += array('preferred' => 't');
 	  }
     $species_list_args=array(
-        'label'=>'Species',
+        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
         'fieldname'=>'occurrence:taxa_taxon_list_id',
         'table'=>'taxa_taxon_list',
         'captionField'=>'taxon',
@@ -243,15 +248,24 @@ class iform_mnhnl_citizen_science_1 {
         'parentField'=>'parent_id',
         'extraParams'=>$extraParams
     );
+    if ($args['species_ctrl']=='tree_browser') {
+      // change the node template to include images
+      global $indicia_templates;
+    	$indicia_templates['tree_browser_node']='<div>'.
+    	    '<img src="'.data_entry_helper::$base_url.'/upload/{image_path}" alt="Image of {caption}" /></div>'.
+    	    '<span>{caption}</span>';
+    }
     // Dynamically generate the species selection control required.        
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
-        'divId'=>'controls'        
+        'divId'=>'controls',
+        'page'=>($user->id==0) ? 'first' : 'middle'        
       ));
     }    
     $r .= "</div>\n";
     $r .= "<div id=\"place\">\n";
+    $r .= '<p class="page-notice ui-widget-header ui-corner-all">'.lang::get('place tab instructions')."</p>";
     // Build the array of spatial reference systems into a format Indicia can use.
     $systems=array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
@@ -259,14 +273,17 @@ class iform_mnhnl_citizen_science_1 {
       $systems[$system] = lang::get($system);
     }    
     $r .= data_entry_helper::sref_and_system(array(
-      'label' => lang::get('spatial ref'),
+      'label' => lang::get('sample:entered_sref'),
       'systems' => $systems
     ));
     $r .= data_entry_helper::map_panel(array(
-      'presetLayers'=>array('multimap_landranger')
+      'presetLayers'=>explode(',', str_replace(' ', '', $args['map_layers'])),
+      'width'=>760
     ));
     if ($args['interface']=='wizard') {
-      $r .= data_entry_helper::wizard_buttons();      
+      $r .= data_entry_helper::wizard_buttons(array(
+        'divId'=>'controls'
+      ));      
     }
     $r .= "</div>\n";    
     $r .= "<div id=\"other\">\n";

@@ -26,21 +26,40 @@ global $default_terms;
  *
  * @package	Client
  */
-$default_terms = array(
+$default_terms = array( 
   'add row'=>'Add Row',
   'back'=>'Back',
   'british national grid'=>'British National Grid',
   'click here'=>'Click here',
   'close'=>'Close',
+  'email'=>'Email',
   'enter additional species'=>'Enter additional species',
   'error loading control'=>'Error loading control',
+  'first name'=>'First Name',
   'lat long 4326'=>'Lat/Long (WGS84)',
   'loading'=>'Loading',
   'next step'=>'Next Step',
+  'phone number'=>'Phone Number',
+  'prev step'=>'Previous Step',
   'search'=>'Search',
   'search for place on map'=>'Search for place on map',
   'spatial ref'=>'Spatial ref.',
   'species_checklist.species'=>'Species',
-  'species_checklist.present'=>'Present'
+  'species_checklist.present'=>'Present',
+  'surname'=>'Surname',
+  'validation_required' => 'Please enter the a value for the %s',
+  'validation_email' => 'Please enter a valid email address',
+  'validation_url' => 'Please enter a valid URL',
+  'validation_dateISO' => 'Please enter a valid date in yyyy-mm-dd format',
+
+  // Default labels for various database fields
+  'occurrence:taxa_taxon_list_id' => 'Species',
+  'sample:date' => 'Date',
+  'sample:entered_sref' => 'Spatial Reference',
+  
+  // Spatial reference systems
+  'OSGB'=>'British National Grid',
+  '4326'=>'WGS84 (decimal lat,long)',
+  '2169'=>'LUREF (x,y)'
 );
 

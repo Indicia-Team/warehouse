@@ -38,10 +38,10 @@ $indicia_templates = array(
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
-  'validation_message' => '<br/><div class="ui-state-error ui-corner-all inline-error">'.
-      '<span class="ui-icon ui-icon-alert" style="float: left; margin-left: 3px;"></span>{error}</div>'."\n",
+  'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
+  'error_class' => 'inline-error',
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
@@ -67,9 +67,9 @@ $indicia_templates = array(
       "\n/* ]]> */</script>\n".
       "<noscript><ul>{tabs}</ul></noscript>\n",
   'tab_next_button' => '<div{class}/>'.
-      '{captionNext} <span class="ui-icon ui-icon-circle-arrow-e" style="float: right"></span></div>',
+      '<span>{captionNext}</span><span class="ui-icon ui-icon-circle-arrow-e"></span></div>',
   'tab_prev_button' => '<div{class}/>'.
-      '{captionPrev} <span class="ui-icon ui-icon-circle-arrow-w" style="float: left"></span></div>',
+      '<span class="ui-icon ui-icon-circle-arrow-w"></span><span>{captionPrev}</span></div>',
   'submit_button' => '<input type="submit"{class}/>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
@@ -83,7 +83,7 @@ $indicia_templates = array(
 	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
     	'<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
-  'tree_browser' => '<div id="{id}"{class}><input type="hidden" name="{fieldname}"/></div>',
+  'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
       '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
@@ -160,7 +160,11 @@ class data_entry_helper extends helper_config {
   
   /**
    * @var array List of methods used to report a validation failure. Options are
-   * message, hint, icon, colour.
+   * message, message, hint, icon, colour, inline.
+   * The inline option specifies that the message should appear on the same line as the control.
+   * Otherwise it goes on the next line, indented by the label width. Because in many cases, controls
+   * on an Indicia form occupy the full available width, it is often more appropriate to place error
+   * messages on the next line so this is the default behaviour.
    */
   public static $validation_mode=array('message', 'colour');
   
@@ -174,6 +178,11 @@ class data_entry_helper extends helper_config {
    * @var string JavaScript text to be emitted after the data entry form and all other JavaScript.
    */
   public static $late_javascript = '';
+  
+  /**
+   * @var string JavaScript text to be emitted during window.onload.
+   */
+  public static $onload_javascript = '';
   
   /**
    * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
@@ -199,7 +208,43 @@ class data_entry_helper extends helper_config {
   /**
    * @var array Website ID, stored here to assist with caching.
    */
-  private static $website_id = null;  
+  private static $website_id = null;
+  
+  /**
+   * @var array Name of the form which has been set up for jQuery validation, if any.
+   */
+  public static $validated_form_id = null;
+  
+  /**
+   * @var array List of messages defined to pass to the validation plugin.
+   */
+  public static $validation_messages = array();
+  
+  /**
+   * @var Array of default validation rules to apply to the controls on the form if the
+   * built in client side validation is used (with the jQuery validation plugin). This array
+   * can be replaced if required.
+   * @todo This array could be auto-populated with validation rules for a survey's fields from the
+   * Warehouse.
+   */
+  public static $default_validation_rules = array(
+    'sample:date'=>array('required', 'dateISO'),
+    'sample:entered_sref'=>array('required'),
+    'occurrence:taxa_taxon_list_id'=>array('required')
+  );
+  
+  /**
+   * Call the init_validation method to turn on client-side validation for any controls with
+   * validation rules defined. To specify validation on each control, set the control's options array
+   * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
+   * validation format. For example, 'validation' => array('required', 'email').
+   * @param string @form_id Id of the form the validation is being attached to.
+   * 
+   */
+  public static function init_validation($form_id) {
+  	self::$validated_form_id = $form_id;
+  	self::add_resource('validation');
+  }
   
  /**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
@@ -344,12 +389,38 @@ class data_entry_helper extends helper_config {
     } else {
       $options['title'] = '';
     }
+    if (!array_key_exists('class', $options)) {
+      $options['class']='';
+    }
     // Add an error class to colour the control if there is an error and this option is set
     if (isset($error) && in_array('colour', $options['validation_mode'])) {
       $options['class'] .= ' ui-state-error';
+      if (array_key_exists('outerClass', $options)) {
+        $options['outerClass'] .= ' ui-state-error';
+      } else {
+      	$options['outerClass'] = 'ui-state-error';
+      }
+    }
+    // add validation metadata to the control if specified, as long as control has a fieldname
+    if (array_key_exists('fieldname', $options)) {
+      // First check for predefined rules
+	    $rules = (array_key_exists('validation', $options) ? $options['validation'] : array());
+	    if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
+	      $rules = array_merge($rules, self::$default_validation_rules[$options['fieldname']]);
+	    }
+	    // Convert these rules into jQuery format.
+	    $options['class'] .= ' '.self::convert_to_jquery_val_metadata($rules);
+	    // Build internationalised validation messages for jQuery to use
+      foreach ($rules as $rule) {
+        self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"), 
+          lang::get($options['fieldname']));
+      }
     }
     if (!empty($options['class'])) {
       $options['class']=' class="'.$options['class'].'"';
+    }
+    if (!empty($options['outerClass'])) {
+      $options['outerClass']=' class="'.$options['outerClass'].'"';
     }    
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -381,6 +452,7 @@ class data_entry_helper extends helper_config {
     }    
     // Output the main control
     $r .= str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);
+    
     // Add an error icon to the control if there is an error and this option is set
     if (isset($error) && in_array('icon', $options['validation_mode'])) {
       $r .= $indicia_templates['validation_icon'];
@@ -398,6 +470,28 @@ class data_entry_helper extends helper_config {
       $r .= $indicia_templates['suffix'];
     }
     return $r;
+  }
+  
+  /**
+   * Takes a list of validation rules in Indicia format, and converts them to the jQuery validaiotn
+   * plugin metadata format.
+   * @param array $rules List of validation rules to be converted.
+   * @return string Validation metadata classes to add to the input element.
+   * @access private
+   */
+  private static function convert_to_jquery_val_metadata($rules) {
+    $converted = array();
+    foreach ($rules as $rule) {
+    	// Detect the rules that can simply be passed through
+    	if    ($rule=='required'
+    	    || $rule=='dateISO'
+    	    || $rule=='email'
+    	    || $rule=='url') {
+    	  $converted[] = $rule;    	
+ 	    }
+ 	    // Now any rules which need parsing or convertion
+    }
+    return implode(' ', $converted);
   }
 
   /**
@@ -846,7 +940,9 @@ class data_entry_helper extends helper_config {
   * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
   * NB the tree itself will have an id of "tr$fieldname".</li>
   * <li><b>id</b><br/>
-  * Optional. ID of the control. Defaults to the fieldname.</li> 
+  * Optional. ID of the hidden input which contains the value. Defaults to the fieldname.</li>
+  * <li><b>divId</b><br/>
+  * Optional. ID of the outer div. Defaults to div_ plus the fieldname.</li>
   * <li><b>table</b><br/>
   * Required. Name (Kohana-style) of the database entity to be queried.</li>
   * <li><b>view</b><br/>
@@ -864,10 +960,14 @@ class data_entry_helper extends helper_config {
   * Array of key=>value pairs which will be passed to the service
   * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
   * queries to the data services.</li>
-  * <li><b>class</b><br/>
+  * <li><b>outerClass</b><br/>
   * Class to be added to the control's outer div.</li>
+  * <li><b>class</b><br/>
+  * Class to be added to the input control (hidden).</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value for the underlying control.</li>
   * </ul>
   * 
   * TODO
@@ -882,13 +982,15 @@ class data_entry_helper extends helper_config {
     $options = array_merge(array(
       'valueField' => $options['captionField'],
       'id' => $options['fieldname'],
+      'divId' => 'div_'.$options['fieldname'],
       'singleLayer' => true,
-      'class' => 'ui-widget ui-corner-all ui-widget-content tree-browser',
-      'view'=>'list',
-    
-      
+      'outerClass' => 'ui-widget ui-corner-all ui-widget-content tree-browser',
+      'listItemClass' => 'ui-widget ui-corner-all ui-state-default',
+      'default' => self::check_default_value($options['fieldname'],
+          array_key_exists('default', $options) ? $options['default'] : ''),
+      'view'=>'list'
     ), $options);    
-    $escaped_id=str_replace(':','\\\\:',$options['id']);
+    $escaped_divId=str_replace(':','\\\\:',$options['divId']);
     // Do stuff with extraParams
     $sParams = '';
     foreach ($options['extraParams'] as $a => $b){
@@ -898,7 +1000,7 @@ class data_entry_helper extends helper_config {
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
     self::$javascript .= "       
-$('div#$escaped_id').indiciaTreeBrowser({
+$('div#$escaped_divId').indiciaTreeBrowser({
   url: '$url/$o_table',
   extraParams : {
     orderby : '$o_captionField',
@@ -912,7 +1014,9 @@ $('div#$escaped_id').indiciaTreeBrowser({
   parentField: '$o_parentField',
   nodeTmpl: '".$indicia_templates['tree_browser_node']."',
   singleLayer: '$o_singleLayer',
-  backCaption: '".lang::get('back')."' 
+  backCaption: '".lang::get('back')."',
+  listItemClass: '$o_listItemClass',
+  defaultValue: '$o_default'
 });\n";
     return self::apply_template('tree_browser', $options);
   }
@@ -941,7 +1045,17 @@ $('div#$escaped_id').indiciaTreeBrowser({
 
     self::add_resource('jquery_ui');
     $escaped_id=str_replace(':','\\\\:',$options['id']);
-    self::$javascript .= "jQuery('#$escaped_id').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});\n";
+    self::$javascript .= "jQuery('#$escaped_id').datepicker({
+  dateFormat : 'yy-mm-dd', 
+  constrainInput: false";
+    // If the validation plugin is running, we need to trigger it when the datepicker closes.
+    if (self::$validated_form_id) {
+    	self::$javascript .= ",
+  onClose: function() {
+    $(this).valid();
+  }";
+    }
+    self::$javascript .= "\n});\n";
 
     if (!array_key_exists('default', $options) || $options['default']=='') {
       $options['default']=lang::get('click here');
@@ -950,7 +1064,6 @@ $('div#$escaped_id').indiciaTreeBrowser({
     if (!array_key_exists('class', $options)) {
       $options['class']='';
     }
-    $options['class'] .= ' date';
     return self::apply_template('date_picker', $options);
   }
 
@@ -1708,7 +1821,7 @@ $('div#$escaped_id').indiciaTreeBrowser({
 	      unset($options['layers']);
 	    }
 	    $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-	    self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+	    self::$onload_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 	
 	    $r = str_replace(
 	          array('{divId}','{class}','{width}','{height}'),
@@ -1937,14 +2050,19 @@ $('div#$escaped_id').indiciaTreeBrowser({
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function enable_tabs($options) {
+    // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
-    	$divId = $options['divId'];
-    	self::$javascript .= "
-$('.next-tab').click(function() {
-  var obj=$('#$divId').tabs(); 
-  obj.tabs('select', obj.tabs('option', 'selected')+1);
+      $divId = $options['divId'];
+      self::$javascript .= "\n$('.tab-next').click(function() {\n";
+      self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+      // Use a selector to find the inputs on the current tab and validate them.
+      if (isset(self::$validated_form_id)) {
+        self::$javascript .= "  if (!$('#".self::$validated_form_id." div > div:eq('+current+') input').valid()) {\n    return; \n}";
+      }
+      // If all is well, move to the next tab.
+      self::$javascript .= "  $('#$divId').tabs('select', current+1);  
 });
-$('.prev-tab').click(function() {
+$('.tab-prev').click(function() {
   var obj=$('#$divId').tabs(); 
   obj.tabs('select', obj.tabs('option', 'selected')-1);
 });\n";
@@ -1992,6 +2110,10 @@ if (errors.length>0) {
   * The id of the div which is tabbed and whose next tab should be selected.</li>
   * <li><b>caption</b><br/>
   * Optional. The untranslated caption of the button. Defaults to next step.</li>
+  * <li><b>class</b><br/>
+  * Optional. Additional classes to add to the div containing the buttons. Use left, right or 
+  * centre to position the div, making sure the containing element is either floated, or has
+  * overflow: auto applied to its style. Default is right.
   * 
   * @link http://docs.jquery.com/UI/Tabs
   */
@@ -1999,25 +2121,29 @@ if (errors.length>0) {
     // Default captions
     $options = array_merge(array(
       'captionNext' => 'next step',   
-      'captionPrev' => 'prevous step',
+      'captionPrev' => 'prev step',
       'buttonClass' => 'ui-widget-content ui-state-default ui-corner-all indicia-button',
-      'page' => 'middle'
+      'class'       => 'right',
+      'page'        => 'middle',
+      'suffixTemplate' => 'nosuffix'
     ), $options);
+    $options['class'] .= ' buttons';
     // translate the captions
     $options['captionNext'] = lang::get($options['captionNext']);
     $options['captionPrev'] = lang::get($options['captionPrev']);
     // Output the buttons
-    $r = '<div>';   
+    $r = '<div class="'.$options['class'].'">';
+    $buttonClass=$options['buttonClass'];   
     if (array_key_exists('divId', $options)) {
       if ($options['page']!='first') {
-        $options['class']="$class tab-prev";
+        $options['class']=$buttonClass." tab-prev";
         $r .= self::apply_template('tab_prev_button', $options);  
       }
       if ($options['page']!='last') {
-        $options['class']="$class tab-next";
+        $options['class']=$buttonClass." tab-next";
         $r .= self::apply_template('tab_next_button', $options);  
       } else {        
-        $options['class']=$class;
+        $options['class']=$buttonClass;
         $r .= self::apply_template('submit_button', $options);     
       }
     }
@@ -2062,7 +2188,7 @@ if (errors.length>0) {
     self::add_resource('jquery_ui');
     // For clean code, the jquery_ui stuff should have gone out in the page header, but just in case...
     if (!in_array('jquery_ui', self::$dumped_resources)) {
-      $r = self::internal_dump_javascript('', '', array('jquery_ui'));
+      $r = self::internal_dump_javascript('', '', '', array('jquery_ui'));
       array_push(self::$dumped_resources, 'jquery_ui');
     } else {
       $r = '';
@@ -2315,7 +2441,7 @@ if (errors.length>0) {
       self::add_resource($resource);
     }
     // place a css class on the body if JavaScript enabled. And output the resources
-    return self::internal_dump_javascript('$("body").addClass("js");', '', $resources);
+    return self::internal_dump_javascript('$("body").addClass("js");', '', '', $resources);
   }
 
   /**
@@ -2327,12 +2453,26 @@ if (errors.length>0) {
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
-    global $indicia_resources;    
-    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, $indicia_resources);
+    global $indicia_resources, $indicia_templates;
+    // If required, setup jQuery validation. We can't prep this JavaScript earlier since we would 
+    // not know all the control messages. 
+    // In the following block, we set the validation plugin's error class to our template.
+    // We also define the error label to be wrapped in a <p> if it is on a newline.
+    if (self::$validated_form_id) {
+	    self::$javascript .= "$('#".self::$validated_form_id."').validate({ 
+	      errorClass: \"".$indicia_templates['error_class']."\",
+	      ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
+	      "highlight: function(element, errorClass) {
+	         // Don't highlight the actual control, as it could be hidden anyway
+	      },
+	      messages: ".json_encode(self::$validation_messages)."
+	    });\n";
+    }
+    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, $indicia_resources);
     // ensure scripted JS does not output again if recalled.
     self::$javascript = "";
     self::$late_javascript = "";
-    return "\n\n".$dump;
+    self::$onload_javascript = "";
   }
   
   /**
@@ -2340,7 +2480,7 @@ if (errors.length>0) {
    * as flexible parameters, rather that using the globals.
    * @access private
    */
-  private static function internal_dump_javascript($javascript, $late_javascript, $resources) {
+  private static function internal_dump_javascript($javascript, $late_javascript, $onload_javascript, $resources) {
     $libraries = '';
     $stylesheets = '';
     if (isset($resources)) {
@@ -2361,13 +2501,18 @@ if (errors.length>0) {
         }
       }
     }
-    if (!empty($javascript) || !empty($late_javascript)) {
+    if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
       $script = "<script type='text/javascript'>/* <![CDATA[ */
 jQuery(document).ready(function() {
 $javascript
 $late_javascript
-});
-/* ]]> */</script>";
+});\n";
+      if (!empty($onload_javascript)) {
+      	$script .= "window.onload = function() {
+$onload_javascript      	  
+};\n";
+      }
+      $script .= "/* ]]> */</script>";
     } else {
       $script='';
     }
@@ -2575,7 +2720,8 @@ $('.ui-state-default').live('mouseout', function() {
       ),
       'flickr' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.flickr.js",self::$js_path."thickbox-compressed.js")),
       'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
-      'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array())
+      'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
+      'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
     );
   }
 
@@ -2635,7 +2781,9 @@ $('.ui-state-default').live('mouseout', function() {
        }
     }
     if ($error!='') {
-       return str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
+    	$template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
+    	$template = str_replace('{id}', $id, $template);
+      return str_replace('{error}', lang::get($error), $template);
     } else {
       return '';
     }
