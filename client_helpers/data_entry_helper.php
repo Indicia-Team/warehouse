@@ -796,10 +796,13 @@ class data_entry_helper extends helper_config {
     self::add_resource('treeview');
     // Declare the data service
     $url = parent::$base_url."index.php/services/data";
-    // If valueField is null, set it to $captionField
-    if (!array_key_exists('valueField', $options))  $options['valueField'] = $options['captionField'];
-    if (!array_key_exists('class', $options)) $options['class'] = 'treebrowser';
-    if (!array_key_exists('id', $options)) $options['id'] = $options['fieldname'];
+    // Setup some default values
+    $options = array_merge(array(
+      'valueField'=>$options['captionField'],
+      'class'=>'treeview',
+      'id'=>$options['fieldname'],
+      'view'=>'list'
+    ), $options);
     $default = self::check_default_value($options['fieldname'], 
         array_key_exists('default', $options) ? $options['default'] : null);
     // Do stuff with extraParams
@@ -878,10 +881,12 @@ class data_entry_helper extends helper_config {
     // Apply some defaults to the options
     $options = array_merge(array(
       'valueField' => $options['captionField'],
-      'class' => 'treebrowser',
       'id' => $options['fieldname'],
       'singleLayer' => true,
-      'class' => 'ui-widget ui-corner-all ui-widget-content tree-browser'
+      'class' => 'ui-widget ui-corner-all ui-widget-content tree-browser',
+      'view'=>'list',
+    
+      
     ), $options);    
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Do stuff with extraParams

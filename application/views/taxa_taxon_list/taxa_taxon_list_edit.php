@@ -26,9 +26,16 @@ echo html::script(array(
   'media/js/jquery.bgiframe.min.js',
   'media/js/thickbox-compressed.js',
   'media/js/jquery.autocomplete.js'
-), FALSE); ?>
+), FALSE); 
+$id = html::initial_value($values, 'taxa_taxon_list:id'); 
+?>
 <script type="text/javascript" >
 $(document).ready(function() {
+	var $tabs=$("#tabs").tabs();
+	var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
+	if (initTab!='') {
+	  $tabs.tabs('select', '#' + initTab);
+	}
   $("input#parent").autocomplete("<?php echo url::site() ?>services/data/taxa_taxon_list", {
     minChars : 1,
     mustMatch : true,
@@ -65,30 +72,23 @@ $(document).ready(function() {
 <?php
 echo html::error_message($model->getError('deleted'));
 ?>
-<form class="cmxform" action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="post" enctype="multipart/form-data">
+<div id="tabs">
+  <ul>
+    <li><a href="#details"><span>Taxon Details</span></a></li>
+<?php if ($id != null) : ?>
+    <li><a href="<?php echo url::site()."taxon_image/$id" ?>" title="images"><span>Images</span></a></li>
+<?php if ($values['table'] != null) : ?>
+    <li><a href="#subtaxa"><span>Child Taxa</span></a></li>
+<?php 
+endif;
+endif;
+?>
+  </ul>
+<div id="details">
+<form class="cmxform" action="<?php echo url::site().'taxa_taxon_list/save' ?>" method="post">
 <?php 
 echo $metadata;
-if (count($values['images'])>0) : ?>
-  <fieldset class="imagelist">
-  <legend>Images</legend>
-  <?php
-  
-  foreach ($values['images'] as $image) {
-    if ($image->external_details) {    
-      $obj = json_decode($image->external_details, true);
-      if (array_key_exists('flickr', $obj)) {
-        $photo = $obj['flickr'];
-        echo '<a class="thickbox" href="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
-                        $photo['id'].'_'.$photo['secret'].'.jpg"><img alt="'.$photo['title'].'" title="'.$photo['title'].'" src="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
-                        $photo['id'].'_'.$photo['secret'].'_t.jpg" /></a>';
-      }
-    } else {
-      echo '<a class="thickbox" href="'.url::base().'upload/'.$image->path.'"><img src="'.url::base().'upload/'.$image->path.'" width="100"/></a>';
-    }
-  }
-  ?>
-  </fieldset>
-<?php endif; ?>
+?>
 <fieldset>
 <input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
 <input type="hidden" name="taxa_taxon_list:taxon_list_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id'); ?>" />
@@ -195,13 +195,13 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
 echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null); 
 ?>
 </form>
-<?php 
-if (html::initial_value($values, 'taxa_taxon_list:id') && $values['table'] != null) { ?>
-  <br />
-  <h2> Child Taxa </h2>
+</div>
+<?php if ($id != null && $values['table'] != null) : ?>
+  <div id="subtaxa">
   <?php echo $values['table']; ?>
-<form class="cmxform" action="<?php echo url::site(); ?>taxa_taxon_list/create/<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id') ?>" method="post">
-  <input type="hidden" name="taxa_taxon_list:parent_id" value=<?php echo html::initial_value($values, 'taxa_taxon_list:id') ?> />
-  <input type="submit" value="New Child Taxon" class="ui-corner-all ui-state-default button" />
+  <form class="cmxform" action="<?php echo url::site(); ?>taxa_taxon_list/create/<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id') ?>" method="post">
+    <input type="hidden" name="taxa_taxon_list:parent_id" value=<?php echo html::initial_value($values, 'taxa_taxon_list:id') ?> />
+    <input type="submit" value="New Child Taxon" class="ui-corner-all ui-state-default button" />
   </form>
-<?php } ?>
+  </div>
+<?php endif; ?>

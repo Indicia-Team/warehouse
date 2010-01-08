@@ -1,4 +1,4 @@
-<?php defined('SYSPATH') or die('No direct script access.');
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -15,35 +15,17 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
  * @package	Core
- * @subpackage Models
+ * @subpackage Views
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
 
-/**
- * Model class for the Taxon_Images table.
- *
- * @package	Core
- * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
- */
-class Taxon_Image_Model extends ORM {
-
-  protected $belongs_to = array(
-    'created_by' => 'user', 
-    'updated_by' => 'user',
-    'taxon_meaning');
-
-  protected $search_field = 'caption';
-
-  public function validate(Validation $array, $save = false) {
-    $array->pre_filter('trim');
-    $array->add_rules('taxon_meaning_id', 'required');
-    $array->add_rules('path', 'required');
-
-    $this->unvalidatedFields = array('caption', 'external_details');
-    return parent::validate($array, $save);
-  }
-
-}
+?>
+<div class="taxon_images">
+<?php echo $table ?>
+<br/>
+<form action="<?php echo url::site().'taxon_image/create/'.$taxa_taxon_list_id; ?>" method="post">
+<input type="submit" value="New taxon image" class="ui-corner-all ui-state-default button" />
+</form>
+</div>

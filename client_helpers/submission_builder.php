@@ -53,7 +53,7 @@ class submission_builder extends helper_config {
    *     'joinsTo' => array('model that this has a many to many join with', ...)
    * )
    */
-  public static function build_submission($values, $structure) {    
+  public static function build_submission($values, $structure) {
     // Handle metaFields and joinsTo first so they don't end up in other parts of the submission (specially handled fields) 
     if (array_key_exists('metaFields', $structure)) {
       $metaFields=array();
@@ -225,7 +225,7 @@ class submission_builder extends helper_config {
       );
     } else if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
     	// link image path attribute direct to record. 
-    	$modelWrapped['fields']['image_path'] = array('value'=>self::handle_media('image_upload'));    	
+    	$modelWrapped['fields']['path'] = array('value'=>self::handle_media('image_upload',false));    	
     }
     return $modelWrapped;
   }
@@ -243,7 +243,6 @@ class submission_builder extends helper_config {
    */
   public static function handle_media($media_id, $submit=true) {
     if (array_key_exists($media_id, $_FILES)) {
-      syslog(LOG_DEBUG, "SITE: Media id $media_id to upload.");
       $uploadpath = parent::$upload_path;
       $target_url = parent::$base_url."/index.php/services/data/handle_media";
       
@@ -253,8 +252,8 @@ class submission_builder extends helper_config {
       $fext = array_pop($parts);      
       $bname = basename($fname, ".$fext");
       // Generate a file id to store the image as
-      $destination = time().rand(0,1000).".".$fext;      
-
+      $destination = time().rand(0,1000).".".$fext;
+      
       if (move_uploaded_file($fname, $uploadpath.$destination)) {
         if ($submit) {      
           $postargs = array();

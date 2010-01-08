@@ -264,8 +264,7 @@ class Upgrade_Model extends Model
         kohana::log('debug', implode(', ',$file_name));
         try
         {
-            foreach($file_name as $name) {             
-              kohana::log('debug', $name);
+            foreach($file_name as $name) {
               if (strcmp($name, $last_executed_file)>0 || empty($last_executed_file)) {
                 if(false === ($_db_file = file_get_contents( $full_upgrade_folder . '/' . $name ))) {
                   throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);

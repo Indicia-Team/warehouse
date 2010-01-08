@@ -117,7 +117,6 @@ class User_Model extends ORM {
           'fkFields' => array(),
           'superModels' => array()
         );
-        echo kohana::debug($this->droppedFields);
         if ($users_websites->loaded || is_numeric($this->droppedFields['website_'.$website->id]['value'])) {
           // If this is an existing users_websites record, preserve the id.
           if ($users_websites->loaded)

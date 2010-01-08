@@ -30,9 +30,13 @@
  */
 class Taxa_taxon_list_Model extends Base_Name_Model {
 
-  protected $belongs_to = array('taxon', 'taxon_list',  'taxon_meaning',
+  protected $belongs_to = array(
+    'taxon', 
+    'taxon_list',  
+    'taxon_meaning',
     'created_by' => 'user',
-    'updated_by' => 'user');
+    'updated_by' => 'user'
+  );
 
   protected $ORM_Tree_children = 'taxa_taxon_lists';
 
