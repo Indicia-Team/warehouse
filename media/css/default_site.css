@@ -23,11 +23,13 @@
 }
 
 .inline-error {
-  display:-moz-inline-stack;
-  display:inline-block;
-  zoom:1;
-  *display:inline;
-  margin-left: 160px;
+	color: red;
+}
+
+p.inline-error {
+  margin-left: 160px;	
+  margin-bottom: -0.8em;
+  margin-top: 0em;
 }
 
 .validation-icon {
@@ -135,6 +137,8 @@ input, select, textarea {
 
 .indicia-button {
   padding: 0em 0.3em;
+  margin: 0em 0.3em;
+  min-height: 23px;
   text-decoration: none;
   width: auto;
   display:inline-block;
@@ -142,10 +146,27 @@ input, select, textarea {
   *display:inline;
 }
 
-.next-tab, .prev-tab {
-	float: right;
+.indicia-button span {
+	display:inline-block;
+  zoom:1;
+  *display:inline;
 }
-	
+
+.buttons {
+	padding: 8px;
+}
+
+.right {
+  float: right;
+}
+
+.left {
+  float: left;
+}
+
+.centre {
+  text-align: center;
+}
 
 #f-dosearch {
   margin: 3px 2em 0 1px;
@@ -204,4 +225,8 @@ li.ui-state-error {
   display:inline-block;
   zoom:1;
   *display:inline;
+}
+
+.ui-tabs-panel {
+  overflow: auto;
 }
