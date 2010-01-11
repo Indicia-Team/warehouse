@@ -47,31 +47,22 @@ class iform_mnhnl_citizen_science_1 {
           'radio_group' => 'Radio group',
           'treeview' => 'Treeview',
           'tree_browser' => 'Tree browser'
-        )
-      ),
-      array(
-      	'name'=>'website_id',
-        'caption'=>'Website ID',
-        'description'=>'The ID of the website that data will be posted into.',
-        'type'=>'int'
-      ),
-      array(
-      	'name'=>'password',
-        'caption'=>'Website Password',
-        'description'=>'The Password of the website that data will be posted into.',
-        'type'=>'string'
+        ),
+        'group'=>'Species'
       ),
       array(
       	'name'=>'list_id',
         'caption'=>'Species List ID',
         'description'=>'The Indicia ID for the species list that species can be selected from.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Species'
       ),
 	    array(
       	'name'=>'preferred',
         'caption'=>'Preferred species only?',
         'description'=>'Should the selection of species be limited to preferred names only?',
-        'type'=>'boolean'
+        'type'=>'boolean',
+	      'group'=>'Species'
       ),
       array(
       	'name'=>'interface',
@@ -89,56 +80,86 @@ class iform_mnhnl_citizen_science_1 {
         'name'=>'uid_attr_id',
         'caption'=>'User ID Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the CMS User ID.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Sample Attributes'
       ),
       array(      
         'name'=>'username_attr_id',
         'caption'=>'Username Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s username.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'email_attr_id',
         'caption'=>'Email Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s email.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'first_name_attr_id',
         'caption'=>'First Name Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s first name.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'surname_attr_id',
         'caption'=>'Surname Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s surname.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'phone_attr_id',
         'caption'=>'Phone Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s phone.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'contact_attr_id',
         'caption'=>'Contactable Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
-        'type'=>'string'
+        'type'=>'int',
+        'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'map_layers',
         'caption'=>'Available Map Layers',      
         'description'=>'List of available map background layers, comma separated. Options are '. 
             'openlayers_wms, nasa_mosaic, virtual_earth, multimap_default, multimap_landranger, google_physical, google_streets, google_hybrid or google_satellite.',
-        'type'=>'string'
+        'type'=>'string',
+        'group'=>'Map'
+      ),
+      array(
+        'name'=>'map_centroid_lat',
+        'caption'=>'Centre of Map Latitude',      
+        'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
+        'type'=>'string',
+        'group'=>'Map'
+      ),
+      array(
+        'name'=>'map_centroid_long',
+        'caption'=>'Centre of Map Longitude',      
+        'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
+        'type'=>'string',
+        'group'=>'Map'
+      ),
+      array(
+        'name'=>'map_zoom',
+        'caption'=>'Map Zoom Level',      
+        'description'=>'Zoom level of the initially displayed map.',
+        'type'=>'int',
+        'group'=>'Map'
       ),
       array(
         'name'=>'spatial_systems',
         'caption'=>'Allowed Spatial Ref Systems',      
-        'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code).',
-        'type'=>'string'
+        'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
+        'type'=>'string',
+        'group'=>'Map'
       )     
     );
   }
@@ -278,7 +299,11 @@ class iform_mnhnl_citizen_science_1 {
     ));
     $r .= data_entry_helper::map_panel(array(
       'presetLayers'=>explode(',', str_replace(' ', '', $args['map_layers'])),
-      'width'=>760
+      'width'=>760,
+      'initial_lat'=>$args['map_centroid_lat'],
+      'initial_long'=>$args['map_centroid_long'],
+      //'initial_zoom'=>$args['map_zoom']
+    
     ));
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
