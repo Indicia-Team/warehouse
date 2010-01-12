@@ -322,7 +322,7 @@ class XMLReportReader_Core implements ReportReader
  	$thisDefn->mode = $this->download;
  	$thisDefn->id = 'occurrences_id';
  	if($this->automagic) {
- 		for($i = 0; $i <= count($this->tables); $i++){
+ 		for($i = 0; $i < count($this->tables); $i++){
 			if($this->tables[$i]['tablename'] == 'occurrences'){ // Warning, will not work with multiple occurrence tables
 		 		$thisDefn->id = "lt".$i."_id";
 		 		break;

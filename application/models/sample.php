@@ -50,7 +50,6 @@ class Sample_Model extends ORM_Tree
   * Validate and save the data.
   *
   * @todo add a validation rule for valid date types.
-  * @todo allow a date string to be passed, which gets mapped to a vague date start, end and type.
   * @todo validate at least a location_name or sref required
   */
   public function validate(Validation $array, $save = FALSE)
@@ -58,21 +57,10 @@ class Sample_Model extends ORM_Tree
     $orig_values = $array->as_array();
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('date_type', 'required', 'length[1,2]');
-    $array->add_rules('date_start', 'date_in_past');
-    $array->add_rules('entered_sref', "required");
-    $array->add_rules('entered_sref_system', 'required');
-    $array->add_rules('geom', 'required');
-    if (array_key_exists('entered_sref_system', $orig_values)) {
-      $system = $orig_values['entered_sref_system'];
-      $array->add_rules('entered_sref', "sref[$system]");
-      $array->add_rules('entered_sref_system', 'sref_system');
-    }    
-
+ 
     // Any fields that don't have a validation rule need to be copied into the model manually
     $this->unvalidatedFields = array
     (
-      'date_start',
       'date_end',
       'location_name',
       'survey_id',
@@ -80,6 +68,22 @@ class Sample_Model extends ORM_Tree
       'recorder_names',
       'parent_id'
     );
+    
+    $array->add_rules('date_type', 'required', 'length[1,2]');
+    $array->add_rules('date_start', 'date_in_past');
+    if (array_key_exists('location_id', $orig_values)) { // if a location is provided, we don't want an sref.
+        $array->add_rules('location_id', 'required');
+    } else {
+	    $array->add_rules('entered_sref', "required");
+    	$array->add_rules('entered_sref_system', 'required');
+	    $array->add_rules('geom', 'required');
+    	if (array_key_exists('entered_sref_system', $orig_values)) {
+      		$system = $orig_values['entered_sref_system'];
+      		$array->add_rules('entered_sref', "sref[$system]");
+	        $array->add_rules('entered_sref_system', 'sref_system');
+    	}    
+    }
+
     return parent::validate($array, $save);
   }
 

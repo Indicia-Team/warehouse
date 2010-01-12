@@ -129,7 +129,12 @@ class ReportEngine {
 
     // What parameters do we expect?
     $this->expectedParams = $this->reportReader->getParams();
-
+	// ensure that only those expected params are passed through to the report.
+	foreach($this->providedParams as $key => $value){
+		if(!isset($this->expectedParams[$key])){
+			unset($this->providedParams[$key]);
+		}
+	}
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
       'content' => $this->compileReport()

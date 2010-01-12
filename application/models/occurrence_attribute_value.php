@@ -66,7 +66,7 @@ class Occurrence_Attribute_Value_Model extends ORM {
 	        break;
 	      case 'B':
 	      	// Boolean
-	      	$array->add_rules('inv_value', 'regex[\0|1\]');
+	      	$array->add_rules('int_value', 'regex[\0|1\]');
 	      	$vf = 'int_value';
 	      	break;
 	      default:
