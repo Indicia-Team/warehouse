@@ -35,6 +35,7 @@
         cssDesc: "headerSortDown",
         indiciaSvc: "http://localhost/indicia/index.php/services",
         dataColumns: null,
+        reportColumnTitles: null,
         actionColumns: {},
         itemsPerPage: 10,
         multiSort: false,
@@ -131,9 +132,23 @@
     */
     function generateReportHeader(record, div) {
       var headers = "";
-      $.each(record, function(key, value){
-        headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+key+"</th>";
-      });
+      $.each(record, function(key, value){ // value is ignored
+    	  var display;
+          if (div.settings.dataColumns == null){ // no dataColumns defined, so use all columns in report, header title = report column name.
+              headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+key+"</th>";
+          } else if(div.settings.dataColumns.indexOf(key) != -1){ // key is in dataColumns array
+        	  if (div.settings.reportColumnTitles == null || !div.settings.reportColumnTitles[key]){ // no column title defined so use report column name
+                  headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+key+"</th>";
+        	  } else { // no column title defined so use report column name
+                  headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+div.settings.reportColumnTitles[key]+"</th>";
+        	  }
+          } // else column is not in dataColumns so do not output it.
+        });
+        $.each(div.settings.actionColumns, function(key, value){
+          headers += "<th class='" + div.settings.cssHeader + "'>";
+          headers += key;
+          headers += "</th>";
+        });
 
       $("thead tr", div).html(headers);
     }
@@ -191,26 +206,38 @@
       var body = "";
       var url = getUrl(div);
       $.getJSON(url, function(data){
+        if (div.recordCount==0 && div.entity.substring(0,4)=='rpt:') {
+            div.recordCount = data.length;
+            $("div.pager", div).each(function(i){
+                generatePager(div, this);
+            });
+        }
         $.each(data, function(r, record){
           if (r==0 && div.entity.substring(0,4)=='rpt:') {
             generateReportHeader(record, div);
           }
-          if (r%2==0) {
-            body += "<tr>";
-          } else {
-            body += "<tr class='odd'>";
-          }
-          $.each(record, function(i, item){
-            if (div.settings.dataColumns == null || div.settings.dataColumns.indexOf(item) != -1){
-              body += "<td>"+item+"</td>";
+          if(div.settings.callback)
+        	  div.settings.callback(div, record);
+          // although it is possible to implement limit etc  for reports, we have to be brutal with the paging
+          // so we can run a callback.
+          if(div.entity.substring(0,4)!='rpt:' || (r >= (div.page-1)*div.settings.itemsPerPage && r < div.page*div.settings.itemsPerPage)){
+            if (r%2==0) {
+              body += "<tr>";
+            } else {
+              body += "<tr class='odd'>";
             }
-          });
-          $.each(div.settings.actionColumns, function(key, value){
-            body += "<td>";
-            body += "<a href='" + value.replace(/£([a-zA-Z_\-]+)£/g, function($0, $1){ return record[$1]; }) + "'>"+key+"</a>";
-            body += "</td>";
-          });
-          body += "</tr>";
+            $.each(record, function(i, item){
+              if (div.settings.dataColumns == null || div.settings.dataColumns.indexOf(i) != -1){
+                body += "<td>"+item+"</td>";
+              }
+            });
+            $.each(div.settings.actionColumns, function(key, value){
+              body += "<td>";
+              body += "<a href='" + value.replace(/£([a-zA-Z_\-]+)£/g, function($0, $1){ return record[$1]; }) + "'>"+key+"</a>";
+              body += "</td>";
+            });
+            body += "</tr>";
+          }
         });
         $("tbody", div).html(body);
       });

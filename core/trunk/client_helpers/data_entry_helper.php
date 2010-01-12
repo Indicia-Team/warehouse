@@ -38,6 +38,7 @@ $indicia_templates = array(
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
+  'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
@@ -378,10 +379,21 @@ class data_entry_helper extends helper_config {
       $options['validation_mode']=self::$validation_mode;
     }
     // Decide if the main control has an error. If so, highlight with the error class and set it's title.
-    if (isset($indicia_errors)) {      
-      if (array_key_exists('fieldname', $options) && array_key_exists($options['fieldname'], $indicia_errors)) {
-        $error = $indicia_errors[$options['fieldname']];
-      }
+    if (isset($indicia_errors) && array_key_exists('fieldname', $options)){
+        $errorKey = $options['fieldname'];
+    	if (substr($errorKey, -4)=='date') {
+          // For date fields, we also include the type, start and end validation problems
+          if (array_key_exists($errorKey.'_start', $indicia_errors)) {
+            $errorKey = $errorKey.'_start';
+          } else if (array_key_exists($errorKey.'_end', $indicia_errors)) {
+            $errorKey = $errorKey.'_end';
+          } else if (array_key_exists($errorKey.'_type', $indicia_errors)) {
+            $errorKey = $errorKey.'_type';
+          }
+        }
+	  	if(array_key_exists($errorKey, $indicia_errors)) {
+	        $error = $indicia_errors[$errorKey];
+      	}
     }
     // Add a hint to the control if there is an error and this option is set
     if (isset($error) && in_array('hint', $options['validation_mode'])) {        
@@ -459,8 +471,8 @@ class data_entry_helper extends helper_config {
     }    
     // Add a message to the control if there is an error and this option is set
     if (isset($error) && in_array('message', $options['validation_mode'])) {
-      $r .= self::check_errors($options['fieldname']);
-    }    
+      $r .= self::check_errors($errorKey);
+    }
     if (array_key_exists('suffixTemplate', $options)) {
       if (array_key_exists($options['suffixTemplate'], $indicia_templates)) 
         $r .= $indicia_templates[$options['suffixTemplate']];
@@ -1368,7 +1380,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           }
         }
         $options['options'] = $opts;
-      } else
+    } else
         echo $response['error'];
     }
     return self::apply_template($outerTmpl, $options);
@@ -2027,7 +2039,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'captionField'=>'name',
         'id'=>'imp-location'
         ), $options);
-    echo self::select($options);
+    return self::select($options);
   }
 
   
@@ -2082,6 +2094,9 @@ if (errors.length>0) {
     $('#'+panel.id+'-tab').addClass('ui-state-error');
   }
 }\n";
+      if (array_key_exists('active', $options)) {      	
+      	self::$late_javascript .= "else {tabs.tabs('select','".$options['active']."');}\n";
+      }
       if (array_key_exists('style', $options) && $options['style']=='wizard') {      	
       	self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
       }
@@ -2577,12 +2592,15 @@ $onload_javascript
   
   public static function dump_remaining_errors()
   { 
-    global $indicia_errors;
-    foreach ($indicia_errors as $error) {
+    global $indicia_errors, $indicia_templates;
+    $r="";
+    foreach ($indicia_errors as $errorKey => $error) {
       if (!in_array($error, self::$displayed_errors)) {
-        echo $error."<br/>";
+        $r .= str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
+        $r .= "[".$errorKey."]";
       }
     }
+    return $r."<br/>";
   }
 
 
@@ -2934,6 +2952,70 @@ $('.ui-state-default').live('mouseout', function() {
     return $return;
   }
 
-}
+  /**
+  * Helper function to fetch details of attributes
+  * 
+  * @return array of attributes.
+  */
+  public static function getAttributes($options) {
+  	$retVal = array();
+    self::add_resource('json');
 
+    $response = self::get_population_data($options);
+    if (!array_key_exists('error', $response)) {
+        foreach ($response as $item){
+        	$retVal[$item['id']] = $item + array('fieldprefix' => $options['fieldprefix']);
+        }
+    } else
+        $retVal = $response;
+
+    return $retVal;
+  }
+
+  /**
+  * Helper function to output an attribute
+  * 
+  * @return string HTML to insert into the page for the control.
+  */
+  public static function outputAttribute($item, $options=array()) {
+  	var_dump($item);
+  	echo "<br />";
+  	var_dump($options);
+  	echo "<br /><br />";
+  	$attrOptions = array('label'=>$item['caption'],
+							'fieldname'=>$item['fieldprefix'].':'.$item['id']);
+  	if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
+  	if(isset($options['default'])) $attrOptions['default']= $options['default'];
+  	
+  	switch ($item['data_type']) {
+        case 'T': // Text
+        case 'F': // Float
+        case 'I': // Integer
+         	$output = self::text_input($attrOptions);
+            break;
+        case 'B': // Boolean
+            $output = self::checkbox($attrOptions);
+            break;
+        case 'D': // Date
+        case 'V': // Vague Date
+            $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker" : "vague-date-picker");
+            $output = self::date_picker($attrOptions);
+            break;
+        case 'L':
+            $output = self::select($attrOptions + array(
+                  'table'=>'termlists_term',
+                  'captionField'=>'term',
+                  'valueField'=>'id',
+                  'extraParams' => $options['extraParams'] + array('termlist_id' => $item['termlist_id']),
+                  'blankText' => ''));
+	        break;
+        default:
+            $output = '<strong>UNKNOWN DATA TYPE '.$item['data_type'].' FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
+            break;
+    }
+
+    return $output;
+  }
+  
+}
 ?>

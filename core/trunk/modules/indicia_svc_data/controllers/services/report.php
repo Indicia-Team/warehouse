@@ -89,6 +89,11 @@ class Report_Controller extends Data_Service_Base_Controller {
     $src = $this->input->get('reportSource', null);
     $rep = $this->input->get('report', null);
     $params = json_decode($this->input->post('params', '{}'), true);
+    // NB that for JSON requests (eg from datagrids) the parameters do not get posted, but appear in the url.
+    if(empty($params)){
+    	// no params posted so look on URL
+    	$params = $_GET;
+    }
     $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
     kohana::log('debug', kohana::debug($data));
     $this->view_columns = $data['content']['columns'];

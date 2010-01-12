@@ -129,6 +129,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+  * Provides the /service/data/sample_attribute service.
+  * Retrieves details of sample attributes.
+  */
+  public function sample_attribute()
+  {
+  $this->handle_call('sample_attribute');
+  }
+
+  /**
+  * Provides the /service/data/sample_attribute_value service.
+  * Retrieves details of sample attribute values.
+  */
+  public function sample_attribute_value()
+  {
+  $this->handle_call('sample_attribute_value');
+  }
+
+  /**
   * Provides the /services/data/survey service.
   * Retrieves details of a single survey.
   */
@@ -471,6 +489,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           break;
         case 'attrs':
           // Check that we're dealing with 'occurrence' or 'sample' here
+          // TODO check this works - looks like it does nothing...
           switch($this->entity)
           {
             case 'sample':
@@ -623,7 +642,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $db->where(array('id' => $id));
 
       if(!in_array ($this->entity, $this->allow_full_access)) {
-            if(array_key_exists ('website_id', $this->view_columns))
+      		if(array_key_exists ('website_id', $fields))
             {
                 $db->in('website_id', array(null, $this->website_id));
             } else {
