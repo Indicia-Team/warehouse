@@ -44,14 +44,14 @@ $indicia_templates = array(
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'error_class' => 'inline-error',
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n",
-  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} value="{default}" {title} />'."\n",
-  'textarea' => '<textarea id="{id}" name="{fieldname}"{class} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
-  'checkbox' => '<input type="checkbox" id="{id}" name="{fieldname}"{class}{checked}{title} />'."\n",
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
+  'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
+  'checkbox' => '<input type="checkbox" id="{id}" name="{fieldname}"{class}{checked}{disabled} {title} />'."\n",
   'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
-  'select' => '<select id="{id}" name="{fieldname}"{class} {title}>{options}</select>',
+  'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{options}</select>',
   'select_option' => '<option value="{value}" {selected} >{caption}</option>',
   'select_option_selected' => 'selected="selected"',
-  'listbox' => '<select id="{id}" name="{fieldname}"{class} size="{size}" multiple="{multiple}" {title}>{options}</select>',
+  'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{options}</select>',
   'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
@@ -2821,11 +2821,12 @@ $('.ui-state-default').live('mouseout', function() {
     if (self::$entity_to_load!=null && array_key_exists($id, self::$entity_to_load)) {
       $return = self::$entity_to_load[$id];
     }
-    if (!$return) {
+    if (is_null($return) || $return == '') { // need to be careful about valid zero values!
       // iterate the variable arguments and use the first one with a real value
       for ($i=1; $i<func_num_args(); $i++) {
-        if (func_get_arg($i)) {
-          $return = func_get_arg($i);
+        $return = func_get_arg($i);
+      	if (!is_null($return) && $return != '') {
+          break;
         }
       }
     }
@@ -2972,18 +2973,42 @@ $('.ui-state-default').live('mouseout', function() {
     return $retVal;
   }
 
+  private static function boolean_attribute($options) {
+    global $indicia_templates;
+    var_dump($options);
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    var_dump($options);
+    $default = self::check_default_value($options['fieldname'], 
+        array_key_exists('default', $options) ? $options['default'] : '', '0');    
+    $options = array_merge(array('sep' => ''), $options);
+    if ($options['class']=='') {
+    	// default class is control-box
+    	$options['class']='control-box';
+    }
+    $items = "";
+    var_dump($default);
+    $buttonList = array('No' => '0', 'Yes' => '1');
+    foreach ($buttonList as $caption => $value) {
+          $checked = ($default == $value) ? ' checked="checked" ' : '';
+          $items .= str_replace(
+              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}'),
+              array('radio', $options['fieldname'], $value, $checked, $caption, $options['sep']),
+              $indicia_templates['check_or_radio_group_item']
+          );
+    }
+    $options['items']=$items;
+    return self::apply_template('check_or_radio_group', $options);
+  }
+  
   /**
   * Helper function to output an attribute
   * 
   * @return string HTML to insert into the page for the control.
   */
   public static function outputAttribute($item, $options=array()) {
-  	var_dump($item);
-  	echo "<br />";
-  	var_dump($options);
-  	echo "<br /><br />";
   	$attrOptions = array('label'=>$item['caption'],
-							'fieldname'=>$item['fieldprefix'].':'.$item['id']);
+							'fieldname'=>$item['fieldprefix'].':'.$item['id'],
+  							'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
   	if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
   	if(isset($options['default'])) $attrOptions['default']= $options['default'];
   	
@@ -2994,7 +3019,9 @@ $('.ui-state-default').live('mouseout', function() {
          	$output = self::text_input($attrOptions);
             break;
         case 'B': // Boolean
-            $output = self::checkbox($attrOptions);
+        	// can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
+        	// in the optional attribute record.
+            $output = self::boolean_attribute($attrOptions);
             break;
         case 'D': // Date
         case 'V': // Vague Date
