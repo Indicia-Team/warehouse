@@ -1,0 +1,17 @@
+.deh-required {
+  color:red;
+}
+
+.srf2-datapanel {
+  float: left;
+  position: relative;
+  width: 425px;
+}
+
+.srf2-mappanel {
+  margin-left: 460px;
+}
+
+textarea {
+  width: 240px;
+}
