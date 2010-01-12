@@ -19,9 +19,8 @@ class Cache_File_Driver implements Cache_Driver {
 	public function __construct($directory)
 	{
 		// Find the real path to the directory
-//		$directory = str_replace('\\', '/', realpath($directory)).'/';
-		$directory = str_replace('\\', '/', $directory).'/';
-		
+		$directory = str_replace('\\', '/', realpath($directory)).'/';
+
 		// Make sure the cache directory is writable
 		if ( ! is_dir($directory) OR ! is_writable($directory))
 			throw new Kohana_Exception('cache.unwritable', $directory);
