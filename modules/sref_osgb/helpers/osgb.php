@@ -32,31 +32,31 @@ class osgb {
 		$sq_100 = self::get_100k_square($sref);
 		if (strlen($sref)==5) {
 			// Assume DINTY Tetrad format 2km squares
-  			// extract the easting and northing
-  			$east  = substr($sref, 2, 1);
-  			$north = substr($sref, 3, 1);
+			// extract the easting and northing
+			$east  = substr($sref, 2, 1);
+			$north = substr($sref, 3, 1);
  			$sq_code_letter_ord = ord(substr($sref, 4, 1));
-  			if ($sq_code_letter_ord > 79) $sq_code_letter_ord--; // Adjust for no O
-   			$sq_size = 2000;
-  			$east = $east * 10000 + floor(($sq_code_letter_ord - 65) / 5) * 2000;
-  			$north = $north * 10000 + (($sq_code_letter_ord - 65) % 5) * 2000;
-  		} else {
+			if ($sq_code_letter_ord > 79) $sq_code_letter_ord--; // Adjust for no O
+ 			$sq_size = 2000;
+			$east = $east * 10000 + floor(($sq_code_letter_ord - 65) / 5) * 2000;
+			$north = $north * 10000 + (($sq_code_letter_ord - 65) % 5) * 2000;
+  	} else {
 			// Normal Numeric Format
 			$coordLen = (strlen($sref)-2)/2;
-  			// extract the easting and northing
-  			$east  = substr($sref, 2, $coordLen);
-  			$north = substr($sref, 2+$coordLen);
-  			// if < 10 figure the easting and northing need to be multiplied up to the power of 10
-  			$sq_size = pow(10, 5-$coordLen);
-  			$east = $east * $sq_size;
-  			$north = $north * $sq_size;
+			// extract the easting and northing
+			$east  = substr($sref, 2, $coordLen);
+			$north = substr($sref, 2+$coordLen);
+			// if < 10 figure the easting and northing need to be multiplied up to the power of 10
+			$sq_size = pow(10, 5-$coordLen);
+			$east = $east * $sq_size;
+			$north = $north * $sq_size;
 		}
-  		$westEdge=$east + $sq_100['x'];
-  		$southEdge=$north + $sq_100['y'];
-  		$eastEdge=$westEdge+$sq_size;
-  		$northEdge=$southEdge+$sq_size;
-  		return 	"POLYGON(($westEdge $southEdge,$westEdge $northEdge,".
-				"$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
+		$westEdge=$east + $sq_100['x'];
+		$southEdge=$north + $sq_100['y'];
+		$eastEdge=$westEdge+$sq_size;
+		$northEdge=$southEdge+$sq_size;
+		return 	"POLYGON(($westEdge $southEdge,$westEdge $northEdge,".
+			 "$eastEdge $northEdge,$eastEdge $southEdge,$westEdge $southEdge))";
 	}
 
 	/**
@@ -89,44 +89,44 @@ class osgb {
 			// DINTY TETRADS
 			// no action as all fixed.
 		} else
-		    $accuracy = pow(10, (10-$precision)/2);
+		  $accuracy = pow(10, (10-$precision)/2);
 
 		$hundredKmE = floor($easting / 100000);
-    	$hundredKmN = floor($northing / 100000);
-    	$firstLetter = "";
-	    if ($hundredKmN < 5) {
-	        if ($hundredKmE < 5) {
-	            $firstLetter = "S";
-	        } else {
-	            $firstLetter = "T";
-	        }
-	    } else if ($hundredKmN < 10) {
-	        if ($hundredKmE < 5) {
-	            $firstLetter = "N";
-	        } else {
-	            $firstLetter = "O";
-	        }
+  	$hundredKmN = floor($northing / 100000);
+  	$firstLetter = "";
+    if ($hundredKmN < 5) {
+	    if ($hundredKmE < 5) {
+	      $firstLetter = "S";
 	    } else {
-	        $firstLetter = "H";
+	      $firstLetter = "T";
 	    }
-	    $secondLetter = "";
-	    $index = 65 + ((4 - ($hundredKmN % 5)) * 5) + ($hundredKmE % 5);
-	    $ti = $index;
-	    // Shift index along if letter is greater than I, since I is skipped
-	    if ($index >= 73) $index++;
-	    $secondLetter = chr($index);
-	    if ($precision == 3) {
-			// DINTY TETRADS
-	    	// 2 numbers at start equivalent to precision = 2
-	    	$e = floor(($easting - (100000 * $hundredKmE)) / 10000);
-	    	$n = floor(($northing - (100000 * $hundredKmN)) / 10000);
-	    	$letter = 65 + floor(($northing - (100000 * $hundredKmN) - ($n * 10000)) / 2000) + 5 * floor(($easting - (100000 * $hundredKmE) - ($e * 10000)) / 2000);
-  			if ($letter >= 79) $letter++; // Adjust for no O
-	    	return $firstLetter.$secondLetter.str_pad($e, 1, '0', STR_PAD_LEFT).str_pad($n, 1, '0', STR_PAD_LEFT).chr($letter);
+	  } else if ($hundredKmN < 10) {
+	    if ($hundredKmE < 5) {
+	      $firstLetter = "N";
+	    } else {
+	      $firstLetter = "O";
 	    }
-	    $e = floor(($easting - (100000 * $hundredKmE)) / $accuracy);
-	    $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
-	    return $firstLetter.$secondLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
+	  } else {
+	    $firstLetter = "H";
+	  }
+    $secondLetter = "";
+    $index = 65 + ((4 - ($hundredKmN % 5)) * 5) + ($hundredKmE % 5);
+    $ti = $index;
+    // Shift index along if letter is greater than I, since I is skipped
+    if ($index >= 73) $index++;
+    $secondLetter = chr($index);
+    if ($precision == 3) {
+		  // DINTY TETRADS
+    	// 2 numbers at start equivalent to precision = 2
+    	$e = floor(($easting - (100000 * $hundredKmE)) / 10000);
+    	$n = floor(($northing - (100000 * $hundredKmN)) / 10000);
+    	$letter = 65 + floor(($northing - (100000 * $hundredKmN) - ($n * 10000)) / 2000) + 5 * floor(($easting - (100000 * $hundredKmE) - ($e * 10000)) / 2000);
+			if ($letter >= 79) $letter++; // Adjust for no O
+    	return $firstLetter.$secondLetter.str_pad($e, 1, '0', STR_PAD_LEFT).str_pad($n, 1, '0', STR_PAD_LEFT).chr($letter);
+    }
+    $e = floor(($easting - (100000 * $hundredKmE)) / $accuracy);
+    $n = floor(($northing - (100000 * $hundredKmN)) / $accuracy);
+    return $firstLetter.$secondLetter.str_pad($e, $precision/2, '0', STR_PAD_LEFT).str_pad($n, $precision/2, '0', STR_PAD_LEFT);
 	}
 
 	/**
