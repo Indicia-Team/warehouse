@@ -201,6 +201,11 @@ class data_entry_helper extends helper_config {
   private static $dumped_resources=array();
   
   /**
+   * @var array List of all error messages returned from an attempt to save.
+   */
+  public static $validation_errors=null;
+  
+  /**
    * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
    * remaining ones at the end.
    */
@@ -371,7 +376,7 @@ class data_entry_helper extends helper_config {
    * Options can contain a setting for prefixTemplate or suffixTemplate to override the standard templates.
    */
   private static function apply_template($template, $options) {
-    global $indicia_templates, $indicia_errors;
+    global $indicia_templates;
     // Don't need the extraParams - they are just for service communication.
     $options['extraParams']=null;
     // Set default validation error output mode
@@ -379,24 +384,15 @@ class data_entry_helper extends helper_config {
       $options['validation_mode']=self::$validation_mode;
     }
     // Decide if the main control has an error. If so, highlight with the error class and set it's title.
-    if (isset($indicia_errors) && array_key_exists('fieldname', $options)){
-        $errorKey = $options['fieldname'];
-    	if (substr($errorKey, -4)=='date') {
-          // For date fields, we also include the type, start and end validation problems
-          if (array_key_exists($errorKey.'_start', $indicia_errors)) {
-            $errorKey = $errorKey.'_start';
-          } else if (array_key_exists($errorKey.'_end', $indicia_errors)) {
-            $errorKey = $errorKey.'_end';
-          } else if (array_key_exists($errorKey.'_type', $indicia_errors)) {
-            $errorKey = $errorKey.'_type';
-          }
-        }
-	  	if(array_key_exists($errorKey, $indicia_errors)) {
-	        $error = $indicia_errors[$errorKey];
-      	}
+    if (self::$validation_errors!=null) {      
+      if (array_key_exists('fieldname', $options)) {        
+        $error = self::check_errors($options['fieldname'], false);
+      }
+    } else {
+      $error="";
     }
     // Add a hint to the control if there is an error and this option is set
-    if (isset($error) && in_array('hint', $options['validation_mode'])) {        
+    if ($error && in_array('hint', $options['validation_mode'])) {        
       $options['title'] = 'title="'.$error.'"';
     } else {
       $options['title'] = '';
@@ -405,7 +401,7 @@ class data_entry_helper extends helper_config {
       $options['class']='';
     }
     // Add an error class to colour the control if there is an error and this option is set
-    if (isset($error) && in_array('colour', $options['validation_mode'])) {
+    if ($error && in_array('colour', $options['validation_mode'])) {
       $options['class'] .= ' ui-state-error';
       if (array_key_exists('outerClass', $options)) {
         $options['outerClass'] .= ' ui-state-error';
@@ -466,12 +462,12 @@ class data_entry_helper extends helper_config {
     $r .= str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);
     
     // Add an error icon to the control if there is an error and this option is set
-    if (isset($error) && in_array('icon', $options['validation_mode'])) {
+    if ($error && in_array('icon', $options['validation_mode'])) {
       $r .= $indicia_templates['validation_icon'];
     }    
     // Add a message to the control if there is an error and this option is set
-    if (isset($error) && in_array('message', $options['validation_mode'])) {
-      $r .= self::check_errors($errorKey);
+    if (in_array('message', $options['validation_mode'])) {
+      $r .= $error;
     }
     if (array_key_exists('suffixTemplate', $options)) {
       if (array_key_exists($options['suffixTemplate'], $indicia_templates)) 
@@ -1048,6 +1044,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. CSS class names to add to the control.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>allowFuture</b><br/>
+  * Optional. If specified, and set to true, then future dates are allowed.</li>
   * </ul>
   * 
   * @return string HTML to insert into the page for the date picker control.
@@ -1058,8 +1056,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     self::add_resource('jquery_ui');
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     self::$javascript .= "jQuery('#$escaped_id').datepicker({
-  dateFormat : 'yy-mm-dd', 
+  dateFormat : 'yy-mm-dd',
   constrainInput: false";
+    // Filter out future dates
+    if (!array_key_exists('allow_future', $options) && $options['allow_future']==false) {
+      self::$javascript .= ",
+  maxDate: '0'";
+    }
     // If the validation plugin is running, we need to trigger it when the datepicker closes.
     if (self::$validated_form_id) {
     	self::$javascript .= ",
@@ -1304,7 +1307,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * any extra params, excluding the read_auth and the nonce. The cache should be 
    * used by all accesses to the DB.
    */
-  private static function get_population_data($options) {    
+  public static function get_population_data($options) {    
     $url = parent::$base_url."index.php/services/data";
     $request = "$url/".$options['table']."?mode=json";
 
@@ -2061,7 +2064,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * 
   * @link http://docs.jquery.com/UI/Tabs
   */
-  public static function enable_tabs($options) {
+  public static function enable_tabs($options) {    
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
@@ -2488,6 +2491,7 @@ if (errors.length>0) {
     self::$javascript = "";
     self::$late_javascript = "";
     self::$onload_javascript = "";
+    return $dump;
   }
   
   /**
@@ -2546,14 +2550,13 @@ $onload_javascript
   public static function dump_errors($response, $inline=true)
   { 
     $r = "";    
-    global $indicia_errors;
     if (is_array($response)) {
       if (array_key_exists('error',$response) || array_key_exists('errors',$response)) {
         if ($inline && array_key_exists('errors',$response)) {
           // Setup an errors array that the data_entry_helper can output alongside the controls
-          $indicia_errors = $response['errors'];
+          self::$validation_errors = $response['errors'];          
           // And tell the helper to reload the existing data.
-          self::$entity_to_load = $_POST;                    
+          self::$entity_to_load = $_POST;
         } else {
           $r .= "<div class=\"ui-state-error ui-corner-all\">\n";
           $r .= "<p>An error occurred when the data was submitted.</p>\n";
@@ -2590,11 +2593,16 @@ $onload_javascript
     return $r;
   }
   
+  /**
+   * Retrieves any errors that have not been emitted alongside a form control and adds them to the page. This is useful
+   * when added to the bottom of a form, because occasionally an error can be returned which is not associated with a form 
+   * control, so calling dump_errors with the inline option set to true will not emit the errors onto the page.
+   */
   public static function dump_remaining_errors()
   { 
-    global $indicia_errors, $indicia_templates;
+    global $indicia_templates;
     $r="";
-    foreach ($indicia_errors as $errorKey => $error) {
+    foreach (self::$validation_errors as $errorKey => $error) {
       if (!in_array($error, self::$displayed_errors)) {
         $r .= str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
         $r .= "[".$errorKey."]";
@@ -2771,37 +2779,42 @@ $('.ui-state-default').live('mouseout', function() {
    * Returns a span containing any validation errors active on the form for the
    * control with the supplied ID.
    *
-   * @param string $id ID of the control to retrieve errors for.
+   * @param string $fieldname Fieldname of the control to retrieve errors for.
+   * @param boolean $plaintext Set to true to return just the error text, otherwise it is wrapped in a span.
    */
-  public static function check_errors($id)
+  public static function check_errors($fieldname, $plaintext=false)
   {
-    global $indicia_errors, $indicia_templates;
-    $error='';    
-    if (isset($indicia_errors)) {
-       if (array_key_exists($id, $indicia_errors)) {
-         $errorKey = $id;
-       } elseif (substr($id, -4)=='date') {
+    global $indicia_templates;
+    $error='';      
+    if (self::$validation_errors!==null) {
+       if (array_key_exists($fieldname, self::$validation_errors)) {
+         $errorKey = $fieldname;
+       } elseif (substr($fieldname, -4)=='date') {
           // For date fields, we also include the type, start and end validation problems
-          if (array_key_exists($id.'_start', $indicia_errors)) {
-            $errorKey = $id.'_start';
+          if (array_key_exists($fieldname.'_start', self::$validation_errors)) {
+            $errorKey = $fieldname.'_start';
           }
-          if (array_key_exists($id.'_end', $indicia_errors)) {
-            $errorKey = $id.'_end';
+          if (array_key_exists($fieldname.'_end', self::$validation_errors)) {
+            $errorKey = $fieldname.'_end';
           }
-          if (array_key_exists($id.'_type', $indicia_errors)) {
-            $errorKey = $id.'_type';
+          if (array_key_exists($id.'_type', self::$validation_errors)) {
+            $errorKey = $fieldname.'_type';
           }
        }
        if (isset($errorKey)) {
-         $error = $indicia_errors[$errorKey];
+         $error = self::$validation_errors[$errorKey];
          // Track errors that were displayed, so we can tell the user about any others.
          self::$displayed_errors[] = $error;
        }
     }
     if ($error!='') {
-    	$template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
-    	$template = str_replace('{id}', $id, $template);
-      return str_replace('{error}', lang::get($error), $template);
+      if ($plaintext) {
+        return $error;
+      } else {
+      	$template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
+      	$template = str_replace('{id}', $id, $template);
+        return str_replace('{error}', lang::get($error), $template);
+      }
     } else {
       return '';
     }
