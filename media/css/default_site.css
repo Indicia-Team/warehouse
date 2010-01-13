@@ -24,12 +24,14 @@
 
 .inline-error {
 	color: red;
+	width: auto;
+	margin-left: 1em;
 }
 
 p.inline-error {
   margin-left: 160px;	
   margin-bottom: -0.8em;
-  margin-top: 0em;
+  margin-top: 0em;  
 }
 
 .validation-icon {
