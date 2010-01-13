@@ -1,5 +1,5 @@
 
-DROP VIEW detail_occurrences;
+DROP VIEW IF EXISTS detail_occurrences;
 CREATE OR REPLACE VIEW detail_occurrences AS
  SELECT o.id, o.confidential, o.comment, o.taxa_taxon_list_id, o.determiner_id, t.taxon, s.entered_sref, s.entered_sref_system,
  	s.geom, s.location_name, s.survey_id, s.date_start, s.date_end, s.date_type,
@@ -26,7 +26,7 @@ FROM ((((samples s LEFT JOIN locations l ON ((l.id = s.location_id))) LEFT
     JOIN surveys su ON ((s.survey_id = su.id))) JOIN users c ON ((c.id =
     s.created_by_id))) JOIN users u ON ((u.id = s.updated_by_id))); 
    
-DROP VIEW list_sample_attributes;
+DROP VIEW IF EXISTS list_sample_attributes;
 CREATE OR REPLACE VIEW list_sample_attributes AS 
  SELECT sa.id,
  		sa.caption,
@@ -42,7 +42,7 @@ CREATE OR REPLACE VIEW list_sample_attributes AS
    LEFT JOIN sample_attributes_websites saw ON sa.id = saw.sample_attribute_id
   ORDER BY saw.id;
 
-DROP VIEW list_occurrence_attributes;
+DROP VIEW IF EXISTS list_occurrence_attributes;
 CREATE OR REPLACE VIEW list_occurrence_attributes AS 
  SELECT oa.id,
  		oa.caption,
@@ -59,7 +59,7 @@ CREATE OR REPLACE VIEW list_occurrence_attributes AS
   ORDER BY oaw.id;
 
 
-DROP VIEW list_sample_attribute_values; 
+DROP VIEW IF EXISTS list_sample_attribute_values; 
 CREATE OR REPLACE VIEW list_sample_attribute_values AS 
    SELECT sav.id, s.id AS sample_id, sa.id AS sample_attribute_id, 
         CASE sa.data_type
