@@ -33,6 +33,7 @@
         cssSortHeader: "headerSort",
         cssAsc: "headerSortUp",
         cssDesc: "headerSortDown",
+        cssOdd: "odd",
         indiciaSvc: "http://localhost/indicia/index.php/services",
         dataColumns: null,
         reportColumnTitles: null,
@@ -219,12 +220,21 @@
           if(div.settings.callback)
         	  div.settings.callback(div, record);
           // although it is possible to implement limit etc  for reports, we have to be brutal with the paging
-          // so we can run a callback.
+          // so we can run a callback on all .
           if(div.entity.substring(0,4)!='rpt:' || (r >= (div.page-1)*div.settings.itemsPerPage && r < div.page*div.settings.itemsPerPage)){
-            if (r%2==0) {
-              body += "<tr>";
+            class='';
+            if (r%2!=0) {
+                class += div.settings.cssOdd;
+            }
+        	if(div.settings.condCss) {
+        		if(record[div.settings.condCss.field] == div.settings.condCss.value) {
+        			class += " "+div.settings.condCss.css;
+        		}
+        	}
+            if (class) {
+                body += "<tr class='"+class+"'>";
             } else {
-              body += "<tr class='odd'>";
+                body += "<tr>";
             }
             $.each(record, function(i, item){
               if (div.settings.dataColumns == null || div.settings.dataColumns.indexOf(i) != -1){

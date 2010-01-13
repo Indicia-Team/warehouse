@@ -12,6 +12,13 @@
   margin-left: 460px;
 }
 
+.srf2-highlight {
+  background-color: #eeeeee;
+}
+
+.odd {
+}
+
 textarea {
   width: 240px;
 }
