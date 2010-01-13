@@ -34,7 +34,20 @@ class iform_mnhnl_citizen_science_1 {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {   
-    return array(      
+    return array(
+      array(
+        'name'=>'interface',
+        'caption'=>'Interface Style Option',
+        'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
+            'wizard pages or having all controls on a single page.',
+        'type'=>'select',
+        'options' => array(
+          'tabs' => 'Tabs',
+          'wizard' => 'Wizard',
+          'one_page' => 'All One Page'
+        ),
+        'group' => 'User Interface'
+      ),      
       array(
       	'name'=>'species_ctrl',
         'caption'=>'Species Control Type',
@@ -48,7 +61,19 @@ class iform_mnhnl_citizen_science_1 {
           'treeview' => 'Treeview',
           'tree_browser' => 'Tree browser'
         ),
-        'group'=>'Species'
+        'group'=>'User Interface'
+      ),
+      array(
+        'name'=>'abundance_ctrl',
+        'caption'=>'Abundance Control Type',
+        'description'=>'The type of control that will be available to select the approximate abundance.',
+        'type'=>'select',
+        'options' => array(          
+          'select' => 'Select',
+          'listbox' => 'List box',
+          'radio_group' => 'Radio group'          
+        ),
+        'group'=>'User Interface'
       ),
       array(
       	'name'=>'list_id',
@@ -63,67 +88,69 @@ class iform_mnhnl_citizen_science_1 {
         'description'=>'Should the selection of species be limited to preferred names only?',
         'type'=>'boolean',
 	      'group'=>'Species'
-      ),
-      array(
-      	'name'=>'interface',
-        'caption'=>'Interface Style Option',
-        'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
-            'wizard pages or having all controls on a single page.',
-        'type'=>'select',
-        'options' => array(
-          'tabs' => 'Tabs',
-          'wizard' => 'Wizard',
-          'one_page' => 'All One Page'
-        )
-      ),
+      ),      
       array(
         'name'=>'uid_attr_id',
         'caption'=>'User ID Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the CMS User ID.',
-        'type'=>'int',
+        'type'=>'smpAttr',
         'group'=>'Sample Attributes'
       ),
       array(      
         'name'=>'username_attr_id',
         'caption'=>'Username Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s username.',
-        'type'=>'int',
+        'type'=>'smpAttr',
         'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'email_attr_id',
         'caption'=>'Email Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s email.',
-        'type'=>'int',
+        'type'=>'smpAttr',
         'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'first_name_attr_id',
         'caption'=>'First Name Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s first name.',
-        'type'=>'int',
+        'type'=>'smpAttr',
         'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'surname_attr_id',
         'caption'=>'Surname Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s surname.',
-        'type'=>'int',
+        'type'=>'smpAttr',
         'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'phone_attr_id',
         'caption'=>'Phone Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that stores the user\'s phone.',
-        'type'=>'int',
+        'type'=>'smpAttr',
         'group'=>'Sample Attributes'
       ),
       array(
         'name'=>'contact_attr_id',
         'caption'=>'Contactable Attribute ID',      
         'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
-        'type'=>'int',
+        'type'=>'smpAttr',
         'group'=>'Sample Attributes'
+      ),
+      array(
+        'name'=>'abundance_attr_id',
+        'caption'=>'Abundance Attribute ID',      
+        'description'=>'Indicia ID for the sample attribute that records the approximate abundance.',
+        'type'=>'smpAttr',
+        'group'=>'Sample Attributes'
+      ),
+      array(
+        'name'=>'abundance_termlist_id',
+        'caption'=>'Abundance Termlist ID',      
+        'description'=>'Indicia ID for the termlist that contains the options to select from when specifying the approximate abundance.',
+        'type'=>'termlist',
+        'group'=>'Termlists'
       ),
       array(
         'name'=>'map_layers',
@@ -178,9 +205,9 @@ class iform_mnhnl_citizen_science_1 {
    */
   public static function get_form($args) {
     global $user;
-    $logged_in = $user->uid>0;
+    $logged_in = $user->uid>0;    
     
-    $r = "<form method=\"post\" id=\"entry_form\">\n";
+    $r = "<form method=\"post\" id=\"entry_form\">\n";        
     // Get authorisation tokens to update and read from the Warehouse.
     $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
@@ -302,7 +329,7 @@ class iform_mnhnl_citizen_science_1 {
       'width'=>760,
       'initial_lat'=>$args['map_centroid_lat'],
       'initial_long'=>$args['map_centroid_long'],
-      //'initial_zoom'=>$args['map_zoom']
+      'initial_zoom'=>$args['map_zoom']
     
     ));
     if ($args['interface']=='wizard') {
@@ -313,9 +340,21 @@ class iform_mnhnl_citizen_science_1 {
     $r .= "</div>\n";    
     $r .= "<div id=\"other\">\n";
     $r .= data_entry_helper::date_picker(array(
-        'label'=>'Date',
+        'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
-    ));    
+    ));
+    // Dynamically create a control for the abundance
+    $abundance_args = array(
+      'label'=>lang::get('Abundance'),
+      'fieldname'=>'smpAttr:' + $args['abundance_attr_id'],
+      'table'=>'termlists_term',
+      'captionField'=>'term',
+      'valueField'=>'id',
+      'extraParams'=>$readAuth + array('termlist_id' => $args['abundance_termlist_id']),
+      'size'=>6, // for listboxes
+      'sep'=>'<br/>'      
+    );
+    $r .= call_user_func(array('data_entry_helper', $args['abundance_ctrl']), $abundance_args);    
     $r .= data_entry_helper::textarea(array(
         'label'=>'Comment',
         'fieldname'=>'sample:comment',
