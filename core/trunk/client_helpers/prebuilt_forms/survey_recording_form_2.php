@@ -28,23 +28,6 @@
  * @subpackage PrebuiltForms
  */
 
-//function node_perm() {
-//  $perms = array('administer content types', 'administer nodes', 'access content', 'view revisions', 'revert revisions', 'delete revisions');
-//
-//  foreach (node_get_types() as $type) {
-//    if ($type->module == 'node') {
-//      $name = check_plain($type->type);
-//      $perms[] = 'create '. $name .' content';
-//      $perms[] = 'delete own '. $name .' content';
-//      $perms[] = 'delete any '. $name .' content';
-//      $perms[] = 'edit own '. $name .' content';
-//      $perms[] = 'edit any '. $name .' content';
-//    }
-//  }
-//
-//  return $perms;
-//}
-
 class iform_survey_recording_form_2 {
 
 	/* TODO LIST
@@ -53,8 +36,22 @@ class iform_survey_recording_form_2 {
      * TODO Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match. Check format of times.
      * TODO Implement map processing
-     * Add in correct layers.
-     * Initially centre and zoom to luxembourg.
+     *  Alter map to use defineable layers. Proxy these. Initially centre and zoom to luxembourg.
+     *  Modify main survey entry so if mod existing location it is displayed on startup as well as on change.
+     *    This should display centroid, buffered centroid and boundary geoms. Start of centroid: label 'A', end 'B'
+     *  Force custom attributes to be required: do through indicia front end and then check data in DB:
+     *      update scripts to match.
+     *  Check format of times.
+     *  Create indicia report for checking of survey walk directions.
+     *  Data import of location SHP files.
+     *  If territorial='No', atlas code is disabled. If 'yes', enabled. set up atlas code as drop down using
+     *    supplied data.
+     *  Sort out which layers are available on which tabs.
+     *  If a feature on the occurrence list layer is clicked/hovered, the taxon is displayed.
+     *  Add functionality to highlight a feature when a row selected in occurrence list.
+     *  Add prompt to confirm when closing a survey.
+     *  Add survey download as CSV: may need to expand main sample to include a survey. 
+     * 
      * When a location is chosen, its geometry is displayed and zoomed to.
      * When an existing survey with an existing location is brought up, its geometry is displayed.
      * When the survey page is displayed, the selection and occurrence list layers are not displayed.
@@ -75,8 +72,11 @@ class iform_survey_recording_form_2 {
 	 * TODO sort out disabling of complex fields in readonly mode.
 	 * TODO improve outputAttributes to handle restrict to survey correctly.
 	 * 
+	 * Improvements: when displaying the transects in the surveys list map, could display their name.
+	 * 
 	 * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
 	 * we can display all the occurrences on the map.
+	 * When displaying transects, we should display children locations as well as parent.
 	 */
   /**
    * Get the list of parameters for this form.
@@ -344,12 +344,63 @@ class iform_survey_recording_form_2 {
     reportColumnTitles: {location_name : 'Transect', date : 'Date', num_visit : 'Visit No', num_occurrences : '# Occurrences', num_taxa : '# Species'},
     actionColumns: {show : \"?sample_id=£id£\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey : '".$args['website_id']."', visit_id : '".$args['sample_visit_number_id']."' ".$loclist."},
-    itemsPerPage : 17
+    parameters : { survey : '".$args['website_id']."', visit_id : '".$args['sample_visit_number_id']."', closed_id : '".$args['sample_closure_id']."' ".$loclist."},
+    itemsPerPage : 17,
+    condCss : {field : 'closed', value : '0', css: 'srf2-highlight'},
+    cssOdd : '' 
   });
 });", 'inline');
 		$r .= '<div id="surveyList"><div class="srf2-datapanel"><div id="smp_grid"></div>';
-		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="Add a new Survey" ONCLICK="window.location.href=\'?newSample\'"></FORM></div></div>';
+		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="Add a new Survey" ONCLICK="window.location.href=\'?newSample\'"></FORM></div>';
+		$r .= "<div class=\"srf2-mappanel\">\n";
+		data_entry_helper::$javascript .= "locationLayer = new OpenLayers.Layer.Vector(\"Location Layer\");
+";	
+        $r .= data_entry_helper::map_panel(array('presetLayers' => array('google_physical','google_satellite') //TODO convert to proper layers
+    						, 'layers'=>array('locationLayer')
+    						, 'initialFeatureWkt' => null
+    						, 'width'=>'auto'));
+    	if($locations != 'all'){
+    		data_entry_helper::$javascript .= "locationList = [".implode(',', $locations)."];\n";
+    	}
+		data_entry_helper::$javascript .= "
+// upload locations into map.
+// Change the location control requests the location's geometry to place on the map.
+$.getJSON(\"$svcUrl\" + \"index.php/services/data/location\" +
+          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+          \"&callback=?\", function(data) {
+    // store value in saved field?
+    if (data.length>0) {
+    	var feature;
+    	var parser = new OpenLayers.Format.WKT();
+		for (var i=0;i<data.length;i++)
+		{\n";
+    	if($locations != 'all'){
+    		data_entry_helper::$javascript .= "
+    		for(var j=0; j<locationList.length; j++) {
+    		  if(locationList[j] == data[i].id || locationList[j] == data[i].parent_id) {";
+    	}
+		data_entry_helper::$javascript .= "
+    			if(data[i].centroid_geom){
+					feature = parser.read(data[i].centroid_geom);
+					locationLayer.addFeatures([feature]);
+				}
+				if(data[i].boundary_geom){
+					feature = parser.read(data[i].boundary_geom);
+					locationLayer.addFeatures([feature]);
+				}\n";
+    	if($locations != 'all'){
+    		data_entry_helper::$javascript .= "
+    		  }
+    		}\n";
+    	}
+		data_entry_helper::$javascript .= "		}
+		locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
+    }
+});
+";
+    						
+        $r .= "</div></div>\n";
+		
 		if(module_exists('iform_loctools') && iform_loctools_checkaccess($node,'admin')){
 			$r .= '<div id="setLocations"><div class="srf2-datapanel"><FORM method="post">';
 			$url = 'http://localhost/indicia/index.php/services/data/location';
@@ -360,6 +411,7 @@ class iform_survey_recording_form_2 {
 	    	$userlist = iform_loctools_listusers($node);
 	    	if(!empty($entities)){
 	    		foreach($entities as $entity){
+	    		  if(!$entity["parent_id"]){ // only assign parent locations.
 	    			$r .= "\n<label for=\"location:".$entity["id"]."\">".$entity["name"].":</label><select id=\"location:".$entity["id"]."\" name=\"location:".$entity["id"]."\">";
 	    				$r .= "<option value=\"\" >&lt;Not Allocated&gt;</option>";
 	    				$defaultuserid = iform_loctools_getuser($node, $entity["id"]);
@@ -372,6 +424,7 @@ class iform_survey_recording_form_2 {
 	    					$r .= "<option value=\"".$uid."\" ".$selected.">".$a_user->name."</option>";
 	    				}
 	    			$r .= "</select>";
+	    		  }
 	    		}
 	    	}
 	    	 $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save Location Allocations\" />\n";
@@ -512,8 +565,6 @@ occListSelector = new OpenLayers.Control.SelectFeature(
     		
     // Set up main Survey Form.
     $r .= "<div id=\"survey\" class=\"srf2-datapanel\">\n";
-//    data_entry_helper::$entity_to_load=$parentSample;
-//    $indicia_errors = $parentErrors;
 	if($readOnly){
 	    $r .= "<strong>This survey has been closed and is now read only.</strong>";
 	}
@@ -669,20 +720,18 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
     }
     
     // add map panel.
-//    Can't use '
-//    'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px;\"{class}></div>\n<br/>\n",
-  
     $r .= "<div class=\"srf2-mappanel\">\n";
     $r .= data_entry_helper::map_panel(array('presetLayers' => array('google_physical','google_satellite') //TODO convert to proper layers
     						, 'layers'=>array('locationLayer', 'occListLayer')
     						, 'initialFeatureWkt' => null
     						, 'width'=>'auto'));
-//		data_entry_helper::$javascript .= "
-//		      jQuery('#imp-location').each(function()
-//      {
+		data_entry_helper::$javascript .= "
+// upload location initial value into map.
+//jQuery('#imp-location').each(function()
+//    {
 //        // Change the location control requests the location's geometry to place on the map.
-//        $.getJSON(div.settings.indiciaSvc + "index.php/services/data/location/"+this.value +
-//          "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
+//        $.getJSON(div.settings.indiciaSvc + \"index.php/services/data/location/\"+this.value +
+//          \"?mode=json&view=detail\" + div.settings.readAuth + \"&callback=?\", function(data) {
 //            // store value in saved field?
 //            if (data.length>0) {
 //              _showWktFeature(div, data[0].centroid_geom);
@@ -690,6 +739,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
 //          }
 //        );
 //      });
+";
     						
     $r .= "</div></div>\n";
         

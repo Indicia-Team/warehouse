@@ -16,7 +16,8 @@
   			from samples cs, occurrences o
   			where cs.parent_id = s.id and cs.deleted = FALSE
   				AND o.sample_id = cs.id and o.deleted = FALSE) as num_taxa,
-  		TRUE as editable
+  		(select int_value from sample_attribute_values sav
+  			where sav.sample_id = s.id and sav.deleted = FALSE and sav.sample_attribute_id = #closed_id#) as closed
   FROM samples s
   LEFT JOIN locations l ON l.id=s.location_id
   WHERE s.survey_id=#survey# AND s.deleted = FALSE AND s.parent_id is null
@@ -31,6 +32,7 @@
         query='SELECT id, title as caption FROM surveys' />
     <param name='visit_id' display='Visit ID: ' description='ID of sample_attribute for visit' datatype='int' />
     <param name='locations' display='Location ID list: ' description='List of IDs of locations' datatype='text' />
+    <param name='closed_id' display='Closed ID: ' description='ID of sample_attribute for closure' datatype='int' />
   </params>
   <columns>
     <column name='id' display='ID' />
