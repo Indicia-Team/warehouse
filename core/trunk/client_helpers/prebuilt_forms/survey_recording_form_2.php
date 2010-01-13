@@ -42,15 +42,11 @@ class iform_survey_recording_form_2 {
      *  Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match.
      *  Check format of times.
-     *  Create indicia report for checking of survey walk directions.
      *  Data import of location SHP files.
-     *  If territorial='No', atlas code is disabled. If 'yes', enabled. set up atlas code as drop down using
-     *    supplied data.
      *  Sort out which layers are available on which tabs.
      *  If a feature on the occurrence list layer is clicked/hovered, the taxon is displayed.
      *  Add functionality to highlight a feature when a row selected in occurrence list.
      *  Add prompt to confirm when closing a survey.
-     *  Add survey download as CSV: may need to expand main sample to include a survey. 
      * 
      * When a location is chosen, its geometry is displayed and zoomed to.
      * When an existing survey with an existing location is brought up, its geometry is displayed.
@@ -60,7 +56,6 @@ class iform_survey_recording_form_2 {
      * When an existing occurrence is chosen (existing position), its geometry is displayed
      * When the occurence tab is displayed, the location layer and selection layers are displayed, but not the occurrence list layer.
      * When the occurence list tab is displayed, the location layer and occurrence list layers are displayed, but not the selection layer.
-     * When the occurence list is built, all occurrences positions are put onto the occurrence list layer.
      *      Why does map click in wrong place.
      * 		1) put initial Location value on map: add both centroid and boundary geometry to map
      * 		2)
@@ -72,7 +67,12 @@ class iform_survey_recording_form_2 {
 	 * TODO sort out disabling of complex fields in readonly mode.
 	 * TODO improve outputAttributes to handle restrict to survey correctly.
 	 * 
-	 * Improvements: when displaying the transects in the surveys list map, could display their name.
+	 * Phase 2:
+     *  Create indicia report for checking of survey walk directions.
+     *  Add survey download as CSV: may need to expand main sample to include a survey. 
+	 * 
+	 * Possible future phases:
+	 *  when displaying the transects in the surveys list map, could display their name.
 	 * 
 	 * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
 	 * we can display all the occurrences on the map.
@@ -512,15 +512,7 @@ $.getJSON(\"$svcUrl\" + \"index.php/services/data/location\" +
     	$disabledText="";
     	$defAttrOptions = array('extraParams'=>$readAuth);
     }
-    
-	
-// ENHANCEMENT1 DEBUG
-//      if($parentSample){
-//    	var_dump($parentSample);
-//    	echo "<br /><br />";
-//    	var_dump($childSample);
-//    	throw(1);
-//    }
+
     $r .= "<h1>MODE = ".$mode."</h1>";
     $r .= "<h2>readOnly = ".$readOnly."</h2>";
     
@@ -608,7 +600,6 @@ occListSelector = new OpenLayers.Control.SelectFeature(
     $r .= " hh:mm<br />";
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_end_time_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')));
     $r .= " hh:mm<br />";
-
     if(user_access($adminPerm)) { //  users with admin permissions can override the closing of the 
     	// sample by unchecking the checkbox.
     	// Because this is attached to the sample, we have to include the sample required fields in the
@@ -717,6 +708,21 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
    		 	$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save Occurrence Details\" />\n";    
        	}
 	    $r .= "</form></div>\n";
+	    data_entry_helper::$javascript .= "
+setAltasStatus = function() {
+	if (jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']:checked\").val() == '0') {
+    	jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').val('');
+	    jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').attr('disabled','disabled');
+	} else {
+    	if(jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').val() == ''){
+    		jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').val('BB02');
+	    }
+    	jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').attr('disabled','');
+	}
+};
+setAltasStatus();
+jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").change(setAltasStatus);\n";
+	    
     }
     
     // add map panel.
