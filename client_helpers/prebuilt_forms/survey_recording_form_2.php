@@ -35,9 +35,8 @@ class iform_survey_recording_form_2 {
      * 
      * TODO Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match.
-     * TODO Implement map processing
-     *  Modify main survey entry so if mod existing location it is displayed on startup as well as on change.
-     *    This should display centroid, buffered centroid and boundary geoms. Start of centroid: label 'A', end 'B'
+	 *  Sort out initialisation of geom so can have ?occurrence=<id>.
+     *  Display ends of centroid: label 'A', end 'B'
      *  Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match.
      *  Data import of location SHP files.
@@ -46,7 +45,6 @@ class iform_survey_recording_form_2 {
      *  Add functionality to highlight a feature when a row selected in occurrence list.
      *  Add prompt to confirm when closing a survey.
      * 
-     * When a location is chosen, its geometry is displayed and zoomed to.
      * When the survey page is displayed, the selection and occurrence list layers are not displayed.
      * When an existing occurrence is chosen (existing position), its geometry is displayed
      * When the occurence tab is displayed, the location layer and selection layers are displayed, but not the occurrence list layer.
@@ -54,7 +52,6 @@ class iform_survey_recording_form_2 {
      * TODO Internationalise
      * TODO Check error handling in form.
 	 *
-	 * TODO ENHANCEMENT1: Sort out initialisation of geom so can have ?occurrence=<id>.
 	 * 
 	 * Phase 2:
      *  Create indicia report for checking of survey walk directions.
@@ -574,8 +571,8 @@ $.getJSON(\"$svcUrl\" + \"index.php/services/data/location\" +
     	$defAttrOptions = array('extraParams'=>$readAuth);
     }
 
-    $r .= "<h1>MODE = ".$mode."</h1>";
-    $r .= "<h2>readOnly = ".$readOnly."</h2>";
+//    $r .= "<h1>MODE = ".$mode."</h1>";
+//    $r .= "<h2>readOnly = ".$readOnly."</h2>";
     
     $r .= "<div id=\"controls\">\n";
     $activeTab = 'survey';
@@ -777,19 +774,38 @@ jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").cha
     						, 'initialFeatureWkt' => null
     						, 'width'=>'auto'));
 	    data_entry_helper::$onload_javascript .= "
-// upload location initial value into map. wrong JS position
-//jQuery('#imp-location').each(function()
-//    {
-//        // Change the location control requests the location's geometry to place on the map.
-//        $.getJSON(div.settings.indiciaSvc + \"index.php/services/data/location/\"+this.value +
-//          \"?mode=json&view=detail\" + div.settings.readAuth + \"&callback=?\", function(data) {
-//            // store value in saved field?
-//            if (data.length>0) {
-//              _showWktFeature(div, data[0].centroid_geom);
-//            }
-//          }
-//        );
-//      });
+// upload location initial value into map.
+jQuery('#imp-location').each(function(){
+	if(this.value != ''){
+		$.getJSON(\"$svcUrl\" + \"index.php/services/data/location/\"+this.value +
+			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&callback=?\", function(data) {
+            	// store value in saved field?
+            	if (data.length>0) {
+            		locationLayer.destroyFeatures();
+            		var parser = new OpenLayers.Format.WKT();
+      				if(data[0].centroid_geom){
+						feature = parser.read(data[0].centroid_geom);
+						locationLayer.addFeatures([feature]);
+      					var bounds=feature.geometry.getBounds();
+      					var dy = (bounds.top-bounds.bottom);
+      					var dx = (bounds.right-bounds.left);
+      					if (dy===0 && dx===0) {
+        					locationLayer.map.setCenter(bounds.getCenterLonLat(), 13);        
+      					} else {
+        					// Set the default view to show something triple the size of the grid square
+        					locationLayer.map.zoomToExtent(bounds);
+  						}
+  					}
+					if(data[0].boundary_geom){
+						feature = parser.read(data[0].boundary_geom);
+						locationLayer.addFeatures([feature]);
+					}
+      				
+  				}
+          }
+        );
+    }
+});
 //
 //test=jQuery(\"#survey-tab\");
 //jQuery(\"#survey-tab\").click(function(){
