@@ -22,7 +22,7 @@
 
 /**
  * Prebuilt Indicia data entry form.
- * NB has Drupal specific code.
+ * NB has Drupal specific code. Relies on presence of IForm loctools and IForm Proxy.
  * 
  * @package	Client
  * @subpackage PrebuiltForms
@@ -34,14 +34,12 @@ class iform_survey_recording_form_2 {
 	 * Features to be fixed before delivery 1.
      * 
      * TODO Force custom attributes to be required: do through indicia front end and then check data in DB:
-     *      update scripts to match. Check format of times.
+     *      update scripts to match.
      * TODO Implement map processing
-     *  Alter map to use defineable layers. Proxy these. Initially centre and zoom to luxembourg.
      *  Modify main survey entry so if mod existing location it is displayed on startup as well as on change.
      *    This should display centroid, buffered centroid and boundary geoms. Start of centroid: label 'A', end 'B'
      *  Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match.
-     *  Check format of times.
      *  Data import of location SHP files.
      *  Sort out which layers are available on which tabs.
      *  If a feature on the occurrence list layer is clicked/hovered, the taxon is displayed.
@@ -49,30 +47,23 @@ class iform_survey_recording_form_2 {
      *  Add prompt to confirm when closing a survey.
      * 
      * When a location is chosen, its geometry is displayed and zoomed to.
-     * When an existing survey with an existing location is brought up, its geometry is displayed.
      * When the survey page is displayed, the selection and occurrence list layers are not displayed.
-     * The A to B tags are displayed on a location.
-     * When an occurrence position is chosen, its geometry is displayed.
      * When an existing occurrence is chosen (existing position), its geometry is displayed
      * When the occurence tab is displayed, the location layer and selection layers are displayed, but not the occurrence list layer.
      * When the occurence list tab is displayed, the location layer and occurrence list layers are displayed, but not the selection layer.
-     *      Why does map click in wrong place.
-     * 		1) put initial Location value on map: add both centroid and boundary geometry to map
-     * 		2)
      * TODO Internationalise
      * TODO Check error handling in form.
 	 *
 	 * TODO ENHANCEMENT1: Sort out initialisation of geom so can have ?occurrence=<id>.
 	 * 
-	 * TODO sort out disabling of complex fields in readonly mode.
-	 * TODO improve outputAttributes to handle restrict to survey correctly.
-	 * 
 	 * Phase 2:
      *  Create indicia report for checking of survey walk directions.
      *  Add survey download as CSV: may need to expand main sample to include a survey. 
+     *  sort out disabling of complex fields in readonly mode.
 	 * 
 	 * Possible future phases:
 	 *  when displaying the transects in the surveys list map, could display their name.
+	 *  improve outputAttributes to handle restrict to survey correctly.
 	 * 
 	 * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
 	 * we can display all the occurrences on the map.
@@ -85,18 +76,6 @@ class iform_survey_recording_form_2 {
   public static function get_parameters() {    
     return array(
       array(
-      	'name'=>'website_id',
-        'caption'=>'Website ID',
-        'description'=>'The Indicia ID of the website that data will be posted into.',
-        'type'=>'int'
-      ),
-      array(
-      	'name'=>'password',
-        'caption'=>'Website Password',
-        'description'=>'The Indicia Password of the website that data will be posted into.',
-        'type'=>'string'
-      ),
-      array(
       	'name'=>'survey_id',
         'caption'=>'Survey ID',
         'description'=>'The Indicia ID of the survey that data will be posted into.',
@@ -106,7 +85,22 @@ class iform_survey_recording_form_2 {
       	'name'=>'not_logged_in',
         'caption'=>'Not Logged In Text',
         'description'=>'The text to be displayed when the user is not logged in.',
-        'type'=>'string'
+        'type'=>'string',
+        'maxlength'=>200
+      ),
+      array(
+      	'name'=>'layer1',
+        'caption'=>'Layer 1 Definition',
+        'description'=>'Comma separated list of option definitions for the first layer',
+        'type'=>'string',
+        'maxlength'=>200
+      ),
+      array(
+      	'name'=>'layer2',
+        'caption'=>'Layer 2 Definition',
+        'description'=>'Comma separated list of option definitions for the first layer',
+        'type'=>'string',
+        'maxlength'=>200
       ),
       
       array(
@@ -234,7 +228,7 @@ class iform_survey_recording_form_2 {
   	global $user;
     $logged_in = $user->uid>0;
   	$r = '';
-  	
+   	
     // Get authorisation tokens to update and read from the Warehouse.
     $writeAuth = data_entry_helper::get_auth($args['website_id'], $args['password']);
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
@@ -286,7 +280,7 @@ class iform_survey_recording_form_2 {
 			}
 		}
       } else { // non Indicia POST, in this case must be the location allocations.
-      	if(module_exists('iform_loctools') && iform_loctools_checkaccess($node,'admin')){
+      	if(iform_loctools_checkaccess($node,'admin')){
       		iform_loctools_deletelocations($node);
 	      	foreach($_POST as $key => $value){
     	  		$parts = explode(':', $key);
@@ -306,10 +300,81 @@ class iform_survey_recording_form_2 {
 			$mode = 1;
 		} // else default to mode 0
     }
-    
+    // define layers for all maps.
+	// each argument is a comma separated list eg:
+    // "Name:Lux Outline,URL:http://localhost/geoserver/wms,LAYERS:indicia:nation2,SRS:EPSG:2169,FORMAT:image/png,minScale:0,maxScale:1000000,units:m";
+    //$Layer1WMSoptionsstring="Name:Lux Outline,URL:http://localhost/geoserver/wms,LAYERS:indicia:nation2,SRS:EPSG:2169,FORMAT:image/png,minScale:0,maxScale:1000000,units:m";
+    //$Layer2WMSoptionsstring="Name:Lux Outline 2,URL:http://localhost/geoserver/wms,LAYERS:indicia:nation2,SRS:EPSG:2169,FORMAT:image/png,minScale:0,maxScale:1000000,units:m";
+    $optionArray_1 = array();
+    $optionArray_2 = array();
+    $options = explode(',', $args['layer1']);
+    foreach($options as $option){
+    	$parts = explode(':', $option);
+    	$optionName = $parts[0];
+    	unset($parts[0]);
+    	$optionsArray_1[$optionName] = implode(':', $parts);
+    }
+    $options = explode(',', $args['layer2']);
+    foreach($options as $option){
+    	$parts = explode(':', $option);
+    	$optionName = $parts[0];
+    	unset($parts[0]);
+    	$optionsArray_2[$optionName] = implode(':', $parts);
+    }
+    data_entry_helper::$javascript .= "
+// Create Layers.
+// Base Layers first.
+var WMSoptions = {          
+          LAYERS: '".$optionsArray_1['LAYERS']."',
+          SERVICE: 'WMS',
+          VERSION: '1.1.0',
+          STYLES: '',
+          SRS: '".$optionsArray_1['SRS']."',
+          FORMAT: '".$optionsArray_1['FORMAT']."'
+    };
+baseLayer_1 = new OpenLayers.Layer.WMS('".$optionsArray_1['Name']."',
+        '".iform_proxy_url($optionsArray_1['URL'])."',
+        WMSoptions, {        	
+         	  minScale: ".$optionsArray_1['minScale'].",
+	          maxScale: ".$optionsArray_1['maxScale'].",          
+	          units: '".$optionsArray_1['units']."',
+	          isBaseLayer: true,
+        });
+WMSoptions = {          
+          LAYERS: '".$optionsArray_2['LAYERS']."',
+          SERVICE: 'WMS',
+          VERSION: '1.1.0',
+          STYLES: '',
+          SRS: '".$optionsArray_2['SRS']."',
+          FORMAT: '".$optionsArray_2['FORMAT']."'
+    };
+baseLayer_2 = new OpenLayers.Layer.WMS('".$optionsArray_2['Name']."',
+        '".iform_proxy_url($optionsArray_2['URL'])."',
+        WMSoptions, {        	
+         	  minScale: ".$optionsArray_2['minScale'].",
+	          maxScale: ".$optionsArray_2['maxScale'].",          
+	          units: '".$optionsArray_2['units']."',
+	          isBaseLayer: true,
+        });
+// Create vector layers: one to display the location onto, and another for the occurrence list
+// the default edit layer is used for the occurrences themselves
+locationLayer = new OpenLayers.Layer.Vector(\"Location Layer\");
+occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\");
+addListFeature = function(div, record) {
+      var parser = new OpenLayers.Format.WKT();
+      var feature = parser.read(record.geom);
+      occListLayer.addFeatures([feature]);
+};
+//featureHover = function(feature) {
+//      alert(\"1\");
+//};
+//var occListSelector = new OpenLayers.Control.SelectFeature( 
+//                     occListLayer, 
+//                     {clickout: true, toggle: true, multiple: false, hover: true,
+//  					  onSelect: featureHover} );
+";
     // default mode 0 : display survey selector
 	if($mode == 0){
-		if(module_exists('iform_loctools')){
 			if(iform_loctools_checkaccess($node,'admin')){
 	    		$r .= "<div id=\"controls\">\n";
 				$r .= data_entry_helper::enable_tabs(array(
@@ -323,9 +388,6 @@ class iform_survey_recording_form_2 {
 		    	)));
 			}
 			$locations = iform_loctools_listlocations($node);
-		} else {
-			$locations = 'all'; // default behaviour with no location filtering module is to display all.
-		}
 		if($locations == 'all'){
 			$reportName = srf2_samples_list;
 			$loclist = '';
@@ -353,10 +415,9 @@ class iform_survey_recording_form_2 {
 		$r .= '<div id="surveyList"><div class="srf2-datapanel"><div id="smp_grid"></div>';
 		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="Add a new Survey" ONCLICK="window.location.href=\'?newSample\'"></FORM></div>';
 		$r .= "<div class=\"srf2-mappanel\">\n";
-		data_entry_helper::$javascript .= "locationLayer = new OpenLayers.Layer.Vector(\"Location Layer\");
-";	
-        $r .= data_entry_helper::map_panel(array('presetLayers' => array('google_physical','google_satellite') //TODO convert to proper layers
-    						, 'layers'=>array('locationLayer')
+        $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
+//						      'presetLayers' => array('google_physical','google_satellite'),
+    						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer')
     						, 'initialFeatureWkt' => null
     						, 'width'=>'auto'));
     	if($locations != 'all'){
@@ -401,7 +462,7 @@ $.getJSON(\"$svcUrl\" + \"index.php/services/data/location\" +
     						
         $r .= "</div></div>\n";
 		
-		if(module_exists('iform_loctools') && iform_loctools_checkaccess($node,'admin')){
+		if(iform_loctools_checkaccess($node,'admin')){
 			$r .= '<div id="setLocations"><div class="srf2-datapanel"><FORM method="post">';
 			$url = 'http://localhost/indicia/index.php/services/data/location';
 	    	$url .= "?mode=json&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&cachetimeout=0';
@@ -522,24 +583,7 @@ $.getJSON(\"$svcUrl\" + \"index.php/services/data/location\" +
     	$activeTab = 'occurrence';
     }
 
-    data_entry_helper::$javascript .= "
-      // Create vector layers: one to display the location onto, and another for the occurrence list
-      // the default edit layer is used for the occurrences themselves
-locationLayer = new OpenLayers.Layer.Vector(\"Location Layer\");
-occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\");
-addListFeature = function(div, record) {
-      var parser = new OpenLayers.Format.WKT();
-      var feature = parser.read(record.geom);
-      occListLayer.addFeatures([feature]);
-};
-featureHover = function(feature) {
-      alert(\"1\");
-};
-occListSelector = new OpenLayers.Control.SelectFeature( 
-                     occListLayer, 
-                     {clickout: true, toggle: true, multiple: false, hover: true,
-  					  onSelect: featureHover} );
-    ";
+
       	
     // Set Up form tabs.
     if($mode == 4)
@@ -650,7 +694,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
     				count_id : '".$args['occurrence_count_id']."'},
     itemsPerPage : 17,
     callback : addListFeature ,
-    controls : [occListSelector]
+    cssOdd : '' 
   });
 ";
 		$r .= '<div id="occ_grid"></div></div>';
@@ -727,12 +771,13 @@ jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").cha
     
     // add map panel.
     $r .= "<div class=\"srf2-mappanel\">\n";
-    $r .= data_entry_helper::map_panel(array('presetLayers' => array('google_physical','google_satellite') //TODO convert to proper layers
-    						, 'layers'=>array('locationLayer', 'occListLayer')
+    $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
+//						      'presetLayers' => array('google_physical','google_satellite'),
+    						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer')
     						, 'initialFeatureWkt' => null
     						, 'width'=>'auto'));
-		data_entry_helper::$javascript .= "
-// upload location initial value into map.
+	    data_entry_helper::$onload_javascript .= "
+// upload location initial value into map. wrong JS position
 //jQuery('#imp-location').each(function()
 //    {
 //        // Change the location control requests the location's geometry to place on the map.
@@ -745,6 +790,12 @@ jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").cha
 //          }
 //        );
 //      });
+//
+//test=jQuery(\"#survey-tab\");
+//jQuery(\"#survey-tab\").click(function(){
+//	alert(\"TEST\");
+//});
+
 ";
     						
     $r .= "</div></div>\n";
