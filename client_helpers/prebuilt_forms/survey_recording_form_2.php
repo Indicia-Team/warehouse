@@ -36,7 +36,6 @@ class iform_survey_recording_form_2 {
      * TODO Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match.
 	 *  Sort out initialisation of geom so can have ?occurrence=<id>.
-     *  Display ends of centroid: label 'A', end 'B'
      *  Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match.
      *  Data import of location SHP files.
@@ -423,7 +422,7 @@ addListFeature = function(div, record) {
 		data_entry_helper::$javascript .= "
 // upload locations into map.
 // Change the location control requests the location's geometry to place on the map.
-$.getJSON(\"$svcUrl\" + \"index.php/services/data/location\" +
+$.getJSON(\"$svcUrl\" + \"/data/location\" +
           \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
           \"&callback=?\", function(data) {
     // store value in saved field?
@@ -763,7 +762,6 @@ setAltasStatus = function() {
 };
 setAltasStatus();
 jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").change(setAltasStatus);\n";
-	    
     }
     
     // add map panel.
@@ -774,37 +772,41 @@ jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").cha
     						, 'initialFeatureWkt' => null
     						, 'width'=>'auto'));
 	    data_entry_helper::$onload_javascript .= "
-// upload location initial value into map.
-jQuery('#imp-location').each(function(){
-	if(this.value != ''){
-		$.getJSON(\"$svcUrl\" + \"index.php/services/data/location/\"+this.value +
+locationChange = function(obj){
+	locationLayer.destroyFeatures();
+	if(obj.value != ''){
+		$.getJSON(\"$svcUrl\" + \"/data/location/\"+obj.value +
 			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&callback=?\", function(data) {
             	// store value in saved field?
-            	if (data.length>0) {
-            		locationLayer.destroyFeatures();
-            		var parser = new OpenLayers.Format.WKT();
-      				if(data[0].centroid_geom){
-						feature = parser.read(data[0].centroid_geom);
-						locationLayer.addFeatures([feature]);
-      					var bounds=feature.geometry.getBounds();
-      					var dy = (bounds.top-bounds.bottom);
-      					var dx = (bounds.right-bounds.left);
-      					if (dy===0 && dx===0) {
-        					locationLayer.map.setCenter(bounds.getCenterLonLat(), 13);        
-      					} else {
-        					// Set the default view to show something triple the size of the grid square
-        					locationLayer.map.zoomToExtent(bounds);
-  						}
-  					}
-					if(data[0].boundary_geom){
-						feature = parser.read(data[0].boundary_geom);
-						locationLayer.addFeatures([feature]);
-					}
-      				
+            if (data.length>0) {
+            	var parser = new OpenLayers.Format.WKT();
+      			if(data[0].centroid_geom){
+					feature = parser.read(data[0].centroid_geom);
+					locationLayer.addFeatures([feature]);
   				}
-          }
-        );
+				if(data[0].boundary_geom){
+					feature = parser.read(data[0].boundary_geom);
+					locationLayer.addFeatures([feature]);
+      				var points = feature.geometry.getVertices(true); // fetch endpoints of line held in boundary_geom
+      				if(points.length > 1){
+      					feature = new OpenLayers.Feature.Vector(points[0], {}, {label: 'A'});
+						locationLayer.addFeatures([feature]);
+      					feature = new OpenLayers.Feature.Vector(points[1], {}, {label: 'B'});
+						locationLayer.addFeatures([feature]);
+  					}
+ 				}	
+				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
+  			}
+        });
     }
+};
+// upload location initial value into map.
+jQuery('#imp-location').each(function(){
+	locationChange(this);
+});
+jQuery('#imp-location').unbind('change');
+jQuery('#imp-location').change(function(){
+	locationChange(this);
 });
 //
 //test=jQuery(\"#survey-tab\");
