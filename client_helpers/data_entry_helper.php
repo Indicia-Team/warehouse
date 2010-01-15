@@ -2988,9 +2988,7 @@ $('.ui-state-default').live('mouseout', function() {
 
   private static function boolean_attribute($options) {
     global $indicia_templates;
-    var_dump($options);
     $options = self::check_arguments(func_get_args(), array('fieldname'));
-    var_dump($options);
     $default = self::check_default_value($options['fieldname'], 
         array_key_exists('default', $options) ? $options['default'] : '', '0');    
     $options = array_merge(array('sep' => ''), $options);
@@ -2999,7 +2997,6 @@ $('.ui-state-default').live('mouseout', function() {
     	$options['class']='control-box';
     }
     $items = "";
-    var_dump($default);
     $buttonList = array('No' => '0', 'Yes' => '1');
     foreach ($buttonList as $caption => $value) {
           $checked = ($default == $value) ? ' checked="checked" ' : '';
