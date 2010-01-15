@@ -34,24 +34,21 @@ class iform_survey_recording_form_2 {
 	 * Features to be fixed before delivery 1.
      * 
      * TODO 
-	 *  Convert OccList to Markers.
 	 *  Add Click Features. If a feature on the occurrence list layer is clicked/hovered, the taxon is displayed.
      *  Add functionality to highlight a feature when a row selected in occurrence list.
 	 *  
-     *  Add prompt to confirm when closing a survey.
      *  Force custom attributes to be required: do through indicia front end and then check data in DB:
      *      update scripts to match.
      *  Data import of location SHP files.
-     * 
-     * TODO Check error handling in form.
-	 * 
+   	 * 
 	 * Phase 2:
 	 *  Internationalise
      *  Create indicia report for checking of survey walk directions.
      *  Add survey download as CSV: may need to expand main sample to include a survey. 
-     *  sort out disabling of complex fields in readonly mode.
+     *  Sort out disabling of complex fields in readonly mode, + Booleans attributes
 	 * 
 	 * Possible future phases:
+	 *  Increase differentiation between layers - occLayer - markers? colours?
 	 *  when displaying the transects in the surveys list map, could display their name.
 	 *  improve outputAttributes to handle restrict to survey correctly.
 	 * 
@@ -618,7 +615,7 @@ addListFeature = function(div, record) {
     $r .= "<div id=\"temp\"></div>";
     $r .= data_entry_helper::tab_header(array('tabs'=>array(
     		'#survey'=>'Survey'
-    		,'#occurrence'=>(isset($childSample['sample:id']) ? 'Edit Occurrence' : 'Add Occurrence')
+    		,'#occurrence'=>($readOnly ? 'Show Occurrence' : (isset($childSample['sample:id']) ?  'Edit Occurrence' : 'Add Occurrence'))
     		,'#occurrenceList'=>'Occurrence List'
     		)));
     		
@@ -682,17 +679,15 @@ addListFeature = function(div, record) {
 		$r .= data_entry_helper::dump_remaining_errors();
     }
     $escaped_id=str_replace(':','\\\\:',$closedFieldName);
-    data_entry_helper::$javascript .= "
-jQuery('#close').click(function() {
-var inputlist =   jQuery(\"input#".$escaped_id."\");
-jQuery(\"#".$escaped_id."\").val('1');
-  jQuery('#SurveyForm').submit();  
-});
-";
     if(!$readOnly){
 	    $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save Survey Details\" />\n";
 	    if(!user_access($adminPerm)) {
-	    	$r .= "<INPUT TYPE=BUTTON id=\"close\" class=\"ui-state-default ui-corner-all\" VALUE=\"Save Survey and Close\">";
+			$r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all\" value=\"Save Survey and Close\"
+				onClick=\"if(confirm('Do you really wish to close this survey?')){
+					var inputlist =   jQuery('input#".$escaped_id."');
+					jQuery('#".$escaped_id."').val('1');
+  					jQuery('#SurveyForm').submit();
+  				};\">\n";
 	    }
     }
     $r .= "</form>";    
