@@ -147,6 +147,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+  * Provides the /service/data/sample_attribute_value service.
+  * Retrieves details of sample attribute values.
+  */
+  public function occurrence_attribute_value()
+  {
+  $this->handle_call('occurrence_attribute_value');
+  }
+
+  /**
   * Provides the /services/data/survey service.
   * Retrieves details of a single survey.
   */
