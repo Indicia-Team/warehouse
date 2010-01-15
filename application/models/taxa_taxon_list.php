@@ -174,7 +174,9 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $sm->submission = $sub;
         if (!$sm->submit()) {
           $result=false;
-          array_push($this->linkedModels, $sm);
+          foreach($sm->errors as $key=>$value) {
+            $this->errors[$sm->object_name.':'.$key]=$value;
+          }          
         } else {
           // If synonym is not latin (a common name), and we have no common name for this object, use it.
           if ($this->common_taxon_id==null && $syn['taxon:language_id']!=2) {

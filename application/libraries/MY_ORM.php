@@ -424,8 +424,9 @@ abstract class ORM extends ORM_Core {
             $this->errors[$a] = 'Could not find a '.ucwords($b['fkTable']).' by looking for "'.$b['fkSearchValue'].
                 '" in the '.ucwords($b['fkSearchField']).' field.';
             $r=false;
+          } else {
+            $this->submission['fields'][$b['fkIdField']] = $fkRecords[0]->id;
           }
-          $this->submission['fields'][$b['fkIdField']] = $fkRecords[0]->id;
         }
       }
     }
