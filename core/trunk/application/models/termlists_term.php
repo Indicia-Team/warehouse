@@ -130,7 +130,9 @@ class Termlists_term_Model extends Base_Name_Model {
           $sm->submission = $sub;
           if (!$sm->submit()) {
             $success=false;
-            array_push($this->linkedModels, $sm);
+            foreach($sm->errors as $key=>$value) {
+              $this->errors[$sm->object_name.':'.$key]=$value;
+            } 
           }
         }
       } catch (Exception $e) {
