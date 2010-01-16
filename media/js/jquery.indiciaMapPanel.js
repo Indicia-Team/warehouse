@@ -373,7 +373,7 @@ $.fn.indiciaMapPanel.defaults = {
     displayFormat: "image/png",
     presetLayers: [],
     indiciaWMSLayers: {},
-    indiciaWFSLayers : {},
+    indiciaWFSLayers : {},    
     layers: [],
     controls: [],
     editLayer: true,
@@ -432,4 +432,24 @@ if (typeof G_PHYSICAL_MAP != "undefined") {
       function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
   $.fn.indiciaMapPanel.presetLayers.google_satellite = 
       function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
-}        
+};
+
+/**
+ * A utility function to convert an OpenLayers filter into text, which can be supplied to a WMS filter call to GeoServer.
+ */
+$.fn.indiciaMapPanel.convertFilterToText = function(filter) {
+  // First, get the filter as XML DOM
+  var dom = new OpenLayers.Format.Filter.v1_0_0().write(filter);
+  // Now, convert the XML to text
+  var serializer, serialized;
+  try {
+    // XMLSerializer exists in current Mozilla browsers
+    serializer = new XMLSerializer();
+    serialized = serializer.serializeToString(dom);
+  }
+  catch (e) {
+    // Internet Explorer has a different approach to serializing XML
+    serialized = dom.xml;
+  }
+  return serialized;
+};
