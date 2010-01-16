@@ -563,10 +563,10 @@ class Data_Controller extends Data_Service_Base_Controller {
           case 'json':
             $s = json_decode($_POST['submission'], true);
         }
-        $this->submit($s);
+        $id = $this->submit($s);
       }
-      // return a success message
-      echo json_encode(array('success'=>'multiple records'));
+      // return a success message plus the id of the topmost record, e.g. the sample created.
+      echo json_encode(array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$id));
       $this->delete_nonce();
     }
     catch (Exception $e)
