@@ -80,14 +80,21 @@ class iform_mnhnl_citizen_science_1 {
         'caption'=>'Species List ID',
         'description'=>'The Indicia ID for the species list that species can be selected from.',
         'type'=>'int',
-        'group'=>'Species'
+        'group'=>'Misc'
       ),
 	    array(
       	'name'=>'preferred',
         'caption'=>'Preferred species only?',
         'description'=>'Should the selection of species be limited to preferred names only?',
         'type'=>'boolean',
-	      'group'=>'Species'
+	      'group'=>'Misc'
+      ),
+      array(
+        'name'=>'survey_id',
+        'caption'=>'Survey ID',
+        'description'=>'The Indicia ID for the survey that data is saved into.',
+        'type'=>'int',
+        'group'=>'Misc'
       ),      
       array(
         'name'=>'uid_attr_id',
@@ -212,6 +219,7 @@ class iform_mnhnl_citizen_science_1 {
     $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
+    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
@@ -329,7 +337,7 @@ class iform_mnhnl_citizen_science_1 {
       'width'=>760,
       'initial_lat'=>$args['map_centroid_lat'],
       'initial_long'=>$args['map_centroid_long'],
-      'initial_zoom'=>$args['map_zoom']
+      'initial_zoom'=>(int) $args['map_zoom']
     
     ));
     if ($args['interface']=='wizard') {
@@ -388,16 +396,6 @@ class iform_mnhnl_citizen_science_1 {
    */
   public static function get_submission($values, $args) {
     return data_entry_helper::build_sample_occurrence_submission($values);     
-  }
-
-  /**
-   * Retrieves a list of the css files that this form requires in addition to the standard
-   * Drupal, theme or Indicia ones.
-   * 
-   * @return array List of css files to include for this form.
-   */
-  public static function get_css() {
-    return array('mnhnl_citizen_science_1.css');
-  }  
+  } 
   
 }
