@@ -361,7 +361,7 @@ class iform_mnhnl_citizen_science_1 {
       'extraParams'=>$readAuth + array('termlist_id' => $args['abundance_termlist_id']),
       'size'=>6, // for listboxes
       'sep'=>'<br/>'      
-    );
+    ); 
     $r .= call_user_func(array('data_entry_helper', $args['abundance_ctrl']), $abundance_args);    
     $r .= data_entry_helper::textarea(array(
         'label'=>'Comment',

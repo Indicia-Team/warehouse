@@ -71,7 +71,7 @@ $indicia_templates = array(
       '<span>{captionNext}</span><span class="ui-icon ui-icon-circle-arrow-e"></span></div>',
   'tab_prev_button' => '<div{class}/>'.
       '<span class="ui-icon ui-icon-circle-arrow-w"></span><span>{captionPrev}</span></div>',
-  'submit_button' => '<input type="submit"{class}/>',
+  'submit_button' => '<input type="submit"{class} id="test" value="{captionSave}"/>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
@@ -2139,15 +2139,17 @@ if (errors.length>0) {
     $options = array_merge(array(
       'captionNext' => 'next step',   
       'captionPrev' => 'prev step',
+      'captionSave' => 'save',
       'buttonClass' => 'ui-widget-content ui-state-default ui-corner-all indicia-button',
       'class'       => 'right',
       'page'        => 'middle',
       'suffixTemplate' => 'nosuffix'
     ), $options);
     $options['class'] .= ' buttons';
-    // translate the captions
+    // localise the captions
     $options['captionNext'] = lang::get($options['captionNext']);
     $options['captionPrev'] = lang::get($options['captionPrev']);
+    $options['captionSave'] = lang::get($options['captionSave']);
     // Output the buttons
     $r = '<div class="'.$options['class'].'">';
     $buttonClass=$options['buttonClass'];   
