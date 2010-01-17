@@ -21,39 +21,38 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-$id = html::initial_value($values, 'taxon_image:id');
+$id = html::initial_value($values, 'occurrence_image:id');
 
 echo html::script(array(
   'media/js/thickbox-compressed.js'
 ), FALSE);
 ?>
-<p>This page allows you to specify the details of a taxon image.</p>
-<form class="cmxform" action="<?php echo url::site().'taxon_image/save'; ?>" method="post" enctype="multipart/form-data">
+<p>This page allows you to specify the details of an occurrence image.</p>
+<form class="cmxform" action="<?php echo url::site().'occurrence_image/save'; ?>" method="post" enctype="multipart/form-data">
 <?php echo $metadata; ?>
 <fieldset>
-<input type="hidden" name="taxon_image:taxon_meaning_id" value="<?php echo html::initial_value($values, 'taxon_image:taxon_meaning_id'); ?>" />
-<input type="hidden" name="taxa_taxon_list:id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:id'); ?>" />
-<input type="hidden" name="taxon_image:id" value="<?php echo $id ?>" />
+<input type="hidden" name="occurrence_image:occurrence_id" value="<?php echo html::initial_value($values, 'occurrence_image:occurrence_id'); ?>" />
+<input type="hidden" name="occurrence_image:id" value="<?php echo $id ?>" />
 <legend>Image details</legend>
 <ol>
 <?php 
 if ($id) : ?>
 <li>
 <label for="image">Image:</label>
-<a class="thickbox" href="<?php echo url::base().'/upload/'.html::initial_value($values, 'taxon_image:path'); ?>" title="View image at full size">
-  <img src="<?php echo url::base().'/upload/'.html::initial_value($values, 'taxon_image:path'); ?>" width="200" alt="Image of the taxon" />
+<a class="thickbox" href="<?php echo url::base().'/upload/'.html::initial_value($values, 'occurrence_image:path'); ?>" title="View image at full size">
+  <img src="<?php echo url::base().'/upload/'.html::initial_value($values, 'occurrence_image:path'); ?>" width="200" alt="Image of the occurrence" />
 </a>
 </li>
 <?php endif; ?>
 <li>
 <label for="file">Upload file:</label>
 <input type="file" name="image_upload" accept="png|jpg|gif" />
-<?php echo html::error_message($model->getError('taxon_image:path')); ?>
+<?php echo html::error_message($model->getError('occurrence_image:path')); ?>
 </li>
 <li>
 <label for="name">Caption</label>
-<input id="caption" name="taxon_image:caption" value="<?php echo html::initial_value($values, 'taxon_image:caption'); ?>" />
-<?php echo html::error_message($model->getError('taxon_image:caption')); ?>
+<input id="caption" name="occurrence_image:caption" value="<?php echo html::initial_value($values, 'occurrence_image:caption'); ?>" />
+<?php echo html::error_message($model->getError('occurrence_image:caption')); ?>
 </li>
 </ol>
 </fieldset>
