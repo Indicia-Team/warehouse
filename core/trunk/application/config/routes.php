@@ -59,6 +59,7 @@ $config['sample_attribute'] = 'sample_attribute/page/1';
 $config['location_attribute'] = 'location_attribute/page/1';
 // Entered Data
 $config['occurrence'] = 'occurrence/page/1';
+$config['occurrence_image/([0-9]+)'] = 'occurrence_image/page/1/$1';
 $config['sample'] = 'sample/page/1';
 // Title
 $config['title'] = 'title/page/1';

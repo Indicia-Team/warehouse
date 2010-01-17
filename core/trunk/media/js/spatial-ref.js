@@ -91,11 +91,14 @@ function show_wkt_feature(wkt) {
 	bounds.bottom = bounds.bottom - dy;
 	bounds.right = bounds.right + dx;
 	bounds.left = bounds.left - dx;
-	// Set the default view to show something triple the size of the grid square
-	map.zoomToExtent(bounds);
-	// if showing a point, don't zoom in too far
-	if (dy==0 && dx==0) {
-		map.zoomTo(11);
+	// Set the default view to show something triple the size of the grid square. If no base layer (i.e.
+	// no internet connection), things don't work so skip it to avoid JS errors
+	if (map.baseLayer!==null) {
+		map.zoomToExtent(bounds);
+		// if showing a point, don't zoom in too far
+		if (dy==0 && dx==0) {
+			map.zoomTo(11);
+		}
 	}
 
 }
@@ -132,7 +135,7 @@ function init_map(base_url, wkt, field_name, geom_name, virtual_earth, google, g
 
 	editlayer = new OpenLayers.Layer.Vector("Current location boundary",
 		{style: boundary_style, 'sphericalMercator': true});
-	if (virtual_earth) {
+	if (virtual_earth && typeof VEMapStyle !=="undefined") {
 		var velayer = new OpenLayers.Layer.VirtualEarth(
 			"Virtual Earth",
 			{'type': VEMapStyle.Aerial, 'sphericalMercator': true}
@@ -163,10 +166,11 @@ function init_map(base_url, wkt, field_name, geom_name, virtual_earth, google, g
 	map.addLayer(editlayer);
 	if (init_layer!='' && typeof(init_layer)!="undefined") {
 		var layers = map.getLayersByName(init_layer);
-		if (layers.length==1)
+		if (layers.length==1) {
 			map.setBaseLayer(layers[0]);
+		}
 	}
-  	map.addControl(new OpenLayers.Control.LayerSwitcher());
+	map.addControl(new OpenLayers.Control.LayerSwitcher());
 	if (wkt!=null) {
 		show_wkt_feature(wkt);
 	} else {

@@ -27,9 +27,15 @@
   'media/js/jquery.bgiframe.min.js',
   'media/js/thickbox-compressed.js',
   'media/js/jquery.autocomplete.js'
-), FALSE); ?>
+), FALSE); 
+$id = html::initial_value($values, 'occurrence:id'); ?>
 <script type="text/javascript" >
 $(document).ready(function() {
+	var $tabs=$("#tabs").tabs();
+  var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
+  if (initTab!='') {
+    $tabs.tabs('select', '#' + initTab);
+  }
   $("input#determiner").autocomplete("<?php echo url::site() ?>services/data/person", {
     minChars : 1,
     mustMatch : true,
@@ -91,35 +97,20 @@ $(document).ready(function() {
 });
 </script>
 <form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
-<?php 
-echo $metadata;
-if (count($values['images'])>0) : ?>
-  <fieldset class="imagelist">
-  <legend>Images</legend>
-  <?php
-  foreach ($values['images'] as $image) {
-    if (empty($image->external_details)) {
-    	// Got an internal image
-    	$image_path=url::base().'upload/'.$image->path;
-    	echo '<a class="thickbox" href="'.$image_path.'"><img src="'.$image_path.'" height="100"/></a>';
-    } else {
-    	// Got an external image - for now only FlickR is supported
-    	$obj = json_decode($image->external_details, true);
-	    if (array_key_exists('flickr', $obj)) {
-	      $photo = $obj['flickr'];
-	      echo '<a class="thickbox" href="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
-	                      $photo['id'].'_'.$photo['secret'].'.jpg"><img alt="'.$photo['title'].'" title="'.$photo['title'].'" src="http://farm'.$photo['farm'].'.static.flickr.com/'.$photo['server'].'/'.
-	                      $photo['id'].'_'.$photo['secret'].'_t.jpg" /></a>';
-	    }
-    }
-    
-  }
-  ?>
-  </fieldset>
-<?php endif; ?>
+<div id="tabs">
+  <ul>
+    <li><a href="#details"><span>Sample Details</span></a></li>
+    <li><a href="#attrs"><span>Additional Attributes</span></a></li>
+    <li><a href="#comments"><span>Comments</span></a></li>
+    <?php if ($id != null) : 
+      ?><li><a href="<?php echo url::site()."occurrence_image/$id" ?>" title="images"><span>Images</span></a></li>
+    <?php endif; ?>
+  </ul>
+<div id="details">
+<?php echo $metadata; ?>
 <fieldset>
 <?php
-print form::hidden('id', html::initial_value($values, 'occurrence:id'));
+print form::hidden('id', $id);
 print form::hidden('website_id', html::initial_value($values, 'occurrence:website_id'));
 print form::hidden('sample_id', html::initial_value($values, 'occurrence:sample_id'));
 ?>
@@ -174,7 +165,14 @@ Verified on <?php echo html::initial_value($values, 'occurrence:verified_on') ?>
 <?php endif; ?>
 </ol>
 </fieldset>
+</div>
+<div id="comments">
 <?php
 echo $values['comments'];
 echo html::form_buttons(html::initial_value($values, 'occurrence:id')!=null);
 ?>
+</div>
+<div id="images">
+</div>
+</div>
+</form>

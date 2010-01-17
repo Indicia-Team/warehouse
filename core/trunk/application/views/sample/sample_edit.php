@@ -35,6 +35,11 @@ $id = html::initial_value($values, 'sample:id');
 <script type='text/javascript'>
 (function($){
   $(document).ready(function() {
+	  var $tabs=$("#tabs").tabs();
+	  var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
+	  if (initTab!='') {
+	    $tabs.tabs('select', '#' + initTab);
+	  }
 	  init_map('<?php echo url::base()."', '".html::initial_value($values, 'sample:geom'); ?>', 'entered_sref', 'entered_geom', true);
     jQuery('.vague-date-picker').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});    
     jQuery('.date-picker').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});
@@ -42,6 +47,13 @@ $id = html::initial_value($values, 'sample:id');
 })(jQuery);
 </script>
 <form class="cmxform" action="<?php echo url::site().'sample/save' ?>" method="post">
+<div id="tabs">
+  <ul>
+    <li><a href="#details"><span>Sample Details</span></a></li>
+    <li><a href="#attrs"><span>Additional Attributes</span></a></li>
+  <?php if ($id!==null) : ?>  <li><a href="#occurrences"><span>Occurrences</span></a></li>
+  <?php endif;?></ul>
+<div id="details">
 <?php echo $metadata; ?>
 <fieldset>
 <?php 
@@ -96,6 +108,7 @@ foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption)
  print form::textarea('sample:recorder_names', html::initial_value($values, 'sample:recorder_names'));
  echo html::error_message($model->getError('sample:recorder_names'));
  ?>
+ </li>
  <li>
  <label for='sample:sample_method_id'>Sample Method:</label>
  <?php
@@ -105,12 +118,16 @@ foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption)
  </li>
  </ol>
  </fieldset>
+ </div>
+ <div id="attrs">
  <fieldset>
  <legend>Survey Specific Attributes</legend>
  <ol>
  <?php
 foreach ($values['attributes'] as $attr) {
 	$name = 'smpAttr:'.$attr['sample_attribute_id'];
+  // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+  if ($attr['id']) $name .= ':'.$attr['id'];
 	echo '<li><label for="">'.$attr['caption']."</label>\n";
 	switch ($attr['data_type']) {
 	  case 'Specific Date':
@@ -134,10 +151,11 @@ foreach ($values['attributes'] as $attr) {
  ?>
  </ol>
  </fieldset>
+ </div>
  <?php if ($id!==null) : ?>
- <h2>Occurrences</h2>
- <?php 
-   echo $values['occurrences']; 
- endif;
- echo html::form_buttons($id!=null); 
- ?>
+ <div id="occurrences">
+ <?php echo $values['occurrences']; ?>
+ </div> 
+ <?php endif; ?>
+ </div>
+ <?php echo html::form_buttons($id!=null); ?>

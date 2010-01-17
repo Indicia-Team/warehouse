@@ -1,4 +1,3 @@
-set search_path=indicia,public;
 CREATE VIEW detail_taxa_taxon_lists AS
 SELECT ttl.id, ttl.taxon_id, t.taxon, t.authority, ttl.taxon_list_id,
     tl.title AS taxon_list, ttl.taxon_meaning_id, ttl.preferred,
