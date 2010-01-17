@@ -41,6 +41,7 @@ $default_terms = array(
   'next step'=>'Next Step',
   'phone number'=>'Phone Number',
   'prev step'=>'Previous Step',
+  'save'=>'Save',
   'search'=>'Search',
   'search for place on map'=>'Search for place on map',
   'spatial ref'=>'Spatial ref.',
