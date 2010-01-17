@@ -168,13 +168,19 @@ class submission_builder extends helper_config {
     	if ($value==lang::get('click here')) {
     		$value='';
     	}
-      if (strpos($key, $prefix) === 0) {                
+      if (strpos($key, $prefix) === 0) {
         $a = explode(':', $key);
         // Attribute in the form occAttr:36 for attribute with attribute id
         // of 36.
         $oap[] = array(
           $entity."_attribute_id" => $a[1], 'value' => $value
         );
+        // If it is an existing attribute value, we need to also put the ID in the array so it 
+        // can update the same value rather than create a new one
+        if (count($a)>2) {
+        	$oap[count($oap)-1]['id'] = $a[2];
+        }
+        
       }
     }
     foreach ($oap as $oa) {

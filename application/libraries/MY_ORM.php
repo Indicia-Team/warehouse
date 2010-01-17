@@ -658,6 +658,8 @@ abstract class ORM extends ORM_Core {
           if ($value['value'] != '') {
           	// work out the *_attribute this is attached to, to figure out the field(s) to store the value in.
             $attrId = $attr['fields'][$this->object_name.'_attribute_id'];
+            // If this is an existing attribute value, get the record id to overwrite
+            $valueId = (array_key_exists('id', $attr['fields'])) ? $attr['fields']['id'] : null;
             $oa = ORM::factory($this->object_name.'_attribute', $attrId);
             $vf = null;
             switch ($oa->data_type) {
@@ -692,10 +694,8 @@ abstract class ORM extends ORM_Core {
             // Hook to the owning entity (the sample, location or occurrence)
             $attr['fields'][$this->object_name.'_id']['value'] = $this->id;
 
-            // Create a attribute value, loading any previous combination of eg sample_id/sample_attribute_id
-            $oam = ORM::factory($this->object_name.'_attribute_value',
-            			array($this->object_name.'_id' => $this->id,
-            					$this->object_name.'_attribute_id' => $attrId));
+            // Create a attribute value, loading the existing value id if it exists
+            $oam = ORM::factory($this->object_name.'_attribute_value', $valueId);
             
             $oam->submission = $attr;
             if (!$oam->inner_submit()) {
