@@ -2,13 +2,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <?php 
-require '../../../client_helpers/data_entry_helper.php';
-require '../../../client_helpers/validation_helper.php'; 
-?>
-<?php
-  // Include a configuration file - not part of the tutorial. In various places, we refer to the configuration
-  // by replacing an ID with echo $config['<<id name>>'];
-  require '../data_entry_config.php';
+require '../../../client_helpers/data_entry_helper.php'; 
+
+// Include a configuration file - not part of the tutorial. In various places, we refer to the configuration
+// by replacing an ID with echo $config['<<id name>>'];
+require '../data_entry_config.php';
 ?>
 <title>Basic Data Entry Tutorial Code</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
@@ -20,19 +18,8 @@ require '../../../client_helpers/validation_helper.php';
 <h1>Basic Data Entry Tutorial Code</h1>
 <?php
 if ($_POST) {
-  // TODO: Maybe this needs to go in a data entry helper variable, so we can use it elsewhere. Dump javascript could store it as a JSON variable in the page.
-  // Then we can link a JS validator to the submit button which uses it.
-  // Top level array for controls is the list of fieldsets. Then each control is:
-  // label, fieldname, datatype, controltype, validation, (other parameters required for the control type)
-  $controls = array('General' => array(
-    array('label' => 'Date', 'fieldname' => 'sample:date', 'validation' => 'required')
-  ));
-  $response = validation_helper::validate($_POST, $controls);
-  if (!$response) {
-    $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
-    $response = data_entry_helper::forward_post_to('save', $submission);
-  }
-  print_r($response);
+  $submission = data_entry_helper::build_sample_occurrence_submission($_POST);
+  $response = data_entry_helper::forward_post_to('save', $submission);
   echo data_entry_helper::dump_errors($response);
 }
 echo data_entry_helper::loading_block_start();

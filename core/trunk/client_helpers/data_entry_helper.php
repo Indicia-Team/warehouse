@@ -384,12 +384,11 @@ class data_entry_helper extends helper_config {
       $options['validation_mode']=self::$validation_mode;
     }
     // Decide if the main control has an error. If so, highlight with the error class and set it's title.
-    if (self::$validation_errors!=null) {      
+    $error="";
+    if (self::$validation_errors!==null) {      
       if (array_key_exists('fieldname', $options)) {        
         $error = self::check_errors($options['fieldname'], false);
       }
-    } else {
-      $error="";
     }
     // Add a hint to the control if there is an error and this option is set
     if ($error && in_array('hint', $options['validation_mode'])) {        
@@ -1045,7 +1044,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>allowFuture</b><br/>
-  * Optional. If specified, and set to true, then future dates are allowed.</li>
+  * Optional. If true, then future dates are allowed. Default is false.</li>
   * </ul>
   * 
   * @return string HTML to insert into the page for the date picker control.
@@ -1059,7 +1058,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   dateFormat : 'yy-mm-dd',
   constrainInput: false";
     // Filter out future dates
-    if (!array_key_exists('allow_future', $options) && $options['allow_future']==false) {
+    if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
       self::$javascript .= ",
   maxDate: '0'";
     }
@@ -2452,6 +2451,7 @@ if (errors.length>0) {
    * @return string Text to place in the head section of the html file.
    */
   public static function dump_header($resources=null) {
+  	global $indicia_resources;
     if (!$resources) {
       $resources = array('jquery_ui',  'defaultStylesheet');
     }
@@ -2459,7 +2459,7 @@ if (errors.length>0) {
       self::add_resource($resource);
     }
     // place a css class on the body if JavaScript enabled. And output the resources
-    return self::internal_dump_javascript('$("body").addClass("js");', '', '', $resources);
+    return self::internal_dump_javascript('$("body").addClass("js");', '', '', $indicia_resources);
   }
 
   /**
@@ -2602,13 +2602,16 @@ $onload_javascript
   { 
     global $indicia_templates;
     $r="";
-    foreach (self::$validation_errors as $errorKey => $error) {
-      if (!in_array($error, self::$displayed_errors)) {
-        $r .= str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
-        $r .= "[".$errorKey."]";
-      }
+    if (self::$validation_errors!==null) {
+	    foreach (self::$validation_errors as $errorKey => $error) {
+	      if (!in_array($error, self::$displayed_errors)) {
+	        $r .= str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
+	        $r .= "[".$errorKey."]";
+	      }
+	    }
+	    $r .= '<br/>';
     }
-    return $r."<br/>";
+    return $r;
   }
 
 
@@ -2797,7 +2800,7 @@ $('.ui-state-default').live('mouseout', function() {
           if (array_key_exists($fieldname.'_end', self::$validation_errors)) {
             $errorKey = $fieldname.'_end';
           }
-          if (array_key_exists($id.'_type', self::$validation_errors)) {
+          if (array_key_exists($fieldname.'_type', self::$validation_errors)) {
             $errorKey = $fieldname.'_type';
           }
        }
@@ -2812,7 +2815,7 @@ $('.ui-state-default').live('mouseout', function() {
         return $error;
       } else {
       	$template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
-      	$template = str_replace('{id}', $id, $template);
+      	$template = str_replace('{for}', $fieldname, $template);
         return str_replace('{error}', lang::get($error), $template);
       }
     } else {
