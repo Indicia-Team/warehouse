@@ -243,7 +243,11 @@
             });
             $.each(div.settings.actionColumns, function(key, value){
               body += "<td>";
-              body += "<a href='" + value.replace(/£([a-zA-Z_\-]+)£/g, function($0, $1){ return record[$1]; }) + "'>"+key+"</a>";
+              if(value.substr(0,7) == 'script:') {
+    			body += "<button type=\"button\" onclick=\""+value.substr(7).replace(/£([a-zA-Z_\-]+)£/g, function($0, $1){ return record[$1]; })+"\">"+key+"</button>";
+              } else {
+            	body += "<a href='" + value.replace(/£([a-zA-Z_\-]+)£/g, function($0, $1){ return record[$1]; }) + "'>"+key+"</a>";
+              }
               body += "</td>";
             });
             body += "</tr>";

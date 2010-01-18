@@ -30,25 +30,16 @@
 
 class iform_survey_recording_form_2 {
 
-	/* TODO LIST
-	 * Features to be fixed before delivery 1.
-     * 
-     * TODO 
-	 *  Add Click Features. If a feature on the occurrence list layer is clicked/hovered, the taxon is displayed.
-     *  Add functionality to highlight a feature when a row selected in occurrence list.
-	 *  
-     *  Force custom attributes to be required: do through indicia front end and then check data in DB:
-     *      update scripts to match.
+	/* TODO 
+	 * "Features" to be fixed before delivery 1.
      *  Data import of location SHP files.
    	 * 
 	 * Phase 2:
 	 *  Internationalise
      *  Create indicia report for checking of survey walk directions.
      *  Add survey download as CSV: may need to expand main sample to include a survey. 
-     *  Sort out disabling of complex fields in readonly mode, + Booleans attributes
 	 * 
 	 * Possible future phases:
-	 *  Increase differentiation between layers - occLayer - markers? colours?
 	 *  when displaying the transects in the surveys list map, could display their name.
 	 *  improve outputAttributes to handle restrict to survey correctly.
 	 * 
@@ -244,6 +235,9 @@ class iform_survey_recording_form_2 {
     $childErrors = null;
     $childLoadID = null;
     $saveErrors = $indicia_errors;
+    $thisOccID=-1; // IDs have to be >0, so this is outside the valid range
+    $displayThisOcc = true; // when populating from the DB rather than POST we have to be
+    						// careful with selection object, as geom in wrong format.
     if ($_POST) {
       if(array_key_exists('website_id', $_POST)) { // Indicia POST, already handled.
     	if (array_key_exists('newSample', $_GET)){
@@ -259,7 +253,11 @@ class iform_survey_recording_form_2 {
 				if(isset(data_entry_helper::$entity_to_load)){ // errors so display Edit Occurrence page.
 					$childSample = data_entry_helper::$entity_to_load;
 					$childErrors = $indicia_errors;
-					$mode = 3; 
+					$displayThisOcc = false;
+					$mode = 3;
+					if($childSample['occurrence:id']){
+						$thisOccID=$childSample['occurrence:id'];
+					}
     			} else {
 					$mode = 4; //display occurrence list
     			}
@@ -291,6 +289,7 @@ class iform_survey_recording_form_2 {
 		} else if (array_key_exists('occurrence_id', $_GET)){
 			$mode = 3;
 		    $childLoadID = $_GET['occurrence_id'];
+		    $thisOccID = $childLoadID;
 		} else if (array_key_exists('newSample', $_GET)){
 			$mode = 1;
 		} // else default to mode 0
@@ -352,8 +351,26 @@ baseLayer_2 = new OpenLayers.Layer.WMS('".$optionsArray_2['Name']."',
         });
 // Create vector layers: one to display the location onto, and another for the occurrence list
 // the default edit layer is used for the occurrences themselves
-locationLayer = new OpenLayers.Layer.Vector(\"Location Layer\");
-occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\");
+locStyleMap = new OpenLayers.StyleMap({
+                \"default\": new OpenLayers.Style({
+                    fillColor: \"Green\",
+                    strokeColor: \"Black\",
+                    fillOpacity: 0.3,
+                    strokeWidth: 1
+                  })
+  });
+locationLayer = new OpenLayers.Layer.Vector(\"Location Layer\",
+                                    {styleMap: locStyleMap});
+occStyleMap = new OpenLayers.StyleMap({
+                \"default\": new OpenLayers.Style({
+                    pointRadius: 3,
+                    fillColor: \"Red\",
+                    fillOpacity: 0.3,
+                    strokeColor: \"Red\",
+                    strokeWidth: 1
+  				}) });
+occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\",
+                                    {styleMap: occStyleMap});
 ";
     ///////////////////////////////////////////////////////////////////
     // default mode 0 : display survey selector and locations allocator
@@ -495,7 +512,6 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     }
     ///////////////////////////////////////////////////////////////////
     
-    $thisOccID=-1; // IDs have to be >0, so this is outside the valid range
     if($childLoadID){
 	    $url = 'http://localhost/indicia/index.php/services/data/occurrence/'.$childLoadID;
 	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
@@ -527,7 +543,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    	}
 	    }
 	    $childSample['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
-	    $thisOccID = $_GET['occurrence_id']; // this will be used to load the occurrence into the editlayer.
+	    $thisOccID = $childLoadID; // this will be used to load the occurrence into the editlayer.
 		$childSample['taxon']=$childSample['occurrence:taxon'];
 		$parentLoadID=$childSample['sample:parent_id'];
     }
@@ -573,28 +589,6 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     	$disabledText="";
     	$defAttrOptions = array('extraParams'=>$readAuth);
     }
-
-	data_entry_helper::$javascript .= "
-addListFeature = function(div, record) {
-    var parser = new OpenLayers.Format.WKT();
-    var feature = parser.read(record.geom);
-    if(record.id != ".$thisOccID."){
-      	occListLayer.addFeatures([feature]);
-    } else {
-	    locationLayer.map.editLayer.destroyFeatures();
-		locationLayer.map.editLayer.addFeatures([feature]);
-		var bounds=feature.geometry.getBounds();
-		locationLayer.map.setCenter(bounds.getCenterLonLat(), 13);
-    }
-};
-//featureHover = function(feature) {
-//      alert(\"1\");
-//};
-//var occListSelector = new OpenLayers.Control.SelectFeature( 
-//                     occListLayer, 
-//                     {clickout: true, toggle: true, multiple: false, hover: true,
-//  					  onSelect: featureHover} );
-";
         
 //    $r .= "<h1>MODE = ".$mode."</h1>";
 //    $r .= "<h2>readOnly = ".$readOnly."</h2>";
@@ -631,22 +625,21 @@ addListFeature = function(div, record) {
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
     	$r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
     }
+    $defAttrOptions['suffixTemplate']='requiredsuffix';
     $attributes = data_entry_helper::getAttributes(array(
         'table'=>'sample_attribute'
        ,'fieldprefix'=>'smpAttr'
        ,'extraParams'=>$readAuth + array('deleted' => 'f', 'website_deleted' => 'f')
     ));
     $r .= data_entry_helper::location_select(array_merge($defAttrOptions,
-    					array('suffixTemplate'=>'requiredsuffix',
-    							'label' => 'Transect')));
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'requiredsuffix')));
+    					array('label' => 'Transect')));
+    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($defAttrOptions, array('default'=>1)));
     if($readOnly){
 	    $r .= data_entry_helper::text_input(array_merge($defAttrOptions,
 					    array('label' => 'Date',
 							'fieldname' => 'sample:date',
-    						'suffixTemplate'=>'requiredsuffix',
 						    'disabled'=>$disabledText
 					    	)));
     } else {
@@ -658,12 +651,12 @@ addListFeature = function(div, record) {
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_wind_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_precipitation_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_temperature_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')));
-    $r .= " degC<br />";
+    $r .= " degC<span class=\"deh-required\">*</span><br />";
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_cloud_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_start_time_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')));
-    $r .= " hh:mm<br />";
+    $r .= " hh:mm<span class=\"deh-required\">*</span><br />";
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_end_time_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')));
-    $r .= " hh:mm<br />";
+    $r .= " hh:mm<span class=\"deh-required\">*</span><br />";
     if(user_access($adminPerm)) { //  users with admin permissions can override the closing of the 
     	// sample by unchecking the checkbox.
     	// Because this is attached to the sample, we have to include the sample required fields in the
@@ -674,14 +667,15 @@ addListFeature = function(div, record) {
 	    // hidden closed
     	$r .= "<input type=\"hidden\" id=\"".$closedFieldName."\" name=\"".$closedFieldName."\" value=\"".$closedFieldValue."\" />\n";
     }
-
+    unset($defAttrOptions['suffixTemplate']);
+    
     if(!empty($indicia_errors)){
 		$r .= data_entry_helper::dump_remaining_errors();
     }
     $escaped_id=str_replace(':','\\\\:',$closedFieldName);
     if(!$readOnly){
 	    $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save Survey Details\" />\n";
-	    if(!user_access($adminPerm)) {
+	    if(!user_access($adminPerm) && $mode !=1) {
 			$r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all\" value=\"Save Survey and Close\"
 				onClick=\"if(confirm('Do you really wish to close this survey?')){
 					var inputlist =   jQuery('input#".$escaped_id."');
@@ -694,26 +688,11 @@ addListFeature = function(div, record) {
     $r .= "</div>\n";
 
     // Set up Occurrence List tab: don't include when creating a new sample as it will have no occurrences
+    // Grid populated at a later point
     if($mode != 1){
 	    $r .= "<div id=\"occurrenceList\" class=\"srf2-datapanel\">\n";
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
-		data_entry_helper::$javascript .= "
-$('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
-    indiciaSvc: '".$svcUrl."',
-    dataColumns: ['taxon', 'territorial', 'count'],
-    reportColumnTitles: {taxon : 'Species', territorial : 'Territorial', count : 'Count'},
-    actionColumns: {show : \"?occurrence_id=£id£\"},
-    auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey : '".$args['website_id']."',
-    				parent_id : '".$parentSample['sample:id']."',
-    				territorial_id : '".$args['occurrence_territorial_id']."',
-    				count_id : '".$args['occurrence_count_id']."'},
-    itemsPerPage : 17,
-    callback : addListFeature ,
-    cssOdd : '' 
-  });
-";
 		$r .= '<div id="occ_grid"></div></div>';
     }
 
@@ -747,7 +726,8 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
         	'valueField'=>'id',
 	        'columns'=>2,
     	    'extraParams'=>$extraParams,
-	    	'suffixTemplate'=>'requiredsuffix'
+	    	'suffixTemplate'=>'requiredsuffix',
+			'disabled'=>$disabledText
 	    );
 	    $r .= data_entry_helper::autocomplete($species_ctrl_args);
     	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], $defAttrOptions);
@@ -791,11 +771,51 @@ jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").cha
     // add map panel.
     $r .= "<div class=\"srf2-mappanel\">\n";
     $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
-//						      'presetLayers' => array('google_physical','google_satellite'),
+						      'presetLayers' => array('google_physical','google_satellite'),
     						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer')
     						, 'initialFeatureWkt' => null
     						, 'width'=>'auto'));
-	    data_entry_helper::$onload_javascript .= "
+    // for timing reasons, all the following has to be done after the map is loaded.
+    // 1) feature selector for occurrence list must have the map present to attach the control
+    // 2) location placer must have the location layer populated and the map present in 
+    //    order to zoom the map into the location.
+    // 3) occurrence list feature adder must have map present in order to zoom into any
+    //    current selection.
+	data_entry_helper::$onload_javascript .= "
+var control = new OpenLayers.Control.SelectFeature(occListLayer);
+occListLayer.map.addControl(control);
+function onPopupClose(evt) {
+    // 'this' is the popup.
+    control.unselect(this.feature);
+}
+function onFeatureSelect(evt) {
+    feature = evt.feature;
+    popup = new OpenLayers.Popup.FramedCloud(\"featurePopup\",
+							 feature.geometry.getBounds().getCenterLonLat(),
+                             new OpenLayers.Size(100,100),
+                             feature.attributes.taxon + \" (\" + feature.attributes.count + \")\",
+                             null, true, onPopupClose);
+    feature.popup = popup;
+    popup.feature = feature;
+    feature.layer.map.addPopup(popup);
+}
+function onFeatureUnselect(evt) {
+    feature = evt.feature;
+    if (feature.popup) {
+        popup.feature = null;
+        feature.layer.map.removePopup(feature.popup);
+        feature.popup.destroy();
+        feature.popup = null;
+    }
+}
+  
+occListLayer.events.on({
+    'featureselected': onFeatureSelect,
+    'featureunselected': onFeatureUnselect
+});
+
+control.activate();
+	    
 locationChange = function(obj){
 	locationLayer.destroyFeatures();
 	if(obj.value != ''){
@@ -819,7 +839,7 @@ locationChange = function(obj){
 						locationLayer.addFeatures([feature]);
   					}
  				}";
-	    if(	$thisOccID < 0) {
+	    if(	$thisOccID < 0 || $readOnly) {
 	    	data_entry_helper::$onload_javascript .= "
 				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());";
 	    }
@@ -836,13 +856,61 @@ jQuery('#imp-location').unbind('change');
 jQuery('#imp-location').change(function(){
 	locationChange(this);
 });
-
-//
-//test=jQuery(\"#survey-tab\");
-//jQuery(\"#survey-tab\").click(function(){
-//	alert(\"TEST\");
-//});
-";						
+";
+    if($mode != 1){
+		data_entry_helper::$onload_javascript .= "
+addListFeature = function(div, record) {
+    var parser = new OpenLayers.Format.WKT();
+    var feature = parser.read(record.geom);
+    if(record.id != ".$thisOccID." || 1==".($readOnly ? 1 : 0)."){
+	    feature.attributes.id = record.id;
+    	feature.attributes.taxon = record.taxon;
+    	feature.attributes.count = record.count;
+    	occListLayer.addFeatures([feature]);
+    	if(record.id == ".$thisOccID."){
+			var bounds=feature.geometry.getBounds();
+			locationLayer.map.setCenter(bounds.getCenterLonLat());
+    	}
+    } else {
+    	if(".$displayThisOcc."){
+    		locationLayer.map.editLayer.destroyFeatures();
+			locationLayer.map.editLayer.addFeatures([feature]);
+			locationLayer.map.zoomToExtent(locationLayer.map.editLayer.getDataExtent());
+		}
+    }
+};
+highlight = function(id){
+	if(id == ".$thisOccID."){
+		occListLayer.map.zoomToExtent(occListLayer.map.editLayer.getDataExtent());
+		return;
+	}
+	for(var i = 0; i < occListLayer.features.length; i++){
+		if(occListLayer.features[i].attributes.id == id){
+			control.unselectAll();
+			var bounds=occListLayer.features[i].geometry.getBounds()
+			var centre=bounds.getCenterLonLat();
+			occListLayer.map.setCenter(centre);
+			control.select(occListLayer.features[i]);
+		}
+	}
+}
+$('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
+    indiciaSvc: '".$svcUrl."',
+    dataColumns: ['taxon', 'territorial', 'count'],
+    reportColumnTitles: {taxon : 'Species', territorial : 'Territorial', count : 'Count'},
+    actionColumns: {Show : \"?occurrence_id=£id£\",
+    				Highlight : \"script:highlight(£id£);\"},
+    auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
+    parameters : { survey : '".$args['website_id']."',
+    				parent_id : '".$parentSample['sample:id']."',
+    				territorial_id : '".$args['occurrence_territorial_id']."',
+    				count_id : '".$args['occurrence_count_id']."'},
+    itemsPerPage : 17,
+    callback : addListFeature ,
+    cssOdd : '' 
+  });
+";
+    };
     $r .= "</div></div>\n";
         
     return $r;
@@ -861,7 +929,7 @@ jQuery('#imp-location').change(function(){
     	$sampleMod = data_entry_helper::wrap_with_attrs($values, 'sample');
     }
     return($sampleMod);
-  } 
+  }
 
   /**
    * Retrieves a list of the css files that this form requires in addition to the standard
