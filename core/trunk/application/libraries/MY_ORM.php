@@ -551,7 +551,7 @@ abstract class ORM extends ORM_Core {
       $this->db->from($attr_entity.'s_websites');
       $this->db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
       $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
-      $this->db->like('validation_rules','required');
+      $this->db->like('validation_rules','%required%');
       $this->db->where($attr_entity.'s.deleted', 'f');
       $this->db->where($attr_entity.'s_websites.deleted', 'f');
       if ($this->identifiers['website_id']) {
