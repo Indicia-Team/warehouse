@@ -56,7 +56,7 @@ $indicia_templates = array(
   'listbox_option_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
-  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} >{caption}</span>{sep}',
+  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} {disabled}>{caption}</span>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px;\"{class}></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
@@ -87,7 +87,7 @@ $indicia_templates = array(
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
-      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {title}/>'."\n",
+      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {disabled} {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
       {
         minChars : 1,
@@ -139,7 +139,7 @@ jQuery('#{parentControlId}').change({fn});
 jQuery('#{parentControlId}').change();\n",
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
-  'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} value="{default}" />' .
+  'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'
 );
 
@@ -398,6 +398,9 @@ class data_entry_helper extends helper_config {
     }
     if (!array_key_exists('class', $options)) {
       $options['class']='';
+    }
+    if (!array_key_exists('disabled', $options)) {
+      $options['disabled']='';
     }
     // Add an error class to colour the control if there is an error and this option is set
     if ($error && in_array('colour', $options['validation_mode'])) {
@@ -1710,10 +1713,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
           $name = htmlspecialchars($item[$options['captionField']], ENT_QUOTES);
           $checked = ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '';
-
+          $disabled = isset($options['disabled']) ?  $options['disabled'] : '';
+          
           $items .= str_replace(
-              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}'),
-              array($type, $options['fieldname'], $item[$options['valueField']], $checked, $name, $options['sep']),
+              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}'),
+              array($type, $options['fieldname'], $item[$options['valueField']], $checked, $name, $options['sep'], $disabled),
               $indicia_templates['check_or_radio_group_item']
           );
         }
@@ -3002,12 +3006,13 @@ $('.ui-state-default').live('mouseout', function() {
     	$options['class']='control-box';
     }
     $items = "";
-    $buttonList = array('No' => '0', 'Yes' => '1');
+    $buttonList = array(lang::get('No') => '0', lang::get('Yes') => '1');
+    $disabled = isset($options['disabled']) ?  $options['disabled'] : '';
     foreach ($buttonList as $caption => $value) {
           $checked = ($default == $value) ? ' checked="checked" ' : '';
           $items .= str_replace(
-              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}'),
-              array('radio', $options['fieldname'], $value, $checked, $caption, $options['sep']),
+              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}'),
+              array('radio', $options['fieldname'], $value, $checked, $caption, $options['sep'], $disabled),
               $indicia_templates['check_or_radio_group_item']
           );
     }
