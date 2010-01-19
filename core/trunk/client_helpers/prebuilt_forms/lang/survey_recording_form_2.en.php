@@ -27,4 +27,39 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
+	'LANG_not_logged_in' => 'You must be logged in to display the contents of this node.',
+	'LANG_Location_Layer' => 'Location Layer',
+	'LANG_Occurrence_List_Layer'=> 'Occurrence List Layer',
+	'LANG_Surveys' => 'Surveys',
+	'LANG_Allocate_Locations' => 'Allocate Locations',
+	'LANG_Transect' => 'Transect',
+	'LANG_Date' => 'Date',
+	'LANG_Visit_No' => 'Visit No',
+	'LANG_Num_Occurrences' => '# Occurrences',
+	'LANG_Num_Species' => '# Species',
+	'LANG_Show' => 'Show',
+	'LANG_Add_Survey' => 'Add New Survey',
+	'LANG_Not_Allocated' => 'Not Allocated',
+	'LANG_Save_Location_Allocations' => 'Save Location Allocations',
+	'LANG_Survey' => 'Survey',
+	'LANG_Show_Occurrence' => 'Show Occurrence',
+	'LANG_Edit_Occurrence' => 'Edit Occurrence',
+	'LANG_Add_Occurrence' => 'Add Occurrence',
+	'LANG_Occurrence_List' => 'Occurrence List',
+	'LANG_Read_Only_Survey' => 'This Survey is Read Only.',
+	'LANG_Save_Survey_Details' => 'Save Survey Details',
+	'LANG_Save_Survey_And_Close' => 'Save and Close Survey',
+	'LANG_Close_Survey_Confirm' => 'Are you sure you wish to close this survey?',
+	'LANG_Species' => 'Species',
+	'LANG_Spatial_ref' => 'Spatial Ref.',
+	'LANG_Click_on_map' => 'Click on map to set the spatial reference',
+	'LANG_Comment' => 'Comment',
+	'LANG_Save_Occurrence_Details' => 'Save Occurrence Details',
+	'LANG_Territorial' => 'Territorial',
+	'LANG_Count' => 'Count',
+	'LANG_Highlight' => 'Highlight'
+	// Can also add entries for 'Yes' and 'No' for the boolean attributes,
+	//   and one for each of the attribute captions. As these are in English
+	//   they are omitted from this file. Note these do not have LANG_ prefixes.
+
 );

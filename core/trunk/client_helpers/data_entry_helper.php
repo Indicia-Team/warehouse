@@ -2987,6 +2987,7 @@ $('.ui-state-default').live('mouseout', function() {
     $response = self::get_population_data($options);
     if (!array_key_exists('error', $response)) {
         foreach ($response as $item){
+        	$item['caption'] = lang::get($item['caption']);
         	$retVal[$item['id']] = $item + array('fieldprefix' => $options['fieldprefix']);
         }
     } else
