@@ -372,10 +372,12 @@ occStyleMap = new OpenLayers.StyleMap({
 occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\",
                                     {styleMap: occStyleMap});
 ";
+	// Work out list of locations this user can see.
+	$locations = iform_loctools_listlocations($node);
     ///////////////////////////////////////////////////////////////////
     // default mode 0 : display survey selector and locations allocator
     ///////////////////////////////////////////////////////////////////
-	if($mode == 0){
+    if($mode == 0){
 		
 		// If the user has permissions, add tabs so can choose to see
 		// locations allocator
@@ -392,8 +394,6 @@ occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\",
 		    	)));
 			}
 			
-		// Work out list of locations this user can see.
-		$locations = iform_loctools_listlocations($node);
 		if($locations == 'all'){
 			$reportName = srf2_samples_list;
 			$loclist = '';
@@ -457,9 +457,12 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 		data_entry_helper::$javascript .= "
     			if(data[i].centroid_geom){
 					feature = parser.read(data[i].centroid_geom);
-					centre = feature.geometry.getCentroid();
-					centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name, pointRadius: 0, fillOpacity: 0});
-					locationLayer.addFeatures([feature, centrefeature]);
+					locationLayer.addFeatures([feature]);
+					if(!data[i].parent_id){
+						centre = feature.geometry.getCentroid();
+						centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name, pointRadius: 0, fillOpacity: 0});
+						locationLayer.addFeatures([centrefeature]);
+					}
 				}
 				if(data[i].boundary_geom){
 					feature = parser.read(data[i].boundary_geom);
@@ -631,8 +634,30 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
        ,'fieldprefix'=>'smpAttr'
        ,'extraParams'=>$readAuth + array('deleted' => 'f', 'website_deleted' => 'f')
     ));
-    $r .= data_entry_helper::location_select(array_merge($defAttrOptions,
+    if($locations != 'all'){
+    	$r .= "<label for=\"imp-location\">Transect:</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
+		$url = 'http://localhost/indicia/index.php/services/data/location';
+	    $url .= "?mode=json&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&cachetimeout=0';
+	    $session = curl_init($url);
+	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+	    $entities = json_decode(curl_exec($session), true);
+	    if(!empty($entities)){
+	    	foreach($entities as $entity){
+	    		if(in_array($entity["id"], $locations)){
+   					if($entity["id"] == data_entry_helper::$entity_to_load['location_id']) {
+   						$selected = 'selected="selected"';
+   					} else {
+   						$selected = '';
+   					}
+   					$r .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
+   				}
+	    	}
+	    }
+	    $r .= "</select><span class=\"deh-required\">*</span><br />";
+    } else {
+	    $r .= data_entry_helper::location_select(array_merge($defAttrOptions,
     					array('label' => 'Transect')));
+    }
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($defAttrOptions, array('default'=>1)));
@@ -839,11 +864,22 @@ locationChange = function(obj){
 						locationLayer.addFeatures([feature]);
   					}
  				}";
-	    if(	$thisOccID < 0 || $readOnly) {
+		if(	$thisOccID < 0 || $readOnly) {
 	    	data_entry_helper::$onload_javascript .= "
 				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());";
 	    }
 	    data_entry_helper::$onload_javascript .= "
+			}
+        });
+ 		$.getJSON(\"$svcUrl\" + \"/data/location/\" +
+			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&callback=?&parent_id=\"+obj.value, function(data) {
+            	// store value in saved field?
+            if (data.length>0) {
+            	var parser = new OpenLayers.Format.WKT();
+      			if(data[0].centroid_geom){
+					feature = parser.read(data[0].centroid_geom);
+					locationLayer.addFeatures([feature]);
+  				}
 			}
         });
     }
