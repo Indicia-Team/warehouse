@@ -225,7 +225,7 @@ class iform_survey_recording_form_2 {
     			// mode 4: display Occurrence List. Occurrence List tab active. No occurence details filled in.
     $readOnly = false; // On top of this, things can be flagged as readonly. RO mode 2+4 means no Add Occurrence tab.
     if (!$logged_in){
-    	return $args['not_logged_in'];
+    	return lang::get('LANG_not_logged_in');
     }
     global $indicia_errors;
     $parentSample = array();
@@ -359,7 +359,7 @@ locStyleMap = new OpenLayers.StyleMap({
                     strokeWidth: 1
                   })
   });
-locationLayer = new OpenLayers.Layer.Vector(\"Location Layer\",
+locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
                                     {styleMap: locStyleMap});
 occStyleMap = new OpenLayers.StyleMap({
                 \"default\": new OpenLayers.Style({
@@ -369,7 +369,7 @@ occStyleMap = new OpenLayers.StyleMap({
                     strokeColor: \"Red\",
                     strokeWidth: 1
   				}) });
-occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\",
+occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_Layer")."\",
                                     {styleMap: occStyleMap});
 ";
 	// Work out list of locations this user can see.
@@ -389,8 +389,8 @@ occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\",
 			    ));
     			$r .= "<div id=\"temp\"></div>";
     			$r .= data_entry_helper::tab_header(array('tabs'=>array(
-    				'#surveyList'=>'Surveys'
-    				,'#setLocations'=>'Allocate Locations'
+    				'#surveyList'=>lang::get('LANG_Surveys')
+    				,'#setLocations'=>lang::get('LANG_Allocate_Locations')
 		    	)));
 			}
 			
@@ -411,8 +411,8 @@ occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\",
   $('div#smp_grid').indiciaDataGrid('rpt:".$reportName."', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['location_name', 'date', 'num_visit', 'num_occurrences', 'num_taxa'],
-    reportColumnTitles: {location_name : 'Transect', date : 'Date', num_visit : 'Visit No', num_occurrences : '# Occurrences', num_taxa : '# Species'},
-    actionColumns: {show : \"?sample_id=£id£\"},
+    reportColumnTitles: {location_name : '".lang::get('LANG_Transect')."', date : '".lang::get('LANG_Date')."', num_visit : '".lang::get('LANG_Visit_No')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', num_taxa : '".lang::get('LANG_Num_Species')."'},
+    actionColumns: {".lang::get('LANG_Show')." : \"?sample_id=£id£\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey : '".$args['website_id']."', visit_id : '".$args['sample_visit_number_id']."', closed_id : '".$args['sample_closure_id']."' ".$loclist."},
     itemsPerPage : 17,
@@ -421,7 +421,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"Occurrence List Layer\",
   });
 });", 'inline');
 		$r .= '<div id="surveyList"><div class="srf2-datapanel"><div id="smp_grid"></div>';
-		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="Add a new Survey" ONCLICK="window.location.href=\'?newSample\'"></FORM></div>';
+		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="'.lang::get('LANG_Add_Survey').'" ONCLICK="window.location.href=\'?newSample\'"></FORM></div>';
 		
 		// Create Map
 		$r .= "<div class=\"srf2-mappanel\">\n";
@@ -494,7 +494,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    		foreach($entities as $entity){
 	    		  if(!$entity["parent_id"]){ // only assign parent locations.
 	    			$r .= "\n<label for=\"location:".$entity["id"]."\">".$entity["name"].":</label><select id=\"location:".$entity["id"]."\" name=\"location:".$entity["id"]."\">";
-	    				$r .= "<option value=\"\" >&lt;Not Allocated&gt;</option>";
+	    				$r .= "<option value=\"\" >&lt;".lang::get('LANG_Not_Allocated')."&gt;</option>";
 	    				$defaultuserid = iform_loctools_getuser($node, $entity["id"]);
 	    				foreach($userlist as $uid => $a_user){
 	    					if($uid == $defaultuserid) {
@@ -508,7 +508,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    		  }
 	    		}
 	    	}
-	    	 $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save Location Allocations\" />\n";
+	    	 $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />\n";
 			$r .= "</FORM></div></div></div>";
 		}
 		return $r;
@@ -611,15 +611,15 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     ));
     $r .= "<div id=\"temp\"></div>";
     $r .= data_entry_helper::tab_header(array('tabs'=>array(
-    		'#survey'=>'Survey'
-    		,'#occurrence'=>($readOnly ? 'Show Occurrence' : (isset($childSample['sample:id']) ?  'Edit Occurrence' : 'Add Occurrence'))
-    		,'#occurrenceList'=>'Occurrence List'
+    		'#survey'=>lang::get('LANG_Survey')
+    		,'#occurrence'=>lang::get($readOnly ? 'LANG_Show_Occurrence' : (isset($childSample['sample:id']) ?  'LANG_Edit_Occurrence' : 'LANG_Add_Occurrence'))
+    		,'#occurrenceList'=>lang::get('LANG_Occurrence_List')
     		)));
     		
     // Set up main Survey Form.
     $r .= "<div id=\"survey\" class=\"srf2-datapanel\">\n";
 	if($readOnly){
-	    $r .= "<strong>This survey has been closed and is now read only.</strong>";
+	    $r .= "<strong>".lang::get('LANG_Read_Only_Survey')."</strong>";
 	}
     $r .= "<form id=\"SurveyForm\" method=\"post\">\n";
     $r .= $writeAuth;
@@ -635,7 +635,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
        ,'extraParams'=>$readAuth + array('deleted' => 'f', 'website_deleted' => 'f')
     ));
     if($locations != 'all'){
-    	$r .= "<label for=\"imp-location\">Transect:</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
+    	$r .= "<label for=\"imp-location\">".lang::get('LANG_Transect').":</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
 		$url = 'http://localhost/indicia/index.php/services/data/location';
 	    $url .= "?mode=json&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&cachetimeout=0';
 	    $session = curl_init($url);
@@ -656,19 +656,19 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    $r .= "</select><span class=\"deh-required\">*</span><br />";
     } else {
 	    $r .= data_entry_helper::location_select(array_merge($defAttrOptions,
-    					array('label' => 'Transect')));
+    					array('label' => lang::get('LANG_Transect'))));
     }
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($defAttrOptions, array('default'=>1)));
     if($readOnly){
 	    $r .= data_entry_helper::text_input(array_merge($defAttrOptions,
-					    array('label' => 'Date',
+					    array('label' => lang::get('LANG_Date'),
 							'fieldname' => 'sample:date',
 						    'disabled'=>$disabledText
 					    	)));
     } else {
-	    $r .= data_entry_helper::date_picker(array('label' => 'Date',
+	    $r .= data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'),
 							'fieldname' => 'sample:date',
     						'class' => 'vague-date-picker',
     						'suffixTemplate'=>'requiredsuffix'));
@@ -699,10 +699,10 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     }
     $escaped_id=str_replace(':','\\\\:',$closedFieldName);
     if(!$readOnly){
-	    $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save Survey Details\" />\n";
+	    $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_Details')."\" />\n";
 	    if(!user_access($adminPerm) && $mode !=1) {
-			$r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all\" value=\"Save Survey and Close\"
-				onClick=\"if(confirm('Do you really wish to close this survey?')){
+			$r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_And_Close')."\"
+				onClick=\"if(confirm('".lang::get('LANG_Close_Survey_Confirm')."')){
 					var inputlist =   jQuery('input#".$escaped_id."');
 					jQuery('#".$escaped_id."').val('1');
   					jQuery('#SurveyForm').submit();
@@ -744,7 +744,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     	}
     	$extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
 	    $species_ctrl_args=array(
-    	    'label'=>'Species',
+    	    'label'=>lang::get('LANG_Species'),
         	'fieldname'=>'occurrence:taxa_taxon_list_id',
 	        'table'=>'taxa_taxon_list',
     	    'captionField'=>'taxon',
@@ -756,17 +756,17 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    );
 	    $r .= data_entry_helper::autocomplete($species_ctrl_args);
     	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], $defAttrOptions);
-	    $r .= data_entry_helper::sref_and_system(array('label'=>'Spatial ref',
+	    $r .= data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'),
 	    			'systems'=>array('2169'=>'Luref (Gauss Luxembourg)'),
 	    			'suffixTemplate'=>'requiredsuffix'));
-    	$r .= "<p>Click on the map to set the spatial reference</p>";
+    	$r .= "<p>".lang::get('LANG_Click_on_map')."</p>";
     	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_count_id']], array_merge($defAttrOptions, array('default'=>1, 'suffixTemplate'=>'requiredsuffix')));
     	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_approximation_id']], $defAttrOptions);
     	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_territorial_id']], array_merge($defAttrOptions, array('default'=>1)));
     	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_atlas_code_id']], $defAttrOptions);
     	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_overflying_id']], $defAttrOptions);
     	$r .= data_entry_helper::textarea(array(
-	        'label'=>'Comment',
+	        'label'=>lang::get('LANG_Comment'),
     	    'fieldname'=>'occurrence:comment',
 			'disabled'=>$disabledText
 	    ));	
@@ -774,7 +774,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 			$r .= data_entry_helper::dump_remaining_errors();
     	}
     	if(!$readOnly){
-   		 	$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save Occurrence Details\" />\n";    
+   		 	$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Occurrence_Details')."\" />\n";    
        	}
 	    $r .= "</form></div>\n";
 	    data_entry_helper::$javascript .= "
@@ -796,7 +796,7 @@ jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").cha
     // add map panel.
     $r .= "<div class=\"srf2-mappanel\">\n";
     $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
-						      'presetLayers' => array('google_physical','google_satellite'),
+//						      'presetLayers' => array('google_physical','google_satellite'),
     						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer')
     						, 'initialFeatureWkt' => null
     						, 'width'=>'auto'));
@@ -933,9 +933,9 @@ highlight = function(id){
 $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
-    reportColumnTitles: {taxon : 'Species', territorial : 'Territorial', count : 'Count'},
-    actionColumns: {Show : \"?occurrence_id=£id£\",
-    				Highlight : \"script:highlight(£id£);\"},
+    reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},
+    actionColumns: {".lang::get('LANG_Show')." : \"?occurrence_id=£id£\",
+    				".lang::get('LANG_Highlight')." : \"script:highlight(£id£);\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey : '".$args['website_id']."',
     				parent_id : '".$parentSample['sample:id']."',
