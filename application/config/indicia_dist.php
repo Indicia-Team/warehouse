@@ -28,10 +28,8 @@ defined('SYSPATH') or die('No direct script access.');
  */
 $config['system'] = array
 (
-    'version'      => '0.1',
     'name'         => '',
-    'repository'   => 'http://indicia.googlecode.com/svn/tag/version_0_1',
-    'release_date' => '2009-01-15'
+    'repository'   => 'http://indicia.googlecode.com/svn/tag/version_0_1'
 );
 
 /**

@@ -161,9 +161,7 @@ echo html::stylesheet(
 
     <!-- BEGIN: footer -->
     <div id="footer">
-    <?php if (isset($system)) : ?>
-        <p>Version <?php echo $system['version']; ?> - Release date <?php echo $system['release_date']; ?></p>
-    <?php endif; ?>
+    
     </div>
     <!-- END: footer -->
 
