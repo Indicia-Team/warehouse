@@ -37,6 +37,7 @@ class Occurrence_attribute_Controller extends Attr_Gridview_Base_Controller {
               'custom_attribute/index',	// viewname
               NULL);						// controllerpath
     $this->columns = array(
+      'id'=>'',
       'website'=>'',
       'survey'=>'',
       'caption'=>'',

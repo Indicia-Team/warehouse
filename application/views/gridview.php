@@ -49,7 +49,7 @@ in <select name="columns" class="filterSelect">
 <?php
 foreach ($columns as $name => $newname) {
   if (!$newname) $newname = $name;
-  echo "<th class='gvSortable gvCol' id='$name'>".ucwords($newname)."</th>";
+  echo "<th class='gvSortable gvCol' id='$name'>".str_replace('_', ' ', ucwords($newname))."</th>";
 }
 if (count($actionColumns)>0) {
   echo "<th class='gvAction'>Task</th>";
