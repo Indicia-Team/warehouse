@@ -84,7 +84,30 @@ class Occurrence_controller extends Gridview_Base_Controller {
     $grid->columns = array('comment' => '', 'updated_on' => '');    
     $r['comments']=$grid->display();
     $r['images']=ORM::factory('occurrence_image')->where('occurrence_id', $this->model->id)->find_all();
+    $this->loadAttributes($r);
     return $r;  
+  }
+  
+  /**
+   * Get the occurrence attribute data ready for the entry form.
+   * @todo Can this code be shared with the sample controller which has a similar method?
+   */
+  private function loadAttributes(&$r) {
+    // Grab all the custom attribute data
+    $attrs = $this->db->
+        from('list_occurrence_attribute_values')->
+        where('occurrence_id', $this->model->id)->
+        get()->as_array(false);
+    $r['attributes'] = $attrs;
+    foreach ($attrs as $attr) {
+      // if there are any lookup lists in the attributes, preload the options     
+      if (!empty($attr['termlist_id'])) {
+        $r['terms_'.$attr['termlist_id']]=array_merge(
+            array(''=>'<no value>'), 
+            $this->get_termlist_terms($attr['termlist_id'])
+        );
+      } 
+    }
   }
 
   public function edit_gv($id = null, $page_no)

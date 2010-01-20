@@ -34,7 +34,7 @@ class Occurrence_image_Controller extends Gridview_Base_Controller
     parent::__construct('occurrence_image', 'gv_occurrence_image', 'occurrence_image/index');
     $this->columns = array(
       'caption'=>'',
-      'path'=>''    
+      'path'=>'Image'    
     );
     $this->pagetitle = "Images";    
     $this->model = ORM::factory('occurrence_image');
@@ -69,7 +69,7 @@ class Occurrence_image_Controller extends Gridview_Base_Controller
     return $r;
   }
   
-/**
+  /**
    * Override the default return page behaviour so that after saving an image you
    * are returned to the occurence entry which has the image.
    */

@@ -54,6 +54,7 @@ echo html::stylesheet(
       'media/js/json2.js',
       'media/js/jquery.js',
       'media/js/jquery.url.js',
+      'media/js/thickbox-compressed.js',
       'media/js/hasharray.js',
       'media/js/superfish.js',
       'media/js/jquery-ui.custom.min.js'
@@ -64,13 +65,26 @@ echo html::stylesheet(
 <?php echo html::stylesheet(array('media/css/menus',),array('screen',)); ?>
 
 <script type="text/javascript">
-      jQuery(document).ready(function() {
-        jQuery('ul.sf-menu').superfish();
-        $('.ui-state-default').hover(
-          function() { $(this).addClass('ui-state-hover'); },
-          function() { $(this).removeClass('ui-state-hover'); }
-        );
+  jQuery(document).ready(function() {
+    jQuery('ul.sf-menu').superfish();
+    // Implement hover over highlighting on buttons, even for AJAX loaded content by using live events
+    $('.ui-state-default').live('mouseover', function() { 
+      $(this).addClass('ui-state-hover'); 
     });
+    $('.ui-state-default').live('mouseout', function() { 
+      $(this).removeClass('ui-state-hover'); 
+    });
+    // create a jQuery live event to attach the thickbox plugin to image links that appear on the page,
+    // even if loaded by AJAX.
+    $('a.thickbox').live('click', function(){
+      var t = this.title || this.name || null;
+      var a = this.href || this.alt;
+      var g = this.rel || false;
+      tb_show(t,a,g);
+      this.blur();
+      return false;
+    });
+  });
 </script>
 <!-- END: jquery/superfish init -->
 

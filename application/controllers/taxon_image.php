@@ -34,7 +34,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
     parent::__construct('taxon_image', 'gv_taxon_image', 'taxon_image/index');
     $this->columns = array(
       'caption'=>'',
-      'path'=>''    
+      'path'=>'Image'    
     );
     $this->pagetitle = "Images";    
     $this->model = ORM::factory('taxon_image');
@@ -57,7 +57,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
   }
   
   /**
-   *  Setup the default values to use when loading this controller to edit a new page.   
+   *  Setup the default values to use when loading this controller to create a new image.   
    */
   protected function getDefaults() {    
     $r = parent::getDefaults();    
@@ -69,6 +69,21 @@ class Taxon_image_Controller extends Gridview_Base_Controller
       $r['taxon_image:taxon_meaning_id'] = $ttl->taxon_meaning_id;
       $r['taxon_image:caption'] = kohana::lang('misc.new_image');
     }
+    return $r;
+  }
+  
+  /**
+   *  Setup the default values to use when loading this controller to edit an existing image.   
+   */
+  protected function getModelValues() {    
+    $r = parent::getModelValues();
+    // The image is linked to a taxon meaning, but we need to use this to link back to the 
+    // preferred taxa in taxon list, so when you save it knows where to go back to.
+    $ttl = ORM::Factory('taxa_taxon_list')->where(array(
+      'taxon_meaning_id' => $this->model->taxon_meaning_id,
+      'preferred' => 'true'      
+    ))->find();
+    $r['taxa_taxon_list:id'] = $ttl->id;
     return $r;
   }
   

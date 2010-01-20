@@ -325,17 +325,18 @@ class Data_Controller extends Data_Service_Base_Controller {
     return $result;
   }
 
+  /**
+   * Handle uploaded files in the $_FILES array by moving them to the upload folder. Images
+   * get resized and duplicated as specified in the indicia config file.
+   */
   public function handle_media()
-  {
-    syslog(LOG_DEBUG, "Attempting to handle media submission.");
+  {    
     // Ensure we have write permissions.
     $this->authenticate();
-    syslog(LOG_DEBUG, "Authentication for media successful.");
     // We will be using a POST array to send data, and presumably a FILES array for the
     // media.
     // Upload size
     $ups = Kohana::config('indicia.maxUploadSize');
-    syslog(LOG_DEBUG, "Maximum upload size is $ups.");
     $_FILES = Validation::factory($_FILES)->add_rules(
       'media_upload', 'upload::valid', 'upload::required',
       'upload::type[png,gif,jpg]', "upload::size[$ups]"
@@ -343,12 +344,11 @@ class Data_Controller extends Data_Service_Base_Controller {
     if ($_FILES->validate())
     {
       $fTmp = upload::save('media_upload');
-      syslog(LOG_DEBUG, "Media validated and saved as $fTmp.");
+      Image::create_image_files(dirname($fTmp), basename($fTmp));
     }
     else
     {
-      syslog(LOG_DEBUG, "Media did not validate.");
-      //TODO better error message
+      // TODO better error message
       echo "Some sort of problem!";
     }
 

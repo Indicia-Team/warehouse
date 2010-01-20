@@ -80,6 +80,32 @@ $config['default_map_y']=7300000;
 $config['default_map_zoom']=4;
 
 /**
+ * Declare the different image files that will be created when an image is uploaded.
+ * Contains an array of image file sizes. The array keys are the prefixes given to the filenames,
+ * except for default, which will match the value stored in the path attribute in the images table.
+ * Inside each image entry is another array, containing the width and/or height. If both are specified,
+ * then the image is scaled and cropped to fit the image size. If only width or only height are 
+ * specified, then the file scaled to this dimension but the other dimension is set automatically
+ * to preserve the aspect ratio. If neither are specified, then the image file is left in its
+ * original dimensions.
+ * Please note, the image file sizes thumb and med have special meaning and should be left in the array
+ * although they can be reconfigured. This is because they are used by the Indicia interface.
+ */
+$config['image_handling']=array(
+  'thumb' => array(
+    'width'  => 100,
+    'height' => 100,
+    'crop' => true
+  ),
+  'med' => array(
+    'width'  => 500
+  ),
+  'default' => array(
+    'width'  => 1024
+  )
+);
+
+/**
  * For developers of indicia only!
  * In a production release this var must be set to bool false!!
  * During the development process each dev has to set this var
