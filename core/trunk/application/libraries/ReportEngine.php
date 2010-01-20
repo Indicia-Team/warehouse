@@ -272,7 +272,7 @@ class ReportEngine {
   	if($vagueDateProcessing) {
 	  	$this->add_vague_dates($data, $columns);
   	}
-  	if($downloadProcessing->mode == 'INITIAL' || $downloadProcessing->mode == 'FINAL') {
+  	if($downloadProcessing->mode == 'INITIAL' || $downloadProcessing->mode == 'CONFIRM' ||$downloadProcessing->mode == 'FINAL') {
 	  	$this->setDownloaded($data, $downloadProcessing);
   	}
   }
@@ -436,6 +436,9 @@ class ReportEngine {
    	  					break;
    	  				case 'I':
    	  					$this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value']);
+		              	break;
+   	  				case 'B':
+   	  					$this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value'] ? 'Yes' : 'No');
 		              	break;
 		            case 'F':
 		              	$this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['float_value']);

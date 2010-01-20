@@ -222,7 +222,7 @@ class XMLReportReader_Core implements ReportReader
 				$query .= ($previous ? " AND " : " WHERE ").
 					" (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
 		    		" AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
-		    		" AND (lt".$i.".downloaded_flag = 'I'::bpchar OR '".$this->download."'::text != 'FINAL'::text)";
+		    		" AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
 				break;
 			}
 		}
@@ -440,6 +440,9 @@ class XMLReportReader_Core implements ReportReader
 		$parentKeyColumn = 'lt'.$this->tableIndex."_".(inflector::singular($tablename)).'_id';
   	} else if($parentKey == 'id'){ // force the link as this table has foreign key to parent table, standard naming convention.
   		$tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
+		$parentKey = 'lt'.$this->tableIndex.'.id';
+  	} else if($parentKey == 'parent_id'){ // SPECIAL CASE: force the link as this table has foreign key to parent table, non standard naming convention.
+  		$tableKey = 'lt'.$this->nextTableIndex.'.parent_id';
 		$parentKey = 'lt'.$this->tableIndex.'.id';
   	} else { // force the link as parent table has foreign key to this table, non standard naming convention.
   		$tableKey = 'lt'.$this->nextTableIndex.'.id';
