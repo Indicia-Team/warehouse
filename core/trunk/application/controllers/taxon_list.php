@@ -32,6 +32,7 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   public function __construct() {
     parent::__construct('taxon_list','taxon_list','taxon_list/index');
     $this->columns = array(
+      'id'=>'',
       'title'=>'',
       'description'=>'');
     $this->pagetitle = "Species lists";

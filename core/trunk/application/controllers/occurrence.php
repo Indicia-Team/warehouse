@@ -45,9 +45,7 @@ class Occurrence_controller extends Gridview_Base_Controller {
     (
       'taxon' => 'Taxon',
       'entered_sref' => 'Spatial Ref',
-      'entered_sref_system' => 'System',
-      'recorder_names' => 'Recorder Names',
-      'date' => 'Date'
+      'date_start' => 'Date'
     );
   }
 
