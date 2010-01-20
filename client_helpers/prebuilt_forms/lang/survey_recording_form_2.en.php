@@ -57,7 +57,16 @@ $custom_terms = array(
 	'LANG_Save_Occurrence_Details' => 'Save Occurrence Details',
 	'LANG_Territorial' => 'Territorial',
 	'LANG_Count' => 'Count',
-	'LANG_Highlight' => 'Highlight'
+	'LANG_Highlight' => 'Highlight',
+	'LANG_Download' => 'Downloads',
+	'LANG_Initial_Download' => 'Carry out initial download of closed surveys. Sweeps up all records which are in closed surveys but which have not been downloaded yet', 
+    'LANG_Initial_Download_Button' => 'Initial Download - CSV',
+	'LANG_Confirm_Download' => 'Carry out confirmation download. This outputs the same data that will be included in the final download, but does not tag the data as downloaded. Only includes data in the last initial download unless a survey has since been reopened, when it will be excluded from this report.',
+    'LANG_Confirm_Download_Button' => 'Confirmation Download - CSV',
+	'LANG_Final_Download' => 'Carry out final download. Data will be marked as downloaded and no longer editable.',
+    'LANG_Final_Download_Button' => 'Final Download - CSV',
+	'LANG_Download_Occurrences' => 'Download CSV List of Occurrences'
+
 	// Can also add entries for 'Yes' and 'No' for the boolean attributes,
 	//   and one for each of the attribute captions. As these are in English
 	//   they are omitted from this file. Note these do not have LANG_ prefixes.

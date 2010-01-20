@@ -170,6 +170,19 @@ echo html::error_message($model->getError('occurrence:record_status'));
 Verified on <?php echo html::initial_value($values, 'occurrence:verified_on') ?> by <?php echo $model->verified_by->username; ?>
 </li>
 <?php endif; ?>
+<li>
+<label for='occurrence:downloaded_flag'>Download Status:</label>
+<?php
+print form::dropdown('occurrence:downloaded_flag', array('N' => 'Not Downloaded', 'I' => 'Trial Downloaded', 'F' => 'Downloaded - Read Only'), 
+    html::initial_value($values, 'occurrence:downloaded_flag'), 'disabled="disabled"');
+echo html::error_message($model->getError('occurrence:downloaded_flag'));
+?>
+</li>
+<?php if (html::initial_value($values, 'occurrence:downloaded_flag') == 'I' || html::initial_value($values, 'occurrence:downloaded_flag') == 'F'): ?>
+<li>
+Downloaded on <?php echo html::initial_value($values, 'occurrence:downloaded_on') ?>
+</li>
+<?php endif; ?>
 </ol>
 </fieldset>
 </div>

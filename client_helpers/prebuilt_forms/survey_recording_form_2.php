@@ -31,16 +31,11 @@
 class iform_survey_recording_form_2 {
 
 	/* TODO 
-	 * "Features" to be fixed before delivery 1.
-     *  Data import of location SHP files.
-   	 * 
 	 * Phase 2:
-	 *  Internationalise
+     *  Speed up superuser display of transects on mode 0 screen
      *  Create indicia report for checking of survey walk directions.
-     *  Add survey download as CSV: may need to expand main sample to include a survey. 
 	 * 
 	 * Possible future phases:
-	 *  when displaying the transects in the surveys list map, could display their name.
 	 *  improve outputAttributes to handle restrict to survey correctly.
 	 * 
 	 * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
@@ -58,13 +53,6 @@ class iform_survey_recording_form_2 {
         'caption'=>'Survey ID',
         'description'=>'The Indicia ID of the survey that data will be posted into.',
         'type'=>'int'
-      ),
-      array(
-      	'name'=>'not_logged_in',
-        'caption'=>'Not Logged In Text',
-        'description'=>'The text to be displayed when the user is not logged in.',
-        'type'=>'string',
-        'maxlength'=>200
       ),
       array(
       	'name'=>'layer1',
@@ -381,18 +369,23 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 		
 		// If the user has permissions, add tabs so can choose to see
 		// locations allocator
-			if(iform_loctools_checkaccess($node,'admin')){
-	    		$r .= "<div id=\"controls\">\n";
-				$r .= data_entry_helper::enable_tabs(array(
+		$tabs = array('#surveyList'=>lang::get('LANG_Surveys'));
+		if(iform_loctools_checkaccess($node,'admin')){
+			$tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
+		}
+		if(iform_loctools_checkaccess($node,'superuser')){
+			$tabs['#downloads'] = lang::get('LANG_Download');
+		}
+		if(count($tabs) > 1){
+    		$r .= "<div id=\"controls\">\n";
+			$r .= data_entry_helper::enable_tabs(array(
     		    	'divId'=>'controls',
     				'active'=>'#surveyList'
-			    ));
-    			$r .= "<div id=\"temp\"></div>";
-    			$r .= data_entry_helper::tab_header(array('tabs'=>array(
-    				'#surveyList'=>lang::get('LANG_Surveys')
-    				,'#setLocations'=>lang::get('LANG_Allocate_Locations')
-		    	)));
-			}
+		    ));
+   			$r .= "<div id=\"temp\"></div>";
+   			$r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
+		}
+			
 			
 		if($locations == 'all'){
 			$reportName = srf2_samples_list;
@@ -509,7 +502,30 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    		}
 	    	}
 	    	 $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />\n";
-			$r .= "</FORM></div></div></div>";
+			$r .= "</FORM></div></div>";
+		}
+        // Add the downloader if user has manager (superuser) rights.
+		if(iform_loctools_checkaccess($node,'superuser')){
+			$r .= '<div id="downloads"><div class="srf2-datapanel">';
+			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= '<p>'.lang::get('LANG_Initial_Download').'</p>';
+			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"INITIAL\"}' />";	
+    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Initial_Download_Button')."\">";
+	   		$r .= "</FORM>";
+	   		$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= '<p>'.lang::get('LANG_Confirm_Download').'</p>';
+	   		$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"CONFIRM\"}' />";	
+    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Confirm_Download_Button')."\">";
+	   		$r .= "</FORM>";
+			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= '<p>'.lang::get('LANG_Final_Download').'</p>';
+			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"FINAL\"}' />";	
+    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Final_Download_Button')."\">";
+	   		$r .= "</FORM>";
+	   		$r .= "</div></div>";
+		}
+		if(count($tabs)>1){
+			$r .= "</div>";
 		}
 		return $r;
     }
@@ -718,7 +734,12 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    $r .= "<div id=\"occurrenceList\" class=\"srf2-datapanel\">\n";
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
-		$r .= '<div id="occ_grid"></div></div>';
+		$r .= '<div id="occ_grid"></div>';
+	   	$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+    	$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"sample\":".data_entry_helper::$entity_to_load['sample:id']."}' />";	
+    	$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Download_Occurrences')."\">";
+	   	$r .= "</FORM>";
+		$r .= '</div>';
     }
 
     // Set up Occurrence tab: don't allow entry of a new occurrence until after top level sample is saved.
@@ -742,6 +763,8 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     	if(array_key_exists('occurrence:id', data_entry_helper::$entity_to_load)){
     		$r .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";	
     	}
+    	$r .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"C\" />\n";    
+    	$r .= "<input type=\"hidden\" id=\"occurrence:download_flag\" name=\"occurrence:record_status\" value=\"N\" />\n";    
     	$extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
 	    $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Species'),

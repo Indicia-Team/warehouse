@@ -165,9 +165,43 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected function csv_encode($array)
   {
     // Get the column titles in the first row
-    $result = $this->get_csv(array_keys($array[0]));
+    if(!is_array($array) || count($array) == 0)
+    	return '';
+	$headers = array_keys($array[0]);
+    if(isset($this->view_columns)){
+    	$newheaders = array();
+    	foreach ($headers as $header) {
+    		if(isset($this->view_columns[$header])){
+    			if(isset($this->view_columns[$header]['display'])){
+    				$newheader = $this->view_columns[$header]['display'];
+    			} else {
+    				$newheader = $header;
+    			}
+    			if(!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] == "true"){
+    				$newheaders[] = $newheader;
+    			}
+    		} else {
+    			$newheaders[] = $header;
+    		}
+	    }
+	    $headers = $newheaders;
+    }
+    $result = $this->get_csv($headers);
     foreach ($array as $row) {
-      $result .= $this->get_csv(array_values($row));
+    	if(isset($this->view_columns)){
+    		$newrow = array();
+    		foreach ($row as $key => $value) {
+    			if(isset($this->view_columns[$key])){
+	   				if(!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] == "true"){
+    					$newrow[] = $value;
+    				}
+    			} else {
+    				$newrow[] = $value;
+    			}
+	    	}
+	    	$row = $newrow;
+    	}
+    	$result .= $this->get_csv(array_values($row));
     }
     kohana::log('info', $result);
     return $result;
