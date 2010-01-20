@@ -39,8 +39,7 @@ class Sample_Controller extends Gridview_Base_Controller
       'title' => 'Survey',
     	'entered_sref' => 'Spatial Ref.',
       'location' => 'Location',
-      'date' => 'Date',
-      'recorder_names' => 'Recorder Names',
+      'date_start' => 'Date'
     );
   }
 

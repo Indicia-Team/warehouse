@@ -244,3 +244,7 @@ fieldset.button-set {
 .imagelist a {
   margin: 0.5em;
 }
+
+.readonly {
+  background-color: #E7E7E7;
+}

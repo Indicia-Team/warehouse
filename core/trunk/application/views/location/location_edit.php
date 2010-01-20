@@ -24,7 +24,6 @@
  echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
-  'media/js/thickbox-compressd.js',
   'media/js/jquery.autocomplete.js',
   'media/js/OpenLayers.js',
   'media/js/spatial-ref.js'

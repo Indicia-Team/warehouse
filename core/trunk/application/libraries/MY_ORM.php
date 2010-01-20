@@ -21,7 +21,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-abstract class ORM extends ORM_Core {
+class ORM extends ORM_Core {
   public $submission = array();
 
   /**
@@ -152,6 +152,7 @@ abstract class ORM extends ORM_Core {
       }
     }
     $this->set_metadata();
+    kohana::log('debug', $array->as_array());
     if (parent::validate($array, $save)) {
       return TRUE;
     }

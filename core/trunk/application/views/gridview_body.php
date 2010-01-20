@@ -36,16 +36,21 @@ foreach ($table as $item)
       $fields[$col] = $a[$col];
     }
   }
-  foreach ($fields as $field) {
+  $idx=0;
+  foreach ($fields as $col => $value) {
     echo "<td>";
-    if ($field!==NULL)
+    if ($value!==NULL)
     {
-      if (preg_match('/^http/', $field))
-        echo html::anchor($field, $field);
+      if (preg_match('/^http/', $value))
+        echo html::anchor($value, $value);
+      elseif ($col == 'path')
+        // output a thumbnail with a link, suitable for lightbox.
+        echo html::sized_image($value);
       else
-        echo $field;
+        echo $value;
     }
     echo "</td>";
+    $idx++;
   }
   if (count($actionColumns)>0) {
     echo "<td>";

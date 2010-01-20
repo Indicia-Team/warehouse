@@ -24,7 +24,6 @@
 echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
-  'media/js/thickbox-compressed.js',
   'media/js/jquery.autocomplete.js'
 ), FALSE); 
 $id = html::initial_value($values, 'taxa_taxon_list:id'); 
