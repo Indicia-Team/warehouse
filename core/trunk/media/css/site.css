@@ -248,3 +248,7 @@ fieldset.button-set {
 .readonly {
   background-color: #E7E7E7;
 }
+
+fieldset.filter select {
+  width: 200px;
+}

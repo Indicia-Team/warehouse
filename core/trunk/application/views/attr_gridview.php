@@ -116,7 +116,7 @@ jQuery(document).ready(function() {
 
 <div>
 <form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
-<fieldset>
+<fieldset class="filter">
 <?php 
 $filter_type = array_key_exists('filter_type', $_GET) ? $_GET['filter_type'] : null;
 $website_id = array_key_exists('website_id', $_GET) ? $_GET['website_id'] : null;
