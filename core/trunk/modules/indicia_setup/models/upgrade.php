@@ -28,86 +28,78 @@ class Upgrade_Model extends Model
 
     /**
      * Do upgrade
-     *
-     * @param string $current_version
-     * @param array $new_system
      * @return mixed true if successful else error message
      */
-    public function run( $current_version, $new_system )
+    public function run()
     {
-        // Downgrade not possible. The new version is lower than the database version
-        //
-        if(1 == version_compare($current_version, $new_system['version']) )
-        {
-            Kohana::log('error', 'Current script version is lower than the database version. Downgrade not possible.');
-            return Kohana::lang('setup.error_downgrade_not_possible');
-        }
-
-        // start transaction
-        $this->begin();
-        try
-        {
-
-            // remove this upgrade step for the first indicia release
-            //
-            if(0 == version_compare('0.1', $current_version) )
-            {
-                // upgrade from version 0.1 to 0.2
-                $this->upgrade_0_1_to_0_2();
-                $current_version = '0.2';
+      $system = new System_Model();
+      // version in the file system
+      $new_version = kohana::config('version.version');
+      // version in the database
+      $old_version = $system->getVersion();  
+      // Downgrade not possible if the new version is lower than the database version      
+      if (1 == version_compare($old_version, $new_version) )
+      {
+        Kohana::log('error', 'Current script version is lower than the database version. Downgrade not possible.');
+        return Kohana::lang('setup.error_downgrade_not_possible');
+      }
+      // This upgrade process was only introduced in version 0.2.3
+      if (1 == version_compare('0.2.3', $old_version) ) {
+        $old_version='0.2.3';
+      }
+      // start transaction
+      $this->begin();
+      try
+      {
+        $currentVersionNumbers = explode('.', $old_version);
+        $stuffToDo = true;
+        while ($stuffToDo) {
+          // Get a version name, to search for a suitable script upgrade folder or an upgrade method with this name
+          $version_name = 'version_'.implode('_', $currentVersionNumbers);
+          kohana::log('debug', "upgrading to $version_name");
+          if (file_exists($this->base_dir . "/modules/indicia_setup/db/" . $version_name)) {
+            // we have a folder containing scripts
+            $this->execute_sql_scripts($version_name);
+            $updatedTo = implode('.', $currentVersionNumbers);
+            kohana::log('debug', "Scripts ran for $version_name");
+          }
+          if (method_exists($this, $version_name)) {
+            // dynamically execute an upgrade method with this version name
+            $this->$version_name();
+            $updatedTo = implode('.', $currentVersionNumbers);
+            kohana::log('debug', "Method ran for $version_name");
+          }
+          // Now find the next version number. We start by incrementing the smallest part of the version (level=2), if that does not work
+          // then we look to the next largest part (level 1) then finally the major version (level 0).
+          $level=2;
+          $stuffToDo=false;
+          while ($level>=0 && $stuffToDo==false) {
+            $currentVersionNumbers[$level]++;
+            $version_name = 'version_'.implode('_', $currentVersionNumbers);
+            if (file_exists($this->base_dir . "/modules/indicia_setup/db/" . $version_name) || (method_exists($this, $version_name))) 
+              $stuffToDo = true;            
+            else {
+              // Couldn't find anything of this version name. Move up a level (e.g. we have searched 0.2.5 and found nothing, so try 0.3.0)            
+              $currentVersionNumbers[$level]=0;
+              $level--;
             }
-
-/* Sample for the next upgrade
-
-            if(0 == version_compare('0.2', $current_version) )
-            {
-                // upgrade from version 0.2 to 0.3
-                $this->upgrade_0_2_to_0_3();
-                $current_version = '0.3';
-            }
-
-*/
-
-            // update system table entry to new version
-            $this->set_new_version( $new_system );
-
-            // update indicia.php config file
-            $this->update_config_file( $new_system );
-
-            // commit transaction
-            $this->commit();
-
-            return true;
+          }        
         }
-        catch(Kohana_Database_Exception $e)
-        {
-            $this->log($e);
-        }
-        catch(Exception $e)
-        {
-            $this->log($e);
-        }
-
+        // update system table entry to new version
+        kohana::log('debug', "Upgrade completed to $updatedTo");
+        $this->set_new_version($updatedTo);                
+        
+        // commit transaction
+        $this->commit();
+        kohana::log('debug', "Upgrade committed");
+        return true;
+      }
+      catch(Exception $e)
+      {
+        $this->log($e);
         return $e->getMessage();
-    }
-
-    /**
-     * upgrade from version 0.1 to 0.2
-     *
-     */
-    private function upgrade_0_1_to_0_2()
-    {
-        return $this->execute_sql_scripts( 'upgrade_0_1_to_0_2' );
-    }
-
-    /**
-     * upgrade from version 0.2 to 0.3
-     *
-     */
-    private function upgrade_0_2_to_0_3()
-    {
-        return $this->execute_sql_scripts( 'upgrade_0_2_to_0_3' );
-    }
+      }      
+    }   
 
     /**
      * start transaction
@@ -130,26 +122,20 @@ class Upgrade_Model extends Model
     /**
      * update system table entry to new version
      *
-     * @param array $new_system  New version number
+     * @param array $new_version  New version number
      */
-    private function set_new_version( $new_system )
+    private function set_new_version( $new_version )
     {
-        $this->db->query("INSERT INTO \"system\"
-                          (\"version\", \"name\", \"repository\", \"release_date\")
-                          VALUES
-                          ('{$new_system['version']}',
-                           '{$new_system['name']}',
-                           '{$new_system['repository']}',
-                           '{$new_system['release_date']}')");
+        $this->db->query("UPDATE system SET version='$new_version'");
     }
 
     /**
      * update indicia.php config file with new system info
      * @param array $new_system
      */
-    private function update_config_file( $new_system )
+    private function update_config_file( $new_version )
     {
-        $this->write_config( $this->buildConfigFileContent( $new_system ) );
+        $this->write_version_config( $this->buildConfigFileContent( $new_version ) );
     }
 
     /**
@@ -174,28 +160,16 @@ class Upgrade_Model extends Model
     /**
      * Build the system config content of indicia.php
      *
-     * @param array $new_system
+     * @param string $new_version New version number
      */
-    private function buildConfigFileContent( & $new_system )
+    private function buildConfigFileContent($new_version)
     {
-        // get config vars from the existing old config file
-        $__config = Kohana::config('indicia');
+      $str = "<?php \n";
+      $str .= "\$config['version'] = '$new_version';\n";
+      $str .= "\$config['upgrade_date'] = '".date("F j, Y, g:i a")."';\n";
+      $str .= "?>";
 
-        $str = "<?php \n\n";
-
-        $str .= '$config["system"]["version"]'      . " = '{$new_system['version']}';\n";
-        $str .= '$config["system"]["name"]'         . " = '{$new_system['name']}';\n";
-        $str .= '$config["system"]["repository"]'   . " = '{$new_system['repository']}';\n";
-        $str .= '$config["system"]["release_date"]' . " = '{$new_system['release_date']}';\n\n";
-
-        $str .= '$config[\'private_key\']     = \'' . $__config['private_key'] . "'; // Change this to a unique value for each Indicia install\n";
-        $str .= '$config[\'nonce_life\']      = '   . $__config['nonce_life'] . ";       // life span of an authentication token for services, in seconds\n";
-        $str .= '$config[\'maxUploadSize\']   = \'' . $__config['maxUploadSize'] . "'; // Maximum size of an upload\n";
-        $str .= '$config[\'defaultPersonId\'] = '   . $__config['defaultPersonId'] . ";\n";
-
-        $str .= "\n?>";
-
-        return $str;
+      return $str;
     }
 
     /**
@@ -203,13 +177,13 @@ class Upgrade_Model extends Model
      *
      * @param string $config_content
      */
-    private function write_config( $config_content )
+    private function write_version_config( $config_content )
     {
-        $config_file = $this->base_dir . "/application/config/indicia.php";
+        $config_file = $this->base_dir . "/application/config/version.php";
 
         if( !@is_writeable($config_file) )
         {
-            throw new  Exception("Config file indicia.php isnt writeable. Check permission on: ". $config_file);
+            throw new  Exception("Config file version.php isnt writeable. Check permission on: ". $config_file);
         }
 
         if(!$fp = @fopen($config_file, 'w'))
@@ -260,8 +234,7 @@ class Upgrade_Model extends Model
             throw new  Exception("Cant open dir " . $full_upgrade_folder);
         }
 
-        sort($file_name);
-        kohana::log('debug', implode(', ',$file_name));
+        sort($file_name);        
         try
         {
             foreach($file_name as $name) {

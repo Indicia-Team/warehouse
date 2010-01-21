@@ -33,56 +33,34 @@ class Home_Controller extends Indicia_Controller {
 
   public function index()
   {
-    $this->check_for_upgrade();
+    //$this->check_for_upgrade();
 
     $view = new View('home');
     $this->template->title='Indicia';
+    $system = new System_Model;
+    $view->db_version=$system->getVersion();
+    $view->app_version=kohana::config('version.version');
     $this->template->content=$view;
   }
-
+  
   /**
-  * Check version of the php scripts against the database version
-  */
-  private function check_for_upgrade()
+   * Action called when an formal upgrade is required.      
+   */
+  public function upgrade() 
   {
-    // system file which is distributed with every indicia version
-    //
-    $new_system = Kohana::config('indicia_dist.system');
-
-    // get system info with the version number of the database
-    $db_system = new System_Model;
-
-    // compare the script version against the database version
-    // if both arent equal start the upgrade process
-    //
-    if(0 != version_compare($db_system->getVersion(), $new_system['version'] ))
-    {
-      $upgrade = new Upgrade_Model;
-
-      // upgrade to version $new_system['version']
-      //
-      if(true !== ($result = $upgrade->run($db_system->getVersion(), $new_system)))
-      {
-        // fatal error: the system stops here
-        //
-        if( false === Kohana::config('core.display_errors'))
-      {
-        die( Kohana::lang('setup.error_upgrade_for_end_user') );
-      }
-      else
-      {
-        die( 'UPGRADE ERROR: <pre>' . nl2br($result) . '</pre>' );
-      }
-      }
-
-      // if successful, reload the system and display a message
-      //
-      $this->session->create()->set_flash(
-        'flash_info', 'The Warehouse has been upgraded to version '.$new_system['version']
-      );
-      url::redirect();
+    $upgrader = new Upgrade_Model();
+    $result = $upgrader->run();
+    $view = new View('upgrade');
+    $this->template->title='Indicia Upgrade';
+    $system = new System_Model;
+    $view->db_version=$system->getVersion();
+    $view->app_version=kohana::config('version.version');    
+    if (!$result===true) {
+      $view->error = $result;
     }
+    $this->template->content=$view;
   }
+ 
 }
 
 ?>
