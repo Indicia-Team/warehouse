@@ -36,8 +36,7 @@ $id = html::initial_value($values, 'taxon_image:id');
 <?php if ($id) : ?>
 <li>
 <label for="image">Image:</label>
-<a class="thickbox" href="<?php echo url::base().'/upload/'.html::initial_value($values, 'taxon_image:path'); ?>" title="View image at full size">
-  <img src="<?php echo url::base().'/upload/med-'.html::initial_value($values, 'taxon_image:path'); ?>" alt="Image of the taxon" />
+<?php echo html::sized_image(html::initial_value($values, 'taxon_image:path'), 'med'); ?>
 </a>
 </li>
 <?php endif; ?>
