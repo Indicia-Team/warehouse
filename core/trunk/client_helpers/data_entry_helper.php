@@ -2977,6 +2977,7 @@ $('.ui-state-default').live('mouseout', function() {
 
   /**
   * Helper function to fetch details of attributes
+  * TODO at moment this assumes non multiplevalue attributes.
   * 
   * @return array of attributes.
   */
@@ -2984,15 +2985,39 @@ $('.ui-state-default').live('mouseout', function() {
   	$retVal = array();
     self::add_resource('json');
 
-    $response = self::get_population_data($options);
-    if (!array_key_exists('error', $response)) {
-        foreach ($response as $item){
-        	$item['caption'] = lang::get($item['caption']);
-        	$retVal[$item['id']] = $item + array('fieldprefix' => $options['fieldprefix']);
-        }
-    } else
-        $retVal = $response;
+	$attrOptions = array(
+    	    'table'=>$options['attrtable']
+       		,'extraParams'=> $options['extraParams']+ array('deleted' => 'f', 'website_deleted' => 'f'));
+    $response = self::get_population_data($attrOptions);
+    if (array_key_exists('error', $response))
+        return $response;
+    foreach ($response as $item){
+        $retVal[$item['id']] = array(
+        		'caption' => lang::get($item['caption']),
+        		'fieldname' => $options['fieldprefix'].':'.$item['id'],
+        		'data_type' => $item['data_type'], // TODO
+        		'termlist_id' => $item['termlist_id']);
+    }
+    
+    if(!$options['id'])
+    	return $retVal;
 
+    $options['extraParams'][$options['key']] = $options['id'];
+    $options['extraParams']['cachetimeout'] = 0;
+    $existingValuesOptions = array(
+    	    'table'=>$options['valuetable']
+       		,'extraParams'=> $options['extraParams']);
+    $response = self::get_population_data($existingValuesOptions);
+    if (array_key_exists('error', $response))
+    	return $response;
+    foreach ($response as $item){
+        if(isset($retVal[$item[$options['attrtable'].'_id']])){
+    		if(isset($item['id'])){
+    			$retVal[$item[$options['attrtable'].'_id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
+	       		$retVal[$item[$options['attrtable'].'_id']]['default'] = $item['raw_value'];
+    		}
+    	}
+    }
     return $retVal;
   }
 
@@ -3028,29 +3053,37 @@ $('.ui-state-default').live('mouseout', function() {
   */
   public static function outputAttribute($item, $options=array()) {
   	$attrOptions = array('label'=>$item['caption'],
-							'fieldname'=>$item['fieldprefix'].':'.$item['id'],
+							'fieldname'=>$item['fieldname'],
   							'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
   	if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
-  	if(isset($options['default'])) $attrOptions['default']= $options['default'];
+  	if(isset($item['default'])) $attrOptions['default']= $item['default'];
+  	else if(isset($options['default'])) $attrOptions['default']= $options['default'];
   	
   	switch ($item['data_type']) {
-        case 'T': // Text
-        case 'F': // Float
-        case 'I': // Integer
-         	$output = self::text_input($attrOptions);
+        case 'Text':
+        case 'T':
+        case 'Float':
+        case 'F':
+        case 'Integer':
+        case 'I':
+        	$output = self::text_input($attrOptions);
             break;
-        case 'B': // Boolean
+        case 'Boolean':
+        case 'B':
         	// can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
         	// in the optional attribute record.
             $output = self::boolean_attribute($attrOptions);
             break;
         case 'D': // Date
+        case 'Specific Date': // Date
         case 'V': // Vague Date
+        case 'Vague Date': // Vague Date
             $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker" : "vague-date-picker");
             $output = self::date_picker($attrOptions);
             break;
+        case 'Lookup List':
         case 'L':
-            $output = self::select($attrOptions + array(
+        	$output = self::select($attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
