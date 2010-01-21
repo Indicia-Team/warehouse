@@ -128,16 +128,7 @@ class Upgrade_Model extends Model
     {
         $this->db->query("UPDATE system SET version='$new_version'");
     }
-
-    /**
-     * update indicia.php config file with new system info
-     * @param array $new_system
-     */
-    private function update_config_file( $new_version )
-    {
-        $this->write_version_config( $this->buildConfigFileContent( $new_version ) );
-    }
-
+    
     /**
      * log error message
      *
@@ -171,34 +162,7 @@ class Upgrade_Model extends Model
 
       return $str;
     }
-
-    /**
-     * Write indicia.php config file
-     *
-     * @param string $config_content
-     */
-    private function write_version_config( $config_content )
-    {
-        $config_file = $this->base_dir . "/application/config/version.php";
-
-        if( !@is_writeable($config_file) )
-        {
-            throw new  Exception("Config file version.php isnt writeable. Check permission on: ". $config_file);
-        }
-
-        if(!$fp = @fopen($config_file, 'w'))
-        {
-           throw new Exception("Cant open file to write: ". $config_file);
-        }
-
-        if( !@fwrite($fp, $config_content) )
-        {
-            throw new Exception("Cant write file: ". $config_file);
-        }
-
-        @fclose($fp);
-    }
-
+    
     /**
      * execute all sql srips from the upgrade folder
      *
