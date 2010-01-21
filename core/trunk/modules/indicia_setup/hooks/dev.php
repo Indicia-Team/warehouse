@@ -21,7 +21,7 @@
 class Dev
 {
   public static function __upgrade()
-  {        
+  {            
     $uri = URI::instance();
     // we havent to proceed futher if a setup call was made
     if($uri->segment(1) == 'setup_check' || $uri->segment(2) == 'upgrade') {
@@ -33,8 +33,11 @@ class Dev
   }
 }
 
-if (kohana::config('upgrade.continuous_upgrade')) {
+// load the optional config file to specify continuous updates
+$upgradeConfig = kohana::config_load('upgrade', false);
+if ($upgradeConfig && $upgradeConfig['continuous_upgrade']) {
   Event::add('system.pre_controller', array('Dev', '__upgrade'));
+  
 }
 
 ?>
