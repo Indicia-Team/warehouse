@@ -74,7 +74,7 @@ public $template = 'templates/template';
    * Save the demo configuration settings.
    */
   public function config_demo_save() {
-    $source = dirname(dirname(__file__ )) . '/config/_helper_config.php';
+    $source = dirname(dirname(__file__ )) . '/config_files/_helper_config.php';
     $dest = dirname(dirname(dirname(dirname(__file__)))) . "/client_helpers/helper_config.php";
     try {
       unlink($dest);
@@ -94,7 +94,7 @@ public $template = 'templates/template';
       $_source_content = str_replace("*base_url*", $base_url, $_source_content);
       file_put_contents($dest, $_source_content);
       // To get the demo working, we also need to copy over the data_entry_config.php file.
-      $source = dirname(dirname(__file__ )) . '/config/_data_entry_config.php';
+      $source = dirname(dirname(__file__ )) . '/config_files/_data_entry_config.php';
       $dest = dirname(dirname(dirname(__file__))) . "/demo/data_entry_config.php";
       copy($source, $dest);
       url::redirect('setup_check');
@@ -127,7 +127,7 @@ public $template = 'templates/template';
     if (isset($_POST['skip'])) {
       url::redirect('setup_check/skip_email');
     } else {
-      $source = dirname(dirname(__file__ )) . '/config/_email.php';
+      $source = dirname(dirname(__file__ )) . '/config_files/_email.php';
       $dest = dirname(dirname(dirname(dirname(__file__)))) . "/application/config/email.php";
       try {
         unlink($dest);
@@ -467,7 +467,7 @@ public $template = 'templates/template';
      */
   private function write_database_config()
   {
-    $tmp_config = file_get_contents(dirname(dirname(__file__ )) . '/config/_database.php');
+    $tmp_config = file_get_contents(dirname(dirname(__file__ )) . '/config_files/_database.php');
 
     $_config = str_replace(
         array(

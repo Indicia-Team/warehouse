@@ -22,12 +22,12 @@
  */
 
 ?>
-<h2>Welcome to the Indicia Warehouse!</h2>
-<?php if ($db_version!=$app_version) : ?>
-<div class="ui-state-error ui-corner-all page-notice">Your database needs to be upgraded as the application version is <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.
-<a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a></div>  
-<?php endif; ?>
-<p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
-of wildlife records. Indicia is an Open Source project funded by the Open Air Laboratories Network and managed
-by the Centre for Ecology and Hydrology.</p>
-<p>You can see Indicia in action on the <a href="<?php echo url::base();?>modules/demo/index.php">website demonstration pages</a>.</p>
+<?php if ($db_version!=$app_version || isset($error)) : ?>
+<div class="page-notice ui-state-error ui-corner-all">The upgrade failed.<br/>
+<?php if ($db_version!=$app_version) echo "Database version and application version do not match.<br/>"; ?> 
+<?php if (isset($error)) echo $error; ?></div>
+<?php else: ?>
+<div class="page-notice ui-state-highlight ui-corner-all">Your system has been upgraded to version <?php echo $app_version; ?>.
+</div>
+<a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home">Return to the Home Page</a></div> 
+<?php endif;?>

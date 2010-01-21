@@ -161,7 +161,10 @@ echo html::stylesheet(
 
     <!-- BEGIN: footer -->
     <div id="footer">
-    
+    <?php
+    echo Kohana::lang('misc.indicia_version').' '; 
+    echo kohana::config('version.version'); 
+    if (kohana::config('upgrade.continuous_upgrade')) echo " (dev)"; ?>
     </div>
     <!-- END: footer -->
 
