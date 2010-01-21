@@ -30,13 +30,33 @@
 
 class iform_survey_recording_form_2 {
 
-	/* TODO 
-	 * Phase 2:
-     *  Speed up superuser display of transects on mode 0 screen
-     *  Create indicia report for checking of survey walk directions.
+	/* TODO
+	 * Data Issues
+	 *	The  transect names are not correct – I didn’t know where they were defined.
+	 *	Some transect lines are wrong.
 	 * 
-	 * Possible future phases:
-	 *  improve outputAttributes to handle restrict to survey correctly.
+	 * BugFix
+	 * 	Survey
+	 * 	 	“Required” attribute processing does not work for samples. 
+	 * 	Occurrence List
+	 * 		Check what happens to map when paging through list
+	 * 
+	 * Feature Ommission
+	 * 	General
+	 * 		Need some way to return to main survey selection screen from survey data entry screen.
+	 * 	Downloads
+     *  	Create indicia report for checking of survey walk directions.
+     *  	Final/Confirm Download report should exclude any surveys with non downloaded occurrences
+	 * 
+	 * Future Enhancements
+	 * 	General
+	 * 		Rename superuser to manager permission
+	 * 	Survey List
+	 * 		Put in "loading" message functionality
+	 * 	Location Allocation
+	 * 		Zoom map into location on request.
+	 *  Indicia Core
+	 *  	improve outputAttributes to handle restrict to survey correctly.
 	 * 
 	 * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
 	 * we can display all the occurrences on the map.
@@ -215,14 +235,13 @@ class iform_survey_recording_form_2 {
     if (!$logged_in){
     	return lang::get('LANG_not_logged_in');
     }
-    global $indicia_errors;
     $parentSample = array();
     $parentErrors = null;
     $parentLoadID = null;
     $childSample = array();
     $childErrors = null;
     $childLoadID = null;
-    $saveErrors = $indicia_errors;
+    $saveErrors = data_entry_helper::$validation_errors;
     $thisOccID=-1; // IDs have to be >0, so this is outside the valid range
     $displayThisOcc = true; // when populating from the DB rather than POST we have to be
     						// careful with selection object, as geom in wrong format.
@@ -232,7 +251,7 @@ class iform_survey_recording_form_2 {
     		if(!is_null(data_entry_helper::$entity_to_load)){
 				$mode = 1; // errors with new sample, entity poulated with post, so display this data.
 				$parentSample = data_entry_helper::$entity_to_load;
-				$parentErrors = $indicia_errors;
+				$parentErrors = $saveErrors;
     		} // else new sample, we don't have the id, so need to go back to gridview: default mode 0
 		} else {
 			// could have saved parent sample or child sample/occurrence pair.
@@ -240,7 +259,7 @@ class iform_survey_recording_form_2 {
 				$parentLoadID = $_POST['sample:parent_id']; // load the parent sample.
 				if(isset(data_entry_helper::$entity_to_load)){ // errors so display Edit Occurrence page.
 					$childSample = data_entry_helper::$entity_to_load;
-					$childErrors = $indicia_errors;
+					$childErrors = $saveErrors;
 					$displayThisOcc = false;
 					$mode = 3;
 					if($childSample['occurrence:id']){
@@ -253,7 +272,7 @@ class iform_survey_recording_form_2 {
 				$mode=2; // display parent sample details, whether errors or not.
 				if(isset(data_entry_helper::$entity_to_load)){ // errors so use posted data.
 					$parentSample = data_entry_helper::$entity_to_load;
-					$parentErrors = $indicia_errors;
+					$parentErrors = $saveErrors;
 				} else {
 					$parentLoadID = $_POST['sample:id']; // load the parent sample.
 				}
@@ -412,73 +431,17 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     condCss : {field : 'closed', value : '0', css: 'srf2-highlight'},
     cssOdd : '' 
   });
-});", 'inline');
-		$r .= '<div id="surveyList"><div class="srf2-datapanel"><div id="smp_grid"></div>';
-		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="'.lang::get('LANG_Add_Survey').'" ONCLICK="window.location.href=\'?newSample\'"></FORM></div>';
-		
-		// Create Map
-		$r .= "<div class=\"srf2-mappanel\">\n";
-        $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
-//						      'presetLayers' => array('google_physical','google_satellite'),
-    						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer')
-    						, 'initialFeatureWkt' => null
-    						, 'width'=>'auto'));
-    	
-    	// Add locations to the map on the locations layer. 
-    	// Zoom in to area which contains the users locations.
-    	if($locations != 'all'){
-    		data_entry_helper::$javascript .= "locationList = [".implode(',', $locations)."];\n";
-    	}
-		data_entry_helper::$javascript .= "
-// upload locations into map.
-// Change the location control requests the location's geometry to place on the map.
-$.getJSON(\"$svcUrl\" + \"/data/location\" +
-          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-          \"&callback=?\", function(data) {
-    // store value in saved field?
-	locationLayer.destroyFeatures();
-    if (data.length>0) {
-    	var feature, centre, centrefeature;
-    	var parser = new OpenLayers.Format.WKT();
-		for (var i=0;i<data.length;i++)
-		{\n";
-    	if($locations != 'all'){ // include restriction on locations if user does not have full access.
-    		data_entry_helper::$javascript .= "
-    		for(var j=0; j<locationList.length; j++) {
-    		  if(locationList[j] == data[i].id || locationList[j] == data[i].parent_id) {";
-    	}
-		data_entry_helper::$javascript .= "
-    			if(data[i].centroid_geom){
-					feature = parser.read(data[i].centroid_geom);
-					locationLayer.addFeatures([feature]);
-					if(!data[i].parent_id){
-						centre = feature.geometry.getCentroid();
-						centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name, pointRadius: 0, fillOpacity: 0});
-						locationLayer.addFeatures([centrefeature]);
-					}
-				}
-				if(data[i].boundary_geom){
-					feature = parser.read(data[i].boundary_geom);
-					locationLayer.addFeatures([feature]);
-				}\n";
-    	if($locations != 'all'){
-    		data_entry_helper::$javascript .= "
-    		  }
-    		}\n";
-    	}
-		data_entry_helper::$javascript .= "
-		}
-		locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
-    }
 });
-";			
-        $r .= "</div></div>\n";
-		
+
+", 'inline');
+		$r .= '<div id="surveyList" class="srf2-datapanel"><div id="smp_grid"></div>';
+		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="'.lang::get('LANG_Add_Survey').'" ONCLICK="window.location.href=\'?newSample\'"></FORM></div>';
+
         // Add the locations allocator if user has admin rights.
 		if(iform_loctools_checkaccess($node,'admin')){
-			$r .= '<div id="setLocations"><div class="srf2-datapanel"><FORM method="post">';
+			$r .= '<div id="setLocations" class="srf2-datapanel"><FORM method="post">';
 			$url = 'http://localhost/indicia/index.php/services/data/location';
-	    	$url .= "?mode=json&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&cachetimeout=0';
+	    	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
 	    	$session = curl_init($url);
 	    	curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 	    	$entities = json_decode(curl_exec($session), true);
@@ -502,11 +465,11 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    		}
 	    	}
 	    	 $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />\n";
-			$r .= "</FORM></div></div>";
+			$r .= "</FORM></div>";
 		}
         // Add the downloader if user has manager (superuser) rights.
 		if(iform_loctools_checkaccess($node,'superuser')){
-			$r .= '<div id="downloads"><div class="srf2-datapanel">';
+			$r .= '<div id="downloads" class="srf2-datapanel">';
 			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Initial_Download').'</p>';
 			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"INITIAL\"}' />";	
@@ -521,9 +484,61 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 			$r .= '<p>'.lang::get('LANG_Final_Download').'</p>';
 			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"FINAL\"}' />";	
     		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Final_Download_Button')."\">";
-	   		$r .= "</FORM>";
-	   		$r .= "</div></div>";
+	   		$r .= "</FORM></div>";
 		}
+				// Create Map
+		$r .= "<div class=\"srf2-mappanel\">\n";
+        $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
+//						      'presetLayers' => array('google_physical','google_satellite'),
+    						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer')
+    						, 'initialFeatureWkt' => null
+    						, 'width'=>'auto'));
+    	
+    	// Add locations to the map on the locations layer. 
+    	// Zoom in to area which contains the users locations.
+    	if($locations != 'all'){
+    		data_entry_helper::$javascript .= "locationList = [".implode(',', $locations)."];\n";
+    	}
+		data_entry_helper::$javascript .= "
+// upload locations into map.
+// Change the location control requests the location's geometry to place on the map.
+$.getJSON(\"$svcUrl\" + \"/data/location\" +
+          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+          \"&callback=?\", function(data) {
+    // store value in saved field?
+	locationLayer.destroyFeatures();
+    if (data.length>0) {
+    	var newFeatures = [];
+    	var feature;
+    	var parser = new OpenLayers.Format.WKT();
+		for (var i=0;i<data.length;i++)
+		{\n";
+    	if($locations != 'all'){ // include restriction on locations if user does not have full access.
+    		data_entry_helper::$javascript .= "
+    		for(var j=0; j<locationList.length; j++) {
+    		  if(locationList[j] == data[i].id || locationList[j] == data[i].parent_id) {";
+    	}
+		data_entry_helper::$javascript .= "
+				if(data[i].boundary_geom){
+					feature = parser.read(data[i].boundary_geom);
+					feature.style = {label: data[i].name,
+                        strokeColor: \"Blue\",
+                    	strokeWidth: 2};
+					newFeatures.push(feature);
+				}\n";
+    	if($locations != 'all'){
+    		data_entry_helper::$javascript .= "
+    		  }
+    		}\n";
+    	}
+		data_entry_helper::$javascript .= "
+		}
+		locationLayer.addFeatures(newFeatures);
+		locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
+    }
+});
+";			
+        $r .= "</div>\n";
 		if(count($tabs)>1){
 			$r .= "</div>";
 		}
@@ -531,6 +546,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     }
     ///////////////////////////////////////////////////////////////////
     
+	$occReadOnly = false;
     if($childLoadID){
 	    $url = 'http://localhost/indicia/index.php/services/data/occurrence/'.$childLoadID;
 	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
@@ -541,7 +557,10 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    foreach($entity[0] as $key => $value){
 	    	$childSample['occurrence:'.$key] = $value;
 	    }
-    	$url = 'http://localhost/indicia/index.php/services/data/sample/'.$childSample['occurrence:sample_id'];
+	    if($entity[0]['downloaded_flag'] == 'F') { // Final download complete, now readonly
+			$occReadOnly = true;
+	    }
+	    $url = 'http://localhost/indicia/index.php/services/data/sample/'.$childSample['occurrence:sample_id'];
 	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
 	    $session = curl_init($url);
 	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -549,27 +568,14 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    foreach($entity[0] as $key => $value){
 	    	$childSample['sample:'.$key] = $value;
 	    }
-	    $url = 'http://localhost/indicia/index.php/services/data/occurrence_attribute_value';
-	    $url .= "?mode=json&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&occurrence_id='.$childLoadID;
-	    $session = curl_init($url);
-	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-	    $entities = json_decode(curl_exec($session), true);
-	    if(!empty($entities)){
-	    	foreach($entities as $entity){
-	    		if(!is_null($entity['raw_value'])){
-		    		$childSample['occAttr:'.$entity['occurrence_attribute_id']] = $entity['raw_value'];
-		    	}
-	    	}
-	    }
 	    $childSample['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
 	    $thisOccID = $childLoadID; // this will be used to load the occurrence into the editlayer.
 		$childSample['taxon']=$childSample['occurrence:taxon'];
 		$parentLoadID=$childSample['sample:parent_id'];
     }
     if($parentLoadID){
-    	// have to force cachetimeout so we get most recent data (we could have just updated it!)
 	    $url = 'http://localhost/indicia/index.php/services/data/sample/'.$parentLoadID;
-	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&cachetimeout=0";
+	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
 	    $session = curl_init($url);
 	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 	    $entity = json_decode(curl_exec($session), true);
@@ -577,23 +583,15 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    foreach($entity[0] as $key => $value){
 	    	$parentSample['sample:'.$key] = $value;
 	    }
+	    if(is_array($locations) && !in_array($entity[0]["location_id"], $locations)){
+			return '<p>'.lang::get('LANG_No_Access_To_Location').'</p>';
+		}
 	    $parentSample['sample:date'] = $parentSample['sample:date_start']; // bit of a bodge
-	    $url = 'http://localhost/indicia/index.php/services/data/sample_attribute_value';
-	    $url .= "?mode=json&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&sample_id='.$parentLoadID."&cachetimeout=0";
-	    $session = curl_init($url);
-	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-	    $entities = json_decode(curl_exec($session), true);
-	    if(!empty($entities)){
-	    	foreach($entities as $entity){
-	    		if(!is_null($entity['raw_value'])){
-		    		$parentSample['smpAttr:'.$entity['sample_attribute_id']] = $entity['raw_value'];
-	    		}
-	    	}
-	    }
+	    // default values for attributes from DB are picked up automatically.
     }
-	$childSample['sample:date'] = $parentSample['sample:date']; // enforce a match between child and parent sample dates
+    $childSample['sample:date'] = $parentSample['sample:date']; // enforce a match between child and parent sample dates
     data_entry_helper::$entity_to_load=$parentSample;
-    $indicia_errors = $parentErrors;				
+    data_entry_helper::$validation_errors = $parentErrors;				
     $closedFieldName = "smpAttr:".$args['sample_closure_id'];
     $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, '0'); // default is not closed
 	$adminPerm = 'IForm node '.$node->nid.' admin';
@@ -628,7 +626,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     $r .= "<div id=\"temp\"></div>";
     $r .= data_entry_helper::tab_header(array('tabs'=>array(
     		'#survey'=>lang::get('LANG_Survey')
-    		,'#occurrence'=>lang::get($readOnly ? 'LANG_Show_Occurrence' : (isset($childSample['sample:id']) ?  'LANG_Edit_Occurrence' : 'LANG_Add_Occurrence'))
+    		,'#occurrence'=>lang::get(($readOnly || $occReadOnly) ? 'LANG_Show_Occurrence' : (isset($childSample['sample:id']) ?  'LANG_Edit_Occurrence' : 'LANG_Add_Occurrence'))
     		,'#occurrenceList'=>lang::get('LANG_Occurrence_List')
     		)));
     		
@@ -646,35 +644,36 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     }
     $defAttrOptions['suffixTemplate']='requiredsuffix';
     $attributes = data_entry_helper::getAttributes(array(
-        'table'=>'sample_attribute'
+    	'id' => data_entry_helper::$entity_to_load['sample:id']
+       ,'valuetable'=>'sample_attribute_value'
+       ,'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
        ,'fieldprefix'=>'smpAttr'
-       ,'extraParams'=>$readAuth + array('deleted' => 'f', 'website_deleted' => 'f')
+       ,'extraParams'=>$readAuth
     ));
-    if($locations != 'all'){
-    	$r .= "<label for=\"imp-location\">".lang::get('LANG_Transect').":</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
-		$url = 'http://localhost/indicia/index.php/services/data/location';
-	    $url .= "?mode=json&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&cachetimeout=0';
-	    $session = curl_init($url);
-	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-	    $entities = json_decode(curl_exec($session), true);
-	    if(!empty($entities)){
-	    	foreach($entities as $entity){
-	    		if(in_array($entity["id"], $locations)){
-   					if($entity["id"] == data_entry_helper::$entity_to_load['location_id']) {
+    // can't use location select due to location filtering. Location list won't change so use caching.
+    $r .= "<label for=\"imp-location\">".lang::get('LANG_Transect').":</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
+	$url = 'http://localhost/indicia/index.php/services/data/location';
+	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
+	$session = curl_init($url);
+	curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+	$entities = json_decode(curl_exec($session), true);
+	if(!empty($entities)){
+	   	foreach($entities as $entity){
+			if($locations == 'all' || in_array($entity["id"], $locations)){
+				if(!$entity['parent_id']){
+	   				if($entity["id"] == data_entry_helper::$entity_to_load['location_id']) {
    						$selected = 'selected="selected"';
    					} else {
    						$selected = '';
    					}
-   					$r .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
-   				}
+	   				$r .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
+				}
 	    	}
 	    }
-	    $r .= "</select><span class=\"deh-required\">*</span><br />";
-    } else {
-	    $r .= data_entry_helper::location_select(array_merge($defAttrOptions,
-    					array('label' => lang::get('LANG_Transect'))));
     }
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $defAttrOptions);
+	$r .= "</select><span class=\"deh-required\">*</span><br />";
+	$r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($defAttrOptions, array('default'=>1)));
     if($readOnly){
@@ -710,7 +709,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     }
     unset($defAttrOptions['suffixTemplate']);
     
-    if(!empty($indicia_errors)){
+    if(!empty(data_entry_helper::$validation_errors)){
 		$r .= data_entry_helper::dump_remaining_errors();
     }
     $escaped_id=str_replace(':','\\\\:',$closedFieldName);
@@ -730,8 +729,8 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 
     // Set up Occurrence List tab: don't include when creating a new sample as it will have no occurrences
     // Grid populated at a later point
+	$r .= "<div id=\"occurrenceList\" class=\"srf2-datapanel\">\n";
     if($mode != 1){
-	    $r .= "<div id=\"occurrenceList\" class=\"srf2-datapanel\">\n";
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
 		$r .= '<div id="occ_grid"></div>';
@@ -739,19 +738,31 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     	$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"sample\":".data_entry_helper::$entity_to_load['sample:id']."}' />";	
     	$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Download_Occurrences')."\">";
 	   	$r .= "</FORM>";
-		$r .= '</div>';
+    } else {
+    	$r .= '<p>'.lang::get('LANG_Page_Not_Available').'</p>';
     }
-
+	$r .= '</div>';
     // Set up Occurrence tab: don't allow entry of a new occurrence until after top level sample is saved.
-    if($mode != 1 && (($mode != 2 && $mode !=4) || $readOnly == false)){
-    	$r .= "<div id=\"occurrence\" class=\"srf2-datapanel\">\n";
+    $r .= "<div id=\"occurrence\" class=\"srf2-datapanel\">\n";
+	if($mode != 1 && (($mode != 2 && $mode !=4) || $readOnly == false)){
     	data_entry_helper::$entity_to_load=$childSample;
-    	$indicia_errors = $childErrors;				
+    	data_entry_helper::$validation_errors = $childErrors;
     	$attributes = data_entry_helper::getAttributes(array(
-       		 'table'=>'occurrence_attribute'
-   			,'fieldprefix'=>'occAttr'
-			,'extraParams'=>$readAuth + array('deleted' => 'f', 'website_deleted' => 'f')));
-    	$r .= "<form method=\"post\">\n";
+	    	'id' => data_entry_helper::$entity_to_load['occurrence:id']
+    	   ,'valuetable'=>'occurrence_attribute_value'
+    	   ,'attrtable'=>'occurrence_attribute'
+    	   ,'key'=>'occurrence_id'
+    	   ,'fieldprefix'=>'occAttr'
+    	   ,'extraParams'=>$readAuth
+	    ));
+    	if($occReadOnly){
+	    	$r .= "<strong>".lang::get('LANG_Read_Only_Occurrence')."</strong>";
+			$disabledText = "disabled=\"disabled\"";
+    		$defAttrOptions['disabled'] = $disabledText;
+		} else if($readOnly){
+	    	$r .= "<strong>".lang::get('LANG_Read_Only_Survey')."</strong>";
+		}
+		$r .= "<form method=\"post\">\n";
     	$r .= $writeAuth;
     	$r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     	$r .= "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
@@ -764,7 +775,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     		$r .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";	
     	}
     	$r .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"C\" />\n";    
-    	$r .= "<input type=\"hidden\" id=\"occurrence:download_flag\" name=\"occurrence:record_status\" value=\"N\" />\n";    
+    	$r .= "<input type=\"hidden\" id=\"occurrence:downloaded_flag\" name=\"occurrence:downloaded_flag\" value=\"N\" />\n";    
     	$extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
 	    $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Species'),
@@ -793,13 +804,13 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     	    'fieldname'=>'occurrence:comment',
 			'disabled'=>$disabledText
 	    ));	
-		if(!empty($indicia_errors)){
+		if(!empty(data_entry_helper::$validation_errors)){
 			$r .= data_entry_helper::dump_remaining_errors();
     	}
-    	if(!$readOnly){
+    	if(!$readOnly && !$occReadOnly){
    		 	$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Occurrence_Details')."\" />\n";    
        	}
-	    $r .= "</form></div>\n";
+	    $r .= "</form>\n";
 	    data_entry_helper::$javascript .= "
 setAltasStatus = function() {
 	if (jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']:checked\").val() == '0') {
@@ -814,7 +825,10 @@ setAltasStatus = function() {
 };
 setAltasStatus();
 jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").change(setAltasStatus);\n";
+    } else {
+    	$r .= '<p>'.lang::get('LANG_Page_Not_Available').'</p>';
     }
+	$r .= '</div>';
     
     // add map panel.
     $r .= "<div class=\"srf2-mappanel\">\n";
@@ -886,12 +900,8 @@ locationChange = function(obj){
       					feature = new OpenLayers.Feature.Vector(points[1], {}, {label: 'B'});
 						locationLayer.addFeatures([feature]);
   					}
- 				}";
-		if(	$thisOccID < 0 || $readOnly) {
-	    	data_entry_helper::$onload_javascript .= "
-				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());";
-	    }
-	    data_entry_helper::$onload_javascript .= "
+ 				}
+				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
 			}
         });
  		$.getJSON(\"$svcUrl\" + \"/data/location/\" +
@@ -921,7 +931,7 @@ jQuery('#imp-location').change(function(){
 addListFeature = function(div, record) {
     var parser = new OpenLayers.Format.WKT();
     var feature = parser.read(record.geom);
-    if(record.id != ".$thisOccID." || 1==".($readOnly ? 1 : 0)."){
+    if(record.id != ".$thisOccID." || 1==".($readOnly ? 1 : 0)." || 1==".($occReadOnly ? 1 : 0)."){
 	    feature.attributes.id = record.id;
     	feature.attributes.taxon = record.taxon;
     	feature.attributes.count = record.count;
@@ -931,17 +941,23 @@ addListFeature = function(div, record) {
 			locationLayer.map.setCenter(bounds.getCenterLonLat());
     	}
     } else {
-    	if(".$displayThisOcc."){
+    	if(".($displayThisOcc ? 1 : 0)."){
     		locationLayer.map.editLayer.destroyFeatures();
 			locationLayer.map.editLayer.addFeatures([feature]);
-			locationLayer.map.zoomToExtent(locationLayer.map.editLayer.getDataExtent());
+			var bounds=feature.geometry.getBounds()
+			var centre=bounds.getCenterLonLat();
+			locationLayer.map.setCenter(centre);
 		}
     }
 };
 highlight = function(id){
 	if(id == ".$thisOccID."){
-		occListLayer.map.zoomToExtent(occListLayer.map.editLayer.getDataExtent());
-		return;
+		if(occListLayer.map.editLayer.features.length > 0){
+			var bounds=occListLayer.map.editLayer.features[0].geometry.getBounds()
+			var centre=bounds.getCenterLonLat();
+			occListLayer.map.setCenter(centre);
+			return;
+		}
 	}
 	for(var i = 0; i < occListLayer.features.length; i++){
 		if(occListLayer.features[i].attributes.id == id){
@@ -950,6 +966,7 @@ highlight = function(id){
 			var centre=bounds.getCenterLonLat();
 			occListLayer.map.setCenter(centre);
 			control.select(occListLayer.features[i]);
+			return;
 		}
 	}
 }

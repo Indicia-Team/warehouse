@@ -47,6 +47,7 @@ $custom_terms = array(
 	'LANG_Add_Occurrence' => 'Add Occurrence',
 	'LANG_Occurrence_List' => 'Occurrence List',
 	'LANG_Read_Only_Survey' => 'This Survey is Read Only.',
+	'LANG_Read_Only_Occurrence' => 'This Occurrence has been downloaded and is now Read Only.',
 	'LANG_Save_Survey_Details' => 'Save Survey Details',
 	'LANG_Save_Survey_And_Close' => 'Save and Close Survey',
 	'LANG_Close_Survey_Confirm' => 'Are you sure you wish to close this survey?',
@@ -58,14 +59,16 @@ $custom_terms = array(
 	'LANG_Territorial' => 'Territorial',
 	'LANG_Count' => 'Count',
 	'LANG_Highlight' => 'Highlight',
-	'LANG_Download' => 'Downloads',
+	'LANG_Download' => 'Reports and Downloads',
 	'LANG_Initial_Download' => 'Carry out initial download of closed surveys. Sweeps up all records which are in closed surveys but which have not been downloaded yet', 
     'LANG_Initial_Download_Button' => 'Initial Download - CSV',
 	'LANG_Confirm_Download' => 'Carry out confirmation download. This outputs the same data that will be included in the final download, but does not tag the data as downloaded. Only includes data in the last initial download unless a survey has since been reopened, when it will be excluded from this report.',
     'LANG_Confirm_Download_Button' => 'Confirmation Download - CSV',
 	'LANG_Final_Download' => 'Carry out final download. Data will be marked as downloaded and no longer editable.',
     'LANG_Final_Download_Button' => 'Final Download - CSV',
-	'LANG_Download_Occurrences' => 'Download CSV List of Occurrences'
+	'LANG_Download_Occurrences' => 'Download CSV List of Occurrences',
+	'LANG_No_Access_To_Location' => 'You have not been allocated the location against which this survey was carried out - you can not access this record.',
+	'LANG_Page_Not_Available' => 'This page is not available at this time.'
 
 	// Can also add entries for 'Yes' and 'No' for the boolean attributes,
 	//   and one for each of the attribute captions. As these are in English
