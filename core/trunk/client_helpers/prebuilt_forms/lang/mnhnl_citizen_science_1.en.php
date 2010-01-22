@@ -30,6 +30,9 @@ $custom_terms = array(
   'happy for contact'=>'Please tick this box if you are happy for us to contact you about this record',
 
   // Tab instructions
-  'place tab instructions'=>'Step 2 - Place Selection<br/>Please either enter the spatial reference of the observation if you know it, or click on the map to specify the place as accurately as you can.',
-  'species tab instructions'=>'Step 1 - Species Selection<br/>Please click on the species which you observed.',
+  'about you tab instructions'=>'<strong>About You</strong><br/>Please tell us about yourself first. This might be important so that we can contact you if the record you contribute is important to science.',
+  'species tab instructions'=>'<strong>Species Selection</strong><br/>Please click on the species which you observed then click the Next Step button.',
+  'place tab instructions'=>'<strong>Place Selection</strong><br/>Please either enter the spatial reference of the observation if you know it, or click on the map to specify the place as accurately as you can.',
+  'other tab instructions'=>'<strong>Other Information</strong><br/>Please tell us when you saw the plant, approximately how many you saw and any comments you have about the record.',
+
 );
