@@ -66,6 +66,8 @@ class Occurrence_Attribute_Value_Model extends ORM {
 	        break;
 	      case 'B':
 	      	// Boolean
+	      	// The checkbox html control actually posts the value on
+          if ($array->int_value=='on') $array->int_value=1;
       		$array->add_rules('int_value', 'minimum[0]');
       		$array->add_rules('int_value', 'maximum[1]');
       		$vf = 'int_value';
