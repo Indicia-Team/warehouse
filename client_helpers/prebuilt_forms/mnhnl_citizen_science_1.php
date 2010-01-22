@@ -148,9 +148,9 @@ class iform_mnhnl_citizen_science_1 {
       array(
         'name'=>'abundance_attr_id',
         'caption'=>'Abundance Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that records the approximate abundance.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
+        'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
+        'type'=>'occAttr',
+        'group'=>'Occurrence Attributes'
       ),
       array(
         'name'=>'abundance_termlist_id',
@@ -354,7 +354,7 @@ class iform_mnhnl_citizen_science_1 {
     // Dynamically create a control for the abundance
     $abundance_args = array(
       'label'=>lang::get('Abundance'),
-      'fieldname'=>'smpAttr:' + $args['abundance_attr_id'],
+      'fieldname'=>'occAttr:' + $args['abundance_attr_id'],
       'table'=>'termlists_term',
       'captionField'=>'term',
       'valueField'=>'id',
