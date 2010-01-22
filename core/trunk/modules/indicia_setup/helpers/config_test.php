@@ -38,6 +38,7 @@ class config_test {
       self::check_postgres($result, $problems_only);
       self::check_dir_permissions($result, $problems_only);
       self::check_curl($result, $problems_only);
+      self::check_gd($result, $problems_only);
       self::check_helper($result, $problems_only);
       self::check_email($result, $problems_only);
       // Check db must be the last one
@@ -211,6 +212,31 @@ class config_test {
       array_push($messages, array(
         'title' => 'cUrl Library',
         'description' => '<p>The cUrl library is installed.</p>',
+        'success' => true
+      ));
+    }
+  }
+  
+/**
+   * Ensure that the gd2 graphics library is installed.
+   *
+   * @param array $messages List of messages that any information should be appended to.
+   * @param boolean $problems_only Set to true to report only the problems, not the successful
+   * checks. False reports both failures and successes.
+   */
+  private static function check_gd2(&$messages, $problems_only) {
+    if (!function_exists('gd_info')) {
+      array_push($messages, array(
+        'title' => 'gd2 Library',
+        'description' => '<p>The gd2 library is not installed on this web server. To fix this, find your php.ini file in the PHP installation folder and ' .
+            'find the line <strong>;extension=php_gd2.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
+            'webserver. Please pass this information to the administrator of your webserver if you are not sure how to do this.</p>',
+        'success' => false
+      ));
+    } elseif (!$problems_only) {
+      array_push($messages, array(
+        'title' => 'gd2 Library',
+        'description' => '<p>The gd2 library is installed.</p>',
         'success' => true
       ));
     }
