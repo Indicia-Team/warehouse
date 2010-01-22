@@ -254,6 +254,7 @@ class iform_mnhnl_citizen_science_1 {
     }   
     if ($user->uid==0) {
       $r .= "<div id=\"about_you\">\n";
+      $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('about you tab instructions')."</p>";
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('first name'),
         'fieldname'=>'smpAttr:'.$args['first_name_attr_id'],
@@ -283,7 +284,7 @@ class iform_mnhnl_citizen_science_1 {
       $r .= "</div>\n";      
     }
     $r .= "<div id=\"species\">\n";
-    $r .= '<p class="page-notice ui-widget-header ui-corner-all">'.lang::get('species tab instructions')."</p>";
+    $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('species tab instructions')."</p>";
 	  $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
 	  if ($args['preferred']) {
 	    $extraParams += array('preferred' => 't');
@@ -316,7 +317,7 @@ class iform_mnhnl_citizen_science_1 {
     }    
     $r .= "</div>\n";
     $r .= "<div id=\"place\">\n";
-    $r .= '<p class="page-notice ui-widget-header ui-corner-all">'.lang::get('place tab instructions')."</p>";
+    $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('place tab instructions')."</p>";
     // Build the array of spatial reference systems into a format Indicia can use.
     $systems=array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
@@ -342,6 +343,7 @@ class iform_mnhnl_citizen_science_1 {
     }
     $r .= "</div>\n";    
     $r .= "<div id=\"other\">\n";
+    $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('other tab instructions')."</p>";
     $r .= data_entry_helper::date_picker(array(
         'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
