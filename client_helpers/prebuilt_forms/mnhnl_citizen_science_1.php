@@ -303,7 +303,7 @@ class iform_mnhnl_citizen_science_1 {
       // change the node template to include images
       global $indicia_templates;
     	$indicia_templates['tree_browser_node']='<div>'.
-    	    '<img src="'.data_entry_helper::$base_url.'/upload/{image_path}" alt="Image of {caption}" /></div>'.
+    	    '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
     	    '<span>{caption}</span>';
     }
     // Dynamically generate the species selection control required.        
