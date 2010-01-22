@@ -36,17 +36,8 @@ class iform_survey_recording_form_2 {
 	 *	Some transect lines are wrong.
 	 * 
 	 * BugFix
-	 * 	Survey
-	 * 	 	“Required” attribute processing does not work for samples. 
 	 * 	Occurrence List
 	 * 		Check what happens to map when paging through list
-	 * 
-	 * Feature Ommission
-	 * 	General
-	 * 		Need some way to return to main survey selection screen from survey data entry screen.
-	 * 	Downloads
-     *  	Create indicia report for checking of survey walk directions.
-     *  	Final/Confirm Download report should exclude any surveys with non downloaded occurrences
 	 * 
 	 * Future Enhancements
 	 * 	General
@@ -470,6 +461,11 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
         // Add the downloader if user has manager (superuser) rights.
 		if(iform_loctools_checkaccess($node,'superuser')){
 			$r .= '<div id="downloads" class="srf2-datapanel">';
+			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_direction_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= '<p>'.lang::get('LANG_Direction_Report').'</p>';
+			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey\":".$args['survey_id'].", \"direction_id\":".$args['sample_walk_direction_id'].", \"closed_id\":".$args['sample_closure_id']."}' />";	
+    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Direction_Report_Button')."\">";
+	   		$r .= "</FORM>";
 			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Initial_Download').'</p>';
 			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"INITIAL\"}' />";	
@@ -586,7 +582,10 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    if(is_array($locations) && !in_array($entity[0]["location_id"], $locations)){
 			return '<p>'.lang::get('LANG_No_Access_To_Location').'</p>';
 		}
-	    $parentSample['sample:date'] = $parentSample['sample:date_start']; // bit of a bodge
+	    if($entity[0]["parent_id"]){
+			return '<p>'.lang::get('LANG_No_Access_To_Sample').'</p>';
+		}
+		$parentSample['sample:date'] = $parentSample['sample:date_start']; // bit of a bodge
 	    // default values for attributes from DB are picked up automatically.
     }
     $childSample['sample:date'] = $parentSample['sample:date']; // enforce a match between child and parent sample dates
@@ -610,6 +609,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 //    $r .= "<h1>MODE = ".$mode."</h1>";
 //    $r .= "<h2>readOnly = ".$readOnly."</h2>";
     
+	data_entry_helper::enable_validation('SurveyForm');
     $r .= "<div id=\"controls\">\n";
     $activeTab = 'survey';
     if($mode == 3){
@@ -642,6 +642,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
     	$r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
     }
+	$defAttrOptions['validation'] = array('required');
     $defAttrOptions['suffixTemplate']='requiredsuffix';
     $attributes = data_entry_helper::getAttributes(array(
     	'id' => data_entry_helper::$entity_to_load['sample:id']
@@ -697,6 +698,8 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     $r .= " hh:mm<span class=\"deh-required\">*</span><br />";
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_end_time_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')));
     $r .= " hh:mm<span class=\"deh-required\">*</span><br />";
+    unset($defAttrOptions['suffixTemplate']);
+    unset($defAttrOptions['validation']);
     if(user_access($adminPerm)) { //  users with admin permissions can override the closing of the 
     	// sample by unchecking the checkbox.
     	// Because this is attached to the sample, we have to include the sample required fields in the
@@ -707,18 +710,24 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    // hidden closed
     	$r .= "<input type=\"hidden\" id=\"".$closedFieldName."\" name=\"".$closedFieldName."\" value=\"".$closedFieldValue."\" />\n";
     }
-    unset($defAttrOptions['suffixTemplate']);
+    
     
     if(!empty(data_entry_helper::$validation_errors)){
 		$r .= data_entry_helper::dump_remaining_errors();
     }
     $escaped_id=str_replace(':','\\\\:',$closedFieldName);
     if(!$readOnly){
-	    $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_Details')."\" />\n";
+	    $r .= "<input type=button id=\"close1\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_Details')."\";
+				onClick=\"var current=$('#controls').tabs('option', 'selected');
+					var result = $('#SurveyForm input').valid();
+					var result2 = $('#SurveyForm select').valid();
+					if (!result || !result2) {
+    					return;
+    				}
+  					jQuery('#SurveyForm').submit();\">\n";
 	    if(!user_access($adminPerm) && $mode !=1) {
 			$r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_And_Close')."\"
 				onClick=\"if(confirm('".lang::get('LANG_Close_Survey_Confirm')."')){
-					var inputlist =   jQuery('input#".$escaped_id."');
 					jQuery('#".$escaped_id."').val('1');
   					jQuery('#SurveyForm').submit();
   				};\">\n";
@@ -811,20 +820,23 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
    		 	$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Occurrence_Details')."\" />\n";    
        	}
 	    $r .= "</form>\n";
+	    $escaped_terr_id = str_replace(':','\\\\:',$attributes[$args['occurrence_territorial_id']]['fieldname']);
+	    $escaped_atlas_id = str_replace(':','\\\\:',$attributes[$args['occurrence_atlas_code_id']]['fieldname']);
+	    
 	    data_entry_helper::$javascript .= "
 setAltasStatus = function() {
-	if (jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']:checked\").val() == '0') {
-    	jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').val('');
-	    jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').attr('disabled','disabled');
+	if (jQuery(\"input[name='".$escaped_terr_id."']:checked\").val() == '0') {
+    	jQuery('#".$escaped_atlas_id."').val('');
+	    jQuery('#".$escaped_atlas_id."').attr('disabled','disabled');
 	} else {
-    	if(jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').val() == ''){
-    		jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').val('BB02');
+    	if(jQuery('#".$escaped_atlas_id."').val() == ''){
+    		jQuery('#".$escaped_atlas_id."').val('BB02');
 	    }
-    	jQuery('#occAttr\\\\:".$args['occurrence_atlas_code_id']."').attr('disabled','');
+    	jQuery('#".$escaped_atlas_id."').attr('disabled','');
 	}
 };
 setAltasStatus();
-jQuery(\"input[name='occAttr\\\\:".$args['occurrence_territorial_id']."']\").change(setAltasStatus);\n";
+jQuery(\"input[name='".$escaped_terr_id."']\").change(setAltasStatus);\n";
     } else {
     	$r .= '<p>'.lang::get('LANG_Page_Not_Available').'</p>';
     }
@@ -987,7 +999,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
   });
 ";
     };
-    $r .= "</div></div>\n";
+    $r .= "</div><div><FORM><INPUT TYPE=\"BUTTON\" VALUE=\"".lang::get('LANG_Return')."\" ONCLICK=\"window.location.href='?Main'\"></FORM></div></div>\n";
         
     return $r;
   }

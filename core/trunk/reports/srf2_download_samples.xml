@@ -8,7 +8,14 @@
       </params>
       <vagueDate enableProcessing='true' /> // in this case value picked up from parameter, though can be set explicitly as well.
       <download mode="#download#" /> // in this case value picked up from parameter, though can be set explicitly as well.
-      <table tablename="samples" where="#this#.deleted = FALSE and #this#.parent_id IS NULL" >
+      <table tablename="samples" where="#this#.deleted = FALSE
+      		and #this#.parent_id IS NULL
+      		and (('#download#'::text != 'CONFIRM'::text and '#download#'::text != 'FINAL'::text) or
+      			NOT EXISTS (select o.id from occurrences o, samples sc
+  								where o.sample_id = sc.id
+  								and sc.parent_id = #this#.id
+  								and o.deleted = FALSE
+  								and o.downloaded_flag = 'N'::bpchar))" > // for FINAL and CONFIRM downloads, ensure all occurrences in a survey have been initially downloaded, ie assume checked 
 		  <subTable tablename="locations" where="#this#.deleted = FALSE" >
 			<tabColumn name='name' display='Transect'/>
 		  </subTable>
