@@ -45,6 +45,7 @@ class Image extends Image_Core {
       $ext = array_pop($fileParts);
       if (in_array($ext, Image::$allowed_types)) {
         $config = kohana::config('indicia.image_handling');
+        print_r($config); throw new Exception;
         if (!$config) {
           // Apply a default configuration if not in the file.
           $config = array(

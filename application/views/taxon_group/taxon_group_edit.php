@@ -21,7 +21,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-?><p>This page allows you to specify the details of a taxon group..</p>
+?><p>This page allows you to specify the details of a taxon group.</p>
 <form class="cmxform" action="<?php echo url::site().'taxon_group/save'; ?>" method="post">
 <?php echo $metadata ?>
 <fieldset>

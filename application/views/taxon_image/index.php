@@ -22,10 +22,10 @@
  */
 
 ?>
-<div class="occurrence_images">
+<div class="taxon_images">
 <?php echo $table ?>
 <br/>
-<form action="<?php echo url::site().'occurrence_image/create/'.$occurrence_id; ?>" method="post">
-<input type="submit" value="New occurrence image" class="ui-corner-all ui-state-default button" />
+<form action="<?php echo url::site().'taxon_image/create/'.$taxa_taxon_list_id; ?>" method="post">
+<input type="submit" value="New taxon image" class="ui-corner-all ui-state-default button" />
 </form>
 </div>

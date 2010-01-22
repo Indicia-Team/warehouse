@@ -162,10 +162,6 @@ echo $metadata;
 <textarea rows="3"  cols="40" id="description" name="taxon:description"><?php echo html::initial_value($values, 'taxon:description'); ?></textarea>
 </li>
 <li>
-<label for='image_path'>Upload Image: </label>
-<input id="image_path" type='file' name='taxa_taxon_list:image' accept='png|jpg|gif' />
-</li>
-<li>
 <label for="external_key">External Key:</label>
 <input id="external_key" name="taxon:external_key" value="<?php echo html::initial_value($values, 'taxon:external_key'); ?>"/>
 <?php echo html::error_message($model->getError('taxon:external_key')); ?>
