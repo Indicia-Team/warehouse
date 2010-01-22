@@ -35,10 +35,6 @@ class iform_survey_recording_form_2 {
 	 *	The  transect names are not correct – I didn’t know where they were defined.
 	 *	Some transect lines are wrong.
 	 * 
-	 * BugFix
-	 * 	Occurrence List
-	 * 		Check what happens to map when paging through list
-	 * 
 	 * Future Enhancements
 	 * 	General
 	 * 		Rename superuser to manager permission
@@ -940,6 +936,7 @@ jQuery('#imp-location').change(function(){
 ";
     if($mode != 1){
 		data_entry_helper::$onload_javascript .= "
+
 addListFeature = function(div, record) {
     var parser = new OpenLayers.Format.WKT();
     var feature = parser.read(record.geom);
@@ -993,10 +990,12 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
     				parent_id : '".$parentSample['sample:id']."',
     				territorial_id : '".$args['occurrence_territorial_id']."',
     				count_id : '".$args['occurrence_count_id']."'},
-    itemsPerPage : 17,
+    itemsPerPage : 10,
     callback : addListFeature ,
     cssOdd : '' 
   });
+// remove callback function after initial population
+addListFeature = function(div, record) {};
 ";
     };
     $r .= "</div><div><FORM><INPUT TYPE=\"BUTTON\" VALUE=\"".lang::get('LANG_Return')."\" ONCLICK=\"window.location.href='?Main'\"></FORM></div></div>\n";
