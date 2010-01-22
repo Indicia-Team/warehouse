@@ -46,7 +46,7 @@ class Indicia_Controller extends Template_Controller {
 
     // assign view array with system information
     //
-    $this->template->system = Kohana::config('indicia.system', false, false);
+    $this->template->system = Kohana::config_load('version');
 
     $this->db = Database::instance();
     $this->auth = new Auth;

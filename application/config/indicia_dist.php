@@ -24,15 +24,6 @@
 defined('SYSPATH') or die('No direct script access.');
 
 /**
- * System configuration parameters
- */
-$config['system'] = array
-(
-    'name'         => '',
-    'repository'   => 'http://indicia.googlecode.com/svn/tag/version_0_1'
-);
-
-/**
  * Key used for generation of security tokens. For maximum security, change this
  * to a unique value for each Indicia install.
  * @todo Make this randomly generated during the installation procedure.
