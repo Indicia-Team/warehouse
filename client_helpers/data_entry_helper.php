@@ -3058,6 +3058,7 @@ $('.ui-state-default').live('mouseout', function() {
   	if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
   	if(isset($item['default'])) $attrOptions['default']= $item['default'];
   	else if(isset($options['default'])) $attrOptions['default']= $options['default'];
+  	if(isset($options['validation'])) $attrOptions['validation'] = $options['validation'];
   	
   	switch ($item['data_type']) {
         case 'Text':
