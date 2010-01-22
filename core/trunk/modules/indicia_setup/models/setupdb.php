@@ -168,7 +168,7 @@ class Setupdb_Model extends Model
                                                     (\"version\", \"name\", \"repository\", \"release_date\")
                                                VALUES
                                                    ('0.1',
-                                                    '{$version['name']}',
+                                                    'Indicia',
                                                     '{$version['repository']}',
                                                     '{$version['release_date']}')"))
         {
