@@ -273,12 +273,7 @@ class iform_mnhnl_citizen_science_1 {
         'label'=>lang::get('phone number'),
         'fieldname'=>'smpAttr:'.$args['phone_attr_id'],
         'class'=>'control-width-4'
-      ));     
-      if ($args['interface']=='wizard') {
-        $r .= data_entry_helper::tab_next_button(array(
-          'divId'=>'controls'
-        ));
-      }
+      ));
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
