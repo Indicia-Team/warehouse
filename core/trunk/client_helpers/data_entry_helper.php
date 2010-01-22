@@ -1839,7 +1839,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 	      unset($options['layers']);
 	    }
 	    $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-	    self::$onload_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+	    self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 	
 	    $r = str_replace(
 	          array('{divId}','{class}','{width}','{height}'),
