@@ -162,15 +162,15 @@ class Setupdb_Model extends Model
      */
     public function insertSystemInfo()
     {
-        $new_system = Kohana::config('indicia_dist.system');
-
-        if(false === pg_query($this->dbconn, "INSERT INTO \"system\"
+        $version = Kohana::config_load('version');        
+        // Note the version is set to 0.1, since this is the initially installed db version which will immediately be updated.
+        if (false === pg_query($this->dbconn, "INSERT INTO \"system\"
                                                     (\"version\", \"name\", \"repository\", \"release_date\")
                                                VALUES
-                                                   ('{$new_system['version']}',
-                                                    '{$new_system['name']}',
-                                                    '{$new_system['repository']}',
-                                                    '{$new_system['release_date']}')"))
+                                                   ('0.1',
+                                                    '{$version['name']}',
+                                                    '{$version['repository']}',
+                                                    '{$version['release_date']}')"))
         {
             return pg_last_error($this->dbconn);
         }
