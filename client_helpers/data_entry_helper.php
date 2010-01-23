@@ -608,9 +608,10 @@ class data_entry_helper extends helper_config {
   */
   public static function checkbox($options) {
     $default = self::check_default_value($options['fieldname'], 
-        array_key_exists('default', $options) ? $options['default'] : null);    
+        array_key_exists('default', $options) ? $options['default'] : null);
+    if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
     if ($default=='on') {
-      $options['checked']==' checked="checked"';
+      $options['checked']=' checked="checked"';
     }
     return self::apply_template('checkbox', $options);
   }
