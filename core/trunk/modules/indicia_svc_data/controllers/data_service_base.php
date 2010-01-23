@@ -57,7 +57,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         $website_id = $nonces[$nonce];
         $website = ORM::factory('website', $website_id);
         if ($website->id) {
-          $password = ORM::factory('website', $website_id)->password;
+          $password = $website->password;
           if (sha1("$nonce:$password")==$array['auth_token'])
           {
             Kohana::log('info', "Authentication successful.");
