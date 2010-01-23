@@ -16,7 +16,6 @@ $javascript = '';
 if ($_POST){
   $submission = data_entry_helper::build_sample_occurrences_list_submission($_POST);
   $response = data_entry_helper::forward_post_to('save', $submission);
-  print_r($response);
   echo data_entry_helper::dump_errors($response);
 }
 
