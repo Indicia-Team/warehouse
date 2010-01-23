@@ -19,7 +19,10 @@ class login {
   public function check()
   {
     $uri = new URI();
-
+    // Skip check when accessing the data services, as it is redundant but would slow the services down.
+    if ($uri->segment(1)=='services' && $uri->segment(2)=='data') {
+    	return;
+    }
     // check for setup request
     //
     if($uri->segment(1) == 'setup_check')
@@ -59,8 +62,9 @@ class login {
     {
       $_SESSION['requested_page'] = $uri->string();
       url::redirect('new_password');
-    }    
+    }
   }
+  
 }
 
 new login;
