@@ -2291,7 +2291,7 @@ if (errors.length>0) {
       $determiner_id = $arr['occurrence:determiner_id'];
     }
     if (array_key_exists('occurrence:record_status', $arr)){
-      $determiner_id = $arr['occurrence:record_status'];
+      $record_status = $arr['occurrence:record_status'];
     }
     $records = array();
     $subModels = array();
@@ -2311,7 +2311,7 @@ if (errors.length>0) {
 	        $record['determiner_id'] = $determiner_id;
 	      }
         if (isset($record_status)) {
-          $record['record_status'] = $determiner_id;
+          $record['record_status'] = $record_status;
         }
 	      $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
 	      $occ = data_entry_helper::wrap($record, 'occurrence');
