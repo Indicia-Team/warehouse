@@ -411,7 +411,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     $select = implode(', ', array_keys($this->db->list_fields($this->viewname)));
     $this->db->select($select);
     // Make sure that we're only showing items appropriate to the logged-in website
-    if(!in_array ($this->entity, $this->allow_full_access)) {
+    if(!$this->in_warehouse && !in_array ($this->entity, $this->allow_full_access)) {
       if(array_key_exists ('website_id', $this->view_columns))
       {
         $this->db->in('website_id', array(null, $this->website_id));

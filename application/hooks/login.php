@@ -20,7 +20,7 @@ class login {
   {
     $uri = new URI();
     // Skip check when accessing the data services, as it is redundant but would slow the services down.
-    if ($uri->segment(1)=='services' && $uri->segment(2)=='data') {
+    if ($uri->segment(1)=='services') {
     	return;
     }
     // check for setup request
@@ -50,8 +50,7 @@ class login {
         $uri->segment(1) != 'login' AND
         $uri->segment(1) != 'logout' AND
         $uri->segment(1) != 'new_password' AND
-        $uri->segment(1) != 'forgotten_password' AND
-        substr(url::current(), 0, 9) != 'services/')
+        $uri->segment(1) != 'forgotten_password')
     {
       $_SESSION['requested_page'] = $uri->string();
       url::redirect('login');
