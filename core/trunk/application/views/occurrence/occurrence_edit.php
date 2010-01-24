@@ -41,7 +41,8 @@ $(document).ready(function() {
     extraParams : {
       orderby : "caption",
       mode : "json",
-      deleted : 'false'
+      deleted : 'false',
+      qfield : 'caption'
     },
     parse: function(data) {
       var results = [];
@@ -110,6 +111,10 @@ $(document).ready(function() {
 <fieldset class="readonly">
 <legend>Sample information</legend>
 <ol>
+<li>
+<label>Survey:</label>
+<input readonly="readonly" type="text" value="<?php echo $model->sample->survey->title; ?>"/>
+</li>
 <li>
 <label>Date:</label>
 <input readonly="readonly" type="text" value="<?php echo $model->sample->date; ?>"/>

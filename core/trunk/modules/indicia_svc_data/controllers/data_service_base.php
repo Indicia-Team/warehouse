@@ -30,10 +30,15 @@
 class Data_Service_Base_Controller extends Service_Base_Controller {
 
   /**
-   * Id of the website calling the service. Obtained when performing read authentication and used
+   * @var int Id of the website calling the service. Obtained when performing read authentication and used
    * to filter the response.
    */
   protected $website_id = null;
+  
+  /**
+   * @var boolean Defines if the user is logged into the warehouse.
+   */
+  protected $in_warehouse = false;
 
   /**
   * Before a request is accepted, this method ensures that the POST data contains the
@@ -70,8 +75,12 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         $this->cache->delete($nonce);
         $this->cache->set($nonce, $website_id, $mode);
       }
+    } else {
+    	$auth = new Auth();
+      $authentic = ($auth->logged_in() || $auth->auto_login());
+      $this->in_warehouse = $authentic;
     }
-
+  
     if (!$authentic)
     {
       Kohana::log('info', "Unable to authenticate.");
