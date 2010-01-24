@@ -57,18 +57,19 @@ class Upgrade_Model extends Model
           // Get a version name, to search for a suitable script upgrade folder or an upgrade method with this name
           $version_name = 'version_'.implode('_', $currentVersionNumbers);
           kohana::log('debug', "upgrading to $version_name");
-          if (file_exists($this->base_dir . "/modules/indicia_setup/db/" . $version_name)) {
-            // we have a folder containing scripts
-            $this->execute_sql_scripts($version_name);
-            $updatedTo = implode('.', $currentVersionNumbers);
-            kohana::log('debug', "Scripts ran for $version_name");
-          }
           if (method_exists($this, $version_name)) {
             // dynamically execute an upgrade method with this version name
             $this->$version_name();
             $updatedTo = implode('.', $currentVersionNumbers);
             kohana::log('debug', "Method ran for $version_name");
           }
+          if (file_exists($this->base_dir . "/modules/indicia_setup/db/" . $version_name)) {
+            // we have a folder containing scripts
+            $this->execute_sql_scripts($version_name);
+            $updatedTo = implode('.', $currentVersionNumbers);
+            kohana::log('debug', "Scripts ran for $version_name");
+          }
+          
           // Now find the next version number. We start by incrementing the smallest part of the version (level=2), if that does not work
           // then we look to the next largest part (level 1) then finally the major version (level 0).
           $level=2;
@@ -229,7 +230,7 @@ class Upgrade_Model extends Model
     if ($prev!=$next) {
       if (false === @file_put_contents( $full_upgrade_folder . '/____' . str_replace('.sql', '', $next) . '____', 'nop' ))
       {
-        throw new  Exception("Couldnt write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
+        throw new  Exception("Couldn't write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
       }
   
       // remove the previous last executed file name
@@ -237,7 +238,7 @@ class Upgrade_Model extends Model
       {
         if( false === @unlink($full_upgrade_folder . '/____' . str_replace('.sql', '', $prev) .'____'))
         {
-          throw new  Exception("Couldnt delete previous executed file name: " . $full_upgrade_folder . '/' . $prev);
+          throw new  Exception("Couldn't delete previous executed file name: " . $full_upgrade_folder . '/' . $prev);
         }
       }
     }  
@@ -260,8 +261,47 @@ class Upgrade_Model extends Model
       return '';
     }
     else {
-      throw new  Exception("Cant open dir " . $_full_upgrade_folder_path);
+      throw new  Exception("Can't open dir " . $_full_upgrade_folder_path);
     }
+  }
+  
+  /**
+   * Utility function to remove a directory, required during some upgrade steps.
+   *
+   */
+  function delTree($dir) {
+    $files = glob( $dir . '*', GLOB_MARK );
+    foreach( $files as $file ){
+        if( substr( $file, -1 ) == '/' )
+            delTree( $file );
+        else
+            unlink( $file );
+    }
+   
+    if (is_dir($dir)) rmdir( $dir );
+   
+  }
+  
+  /**
+   * Method to handle the upgrade from 0.2.3 to 0.2.4.
+   * This needs to clean up the old upgrade 0_1_to_0_2 folder plus move the last upgrade script
+   * marker into the new version 0_2_3 folder. 
+   */
+  private function version_0_2_4() {
+  	// Only bother if the old script upgrade folder still exists.
+  	if (file_exists($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/')) {
+	    $last_executed_marker_file = $this->get_last_executed_sql_file_name(
+	        $this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/'
+	    );
+	    if ($last_executed_marker_file) {
+	      if (false === @file_put_contents($this->base_dir . '/modules/indicia_setup/db/version_0_2_3/'.basename($last_executed_marker_file), 'nop' ))
+	      {
+	        throw new  Exception("Couldn't write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
+	      }
+	    }
+	    // remove the old database upgrade folder
+	    $this->deltree($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/');
+  	}
   }
 
 }
