@@ -31,10 +31,6 @@
 class iform_survey_recording_form_2 {
 
 	/* TODO
-	 * Data Issues
-	 *	The  transect names are not correct – I didn’t know where they were defined.
-	 *	Some transect lines are wrong.
-	 * 
 	 * Future Enhancements
 	 * 	General
 	 * 		Rename superuser to manager permission
@@ -414,7 +410,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     actionColumns: {".lang::get('LANG_Show')." : \"?sample_id=£id£\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey : '".$args['website_id']."', visit_id : '".$args['sample_visit_number_id']."', closed_id : '".$args['sample_closure_id']."' ".$loclist."},
-    itemsPerPage : 17,
+    itemsPerPage : 12,
     condCss : {field : 'closed', value : '0', css: 'srf2-highlight'},
     cssOdd : '' 
   });
@@ -427,8 +423,8 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
         // Add the locations allocator if user has admin rights.
 		if(iform_loctools_checkaccess($node,'admin')){
 			$r .= '<div id="setLocations" class="srf2-datapanel"><FORM method="post">';
-			$url = 'http://localhost/indicia/index.php/services/data/location';
-	    	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
+			$url = $svcUrl.'/data/location';
+	    	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name";
 	    	$session = curl_init($url);
 	    	curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 	    	$entities = json_decode(curl_exec($session), true);
@@ -496,7 +492,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 // Change the location control requests the location's geometry to place on the map.
 $.getJSON(\"$svcUrl\" + \"/data/location\" +
           \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-          \"&callback=?\", function(data) {
+          \"&parent_id=NULL&callback=?\", function(data) {
     // store value in saved field?
 	locationLayer.destroyFeatures();
     if (data.length>0) {
@@ -540,7 +536,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     
 	$occReadOnly = false;
     if($childLoadID){
-	    $url = 'http://localhost/indicia/index.php/services/data/occurrence/'.$childLoadID;
+	    $url = $svcUrl.'/data/occurrence/'.$childLoadID;
 	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
 	    $session = curl_init($url);
 	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -552,7 +548,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    if($entity[0]['downloaded_flag'] == 'F') { // Final download complete, now readonly
 			$occReadOnly = true;
 	    }
-	    $url = 'http://localhost/indicia/index.php/services/data/sample/'.$childSample['occurrence:sample_id'];
+	    $url = $svcUrl.'/data/sample/'.$childSample['occurrence:sample_id'];
 	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
 	    $session = curl_init($url);
 	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -566,7 +562,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 		$parentLoadID=$childSample['sample:parent_id'];
     }
     if($parentLoadID){
-	    $url = 'http://localhost/indicia/index.php/services/data/sample/'.$parentLoadID;
+	    $url = $svcUrl.'/data/sample/'.$parentLoadID;
 	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
 	    $session = curl_init($url);
 	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -648,28 +644,32 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
        ,'fieldprefix'=>'smpAttr'
        ,'extraParams'=>$readAuth
     ));
-    // can't use location select due to location filtering. Location list won't change so use caching.
-    $r .= "<label for=\"imp-location\">".lang::get('LANG_Transect').":</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
-	$url = 'http://localhost/indicia/index.php/services/data/location';
-	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
-	$session = curl_init($url);
-	curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-	$entities = json_decode(curl_exec($session), true);
-	if(!empty($entities)){
-	   	foreach($entities as $entity){
-			if($locations == 'all' || in_array($entity["id"], $locations)){
-				if(!$entity['parent_id']){
-	   				if($entity["id"] == data_entry_helper::$entity_to_load['location_id']) {
-   						$selected = 'selected="selected"';
+    if($locations == 'all'){
+    	$locOptions = array_merge(array('label'=>lang::get('LANG_Transect')), $defAttrOptions);
+    	$locOptions['extraParams'] = array_merge(array('parent_id'=>'NULL', 'view'=>'detail', 'orderby'=>'name'), $locOptions['extraParams']);
+    	$r .= data_entry_helper::location_select($locOptions);
+    } else {
+	    // can't use location select due to location filtering.
+    	$r .= "<label for=\"imp-location\">".lang::get('LANG_Transect').":</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
+		$url = $svcUrl.'/data/location';
+		$url .= "?mode=json&view=detail&parent_id=NULL&orderby=name&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
+		$session = curl_init($url);
+		curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+		$entities = json_decode(curl_exec($session), true);
+		if(!empty($entities)){
+	   		foreach($entities as $entity){
+				if(in_array($entity["id"], $locations)){
+   					if($entity["id"] == data_entry_helper::$entity_to_load['sample:location_id']) {
+						$selected = 'selected="selected"';
    					} else {
-   						$selected = '';
-   					}
-	   				$r .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
+						$selected = '';
+					}
+   					$r .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
 				}
-	    	}
+		    }
 	    }
+		$r .= "</select><span class=\"deh-required\">*</span><br />";
     }
-	$r .= "</select><span class=\"deh-required\">*</span><br />";
 	$r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $defAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($defAttrOptions, array('default'=>1)));
@@ -889,41 +889,51 @@ control.activate();
 locationChange = function(obj){
 	locationLayer.destroyFeatures();
 	if(obj.value != ''){
-		$.getJSON(\"$svcUrl\" + \"/data/location/\"+obj.value +
-			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&callback=?\", function(data) {
-            	// store value in saved field?
+		jQuery.getJSON(\"".$svcUrl."\" + \"/data/location/\"+obj.value +
+			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."\" +
+			\"&callback=?\", function(data) {
             if (data.length>0) {
             	var parser = new OpenLayers.Format.WKT();
-      			if(data[0].centroid_geom){
-					feature = parser.read(data[0].centroid_geom);
-					locationLayer.addFeatures([feature]);
+            	for (var i=0;i<data.length;i++)
+				{
+	      			if(data[i].centroid_geom){
+						feature = parser.read(data[i].centroid_geom);
+						centre = feature.geometry.getCentroid();
+						centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name});
+						locationLayer.addFeatures([feature, centrefeature]); 
+					}
+					if(data[i].boundary_geom){
+						feature = parser.read(data[i].boundary_geom);
+						feature.style = {strokeColor: \"Blue\",
+    	                	strokeWidth: 2};
+						locationLayer.addFeatures([feature]);
+ 					}
+    				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
   				}
-				if(data[0].boundary_geom){
-					feature = parser.read(data[0].boundary_geom);
-					locationLayer.addFeatures([feature]);
-      				var points = feature.geometry.getVertices(true); // fetch endpoints of line held in boundary_geom
-      				if(points.length > 1){
-      					feature = new OpenLayers.Feature.Vector(points[0], {}, {label: 'A'});
-						locationLayer.addFeatures([feature]);
-      					feature = new OpenLayers.Feature.Vector(points[1], {}, {label: 'B'});
-						locationLayer.addFeatures([feature]);
-  					}
- 				}
-				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
 			}
-        });
- 		$.getJSON(\"$svcUrl\" + \"/data/location/\" +
+		});
+ 		$.getJSON(\"".$svcUrl."\" + \"/data/location\" +
 			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&callback=?&parent_id=\"+obj.value, function(data) {
-            	// store value in saved field?
             if (data.length>0) {
             	var parser = new OpenLayers.Format.WKT();
-      			if(data[0].centroid_geom){
-					feature = parser.read(data[0].centroid_geom);
-					locationLayer.addFeatures([feature]);
-  				}
+            	for (var i=0;i<data.length;i++)
+				{
+	      			if(data[i].centroid_geom){
+						feature = parser.read(data[i].centroid_geom);
+						locationLayer.addFeatures([feature]);
+					}
+					if(data[i].boundary_geom){
+						feature = parser.read(data[i].boundary_geom);
+						feature.style = {label: data[i].name,
+							labelAlign: \"cb\",
+							strokeColor: \"Blue\",
+    	                	strokeWidth: 2};
+						locationLayer.addFeatures([feature]);
+ 					}
+ 				}
 			}
         });
-    }
+  }
 };
 // upload location initial value into map.
 jQuery('#imp-location').each(function(){
@@ -936,8 +946,13 @@ jQuery('#imp-location').change(function(){
 ";
     if($mode != 1){
 		data_entry_helper::$onload_javascript .= "
+activateAddList = 1;
 
-addListFeature = function(div, record) {
+addListFeature = function(div, r, record, count) {
+	if(activateAddList == 0)
+		return;
+	if(r == count)
+		activateAddList = 0;
     var parser = new OpenLayers.Format.WKT();
     var feature = parser.read(record.geom);
     if(record.id != ".$thisOccID." || 1==".($readOnly ? 1 : 0)." || 1==".($occReadOnly ? 1 : 0)."){
@@ -990,12 +1005,13 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
     				parent_id : '".$parentSample['sample:id']."',
     				territorial_id : '".$args['occurrence_territorial_id']."',
     				count_id : '".$args['occurrence_count_id']."'},
-    itemsPerPage : 10,
+    itemsPerPage : 12,
     callback : addListFeature ,
     cssOdd : '' 
   });
-// remove callback function after initial population
-addListFeature = function(div, record) {};
+
+// activateAddList = 0;
+
 ";
     };
     $r .= "</div><div><FORM><INPUT TYPE=\"BUTTON\" VALUE=\"".lang::get('LANG_Return')."\" ONCLICK=\"window.location.href='?Main'\"></FORM></div></div>\n";

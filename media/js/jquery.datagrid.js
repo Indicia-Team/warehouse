@@ -206,6 +206,7 @@
     function generateBody(div){
       var body = "";
       var url = getUrl(div);
+      var storedData; 
       $.getJSON(url, function(data){
         if (div.recordCount==0 && div.entity.substring(0,4)=='rpt:') {
             div.recordCount = data.length;
@@ -213,12 +214,13 @@
                 generatePager(div, this);
             });
         }
+        storedData = data;
         $.each(data, function(r, record){
           if (r==0 && div.entity.substring(0,4)=='rpt:') {
             generateReportHeader(record, div);
           }
           if(div.settings.callback)
-        	  div.settings.callback(div, record);
+        	  div.settings.callback(div, r+1, record, storedData.length);
           // although it is possible to implement limit etc  for reports, we have to be brutal with the paging
           // so we can run a callback on all .
           if(div.entity.substring(0,4)!='rpt:' || (r >= (div.page-1)*div.settings.itemsPerPage && r < div.page*div.settings.itemsPerPage)){
