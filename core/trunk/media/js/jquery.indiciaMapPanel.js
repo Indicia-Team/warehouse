@@ -256,7 +256,7 @@
 
       $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCloseBtnId).click(function()
       {
-        $('#'+opts.georefDivId).hide('fast');
+        $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).hide('fast');
       });
 
       $('#imp-location').change(function()
