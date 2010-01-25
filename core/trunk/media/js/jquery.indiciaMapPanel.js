@@ -318,10 +318,10 @@
               ));
             });
             ol.appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
-            $('#'+opts.georefDivId).show("fast");
+            $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).show("fast");
           } else {
             $('<p>'+opts.msgGeorefNothingFound+'</p>').appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
-            $('#'+opts.georefDivId).show("fast");
+            $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).show("fast");
           }
         });
       }
