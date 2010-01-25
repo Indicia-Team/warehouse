@@ -194,7 +194,23 @@ class iform_mnhnl_citizen_science_1 {
         'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
         'type'=>'string',
         'group'=>'Map'
-      )     
+      ),
+      array(
+        'name'=>'georefPreferredArea',
+        'caption'=>'Preferred area for georeferencing.',      
+        'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
+        'type'=>'string',
+        'default'=>'gb',
+        'group'=>'Map'
+      ),
+      array(
+        'name'=>'georefCountry',
+        'caption'=>'Preferred country for georeferencing.',      
+        'description'=>'Preferred country to look within when trying to resolve a place name.',
+        'type'=>'string',
+        'default'=>'United Kingdom',
+        'group'=>'Map'
+      )
     );
   }
   
@@ -327,6 +343,12 @@ class iform_mnhnl_citizen_science_1 {
     $r .= data_entry_helper::sref_and_system(array(
       'label' => lang::get('sample:entered_sref'),
       'systems' => $systems
+    ));
+    $r .= data_entry_helper::georeference_lookup(array(
+      'label' => lang::get('search for place on map'),
+      'georefPreferredArea' => $args['georefPreferredArea'],
+      'georefCountry' => $args['georefCountry'],
+      'georefLang' => $args['language']
     ));
     $r .= data_entry_helper::map_panel(array(
       'presetLayers'=>explode(',', str_replace(' ', '', $args['map_layers'])),

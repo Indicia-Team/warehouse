@@ -1798,7 +1798,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 	      'class'=>'',
 	      'width'=>600,
 	      'height'=>470,
-	      'geoPlanetApiKey'=>parent::$geoplanet_api_key,
 	      'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
 	    ), $options);
 	
@@ -1991,6 +1990,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. The name of the database field this control is bound to if any.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
+  * <li><b>georefPreferredArea</b><br/>
+  * Optional. Hint provided to the locality search service as to which area to look for the place name in. Any example usage of this 
+  * would be to set it to the name of a region for a survey based in that region. Note that this is only a hint, and the search
+  * service may still return place names outside the region. Defaults to gb.</li>
+  * <li><b>georefCountry</b><br/>
+  * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
+  * <li><b>georefLang</b><br/>
+  * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
@@ -1999,8 +2006,18 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   */
   public static function georeference_lookup($options) {
     $options = self::check_options($options);
-    $options['id']='imp-georef-search';
+    $options = array_merge(array(
+      'id' => 'imp-georef-search',
+      'georefPreferredArea' => 'gb',
+      'georefCountry' => 'United Kingdom',
+      'georefLang' => 'en-EN'  
+    ), $options);
+    
     self::$javascript .= "indicia_url='".self::$base_url."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea='".$options['georefPreferredArea']."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry='".$options['georefCountry']."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefLang='".$options['georefLang']."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey='".parent::$geoplanet_api_key."';\n";
     return self::apply_template('georeference_lookup', $options);
   }
 

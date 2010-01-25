@@ -243,18 +243,18 @@
       });
 
       // If a place search (georeference) control exists, bind it to the map.
-      $('#'+opts.georefSearchId).keypress(function(e) {
+      $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchId).keypress(function(e) {
         if (e.which==13) {
           _georeference(div);
           return false;
         }
       });
 
-      $('#'+opts.georefSearchBtnId).click(function() {
+      $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchBtnId).click(function() {
         _georeference(div);
       });
 
-      $('#'+opts.georefCloseBtnId).click(function()
+      $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCloseBtnId).click(function()
       {
         $('#'+opts.georefDivId).hide('fast');
       });
@@ -274,25 +274,27 @@
     }
 
     function _georeference(div) {
-      if (opts.geoPlanetApiKey.length==0) {
+      if ($.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey.length==0) {
         alert('Incorrect configuration - Geoplanet API Key not specified.');
         throw('Incorrect configuration - Geoplanet API Key not specified.');
       }
-      $('#' + opts.georefDivId).hide();
-      $('#' + opts.georefOutputDivId).empty();
+      $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).hide();
+      $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId).empty();
       var ref;
-      var searchtext = $('#' + opts.georefSearchId).val();
+      var searchtext = $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchId).val();
       if (searchtext != '') {
         var request = 'http://where.yahooapis.com/v1/places.q("' +
-        searchtext + ' ' + opts.georefPreferredArea + '", "' + opts.georefCountry + '");count=10';
-        $.getJSON(request + "?format=json&lang="+opts.georefLang+"&appid="+opts.geoPlanetApiKey+"&callback=?", function(data){
+        searchtext + ' ' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea + '", "' + 
+            $.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry + '");count=10';
+        $.getJSON(request + "?format=json&lang="+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefLang+
+        		"&appid="+$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey+"&callback=?", function(data){
           // an array to store the responses in the required country, because GeoPlanet will not limit to a country
           var found = { places: [], count: 0 };
           jQuery.each(data.places.place, function(i,place) {
             // Ingore places outside the chosen country, plus ignore places that were hit because they
             // are similar to the country name we are searching in.
-            if (place.country.toUpperCase()==opts.georefCountry.toUpperCase()
-                && (place.name.toUpperCase().indexOf(opts.georefCountry.toUpperCase())==-1
+            if (place.country.toUpperCase()==$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase()
+                && (place.name.toUpperCase().indexOf($.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase())==-1
                 || place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
                 found.places.push(place);
               found.count++;
@@ -302,8 +304,8 @@
             ref=found.places[0].centroid.latitude + ', ' + found.places[0].centroid.longitude;
             _displayLocation(div, ref);
           } else if (found.count!=0) {
-            $('<p>Select from the following places that were found matching your search, then click on the map to specify the exact location:</p>')
-                    .appendTo('#'+opts.georefOutputDivId);
+            $('<p>'+opts.msgGeorefSelectPlace+'</p>')
+                    .appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
             var ol=$('<ol>');
             $.each(found.places, function(i,place){
               ref= place.centroid.latitude + ', ' + place.centroid.longitude;
@@ -315,10 +317,10 @@
                 function(ref){return function() { _displayLocation(div, ref); } })(ref))
               ));
             });
-            ol.appendTo('#'+opts.georefOutputDivId);
+            ol.appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
             $('#'+opts.georefDivId).show("fast");
           } else {
-            $('<p>No locations found with that name. Try a nearby town name.</p>').appendTo(outputDivId);
+            $('<p>'+opts.msgGeorefNothingFound+'</p>').appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
             $('#'+opts.georefDivId).show("fast");
           }
         });
@@ -379,25 +381,34 @@ $.fn.indiciaMapPanel.defaults = {
     editLayer: true,
     editLayerName: 'Selection layer',
     initialFeatureWkt: null,
-    defaultSystem: 'OSGB',
-    georefPreferredArea : 'gb',
-    georefCountry : 'United Kingdom',
-    georefLang : 'en-EN',
-    geoPlanetApiKey: '',
+    defaultSystem: 'OSGB',    
     srefId: 'imp-sref',
     srefSystemId: 'imp-sref-system',
-    geomId: 'imp-geom',
-    georefSearchId: 'imp-georef-search',
-    georefSearchBtnId: 'imp-georef-search-btn',
-    georefCloseBtnId: 'imp-georef-close-btn',
-    georefOutputDivId: 'imp-georef-output-div',
-    georefDivId: 'imp-georef-div',
+    geomId: 'imp-geom',    
     clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
-    clickedSrefPrecisionMax: ''
+    clickedSrefPrecisionMax: '',
+    msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
+    msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.'
+    
     /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a 
      * displayedSrefPrecisionMin and Mx for a square size output into a list box as you hover. Both of these could either be
      * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
 };
+
+/**
+ * Settings for the georeference lookup.  
+ */
+$.fn.indiciaMapPanel.georeferenceLookupSettings = {
+  georefSearchId: 'imp-georef-search',
+  georefSearchBtnId: 'imp-georef-search-btn',
+  georefCloseBtnId: 'imp-georef-close-btn',
+  georefOutputDivId: 'imp-georef-output-div',
+  georefDivId: 'imp-georef-div',
+  georefPreferredArea : 'gb',
+  georefCountry : 'United Kingdom',
+  georefLang : 'en-EN',
+  geoPlanetApiKey: ''
+}
 
 /**
  * Default options to pass to the openlayers map constructor

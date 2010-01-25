@@ -50,6 +50,8 @@ class iform_form_name {
   
   /**
    * Return the generated form output.
+   * @param array $args List of parameter values passed through to the form depending on how the form has been configured.
+   * This array always contains a value for language.
    * @return Form HTML.
    * @todo: Implement this method 
    */
