@@ -407,7 +407,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['location_name', 'date', 'num_visit', 'num_occurrences', 'num_taxa'],
     reportColumnTitles: {location_name : '".lang::get('LANG_Transect')."', date : '".lang::get('LANG_Date')."', num_visit : '".lang::get('LANG_Visit_No')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', num_taxa : '".lang::get('LANG_Num_Species')."'},
-    actionColumns: {".lang::get('LANG_Show')." : \"?sample_id=£id£\"},
+    actionColumns: {".lang::get('LANG_Show')." : \"".url('node/'.($node->nid), array('query' => 'sample_id=£id£'))."\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey : '".$args['survey_id']."', visit_id : '".$args['sample_visit_number_id']."', closed_id : '".$args['sample_closure_id']."' ".$loclist."},
     itemsPerPage : 12,
@@ -418,7 +418,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 
 ", 'inline');
 		$r .= '<div id="surveyList" class="srf2-datapanel"><div id="smp_grid"></div>';
-		$r .= '<form><input type="button" value="'.lang::get('LANG_Add_Survey').'" onclick="window.location.href=\'?newSample\'"></form></div>';
+		$r .= '<form><input type="button" value="'.lang::get('LANG_Add_Survey').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'"></form></div>';
 
         // Add the locations allocator if user has admin rights.
 		if(iform_loctools_checkaccess($node,'admin')){
@@ -714,8 +714,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     $escaped_id=str_replace(':','\\\\:',$closedFieldName);
     if(!$readOnly){
 	    $r .= "<input type=button id=\"close1\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_Details')."\";
-				onclick=\"var current=$('#controls').tabs('option', 'selected');
-					var result = $('#SurveyForm input').valid();
+				onclick=\"var result = $('#SurveyForm input').valid();
 					var result2 = $('#SurveyForm select').valid();
 					if (!result || !result2) {
     					return;
@@ -724,6 +723,11 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 	    if(!user_access($adminPerm) && $mode !=1) {
 			$r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_And_Close')."\"
 				onclick=\"if(confirm('".lang::get('LANG_Close_Survey_Confirm')."')){
+					var result = $('#SurveyForm input').valid();
+					var result2 = $('#SurveyForm select').valid();
+					if (!result || !result2) {
+    					return;
+    				}
 					jQuery('#".$escaped_id."').val('1');
   					jQuery('#SurveyForm').submit();
   				};\">\n";
@@ -998,7 +1002,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
     reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},
-    actionColumns: {".lang::get('LANG_Show')." : \"?occurrence_id=£id£\",
+    actionColumns: {".lang::get('LANG_Show')." : \"".url('node/'.($node->nid), array('query' => 'occurrence_id=£id£'))."\",
     				".lang::get('LANG_Highlight')." : \"script:highlight(£id£);\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey : '".$args['website_id']."',
@@ -1014,7 +1018,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
 
 ";
     };
-    $r .= "</div><div><form><input type=\"button\" value=\"".lang::get('LANG_Return')."\" onclick=\"window.location.href='?Main'\"></form></div></div>\n";
+    $r .= "</div><div><form><input type=\"button\" value=\"".lang::get('LANG_Return')."\" onclick=\"window.location.href='".url('node/'.($node->nid), array('query' => 'Main'))."'\"></form></div></div>\n";
         
     return $r;
   }
