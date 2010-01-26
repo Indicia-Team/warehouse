@@ -100,10 +100,8 @@ class Occurrence_controller extends Gridview_Base_Controller {
     foreach ($attrs as $attr) {
       // if there are any lookup lists in the attributes, preload the options     
       if (!empty($attr['termlist_id'])) {
-        $r['terms_'.$attr['termlist_id']]=array_merge(
-            array(''=>'<no value>'), 
-            $this->get_termlist_terms($attr['termlist_id'])
-        );
+        $r['terms_'.$attr['termlist_id']]=$this->get_termlist_terms($attr['termlist_id']);
+        $r['terms_'.$attr['termlist_id']][0] = '-no value-';
       } 
     }
   }

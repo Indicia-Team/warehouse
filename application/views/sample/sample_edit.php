@@ -135,8 +135,8 @@ foreach ($values['attributes'] as $attr) {
 	  case 'Vague Date':
 	    echo form::input($name, $attr['value'], 'class="vague-date-picker"');
 	    break;
-	  case 'Lookup List':
-	  	echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['value']);
+	  case 'Lookup List':	    
+	  	echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);
 	  	break;
 	  case 'Boolean':
 	  	echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);

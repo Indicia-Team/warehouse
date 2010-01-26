@@ -44,12 +44,12 @@ class Occurrence_image_Controller extends Gridview_Base_Controller
   * Override the default page functionality to filter by occurrence_id.
   */
   public function page($page_no, $filter=null)
-  {  	
+  { 
     $occurrence_id=$filter;
     // At this point, $occurrence_id has a value - the framework will trap the other case.
     // No further filtering of the gridview required as the very fact you can access the parent occurrence
     // means you can access all the images for it.
-    $this->base_filter['occurrence_id'] = $occurrence_id;   
+    $this->base_filter['occurrence_id'] = $occurrence_id;
     parent::page($page_no);
     $this->view->occurrence_id = $occurrence_id;
   }
