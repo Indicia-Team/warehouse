@@ -59,9 +59,9 @@ class Valid extends valid_Core {
    */
   public static function unique($column_value, $args){
     $db = new Database();
-    if ($args[2] == ''){
+    if ($args[2] == ''){      
       $number_of_records = $db->count_records($args[0], array($args[1] => $column_value));
-    } else {
+    } else {      
       $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'id !=' => $args[2]));
     }
 

@@ -29,16 +29,20 @@
  */
 class config_test {
 
-  public static function check_config($problems_only=false) {
-    $result = array();
-    $indicia_config=kohana::config_load('indicia', false);
-    // If the Indicia config is present, then everything has passed, so we can skip the tests.
-    if ($indicia_config==null) {
+  /**
+   * Check the system configuration.
+   * @param boolean $problems_only If true then only reports on problems, not successful checks. Defaults to false.
+   * @param boolean $force If true then forces a check even if the system configuration has been completed.
+   */
+  public static function check_config($problems_only=false, $force=false) {    
+    $result = array();    
+    // If the Indicia config is present, then everything has passed, so we can skip the tests unless it is being forced.
+    if ($force || kohana::config_load('indicia', false)==null) {
       self::check_php_version($result, $problems_only);
       self::check_postgres($result, $problems_only);
       self::check_dir_permissions($result, $problems_only);
       self::check_curl($result, $problems_only);
-      self::check_gd($result, $problems_only);
+      self::check_gd2($result, $problems_only);
       self::check_helper($result, $problems_only);
       self::check_email($result, $problems_only);
       // Check db must be the last one

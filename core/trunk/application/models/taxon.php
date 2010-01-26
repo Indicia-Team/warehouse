@@ -46,7 +46,8 @@ class Taxon_Model extends ORM {
       'external_key',
       'authority',
       'deleted',
-      'search_code'
+      'search_code',
+      'description'
     );
     return parent::validate($array, $save);
   }

@@ -22,14 +22,35 @@
  */
 
 ?>
+<script type='text/javascript'>
+$(document).ready(function(){
+  $('div#issues').hide();
+  $('#issues_toggle').show();
+  $('#issues_toggle').click(function(){
+    $('div#issues').toggle('slow');
+  });
+});
+</script>
 <h2>Welcome to the Indicia Warehouse!</h2>
 <?php if ($db_version!=$app_version) : ?>
 <div class="ui-state-error ui-corner-all page-notice">Your database needs to be upgraded as the application version is <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.
 <a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a></div>  
 <?php 
-endif; 
-if (kohana::config('image.driver') == 'GD' && !function_exists('gd_info')) : ?>
-<div class="ui-state-error ui-corner-all page-notice">This warehouse is configured to use the GD2 image library but it is not enabled in your PHP ini file. Please enable it before continuing.</div>    
+endif;
+$problems = config_test::check_config(true, true);
+if (count($problems)>0) : ?>
+<div class="ui-state-error ui-corner-all page-notice">
+<p>There are configuration issues on this server.
+<span id="issues_toggle" class="ui-state-default ui-corner-all button" style="margin-left: 1em;">Show/Hide Details</span>
+</p>
+<div id='issues'>
+<?php
+foreach($problems as $problem) { 
+  echo '<div class="page-notice ui-widget-content ui-corner-all"><div>'.$problem['title'].'</div><div>'.$problem['description'].'</div></div>';
+}
+?>
+</div>
+</div>
 <?php endif; ?>
 <p>Indicia is a toolkit that simplifies the construction of new websites which allow data entry, mapping and reporting
 of wildlife records. Indicia is an Open Source project funded by the Open Air Laboratories Network and managed
