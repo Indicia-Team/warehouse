@@ -310,7 +310,7 @@
       // Convert indicia WMS/WFS layers into js objects
       $.each(this.settings.indiciaWMSLayers, function(key, value)
       {
-        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + 'wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
+        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + 'wms', { layers: value, transparent: true }, { singleTile: true, isBaseLayer: false, sphericalMercator: true}));
       });
       $.each(this.settings.indiciaWFSLayers, function(key, value)
       {
@@ -436,8 +436,8 @@ $.fn.indiciaMapPanel.openLayersDefaults = {
  * Some pre-configured layers that can be added to the map.
  */
 $.fn.indiciaMapPanel.presetLayers = {
-  openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic', 'sphericalMercator': true}); },
-  nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7', 'sphericalMercator': true}); },
+  openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true}); },
+  nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true}); },
   virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
   multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
   multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
