@@ -916,7 +916,7 @@ locationChange = function(obj){
   				}
 			}
 		});
- 		$.getJSON(\"".$svcUrl."\" + \"/data/location\" +
+ 		jQuery.getJSON(\"".$svcUrl."\" + \"/data/location\" +
 			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&callback=?&parent_id=\"+obj.value, function(data) {
             if (data.length>0) {
             	var parser = new OpenLayers.Format.WKT();
@@ -1005,7 +1005,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
     actionColumns: {".lang::get('LANG_Show')." : \"".url('node/'.($node->nid), array('query' => 'occurrence_id=£id£'))."\",
     				".lang::get('LANG_Highlight')." : \"script:highlight(£id£);\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey : '".$args['website_id']."',
+    parameters : { survey : '".$args['survey_id']."',
     				parent_id : '".$parentSample['sample:id']."',
     				territorial_id : '".$args['occurrence_territorial_id']."',
     				count_id : '".$args['occurrence_count_id']."'},
