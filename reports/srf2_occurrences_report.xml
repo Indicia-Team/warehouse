@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="SRF2 Occurrence Report" description="Details of all occurrances associated with a survey">
+<report title="SRF2 Occurrence Report" description="Details of all occurrences associated with a survey">
       <params>
     		<param name='sample' display='Sample: ' description='ID of parent sample to return data for' datatype='int' />
       </params>

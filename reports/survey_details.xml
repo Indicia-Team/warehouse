@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Survey Details" description="Details of all occurrances associated with a report">
+<report title="Survey Details" description="Details of all occurrences associated with a report">
       <params>
     		<param name='survey' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
         		query='SELECT id, title as caption FROM surveys'/>

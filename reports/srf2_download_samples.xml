@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="SRF2 Download Samples" description="Details of all occurrances associated with closed samples">
+<report title="SRF2 Download Samples" description="Details of all occurrences associated with closed samples">
       <params>
             <param name="download" display="Download" description="Carry out as a download... Downloaded records are set to read only."
             	datatype='lookup' lookup_values='OFF:No,INITIAL:sweep up all records,CONFIRM:Final but dont mark records,FINAL:Final + mark records' />
