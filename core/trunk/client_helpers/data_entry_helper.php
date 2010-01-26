@@ -59,9 +59,9 @@ $indicia_templates = array(
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} {disabled}>{caption}</span>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px;\"{class}></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
-      "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"".lang::get('search')."\" />\n".
+      "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\"><div id=\"imp-georef-output-div\">\n".
-      "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">".lang::get('close')."</a>\n".
+      "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">{close}</a>\n".
       "</div>",
   'tab_header' => '<script type="text/javascript">/* <![CDATA[ */'."\n".
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
@@ -2010,7 +2010,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'id' => 'imp-georef-search',
       'georefPreferredArea' => 'gb',
       'georefCountry' => 'United Kingdom',
-      'georefLang' => 'en-EN'  
+      'georefLang' => 'en-EN',
+      // Internationalise the labels here, because if we do this directly in the template setup code it is too early for any custom
+      // language files to be loaded.
+      'search' => lang::get('search'),
+      'close' => lang::get('close'),
     ), $options);
     
     self::$javascript .= "indicia_url='".self::$base_url."';\n";

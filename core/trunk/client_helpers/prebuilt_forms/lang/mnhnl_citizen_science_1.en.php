@@ -27,8 +27,28 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
+  'abundance' => 'Abundance',
+  'close'=>'Close',
+  'email'=>'Email',
+  'first name'=>'First Name',
   'happy for contact'=>'Please tick this box if you are happy for us to contact you about this record',
-
+  'next step'=>'Next Step',
+  'occurrence:taxa_taxon_list_id'=>'Species',
+  'phone number'=>'Phone Number',
+  'prev step'=>'Previous Step',
+  'save'=>'Save',
+  'sample:comment'=>'Comment',
+  'sample:date' => 'Date',
+  'sample:entered_sref'=>'Spatial Reference',
+  'search'=>'Search',
+  'search for place on map'=>'Search for place on map',
+  'surname'=>'Surname',
+  
+  // Tab titles (only visible if interface tabbed
+  'about you'=>'About You',
+  'what did you see'=>'What did you see?',
+  'where was it'=>'Where was it?',
+  'other information'=>'Other information',
   // Tab instructions
   'about you tab instructions'=>'<strong>About You</strong><br/>Please tell us about yourself first. This might be important so that we can contact you if the record you contribute is important to science.',
   'species tab instructions'=>'<strong>Species Selection</strong><br/>Please click on the species which you observed then click the Next Step button.',

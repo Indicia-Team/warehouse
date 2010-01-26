@@ -372,7 +372,7 @@ class iform_mnhnl_citizen_science_1 {
     ));
     // Dynamically create a control for the abundance
     $abundance_args = array(
-      'label'=>lang::get('Abundance'),
+      'label'=>lang::get('abundance'),
       'fieldname'=>'occAttr:' + $args['abundance_attr_id'],
       'table'=>'termlists_term',
       'captionField'=>'term',
@@ -383,7 +383,7 @@ class iform_mnhnl_citizen_science_1 {
     ); 
     $r .= call_user_func(array('data_entry_helper', $args['abundance_ctrl']), $abundance_args);    
     $r .= data_entry_helper::textarea(array(
-        'label'=>'Comment',
+        'label'=>lang::get('sample:comment'),
         'fieldname'=>'sample:comment',
         'class'=>'wide',
     ));
