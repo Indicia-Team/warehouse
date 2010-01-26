@@ -32,9 +32,11 @@ class Survey_Controller extends Gridview_Base_Controller {
   public function __construct() {
     parent::__construct('survey', 'gv_survey', 'survey/index');
     $this->columns = array(
-      'title'=>'',
-      'description'=>'',
-      'website'=>'');
+      'id'          => '',
+      'title'       => '',
+      'description' => '',
+      'website'     => ''
+    );
     $this->pagetitle = "Surveys";
     $this->model = ORM::factory('survey');
     $this->auth_filter = $this->gen_auth_filter;

@@ -36,9 +36,11 @@ class Website_Controller extends Gridview_Base_Controller
   {
     parent::__construct('website', 'website', 'website/index');
 
-    $this->columns = array('title'       =>'',
-        'description' =>'',
-        'url' =>''
+    $this->columns = array(
+        'id'          => '',
+        'title'       => '',
+        'description' => '',
+        'url'         => ''
     );
 
     $this->pagetitle = "Websites";
