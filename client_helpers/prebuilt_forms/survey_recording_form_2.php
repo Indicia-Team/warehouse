@@ -409,7 +409,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     reportColumnTitles: {location_name : '".lang::get('LANG_Transect')."', date : '".lang::get('LANG_Date')."', num_visit : '".lang::get('LANG_Visit_No')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', num_taxa : '".lang::get('LANG_Num_Species')."'},
     actionColumns: {".lang::get('LANG_Show')." : \"?sample_id=£id£\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey : '".$args['website_id']."', visit_id : '".$args['sample_visit_number_id']."', closed_id : '".$args['sample_closure_id']."' ".$loclist."},
+    parameters : { survey : '".$args['survey_id']."', visit_id : '".$args['sample_visit_number_id']."', closed_id : '".$args['sample_closure_id']."' ".$loclist."},
     itemsPerPage : 12,
     condCss : {field : 'closed', value : '0', css: 'srf2-highlight'},
     cssOdd : '' 
@@ -418,11 +418,11 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 
 ", 'inline');
 		$r .= '<div id="surveyList" class="srf2-datapanel"><div id="smp_grid"></div>';
-		$r .= '<FORM><INPUT TYPE="BUTTON" VALUE="'.lang::get('LANG_Add_Survey').'" ONCLICK="window.location.href=\'?newSample\'"></FORM></div>';
+		$r .= '<form><input type="button" value="'.lang::get('LANG_Add_Survey').'" onclick="window.location.href=\'?newSample\'"></form></div>';
 
         // Add the locations allocator if user has admin rights.
 		if(iform_loctools_checkaccess($node,'admin')){
-			$r .= '<div id="setLocations" class="srf2-datapanel"><FORM method="post">';
+			$r .= '<div id="setLocations" class="srf2-datapanel"><form method="post">';
 			$url = $svcUrl.'/data/location';
 	    	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name";
 	    	$session = curl_init($url);
@@ -448,31 +448,31 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 	    		}
 	    	}
 	    	 $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />\n";
-			$r .= "</FORM></div>";
+			$r .= "</form></div>";
 		}
         // Add the downloader if user has manager (superuser) rights.
 		if(iform_loctools_checkaccess($node,'superuser')){
 			$r .= '<div id="downloads" class="srf2-datapanel">';
-			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_direction_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_direction_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Direction_Report').'</p>';
 			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey\":".$args['survey_id'].", \"direction_id\":".$args['sample_walk_direction_id'].", \"closed_id\":".$args['sample_closure_id']."}' />";	
-    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Direction_Report_Button')."\">";
-	   		$r .= "</FORM>";
-			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+    		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Direction_Report_Button')."\">";
+	   		$r .= "</form>";
+			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Initial_Download').'</p>';
 			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"INITIAL\"}' />";	
-    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Initial_Download_Button')."\">";
-	   		$r .= "</FORM>";
-	   		$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+    		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Initial_Download_Button')."\">";
+	   		$r .= "</form>";
+	   		$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Confirm_Download').'</p>';
 	   		$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"CONFIRM\"}' />";	
-    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Confirm_Download_Button')."\">";
-	   		$r .= "</FORM>";
-			$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+    		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Confirm_Download_Button')."\">";
+	   		$r .= "</form>";
+			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Final_Download').'</p>';
 			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"FINAL\"}' />";	
-    		$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Final_Download_Button')."\">";
-	   		$r .= "</FORM></div>";
+    		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Final_Download_Button')."\">";
+	   		$r .= "</form></div>";
 		}
 				// Create Map
 		$r .= "<div class=\"srf2-mappanel\">\n";
@@ -714,7 +714,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     $escaped_id=str_replace(':','\\\\:',$closedFieldName);
     if(!$readOnly){
 	    $r .= "<input type=button id=\"close1\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_Details')."\";
-				onClick=\"var current=$('#controls').tabs('option', 'selected');
+				onclick=\"var current=$('#controls').tabs('option', 'selected');
 					var result = $('#SurveyForm input').valid();
 					var result2 = $('#SurveyForm select').valid();
 					if (!result || !result2) {
@@ -723,7 +723,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
   					jQuery('#SurveyForm').submit();\">\n";
 	    if(!user_access($adminPerm) && $mode !=1) {
 			$r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Survey_And_Close')."\"
-				onClick=\"if(confirm('".lang::get('LANG_Close_Survey_Confirm')."')){
+				onclick=\"if(confirm('".lang::get('LANG_Close_Survey_Confirm')."')){
 					jQuery('#".$escaped_id."').val('1');
   					jQuery('#SurveyForm').submit();
   				};\">\n";
@@ -739,9 +739,9 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
 		$r .= '<div id="occ_grid"></div>';
-	   	$r .= "<FORM method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+	   	$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
     	$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"sample\":".data_entry_helper::$entity_to_load['sample:id']."}' />";	
-    	$r .= "<INPUT type=\"submit\" class=\"ui-state-default ui-corner-all\" VALUE=\"".lang::get('LANG_Download_Occurrences')."\">";
+    	$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Download_Occurrences')."\">";
 	   	$r .= "</FORM>";
     } else {
     	$r .= '<p>'.lang::get('LANG_Page_Not_Available').'</p>';
@@ -1014,7 +1014,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
 
 ";
     };
-    $r .= "</div><div><FORM><INPUT TYPE=\"BUTTON\" VALUE=\"".lang::get('LANG_Return')."\" ONCLICK=\"window.location.href='?Main'\"></FORM></div></div>\n";
+    $r .= "</div><div><form><input type=\"button\" value=\"".lang::get('LANG_Return')."\" onclick=\"window.location.href='?Main'\"></form></div></div>\n";
         
     return $r;
   }
