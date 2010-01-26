@@ -70,10 +70,6 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
             $this->website_id = $website_id;
           }
         }
-
-        // Refresh the nonce. If it's a write nonce, we'll delete it later when the data has been saved
-        $this->cache->delete($nonce);
-        $this->cache->set($nonce, $website_id, $mode);
       }
     } else {
     	$auth = new Auth();
