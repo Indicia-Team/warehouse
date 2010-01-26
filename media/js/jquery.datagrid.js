@@ -224,17 +224,17 @@
           // although it is possible to implement limit etc  for reports, we have to be brutal with the paging
           // so we can run a callback on all .
           if(div.entity.substring(0,4)!='rpt:' || (r >= (div.page-1)*div.settings.itemsPerPage && r < div.page*div.settings.itemsPerPage)){
-            class='';
+            var css='';
             if (r%2!=0) {
-                class += div.settings.cssOdd;
+                css += div.settings.cssOdd;
             }
         	if(div.settings.condCss) {
         		if(record[div.settings.condCss.field] == div.settings.condCss.value) {
-        			class += " "+div.settings.condCss.css;
+        			css += " "+div.settings.condCss.css;
         		}
         	}
-            if (class) {
-                body += "<tr class='"+class+"'>";
+            if (css) {
+                body += "<tr class='"+css+"'>";
             } else {
                 body += "<tr>";
             }
