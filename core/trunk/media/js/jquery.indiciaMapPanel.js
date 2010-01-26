@@ -23,121 +23,25 @@
 
 (function($) {
   $.fn.indiciaMapPanel = function(options, olOptions) {
-    // Extend our default options with those provided, basing this on an empty object
-    // so the defaults don't get changed.
-    var opts = $.extend({}, $.fn.indiciaMapPanel.defaults, options);
-    var olOpts = $.extend({}, $.fn.indiciaMapPanel.openLayersDefaults, olOptions);
-
-    return this.each(function() {
-      this.settings = opts;
-
-      // Sizes the div
-      $(this).css('height', this.settings.height+'px').css('width', this.settings.width+'px');
-
-      // If we're using a proxy
-      if (this.settings.proxy)
-      {
-        OpenLayers.ProxyHost = this.settings.proxy;
-      }
-      
-      // Keep a reference to this, to simplify scoping issues.
-      var div = this;
-
-      // Constructs the map
-      div.map = new OpenLayers.Map($(this)[0], olOpts);
-      
-      // Iterate over the preset layers, adding them to the map
-      $.each(this.settings.presetLayers, function(i, item)
-      {
-        // Check whether this is a defined layer
-        if ($.fn.indiciaMapPanel.presetLayers.hasOwnProperty(item))
-        {
-          var layer = $.fn.indiciaMapPanel.presetLayers[item]();
-          div.map.addLayers([layer]);
-          if (item=='multimap_landranger') {
-        	  // Landranger is not just a simple layer - need to set a Multimap option
-        	  _enableMMLandranger();
-          }
-        } else {
-          alert('Requested preset layer ' + item + ' is not recognised.');
-        }
-      });
-      
-      // Convert indicia WMS/WFS layers into js objects
-      $.each(this.settings.indiciaWMSLayers, function(key, value)
-      {
-        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + 'wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
-      });
-      $.each(this.settings.indiciaWFSLayers, function(key, value)
-      {
-        div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + 'wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
-      });
-
-      div.map.addLayers(this.settings.layers); 
-      
-      // Centre the map      
-      var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);      
-      center.transform(div.map.displayProjection, div.map.projection);      
-      div.map.setCenter(center, this.settings.initial_zoom);
-
-      if (this.settings.editLayer) {
-        // Add an editable layer to the map
-        var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true});
-        div.map.editLayer = editLayer;
-        div.map.addLayers([div.map.editLayer]);
-        
-        if (this.settings.initialFeatureWkt == null ) {
-        	// if no initial feature specified, but there is a populated imp-geom hidden input, 
-        	// use the value from the hidden geom        	
-        	this.settings.initialFeatureWkt = $('#imp-geom').val();
-        }
-
-        // Draw the feature to be loaded on startup, if present
-        if (this.settings.initialFeatureWkt)
-        {
-          _showWktFeature(this, this.settings.initialFeatureWkt);
-        }
-      }
-
-      // Add any map controls
-      $.each(this.settings.controls, function(i, item) {
-        div.map.addControl(item);
-      });
-
-      // Add a layer switcher if there are multiple layers
-      if ((this.settings.presetLayers.length + this.settings.layers.length) > 1) {
-        div.map.addControl(new OpenLayers.Control.LayerSwitcher());
-      }
-
-      // Disable the scroll wheel from zooming if required
-      if (!this.settings.scroll_wheel_zoom) {
-        $.each(div.map.controls, function(i, control) {
-          if (control instanceof OpenLayers.Control.Navigation) {
-            control.disableZoomWheel();
-          }
-        });
-      }      
-      _bindControls(this);   
-    });
-    
     /**
      * Enable a multimap landranger preference.
      */
     function _enableMMLandranger() {
-      // Don't do this if the MM script is not linked up properly, otherwise we get a JS 
+      // Don't do this if the MM script is not linked up properly, otherwise we get a JS
       // exception and the other scripts stop running
       if (typeof MMDataResolver != "undefined") {
         var landrangerData = 904;
         var prefs = MMDataResolver.getDataPreferences(MM_WORLD_MAP);
-      
+
         // Remove the landranger data where it is present
         for (i=0; i<prefs.length; i++) {
-        if (landrangerData == prefs[i]) prefs.splice(i, 1);
+          if (landrangerData == prefs[i]) {
+            prefs.splice(i, 1);
+          }
         }
-      
         // Add to beginning of array (highest priority)
         prefs.unshift(landrangerData);
-     
+
         MMDataResolver.setDataPreferences( MM_WORLD_MAP, prefs );
       }
     }
@@ -163,7 +67,7 @@
       bounds.left = bounds.left - dx;
       // if showing a point, don't zoom in too far
       if (dy===0 && dx===0) {
-        div.map.setCenter(bounds.getCenterLonLat(), 13);        
+        div.map.setCenter(bounds.getCenterLonLat(), 13);
       } else {
         // Set the default view to show something triple the size of the grid square
         div.map.zoomToExtent(bounds);
@@ -199,13 +103,13 @@
             precision=4;
           } else {
             precision=2;
-          }          
+          }
           // enforce precision limits if specifid in the settings
           if (div.settings.clickedSrefPrecisionMin!=='') {
-        	precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+          precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
           }
-          if (div.settings.clickedSrefPrecisionMax!=='') { 
-          	precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+          if (div.settings.clickedSrefPrecisionMax!=='') {
+            precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
           }
           $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
             "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
@@ -213,12 +117,12 @@
             "&precision=" + precision +
             "&callback=?", function(data)
             {
-              $('#'+opts.srefId).val(data.sref);              
+              $('#'+opts.srefId).val(data.sref);
               div.map.editLayer.destroyFeatures();
               $('#'+opts.geomId).val(data.wkt);
               var parser = new OpenLayers.Format.WKT();
               var feature = parser.read(data.wkt);
-              div.map.editLayer.addFeatures([feature]);              
+              div.map.editLayer.addFeatures([feature]);
             }
           );
         }
@@ -274,7 +178,7 @@
     }
 
     function _georeference(div) {
-      if ($.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey.length==0) {
+      if ($.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey.length===0) {
         alert('Incorrect configuration - Geoplanet API Key not specified.');
         throw('Incorrect configuration - Geoplanet API Key not specified.');
       }
@@ -284,37 +188,47 @@
       var searchtext = $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchId).val();
       if (searchtext != '') {
         var request = 'http://where.yahooapis.com/v1/places.q("' +
-        searchtext + ' ' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea + '", "' + 
+        searchtext + ' ' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea + '", "' +
             $.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry + '");count=10';
         $.getJSON(request + "?format=json&lang="+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefLang+
-        		"&appid="+$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey+"&callback=?", function(data){
+            "&appid="+$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey+"&callback=?", function(data){
           // an array to store the responses in the required country, because GeoPlanet will not limit to a country
           var found = { places: [], count: 0 };
           jQuery.each(data.places.place, function(i,place) {
             // Ingore places outside the chosen country, plus ignore places that were hit because they
             // are similar to the country name we are searching in.
-            if (place.country.toUpperCase()==$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase()
-                && (place.name.toUpperCase().indexOf($.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase())==-1
-                || place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
-                found.places.push(place);
+            if (place.country.toUpperCase()==$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase() &&
+                (place.name.toUpperCase().indexOf($.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase())==-1 ||
+                place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
+              found.places.push(place);
               found.count++;
             }
           });
           if (found.count==1 && found.places[0].name.toLowerCase()==searchtext.toLowerCase()) {
             ref=found.places[0].centroid.latitude + ', ' + found.places[0].centroid.longitude;
             _displayLocation(div, ref);
-          } else if (found.count!=0) {
+          } else if (found.count!==0) {
             $('<p>'+opts.msgGeorefSelectPlace+'</p>')
                     .appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
-            var ol=$('<ol>');
+            var ol=$('<ol>'), placename;
             $.each(found.places, function(i,place){
               ref= place.centroid.latitude + ', ' + place.centroid.longitude;
               placename = place.name+' (' + place.placeTypeName + ')';
-              if (place.admin1!='') placename = placename + ', '+place.admin1;
-              if (place.admin2!='') placename = placename + '\\' + place.admin2;
+              if (place.admin1!='') {
+                placename = placename + ', '+place.admin1;
+              }
+              if (place.admin2!='') { 
+                placename = placename + '\\' + place.admin2;
+              }
 
-              ol.append($("<li>").append($("<a href='#'>" + placename + "</a>").click((
-                function(ref){return function() { _displayLocation(div, ref); } })(ref))
+              ol.append($("<li>").append(
+                $("<a href='#'>" + placename + "</a>").click((
+                  function(ref){
+                    return function() { 
+                      _displayLocation(div, ref);
+                    };
+                  }
+                )(ref))
               ));
             });
             ol.appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
@@ -353,6 +267,102 @@
       }
     }
 
+    // Extend our default options with those provided, basing this on an empty object
+    // so the defaults don't get changed.
+    var opts = $.extend({}, $.fn.indiciaMapPanel.defaults, options);
+    var olOpts = $.extend({}, $.fn.indiciaMapPanel.openLayersDefaults, olOptions);
+
+    return this.each(function() {
+      this.settings = opts;
+
+      // Sizes the div
+      $(this).css('height', this.settings.height+'px').css('width', this.settings.width+'px');
+
+      // If we're using a proxy
+      if (this.settings.proxy)
+      {
+        OpenLayers.ProxyHost = this.settings.proxy;
+      }
+
+      // Keep a reference to this, to simplify scoping issues.
+      var div = this;
+
+      // Constructs the map
+      div.map = new OpenLayers.Map($(this)[0], olOpts);
+
+      // Iterate over the preset layers, adding them to the map
+      $.each(this.settings.presetLayers, function(i, item)
+      {
+        // Check whether this is a defined layer
+        if ($.fn.indiciaMapPanel.presetLayers.hasOwnProperty(item))
+        {
+          var layer = $.fn.indiciaMapPanel.presetLayers[item]();
+          div.map.addLayers([layer]);
+          if (item=='multimap_landranger') {
+            // Landranger is not just a simple layer - need to set a Multimap option
+            _enableMMLandranger();
+          }
+        } else {
+          alert('Requested preset layer ' + item + ' is not recognised.');
+        }
+      });
+
+      // Convert indicia WMS/WFS layers into js objects
+      $.each(this.settings.indiciaWMSLayers, function(key, value)
+      {
+        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + 'wms', { layers: value, transparent: true }, { isBaseLayer: false, sphericalMercator: true}));
+      });
+      $.each(this.settings.indiciaWFSLayers, function(key, value)
+      {
+        div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + 'wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
+      });
+
+      div.map.addLayers(this.settings.layers);
+
+      // Centre the map
+      var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
+      center.transform(div.map.displayProjection, div.map.projection);
+      div.map.setCenter(center, this.settings.initial_zoom);
+
+      if (this.settings.editLayer) {
+        // Add an editable layer to the map
+        var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true});
+        div.map.editLayer = editLayer;
+        div.map.addLayers([div.map.editLayer]);
+
+        if (this.settings.initialFeatureWkt === null ) {
+          // if no initial feature specified, but there is a populated imp-geom hidden input,
+          // use the value from the hidden geom
+          this.settings.initialFeatureWkt = $('#imp-geom').val();
+        }
+
+        // Draw the feature to be loaded on startup, if present
+        if (this.settings.initialFeatureWkt)
+        {
+          _showWktFeature(this, this.settings.initialFeatureWkt);
+        }
+      }
+
+      // Add any map controls
+      $.each(this.settings.controls, function(i, item) {
+        div.map.addControl(item);
+      });
+
+      // Add a layer switcher if there are multiple layers
+      if ((this.settings.presetLayers.length + this.settings.layers.length) > 1) {
+        div.map.addControl(new OpenLayers.Control.LayerSwitcher());
+      }
+
+      // Disable the scroll wheel from zooming if required
+      if (!this.settings.scroll_wheel_zoom) {
+        $.each(div.map.controls, function(i, control) {
+          if (control instanceof OpenLayers.Control.Navigation) {
+            control.disableZoomWheel();
+          }
+        });
+      }
+      _bindControls(this);
+    });
 
   };
 
@@ -375,28 +385,28 @@ $.fn.indiciaMapPanel.defaults = {
     displayFormat: "image/png",
     presetLayers: [],
     indiciaWMSLayers: {},
-    indiciaWFSLayers : {},    
+    indiciaWFSLayers : {},
     layers: [],
     controls: [],
     editLayer: true,
     editLayerName: 'Selection layer',
     initialFeatureWkt: null,
-    defaultSystem: 'OSGB',    
+    defaultSystem: 'OSGB',
     srefId: 'imp-sref',
     srefSystemId: 'imp-sref-system',
-    geomId: 'imp-geom',    
+    geomId: 'imp-geom',
     clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
     clickedSrefPrecisionMax: '',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.'
-    
-    /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a 
+
+    /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a
      * displayedSrefPrecisionMin and Mx for a square size output into a list box as you hover. Both of these could either be
      * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
 };
 
 /**
- * Settings for the georeference lookup.  
+ * Settings for the georeference lookup.
  */
 $.fn.indiciaMapPanel.georeferenceLookupSettings = {
   georefSearchId: 'imp-georef-search',
@@ -408,7 +418,7 @@ $.fn.indiciaMapPanel.georeferenceLookupSettings = {
   georefCountry : 'United Kingdom',
   georefLang : 'en-EN',
   geoPlanetApiKey: ''
-}
+};
 
 /**
  * Default options to pass to the openlayers map constructor
@@ -435,15 +445,15 @@ $.fn.indiciaMapPanel.presetLayers = {
 // To protect ourselves against exceptions because the Google script would not link up, we
 // only enable these layers if the Google constants are available.
 if (typeof G_PHYSICAL_MAP != "undefined") {
-  $.fn.indiciaMapPanel.presetLayers.google_physical = 
+  $.fn.indiciaMapPanel.presetLayers.google_physical =
       function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': 'true'}); };
   $.fn.indiciaMapPanel.presetLayers.google_streets =
       function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
-  $.fn.indiciaMapPanel.presetLayers.google_hybrid = 
+  $.fn.indiciaMapPanel.presetLayers.google_hybrid =
       function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
-  $.fn.indiciaMapPanel.presetLayers.google_satellite = 
+  $.fn.indiciaMapPanel.presetLayers.google_satellite =
       function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
-};
+}
 
 /**
  * A utility function to convert an OpenLayers filter into text, which can be supplied to a WMS filter call to GeoServer.
