@@ -27,7 +27,7 @@ class html extends html_Core {
        if (!in_array($fieldname, $skipped)) {
          // make a clean looking caption         
          if (substr($fieldname,0,3)=='fk_') {
-           $captionSuffix=' (lookup)';
+           $captionSuffix=' ('.kohana::lang('misc.lookup_existing_record').')';
          } else {
            $captionSuffix='';
          }
@@ -99,10 +99,10 @@ class html extends html_Core {
     */
    public static function form_buttons($allowDelete) {      
      $r = '<fieldset class="button-set">'."\n";
-     $r .= '<input type="submit" name="submit" value="Save" class="ui-corner-all ui-state-default button ui-priority-primary" />'."\n"; 
-     $r .= '<input type="submit" name="submit" value="Cancel" class="ui-corner-all ui-state-default button" />'."\n";
+     $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.save').'" class="ui-corner-all ui-state-default button ui-priority-primary" />'."\n"; 
+     $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.cancel').'" class="ui-corner-all ui-state-default button" />'."\n";
      if ($allowDelete) {
-       $r .= '<input type="submit" name="submit" value="Delete" onclick="if (!confirm(\'Are you sure you want to delete this record?\')) {return false;}" class="ui-corner-all ui-state-default button" />'."\n";
+       $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.delete').'" onclick="if (!confirm(\''.kohana::lang('misc.confirm_delete').'\')) {return false;}" class="ui-corner-all ui-state-default button" />'."\n";
      }
      $r .= '</fieldset>';
      return $r;
