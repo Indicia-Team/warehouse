@@ -20,6 +20,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+require_once('includes/map.php');
+
 /**
  * Prebuilt Indicia data entry form that presents taxon search box, date control, map picker,
  * survey selector and comment entry controls.
@@ -34,182 +36,185 @@ class iform_mnhnl_citizen_science_1 {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {   
-    return array(
+    return array_merge(
+      iform_map_get_map_parameters(), 
       array(
-        'name'=>'interface',
-        'caption'=>'Interface Style Option',
-        'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
-            'wizard pages or having all controls on a single page.',
-        'type'=>'select',
-        'options' => array(
-          'tabs' => 'Tabs',
-          'wizard' => 'Wizard',
-          'one_page' => 'All One Page'
+        array(
+          'name'=>'interface',
+          'caption'=>'Interface Style Option',
+          'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
+              'wizard pages or having all controls on a single page.',
+          'type'=>'select',
+          'options' => array(
+            'tabs' => 'Tabs',
+            'wizard' => 'Wizard',
+            'one_page' => 'All One Page'
+          ),
+          'group' => 'User Interface'
+        ),      
+        array(
+        	'name'=>'species_ctrl',
+          'caption'=>'Species Control Type',
+          'description'=>'The type of control that will be available to select a species.',
+          'type'=>'select',
+          'options' => array(
+            'autocomplete' => 'Autocomplete',
+            'select' => 'Select',
+            'listbox' => 'List box',
+            'radio_group' => 'Radio group',
+            'treeview' => 'Treeview',
+            'tree_browser' => 'Tree browser'
+          ),
+          'group'=>'User Interface'
         ),
-        'group' => 'User Interface'
-      ),      
-      array(
-      	'name'=>'species_ctrl',
-        'caption'=>'Species Control Type',
-        'description'=>'The type of control that will be available to select a species.',
-        'type'=>'select',
-        'options' => array(
-          'autocomplete' => 'Autocomplete',
-          'select' => 'Select',
-          'listbox' => 'List box',
-          'radio_group' => 'Radio group',
-          'treeview' => 'Treeview',
-          'tree_browser' => 'Tree browser'
+        array(
+          'name'=>'abundance_ctrl',
+          'caption'=>'Abundance Control Type',
+          'description'=>'The type of control that will be available to select the approximate abundance.',
+          'type'=>'select',
+          'options' => array(
+            'select' => 'Select',
+            'listbox' => 'List box',
+            'radio_group' => 'Radio group'          
+          ),
+          'group'=>'User Interface'
         ),
-        'group'=>'User Interface'
-      ),
-      array(
-        'name'=>'abundance_ctrl',
-        'caption'=>'Abundance Control Type',
-        'description'=>'The type of control that will be available to select the approximate abundance.',
-        'type'=>'select',
-        'options' => array(          
-          'select' => 'Select',
-          'listbox' => 'List box',
-          'radio_group' => 'Radio group'          
+        array(
+        	'name'=>'list_id',
+          'caption'=>'Species List ID',
+          'description'=>'The Indicia ID for the species list that species can be selected from.',
+          'type'=>'int',
+          'group'=>'Misc'
         ),
-        'group'=>'User Interface'
-      ),
-      array(
-      	'name'=>'list_id',
-        'caption'=>'Species List ID',
-        'description'=>'The Indicia ID for the species list that species can be selected from.',
-        'type'=>'int',
-        'group'=>'Misc'
-      ),
-	    array(
-      	'name'=>'preferred',
-        'caption'=>'Preferred species only?',
-        'description'=>'Should the selection of species be limited to preferred names only?',
-        'type'=>'boolean',
-	      'group'=>'Misc'
-      ),
-      array(
-        'name'=>'survey_id',
-        'caption'=>'Survey ID',
-        'description'=>'The Indicia ID for the survey that data is saved into.',
-        'type'=>'int',
-        'group'=>'Misc'
-      ),      
-      array(
-        'name'=>'uid_attr_id',
-        'caption'=>'User ID Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that stores the CMS User ID.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
-      ),
-      array(      
-        'name'=>'username_attr_id',
-        'caption'=>'Username Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that stores the user\'s username.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
-      ),
-      array(
-        'name'=>'email_attr_id',
-        'caption'=>'Email Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that stores the user\'s email.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
-      ),
-      array(
-        'name'=>'first_name_attr_id',
-        'caption'=>'First Name Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that stores the user\'s first name.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
-      ),
-      array(
-        'name'=>'surname_attr_id',
-        'caption'=>'Surname Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that stores the user\'s surname.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
-      ),
-      array(
-        'name'=>'phone_attr_id',
-        'caption'=>'Phone Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that stores the user\'s phone.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
-      ),
-      array(
-        'name'=>'contact_attr_id',
-        'caption'=>'Contactable Attribute ID',      
-        'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
-        'type'=>'smpAttr',
-        'group'=>'Sample Attributes'
-      ),
-      array(
-        'name'=>'abundance_attr_id',
-        'caption'=>'Abundance Attribute ID',      
-        'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
-        'type'=>'occAttr',
-        'group'=>'Occurrence Attributes'
-      ),
-      array(
-        'name'=>'abundance_termlist_id',
-        'caption'=>'Abundance Termlist ID',      
-        'description'=>'Indicia ID for the termlist that contains the options to select from when specifying the approximate abundance.',
-        'type'=>'termlist',
-        'group'=>'Termlists'
-      ),
-      array(
-        'name'=>'map_layers',
-        'caption'=>'Available Map Layers',      
-        'description'=>'List of available map background layers, comma separated. Options are '. 
-            'openlayers_wms, nasa_mosaic, virtual_earth, multimap_default, multimap_landranger, google_physical, google_streets, google_hybrid or google_satellite.',
-        'type'=>'string',
-        'group'=>'Map'
-      ),
-      array(
-        'name'=>'map_centroid_lat',
-        'caption'=>'Centre of Map Latitude',      
-        'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
-        'type'=>'string',
-        'group'=>'Map'
-      ),
-      array(
-        'name'=>'map_centroid_long',
-        'caption'=>'Centre of Map Longitude',      
-        'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
-        'type'=>'string',
-        'group'=>'Map'
-      ),
-      array(
-        'name'=>'map_zoom',
-        'caption'=>'Map Zoom Level',      
-        'description'=>'Zoom level of the initially displayed map.',
-        'type'=>'int',
-        'group'=>'Map'
-      ),
-      array(
-        'name'=>'spatial_systems',
-        'caption'=>'Allowed Spatial Ref Systems',      
-        'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
-        'type'=>'string',
-        'group'=>'Map'
-      ),
-      array(
-        'name'=>'georefPreferredArea',
-        'caption'=>'Preferred area for georeferencing.',      
-        'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
-        'type'=>'string',
-        'default'=>'gb',
-        'group'=>'Map'
-      ),
-      array(
-        'name'=>'georefCountry',
-        'caption'=>'Preferred country for georeferencing.',      
-        'description'=>'Preferred country to look within when trying to resolve a place name.',
-        'type'=>'string',
-        'default'=>'United Kingdom',
-        'group'=>'Map'
+  	    array(
+        	'name'=>'preferred',
+          'caption'=>'Preferred species only?',
+          'description'=>'Should the selection of species be limited to preferred names only?',
+          'type'=>'boolean',
+  	      'group'=>'Misc'
+        ),
+        array(
+          'name'=>'survey_id',
+          'caption'=>'Survey ID',
+          'description'=>'The Indicia ID for the survey that data is saved into.',
+          'type'=>'int',
+          'group'=>'Misc'
+        ),      
+        array(
+          'name'=>'uid_attr_id',
+          'caption'=>'User ID Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the CMS User ID.',
+          'type'=>'smpAttr',
+          'group'=>'Sample Attributes'
+        ),
+        array(      
+          'name'=>'username_attr_id',
+          'caption'=>'Username Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the user\'s username.',
+          'type'=>'smpAttr',
+          'group'=>'Sample Attributes'
+        ),
+        array(
+          'name'=>'email_attr_id',
+          'caption'=>'Email Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the user\'s email.',
+          'type'=>'smpAttr',
+          'group'=>'Sample Attributes'
+        ),
+        array(
+          'name'=>'first_name_attr_id',
+          'caption'=>'First Name Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the user\'s first name.',
+          'type'=>'smpAttr',
+          'group'=>'Sample Attributes'
+        ),
+        array(
+          'name'=>'surname_attr_id',
+          'caption'=>'Surname Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the user\'s surname.',
+          'type'=>'smpAttr',
+          'group'=>'Sample Attributes'
+        ),
+        array(
+          'name'=>'phone_attr_id',
+          'caption'=>'Phone Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the user\'s phone.',
+          'type'=>'smpAttr',
+          'group'=>'Sample Attributes'
+        ),
+        array(
+          'name'=>'contact_attr_id',
+          'caption'=>'Contactable Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
+          'type'=>'smpAttr',
+          'group'=>'Sample Attributes'
+        ),
+        array(
+          'name'=>'abundance_attr_id',
+          'caption'=>'Abundance Attribute ID',      
+          'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
+          'type'=>'occAttr',
+          'group'=>'Occurrence Attributes'
+        ),
+        array(
+          'name'=>'abundance_termlist_id',
+          'caption'=>'Abundance Termlist ID',      
+          'description'=>'Indicia ID for the termlist that contains the options to select from when specifying the approximate abundance.',
+          'type'=>'termlist',
+          'group'=>'Termlists'
+        ),
+        array(
+          'name'=>'map_layers',
+          'caption'=>'Available Map Layers',      
+          'description'=>'List of available map background layers, comma separated. Options are '. 
+              'openlayers_wms, nasa_mosaic, virtual_earth, multimap_default, multimap_landranger, google_physical, google_streets, google_hybrid or google_satellite.',
+          'type'=>'string',
+          'group'=>'Map'
+        ),
+        array(
+          'name'=>'map_centroid_lat',
+          'caption'=>'Centre of Map Latitude',      
+          'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
+          'type'=>'string',
+          'group'=>'Map'
+        ),
+        array(
+          'name'=>'map_centroid_long',
+          'caption'=>'Centre of Map Longitude',      
+          'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
+          'type'=>'string',
+          'group'=>'Map'
+        ),
+        array(
+          'name'=>'map_zoom',
+          'caption'=>'Map Zoom Level',      
+          'description'=>'Zoom level of the initially displayed map.',
+          'type'=>'int',
+          'group'=>'Map'
+        ),
+        array(
+          'name'=>'spatial_systems',
+          'caption'=>'Allowed Spatial Ref Systems',      
+          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
+          'type'=>'string',
+          'group'=>'Map'
+        ),
+        array(
+          'name'=>'georefPreferredArea',
+          'caption'=>'Preferred area for georeferencing.',      
+          'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
+          'type'=>'string',
+          'default'=>'gb',
+          'group'=>'Map'
+        ),
+        array(
+          'name'=>'georefCountry',
+          'caption'=>'Preferred country for georeferencing.',      
+          'description'=>'Preferred country to look within when trying to resolve a place name.',
+          'type'=>'string',
+          'default'=>'United Kingdom',
+          'group'=>'Map'
+        )
       )
     );
   }
@@ -350,14 +355,8 @@ class iform_mnhnl_citizen_science_1 {
       'georefCountry' => $args['georefCountry'],
       'georefLang' => $args['language']
     ));
-    $r .= data_entry_helper::map_panel(array(
-      'presetLayers'=>explode(',', str_replace(' ', '', $args['map_layers'])),
-      'width'=>760,
-      'initial_lat'=>$args['map_centroid_lat'],
-      'initial_long'=>$args['map_centroid_long'],
-      'initial_zoom'=>(int) $args['map_zoom']
-    
-    ));
+    $options = iform_map_get_map_options($args, $readAuth);
+    $r .= data_entry_helper::map_panel($options);
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls'

@@ -20,6 +20,7 @@
  * @link  http://code.google.com/p/indicia/
  */
 
+require_once('includes/map.php');
 /**
  *
  *
@@ -36,290 +37,215 @@ class iform_my_dot_map {
    * @todo: Implement this method
    */
   public static function get_parameters() {
-    return array(
-      array(
-        'name'=>'map_centroid_lat',
-        'caption'=>'Centre of Map Latitude',
-        'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
-        'type'=>'string',
-        'group'=>'Initial View'
-      ),
-      array(
-        'name'=>'map_centroid_long',
-        'caption'=>'Centre of Map Longitude',
-        'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
-        'type'=>'string',
-        'group'=>'Initial View'
-      ),
-      array(
-        'name'=>'map_zoom',
-        'caption'=>'Map Zoom Level',
-        'description'=>'Zoom level of the initially displayed map.',
-        'type'=>'int',
-        'group'=>'Initial View'
-      ),
-      array(
-        'name'=>'map_width',
-        'caption'=>'Map Width (px)',
-        'description'=>'Width in pixels of the map.',
-        'type'=>'int',
-        'group'=>'Initial View',
-        'default'=>500
-      ),
-      array(
-        'name'=>'map_height',
-        'caption'=>'Map Height (px)',
-        'description'=>'Height in pixels of the map.',
-        'type'=>'int',
-        'group'=>'Initial View',
-        'default'=>600
-      ),
-      array(
-        'name'=>'preset_layers',
-        'caption'=>'Preset Base Layers',
-        'description'=>'Select the preset base layers that are available for the map.',
-        'type'=>'list',
-        'options' => array(
-          'google_physical' => 'Google Physical',
-          'google_streets' => 'Google Streets',
-          'google_hybrid' => 'Google Hybrid',
-          'google_satellite' => 'Google Satellite',
-          'virtual_earth' => 'Microsoft Virtual Earth',
-          'multimap_default' => 'Multimap',
-          'multimap_landranger' => 'Multimap with OS Landranger'
+    return array_merge(
+      iform_map_get_map_parameters(),
+      array(      
+        // Distribution layer 1
+        array(
+          'name' => 'wms_dist_1_title',
+          'caption' => 'Layer Caption',
+          'description' => 'Caption to display for the optional WMS full species distribution map layer',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 1' ,
+          'required'=>false
         ),
-        'group'=>'Base Layers',
-        'required'=>'false'
-      ),
-      array(
-        'name' => 'wms_base_title',
-        'caption' => 'Additional WMS Base Layer Caption',
-        'description' => 'Caption to display for the optional WMS base map layer',
-        'type' => 'textfield',
-        'group'=>'Base Layers',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_base_url',
-        'caption' => 'Additional WMS Base Layer Service URL',
-        'description' => 'URL of the WMS service to display for the optional WMS base map layer',
-        'type' => 'textfield',
-        'group'=>'Base Layers',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_base_layer',
-        'caption' => 'Additional WMS Base Layer Name',
-        'description' => 'Layername of the WMS service layer for the optional WMS base map layer',
-        'type' => 'textfield',
-        'group'=>'Base Layers',
-        'required'=>false
-      ),
-      // Distribution layer 1
-      array(
-        'name' => 'wms_dist_1_title',
-        'caption' => 'Layer Caption',
-        'description' => 'Caption to display for the optional WMS full species distribution map layer',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 1' ,
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_1_internal',
-        'caption' => 'Layer 1 uses GeoServer to access Indicia database?',
-        'description' => 'Check this box if layer 1 uses a GeoServer instance to access the Indicia database.',
-        'type' => 'checkbox',
-        'group'=>'Distribution Layer 1' ,
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_1_url',
-        'caption' => 'Service URL (External Layers Only)',
-        'description' => 'URL of the WMS service to display for this layer. Leave blank '.
-            'if using GeoServer to access this instance of Indicia.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 1',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_1_layer',
-        'caption' => 'Layer Name',
-        'description' => 'Layer name of the WMS service layer. If using GeoServer to access this instance of Indicia, please ensure that the '.
-            'detail_occurrences view is exposed as a feature type and the name and prefix is given here.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 1',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_1_filter_against',
-        'caption' => 'What to Filter Against?',
-        'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
-          'on the selected value.',
-        'type' => 'select',
-        'options' => array(
-          // Developer note - these fields should be in the occurrence detail view.
-          'none' => 'No Filter',
-          'taxa_taxon_list_id' => 'Species',
-          'external_key' => 'Species using External Key',
-          'survey_id' => 'Survey'
+        array(
+          'name' => 'wms_dist_1_internal',
+          'caption' => 'Layer 1 uses GeoServer to access Indicia database?',
+          'description' => 'Check this box if layer 1 uses a GeoServer instance to access the Indicia database.',
+          'type' => 'checkbox',
+          'group'=>'Distribution Layer 1' ,
+          'required'=>false
         ),
-        'group'=>'Distribution Layer 1',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_1_filter_field',
-        'caption' => 'Field in WMS Dataset to Filter Against (External Layers Only)',
-        'description' => 'If using an external layer, specify the name of the field in the database table underlying the WMS layer which you want to filter against. '.
-            'Leave blank for layers using the GeoServer set up for this instance of Indicia.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 1',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_1_style',
-        'caption' => 'Style',
-        'description' => 'Name of the style to load for this layer (e.g. the style registered on GeoServer you want to use). This style must exist, '.
-            'and the setting is case sensitive.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 1',
-        'required'=>false
-      ),
-      // Distribution layer 2
-      array(
-        'name' => 'wms_dist_2_title',
-        'caption' => 'Layer Caption',
-        'description' => 'Caption to display for the optional WMS full species distribution map layer',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 2' ,
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_2_internal',
-        'caption' => 'Layer 2 uses GeoServer to access Indicia database?',
-        'description' => 'Check this box if layer 2 uses a GeoServer instance to access the Indicia database.',
-        'type' => 'checkbox',
-        'group'=>'Distribution Layer 2' ,
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_2_url',
-        'caption' => 'Service URL  (External Layers Only)',
-        'description' => 'URL of the WMS service to display for this layer. Leave blank '.
-            'if using GeoServer to access this instance of Indicia.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 2',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_2_layer',
-        'caption' => 'Layer Name',
-        'description' => 'Layer name of the WMS service layer. If using GeoServer to access this instance of Indicia, please ensure that the '.
-            'detail_occurrences view is exposed as a feature type and the name and prefix is given here.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 2',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_2_filter_against',
-        'caption' => 'What to Filter Against?',
-        'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
-          'on the selected value.',
-        'type' => 'select',
-        'options' => array(
-          // Developer note - these fields should be in the occurrence detail view.
-          'none' => 'No Filter',
-          'taxa_taxon_list_id' => 'Species',
-          'external_key' => 'Species using External Key',
-          'survey_id' => 'Survey'
+        array(
+          'name' => 'wms_dist_1_url',
+          'caption' => 'Service URL (External Layers Only)',
+          'description' => 'URL of the WMS service to display for this layer. Leave blank '.
+              'if using GeoServer to access this instance of Indicia.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 1',
+          'required'=>false
         ),
-        'group'=>'Distribution Layer 2',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_2_filter_field',
-        'caption' => 'Field in WMS Dataset to Filter Against  (External Layers Only)',
-        'description' => 'If using an external layer, specify the name of the field in the database table underlying the WMS layer which you want to filter against. '.
-            'Leave blank for layers using the GeoServer set up for this instance of Indicia.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 2',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_2_style',
-        'caption' => 'Style',
-        'description' => 'Name of the style to load for this layer (e.g. the style registered on GeoServer you want to use). This style must exist, '.
-            'and the setting is case sensitive.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 2',
-        'required'=>false
-      ),
-      // Distribution layer 3
-      array(
-        'name' => 'wms_dist_3_title',
-        'caption' => 'Layer Caption',
-        'description' => 'Caption to display for the optional WMS full species distribution map layer',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 3' ,
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_3_internal',
-        'caption' => 'Layer 3 uses GeoServer to access Indicia database?',
-        'description' => 'Check this box if layer 3 uses a GeoServer instance to access the Indicia database.',
-        'type' => 'checkbox',
-        'group'=>'Distribution Layer 3' ,
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_3_url',
-        'caption' => 'Service URL',
-        'description' => 'URL of the WMS service to display for this layer. Leave blank '.
-            'if using GeoServer to access this instance of Indicia.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 3',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_3_layer',
-        'caption' => 'Layer Name',
-        'description' => 'Layer name of the WMS service layer. If using GeoServer to access this instance of Indicia, please ensure that the '.
-            'detail_occurrences view is exposed as a feature type and the name and prefix is given here.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 3',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_3_filter_against',
-        'caption' => 'What to Filter Against?',
-        'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
-          'on the selected value.',
-        'type' => 'select',
-        'options' => array(
-          // Developer note - these fields should be in the occurrence detail view.
-          'none' => 'No Filter',
-          'taxa_taxon_list_id' => 'Species',
-          'external_key' => 'Species using External Key',
-          'survey_id' => 'Survey'
+        array(
+          'name' => 'wms_dist_1_layer',
+          'caption' => 'Layer Name',
+          'description' => 'Layer name of the WMS service layer. If using GeoServer to access this instance of Indicia, please ensure that the '.
+              'detail_occurrences view is exposed as a feature type and the name and prefix is given here.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 1',
+          'required'=>false
         ),
-        'group'=>'Distribution Layer 3',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_3_filter_field',
-        'caption' => 'Field in WMS Dataset to Filter Against',
-        'description' => 'If using an external layer, specify the name of the field in the database table underlying the WMS layer which you want to filter against. '.
-            'Leave blank for layers using the GeoServer set up for this instance of Indicia.',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 3',
-        'required'=>false
-      ),
-      array(
-        'name' => 'wms_dist_3_style',
-        'caption' => 'Style',
-        'description' => 'Name of the style to load for this layer (e.g. the style registered on GeoServer you want to use).',
-        'type' => 'textfield',
-        'group'=>'Distribution Layer 3',
-        'required'=>false
+        array(
+          'name' => 'wms_dist_1_filter_against',
+          'caption' => 'What to Filter Against?',
+          'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
+            'on the selected value.',
+          'type' => 'select',
+          'options' => array(
+            // Developer note - these fields should be in the occurrence detail view.
+            'none' => 'No Filter',
+            'taxa_taxon_list_id' => 'Species',
+            'external_key' => 'Species using External Key',
+            'survey_id' => 'Survey'
+          ),
+          'group'=>'Distribution Layer 1',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_1_filter_field',
+          'caption' => 'Field in WMS Dataset to Filter Against (External Layers Only)',
+          'description' => 'If using an external layer, specify the name of the field in the database table underlying the WMS layer which you want to filter against. '.
+              'Leave blank for layers using the GeoServer set up for this instance of Indicia.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 1',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_1_style',
+          'caption' => 'Style',
+          'description' => 'Name of the style to load for this layer (e.g. the style registered on GeoServer you want to use). This style must exist, '.
+              'and the setting is case sensitive.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 1',
+          'required'=>false
+        ),
+        // Distribution layer 2
+        array(
+          'name' => 'wms_dist_2_title',
+          'caption' => 'Layer Caption',
+          'description' => 'Caption to display for the optional WMS full species distribution map layer',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 2' ,
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_2_internal',
+          'caption' => 'Layer 2 uses GeoServer to access Indicia database?',
+          'description' => 'Check this box if layer 2 uses a GeoServer instance to access the Indicia database.',
+          'type' => 'checkbox',
+          'group'=>'Distribution Layer 2' ,
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_2_url',
+          'caption' => 'Service URL  (External Layers Only)',
+          'description' => 'URL of the WMS service to display for this layer. Leave blank '.
+              'if using GeoServer to access this instance of Indicia.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 2',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_2_layer',
+          'caption' => 'Layer Name',
+          'description' => 'Layer name of the WMS service layer. If using GeoServer to access this instance of Indicia, please ensure that the '.
+              'detail_occurrences view is exposed as a feature type and the name and prefix is given here.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 2',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_2_filter_against',
+          'caption' => 'What to Filter Against?',
+          'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
+            'on the selected value.',
+          'type' => 'select',
+          'options' => array(
+            // Developer note - these fields should be in the occurrence detail view.
+            'none' => 'No Filter',
+            'taxa_taxon_list_id' => 'Species',
+            'external_key' => 'Species using External Key',
+            'survey_id' => 'Survey'
+          ),
+          'group'=>'Distribution Layer 2',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_2_filter_field',
+          'caption' => 'Field in WMS Dataset to Filter Against  (External Layers Only)',
+          'description' => 'If using an external layer, specify the name of the field in the database table underlying the WMS layer which you want to filter against. '.
+              'Leave blank for layers using the GeoServer set up for this instance of Indicia.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 2',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_2_style',
+          'caption' => 'Style',
+          'description' => 'Name of the style to load for this layer (e.g. the style registered on GeoServer you want to use). This style must exist, '.
+              'and the setting is case sensitive.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 2',
+          'required'=>false
+        ),
+        // Distribution layer 3
+        array(
+          'name' => 'wms_dist_3_title',
+          'caption' => 'Layer Caption',
+          'description' => 'Caption to display for the optional WMS full species distribution map layer',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 3' ,
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_3_internal',
+          'caption' => 'Layer 3 uses GeoServer to access Indicia database?',
+          'description' => 'Check this box if layer 3 uses a GeoServer instance to access the Indicia database.',
+          'type' => 'checkbox',
+          'group'=>'Distribution Layer 3' ,
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_3_url',
+          'caption' => 'Service URL',
+          'description' => 'URL of the WMS service to display for this layer. Leave blank '.
+              'if using GeoServer to access this instance of Indicia.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 3',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_3_layer',
+          'caption' => 'Layer Name',
+          'description' => 'Layer name of the WMS service layer. If using GeoServer to access this instance of Indicia, please ensure that the '.
+              'detail_occurrences view is exposed as a feature type and the name and prefix is given here.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 3',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_3_filter_against',
+          'caption' => 'What to Filter Against?',
+          'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
+            'on the selected value.',
+          'type' => 'select',
+          'options' => array(
+            // Developer note - these fields should be in the occurrence detail view.
+            'none' => 'No Filter',
+            'taxa_taxon_list_id' => 'Species',
+            'external_key' => 'Species using External Key',
+            'survey_id' => 'Survey'
+          ),
+          'group'=>'Distribution Layer 3',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_3_filter_field',
+          'caption' => 'Field in WMS Dataset to Filter Against',
+          'description' => 'If using an external layer, specify the name of the field in the database table underlying the WMS layer which you want to filter against. '.
+              'Leave blank for layers using the GeoServer set up for this instance of Indicia.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 3',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_3_style',
+          'caption' => 'Style',
+          'description' => 'Name of the style to load for this layer (e.g. the style registered on GeoServer you want to use).',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 3',
+          'required'=>false
+        )
       )
     );
   }
@@ -340,45 +266,17 @@ class iform_my_dot_map {
    */
   public static function get_form($args) {
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    //Now, build the map
-    $presetLayers = array();
-    // read out the activated preset layers
-    foreach($args['preset_layers'] as $layer => $active) {
-      if ($active!==0) {
-        $presetLayers[] = $layer;
-      }
-    }
-    $options = array(
-      'readAuth' => $readAuth,
-      'presetLayers' => $presetLayers,
-      'editLayer' => false,
-      'layers' => array(),
-      'initial_lat'=>$args['map_centroid_lat'],
-      'initial_long'=>$args['map_centroid_long'],
-      'initial_zoom'=>(int) $args['map_zoom'],
-      'width'=>(int) $args['map_width'],
-      'height'=>(int) $args['map_height']
-    );
-    // If they have defined a custom base layer, add it
-    if ($args['wms_base_title'] && $args['wms_base_url'] && $args['wms_base_layer']) {
-      data_entry_helper::$javascript .= "var baseLayer = new OpenLayers.Layer.WMS(
-        '".$args['wms_base_title']."',
-        '".$args['wms_base_url']."',
-        {layers: '".$args['wms_base_layer']."', 'sphericalMercator': true}
-      );\n";
-      $options['layers'][] = 'baseLayer';
-
-    }
+    // setup the map options
+    $options = iform_map_get_map_options($args, $readAuth);
     if (array_key_exists('table', $_GET) && $_GET['table']=='sample') {
       // Use a cUrl request to get the data from Indicia which contains the value we need to filter against
       // Read the record that was just posted.
-
       $fetchOpts = array(
         'table'=>'occurrence',
         'extraParams' => $readAuth + array('sample_id'=>$_GET['id'], 'view' => 'detail')
       );
       // @todo Error handling on the response
-      $occurrence = data_entry_helper::get_population_data($fetchOpts);
+      $occurrence = data_entry_helper::get_population_data($fetchOpts);      
     }
     // Add the 3 distribution layers if present
     $layerName = self::build_distribution_layer(1, $args, $occurrence);
@@ -387,6 +285,7 @@ class iform_my_dot_map {
     if ($layerName) $options['layers'][] = $layerName;
     $layerName = self::build_distribution_layer(3, $args, $occurrence);
     if ($layerName) $options['layers'][] = $layerName;
+    // Now output a grid of the occurrences that were just saved.
     $r = '<div class="page-notice ui-widget ui-corner-all">';
     $r .= "<table><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
     $r .= "<tbody>\n";
