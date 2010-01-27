@@ -326,8 +326,8 @@ class iform_mnhnl_bird_transect_walks {
 				}
 			}
 		}
-      } else { // non Indicia POST, in this case must be the location allocations.
-      	if(iform_loctools_checkaccess($node,'admin')){
+      } else { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
+      	if(iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnlbtw', $_POST)){
       		iform_loctools_deletelocations($node);
 	      	foreach($_POST as $key => $value){
     	  		$parts = explode(':', $key);
@@ -488,6 +488,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
         // Add the locations allocator if user has admin rights.
 		if(iform_loctools_checkaccess($node,'admin')){
 			$r .= '<div id="setLocations" class="mnhnl-btw-datapanel"><form method="post">';
+    		$r .= "<input type=\"hidden\" id=\"mnhnlbtw\" name=\"mnhnlbtw\" value=\"mnhnlbtw\" />\n";
 			$url = $svcUrl.'/data/location';
 	    	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name";
 	    	$session = curl_init($url);
