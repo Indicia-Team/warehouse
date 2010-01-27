@@ -28,7 +28,7 @@
  * @subpackage PrebuiltForms
  */
 
-class iform_survey_recording_form_2 {
+class iform_mnhnl_bird_transect_walks {
 
 	/* TODO
 	 * Future Enhancements
@@ -62,75 +62,124 @@ class iform_survey_recording_form_2 {
         'caption'=>'Layer 1 Definition',
         'description'=>'Comma separated list of option definitions for the first layer',
         'type'=>'string',
-        'maxlength'=>200
+        'group'=>'Maps',
+      'maxlength'=>200
       ),
       array(
       	'name'=>'layer2',
         'caption'=>'Layer 2 Definition',
         'description'=>'Comma separated list of option definitions for the first layer',
         'type'=>'string',
-        'maxlength'=>200
+        'group'=>'Maps',
+      	'maxlength'=>200
+      ),
+      array(
+        'name'=>'preset_layers',
+        'caption'=>'Preset Base Layers',
+        'description'=>'Select the preset base layers that are available for the map.',
+        'type'=>'list',
+        'options' => array(
+          'google_physical' => 'Google Physical',
+          'google_streets' => 'Google Streets',
+          'google_hybrid' => 'Google Hybrid',
+          'google_satellite' => 'Google Satellite',
+          'virtual_earth' => 'Microsoft Virtual Earth'
+          // NB Multimap is UK only.
+        ),
+        'group'=>'Maps',
+        'required'=>false
+      ),
+      array(
+        'name'=>'map_centroid_lat',
+        'caption'=>'Centre of Map Latitude',
+        'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
+        'type'=>'string',
+        'group'=>'Maps'
+      ),
+      array(
+        'name'=>'map_centroid_long',
+        'caption'=>'Centre of Map Longitude',
+        'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
+        'type'=>'string',
+        'group'=>'Maps'
+      ),
+      array(
+        'name'=>'map_zoom',
+        'caption'=>'Map Zoom Level',
+        'description'=>'Zoom level of the initially displayed map.',
+        'type'=>'int',
+        'group'=>'Maps'
       ),
       
       array(
       	'name'=>'sample_walk_direction_id',
         'caption'=>'Sample Walk Direction Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Walk Direction.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_reliability_id',
         'caption'=>'Sample Data Reliability Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Data Reliability.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_visit_number_id',
         'caption'=>'Sample Visit Number Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Visit Number.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_wind_id',
         'caption'=>'Sample Wind Force Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Wind Force.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_precipitation_id',
         'caption'=>'Sample Precipitation Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Precipitation.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_temperature_id',
         'caption'=>'Sample Temperature Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Temperature.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_cloud_id',
         'caption'=>'Sample Cloud Cover Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Cloud Cover.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_start_time_id',
         'caption'=>'Sample Start Time Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Start Time.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_end_time_id',
         'caption'=>'Sample End Time Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the End Time.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'sample_closure_id',
         'caption'=>'Sample Closed Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for Closure: this is used to determine whether the sample is editable.',
-        'type'=>'int'
+        'group'=>'Sample Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'list_id',
@@ -142,37 +191,43 @@ class iform_survey_recording_form_2 {
       	'name'=>'occurrence_confidence_id',
         'caption'=>'Occurrence Confidence Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for the Data Confidence.',
-        'type'=>'int'
+        'group'=>'Occurrence Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'occurrence_count_id',
         'caption'=>'Occurrence Count Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for the Count of the particular species.',
-        'type'=>'int'
+        'group'=>'Occurrence Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'occurrence_approximation_id',
         'caption'=>'Occurrence Approximation Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for whether the count is approximate.',
-        'type'=>'int'
+        'group'=>'Occurrence Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'occurrence_territorial_id',
         'caption'=>'Occurrence Territorial Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for [TODO].',
-        'type'=>'int'
+        'group'=>'Occurrence Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'occurrence_atlas_code_id',
         'caption'=>'Occurrence Atlas Code Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for [TODO].',
-        'type'=>'int'
+        'group'=>'Occurrence Attribute IDs',
+      	'type'=>'int'
       ),
       array(
       	'name'=>'occurrence_overflying_id',
         'caption'=>'Occurrence Overflying Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for [TODO].',
-        'type'=>'int'
+        'group'=>'Occurrence Attribute IDs',
+      	'type'=>'int'
       )
     );
   }
@@ -182,7 +237,7 @@ class iform_survey_recording_form_2 {
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'Site Recording Form 2';  
+    return 'MNHNL Bird Transect Walks';  
   }
 
   public static function get_perms($nid) {
@@ -203,6 +258,16 @@ class iform_survey_recording_form_2 {
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
 	$svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
+	$presetLayers = array();
+    // read out the activated preset layers
+    if(isset($args['preset_layers'])) {
+	    foreach($args['preset_layers'] as $layer => $active) {
+    	  if ($active!==0) {
+        	$presetLayers[] = $layer;
+    	  }
+    	}
+    }
+    
     // When invoked by GET there are the following modes:
     // Not logged in: Display an information message.
     // No additional arguments: display the survey selector.
@@ -390,39 +455,39 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 			
 			
 		if($locations == 'all'){
-			$reportName = srf2_samples_list;
-			$loclist = '';
+			$useloclist = 'NO';
+			$loclist = '-1';
 		} else {
-			$reportName = srf2_samples_list_restricted;
 			// an empty list will cause an sql error, lids must be > 0, so push a -1 to prevent the error.
 			if(empty($locations)) $locations[] = -1;
-			$loclist = ", locations : \"".implode(',', $locations)."\"";
+			$useloclist = 'YES';
+			$loclist = implode(',', $locations);
 		}
 		
 		// Create the Survey list datagrid for this user.
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
 		drupal_add_js("jQuery(document).ready(function(){
-  $('div#smp_grid').indiciaDataGrid('rpt:".$reportName."', {
+  $('div#smp_grid').indiciaDataGrid('rpt:mnhnl_btw_list_samples', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['location_name', 'date', 'num_visit', 'num_occurrences', 'num_taxa'],
     reportColumnTitles: {location_name : '".lang::get('LANG_Transect')."', date : '".lang::get('LANG_Date')."', num_visit : '".lang::get('LANG_Visit_No')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', num_taxa : '".lang::get('LANG_Num_Species')."'},
     actionColumns: {".lang::get('LANG_Show')." : \"".url('node/'.($node->nid), array('query' => 'sample_id=£id£'))."\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey : '".$args['survey_id']."', visit_id : '".$args['sample_visit_number_id']."', closed_id : '".$args['sample_closure_id']."' ".$loclist."},
+    parameters : { survey_id : '".$args['survey_id']."', visit_attr_id : '".$args['sample_visit_number_id']."', closed_attr_id : '".$args['sample_closure_id']."', use_location_list : '".$useloclist."', locations : '".$loclist."'},
     itemsPerPage : 12,
-    condCss : {field : 'closed', value : '0', css: 'srf2-highlight'},
+    condCss : {field : 'closed', value : '0', css: 'mnhnl-btw-highlight'},
     cssOdd : '' 
   });
 });
 
 ", 'inline');
-		$r .= '<div id="surveyList" class="srf2-datapanel"><div id="smp_grid"></div>';
+		$r .= '<div id="surveyList" class="mnhnl-btw-datapanel"><div id="smp_grid"></div>';
 		$r .= '<form><input type="button" value="'.lang::get('LANG_Add_Survey').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'"></form></div>';
 
         // Add the locations allocator if user has admin rights.
 		if(iform_loctools_checkaccess($node,'admin')){
-			$r .= '<div id="setLocations" class="srf2-datapanel"><form method="post">';
+			$r .= '<div id="setLocations" class="mnhnl-btw-datapanel"><form method="post">';
 			$url = $svcUrl.'/data/location';
 	    	$url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name";
 	    	$session = curl_init($url);
@@ -452,35 +517,39 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 		}
         // Add the downloader if user has manager (superuser) rights.
 		if(iform_loctools_checkaccess($node,'superuser')){
-			$r .= '<div id="downloads" class="srf2-datapanel">';
-			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_direction_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= '<div id="downloads" class="mnhnl-btw-datapanel">';
+			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=mnhnl_btw_transect_direction_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Direction_Report').'</p>';
-			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey\":".$args['survey_id'].", \"direction_id\":".$args['sample_walk_direction_id'].", \"closed_id\":".$args['sample_closure_id']."}' />";	
+			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey_id\":".$args['survey_id'].", \"direction_attr_id\":".$args['sample_walk_direction_id'].", \"closed_attr_id\":".$args['sample_closure_id']."}' />";	
     		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Direction_Report_Button')."\">";
 	   		$r .= "</form>";
-			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Initial_Download').'</p>';
-			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"INITIAL\"}' />";	
+			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey_id\":".$args['survey_id'].", \"closed_attr_id\":".$args['sample_closure_id'].", \"download\": \"INITIAL\"}' />";	
     		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Initial_Download_Button')."\">";
 	   		$r .= "</form>";
-	   		$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+	   		$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Confirm_Download').'</p>';
-	   		$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"CONFIRM\"}' />";	
+	   		$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey_id\":".$args['survey_id'].", \"closed_attr_id\":".$args['sample_closure_id'].", \"download\": \"CONFIRM\"}' />";	
     		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Confirm_Download_Button')."\">";
 	   		$r .= "</form>";
-			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_download_samples.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+			$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
 			$r .= '<p>'.lang::get('LANG_Final_Download').'</p>';
-			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"closed_id\":".$args['sample_closure_id'].", \"download\": \"FINAL\"}' />";	
+			$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey_id\":".$args['survey_id'].", \"closed_attr_id\":".$args['sample_closure_id'].", \"download\": \"FINAL\"}' />";	
     		$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Final_Download_Button')."\">";
 	   		$r .= "</form></div>";
 		}
 				// Create Map
-		$r .= "<div class=\"srf2-mappanel\">\n";
-        $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
-//						      'presetLayers' => array('google_physical','google_satellite'),
-    						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer')
+		$r .= "<div class=\"mnhnl-btw-mappanel\">\n";
+        $r .= data_entry_helper::map_panel(array('presetLayers' => $presetLayers
+    						, 'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer')
     						, 'initialFeatureWkt' => null
-    						, 'width'=>'auto'));
+    						, 'width'=>'auto'
+    						, 'editLayer'=> false
+    						, 'initial_lat'=>$args['map_centroid_lat']
+      						, 'initial_long'=>$args['map_centroid_long']
+      						, 'initial_zoom'=>(int) $args['map_zoom']
+    						));
     	
     	// Add locations to the map on the locations layer. 
     	// Zoom in to area which contains the users locations.
@@ -623,7 +692,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     		)));
     		
     // Set up main Survey Form.
-    $r .= "<div id=\"survey\" class=\"srf2-datapanel\">\n";
+    $r .= "<div id=\"survey\" class=\"mnhnl-btw-datapanel\">\n";
 	if($readOnly){
 	    $r .= "<strong>".lang::get('LANG_Read_Only_Survey')."</strong>";
 	}
@@ -738,13 +807,13 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 
     // Set up Occurrence List tab: don't include when creating a new sample as it will have no occurrences
     // Grid populated at a later point
-	$r .= "<div id=\"occurrenceList\" class=\"srf2-datapanel\">\n";
+	$r .= "<div id=\"occurrenceList\" class=\"mnhnl-btw-datapanel\">\n";
     if($mode != 1){
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
 		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
 		$r .= '<div id="occ_grid"></div>';
-	   	$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=srf2_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
-    	$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"sample\":".data_entry_helper::$entity_to_load['sample:id']."}' />";	
+	   	$r .= "<form method=\"post\" action=\"".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=mnhnl_btw_occurrences_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv\">";
+    	$r .= "<input type=\"hidden\" id=\"params\" name=\"params\" value='{\"survey_id\":".$args['survey_id'].", \"sample_id\":".data_entry_helper::$entity_to_load['sample:id']."}' />";	
     	$r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Download_Occurrences')."\">";
 	   	$r .= "</FORM>";
     } else {
@@ -752,7 +821,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     }
 	$r .= '</div>';
     // Set up Occurrence tab: don't allow entry of a new occurrence until after top level sample is saved.
-    $r .= "<div id=\"occurrence\" class=\"srf2-datapanel\">\n";
+    $r .= "<div id=\"occurrence\" class=\"mnhnl-btw-datapanel\">\n";
 	if($mode != 1 && (($mode != 2 && $mode !=4) || $readOnly == false)){
     	data_entry_helper::$entity_to_load=$childSample;
     	data_entry_helper::$validation_errors = $childErrors;
@@ -843,12 +912,15 @@ jQuery(\"input[name='".$escaped_terr_id."']\").change(setAltasStatus);\n";
 	$r .= '</div>';
     
     // add map panel.
-    $r .= "<div class=\"srf2-mappanel\">\n";
-    $r .= data_entry_helper::map_panel(array('presetLayers' => array(),
-//						      'presetLayers' => array('google_physical','google_satellite'),
-    						  'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer')
+    $r .= "<div class=\"mnhnl-btw-mappanel\">\n";
+    $r .= data_entry_helper::map_panel(array('presetLayers' => $presetLayers
+    						, 'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer')
     						, 'initialFeatureWkt' => null
-    						, 'width'=>'auto'));
+    						, 'width'=>'auto'
+    						, 'initial_lat'=>$args['map_centroid_lat']
+      						, 'initial_long'=>$args['map_centroid_long']
+      						, 'initial_zoom'=>(int) $args['map_zoom']
+    						));
     // for timing reasons, all the following has to be done after the map is loaded.
     // 1) feature selector for occurrence list must have the map present to attach the control
     // 2) location placer must have the location layer populated and the map present in 
@@ -998,17 +1070,17 @@ highlight = function(id){
 		}
 	}
 }
-$('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
+$('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
     reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},
     actionColumns: {".lang::get('LANG_Show')." : \"".url('node/'.($node->nid), array('query' => 'occurrence_id=£id£'))."\",
     				".lang::get('LANG_Highlight')." : \"script:highlight(£id£);\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey : '".$args['survey_id']."',
+    parameters : { survey_id : '".$args['survey_id']."',
     				parent_id : '".$parentSample['sample:id']."',
-    				territorial_id : '".$args['occurrence_territorial_id']."',
-    				count_id : '".$args['occurrence_count_id']."'},
+    				territorial_attr_id : '".$args['occurrence_territorial_id']."',
+    				count_attr_id : '".$args['occurrence_count_id']."'},
     itemsPerPage : 12,
     callback : addListFeature ,
     cssOdd : '' 
@@ -1045,6 +1117,6 @@ $('div#occ_grid').indiciaDataGrid('rpt:srf2_occurrences_list', {
    * @return array List of css files to include for this form.
    */
   public static function get_css() {
-    return array('survey_recording_form_2.css');
+    return array('mnhnl_bird_transect_walks.css');
   }  
 }

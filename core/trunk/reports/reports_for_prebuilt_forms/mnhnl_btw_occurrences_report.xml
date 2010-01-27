@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="SRF2 Occurrence Report" description="Details of all occurrences associated with a survey">
+<report title="MNHNL Occurrence Report" description="Details all occurrences associated with a top level sample. Normally invoked from Occurrence List tab on the form.">
       <params>
-    		<param name='sample' display='Sample: ' description='ID of parent sample to return data for' datatype='int' />
+		    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+		        query='SELECT id, title as caption FROM surveys' />
+    		<param name='sample_id' display='Sample: ' description='ID of parent sample to return data for' datatype='int' />
       </params>
       <vagueDate enableProcessing='true' />
-      <table tablename="samples" where="#this#.id = #sample#" >
+      <table tablename="samples" where="#this#.id = #sample_id# and #this#.survey_id = #survey_id#" >
 		  <subTable tablename="locations" where="#this#.deleted = FALSE" >
 			<tabColumn name='name' display='Transect'/>
 		  </subTable>
