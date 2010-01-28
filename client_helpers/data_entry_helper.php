@@ -57,7 +57,7 @@ $indicia_templates = array(
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} {disabled}>{caption}</span>{sep}',
-  'map_panel' => "<div id=\"{divId}\" style=\"width: {width}px; height: {height}px;\"{class}></div>\n<br/>\n",
+  'map_panel' => "<div id=\"{divId}\" style=\"{widthStyle} height: {height}px;\"{class}></div>\n<br/>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\"><div id=\"imp-georef-output-div\">\n".
@@ -1842,8 +1842,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 	    self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 	
 	    $r = str_replace(
-	          array('{divId}','{class}','{width}','{height}'),
-	          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'], $options['height']),
+	          array('{divId}','{class}','{widthStyle}','{height}'),
+	          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? : "width: ".$options['width']."px;", $options['height']),
 	          $indicia_templates['map_panel']
 	      );
 	    return $r;
