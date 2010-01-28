@@ -137,11 +137,15 @@
     	  var display;
           if (div.settings.dataColumns == null){ // no dataColumns defined, so use all columns in report, header title = report column name.
               headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+key+"</th>";
-          } else if(div.settings.dataColumns.indexOf(key) != -1){ // key is in dataColumns array
-        	  if (div.settings.reportColumnTitles == null || !div.settings.reportColumnTitles[key]){ // no column title defined so use report column name
-                  headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+key+"</th>";
-        	  } else { // no column title defined so use report column name
-                  headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+div.settings.reportColumnTitles[key]+"</th>";
+          } else {
+        	  for(var i = 0; i< div.settings.dataColumns.length; i++){
+        		  if(div.settings.dataColumns[i] == key){ // key is in dataColumns array
+        	  		if (div.settings.reportColumnTitles == null || !div.settings.reportColumnTitles[key]){ // no column title defined so use report column name
+        	  			headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+key+"</th>";
+        	  		} else { // no column title defined so use report column name
+        	  			headers += "<th class='" + div.settings.cssHeader + " " +div.settings.cssSortHeader + "'>"+div.settings.reportColumnTitles[key]+"</th>";
+        	  		}
+      			  }
         	  }
           } // else column is not in dataColumns so do not output it.
         });
@@ -239,9 +243,15 @@
                 body += "<tr>";
             }
             $.each(record, function(i, item){
-              if (div.settings.dataColumns == null || div.settings.dataColumns.indexOf(i) != -1){
-                body += "<td>"+item+"</td>";
-              }
+                if (div.settings.dataColumns == null){
+                    body += "<td>"+item+"</td>";
+                } else {
+              		for(var j = 0; j< div.settings.dataColumns.length; j++){
+              			if(div.settings.dataColumns[j] == i){
+                            body += "<td>"+item+"</td>";
+              			}
+              		}
+                }
             });
             $.each(div.settings.actionColumns, function(key, value){
               body += "<td>";
