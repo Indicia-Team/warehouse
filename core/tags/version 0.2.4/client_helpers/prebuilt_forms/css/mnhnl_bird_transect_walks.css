@@ -1,0 +1,21 @@
+.deh-required {
+  color:red;
+}
+
+.mnhnl-btw-datapanel {
+  float: left;
+  position: relative;
+  width: 425px;
+}
+
+.mnhnl-btw-mappanel {
+  margin-left: 460px;
+}
+
+.mnhnl-btw-highlight {
+  background-color: #eeeeee;
+}
+
+textarea {
+  width: 240px;
+}

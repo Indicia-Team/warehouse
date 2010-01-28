@@ -1,0 +1,33 @@
+.footer {
+  font-size: 0.9em;
+}
+
+.tree-browser {
+  width: 580px;  
+}
+
+.tree-browser li {
+  width: 95px;
+  height: 109px;
+  vertical-align: middle;	
+  font-size: 0.9em;
+  padding: 5px;
+  line-height: 1.2em;
+  text-align: center;
+  margin: 4px;
+}
+
+.tree-browser div {
+	position: relative;
+	width: 95px;
+	height: 80px;
+	margin-bottom: 3px;
+	text-align: left;
+}
+
+.tree-browser div img {
+	width: 95px;
+	height: auto;
+	position: absolute;
+	clip: rect(0px 100px 80px 0px);
+}
