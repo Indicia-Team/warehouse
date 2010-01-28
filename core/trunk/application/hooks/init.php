@@ -21,9 +21,11 @@ class Indicia
     }
 
     /**
-     * set the database schema paths
+     * Hook to prepare the database connection. Performs 2 tasks.
+     *   1) Initialises the search path, unless configured not to do this (e.g. if this is set at db level).
+     *   2) If this is a report request, sets the connection to read only.
      */
-    public static function set_search_path()
+    public static function prepare_connection()
     {
         $uri = URI::instance();
         // we havent to proceed futher if a setup call was made
@@ -38,17 +40,25 @@ class Indicia
         //
         $_schema = Kohana::config('database.default.schema');
 
-        if(!empty($_schema))
+        $query = '';
+        if(!empty($_schema) && kohana::config('indicia.apply_schema')!==false)
         {
-            $db = Database::instance();
-            $result = $db->query('SET search_path TO ' . $_schema . ', public, pg_catalog');
+          $query = "SET search_path TO $_schema, public, pg_catalog;\n";
         }
-
+        // Force a read only connection for reporting.
+        if ($uri->segment(1)=='services' && $uri->segment(2)=='report') {
+          $query .= "SET default_transaction_read_only TO true;\n";
+        }
+        if (!empty($query)) {
+          $db = Database::instance();
+          $db->query($query);
+        }
     }
 
 
 }
 
 Event::add('system.ready',   array('Indicia', 'init'));
-Event::add('system.routing', array('Indicia', 'set_search_path'));
+Event::add('system.routing', array('Indicia', 'prepare_connection'));
+
 ?>
