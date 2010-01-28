@@ -54,7 +54,7 @@ class Sample_Attribute_Value_Model extends ORM {
       case 'F':
         $vf = 'float_value';
         break;
-      case 'D':        
+      case 'D':
         $array->add_rules('date_end_value', 'required');
         $array->add_rules('date_type_value', 'required');
         $vf = 'date_start_value';
@@ -80,9 +80,9 @@ class Sample_Attribute_Value_Model extends ORM {
       if ($vf != null) $array->add_rules($vf, 'required');
       // Now get the custom attribute validation rules
       if ($oam->validation_rules != '') {
-        $rules = explode("\r\n", $oam->validation_rules);
+        $rules = explode("\n", $oam->validation_rules);
         foreach ($rules as $a){
-          $array->add_rules($vf, $a);
+          $array->add_rules($vf, trim($a));
         }
       }
     }
