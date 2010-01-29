@@ -1843,7 +1843,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 	
 	    $r = str_replace(
 	          array('{divId}','{class}','{widthStyle}','{height}'),
-	          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? : "width: ".$options['width']."px;", $options['height']),
+	          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
 	          $indicia_templates['map_panel']
 	      );
 	    return $r;
