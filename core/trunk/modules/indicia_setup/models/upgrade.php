@@ -272,14 +272,12 @@ class Upgrade_Model extends Model
   function delTree($dir) {
     $files = glob( $dir . '*', GLOB_MARK );
     foreach( $files as $file ){
-        if( substr( $file, -1 ) == '/' )
-            delTree( $file );
-        else
-            unlink( $file );
+      if( substr( $file, -1 ) == '/' )
+        delTree( $file );
+      else
+        unlink( $file );
     }
-   
-    if (is_dir($dir)) rmdir( $dir );
-   
+    if (is_dir($dir)) rmdir( $dir );   
   }
   
   /**
@@ -287,21 +285,26 @@ class Upgrade_Model extends Model
    * This needs to clean up the old upgrade 0_1_to_0_2 folder plus move the last upgrade script
    * marker into the new version 0_2_3 folder. 
    */
-  private function version_0_2_4() {
-  	// Only bother if the old script upgrade folder still exists.
-  	if (file_exists($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/')) {
-	    $last_executed_marker_file = $this->get_last_executed_sql_file_name(
-	        $this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/'
-	    );
-	    if ($last_executed_marker_file) {
-	      if (false === @file_put_contents($this->base_dir . '/modules/indicia_setup/db/version_0_2_3/'.basename($last_executed_marker_file), 'nop' ))
-	      {
-	        throw new  Exception("Couldn't write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
-	      }
-	    }
-	    // remove the old database upgrade folder
-	    $this->deltree($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/');
-  	}
+  private function version_0_2_4 () {
+    // Only bother if the old script upgrade folder still exists.
+    if (file_exists($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/')) {
+      $last_executed_marker_file = $this->get_last_executed_sql_file_name(
+          $this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/'
+      );
+      if ($last_executed_marker_file) {
+        if (false === @file_put_contents($this->base_dir . '/modules/indicia_setup/db/version_0_2_3/'.basename($last_executed_marker_file), 'nop' ))
+        {
+          throw new  Exception("Couldn't write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
+        }
+      }
+      // remove the old database upgrade folder
+      try {
+        $this->deltree($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/');
+      } catch (Exception $e) {
+        $session = new Session();
+        $session->set_flash('flash_error', kohana::lang('setup.failed_delete_old_upgrade_folder'));
+      }
+    }
   }
 
 }
