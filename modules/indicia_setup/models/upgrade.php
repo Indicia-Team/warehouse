@@ -285,7 +285,7 @@ class Upgrade_Model extends Model
    * This needs to clean up the old upgrade 0_1_to_0_2 folder plus move the last upgrade script
    * marker into the new version 0_2_3 folder. 
    */
-  private function version_0_2_4 () {
+  private function version_0_2_3 () {
     // Only bother if the old script upgrade folder still exists.
     if (file_exists($this->base_dir . '/modules/indicia_setup/db/upgrade_0_1_to_0_2/')) {
       $last_executed_marker_file = $this->get_last_executed_sql_file_name(
