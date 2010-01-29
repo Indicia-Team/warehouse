@@ -16,6 +16,9 @@ $lang = array
     'db_password' => 'Password',
     'db_report_user'     => 'Connection Username for Reporting',
     'db_report_password' => 'Password for Reporting',
+    'failed_delete_old_upgrade_folder' => 'The upgrade process tried to delete the folder /modules/indicia_setup/db/upgrade_0_1_to_0_2/ from the '.
+            'installation folder but failed, probably because the webserver does not have the required permissions to do this. Please remove this folder manually. '.
+            'The upgrade has succeeded and this will not affect the operation of Indicia.',
     'indicia_administrator'   => 'Create Indicia administrator',
     'indicia_login'           => 'Login',
     'indicia_password'        => 'Password',
