@@ -132,7 +132,7 @@ function iform_map_get_map_options($args, $readAuth) {
   $options = array(
     'readAuth' => $readAuth,
     'presetLayers' => $presetLayers,
-    'editLayer' => false,
+    'editLayer' => true,
     'layers' => array(),
     'initial_lat'=>$args['map_centroid_lat'],
     'initial_long'=>$args['map_centroid_long'],
