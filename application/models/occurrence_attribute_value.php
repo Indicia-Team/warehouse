@@ -39,7 +39,10 @@ class Occurrence_Attribute_Value_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('occurrence_attribute_id', 'required');
     $array->add_rules('occurrence_id', 'required');
-
+    $this->unvalidatedFields = array(
+      'deleted'
+    );
+    
     // We apply the validation rules specified in the occurrence attribute
     // table to the value given.
     if (array_key_exists('occurrence_attribute_id', $array->as_array())) {

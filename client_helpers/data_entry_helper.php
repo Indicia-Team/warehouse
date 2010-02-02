@@ -665,6 +665,8 @@ class data_entry_helper extends helper_config {
    * rather than use a locally stored (cached) copy of the previous request. This speeds things up
    * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
    * if this is not specified then 1 hour.</li>
+   * <li><b>survey_id</b><br/>
+   * Optional. used to determine which attributes are valid for this website/survey combination</li> 
    * </ul>
    */
   public static function species_checklist()
@@ -743,7 +745,7 @@ class data_entry_helper extends helper_config {
               break;  
             default:              
               $occAttrControls[$occAttr] =
-                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr' class='$class'/>";
+                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr' class='$class' value=\"\"/>";
               break;
           }
         }
@@ -780,26 +782,55 @@ class data_entry_helper extends helper_config {
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
         $row = "\n<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
+        // go through list in entity to load and find first entry for this taxon, then extract the 
+        // record ID if if exists.
+        $existing_record_id = '';
+		if(self::$entity_to_load){
+			foreach(self::$entity_to_load as $key => $value){
+	        	$parts = explode(':', $key);
+    	    	if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
+        			$existing_record_id = $parts[2];
+        			break;
+    	    	}
+        	}
+        }
+        $attributes = self::getAttributes(array(
+	    	'id' => $existing_record_id
+    	   ,'valuetable'=>'occurrence_attribute_value'
+	       ,'attrtable'=>'occurrence_attribute'
+    	   ,'key'=>'occurrence_id'
+	       ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
+    	   ,'extraParams'=>$options['readAuth']
+    	   ,'survey_id'=>$options['survey_id']
+	    ));
         if ($options['checkboxCol']=='true') {
-          if (self::$entity_to_load!=null && array_key_exists("sc:$id:present", self::$entity_to_load)) {
+          if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
             $checked = ' checked="checked"';
           } else {
             $checked='';
           }
-          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:present' $checked /></td>";
+          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:$existing_record_id:present' $checked /></td>";
         }
         foreach ($occAttrControls as $oc) {
-          preg_match('/oa:(\d+)/', $oc, $matches);
-          $ctrlId = "sc:$id:occAttr:".$matches[1];
+          preg_match('/oa:(\d+)/', $oc, $matches); // matches 1 holds the occurrence_attribute_id
+//          $ctrlId = "sc:$id:$existing_record_id:occAttr:".$matches[1];
+          $ctrlId = $attributes[$matches[1]]['fieldname'];
           $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
-          
           // If there is an existing value to load for this control, we need to put the value in the control.
+          $existing_value = '';
           if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load) 
               && !empty(self::$entity_to_load[$ctrlId])) {
+              	$existing_value = self::$entity_to_load[$ctrlId];
+          } else if(array_key_exists('default', $attributes[$matches[1]])){
+              	$existing_value = $attributes[$matches[1]]['default'];
+          }
+          if($existing_value){
             // For select controls, specify which option is selected from the existing value    
             if (substr($oc, 0, 7)=='<select') {              
-              $oc = str_replace('value="'.self::$entity_to_load[$ctrlId].'"', 
-                  'value="'.self::$entity_to_load[$ctrlId].' '.$indicia_templates['select_option_selected'], $oc);
+              $oc = str_replace('value="'.$existing_value.'"', 
+                  'value="'.$existing_value.'" '.$indicia_templates['select_option_selected'], $oc);
+            } else {
+              $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
           }
           $row .= "\n<td class='scOccAttrCell ui-widget-content'>".$oc."</td>";
@@ -829,7 +860,10 @@ class data_entry_helper extends helper_config {
             'taxa_taxon_list', 'taxon', 'id', $options['readAuth'] +
             array('taxon_list_id' => $options['lookupListId']));
         $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
-      }      
+      }
+      if ($options['checkboxCol']=='true') { // need to tag if checkboxes active so can delete entry if needed
+      	$grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
+      }
       return $grid;
     } else {
       return $taxalist['error'];
@@ -2071,7 +2105,50 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
   
-  /**
+ /**
+  * Outputs an autocomplete control that is dedicated to listing locations and which is bound to any map panel
+  * added to the page. Although it is possible to set all the options of a normal autocomplete, generally
+  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
+  * sample's location_id field so can normally also be left.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Optional. The name of the database field this control is bound to.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>extraParams</b><br/>
+  * Required. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  * 
+  * @return string HTML to insert into the page for the location select control.
+  */
+  public static function location_autocomplete($options) {
+    $options = self::check_options($options);
+    $options = array_merge(array(
+        'table'=>'location',
+        'fieldname'=>'sample:location_id',
+        'valueField'=>'id',
+        'captionField'=>'name',
+        'id'=>'imp-location'
+        ), $options);
+        
+    return self::autocomplete($options);
+  }
+
+  
+ /**
   * Helper method to enable the support for tabbed interfaces for a div. The jQuery documentation
   * describes how to specify a list within the div which defines the tabs that are present. This method
   * also automatically selects the first tab that contains validation errors if the form is being
@@ -2314,23 +2391,34 @@ if (errors.length>0) {
     if (array_key_exists('occurrence:record_status', $arr)){
       $record_status = $arr['occurrence:record_status'];
     }
+    // Species checklist entries take the following format
+    // sc:<taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
       if (strpos($key, 'sc') !== false){
         // Don't explode the last element for occurrence attributes
-        $a = explode(':', $key, 3);
-        $records[$a[1]][$a[2]] = $value;
+        $a = explode(':', $key, 4);
+        $records[$a[1]][$a[3]] = $value;
+        // store any id so update existing record
+        if($a[2]) {
+        	$records[$a[1]]['id'] = $a[2];
+        }
       }
     }
     foreach ($records as $id => $record){
       if ((array_key_exists('present', $record) && $record['present']) || 
+          (array_key_exists('id', $record)) ||
           ($include_if_any_data && implode('',$record)!='')) {            
+    	if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
+    		// checkboxes do not appear if not checked. If uncheck, delete record.
+    		$record['deleted'] = 't';
+    	}
         $record['taxa_taxon_list_id'] = $id;
-	      $record['website_id'] = $website_id;
-	      if (isset($determiner_id)) {
+	    $record['website_id'] = $website_id;
+	    if (isset($determiner_id)) {
 	        $record['determiner_id'] = $determiner_id;
-	      }
+	    }
         if (isset($record_status)) {
           $record['record_status'] = $record_status;
         }
@@ -3009,7 +3097,7 @@ $('.ui-state-default').live('mouseout', function() {
 
 	$attrOptions = array(
     	    'table'=>$options['attrtable']
-       		,'extraParams'=> $options['extraParams']+ array('deleted' => 'f', 'website_deleted' => 'f'));
+       		,'extraParams'=> $options['extraParams']+ array('deleted' => 'f', 'website_deleted' => 'f', 'restrict_to_survey_id' => 'NULL'));
     $response = self::get_population_data($attrOptions);
     if (array_key_exists('error', $response))
         return $response;
@@ -3017,15 +3105,27 @@ $('.ui-state-default').live('mouseout', function() {
         $retVal[$item['id']] = array(
         		'caption' => lang::get($item['caption']),
         		'fieldname' => $options['fieldprefix'].':'.$item['id'],
-        		'data_type' => $item['data_type'], // TODO
+        		'data_type' => $item['data_type'],
         		'termlist_id' => $item['termlist_id']);
     }
-    
+    if(isset($options['survey_id'])){
+	  	$attrOptions['extraParams']['restrict_to_survey_id'] = $options['survey_id'];
+	    $response = self::get_population_data($attrOptions);
+	    if (array_key_exists('error', $response))
+    	    return $response;
+	    foreach ($response as $item){
+    	    $retVal[$item['id']] = array(
+        		'caption' => lang::get($item['caption']),
+        		'fieldname' => $options['fieldprefix'].':'.$item['id'],
+        		'data_type' => $item['data_type'],
+        		'termlist_id' => $item['termlist_id']);
+	    }
+    }
     if(!$options['id'])
     	return $retVal;
 
     $options['extraParams'][$options['key']] = $options['id'];
-    $options['extraParams']['cachetimeout'] = 0;
+    $options['extraParams']['cachetimeout'] = 0; // can't cache
     $existingValuesOptions = array(
     	    'table'=>$options['valuetable']
        		,'extraParams'=> $options['extraParams']);
