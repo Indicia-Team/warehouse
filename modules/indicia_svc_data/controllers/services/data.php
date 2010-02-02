@@ -429,9 +429,19 @@ class Data_Controller extends Data_Service_Base_Controller {
       Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
           throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
       }
-        $this->db->where($this->viewname.'.id', $this->uri->argument(1));
+      $this->db->where($this->viewname.'.id', $this->uri->argument(1));
     }
-    return $this->db->get()->result_array(FALSE);
+    try {
+      return $this->db->get()->result_array(FALSE);
+    }
+    catch (Exception $e) {
+      kohana::log('error', 'Error occurred running the following query from a service request:'); 
+      kohana::log('error', $this->db->last_query());
+      kohana::log('error', 'Request detail:');
+      kohana::log('error', $this->uri->string());
+      kohana::log('error', kohana::debug($_GET));
+      throw $e;
+    }
   }
 
   /**
@@ -463,9 +473,10 @@ class Data_Controller extends Data_Service_Base_Controller {
     $sortdir='ASC';
     $orderby='';
     $like=array();
-    $where=array();
+    $where=array();    
     foreach ($_GET as $param => $value)
     {
+      $value = urldecode($value);
       switch ($param)
       {
         case 'sortdir':
@@ -494,7 +505,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           }
           break;
         case 'q':
-          $q = strtolower($value);
+          $q = $value;
           break;
         case 'attrs':
           // Check that we're dealing with 'occurrence', 'location' or 'sample' here

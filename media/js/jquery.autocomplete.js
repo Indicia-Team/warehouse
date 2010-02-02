@@ -346,7 +346,7 @@ $.Autocompleter = function(input, options) {
 				dataType: options.dataType,
 				url: options.url,
 				data: $.extend({
-					q: lastWord(term),
+					q: encodeURI(lastWord(term)),
 					limit: options.max
 				}, extraParams),
 				success: function(data) {
