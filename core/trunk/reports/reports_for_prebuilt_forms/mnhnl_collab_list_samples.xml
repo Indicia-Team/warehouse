@@ -1,0 +1,34 @@
+<report
+    title="MNHNL Samples List"
+    description="Form Internal Report: Used by the Surveys grid to retrieve the top level samples associated with a survey."
+>
+  <query>
+  SELECT s.id,
+  		l.name as location_name,
+  		s.entered_sref,
+  		s.date_start,
+  		s.date_end,
+  		s.date_type,
+  		(select count(*) as num_occurrences from occurrences o where o.sample_id = s.id and o.deleted = FALSE) as num_occurrences,
+  		(select (count(*) &gt; 0) as completed from occurrences o where o.sample_id = s.id and o.deleted = FALSE and o.record_status = 'C') as completed
+  FROM samples s
+  LEFT JOIN locations l ON l.id=s.location_id
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>date_start DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='location_name' display='Transact' />
+    <column name='entered_sref' display='SRef' />
+    <column name='date' display='Date' />
+    <column name='num_occurrences' display='# Occurrences' />
+    <column name='completed' display='Completed' />
+  </columns>
+</report>
