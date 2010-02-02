@@ -497,20 +497,24 @@ class Data_Controller extends Data_Service_Base_Controller {
           $q = strtolower($value);
           break;
         case 'attrs':
-          // Check that we're dealing with 'occurrence' or 'sample' here
+          // Check that we're dealing with 'occurrence', 'location' or 'sample' here
           // TODO check this works - looks like it does nothing...
           switch($this->entity)
           {
             case 'sample':
-              Kohana::log('info', "Fetching attributes $value for sample");
+              Kohana::log('debug', "Fetching attributes $value for sample");
               $attrs = explode(',', $value);
               break;
             case 'occurrence':
-              Kohana::log('info', "Fetching attributes $value for occurrence");
+              Kohana::log('debug', "Fetching attributes $value for occurrence");
+              $attrs = explode(',', $value);
+              break;
+            case 'location':
+              Kohana::log('debug', "Fetching attributes $value for location");
               $attrs = explode(',', $value);
               break;
             default:
-              Kohana::log('info', 'Trying to fetch attributes for non sample/occurrence table. Ignoring.');
+              Kohana::log('debug', 'Trying to fetch attributes for non sample/occurrence/location table. Ignoring.');
           }
           break;
       default:
@@ -519,10 +523,12 @@ class Data_Controller extends Data_Service_Base_Controller {
           // A parameter has been supplied which specifies the field name of a filter field
           if ($value == 'NULL')
             $value = NULL;
-          if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool') {
+          // Build a where for ints, bools or if there is no * in the search string.
+          if ($this->view_columns[$param]['type']=='int' || $this->view_columns[$param]['type']=='bool' ||
+              strpos($value, '*')===false) {
             $where[$param]=$value;
           } else {
-            $like[$param]=$value;
+            $like[$param]=str_replace('*', '%', $value);
           }
 
         }
@@ -536,13 +542,18 @@ class Data_Controller extends Data_Service_Base_Controller {
       }
       else
       {
-        $like[$qfield]=$q;
+        // When using qfield and q parameters, it is from an AJAX call for an autocomplete, so append a wildcard and
+        // also switch any service wildcards (*) for sql wildcards (%).
+        $like[$qfield]=str_replace('*', '%', $q).'%';
       }
     }
     if ($orderby)
       $this->db->orderby($orderby, $sortdir);
-    if (count($like))
-      $this->db->like($like);
+    if (count($like)) {      
+      foreach ($like as $field => $value) {
+        $this->db->like($field, $value, false);
+      }
+    }
     if (count($where))
       $this->db->where($where);
   }
