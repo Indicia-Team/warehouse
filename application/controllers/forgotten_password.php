@@ -79,21 +79,22 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       $link_code = $this->auth->hash_password($user->username);
       $user->__set('forgotten_password_key', $link_code);
       $user->save();
-      $swift = email::connect();
-      $message = new Swift_Message($email_config['forgotten_passwd_title'],
-                                 View::factory('templates/forgotten_password_email')->set(array('server' => $email_config['server_name'], 'new_password_link' => '<a href="'.url::site().'new_password/email/'.$link_code.'">'.url::site().'new_password/email/'.$link_code.'</a>')),
-                                 'text/html');
-      $recipients = new Swift_RecipientList();
-      $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
-
       try
       {
+        $swift = email::connect();
+        $message = new Swift_Message($email_config['forgotten_passwd_title'],
+                                   View::factory('templates/forgotten_password_email')->set(array('server' => $email_config['server_name'], 'new_password_link' => '<a href="'.url::site().'new_password/email/'.$link_code.'">'.url::site().'new_password/email/'.$link_code.'</a>')),
+                                   'text/html');
+        $recipients = new Swift_RecipientList();
+        $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
         $swift->send($message, $recipients, $email_config['address']);
       }
-      catch (Swift_ConnectionException $e)
+      catch (Swift_Exception $e)
       {
+        kohana::log('error', "Error sending forgotten password: " . $e->getMessage());
         throw new Kohana_User_Exception('swift.general_error', $e->getMessage());
       }
+      kohana::log('info', "Forgotten password sent to $person->first_name $person->surname");
       $this->template->title = 'Email Sent';
       $this->template->content = new View('login/login_message');
       $this->template->content->message = 'An email providing a link which will allow your password to be reset has been sent to the specified email address, or if a Username was provided, to the registered email address for that User.<br />';
@@ -128,21 +129,22 @@ class Forgotten_Password_Controller extends Indicia_Controller {
     $link_code = $this->auth->hash_password($user->username);
     $user->__set('forgotten_password_key', $link_code);
     $user->save();
-    $swift = email::connect();
-    $message = new Swift_Message($email_config['forgotten_passwd_title'],
-                               View::factory('templates/forgotten_password_email_2')->set(array('server' => $email_config['server_name'], 'new_password_link' => '<a href="'.url::site().'new_password/email/'.$link_code.'">'.url::site().'new_password/email/'.$link_code.'</a>')),
-                               'text/html');
-    $recipients = new Swift_RecipientList();
-    $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
-
     try
     {
+      $swift = email::connect();
+      $message = new Swift_Message($email_config['forgotten_passwd_title'],
+                                 View::factory('templates/forgotten_password_email_2')->set(array('server' => $email_config['server_name'], 'new_password_link' => '<a href="'.url::site().'new_password/email/'.$link_code.'">'.url::site().'new_password/email/'.$link_code.'</a>')),
+                                 'text/html');
+      $recipients = new Swift_RecipientList();
+      $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
       $swift->send($message, $recipients, $email_config['address']);
     }
-    catch (Swift_ConnectionException $e)
+    catch (Swift_Exception $e)
     {
+      kohana::log('error', "Error sending forgotten password: " . $e->getMessage());
       throw new Kohana_User_Exception('swift.general_error', $e->getMessage());
     }
+    kohana::log('info', "Forgotten password sent to $person->first_name $person->surname");
     url::redirect('user');
   }
 
