@@ -31,7 +31,7 @@ $custom_terms = array(
   'close'=>'Fermer',
   'email'=>'adresse e-mail',
   'first name'=>'Prénom',
-  'happy for contact'=>'Je suis d'accord d'être éventuellement contacté au sujet de cette observation',
+  'happy for contact'=>'Je suis d\'accord d\'être éventuellement contacté au sujet de cette observation',
   'next step'=>'Suivant',
   'occurrence:taxa_taxon_list_id'=>'Espèce',
   'phone number'=>'Téléphone',
@@ -43,17 +43,17 @@ $custom_terms = array(
   'search'=>'Chercher',
   'search for place on map'=>'Chercher la position sur la carte',
   'surname'=>'Nom',
-  
-  // Tab titles (only visible if interface tabbed
+
+  // Tab titles (only visible if interface tabbed)
   'about you'=>'Qui êtes vous?',
-  'what did you see'=>'Qu'avez-vous vu?',
+  'what did you see'=>'Qu\'avez-vous vu?',
   'where was it'=>'Où était-ce?',
   'other information'=>'Autres Informations',
   // Tab instructions
-  'about you tab instructions'=>'<strong>Qui êtes vous?</strong><br/>Dites nous s'il vous plaît qui vous êtes. Cela pourrait être important pour que nous puissions vous contacter au cas où votre observation serait particulièrement intéressante.',
-  'species tab instructions'=>'<strong>Qu'avez-vous vu?</strong><br/>Cliquez sur la fleur que vous avez vue, ensuite sur Suivant.',
-  'place tab instructions'=>'<strong>Où était-ce?</strong><br/>Cherchez sur la carte aussi précisément que possible l'endroit où vous avez vu la fleur. Si vous connaissez les coordonnées, vous pouvez aussi les entrer directement.',
-  'other tab instructions'=>'<strong>Autres Informations</strong><br/>Indiquez s'il vous plaît quand vous avez vu cette fleur, combien il y en avait à peu près et si nécessaire d'autres commentaires.',
+  'about you tab instructions'=>'<strong>Qui êtes vous?</strong><br/>Dites nous s\'il vous plaît qui vous êtes. Cela pourrait être important pour que nous puissions vous contacter au cas où votre observation serait particulièrement intéressante.',
+  'species tab instructions'=>'<strong>Qu\'avez-vous vu?</strong><br/>Cliquez sur la fleur que vous avez vue, ensuite sur Suivant.',
+  'place tab instructions'=>'<strong>Où était-ce?</strong><br/>Cherchez sur la carte aussi précisément que possible l\'endroit où vous avez vu la fleur. Si vous connaissez les coordonnées, vous pouvez aussi les entrer directement.',
+  'other tab instructions'=>'<strong>Autres Informations</strong><br/>Indiquez s\'il vous plaît quand vous avez vu cette fleur, combien il y en avait à peu près et si nécessaire d\'autres commentaires.',
 
 
 
