@@ -52,7 +52,7 @@ class lang {
       // no translation, so use original requested key
       $output=$key;
     }
-    return $output;
+    return utf8_encode($output);
   }
 
 
