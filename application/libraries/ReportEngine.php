@@ -489,7 +489,7 @@ class ReportEngine {
   			if(isset($row[$downloadDetails->id])){
   				$idList[] = $row[$downloadDetails->id];
   				if(count($idList) >= self::rowsPerUpdate){
-  					$this->updateDownloaded(idList, $downloadDetails->mode);
+  					$this->updateDownloaded($idList, $downloadDetails->mode);
   					$idList = array();
   				}
   			}
@@ -507,8 +507,12 @@ class ReportEngine {
   	}
   	$downloaded_on = date("Ymd H:i:s");
     $db = new Database(); // use default access so can update.
-  	$query = "UPDATE occurrences SET downloaded_flag = '".($mode == 'FINAL'? 'F' : 'I')."', downloaded_on = '".$downloaded_on."' WHERE id IN (".implode(',',$idList).");";
-  	$response = $db->query($query);
+    $db->query('START TRANSACTION READ WRITE;');
+    $response = $db->in("id", $idList)
+    		->update('occurrences',
+    			array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I'),
+    					'downloaded_on' => $downloaded_on));
+    $db->query('COMMIT;');
   }
   
   private function fetchLocalReport($request)

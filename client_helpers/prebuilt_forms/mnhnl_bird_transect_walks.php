@@ -34,10 +34,15 @@ class iform_mnhnl_bird_transect_walks {
 	 * Future Enhancements
 	 * 	General
 	 * 		Rename superuser to manager permission
+	 *      Separate the loading of the OCCList grid view from the population of the map.
+	 *      Change onShow for tabs to zoom into relevant area: eg location for survey, occlist extent for occlist
 	 * 	Survey List
 	 * 		Put in "loading" message functionality
+	 * 		Add filter by location
+	 * 		Alter location to WFS layer.
 	 * 	Location Allocation
 	 * 		Zoom map into location on request.
+	 * 		Tidy up list - goes beyond pane boundary
 	 *  Indicia Core
 	 *  	improve outputAttributes to handle restrict to survey correctly.
 	 *
@@ -278,7 +283,7 @@ class iform_mnhnl_bird_transect_walks {
     			// mode 1: display new sample: no occurrence list or add occurrence tabs. Survey tab active
     			// mode 2: display existing sample. Survey tab active. No occurence details filled in.
     			// mode 3: display existing occurrence. Add Occurrence tab active. Occurence details filled in.
-    			// mode 4: display Occurrence List. Occurrence List tab active. No occurence details filled in.
+    			// mode 4: NO LONGER USED. display Occurrence List. Occurrence List tab active. No occurence details filled in. 
     $readOnly = false; // On top of this, things can be flagged as readonly. RO mode 2+4 means no Add Occurrence tab.
     if (!$logged_in){
     	return lang::get('LANG_not_logged_in');
@@ -305,16 +310,16 @@ class iform_mnhnl_bird_transect_walks {
 			// could have saved parent sample or child sample/occurrence pair.
 			if (array_key_exists('sample:parent_id', $_POST)){ // have saved child sample/occurrence pair
 				$parentLoadID = $_POST['sample:parent_id']; // load the parent sample.
+				$mode = 3;
 				if(isset(data_entry_helper::$entity_to_load)){ // errors so display Edit Occurrence page.
 					$childSample = data_entry_helper::$entity_to_load;
 					$childErrors = $saveErrors;
 					$displayThisOcc = false;
-					$mode = 3;
 					if($childSample['occurrence:id']){
 						$thisOccID=$childSample['occurrence:id'];
 					}
-    			} else {
-					$mode = 4; //display occurrence list
+//    			} else {
+//					$mode = 4; //display occurrence list
     			}
 			} else { // saved parent record. display updated parent, no child.
 				$mode=2; // display parent sample details, whether errors or not.
@@ -869,7 +874,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 			'disabled'=>$disabledText
 	    );
 	    $r .= data_entry_helper::autocomplete($species_ctrl_args);
-    	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], $defAttrOptions);
+    	$r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], array_merge($defAttrOptions, array('noBlankText'=>'')));
 	    $r .= data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'),
 	    			'systems'=>array('2169'=>'Luref (Gauss Luxembourg)'),
 	    			'suffixTemplate'=>'requiredsuffix'));
@@ -1022,6 +1027,23 @@ jQuery('#imp-location').unbind('change');
 jQuery('#imp-location').change(function(){
 	locationChange(this);
 });
+var selected = $('#controls').tabs('option', 'selected');
+
+// Only leave the click control activated for edit/add occurrence tab.
+if(selected != 1){
+    locationLayer.map.editLayer.clickControl.deactivate(); 
+}
+$('#controls').bind('tabsshow', function(event, ui) {
+        if(ui.index == 1) 
+        { 
+         locationLayer.map.editLayer.clickControl.activate(); 
+        } 
+        else  
+        { 
+         locationLayer.map.editLayer.clickControl.deactivate(); 
+        } 
+    }
+);
 ";
     if($mode != 1){
 		data_entry_helper::$onload_javascript .= "

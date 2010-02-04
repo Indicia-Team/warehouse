@@ -132,7 +132,10 @@
       var click = new OpenLayers.Control.Click();
       div.map.addControl(click);
       click.activate();
-
+      if (div.settings.editLayer) {
+    	  div.map.editLayer.clickControl = click;
+      }
+      
       // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefId).change(function() {
         $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
