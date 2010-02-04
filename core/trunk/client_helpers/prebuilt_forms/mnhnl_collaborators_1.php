@@ -308,7 +308,6 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     }
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
-
     $attributes = data_entry_helper::getAttributes(array(
     	'id' => data_entry_helper::$entity_to_load['sample:id']
        ,'valuetable'=>'sample_attribute_value'
@@ -318,7 +317,6 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
        ,'extraParams'=>$readAuth
        ,'survey_id'=>$args['survey_id']
     ));
-
     if ($logged_in) {
       // If logged in, output some hidden data about the user
       $uid = $user->uid;
@@ -328,9 +326,9 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       $email_attr_id = $args['email_attr_id'];
       $username_attr_id = $args['username_attr_id'];
       // This assumes that we have the following attributes : no built in error checking.
-      $r .= "<input type=\"hidden\" name=\"smpAttr:$uid_attr_id\" value=\"$uid\" />\n";
-      $r .= "<input type=\"hidden\" name=\"smpAttr:$email_attr_id\" value=\"$email\" />\n";
-      $r .= "<input type=\"hidden\" name=\"smpAttr:$username_attr_id\" value=\"$username\" />\n";    
+      $r .= "<input type=\"hidden\" name=\"".$attributes[$uid_attr_id]['fieldname']."\" value=\"$uid\" />\n";
+      $r .= "<input type=\"hidden\" name=\"".$attributes[$email_attr_id]['fieldname']."\" value=\"$email\" />\n";
+      $r .= "<input type=\"hidden\" name=\"".$attributes[$username_attr_id]['fieldname']."\" value=\"$username\" />\n";    
     }
     $r .= "<div id=\"controls\">\n";
     if ($args['interface']!='one_page') {    	
