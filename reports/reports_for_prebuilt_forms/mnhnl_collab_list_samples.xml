@@ -1,6 +1,6 @@
 <report
-    title="MNHNL Samples List"
-    description="Form Internal Report: Used by the Surveys grid to retrieve the top level samples associated with a survey."
+    title="MNHNL Collaboration Form Samples List"
+    description="Form Internal Report: Used by the Samples grid to retrieve the samples associated with a survey and user."
 >
   <query>
   SELECT s.id,
@@ -14,6 +14,13 @@
   FROM samples s
   LEFT JOIN locations l ON l.id=s.location_id
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE
+  AND ((#userID# > 0 AND EXISTS (SELECT id FROM sample_attribute_values sav
+  								WHERE sav.sample_id = s.id
+  								AND sav.sample_attribute_id = #userID_attr_id#
+  								AND sav.int_value = #userID#))
+  		OR (#userID# &lt;= 0 AND NOT EXISTS (SELECT id FROM sample_attribute_values sav
+  								WHERE sav.sample_id = s.id
+  								AND sav.sample_attribute_id = #userID_attr_id#)))
   #order_by#
   </query>
   <order_bys>
@@ -22,6 +29,8 @@
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
+    <param name='userID_attr_id' display='CMS User Sample Attribute ID' description='Sample Attribute ID used to Identify User' datatype='int' />
+    <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for non logged in people' datatype='int' />
   </params>
   <columns>
     <column name='id' display='ID' />

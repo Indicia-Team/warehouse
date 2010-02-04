@@ -627,6 +627,7 @@ class ReportEngine {
   private function executeQuery()
   {
     $db = new Database('report');
+    Kohana::log('debug', "Running report query : ".$this->query);
     $this->response = $db->query($this->query);
   }
 
