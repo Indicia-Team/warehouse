@@ -659,8 +659,16 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     $childSample['sample:date'] = $parentSample['sample:date']; // enforce a match between child and parent sample dates
     data_entry_helper::$entity_to_load=$parentSample;
     data_entry_helper::$validation_errors = $parentErrors;
-    $closedFieldName = "smpAttr:".$args['sample_closure_id'];
-    $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, '0'); // default is not closed
+    $attributes = data_entry_helper::getAttributes(array(
+    	'id' => data_entry_helper::$entity_to_load['sample:id']
+       ,'valuetable'=>'sample_attribute_value'
+       ,'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
+       ,'fieldprefix'=>'smpAttr'
+       ,'extraParams'=>$readAuth
+    ));
+    $closedFieldName = $attributes[$args['sample_closure_id']]['fieldname'];
+    $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, array_key_exists('default', $attributes[$args['sample_closure_id']]) ? $attributes[$args['sample_closure_id']]['default'] : '0'); // default is not closed
 	$adminPerm = 'IForm node '.$node->nid.' admin';
     if($closedFieldValue == '1' && !user_access($adminPerm)){
     	// sample has been closed, no admin perms. Everything now set to read only.
@@ -712,14 +720,6 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
     }
 	$defAttrOptions['validation'] = array('required');
     $defAttrOptions['suffixTemplate']='requiredsuffix';
-    $attributes = data_entry_helper::getAttributes(array(
-    	'id' => data_entry_helper::$entity_to_load['sample:id']
-       ,'valuetable'=>'sample_attribute_value'
-       ,'attrtable'=>'sample_attribute'
-       ,'key'=>'sample_id'
-       ,'fieldprefix'=>'smpAttr'
-       ,'extraParams'=>$readAuth
-    ));
     if($locations == 'all'){
     	$locOptions = array_merge(array('label'=>lang::get('LANG_Transect')), $defAttrOptions);
     	$locOptions['extraParams'] = array_merge(array('parent_id'=>'NULL', 'view'=>'detail', 'orderby'=>'name'), $locOptions['extraParams']);
