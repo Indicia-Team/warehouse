@@ -123,7 +123,7 @@ function iform_map_get_map_parameters() {
  */
 function iform_map_get_map_options($args, $readAuth) {
   // read out the activated preset layers
-  $presetLayers = array();  
+  $presetLayers = array();
   foreach($args['preset_layers'] as $layer => $active) {
     if ($active!==0) {
       $presetLayers[] = $layer;
@@ -147,7 +147,7 @@ function iform_map_get_map_options($args, $readAuth) {
       '".$args['wms_base_url']."',
       {layers: '".$args['wms_base_layer']."', 'sphericalMercator': true}
     );\n";
-    $options['layers'][] = 'baseLayer';    
+    $options['layers'][] = 'baseLayer';
   }
   return $options;
 }

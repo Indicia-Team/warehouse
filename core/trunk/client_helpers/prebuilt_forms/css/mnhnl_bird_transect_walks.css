@@ -5,11 +5,13 @@
 .mnhnl-btw-datapanel {
   float: left;
   position: relative;
-  width: 425px;
+  width: 420px;
+  padding: 1em 0.5em !important;
 }
 
 .mnhnl-btw-mappanel {
-  margin-left: 460px;
+  margin-left: 435px;
+  height: 490px;
 }
 
 .mnhnl-btw-highlight {
