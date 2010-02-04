@@ -236,7 +236,11 @@ class iform_mnhnl_collaborators_1 {
     reportColumnTitles: {location_name : '".lang::get('LANG_Location')."', entered_sref : '".lang::get('LANG_Spatial_ref')."', date : '".lang::get('LANG_Date')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', completed : '".lang::get('LANG_Completed')."'},
     actionColumns: {".lang::get('LANG_Edit')." : \"".url('node/'.($node->nid), array('query' => 'sample_id=£id£'))."\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : { survey_id : '".$args['survey_id']."'},
+    parameters : {
+    			survey_id : '".$args['survey_id']."',
+    			userID_attr_id : '".$args['uid_attr_id']."',
+    			userID : '".$user->uid."'
+    				},
     itemsPerPage : 12 
   });
 });
@@ -293,9 +297,6 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         
 //    $r .= "<h1>MODE = ".$mode."</h1>";
 //    $r .= "<h2>readOnly = ".$readOnly."</h2>";
-
-    global $user;
-    $logged_in = $user->uid>0;    
     
     $r = "<form method=\"post\" id=\"entry_form\">\n";        
     // Get authorisation tokens to update and read from the Warehouse.
