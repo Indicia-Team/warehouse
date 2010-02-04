@@ -96,6 +96,7 @@ class XMLReportReader_Core implements ReportReader
               	$this->setSubTable(
               	    $reader->getAttribute('tablename'),
               	    $reader->getAttribute('parentKey'),
+              	    $reader->getAttribute('tableKey'),
               	    $reader->getAttribute('join'),
               	    $reader->getAttribute('where'));
               	break;
@@ -432,20 +433,20 @@ class XMLReportReader_Core implements ReportReader
           'columns' => array());
   }
 
-  private function setSubTable($tablename, $parentKey, $join, $where)
+  private function setSubTable($tablename, $parentKey, $tableKey, $join, $where)
   {
-	if($parentKey == ''){ // standard behaviour: force the link as parent table has foreign key to this table, standard naming convention.
-  		$tableKey = 'lt'.$this->nextTableIndex.'.id';
+  	if($tableKey == ''){
+  		if($parentKey == 'id'){
+  			$tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
+  		} else {
+  			$tableKey = 'lt'.$this->nextTableIndex.'.id';
+  		}
+  	} else {
+  		$tableKey = 'lt'.$this->nextTableIndex.".".$tableKey;
+  	}
+	if($parentKey == ''){
   		$parentKey = 'lt'.$this->tableIndex.".".(inflector::singular($tablename)).'_id';
-		$parentKeyColumn = 'lt'.$this->tableIndex."_".(inflector::singular($tablename)).'_id';
-  	} else if($parentKey == 'id'){ // force the link as this table has foreign key to parent table, standard naming convention.
-  		$tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
-		$parentKey = 'lt'.$this->tableIndex.'.id';
-  	} else if($parentKey == 'parent_id'){ // SPECIAL CASE: force the link as this table has foreign key to parent table, non standard naming convention.
-  		$tableKey = 'lt'.$this->nextTableIndex.'.parent_id';
-		$parentKey = 'lt'.$this->tableIndex.'.id';
-  	} else { // force the link as parent table has foreign key to this table, non standard naming convention.
-  		$tableKey = 'lt'.$this->nextTableIndex.'.id';
+  	} else { // force the link as this table has foreign key to parent table, standard naming convention.
 		$parentKey = 'lt'.$this->tableIndex.".".$parentKey;
   	}
 	$this->tables[$this->nextTableIndex] = array(

@@ -3206,12 +3206,14 @@ $('.ui-state-default').live('mouseout', function() {
             break;
         case 'Lookup List':
         case 'L':
+        	if(!array_key_exists('noBlankText', $options)){
+        		$attrOptions = $attrOptions + array('blankText' => '');
+        	}
         	$output = self::select($attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
-                  'extraParams' => $options['extraParams'] + array('termlist_id' => $item['termlist_id']),
-                  'blankText' => ''));
+                  'extraParams' => $options['extraParams'] + array('termlist_id' => $item['termlist_id'])));
 	        break;
         default:
             $output = '<strong>UNKNOWN DATA TYPE '.$item['data_type'].' FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
