@@ -286,13 +286,15 @@ class iform_my_dot_map {
     $layerName = self::build_distribution_layer(3, $args, $occurrence);
     if ($layerName) $options['layers'][] = $layerName;
     // Now output a grid of the occurrences that were just saved.
-    $r = '<div class="page-notice ui-widget ui-corner-all">';
-    $r .= "<table><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
-    $r .= "<tbody>\n";
-    foreach ($occurrence as $record) {
-      $r .= "<tr><td>".$record['taxon']."</td><td>".$record['date_start']."</td><td>".$record['entered_sref']."</td></tr>\n";
+    if (isset($occurrence)) {
+      $r = '<div class="page-notice ui-widget ui-corner-all">';
+      $r .= "<table><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
+      $r .= "<tbody>\n";      
+      foreach ($occurrence as $record) {
+        $r .= "<tr><td>".$record['taxon']."</td><td>".$record['date_start']."</td><td>".$record['entered_sref']."</td></tr>\n";
+      }
+      $r .= "</tbody></table>\n";
     }
-    $r .= "</tbody></table>\n";
     $r .= data_entry_helper::map_panel($options);
     return $r;
   }
