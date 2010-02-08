@@ -601,6 +601,13 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
 		locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
     }
 });
+$('#controls').bind('tabsshow', function(event, ui) {
+	var y = $('.mnhnl-btw-datapanel:visible').outerHeight(true) + $('.mnhnl-btw-datapanel:visible').position().top;
+	if(y < $('.mnhnl-btw-mappanel').outerHeight(true)+ $('.mnhnl-btw-mappanel').position().top){
+		y = $('.mnhnl-btw-mappanel').outerHeight(true)+ $('.mnhnl-btw-mappanel').position().top;
+	}
+	$('#controls').height(y - $('#controls').position().top);
+});
 ";
         $r .= "</div>\n";
 		if(count($tabs)>1){

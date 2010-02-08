@@ -3125,9 +3125,9 @@ $('.ui-state-default').live('mouseout', function() {
     	return $retVal;
 
     $options['extraParams'][$options['key']] = $options['id'];
-    $options['extraParams']['cachetimeout'] = 0; // can't cache
     $existingValuesOptions = array(
     	    'table'=>$options['valuetable']
+    		,'cachetimeout' => 0 // can't cache
        		,'extraParams'=> $options['extraParams']);
     $response = self::get_population_data($existingValuesOptions);
     if (array_key_exists('error', $response))
