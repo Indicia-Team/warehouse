@@ -19,7 +19,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
- 
+
 require_once('includes/language_utils.php');
 
 /**
@@ -285,7 +285,7 @@ class iform_mnhnl_bird_transect_walks {
           // mode 1: display new sample: no occurrence list or add occurrence tabs. Survey tab active
           // mode 2: display existing sample. Survey tab active. No occurence details filled in.
           // mode 3: display existing occurrence. Add Occurrence tab active. Occurence details filled in.
-          // mode 4: NO LONGER USED. display Occurrence List. Occurrence List tab active. No occurence details filled in. 
+          // mode 4: NO LONGER USED. display Occurrence List. Occurrence List tab active. No occurence details filled in.
     $readOnly = false; // On top of this, things can be flagged as readonly. RO mode 2+4 means no Add Occurrence tab.
     if (!$logged_in){
       return lang::get('LANG_not_logged_in');
@@ -690,7 +690,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $disabledText="";
       $defAttrOptions = array('extraParams'=>$readAuth);
     }
-    
+
     data_entry_helper::enable_validation('SurveyForm');
     $r .= "<div id=\"controls\">\n";
     $activeTab = 'survey';
@@ -889,10 +889,10 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_approximation_id']], $defAttrOptions);
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_territorial_id']], array_merge($defAttrOptions, array('default'=>1)));
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_atlas_code_id']], array_merge($defAttrOptions, array('extraParams'=>array_merge(
-          $readAuth, 
+          $readAuth,
           array(
-            'language_id' => iform_lang_iso_639_2();
-          )          
+            'iso' => iform_lang_iso_639_2()
+          )
       ))));
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_overflying_id']], $defAttrOptions);
       $r .= data_entry_helper::textarea(array(
@@ -1042,17 +1042,17 @@ var selected = $('#controls').tabs('option', 'selected');
 
 // Only leave the click control activated for edit/add occurrence tab.
 if(selected != 1){
-    locationLayer.map.editLayer.clickControl.deactivate(); 
+    locationLayer.map.editLayer.clickControl.deactivate();
 }
 $('#controls').bind('tabsshow', function(event, ui) {
-        if(ui.index == 1) 
-        { 
-         locationLayer.map.editLayer.clickControl.activate(); 
-        } 
-        else  
-        { 
-         locationLayer.map.editLayer.clickControl.deactivate(); 
-        } 
+        if(ui.index == 1)
+        {
+         locationLayer.map.editLayer.clickControl.activate();
+        }
+        else
+        {
+         locationLayer.map.editLayer.clickControl.deactivate();
+        }
     }
 );
 ";
