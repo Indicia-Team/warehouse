@@ -49,18 +49,6 @@ class iform_basic_1 {
         )
       ),
       array(
-      	'name'=>'website_id',
-        'caption'=>'Website ID',
-        'description'=>'The ID of the website that data will be posted into.',
-        'type'=>'int'
-      ),
-      array(
-      	'name'=>'password',
-        'caption'=>'Website Password',
-        'description'=>'The Password of the website that data will be posted into.',
-        'type'=>'string'
-      ),
-      array(
       	'name'=>'list_id',
         'caption'=>'Species List ID',
         'description'=>'The Indicia ID for the species list that species can be selected from.',

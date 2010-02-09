@@ -36,18 +36,6 @@ class iform_basic_2 {
   public static function get_parameters() {    
     return array(
       array(
-      	'name'=>'website_id',
-        'caption'=>'Website ID',
-        'description'=>'The ID of the website that data will be posted into.',
-        'type'=>'int'
-      ),
-      array(
-      	'name'=>'password',
-        'caption'=>'Website Password',
-        'description'=>'The Password of the website that data will be posted into.',
-        'type'=>'string'
-      ),
-      array(
       	'name'=>'survey_id',
         'caption'=>'Survey ID',
         'description'=>'The ID of the survey that data will be posted into.',
