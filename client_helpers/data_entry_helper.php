@@ -81,8 +81,8 @@ $indicia_templates = array(
   'loading_block_end' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       "document.write('</div>');\n".
       "/* ]]> */</script>",
-	'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
-    	'<span class="nobreak vernacular">{common}</span></div>',
+  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
+      '<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
   'tree_browser_node' => '<span>{caption}</span>',
@@ -248,8 +248,8 @@ class data_entry_helper extends helper_config {
    * 
    */
   public static function enable_validation($form_id) {
-  	self::$validated_form_id = $form_id;
-  	self::add_resource('validation');
+    self::$validated_form_id = $form_id;
+    self::add_resource('validation');
   }
   
  /**
@@ -408,19 +408,19 @@ class data_entry_helper extends helper_config {
       if (array_key_exists('outerClass', $options)) {
         $options['outerClass'] .= ' ui-state-error';
       } else {
-      	$options['outerClass'] = 'ui-state-error';
+        $options['outerClass'] = 'ui-state-error';
       }
     }
     // add validation metadata to the control if specified, as long as control has a fieldname
     if (array_key_exists('fieldname', $options)) {
       // First check for predefined rules
-	    $rules = (array_key_exists('validation', $options) ? $options['validation'] : array());
-	    if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
-	      $rules = array_merge($rules, self::$default_validation_rules[$options['fieldname']]);
-	    }
-	    // Convert these rules into jQuery format.
-	    $options['class'] .= ' '.self::convert_to_jquery_val_metadata($rules);
-	    // Build internationalised validation messages for jQuery to use
+      $rules = (array_key_exists('validation', $options) ? $options['validation'] : array());
+      if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
+        $rules = array_merge($rules, self::$default_validation_rules[$options['fieldname']]);
+      }
+      // Convert these rules into jQuery format.
+      $options['class'] .= ' '.self::convert_to_jquery_val_metadata($rules);
+      // Build internationalised validation messages for jQuery to use
       foreach ($rules as $rule) {
         self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"), 
           lang::get($options['fieldname']));
@@ -492,14 +492,14 @@ class data_entry_helper extends helper_config {
   private static function convert_to_jquery_val_metadata($rules) {
     $converted = array();
     foreach ($rules as $rule) {
-    	// Detect the rules that can simply be passed through
-    	if    ($rule=='required'
-    	    || $rule=='dateISO'
-    	    || $rule=='email'
-    	    || $rule=='url') {
-    	  $converted[] = $rule;    	
- 	    }
- 	    // Now any rules which need parsing or convertion
+      // Detect the rules that can simply be passed through
+      if    ($rule=='required'
+          || $rule=='dateISO'
+          || $rule=='email'
+          || $rule=='url') {
+        $converted[] = $rule;    	
+       }
+       // Now any rules which need parsing or convertion
     }
     return implode(' ', $converted);
   }
@@ -785,24 +785,24 @@ class data_entry_helper extends helper_config {
         // go through list in entity to load and find first entry for this taxon, then extract the 
         // record ID if if exists.
         $existing_record_id = '';
-		if(self::$entity_to_load){
-			foreach(self::$entity_to_load as $key => $value){
-	        	$parts = explode(':', $key);
-    	    	if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
-        			$existing_record_id = $parts[2];
-        			break;
-    	    	}
-        	}
+    if(self::$entity_to_load){
+      foreach(self::$entity_to_load as $key => $value){
+            $parts = explode(':', $key);
+            if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
+              $existing_record_id = $parts[2];
+              break;
+            }
+          }
         }
         $attributes = self::getAttributes(array(
-	    	'id' => $existing_record_id
-    	   ,'valuetable'=>'occurrence_attribute_value'
-	       ,'attrtable'=>'occurrence_attribute'
-    	   ,'key'=>'occurrence_id'
-	       ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
-    	   ,'extraParams'=>$options['readAuth']
-    	   ,'survey_id'=>$options['survey_id']
-	    ));
+        'id' => $existing_record_id
+         ,'valuetable'=>'occurrence_attribute_value'
+         ,'attrtable'=>'occurrence_attribute'
+         ,'key'=>'occurrence_id'
+         ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
+         ,'extraParams'=>$options['readAuth']
+         ,'survey_id'=>$options['survey_id']
+      ));
         if ($options['checkboxCol']=='true') {
           if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
             $checked = ' checked="checked"';
@@ -820,9 +820,9 @@ class data_entry_helper extends helper_config {
           $existing_value = '';
           if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load) 
               && !empty(self::$entity_to_load[$ctrlId])) {
-              	$existing_value = self::$entity_to_load[$ctrlId];
+                $existing_value = self::$entity_to_load[$ctrlId];
           } else if(array_key_exists('default', $attributes[$matches[1]])){
-              	$existing_value = $attributes[$matches[1]]['default'];
+                $existing_value = $attributes[$matches[1]]['default'];
           }
           if($existing_value){
             // For select controls, specify which option is selected from the existing value    
@@ -862,7 +862,7 @@ class data_entry_helper extends helper_config {
         $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
       }
       if ($options['checkboxCol']=='true') { // need to tag if checkboxes active so can delete entry if needed
-      	$grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
+        $grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
       }
       return $grid;
     } else {
@@ -1102,7 +1102,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     // If the validation plugin is running, we need to trigger it when the datepicker closes.
     if (self::$validated_form_id) {
-    	self::$javascript .= ",
+      self::$javascript .= ",
   onClose: function() {
     $(this).valid();
   }";
@@ -1262,7 +1262,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       } else {
         $ret_value = false;
       }
-  	}
+    }
     return $ret_value;
   }
 
@@ -1735,8 +1735,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     global $indicia_templates;
     $options = array_merge(array('sep' => ''), $options);
     if ($options['class']=='') {
-    	// default class is control-box
-    	$options['class']='control-box';
+      // default class is control-box
+      $options['class']='control-box';
     }
     $url = parent::$base_url."/index.php/services/data";
     // Execute a request to the service
@@ -1820,68 +1820,68 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * The div's id can be specified using the divId array entry.
    */
   public static function map_panel($options) {
-  	if (!$options) {
-  		return '<div class="error">Form error. No options supplied to the map_panel method.</div>';  
-  	} else {
-	    global $indicia_templates;
-	    self::add_resource('indiciaMapPanel');
-	    $options = array_merge(array(
-	      'indiciaSvc'=>self::$base_url,
-	      'indiciaGeoSvc'=>self::$geoserver_url,
-	      'divId'=>'map',
-	      'class'=>'',
-	      'width'=>600,
-	      'height'=>470,
-	      'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
-	    ), $options);
-	
-	    if (array_key_exists('readAuth', $options)) {
-	      // Convert the readAuth into a query string so it can pass straight to the JS class.
-	      $options['readAuth']=self::array_to_query_string($options['readAuth']);
-	      str_replace('&', '&amp;', $options['readAuth']);
-	    }
-	
-	    // Autogenerate the links to the various mapping libraries as required
-	    if (array_key_exists('presetLayers', $options)) {
-	      foreach ($options['presetLayers'] as $layer)
-	      {
-	        $a = explode('_', $layer);
-	        $a = strtolower($a[0]);
-	        switch($a)
-	        {
-	          case 'google':
-	            self::add_resource('googlemaps');
-	            break;
-	          case 'multimap':
-	            self::add_resource('multimap');
-	            break;
-	          case 'virtual':
-	            self::add_resource('virtualearth');
-	            break;
-	        }
-	      }
-	    }
-	    // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
-	    // and controls, not the string class names.
-	    $json_insert='';
-	    if (array_key_exists('controls', $options)) {
-	      $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
-	      unset($options['controls']);
-	    }
-	    if (array_key_exists('layers', $options)) {
-	      $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
-	      unset($options['layers']);
-	    }
-	    $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-	    self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-	
-	    $r = str_replace(
-	          array('{divId}','{class}','{widthStyle}','{height}'),
-	          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
-	          $indicia_templates['map_panel']
-	      );
-	    return $r;
-  	}
+    if (!$options) {
+      return '<div class="error">Form error. No options supplied to the map_panel method.</div>';  
+    } else {
+      global $indicia_templates;
+      self::add_resource('indiciaMapPanel');
+      $options = array_merge(array(
+        'indiciaSvc'=>self::$base_url,
+        'indiciaGeoSvc'=>self::$geoserver_url,
+        'divId'=>'map',
+        'class'=>'',
+        'width'=>600,
+        'height'=>470,
+        'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+      ), $options);
+  
+      if (array_key_exists('readAuth', $options)) {
+        // Convert the readAuth into a query string so it can pass straight to the JS class.
+        $options['readAuth']=self::array_to_query_string($options['readAuth']);
+        str_replace('&', '&amp;', $options['readAuth']);
+      }
+  
+      // Autogenerate the links to the various mapping libraries as required
+      if (array_key_exists('presetLayers', $options)) {
+        foreach ($options['presetLayers'] as $layer)
+        {
+          $a = explode('_', $layer);
+          $a = strtolower($a[0]);
+          switch($a)
+          {
+            case 'google':
+              self::add_resource('googlemaps');
+              break;
+            case 'multimap':
+              self::add_resource('multimap');
+              break;
+            case 'virtual':
+              self::add_resource('virtualearth');
+              break;
+          }
+        }
+      }
+      // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
+      // and controls, not the string class names.
+      $json_insert='';
+      if (array_key_exists('controls', $options)) {
+        $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
+        unset($options['controls']);
+      }
+      if (array_key_exists('layers', $options)) {
+        $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
+        unset($options['layers']);
+      }
+      $json=substr(json_encode($options), 0, -1).$json_insert.'}';
+      self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+  
+      $r = str_replace(
+            array('{divId}','{class}','{widthStyle}','{height}'),
+            array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
+            $indicia_templates['map_panel']
+        );
+      return $r;
+    }
   }
 
  /**
@@ -2200,10 +2200,10 @@ if (errors.length>0) {
   }
 }\n";
       if (array_key_exists('active', $options)) {      	
-      	self::$late_javascript .= "else {tabs.tabs('select','".$options['active']."');}\n";
+        self::$late_javascript .= "else {tabs.tabs('select','".$options['active']."');}\n";
       }
       if (array_key_exists('style', $options) && $options['style']=='wizard') {      	
-      	self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
+        self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
       }
     }
     self::add_resource('jquery_ui');
@@ -2402,7 +2402,7 @@ if (errors.length>0) {
         $records[$a[1]][$a[3]] = $value;
         // store any id so update existing record
         if($a[2]) {
-        	$records[$a[1]]['id'] = $a[2];
+          $records[$a[1]]['id'] = $a[2];
         }
       }
     }
@@ -2410,25 +2410,25 @@ if (errors.length>0) {
       if ((array_key_exists('present', $record) && $record['present']) || 
           (array_key_exists('id', $record)) ||
           ($include_if_any_data && implode('',$record)!='')) {            
-    	if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
-    		// checkboxes do not appear if not checked. If uncheck, delete record.
-    		$record['deleted'] = 't';
-    	}
+      if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
+        // checkboxes do not appear if not checked. If uncheck, delete record.
+        $record['deleted'] = 't';
+      }
         $record['taxa_taxon_list_id'] = $id;
-	    $record['website_id'] = $website_id;
-	    if (isset($determiner_id)) {
-	        $record['determiner_id'] = $determiner_id;
-	    }
+      $record['website_id'] = $website_id;
+      if (isset($determiner_id)) {
+          $record['determiner_id'] = $determiner_id;
+      }
         if (isset($record_status)) {
           $record['record_status'] = $record_status;
         }
-	      $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
-	      $occ = data_entry_helper::wrap($record, 'occurrence');
-	      $occ['metaFields']['occAttributes']['value'] = $occAttrs;
-	      $subModels[] = array(
-	        'fkId' => 'sample_id',
-	        'model' => $occ
-	      );
+        $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
+        $occ = data_entry_helper::wrap($record, 'occurrence');
+        $occ['metaFields']['occAttributes']['value'] = $occAttrs;
+        $subModels[] = array(
+          'fkId' => 'sample_id',
+          'model' => $occ
+        );
       }
     }    
     return $subModels;
@@ -2567,7 +2567,7 @@ if (errors.length>0) {
    * @return string Text to place in the head section of the html file.
    */
   public static function dump_header($resources=null) {
-  	global $indicia_resources;
+    global $indicia_resources;
     if (!$resources) {
       $resources = array('jquery_ui',  'defaultStylesheet');
     }
@@ -2593,14 +2593,14 @@ if (errors.length>0) {
     // In the following block, we set the validation plugin's error class to our template.
     // We also define the error label to be wrapped in a <p> if it is on a newline.
     if (self::$validated_form_id) {
-	    self::$javascript .= "$('#".self::$validated_form_id."').validate({ 
-	      errorClass: \"".$indicia_templates['error_class']."\",
-	      ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
-	      "highlight: function(element, errorClass) {
-	         // Don't highlight the actual control, as it could be hidden anyway
-	      },
-	      messages: ".json_encode(self::$validation_messages)."
-	    });\n";
+      self::$javascript .= "$('#".self::$validated_form_id."').validate({ 
+        errorClass: \"".$indicia_templates['error_class']."\",
+        ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
+        "highlight: function(element, errorClass) {
+           // Don't highlight the actual control, as it could be hidden anyway
+        },
+        messages: ".json_encode(self::$validation_messages)."
+      });\n";
     }
     $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, $indicia_resources);
     // ensure scripted JS does not output again if recalled.
@@ -2643,7 +2643,7 @@ $javascript
 $late_javascript
 });\n";
       if (!empty($onload_javascript)) {
-      	$script .= "window.onload = function() {
+        $script .= "window.onload = function() {
 $onload_javascript      	  
 };\n";
       }
@@ -2719,13 +2719,13 @@ $onload_javascript
     global $indicia_templates;
     $r="";
     if (self::$validation_errors!==null) {
-	    foreach (self::$validation_errors as $errorKey => $error) {
-	      if (!in_array($error, self::$displayed_errors)) {
-	        $r .= str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
-	        $r .= "[".$errorKey."]";
-	      }
-	    }
-	    $r .= '<br/>';
+      foreach (self::$validation_errors as $errorKey => $error) {
+        if (!in_array($error, self::$displayed_errors)) {
+          $r .= str_replace('{error}', lang::get($error), $indicia_templates['validation_message']);
+          $r .= "[".$errorKey."]";
+        }
+      }
+      $r .= '<br/>';
     }
     return $r;
   }
@@ -2801,8 +2801,8 @@ $onload_javascript
    * hover the mouse over them.
    */
   public static function link_default_stylesheet() {
-  	// make buttons highlight when hovering over them
-  	self::$javascript .= "
+    // make buttons highlight when hovering over them
+    self::$javascript .= "
 $('.ui-state-default').live('mouseover', function() { 
   $(this).addClass('ui-state-hover'); 
 });
@@ -2930,8 +2930,8 @@ $('.ui-state-default').live('mouseout', function() {
       if ($plaintext) {
         return $error;
       } else {
-      	$template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
-      	$template = str_replace('{for}', $fieldname, $template);
+        $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
+        $template = str_replace('{for}', $fieldname, $template);
         return str_replace('{error}', lang::get($error), $template);
       }
     } else {
@@ -2957,7 +2957,7 @@ $('.ui-state-default').live('mouseout', function() {
       // iterate the variable arguments and use the first one with a real value
       for ($i=1; $i<func_num_args(); $i++) {
         $return = func_get_arg($i);
-      	if (!is_null($return) && $return != '') {
+        if (!is_null($return) && $return != '') {
           break;
         }
       }
@@ -3028,13 +3028,13 @@ $('.ui-state-default').live('mouseout', function() {
       self::check_config('$flickr_api_secret', isset(self::$flickr_api_secret), empty(self::$flickr_api_secret), $missing_configs, $blank_configs);
       // Warn the user of the missing ones - the important bit.
       if (count($missing_configs)>0) {
-      	$r .= '<li class="ui-widget ui-state-error">Error: The following configuration entries are missing from helper_config.php : '.
-      	    implode(', ', $missing_configs).'. This may prevent the data_entry_helper class from functioning normally.</li>';
+        $r .= '<li class="ui-widget ui-state-error">Error: The following configuration entries are missing from helper_config.php : '.
+            implode(', ', $missing_configs).'. This may prevent the data_entry_helper class from functioning normally.</li>';
       }
       // Also warn them of blank ones - not so important as it should only affect the one area of functionality
       if (count($blank_configs)>0) {
-      	$r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
-      	    implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
+        $r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
+            implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
       }     
     }
     $r .= '</ul></div>';
@@ -3092,53 +3092,53 @@ $('.ui-state-default').live('mouseout', function() {
   * @return array of attributes.
   */
   public static function getAttributes($options) {
-  	$retVal = array();
+    $retVal = array();
     self::add_resource('json');
 
-	$attrOptions = array(
-    	    'table'=>$options['attrtable']
-       		,'extraParams'=> $options['extraParams']+ array('deleted' => 'f', 'website_deleted' => 'f', 'restrict_to_survey_id' => 'NULL'));
+  $attrOptions = array(
+          'table'=>$options['attrtable']
+           ,'extraParams'=> $options['extraParams']+ array('deleted' => 'f', 'website_deleted' => 'f', 'restrict_to_survey_id' => 'NULL'));
     $response = self::get_population_data($attrOptions);
     if (array_key_exists('error', $response))
         return $response;
     foreach ($response as $item){
         $retVal[$item['id']] = array(
-        		'caption' => lang::get($item['caption']),
-        		'fieldname' => $options['fieldprefix'].':'.$item['id'],
-        		'data_type' => $item['data_type'],
-        		'termlist_id' => $item['termlist_id']);
+            'caption' => lang::get($item['caption']),
+            'fieldname' => $options['fieldprefix'].':'.$item['id'],
+            'data_type' => $item['data_type'],
+            'termlist_id' => $item['termlist_id']);
     }
     if(isset($options['survey_id'])){
-	  	$attrOptions['extraParams']['restrict_to_survey_id'] = $options['survey_id'];
-	    $response = self::get_population_data($attrOptions);
-	    if (array_key_exists('error', $response))
-    	    return $response;
-	    foreach ($response as $item){
-    	    $retVal[$item['id']] = array(
-        		'caption' => lang::get($item['caption']),
-        		'fieldname' => $options['fieldprefix'].':'.$item['id'],
-        		'data_type' => $item['data_type'],
-        		'termlist_id' => $item['termlist_id']);
-	    }
+      $attrOptions['extraParams']['restrict_to_survey_id'] = $options['survey_id'];
+      $response = self::get_population_data($attrOptions);
+      if (array_key_exists('error', $response))
+          return $response;
+      foreach ($response as $item){
+          $retVal[$item['id']] = array(
+            'caption' => lang::get($item['caption']),
+            'fieldname' => $options['fieldprefix'].':'.$item['id'],
+            'data_type' => $item['data_type'],
+            'termlist_id' => $item['termlist_id']);
+      }
     }
     if(!$options['id'])
-    	return $retVal;
+      return $retVal;
 
     $options['extraParams'][$options['key']] = $options['id'];
     $existingValuesOptions = array(
-    	    'table'=>$options['valuetable']
-    		,'cachetimeout' => 0 // can't cache
-       		,'extraParams'=> $options['extraParams']);
+          'table'=>$options['valuetable']
+        ,'cachetimeout' => 0 // can't cache
+           ,'extraParams'=> $options['extraParams']);
     $response = self::get_population_data($existingValuesOptions);
     if (array_key_exists('error', $response))
-    	return $response;
+      return $response;
     foreach ($response as $item){
         if(isset($retVal[$item[$options['attrtable'].'_id']])){
-    		if(isset($item['id'])){
-    			$retVal[$item[$options['attrtable'].'_id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
-	       		$retVal[$item[$options['attrtable'].'_id']]['default'] = $item['raw_value'];
-    		}
-    	}
+        if(isset($item['id'])){
+          $retVal[$item[$options['attrtable'].'_id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
+             $retVal[$item[$options['attrtable'].'_id']]['default'] = $item['raw_value'];
+        }
+      }
     }
     return $retVal;
   }
@@ -3150,8 +3150,8 @@ $('.ui-state-default').live('mouseout', function() {
         array_key_exists('default', $options) ? $options['default'] : '', '0');    
     $options = array_merge(array('sep' => ''), $options);
     if ($options['class']=='') {
-    	// default class is control-box
-    	$options['class']='control-box';
+      // default class is control-box
+      $options['class']='control-box';
     }
     $items = "";
     $buttonList = array(lang::get('No') => '0', lang::get('Yes') => '1');
@@ -3171,30 +3171,38 @@ $('.ui-state-default').live('mouseout', function() {
   /**
   * Helper function to output an attribute
   * 
+  * @param array $item Attribute definition as returned by a call to getAttributes.
+  * @param array $options Additional options for the attribute to be output. Array entries can be:
+  *    disabled
+  *    suffixTemplate
+  *    default
+  *    validation
+  *    noBlankText
+  *    extraParams  
   * @return string HTML to insert into the page for the control.
   */
   public static function outputAttribute($item, $options=array()) {
-  	$attrOptions = array('label'=>$item['caption'],
-							'fieldname'=>$item['fieldname'],
-  							'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
-  	if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
-  	if(isset($item['default'])) $attrOptions['default']= $item['default'];
-  	else if(isset($options['default'])) $attrOptions['default']= $options['default'];
-  	if(isset($options['validation'])) $attrOptions['validation'] = $options['validation'];
-  	
-  	switch ($item['data_type']) {
+    $attrOptions = array('label'=>$item['caption'],
+              'fieldname'=>$item['fieldname'],
+                'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
+    if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
+    if(isset($item['default'])) $attrOptions['default']= $item['default'];
+    else if(isset($options['default'])) $attrOptions['default']= $options['default'];
+    if(isset($options['validation'])) $attrOptions['validation'] = $options['validation'];
+    
+    switch ($item['data_type']) {
         case 'Text':
         case 'T':
         case 'Float':
         case 'F':
         case 'Integer':
         case 'I':
-        	$output = self::text_input($attrOptions);
+          $output = self::text_input($attrOptions);
             break;
         case 'Boolean':
         case 'B':
-        	// can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
-        	// in the optional attribute record.
+          // can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
+          // in the optional attribute record.
             $output = self::boolean_attribute($attrOptions);
             break;
         case 'D': // Date
@@ -3206,15 +3214,15 @@ $('.ui-state-default').live('mouseout', function() {
             break;
         case 'Lookup List':
         case 'L':
-        	if(!array_key_exists('noBlankText', $options)){
-        		$attrOptions = $attrOptions + array('blankText' => '');
-        	}
-        	$output = self::select($attrOptions + array(
+          if(!array_key_exists('noBlankText', $options)){
+            $attrOptions = $attrOptions + array('blankText' => '');
+          }
+          $output = self::select($attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
                   'extraParams' => $options['extraParams'] + array('termlist_id' => $item['termlist_id'])));
-	        break;
+          break;
         default:
             $output = '<strong>UNKNOWN DATA TYPE '.$item['data_type'].' FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
             break;
