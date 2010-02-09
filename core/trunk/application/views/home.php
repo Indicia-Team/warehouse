@@ -32,7 +32,7 @@ $(document).ready(function(){
 });
 </script>
 <h2>Welcome to the Indicia Warehouse!</h2>
-<?php if ($db_version!=$app_version) : ?>
+<?php if ($db_version<$app_version) : ?>
 <div class="ui-state-error ui-corner-all page-notice">Your database needs to be upgraded as the application version is <?php echo $app_version; ?> but the database version is <?php echo $db_version; ?>.
 <a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home/upgrade">Run Upgrade</a></div>  
 <?php 
