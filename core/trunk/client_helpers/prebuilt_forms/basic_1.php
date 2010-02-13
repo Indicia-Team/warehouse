@@ -118,7 +118,12 @@ class iform_basic_1 {
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     $r .= "</div>\n";
     $r .= "<div id=\"place\">\n";
-    $r .= data_entry_helper::map();
+    // for this form, use virtual earth and no geoplanet lookup, since then it requires no API keys so is a good
+    // quick demo of how things work.
+    $r .= data_entry_helper::map(array(
+      'presetLayers' => array('virtual_earth'),
+      'locate' => false
+    ));
     $r .= "</div>\n";    
     $r .= "<div id=\"other\">\n";
     $r .= data_entry_helper::date_picker(array(
