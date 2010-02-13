@@ -643,7 +643,7 @@ class data_entry_helper extends helper_config {
    * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
    * occAttrs then all remaining controls re-use the last class.</li>
    * <li><b>extraParams</b><br/>
-   * Optional. Associative array of items to pass via the query string to the service. This
+   * Associative array of items to pass via the query string to the service. This
    * should at least contain the read authorisation array.</li>
    * <li><b>lookupListId</b><br/>
    * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
@@ -666,7 +666,7 @@ class data_entry_helper extends helper_config {
    * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
    * if this is not specified then 1 hour.</li>
    * <li><b>survey_id</b><br/>
-   * Optional. used to determine which attributes are valid for this website/survey combination</li> 
+   * Optional. Used to determine which attributes are valid for this website/survey combination</li> 
    * </ul>
    */
   public static function species_checklist()
@@ -686,14 +686,10 @@ class data_entry_helper extends helper_config {
     if (array_key_exists('listId', $options)) {
       $options['extraParams']['taxon_list_id']=$options['listId'];
     }
-    if (!array_key_exists('preferred', $options['extraParams'])) {
-      // default to only preferred taxon names
-      $options['extraParams']['preferred']='t';
-    }
-    if (!array_key_exists('orderby', $options['extraParams'])) {
-      // default to only preferred taxon names
-      $options['extraParams']['orderby']='taxon';
-    }
+    $options['extraParams'] = array_merge(array(
+      'preferred'=>'t', // default to preferred taxa only
+      'orderby'=>'taxon' // default sort by taxon name
+    ), $options['extraParams']);
     if (array_key_exists('readAuth', $options)) {
       $options['extraParams'] += $options['readAuth'];
     } else {
@@ -785,8 +781,8 @@ class data_entry_helper extends helper_config {
         // go through list in entity to load and find first entry for this taxon, then extract the 
         // record ID if if exists.
         $existing_record_id = '';
-    if(self::$entity_to_load){
-      foreach(self::$entity_to_load as $key => $value){
+        if(self::$entity_to_load){
+          foreach(self::$entity_to_load as $key => $value){
             $parts = explode(':', $key);
             if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
               $existing_record_id = $parts[2];
@@ -795,14 +791,14 @@ class data_entry_helper extends helper_config {
           }
         }
         $attributes = self::getAttributes(array(
-        'id' => $existing_record_id
-         ,'valuetable'=>'occurrence_attribute_value'
-         ,'attrtable'=>'occurrence_attribute'
-         ,'key'=>'occurrence_id'
-         ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
-         ,'extraParams'=>$options['readAuth']
-         ,'survey_id'=>$options['survey_id']
-      ));
+          'id' => $existing_record_id
+           ,'valuetable'=>'occurrence_attribute_value'
+           ,'attrtable'=>'occurrence_attribute'
+           ,'key'=>'occurrence_id'
+           ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
+           ,'extraParams'=>$options['readAuth']
+           ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
+        ));
         if ($options['checkboxCol']=='true') {
           if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
             $checked = ' checked="checked"';
