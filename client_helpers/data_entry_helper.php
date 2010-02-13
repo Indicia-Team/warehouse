@@ -1768,7 +1768,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * associated controls.
   *
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>layers</b><br/>
+  * <li><b>presetLayers</b><br/>
   * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
   * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth', 'multimap_default', 'multimap_landranger'</li> 
   * <li><b>edit</b><br/>
@@ -1834,7 +1834,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'height'=>470,
         'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
       ), $options);
-  
       if (array_key_exists('readAuth', $options)) {
         // Convert the readAuth into a query string so it can pass straight to the JS class.
         $options['readAuth']=self::array_to_query_string($options['readAuth']);
