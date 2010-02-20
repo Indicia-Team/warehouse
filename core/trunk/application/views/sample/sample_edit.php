@@ -20,7 +20,6 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
 echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
@@ -58,6 +57,7 @@ $id = html::initial_value($values, 'sample:id');
 <?php 
 print form::hidden('sample:id', html::specialchars($id));
 print form::hidden('sample:survey_id', html::initial_value($values, 'sample:survey_id')); 
+print form::hidden('website_id', html::initial_value($values, 'website_id'));
 ?>
 <legend>Sample Details</legend>
 <ol>
@@ -113,6 +113,13 @@ foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption)
  <?php
  print form::dropdown('sample:sample_method_id', $other_data['method_terms'], html::initial_value($values, 'sample:sample_method_id'));
  echo html::error_message($model->getError('sample:sample_method_id'));
+ ?>
+ </li>
+ <li>
+ <label for='sample:comment'>Comment:</label>
+ <?php
+ print form::textarea('sample:comment', html::initial_value($values, 'sample:comment'));
+ echo html::error_message($model->getError('sample:comment'));
  ?>
  </li>
  </ol>

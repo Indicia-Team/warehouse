@@ -47,6 +47,7 @@ class Sample_Controller extends Gridview_Base_Controller
     $r = parent::getModelValues();
     $this->loadOccurrences($r);
     $this->loadAttributes($r);
+    $r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
     return $r;      
   }
   
@@ -60,6 +61,7 @@ class Sample_Controller extends Gridview_Base_Controller
   	  $this->loadOccurrences($r);
   	}
   	$this->loadAttributes($r);
+  	$r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
   	return $r;
   }
   
