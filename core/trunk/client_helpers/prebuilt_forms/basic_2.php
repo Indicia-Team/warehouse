@@ -40,6 +40,12 @@ class iform_basic_2 {
         'caption'=>'Survey ID',
         'description'=>'The ID of the survey that data will be posted into.',
         'type'=>'int'
+      ),
+      array(
+        'name'=>'taxon_list_id',
+        'caption'=>'Taxon List ID',
+        'description'=>'The ID of the taxon list that species can be selected from.',
+        'type'=>'int'
       )
     );
   }
@@ -56,27 +62,27 @@ class iform_basic_2 {
    * Return the generated form output.
    * @return Form HTML.
    */
-  public static function get_form() {
+  public static function get_form($args) {
     $r = "<form method=\"post\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
     $r .= data_entry_helper::get_auth(1, 'password');
-    $readAuth = data_entry_helper::get_read_auth(1, 'password');
-    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"1\" />\n";
-    $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
+    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    $r .= '<input type="hidden"  name="website_id" value="'.$args['website_id'].'" />'."\n";
+    $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'" />'."\n";
+    $r .= "<input type=\"hidden\" id=\"record_status\" value=\"C\" />\n";
     $r .= data_entry_helper::autocomplete(array(
         'label'=>'Species',
         'fieldname'=>'occurrence:taxa_taxon_list_id',
         'table'=>'taxa_taxon_list',
         'captionField'=>'taxon',
         'valueField'=>'id',
-        'extraParams'=>$readAuth + array('taxon_list_id' => 1)
+        'extraParams'=>$readAuth + array('taxon_list_id' => $args['taxon_list_id'])
     ));
     $r .= data_entry_helper::date_picker(array(
         'label'=>'Date',
         'fieldname'=>'sample:date'
     ));
     $r .= data_entry_helper::map();
-    $r .= "<input type=\"hidden\" name=\"sample:survey_id\" value=\"1\" />\n";
     $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save\" />\n";    
     $r .= "</form>";    
         
