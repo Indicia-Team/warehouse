@@ -555,6 +555,7 @@ class ORM extends ORM_Core {
       $this->db->like('validation_rules','%required%');
       $this->db->where($attr_entity.'s.deleted', 'f');
       $this->db->where($attr_entity.'s_websites.deleted', 'f');
+      print_r($this->identifiers);
       if ($this->identifiers['website_id']) {
         $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
       }

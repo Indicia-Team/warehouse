@@ -66,7 +66,8 @@ class Sample_Model extends ORM_Tree
       'survey_id',
       'deleted',
       'recorder_names',
-      'parent_id'
+      'parent_id',
+      'comment'
     );
     
     $array->add_rules('date_type', 'required', 'length[1,2]');
