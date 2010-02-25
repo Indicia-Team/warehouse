@@ -332,7 +332,7 @@
 
       if (this.settings.editLayer) {
         // Add an editable layer to the map
-        var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true});
+        var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: false});
         div.map.editLayer = editLayer;
         div.map.addLayers([div.map.editLayer]);
 
