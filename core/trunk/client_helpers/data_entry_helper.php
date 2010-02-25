@@ -152,13 +152,13 @@ jQuery('#{parentControlId}').change();\n",
  * @package	Client
  */
 class data_entry_helper extends helper_config {
-  
+
   /**
-   * @var array When reloading a form, this can be populated with the list of values to load into the controls. E.g. set it to the 
+   * @var array When reloading a form, this can be populated with the list of values to load into the controls. E.g. set it to the
    * content of $_POST after submitting a form that needs to reload.
    */
   public static $entity_to_load=null;
-  
+
   /**
    * @var array List of methods used to report a validation failure. Options are
    * message, message, hint, icon, colour, inline.
@@ -168,64 +168,64 @@ class data_entry_helper extends helper_config {
    * messages on the next line so this is the default behaviour.
    */
   public static $validation_mode=array('message', 'colour');
-  
+
   /**
    * @var string JavaScript text to be emitted after the data entry form. Each control that
    * needs custom JavaScript can append the script to this variable.
    */
   public static $javascript = '';
-  
+
   /**
    * @var string JavaScript text to be emitted after the data entry form and all other JavaScript.
    */
   public static $late_javascript = '';
-  
+
   /**
    * @var string JavaScript text to be emitted during window.onload.
    */
   public static $onload_javascript = '';
-  
+
   /**
    * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
    */
   public static $js_path = null;
-  
+
   /**
    * @var string Path to Indicia CSS folder. If not specified, then it is calculated from the Warehouse $base_url.
    */
   public static $css_path = null;
-  
+
   /**
    * @var array List of resources that have already been dumped out, so we don't duplicate them.
    */
   private static $dumped_resources=array();
-  
+
   /**
    * @var array List of all error messages returned from an attempt to save.
    */
   public static $validation_errors=null;
-  
+
   /**
    * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
    * remaining ones at the end.
    */
   private static $displayed_errors=array();
-  
+
   /**
    * @var array Website ID, stored here to assist with caching.
    */
   private static $website_id = null;
-  
+
   /**
    * @var array Name of the form which has been set up for jQuery validation, if any.
    */
   public static $validated_form_id = null;
-  
+
   /**
    * @var array List of messages defined to pass to the validation plugin.
    */
   public static $validation_messages = array();
-  
+
   /**
    * @var Array of default validation rules to apply to the controls on the form if the
    * built in client side validation is used (with the jQuery validation plugin). This array
@@ -238,20 +238,20 @@ class data_entry_helper extends helper_config {
     'sample:entered_sref'=>array('required'),
     'occurrence:taxa_taxon_list_id'=>array('required')
   );
-  
+
   /**
    * Call the enable_validation method to turn on client-side validation for any controls with
    * validation rules defined. To specify validation on each control, set the control's options array
    * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
    * validation format. For example, 'validation' => array('required', 'email').
    * @param string @form_id Id of the form the validation is being attached to.
-   * 
+   *
    */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
     self::add_resource('validation');
   }
-  
+
  /**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
  *
@@ -385,13 +385,13 @@ class data_entry_helper extends helper_config {
     }
     // Decide if the main control has an error. If so, highlight with the error class and set it's title.
     $error="";
-    if (self::$validation_errors!==null) {      
-      if (array_key_exists('fieldname', $options)) {        
+    if (self::$validation_errors!==null) {
+      if (array_key_exists('fieldname', $options)) {
         $error = self::check_errors($options['fieldname'], false);
       }
     }
     // Add a hint to the control if there is an error and this option is set
-    if ($error && in_array('hint', $options['validation_mode'])) {        
+    if ($error && in_array('hint', $options['validation_mode'])) {
       $options['title'] = 'title="'.$error.'"';
     } else {
       $options['title'] = '';
@@ -422,7 +422,7 @@ class data_entry_helper extends helper_config {
       $options['class'] .= ' '.self::convert_to_jquery_val_metadata($rules);
       // Build internationalised validation messages for jQuery to use
       foreach ($rules as $rule) {
-        self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"), 
+        self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"),
           lang::get($options['fieldname']));
       }
     }
@@ -431,7 +431,7 @@ class data_entry_helper extends helper_config {
     }
     if (!empty($options['outerClass'])) {
       $options['outerClass']=' class="'.$options['outerClass'].'"';
-    }    
+    }
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
     $replaceValues=array();
@@ -453,26 +453,26 @@ class data_entry_helper extends helper_config {
       $r .= str_replace(
           array('{label}', '{id}', '{labelClass}'),
           array(
-              $options['label'], 
+              $options['label'],
               array_key_exists('inputId', $options) ? $options['inputId'] : $options['id'],
               array_key_exists('labelClass', $options) ? ' class="'.$options['labelClass'].'"' : '',
-          ),              
+          ),
           $indicia_templates['label']
       );
-    }    
+    }
     // Output the main control
     $r .= str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);
-    
+
     // Add an error icon to the control if there is an error and this option is set
     if ($error && in_array('icon', $options['validation_mode'])) {
       $r .= $indicia_templates['validation_icon'];
-    }    
+    }
     // Add a message to the control if there is an error and this option is set
     if (in_array('message', $options['validation_mode'])) {
       $r .= $error;
     }
     if (array_key_exists('suffixTemplate', $options)) {
-      if (array_key_exists($options['suffixTemplate'], $indicia_templates)) 
+      if (array_key_exists($options['suffixTemplate'], $indicia_templates))
         $r .= $indicia_templates[$options['suffixTemplate']];
       else
         $r .= $indicia_templates['suffix'].'<span class="ui-state-error">Code error: suffix template '.$options['suffixTemplate'].' not in list of known templates.</span>';
@@ -481,7 +481,7 @@ class data_entry_helper extends helper_config {
     }
     return $r;
   }
-  
+
   /**
    * Takes a list of validation rules in Indicia format, and converts them to the jQuery validaiotn
    * plugin metadata format.
@@ -497,7 +497,7 @@ class data_entry_helper extends helper_config {
           || $rule=='dateISO'
           || $rule=='email'
           || $rule=='url') {
-        $converted[] = $rule;    	
+        $converted[] = $rule;
        }
        // Now any rules which need parsing or convertion
     }
@@ -517,7 +517,7 @@ class data_entry_helper extends helper_config {
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the file upload control.
   */
   public static function image_upload() {
@@ -542,7 +542,7 @@ class data_entry_helper extends helper_config {
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the text input control.
   */
   public static function text_input() {
@@ -574,7 +574,7 @@ class data_entry_helper extends helper_config {
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the textarea control.
   */
   public static function textarea() {
@@ -585,7 +585,7 @@ class data_entry_helper extends helper_config {
     ), $options);
     return self::apply_template('textarea', $options);
   }
-  
+
   /**
   * Helper function to output an HTML checkbox control. This includes re-loading of existing values
   * and displaying of validation error messages.
@@ -603,11 +603,11 @@ class data_entry_helper extends helper_config {
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the checkbox control.
   */
   public static function checkbox($options) {
-    $default = self::check_default_value($options['fieldname'], 
+    $default = self::check_default_value($options['fieldname'],
         array_key_exists('default', $options) ? $options['default'] : null);
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
     if ($default=='on') {
@@ -627,7 +627,7 @@ class data_entry_helper extends helper_config {
    * <p>Further, the control will incorporate the functionality to add extra terms to the
    * control from the parent list of the one given. This will take the form of an autocomplete
    * box against the parent list which will add an extra row to the control upon selection.</p>
-   * 
+   *
    * <p>To change the format of the label displayed for each taxon, use the global $indicia_templates variable
    * to set the value for the entry 'taxon_label'. The tags available in the template are {taxon},
    * {authority} and {common}.</p>
@@ -647,7 +647,7 @@ class data_entry_helper extends helper_config {
    * should at least contain the read authorisation array.</li>
    * <li><b>lookupListId</b><br/>
    * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
-   * rows to the grid. If specified, then an autocomplete text box and Add Row button are generated 
+   * rows to the grid. If specified, then an autocomplete text box and Add Row button are generated
    * automatically allowing the user to pick a species to add as an extra row.</li>
    * <li><b>header</b><br/>
    * Include a header row in the grid? Defaults to true.</li>
@@ -655,10 +655,10 @@ class data_entry_helper extends helper_config {
    * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
    * Defaults to 1.</li>
    * <li><b>checkboxCol</b><br/>
-   * Include a presence checkbox column in the grid. If present, then this contains a checkbox for each row which must be ticked for the 
+   * Include a presence checkbox column in the grid. If present, then this contains a checkbox for each row which must be ticked for the
    * row to be saved. Otherwise any row containing data in an attribute gets saved.</li>
    * <li><b>class</b><br/>
-   * Optional. CSS class names to add to the control.</li> 
+   * Optional. CSS class names to add to the control.</li>
    * <li><b>cachetimeout</b><br/>
    * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
    * after a request for data to the Indicia Warehouse before a new request will refetch the data,
@@ -666,11 +666,11 @@ class data_entry_helper extends helper_config {
    * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
    * if this is not specified then 1 hour.</li>
    * <li><b>survey_id</b><br/>
-   * Optional. Used to determine which attributes are valid for this website/survey combination</li> 
+   * Optional. Used to determine which attributes are valid for this website/survey combination</li>
    * </ul>
    */
   public static function species_checklist()
-  { 
+  {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     // Apply default values
@@ -698,10 +698,10 @@ class data_entry_helper extends helper_config {
           'nonce' => $options['extraParams']['nonce']
       );
     }
-    $options['table']='taxa_taxon_list';    
+    $options['table']='taxa_taxon_list';
     $taxalist = self::get_population_data($options);
     $url = parent::$base_url."index.php/services/data";
-    
+
     // Get the list of occurrence attributes
     if (array_key_exists('occAttrs', $options)) {
       $idx=0;
@@ -711,20 +711,20 @@ class data_entry_helper extends helper_config {
         $a = self::get_population_data(array(
             'table'=>'occurrence_attribute',
             'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
-        ));        
+        ));
         if (count($a)>0 && !array_key_exists('error', $a))
-        { 
+        {
           $b = $a[0];
           $occAttrs[$occAttr] = $b['caption'];
           // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-          $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;          
+          $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;
           // Build the correct control
           switch ($b['data_type'])
           {
             case 'L':
               $tlId = $b['termlist_id'];
               $occAttrControls[$occAttr] = data_entry_helper::select(array(
-                  'fieldname' => 'oa:'.$occAttr, 
+                  'fieldname' => 'oa:'.$occAttr,
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
@@ -734,12 +734,12 @@ class data_entry_helper extends helper_config {
               ));
               break;
             case 'D':
-            case 'V':              
+            case 'V':
               // Date-picker control
               $occAttrControls[$occAttr] = "<input type='text' class='date $class' id='oa:$occAttr' name='oa:$occAttr' " .
                   "value='".lang::get('click here')."'/>";
-              break;  
-            default:              
+              break;
+            default:
               $occAttrControls[$occAttr] =
                   "<input type='text' id='oa:$occAttr' name='oa:$occAttr' class='$class' value=\"\"/>";
               break;
@@ -747,7 +747,7 @@ class data_entry_helper extends helper_config {
         }
         $idx++;
       }
-    }    
+    }
     // Build the grid
     if (! array_key_exists('error', $taxalist))
     {
@@ -778,7 +778,7 @@ class data_entry_helper extends helper_config {
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
         $row = "\n<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
-        // go through list in entity to load and find first entry for this taxon, then extract the 
+        // go through list in entity to load and find first entry for this taxon, then extract the
         // record ID if if exists.
         $existing_record_id = '';
         if(self::$entity_to_load){
@@ -814,16 +814,16 @@ class data_entry_helper extends helper_config {
           $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
           // If there is an existing value to load for this control, we need to put the value in the control.
           $existing_value = '';
-          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load) 
+          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
               && !empty(self::$entity_to_load[$ctrlId])) {
                 $existing_value = self::$entity_to_load[$ctrlId];
           } else if(array_key_exists('default', $attributes[$matches[1]])){
                 $existing_value = $attributes[$matches[1]]['default'];
           }
           if($existing_value){
-            // For select controls, specify which option is selected from the existing value    
-            if (substr($oc, 0, 7)=='<select') {              
-              $oc = str_replace('value="'.$existing_value.'"', 
+            // For select controls, specify which option is selected from the existing value
+            if (substr($oc, 0, 7)=='<select') {
+              $oc = str_replace('value="'.$existing_value.'"',
                   'value="'.$existing_value.'" '.$indicia_templates['select_option_selected'], $oc);
             } else {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
@@ -841,7 +841,7 @@ class data_entry_helper extends helper_config {
       $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
       $grid .= '</tbody></table>';
 
-      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid, 
+      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
         // Javascript to add further rows to the grid
@@ -864,12 +864,12 @@ class data_entry_helper extends helper_config {
     } else {
       return $taxalist['error'];
     }
-    
+
   }
-  
+
   /**
    * Applies a template to build the output label for each taxon in a taxon grid.
-   * 
+   *
    * @access private
    * @param $taxon Array holding the taxon attributes.
    * @return string HTML for the taxon label
@@ -884,10 +884,10 @@ class data_entry_helper extends helper_config {
         array_push($replaceTags, '{'.$option.'}');
         array_push($replaceValues, $taxon[$option]);
       }
-    }    
-    return str_replace($replaceTags, $replaceValues, $indicia_templates['taxon_label']);    
+    }
+    return str_replace($replaceTags, $replaceValues, $indicia_templates['taxon_label']);
   }
-  
+
 
   /**
   * Helper function to generate a treeview from a given list
@@ -897,7 +897,7 @@ class data_entry_helper extends helper_config {
   * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
   * NB the tree itself will have an id of "tr$fieldname".</li>
   * <li><b>id</b><br/>
-  * Optional. ID of the control. Defaults to the fieldname.</li> 
+  * Optional. ID of the control. Defaults to the fieldname.</li>
   * <li><b>table</b><br/>
   * Required. Name (Kohana-style) of the database entity to be queried.</li>
   * <li><b>view</b><br/>
@@ -919,13 +919,13 @@ class data_entry_helper extends helper_config {
   * main class to be added to UL tag - currently can be treeview, treeview-red,
   * treeview_black, treeview-gray. The filetree class although present, does not work properly.</li>
   * </ul>
-  * 
+  *
   * TODO
-  * Need to do initial value.  
+  * Need to do initial value.
   */
   public static function treeview()
   {
-    global $indicia_templates; 
+    global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField',
         'topField', 'topValue', 'parentField', 'default', 'extraParams', 'class'));
     self::add_resource('treeview');
@@ -938,7 +938,7 @@ class data_entry_helper extends helper_config {
       'id'=>$options['fieldname'],
       'view'=>'list'
     ), $options);
-    $default = self::check_default_value($options['fieldname'], 
+    $default = self::check_default_value($options['fieldname'],
         array_key_exists('default', $options) ? $options['default'] : null);
     // Do stuff with extraParams
     $sParams = '';
@@ -955,20 +955,20 @@ class data_entry_helper extends helper_config {
         mode : 'json',
         $sParams
       },
-      valueControl: '$o_fieldname',      
+      valueControl: '$o_fieldname',
       valueField: '$o_valueField',
       captionField: '$o_captionField',
       view: '$o_view',
       parentField: '$o_parentField',
       dataType: 'jsonp',
-      nodeTmpl: '".$indicia_templates['treeview_node']."'      
+      nodeTmpl: '".$indicia_templates['treeview_node']."'
     });\n";
 
     $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_fieldname.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
     $tree .= self::check_errors($o_fieldname);
     return $tree;
   }
-  
+
   /**
   * Helper function to generate a browser control from a given list. The browser
   * behaves similarly to a treeview, except that the child lists are appended to the control
@@ -1010,9 +1010,9 @@ class data_entry_helper extends helper_config {
   * <li><b>default</b><br/>
   * Optional. The default value for the underlying control.</li>
   * </ul>
-  * 
+  *
   * TODO
-  * Need to do initial value.  
+  * Need to do initial value.
   */
   public static function tree_browser($options) {
     global $indicia_templates;
@@ -1030,7 +1030,7 @@ class data_entry_helper extends helper_config {
       'default' => self::check_default_value($options['fieldname'],
           array_key_exists('default', $options) ? $options['default'] : ''),
       'view'=>'list'
-    ), $options);    
+    ), $options);
     $escaped_divId=str_replace(':','\\\\:',$options['divId']);
     // Do stuff with extraParams
     $sParams = '';
@@ -1040,7 +1040,7 @@ class data_entry_helper extends helper_config {
     // lop the comma off the end
     $sParams = substr($sParams, 0, -1);
     extract($options, EXTR_PREFIX_ALL, 'o');
-    self::$javascript .= "       
+    self::$javascript .= "
 $('div#$escaped_divId').indiciaTreeBrowser({
   url: '$url/$o_table',
   extraParams : {
@@ -1080,7 +1080,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>allowFuture</b><br/>
   * Optional. If true, then future dates are allowed. Default is false.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the date picker control.
   */
   public static function date_picker() {
@@ -1216,7 +1216,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the listbox control.
   */
   public static function listbox()
@@ -1337,10 +1337,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * options' table and extraParams values what is requested. This is now cacheable.
    * NB that this function only uses the 'table' and 'extraParams' of $options
    * When generating the cache for this data we need to use the table and
-   * any extra params, excluding the read_auth and the nonce. The cache should be 
+   * any extra params, excluding the read_auth and the nonce. The cache should be
    * used by all accesses to the DB.
    */
-  public static function get_population_data($options) {    
+  public static function get_population_data($options) {
     $url = parent::$base_url."index.php/services/data";
     $request = "$url/".$options['table']."?mode=json";
 
@@ -1349,7 +1349,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $request .= self::array_to_query_string($options['extraParams']);
     } else
       $cacheOpts = array();
-    
+
     $cacheOpts['table'] = $options['table'];
     $cacheOpts['indicia_website_id'] = self::$website_id;
     /* If present 'auth_token' amd 'nonce' are ignored as these are session dependant. */
@@ -1363,14 +1363,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $cacheTimeOut = self::_getCacheTimeOut($options);
     /* TODO : confirm if upload directory is best place for cache files */
     $cacheFile = self::_getCacheFileName(parent::$upload_path, $cacheOpts, $cacheTimeOut);
-    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts))) 
-      $response = self::http_post($request, null);    
+    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
+      $response = self::http_post($request, null);
     self::_timeOutCacheFile($cacheFile, $cacheTimeOut);
     self::_cacheResponse($cacheFile, $response, $cacheOpts);
 
     $r = json_decode($response['output'], true);
     if (!is_array($r)) {
-      echo '<div class="ui-state-error"><strong>Invalid response received from Indicia Warehouse.</strong><br/>'.print_r($response, true).'</div>';            
+      echo '<div class="ui-state-error"><strong>Invalid response received from Indicia Warehouse.</strong><br/>'.print_r($response, true).'</div>';
     }
     return $r;
   }
@@ -1383,7 +1383,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function select_or_listbox($options, $outerTmpl, $itemTmpl, $selectTmpl) {
     global $indicia_templates;
-    self::add_resource('json');    
+    self::add_resource('json');
     $options = array_merge(array(
       'filterField'=>'parent_id',
       'size'=>3
@@ -1402,7 +1402,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
               array('', $options['blankText']),
               $indicia_templates[$itemTmpl]
           );
-        }        
+        }
         foreach ($response as $item){
           if (array_key_exists($options['captionField'], $item) &&
               array_key_exists($options['valueField'], $item))
@@ -1453,7 +1453,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
   * <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
   * <br/>
-  * 
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
@@ -1478,9 +1478,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the autocomplete control.
-  * 
+  *
   * @link http://code.google.com/p/indicia/wiki/DataModel
   */
   public static function autocomplete() {
@@ -1562,7 +1562,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the postcode control.
   */
   public static function postcode_textbox($options) {
@@ -1621,7 +1621,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the generated list.
   */
   public static function list_in_template() {
@@ -1676,7 +1676,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the group of radio buttons.
   */
   public static function radio_group() {
@@ -1716,7 +1716,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the group of checkboxes.
   */
   public static function checkbox_group() {
@@ -1745,7 +1745,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           $name = htmlspecialchars($item[$options['captionField']], ENT_QUOTES);
           $checked = ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '';
           $disabled = isset($options['disabled']) ?  $options['disabled'] : '';
-          
+
           $items .= str_replace(
               array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}'),
               array($type, $options['fieldname'], $item[$options['valueField']], $checked, $name, $options['sep'], $disabled),
@@ -1766,23 +1766,23 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>presetLayers</b><br/>
   * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
-  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth', 'multimap_default', 'multimap_landranger'</li> 
+  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth', 'multimap_default', 'multimap_landranger'</li>
   * <li><b>edit</b><br/>
-  * True or false to include the edit controls for picking spatial references.</li> 
+  * True or false to include the edit controls for picking spatial references.</li>
   * <li><b>locate</b><br/>
-  * True or false to include the geolocate controls.</li> 
+  * True or false to include the geolocate controls.</li>
   * <li><b>wkt</b><br/>
   * Well Known Text of a spatial object to add to the map at startup.</li>
   */
   public static function map() {
-    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));    
+    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
     $options = array_merge(array(
         'div'=>'map',
         'presetLayers'=>array('multimap_landranger','google_physical','google_satellite'),
         'edit'=>true,
         'locate'=>true,
         'wkt'=>null
-    ), $options);        
+    ), $options);
     $r = '';
     if ($options['edit']) {
       $r .= self::sref_and_system(array(
@@ -1798,85 +1798,147 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     return $r;
   }
 
-  /**
-   * Outputs a map panel.
-   * The map panel can be augmented by adding any of the following controls which automatically link themselves
-   * to the map:
-   * <ul>
-   * <li>{@link sref_textbox()}</ul>
-   * </ul>{@link sref_system_select()}</ul>
-   * </ul>{@link sref_and_system()}</ul>
-   * </ul>{@link georeference_lookup()}</ul>
-   * </ul>{@link location_select()}</ul>
-   * </ul>{@link location_autocomplete()}</li>
-   * </ul>{@link postcode_textbox()}</li>
-   * </ul>
-   *
-   * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
-   * The div's id can be specified using the divId array entry.
-   */
-  public static function map_panel($options) {
-    if (!$options) {
-      return '<div class="error">Form error. No options supplied to the map_panel method.</div>';  
-    } else {
-      global $indicia_templates;
-      self::add_resource('indiciaMapPanel');
-      $options = array_merge(array(
-        'indiciaSvc'=>self::$base_url,
-        'indiciaGeoSvc'=>self::$geoserver_url,
-        'divId'=>'map',
-        'class'=>'',
-        'width'=>600,
-        'height'=>470,
-        'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
-      ), $options);
-      if (array_key_exists('readAuth', $options)) {
-        // Convert the readAuth into a query string so it can pass straight to the JS class.
-        $options['readAuth']=self::array_to_query_string($options['readAuth']);
-        str_replace('&', '&amp;', $options['readAuth']);
-      }
-  
-      // Autogenerate the links to the various mapping libraries as required
-      if (array_key_exists('presetLayers', $options)) {
-        foreach ($options['presetLayers'] as $layer)
-        {
-          $a = explode('_', $layer);
-          $a = strtolower($a[0]);
-          switch($a)
+/**
+ * Outputs a map panel.
+ * The map panel can be augmented by adding any of the following controls which automatically link themselves
+ * to the map:
+ * <ul>
+ * <li>{@link sref_textbox()}</ul>
+ * </ul>{@link sref_system_select()}</ul>
+ * </ul>{@link sref_and_system()}</ul>
+ * </ul>{@link georeference_lookup()}</ul>
+ * </ul>{@link location_select()}</ul>
+ * </ul>{@link location_autocomplete()}</li>
+ * </ul>{@link postcode_textbox()}</li>
+ * </ul>
+ *
+ * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
+ * Has the following possible options:
+ * <li><b>indiciaSvc</b><br/>
+ * </li>
+ * <li><b>indiciaGeoSvc</b><br/>
+ * </li>
+ * <li><b>readAuth</b><br/>
+ * </li>
+ * <li><b>height</b><br/>
+ * </li>
+ * <li><b>width</b><br/>
+ * </li>
+ * <li><b>initial_lat</b><br/>
+ * </li>
+ * <li><b>initial_long</b><br/>
+ * </li>
+ * <li><b>initial_zoom</b><br/>
+ * </li>
+ * <li><b>scroll_wheel_zoom</b><br/>
+ * </li>
+ * <li><b>proxy</b><br/>
+ * </li>
+ * <li><b>displayFormat</b><br/>
+ * </li>
+ * <li><b>presetLayers</b><br/>
+ * </li>
+ * <li><b>indiciaWMSLayers</b><br/>
+ * </li>
+ * <li><b>indiciaWFSLayers</b><br/>
+ * </li>
+ * <li><b>layers</b><br/>
+ * </li>
+ * <li><b>controls</b><br/>
+ * </li>
+ * <li><b>editLayer</b><br/>
+ * </li>
+ * <li><b>editLayerName</b><br/>
+ * </li>
+ * <li><b>initialFeatureWkt</b><br/>
+ * </li>
+ * <li><b>defaultSystem</b><br/>
+ * </li>
+ * <li><b>srefId</b><br/>
+ * </li>
+ * <li><b>srefSystemId</b><br/>
+ * </li>
+ * <li><b>geomId</b><br/>
+ * </li>
+ * <li><b>clickedSrefPrecisionMin</b><br/>
+ * </li>
+ * <li><b>clickedSrefPrecisionMax</b><br/>
+ * </li>
+ * <li><b>msgGeorefSelectPlace</b><br/>
+ * </li>
+ * <li><b>msgGeorefNothingFound</b><br/>
+ * </li>
+ * <li><b>projection</b><br/>
+ * EPSG code of the required projection. Defaults to 900913. Note that if this is changed, most of the preset layers will not work as they
+ * do not support reprojection. Ensure that all base layers available support the projection you define.
+ * </li>
+ */
+    public static function map_panel($options) {
+      if (!$options) {
+        return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
+      } else {
+        global $indicia_templates;
+        self::add_resource('indiciaMapPanel');
+        $options = array_merge(array(
+          'indiciaSvc'=>self::$base_url,
+          'indiciaGeoSvc'=>self::$geoserver_url,
+          'divId'=>'map',
+          'class'=>'',
+          'width'=>600,
+          'height'=>470,
+          'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+        ), $options);
+
+        if (array_key_exists('readAuth', $options)) {
+          // Convert the readAuth into a query string so it can pass straight to the JS class.
+          $options['readAuth']=self::array_to_query_string($options['readAuth']);
+          str_replace('&', '&amp;', $options['readAuth']);
+        }
+
+        // Autogenerate the links to the various mapping libraries as required
+        if (array_key_exists('presetLayers', $options)) {
+          foreach ($options['presetLayers'] as $layer)
           {
-            case 'google':
-              self::add_resource('googlemaps');
-              break;
-            case 'multimap':
-              self::add_resource('multimap');
-              break;
-            case 'virtual':
-              self::add_resource('virtualearth');
-              break;
+            $a = explode('_', $layer);
+            $a = strtolower($a[0]);
+            switch($a)
+            {
+              case 'google':
+                self::add_resource('googlemaps');
+                break;
+              case 'multimap':
+                self::add_resource('multimap');
+                break;
+              case 'virtual':
+                self::add_resource('virtualearth');
+                break;
+            }
           }
         }
+        // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
+        // and controls, not the string class names.
+        $json_insert='';
+        if (array_key_exists('controls', $options)) {
+          $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
+          unset($options['controls']);
+        }
+        if (array_key_exists('layers', $options)) {
+          $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
+          unset($options['layers']);
+        }
+        $json=substr(json_encode($options), 0, -1).$json_insert.'}';
+        if (array_key_exists('projection', $options)) {
+          self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");';
+        }
+        self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+
+        $r = str_replace(
+              array('{divId}','{class}','{widthStyle}','{height}'),
+              array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
+              $indicia_templates['map_panel']
+          );
+        return $r;
       }
-      // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
-      // and controls, not the string class names.
-      $json_insert='';
-      if (array_key_exists('controls', $options)) {
-        $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
-        unset($options['controls']);
-      }
-      if (array_key_exists('layers', $options)) {
-        $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
-        unset($options['layers']);
-      }
-      $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-      self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-  
-      $r = str_replace(
-            array('{divId}','{class}','{widthStyle}','{height}'),
-            array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
-            $indicia_templates['map_panel']
-        );
-      return $r;
-    }
   }
 
  /**
@@ -1893,12 +1955,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>  
+  * Optional. CSS class names to add to the control.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
-  * @return string HTML to insert into the page for the spatial reference control. 
+  *
+  * @return string HTML to insert into the page for the spatial reference control.
   */
   public static function sref_textbox($options) {
     // get the table and fieldname
@@ -1931,7 +1993,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>  
+  * Optional. CSS class names to add to the control.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>systems</b>
@@ -1941,8 +2003,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
-  * @return string HTML to insert into the page for the spatial reference systems selection control. 
+  *
+  * @return string HTML to insert into the page for the spatial reference systems selection control.
   */
   public static function sref_system_select($options) {
     global $indicia_templates;
@@ -1977,12 +2039,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>systems</b>
   * Optional. List of spatial reference systems to display. Associative array with the key
   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
-  * the description to display.</li>  
+  * the description to display.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
-  * @return string HTML to insert into the page for the spatial reference and system selection control. 
+  *
+  * @return string HTML to insert into the page for the spatial reference and system selection control.
   */
   public static function sref_and_system($options) {
     $options = array_merge(array(
@@ -2020,7 +2082,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>georefPreferredArea</b><br/>
-  * Optional. Hint provided to the locality search service as to which area to look for the place name in. Any example usage of this 
+  * Optional. Hint provided to the locality search service as to which area to look for the place name in. Any example usage of this
   * would be to set it to the name of a region for a survey based in that region. Note that this is only a hint, and the search
   * service may still return place names outside the region. Defaults to gb.</li>
   * <li><b>georefCountry</b><br/>
@@ -2030,7 +2092,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the georeference lookup control.
   */
   public static function georeference_lookup($options) {
@@ -2045,7 +2107,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       'search' => lang::get('search'),
       'close' => lang::get('close'),
     ), $options);
-    
+
     self::$javascript .= "indicia_url='".self::$base_url."';\n";
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea='".$options['georefPreferredArea']."';\n";
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry='".$options['georefCountry']."';\n";
@@ -2080,7 +2142,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the location select control.
   */
   public static function location_select($options) {
@@ -2099,7 +2161,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     return self::select($options);
   }
 
-  
+
  /**
   * Outputs an autocomplete control that is dedicated to listing locations and which is bound to any map panel
   * added to the page. Although it is possible to set all the options of a normal autocomplete, generally
@@ -2126,7 +2188,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
-  * 
+  *
   * @return string HTML to insert into the page for the location select control.
   */
   public static function location_autocomplete($options) {
@@ -2138,30 +2200,30 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'captionField'=>'name',
         'id'=>'imp-location'
         ), $options);
-        
+
     return self::autocomplete($options);
   }
 
-  
+
  /**
   * Helper method to enable the support for tabbed interfaces for a div. The jQuery documentation
   * describes how to specify a list within the div which defines the tabs that are present. This method
   * also automatically selects the first tab that contains validation errors if the form is being
   * reloaded after a validation attempt.
-  * 
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>divId</b><br/>
-  * Optional. The id of the div which will be tabbed. If not specified then the caller is 
+  * Optional. The id of the div which will be tabbed. If not specified then the caller is
   * responsible for calling the jQuery tabs plugin - this method just links the appropriate
   * jQuery files.</li>
   * <li><b>style</b><br/>
   * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
   * is not displayed and the navigation should be provided by the tab_button control. This
   * must be manually added to each tab page div.</li>
-  * 
+  *
   * @link http://docs.jquery.com/UI/Tabs
   */
-  public static function enable_tabs($options) {    
+  public static function enable_tabs($options) {
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
@@ -2172,10 +2234,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         self::$javascript .= "  if (!$('#".self::$validated_form_id." div > div:eq('+current+') input').valid()) {\n    return; \n}";
       }
       // If all is well, move to the next tab.
-      self::$javascript .= "  $('#$divId').tabs('select', current+1);  
+      self::$javascript .= "  $('#$divId').tabs('select', current+1);
 });
 $('.tab-prev').click(function() {
-  var obj=$('#$divId').tabs(); 
+  var obj=$('#$divId').tabs();
   obj.tabs('select', obj.tabs('option', 'selected')-1);
 });\n";
       // We put this javascript into $late_javascript so that it can come after the other controls.
@@ -2194,16 +2256,16 @@ if (errors.length>0) {
     $('#'+panel.id+'-tab').addClass('ui-state-error');
   }
 }\n";
-      if (array_key_exists('active', $options)) {      	
+      if (array_key_exists('active', $options)) {
         self::$late_javascript .= "else {tabs.tabs('select','".$options['active']."');}\n";
       }
-      if (array_key_exists('style', $options) && $options['style']=='wizard') {      	
+      if (array_key_exists('style', $options) && $options['style']=='wizard') {
         self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
       }
     }
     self::add_resource('jquery_ui');
   }
-  
+
   public static function tab_header($options) {
     $options = self::check_options($options);
     // Convert the tabs array to a string of <li> elements
@@ -2213,29 +2275,29 @@ if (errors.length>0) {
       $tabs .= "<li id=\"$tabId\"><a href=\"$link\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
-    return self::apply_template('tab_header', $options);  
+    return self::apply_template('tab_header', $options);
   }
-  
+
   /**
-  * Insert a button which, when clicked, displays the next tab. Insert this inside the tab divs 
+  * Insert a button which, when clicked, displays the next tab. Insert this inside the tab divs
   * on each tab you want to have a next button, excluding the last tab.
-  * 
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>divId</b><br/>
   * The id of the div which is tabbed and whose next tab should be selected.</li>
   * <li><b>caption</b><br/>
   * Optional. The untranslated caption of the button. Defaults to next step.</li>
   * <li><b>class</b><br/>
-  * Optional. Additional classes to add to the div containing the buttons. Use left, right or 
+  * Optional. Additional classes to add to the div containing the buttons. Use left, right or
   * centre to position the div, making sure the containing element is either floated, or has
   * overflow: auto applied to its style. Default is right.
-  * 
+  *
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function wizard_buttons($options=array()) {
     // Default captions
     $options = array_merge(array(
-      'captionNext' => 'next step',   
+      'captionNext' => 'next step',
       'captionPrev' => 'prev step',
       'captionSave' => 'save',
       'buttonClass' => 'ui-widget-content ui-state-default ui-corner-all indicia-button',
@@ -2250,33 +2312,33 @@ if (errors.length>0) {
     $options['captionSave'] = lang::get($options['captionSave']);
     // Output the buttons
     $r = '<div class="'.$options['class'].'">';
-    $buttonClass=$options['buttonClass'];   
+    $buttonClass=$options['buttonClass'];
     if (array_key_exists('divId', $options)) {
       if ($options['page']!='first') {
         $options['class']=$buttonClass." tab-prev";
-        $r .= self::apply_template('tab_prev_button', $options);  
+        $r .= self::apply_template('tab_prev_button', $options);
       }
       if ($options['page']!='last') {
         $options['class']=$buttonClass." tab-next";
-        $r .= self::apply_template('tab_next_button', $options);  
-      } else {        
+        $r .= self::apply_template('tab_next_button', $options);
+      } else {
         $options['class']=$buttonClass;
-        $r .= self::apply_template('submit_button', $options);     
+        $r .= self::apply_template('submit_button', $options);
       }
     }
     $r .= '</div>';
     return $r;
   }
-  
-  /* Insert a button which, when clicked, displays the previous tab. Insert this inside the tab divs 
+
+  /* Insert a button which, when clicked, displays the previous tab. Insert this inside the tab divs
   * on each tab you want to have a next button, excluding the first tab.
-  * 
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>divId</b><br/>
   * The id of the div which is tabbed and whose next tab should be selected.</li>
   * <li><b>caption</b><br/>
   * Optional. The untranslated caption of the button. Defaults to previous step.</li>
-  * 
+  *
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function tab_prev_button($options) {
@@ -2284,19 +2346,19 @@ if (errors.length>0) {
     $options['caption'] = lang::get($options['caption']);
     if (!array_key_exists('class', $options)) $options['class'] = 'ui-widget-content ui-state-default ui-corner-all indicia-button prev-tab';
     if (array_key_exists('divId', $options)) {
-      return self::apply_template('tab_prev_button', $options);     
+      return self::apply_template('tab_prev_button', $options);
     }
   }
-  
+
   /**
-   * <p>Allows the demarcation of the start of a region of the page HTML to be declared which will be replaced by 
+   * <p>Allows the demarcation of the start of a region of the page HTML to be declared which will be replaced by
    * a loading message whilst the page is loading.</p>
-   * <p>If JavaScript is disabled then this has no effect. Note that hiding the block is achieved by setting 
-   * it's left to move it off the page, rather than display: none. This is because OpenLayers won't initialise 
+   * <p>If JavaScript is disabled then this has no effect. Note that hiding the block is achieved by setting
+   * it's left to move it off the page, rather than display: none. This is because OpenLayers won't initialise
    * properly on a div that is display none.</p>
    * <p><b>Warning.</b> To use this function, always insert a call to dump_header in the <head> element of your
    * HTML page to ensure that JQuery is loaded first. Otherwise this will not work.</p>
-   * 
+   *
    * @return string HTML and JavaScript to insert into the page at the start of the block
    * which is replaced by a loading panel while the page is loading.
    */
@@ -2311,13 +2373,13 @@ if (errors.length>0) {
       $r = '';
     }
     $r .= $indicia_templates['loading_block_start'];
-    return $r;        
-  } 
-  
+    return $r;
+  }
+
   /**
-   * Allows the demarcation of the end of a region of the page HTML to be declared which will be replaced by 
+   * Allows the demarcation of the end of a region of the page HTML to be declared which will be replaced by
    * a loading message whilst the page is loading.
-   * 
+   *
    * @return string HTML and JavaScript to insert into the page at the start of the block
    * which is replaced by a loading panel while the page is loading.
    */
@@ -2326,9 +2388,9 @@ if (errors.length>0) {
     // First hide the message, then hide the form, slide it into view, then show it.
     self::$javascript .= "$('.loading-panel').remove();\n".
         "var panel=$('.loading-hide')[0];\n".
-        "$(panel).hide();\n".    
+        "$(panel).hide();\n".
         "$(panel).removeClass('loading-hide');\n".
-        "$(panel).fadeIn('slow');\n";    
+        "$(panel).fadeIn('slow');\n";
     return $indicia_templates['loading_block_end'];
   }
 
@@ -2363,14 +2425,14 @@ if (errors.length>0) {
   * Wraps data from a species checklist grid (generated by
   * data_entry_helper::species_checklist) into a suitable format for submission. This will
   * return an array of submodel entries which can be dropped directly into the subModel
-  * section of the submission array. If there is a field occurrence:determiner_id or 
-  * occurrence:record_status in the main form data, then these values are applied to each 
-  * occurrence created from the grid. For example, place a hidden field in the form named 
+  * section of the submission array. If there is a field occurrence:determiner_id or
+  * occurrence:record_status in the main form data, then these values are applied to each
+  * occurrence created from the grid. For example, place a hidden field in the form named
   * "occurrence:record_status" with a value "C" to set all occurrence records to completed
-  * as soon as they are entered. 
+  * as soon as they are entered.
   *
   * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
-  * @param boolean $include_if_any_data If true, then any list entry which has any data 
+  * @param boolean $include_if_any_data If true, then any list entry which has any data
   * set will be included in the submission. Set this to true when hiding the select checkbox
   * in the grid.
   */
@@ -2402,9 +2464,9 @@ if (errors.length>0) {
       }
     }
     foreach ($records as $id => $record){
-      if ((array_key_exists('present', $record) && $record['present']) || 
+      if ((array_key_exists('present', $record) && $record['present']) ||
           (array_key_exists('id', $record)) ||
-          ($include_if_any_data && implode('',$record)!='')) {            
+          ($include_if_any_data && implode('',$record)!='')) {
       if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
         // checkboxes do not appear if not checked. If uncheck, delete record.
         $record['deleted'] = 't';
@@ -2425,7 +2487,7 @@ if (errors.length>0) {
           'model' => $occ
         );
       }
-    }    
+    }
     return $subModels;
   }
 
@@ -2453,9 +2515,9 @@ if (errors.length>0) {
    */
   public static function wrap($array, $entity)
   {
-    return submission_builder::wrap($array, $entity); 
+    return submission_builder::wrap($array, $entity);
   }
-  
+
    /**
    * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,
    * and also grabs the custom attributes (if there are any) and links them to the model.
@@ -2466,7 +2528,7 @@ if (errors.length>0) {
    * contain an image upload (as long as a suitable entity is available to store the image in).
    */
   public static function wrap_with_attrs($values, $modelName) {
-    return submission_builder::wrap_with_attrs($values, $modelName);    
+    return submission_builder::wrap_with_attrs($values, $modelName);
   }
 
   /**
@@ -2493,26 +2555,26 @@ if (errors.length>0) {
     }
     return self::build_submission($values, $structure);
   }
-  
+
   /**
    * Helper function to simplify building of a submission that contains a single sample
    * and multiple occurrences records generated by a species_checklist control.
-   * 
+   *
    * @param array $values List of the posted values to create the submission from.
-   * @param boolean $include_if_any_data If true, then any list entry which has any data 
+   * @param boolean $include_if_any_data If true, then any list entry which has any data
    * set will be included in the submission. Set this to true when hiding the select checkbox
    * in the grid.
-   * @return array Sample submission array 
+   * @return array Sample submission array
    */
   public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false) {
     // We're mainly submitting to the sample model
     $sampleMod = data_entry_helper::wrap_with_attrs($values, 'sample');
     $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data);
-  
+
     // Add the occurrences in as subModels
     $sampleMod['subModels'] = $occurrences;
-  
-    return $sampleMod;   
+
+    return $sampleMod;
   }
 
   /**
@@ -2530,13 +2592,13 @@ if (errors.length>0) {
   public static function build_submission($values, $structure) {
     return submission_builder::build_submission($values, $structure);
   }
-  
+
   /**
-   * This method allows JavaScript and CSS links to be created and placed in the <head> of the 
-   * HTML file rather than using dump_javascript which must be called after the form is built. 
-   * The advantage of dump_javascript is that it intelligently builds the required links 
+   * This method allows JavaScript and CSS links to be created and placed in the <head> of the
+   * HTML file rather than using dump_javascript which must be called after the form is built.
+   * The advantage of dump_javascript is that it intelligently builds the required links
    * depending on what is on your form. dump_header is not intelligent because the form is not
-   * built yet, but placing links in the header leads to cleaner code which validates better. 
+   * built yet, but placing links in the header leads to cleaner code which validates better.
    * @param $resources List of resources to include in the header. The available options are:
    * <ul>
    * <li>jquery<li>
@@ -2558,7 +2620,7 @@ if (errors.length>0) {
    * <li>defaultStylesheet<li>
    * </ul>
    * The default for this is jquery_ui and defaultStylesheet.
-   * 
+   *
    * @return string Text to place in the head section of the html file.
    */
   public static function dump_header($resources=null) {
@@ -2576,19 +2638,19 @@ if (errors.length>0) {
   /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
   * page which uses the data entry helper so output all JavaScript required by previous calls.
-  * 
+  *
   * @return string JavaScript to insert into the page for all the controls added to the page so far.
   *
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
     global $indicia_resources, $indicia_templates;
-    // If required, setup jQuery validation. We can't prep this JavaScript earlier since we would 
-    // not know all the control messages. 
+    // If required, setup jQuery validation. We can't prep this JavaScript earlier since we would
+    // not know all the control messages.
     // In the following block, we set the validation plugin's error class to our template.
     // We also define the error label to be wrapped in a <p> if it is on a newline.
     if (self::$validated_form_id) {
-      self::$javascript .= "$('#".self::$validated_form_id."').validate({ 
+      self::$javascript .= "$('#".self::$validated_form_id."').validate({
         errorClass: \"".$indicia_templates['error_class']."\",
         ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
         "highlight: function(element, errorClass) {
@@ -2604,7 +2666,7 @@ if (errors.length>0) {
     self::$onload_javascript = "";
     return $dump;
   }
-  
+
   /**
    * Internal implementation of the dump_javascript method which takes the javascript and resources list
    * as flexible parameters, rather that using the globals.
@@ -2639,14 +2701,14 @@ $late_javascript
 });\n";
       if (!empty($onload_javascript)) {
         $script .= "window.onload = function() {
-$onload_javascript      	  
+$onload_javascript
 };\n";
       }
       $script .= "/* ]]> */</script>";
     } else {
       $script='';
     }
-    return $stylesheets.$libraries.$script;    
+    return $stylesheets.$libraries.$script;
   }
 
   /**
@@ -2659,13 +2721,13 @@ $onload_javascript
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_errors($response, $inline=true)
-  { 
-    $r = "";    
+  {
+    $r = "";
     if (is_array($response)) {
       if (array_key_exists('error',$response) || array_key_exists('errors',$response)) {
         if ($inline && array_key_exists('errors',$response)) {
           // Setup an errors array that the data_entry_helper can output alongside the controls
-          self::$validation_errors = $response['errors'];          
+          self::$validation_errors = $response['errors'];
           // And tell the helper to reload the existing data.
           self::$entity_to_load = $_POST;
         } else {
@@ -2703,14 +2765,14 @@ $onload_javascript
       $r .= "<div class=\"ui-state-error ui-corner-all\">$response</div>\n";
     return $r;
   }
-  
+
   /**
    * Retrieves any errors that have not been emitted alongside a form control and adds them to the page. This is useful
-   * when added to the bottom of a form, because occasionally an error can be returned which is not associated with a form 
+   * when added to the bottom of a form, because occasionally an error can be returned which is not associated with a form
    * control, so calling dump_errors with the inline option set to true will not emit the errors onto the page.
    */
   public static function dump_remaining_errors()
-  { 
+  {
     global $indicia_templates;
     $r="";
     if (self::$validation_errors!==null) {
@@ -2798,11 +2860,11 @@ $onload_javascript
   public static function link_default_stylesheet() {
     // make buttons highlight when hovering over them
     self::$javascript .= "
-$('.ui-state-default').live('mouseover', function() { 
-  $(this).addClass('ui-state-hover'); 
+$('.ui-state-default').live('mouseover', function() {
+  $(this).addClass('ui-state-hover');
 });
-$('.ui-state-default').live('mouseout', function() { 
-  $(this).removeClass('ui-state-hover'); 
+$('.ui-state-default').live('mouseout', function() {
+  $(this).removeClass('ui-state-hover');
 });\n";
     self::add_resource('defaultStylesheet');
   }
@@ -2811,7 +2873,7 @@ $('.ui-state-default').live('mouseout', function() {
    * List of external resources including stylesheets and js files used by the data entry helper class.
    */
   public static function _RESOURCES()
-  {    
+  {
     $base = parent::$base_url;
     if (!self::$js_path) {
       self::$js_path =$base.'media/js/';
@@ -2838,7 +2900,7 @@ $('.ui-state-default').live('mouseout', function() {
 
     return array (
       'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.js")),
-      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js")),          
+      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js")),
       'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."addRowToGrid.js")),
       'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
       'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
@@ -2899,7 +2961,7 @@ $('.ui-state-default').live('mouseout', function() {
   public static function check_errors($fieldname, $plaintext=false)
   {
     global $indicia_templates;
-    $error='';      
+    $error='';
     if (self::$validation_errors!==null) {
        if (array_key_exists($fieldname, self::$validation_errors)) {
          $errorKey = $fieldname;
@@ -2943,7 +3005,7 @@ $('.ui-state-default').live('mouseout', function() {
    * $param [string, [string ...]] Variable list of possible default values. The first that is
    * not empty is used.
    */
-  public static function check_default_value($id) {    
+  public static function check_default_value($id) {
     $return = null;
     if (self::$entity_to_load!=null && array_key_exists($id, self::$entity_to_load)) {
       $return = self::$entity_to_load[$id];
@@ -3030,12 +3092,12 @@ $('.ui-state-default').live('mouseout', function() {
       if (count($blank_configs)>0) {
         $r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
             implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
-      }     
+      }
     }
     $r .= '</ul></div>';
     return $r;
   }
-  
+
   private static function check_config($name, $isset, $empty, &$missing_configs, &$blank_configs) {
     if (!$isset) {
       array_push($missing_configs, $name);
@@ -3083,7 +3145,7 @@ $('.ui-state-default').live('mouseout', function() {
   /**
   * Helper function to fetch details of attributes
   * TODO at moment this assumes non multiplevalue attributes.
-  * 
+  *
   * @return array of attributes.
   */
   public static function getAttributes($options) {
@@ -3141,8 +3203,8 @@ $('.ui-state-default').live('mouseout', function() {
   private static function boolean_attribute($options) {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('fieldname'));
-    $default = self::check_default_value($options['fieldname'], 
-        array_key_exists('default', $options) ? $options['default'] : '', '0');    
+    $default = self::check_default_value($options['fieldname'],
+        array_key_exists('default', $options) ? $options['default'] : '', '0');
     $options = array_merge(array('sep' => ''), $options);
     if ($options['class']=='') {
       // default class is control-box
@@ -3162,10 +3224,10 @@ $('.ui-state-default').live('mouseout', function() {
     $options['items']=$items;
     return self::apply_template('check_or_radio_group', $options);
   }
-  
+
   /**
   * Helper function to output an attribute
-  * 
+  *
   * @param array $item Attribute definition as returned by a call to getAttributes.
   * @param array $options Additional options for the attribute to be output. Array entries can be:
   *    disabled
@@ -3173,7 +3235,7 @@ $('.ui-state-default').live('mouseout', function() {
   *    default
   *    validation
   *    noBlankText
-  *    extraParams  
+  *    extraParams
   * @return string HTML to insert into the page for the control.
   */
   public static function outputAttribute($item, $options=array()) {
@@ -3184,7 +3246,7 @@ $('.ui-state-default').live('mouseout', function() {
     if(isset($item['default'])) $attrOptions['default']= $item['default'];
     else if(isset($options['default'])) $attrOptions['default']= $options['default'];
     if(isset($options['validation'])) $attrOptions['validation'] = $options['validation'];
-    
+
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
@@ -3225,6 +3287,6 @@ $('.ui-state-default').live('mouseout', function() {
 
     return $output;
   }
-  
+
 }
 ?>
