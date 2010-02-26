@@ -570,6 +570,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
                 , 'initial_long'=>$args['map_centroid_long']
                 , 'initial_zoom'=>(int) $args['map_zoom']
                 , 'projection'=>$args['map_projection']
+                , 'scroll_wheel_zoom' => false
                 ));
 
       // Add locations to the map on the locations layer.
@@ -948,6 +949,7 @@ jQuery(\"input[name='".$escaped_terr_id."']\").change(setAltasStatus);\n";
                 , 'initial_long'=>$args['map_centroid_long']
                 , 'initial_zoom'=>(int) $args['map_zoom']
                 , 'projection'=>$args['map_projection']
+                , 'scroll_wheel_zoom' => false
                 ));
     // for timing reasons, all the following has to be done after the map is loaded.
     // 1) feature selector for occurrence list must have the map present to attach the control
@@ -1082,8 +1084,8 @@ addListFeature = function(div, r, record, count) {
       feature.attributes.count = record.count;
       occListLayer.addFeatures([feature]);
       if(record.id == ".$thisOccID."){
-      var bounds=feature.geometry.getBounds();
-      locationLayer.map.setCenter(bounds.getCenterLonLat());
+        var bounds=feature.geometry.getBounds();
+        locationLayer.map.setCenter(bounds.getCenterLonLat());
       }
     } else {
       if(".($displayThisOcc ? 1 : 0)."){
