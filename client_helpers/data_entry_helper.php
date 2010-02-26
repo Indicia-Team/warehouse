@@ -3236,6 +3236,7 @@ $('.ui-state-default').live('mouseout', function() {
   *    validation
   *    noBlankText
   *    extraParams
+  *    language - iso 639:3 code for the language to output for terms in a termlist. If not set no language filter is used.
   * @return string HTML to insert into the page for the control.
   */
   public static function outputAttribute($item, $options=array()) {
@@ -3274,11 +3275,21 @@ $('.ui-state-default').live('mouseout', function() {
           if(!array_key_exists('noBlankText', $options)){
             $attrOptions = $attrOptions + array('blankText' => '');
           }
+          $dataSvcParams = array('termlist_id' => $item['termlist_id']);
+          if (array_key_exists('language', $options)) {
+            $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);
+          }
+          if (!array_key_exists('orderby', $options['extraParams'])) {
+		    $dataSvcParams = $dataSvcParams + array('orderby'=>'sort_order');
+          }
+          if(!array_key_exists('noBlankText', $options)) {
+		    $attrOptions = $attrOptions + array('blankText' => '');
+          }
           $output = self::select($attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
-                  'extraParams' => $options['extraParams'] + array('termlist_id' => $item['termlist_id'])));
+                  'extraParams' => $options['extraParams'] + $dataSvcParams));
           break;
         default:
             $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
