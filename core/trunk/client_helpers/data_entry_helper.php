@@ -1928,7 +1928,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         }
         $json=substr(json_encode($options), 0, -1).$json_insert.'}';
         if (array_key_exists('projection', $options)) {
-          self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");';
+          self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
         }
         self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
@@ -3281,7 +3281,7 @@ $('.ui-state-default').live('mouseout', function() {
                   'extraParams' => $options['extraParams'] + array('termlist_id' => $item['termlist_id'])));
           break;
         default:
-            $output = '<strong>UNKNOWN DATA TYPE '.$item['data_type'].' FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
+            $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
             break;
     }
 
