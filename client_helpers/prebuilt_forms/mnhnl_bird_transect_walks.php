@@ -97,6 +97,15 @@ class iform_mnhnl_bird_transect_walks {
         'required'=>false
       ),
       array(
+	    'name'=>'map_projection',
+	    'caption'=>'Map Projection (EPSG code)',
+	    'description'=>'EPSG code to use for the map. If using 900913 then the preset layers such as Google maps will work, but for any other '.
+	        'projection make sure that your base layers support it.',
+	    'type'=>'string',
+	    'default' => '900913',
+	    'group'=>'Maps'
+      ),
+      array(
         'name'=>'map_centroid_lat',
         'caption'=>'Centre of Map Latitude',
         'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
@@ -394,6 +403,7 @@ baseLayer_1 = new OpenLayers.Layer.WMS('".$optionsArray_1['Name']."',
             maxScale: ".$optionsArray_1['maxScale'].",
             units: '".$optionsArray_1['units']."',
             isBaseLayer: true,
+            singleTile: true
         });
 WMSoptions = {
           LAYERS: '".$optionsArray_2['LAYERS']."',
@@ -410,6 +420,7 @@ baseLayer_2 = new OpenLayers.Layer.WMS('".$optionsArray_2['Name']."',
             maxScale: ".$optionsArray_2['maxScale'].",
             units: '".$optionsArray_2['units']."',
             isBaseLayer: true,
+            singleTile: true
         });
 // Create vector layers: one to display the location onto, and another for the occurrence list
 // the default edit layer is used for the occurrences themselves
@@ -556,8 +567,9 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
                 , 'height'=>490
                 , 'editLayer'=> false
                 , 'initial_lat'=>$args['map_centroid_lat']
-                  , 'initial_long'=>$args['map_centroid_long']
-                  , 'initial_zoom'=>(int) $args['map_zoom']
+                , 'initial_long'=>$args['map_centroid_long']
+                , 'initial_zoom'=>(int) $args['map_zoom']
+                , 'projection'=>$args['map_projection']
                 ));
 
       // Add locations to the map on the locations layer.
@@ -724,7 +736,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
       $r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";
     }
-  $defAttrOptions['validation'] = array('required');
+    $defAttrOptions['validation'] = array('required');
     $defAttrOptions['suffixTemplate']='requiredsuffix';
     if($locations == 'all'){
       $locOptions = array_merge(array('label'=>lang::get('LANG_Transect')), $defAttrOptions);
@@ -733,29 +745,30 @@ $('#controls').bind('tabsshow', function(event, ui) {
     } else {
       // can't use location select due to location filtering.
       $r .= "<label for=\"imp-location\">".lang::get('LANG_Transect').":</label>\n<select id=\"imp-location\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
-    $url = $svcUrl.'/data/location';
-    $url .= "?mode=json&view=detail&parent_id=NULL&orderby=name&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
-    $session = curl_init($url);
-    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $entities = json_decode(curl_exec($session), true);
-    if(!empty($entities)){
-         foreach($entities as $entity){
-        if(in_array($entity["id"], $locations)){
-             if($entity["id"] == data_entry_helper::$entity_to_load['sample:location_id']) {
+      $url = $svcUrl.'/data/location';
+      $url .= "?mode=json&view=detail&parent_id=NULL&orderby=name&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
+      $session = curl_init($url);
+      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+      $entities = json_decode(curl_exec($session), true);
+      if(!empty($entities)){
+        foreach($entities as $entity){
+          if(in_array($entity["id"], $locations)) {
+            if($entity["id"] == data_entry_helper::$entity_to_load['sample:location_id']) {
               $selected = 'selected="selected"';
-             } else {
+            } else {
               $selected = '';
             }
-             $r .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
-        }
+            $r .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
+          }
         }
       }
-    $r .= "</select><span class=\"deh-required\">*</span><br />";
+      $r .= "</select><span class=\"deh-required\">*</span><br />";
     }
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $defAttrOptions);
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $defAttrOptions);
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($defAttrOptions, array('default'=>1)));
-    if($readOnly){
+	$languageFilteredAttrOptions = $defAttrOptions + array('language' => iform_lang_iso_639_2($args['language']));
+    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $languageFilteredAttrOptions);
+    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $languageFilteredAttrOptions);
+    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($languageFilteredAttrOptions, array('default'=>1)));
+    if($readOnly) {
       $r .= data_entry_helper::text_input(array_merge($defAttrOptions,
               array('label' => lang::get('LANG_Date'),
               'fieldname' => 'sample:date',
@@ -767,8 +780,8 @@ $('#controls').bind('tabsshow', function(event, ui) {
                 'class' => 'vague-date-picker',
                 'suffixTemplate'=>'requiredsuffix'));
     }
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_wind_id']], $defAttrOptions);
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_precipitation_id']], $defAttrOptions);
+    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_wind_id']], $languageFilteredAttrOptions);
+    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_precipitation_id']], $languageFilteredAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_temperature_id']], array_merge($defAttrOptions, array('suffixTemplate'=>'nosuffix')));
     $r .= " degC<span class=\"deh-required\">*</span><br />";
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_cloud_id']], $defAttrOptions);
@@ -880,7 +893,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       'disabled'=>$disabledText
       );
       $r .= data_entry_helper::autocomplete($species_ctrl_args);
-      $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], array_merge($defAttrOptions, array('noBlankText'=>'')));
+      $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], array_merge($languageFilteredAttrOptions, array('noBlankText'=>'')));
       $r .= data_entry_helper::sref_and_system(array('label'=>lang::get('LANG_Spatial_ref'),
             'systems'=>array('2169'=>'Luref (Gauss Luxembourg)'),
             'suffixTemplate'=>'requiredsuffix'));
@@ -888,12 +901,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_count_id']], array_merge($defAttrOptions, array('default'=>1, 'suffixTemplate'=>'requiredsuffix')));
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_approximation_id']], $defAttrOptions);
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_territorial_id']], array_merge($defAttrOptions, array('default'=>1)));
-      $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_atlas_code_id']], array_merge($defAttrOptions, array('extraParams'=>array_merge(
-          $readAuth,
-          array(
-            'iso' => iform_lang_iso_639_2()
-          )
-      ))));
+      $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_atlas_code_id']], $languageFilteredAttrOptions);
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_overflying_id']], $defAttrOptions);
       $r .= data_entry_helper::textarea(array(
           'label'=>lang::get('LANG_Comment'),
@@ -937,8 +945,9 @@ jQuery(\"input[name='".$escaped_terr_id."']\").change(setAltasStatus);\n";
                 , 'width'=>'auto'
                 , 'height'=>490
                 , 'initial_lat'=>$args['map_centroid_lat']
-                  , 'initial_long'=>$args['map_centroid_long']
-                  , 'initial_zoom'=>(int) $args['map_zoom']
+                , 'initial_long'=>$args['map_centroid_long']
+                , 'initial_zoom'=>(int) $args['map_zoom']
+                , 'projection'=>$args['map_projection']
                 ));
     // for timing reasons, all the following has to be done after the map is loaded.
     // 1) feature selector for occurrence list must have the map present to attach the control
