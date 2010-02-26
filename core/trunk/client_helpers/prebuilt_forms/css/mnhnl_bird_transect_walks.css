@@ -25,3 +25,7 @@ textarea {
 #smp_grid {
   font-size: 90%;
 }
+
+#occurrence label {
+  width: 95px;
+}

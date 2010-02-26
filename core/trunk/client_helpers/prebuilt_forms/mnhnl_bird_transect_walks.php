@@ -850,7 +850,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
   $r .= '</div>';
     // Set up Occurrence tab: don't allow entry of a new occurrence until after top level sample is saved.
     $r .= "<div id=\"occurrence\" class=\"mnhnl-btw-datapanel\">\n";
-  if($mode != 1 && (($mode != 2 && $mode !=4) || $readOnly == false)){
+    if($mode != 1 && (($mode != 2 && $mode !=4) || $readOnly == false)){
       data_entry_helper::$entity_to_load=$childSample;
       data_entry_helper::$validation_errors = $childErrors;
       $attributes = data_entry_helper::getAttributes(array(
@@ -863,12 +863,12 @@ $('#controls').bind('tabsshow', function(event, ui) {
       ));
       if($occReadOnly){
         $r .= "<strong>".lang::get('LANG_Read_Only_Occurrence')."</strong>";
-      $disabledText = "disabled=\"disabled\"";
+        $disabledText = "disabled=\"disabled\"";
         $defAttrOptions['disabled'] = $disabledText;
-    } else if($readOnly){
+      } else if($readOnly){
         $r .= "<strong>".lang::get('LANG_Read_Only_Survey')."</strong>";
-    }
-    $r .= "<form method=\"post\">\n";
+      }
+      $r .= "<form method=\"post\">\n";
       $r .= $writeAuth;
       $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
       $r .= "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
@@ -1122,8 +1122,8 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
     reportColumnTitles: {taxon : '".lang::get('LANG_Species')."', territorial : '".lang::get('LANG_Territorial')."', count : '".lang::get('LANG_Count')."'},
-    actionColumns: {".lang::get('LANG_Show')." : \"".url('node/'.($node->nid), array('query' => 'occurrence_id=£id£'))."\",
-            ".lang::get('LANG_Highlight')." : \"script:highlight(£id£);\"},
+    actionColumns: {'".lang::get('LANG_Show')."' : \"".url('node/'.($node->nid), array('query' => 'occurrence_id=£id£'))."\",
+            '".lang::get('LANG_Highlight')."' : \"script:highlight(£id£);\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : { survey_id : '".$args['survey_id']."',
             parent_id : '".$parentSample['sample:id']."',
