@@ -22,7 +22,7 @@
 global $custom_terms;
 
 /**
- * Language terms for the survey_reporting_form_2 form.
+ * Language terms for the mnhnl_bird_transect_walks form.
  *
  * @package	Client
  */
@@ -62,7 +62,7 @@ $custom_terms = array(
 	'LANG_Download' => 'Reports and Downloads',
 	'LANG_Direction_Report' => 'Run a report to check that all non downloaded closed surveys have been walked in the same direction as the previously entered survey on that location. Returns the surveys which are in a different direction.',
 	'LANG_Direction_Report_Button' => 'Run Survey Direction Warning Report - CSV',
-	'LANG_Initial_Download' => 'Carry out initial download of closed surveys. Sweeps up all records which are in closed surveys but which have not been downloaded yet', 
+	'LANG_Initial_Download' => 'Carry out initial download of closed surveys. Sweeps up all records which are in closed surveys but which have not been downloaded yet',
     'LANG_Initial_Download_Button' => 'Initial Download - CSV',
 	'LANG_Confirm_Download' => 'Carry out confirmation download. This outputs the same data that will be included in the final download, but does not tag the data as downloaded. Only includes data in the last initial download unless a survey has since been reopened, when it will be excluded from this report.',
     'LANG_Confirm_Download_Button' => 'Confirmation Download - CSV',
@@ -73,11 +73,23 @@ $custom_terms = array(
 	'LANG_No_Access_To_Sample' => 'This record is not a valid top level sample.',
 	'LANG_Page_Not_Available' => 'This page is not available at this time.',
 	'LANG_Return' => 'Return to main survey selection screen',
+	'Atlas Code' => 'Atlas Code',
+	'Approximation?' => 'Approximation?',
+	'Overflying' => 'Overflying',
+	'Closed' => 'Closed',
+	'Cloud Cover' => 'Cloud Cover',
+	'Confidence' => 'Confidence',
+	'Count' => 'Count',
+	'End Time' => 'End Time',
+	'No' => 'No',
 	'validation_required' => 'Please enter a value for this field',
-
-	
-	// Can also add entries for 'Yes' and 'No' for the boolean attributes,
-	//   and one for each of the attribute captions. As these are in English
-	//   they are omitted from this file. Note these do not have LANG_ prefixes.
-
+	'Precipitation' => 'Precipitation',
+	'Reliability of this data' => 'Reliability of this data',
+	'Start Time' => 'Start Time',
+	'Temperature (Celsius)' => 'Temperature (Celsius)',
+	'Territorial' => 'Territorial',
+	'Visit number in year' => 'Visit number in year',
+	'Walk started at end' => 'Walk started at end',
+	'Wind Force' => 'Wind Force',
+	'Yes' => 'Yes'
 );
