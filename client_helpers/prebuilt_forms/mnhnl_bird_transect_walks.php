@@ -768,7 +768,8 @@ $('#controls').bind('tabsshow', function(event, ui) {
 	$languageFilteredAttrOptions = $defAttrOptions + array('language' => iform_lang_iso_639_2($args['language']));
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $languageFilteredAttrOptions);
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $languageFilteredAttrOptions);
-    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($languageFilteredAttrOptions, array('default'=>1)));
+    $r .= data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']],
+        array_merge($languageFilteredAttrOptions, array('default'=>1, 'noBlankText'=>true)));
     if($readOnly) {
       $r .= data_entry_helper::text_input(array_merge($defAttrOptions,
               array('label' => lang::get('LANG_Date'),
