@@ -345,6 +345,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     {
       $fTmp = upload::save('media_upload');
       Image::create_image_files(dirname($fTmp), basename($fTmp));
+      $this->response=basename($fTmp);
+      kohana::log('debug', 'Successfully uploaded media to '. basename($fTmp));
+      $this->send_response();
     }
     else
     {
