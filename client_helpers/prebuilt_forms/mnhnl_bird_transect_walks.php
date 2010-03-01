@@ -367,7 +367,7 @@ class iform_mnhnl_bird_transect_walks {
     }
 
     // define layers for all maps.
-  // each argument is a comma separated list eg:
+    // each argument is a comma separated list eg:
     // "Name:Lux Outline,URL:http://localhost/geoserver/wms,LAYERS:indicia:nation2,SRS:EPSG:2169,FORMAT:image/png,minScale:0,maxScale:1000000,units:m";
     $optionArray_1 = array();
     $optionArray_2 = array();
@@ -599,7 +599,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
       }
     data_entry_helper::$javascript .= "
         if(data[i].boundary_geom){
-          feature = parser.read(data[i].boundary_geom);
+          ".self::readBoundaryJs('data[i].boundary_geom', $args['map_projection'])."
           feature.style = {label: data[i].name,
                         strokeColor: \"Blue\",
                       strokeWidth: 2};
@@ -1003,20 +1003,19 @@ locationChange = function(obj){
               var parser = new OpenLayers.Format.WKT();
               for (var i=0;i<data.length;i++)
         {
-              if(data[i].centroid_geom){
-            feature = parser.read(data[i].centroid_geom);
+          if(data[i].centroid_geom){
+            ".self::readBoundaryJs('data[i].centroid_geom', $args['map_projection'])."
             centre = feature.geometry.getCentroid();
             centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name});
             locationLayer.addFeatures([feature, centrefeature]);
           }
           if(data[i].boundary_geom){
-            feature = parser.read(data[i].boundary_geom);
-            feature.style = {strokeColor: \"Blue\",
-                        strokeWidth: 2};
+            ".self::readBoundaryJs('data[i].boundary_geom', $args['map_projection'])."
+            feature.style = {strokeColor: \"Blue\", strokeWidth: 2};
             locationLayer.addFeatures([feature]);
-           }
-            locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
           }
+          locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
+        }
       }
     });
      jQuery.getJSON(\"".$svcUrl."\" + \"/data/location\" +
@@ -1025,12 +1024,12 @@ locationChange = function(obj){
               var parser = new OpenLayers.Format.WKT();
               for (var i=0;i<data.length;i++)
         {
-              if(data[i].centroid_geom){
-            feature = parser.read(data[i].centroid_geom);
+          if(data[i].centroid_geom){
+            ".self::readBoundaryJs('data[i].centroid_geom', $args['map_projection'])."
             locationLayer.addFeatures([feature]);
           }
           if(data[i].boundary_geom){
-            feature = parser.read(data[i].boundary_geom);
+            ".self::readBoundaryJs('data[i].boundary_geom', $args['map_projection'])."
             feature.style = {label: data[i].name,
               labelAlign: \"cb\",
               strokeColor: \"Blue\",
@@ -1078,7 +1077,7 @@ addListFeature = function(div, r, record, count) {
   if(r == count)
     activateAddList = 0;
     var parser = new OpenLayers.Format.WKT();
-    var feature = parser.read(record.geom);
+    ".self::readBoundaryJs('record.geom', $args['map_projection'])."
     if(record.id != ".$thisOccID." || 1==".($readOnly ? 1 : 0)." || 1==".($occReadOnly ? 1 : 0)."){
       feature.attributes.id = record.id;
       feature.attributes.taxon = record.taxon;
@@ -1166,5 +1165,19 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
    */
   public static function get_css() {
     return array('mnhnl_bird_transect_walks.css');
+  }
+
+  /**
+   * Construct JavaScript to read and transform a boundary from the supplied
+   * object name.
+   * @param string $name Name of the existing geometry object to read the feature from.
+   * @param string $proj EPSG code for the projection we want the feature in.
+   */
+  private static function readBoundaryJs($name, $proj) {
+    $r = "feature = parser.read($name);";
+	if ($proj!='900913') {
+	  $r .= "\n    feature.geometry.transform(new OpenLayers.Projection('EPSG:900913'), new OpenLayers.Projection('EPSG:" . $proj . "'));";
+    }
+    return $r;
   }
 }
