@@ -921,19 +921,27 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $escaped_atlas_id = str_replace(':','\\\\:',$attributes[$args['occurrence_atlas_code_id']]['fieldname']);
 
       data_entry_helper::$javascript .= "
-setAltasStatus = function() {
+setAtlasStatus = function() {
   if (jQuery(\"input[name='".$escaped_terr_id."']:checked\").val() == '0') {
       jQuery('#".$escaped_atlas_id."').val('');
       jQuery('#".$escaped_atlas_id."').attr('disabled','disabled');
   } else {
-      if(jQuery('#".$escaped_atlas_id."').val() == ''){
-        jQuery('#".$escaped_atlas_id."').val('BB02');
+      if(jQuery('#".$escaped_atlas_id."').val() == '') {
+        // Find the BB02 option (depends on the language what val it has)
+        var bb02;
+        jQuery.each(jQuery('#".$escaped_atlas_id." option'), function(index, option) {
+          if (option.text.substr(0,4)=='BB02') {
+            bb02 = option.value;
+            return; // just from the each loop
+          }
+        });
+        jQuery('#".$escaped_atlas_id."').val(bb02);
       }
       jQuery('#".$escaped_atlas_id."').attr('disabled','');
   }
 };
-setAltasStatus();
-jQuery(\"input[name='".$escaped_terr_id."']\").change(setAltasStatus);\n";
+setAtlasStatus();
+jQuery(\"input[name='".$escaped_terr_id."']\").change(setAtlasStatus);\n";
     } else {
       $r .= '<p>'.lang::get('LANG_Page_Not_Available').'</p>';
     }
