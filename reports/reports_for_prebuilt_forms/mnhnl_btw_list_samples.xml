@@ -8,17 +8,19 @@
   		s.date_start,
   		s.date_end,
   		s.date_type,
-  		(select int_value as num_visit from sample_attribute_values sav
-  			where sav.sample_id = s.id and sav.deleted = FALSE and sav.sample_attribute_id = #visit_attr_id# limit 1) as num_visit,
+  		tvisit.term as num_visit,
   		(select count(*) as num_occurrences from samples cs where cs.parent_id = s.id and cs.deleted = FALSE) as num_occurrences,
-  		(select count(distinct o.taxa_taxon_list_id) as num_taxa
-  			from samples cs, occurrences o
+  		(select count(distinct ttl.taxon_meaning_id) as num_taxa
+  			from samples cs, occurrences o, taxa_taxon_lists ttl
   			where cs.parent_id = s.id and cs.deleted = FALSE
-  				AND o.sample_id = cs.id and o.deleted = FALSE) as num_taxa,
+  				AND o.sample_id = cs.id and o.deleted = FALSE
+  				AND ttl.id=o.taxa_taxon_list_id and ttl.deleted = FALSE) as num_taxa,
   		(select int_value as closed from sample_attribute_values sav
   			where sav.sample_id = s.id and sav.deleted = FALSE and sav.sample_attribute_id = #closed_attr_id# limit 1) as closed
   FROM samples s
   LEFT JOIN locations l ON l.id=s.location_id
+  INNER JOIN sample_attribute_values savvisit ON savvisit.sample_id = s.id and savvisit.deleted = FALSE and savvisit.sample_attribute_id = #visit_attr_id#
+  INNER JOIN list_termlists_terms tvisit ON tvisit.id=savvisit.int_value
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id is null
   	AND ('#use_location_list#'::text = 'NO'::text OR (l.id in (#locations#)))
   #order_by#
