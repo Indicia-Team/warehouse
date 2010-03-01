@@ -34,7 +34,7 @@ $custom_terms = array(
 	'LANG_Allocate_Locations' => 'Allocate Locations',
 	'LANG_Transect' => 'Transect',
 	'LANG_Date' => 'Date',
-	'LANG_Visit_No' => 'Numéro de passage',
+	'LANG_Visit_No' => 'Passage No',
 	'LANG_Num_Occurrences' => '# Contacts',
 	'LANG_Num_Species' => '# Espèces',
 	'LANG_Show' => 'Montrer',
@@ -42,9 +42,9 @@ $custom_terms = array(
 	'LANG_Not_Allocated' => 'Not Allocated',
 	'LANG_Save_Location_Allocations' => 'Save Location Allocations',
 	'LANG_Survey' => 'Echantillonage',
-	'LANG_Show_Occurrence' => 'Montrer Contact',
-	'LANG_Edit_Occurrence' => 'Editer Contact',
-	'LANG_Add_Occurrence' => 'Ajouter Contact',
+	'LANG_Show_Occurrence' => 'Montrer contact',
+	'LANG_Edit_Occurrence' => 'Editer contact',
+	'LANG_Add_Occurrence' => 'Ajouter contact',
 	'LANG_Occurrence_List' => 'Liste des contacts',
 	'LANG_Read_Only_Survey' => 'Cet échantillonnage est bloqué.',
 	'LANG_Read_Only_Occurrence' => 'Ce contact a été téléchargé et est protégé maintenant.',
@@ -74,13 +74,6 @@ $custom_terms = array(
 	'LANG_Page_Not_Available' => 'Cette page est non-disponible actuellement.',
 	'LANG_Return' => 'Retour à l\'écran principal des inventaires',
 	'validation_required' => 'Veuillez entrer une valeur pour ce champ',
-
-
-	// Can also add entries for 'Yes' and 'No' for the boolean attributes,
-	//   and one for each of the attribute captions. As these are in English
-	//   they are omitted from this file. Note these do not have LANG_ prefixes.
-
-
 
 	'Atlas Code' => 'Code Atlas',
 	'Approximation?' => 'Approximation?',
