@@ -90,11 +90,11 @@ class Termlists_term_Model extends Base_Name_Model {
 
         foreach ($existingSyn as $syn) {
           // Is the term from the db in the list of synonyms?
-          if (array_key_exists($syn->term->term, $arrSyn) &&
-              $arrSyn[$syn->term->term]['lang'] ==
-              $syn->term->language->iso ) {
-            $arrSyn = array_diff_key($arrSyn, array($syn->term->term => ''));
-          } else {
+          if (array_key_exists($syn->term->language->iso, $arrSyn) &&
+              $arrSyn[$syn->term->language->iso] == $syn->term->term)
+            // This one already in db, so can remove from our array
+            $arrSyn = array_diff_key($arrSyn, array($syn->term->language->iso => ''));
+          else {
             // Synonym has been deleted - remove it from the db
             $syn->deleted = 't';
             $syn->save();
@@ -107,16 +107,16 @@ class Termlists_term_Model extends Base_Name_Model {
         Kohana::log("info", "Synonyms remaining to add: ".count($arrSyn));
         $sm = ORM::factory('termlists_term');
         kohana::log('debug', $arrSyn);
-        foreach ($arrSyn as $term => $syn) {
+        foreach ($arrSyn as $lang => $term) {
           $sm->clear();
-          $lang = $syn['lang'];
           // Wrap a new submission
-          Kohana::log("info", "Wrapping submission for synonym ".$term);
+          Kohana::log("debug", "Wrapping submission for synonym ".$term);
           $syn = $_POST;
           $syn['term:id'] = null;
           $syn['term:term'] = $term;
           $syn['term:language_id'] = ORM::factory('language')->where(array(
             'iso' => $lang))->find()->id;
+          $syn['term:language_id'];
           $syn['termlists_term:id'] = '';
           $syn['termlists_term:preferred'] = 'f';
           $syn['termlists_term:meaning_id'] = $meaning_id;
@@ -126,13 +126,13 @@ class Termlists_term_Model extends Base_Name_Model {
           $sub = $this->wrap($syn);
           // Don't resubmit the meaning record
           unset($sub['superModels'][0]);
-          
+
           $sm->submission = $sub;
           if (!$sm->submit()) {
             $success=false;
             foreach($sm->errors as $key=>$value) {
               $this->errors[$sm->object_name.':'.$key]=$value;
-            } 
+            }
           }
         }
       } catch (Exception $e) {
@@ -149,14 +149,14 @@ class Termlists_term_Model extends Base_Name_Model {
    */
   protected function set_synonym_sub_array($tokens, &$array) {
     if (count($tokens) >= 2) {
-      $array[$tokens[0]] = array('lang' => trim($tokens[1]));
+      $array[trim($tokens[1])] = trim($tokens[0]);
     } else {
-      $array[$tokens[0]] = array('lang' => kohana::config('indicia.default_lang'));
+      $array[kohana::config('indicia.default_lang')] = trim($tokens[0]);
     }
   }
-  
+
   /**
-   * Return a displayable caption for the item.   
+   * Return a displayable caption for the item.
    */
   public function caption()
   {
@@ -164,13 +164,13 @@ class Termlists_term_Model extends Base_Name_Model {
       return ($this->term_id != null ? $this->term->term : '');
     } else {
       return 'Term in List';
-    }    
+    }
   }
 
   /**
    * Return the submission structure, which includes defining term and meaning as the parent
    * (super) models, and the synonyms as metaFields which are specially handled.
-   * 
+   *
    * @return array Submission structure for a termlists_term entry.
    */
   public function get_submission_structure()
@@ -181,17 +181,17 @@ class Termlists_term_Model extends Base_Name_Model {
         'meaning'=>array('fk' => 'meaning_id'),
         'term'=>array('fk' => 'term_id')
       ),
-      'metaFields'=>array('synonyms')      
+      'metaFields'=>array('synonyms')
     );
   }
-  
-  /** 
-   * Set default values for a new entry.   
+
+  /**
+   * Set default values for a new entry.
    */
   public function getDefaults() {
     return array(
       'preferred'=>'t'
-    );  
+    );
   }
 
 }
