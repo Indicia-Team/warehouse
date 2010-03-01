@@ -216,52 +216,84 @@ class submission_builder extends helper_config {
       }
     }
     // Does it have an image?
-    if ($name = self::handle_media("$modelName:image"))
-    {
-      // Add image model for a detail table record to be created.
-      // TODO Get a caption for the image
-      $oiFields = array(
-          'path' => $name,
-          'caption' => 'Default caption'
-      );
-      $oiMod = self::wrap($oiFields, $modelName.'_image');
-      $modelWrapped['subModels'][] = array(
-          'fkId' => 'occurrence_id',
-          'model' => $oiMod
-      );
-    } else if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
-      // link image path attribute direct to record.
-      $modelWrapped['fields']['path'] = array('value'=>self::handle_media('image_upload',false));
+    $names = self::handle_media("$modelName:image");
+    if (is_array($names)) {
+      foreach ($names as $name)
+      {
+        // Add image model for a detail table record to be created.
+        // TODO Get a caption for the image
+        $oiFields = array(
+            'path' => $name,
+            'caption' => 'Default caption'
+        );
+        $oiMod = self::wrap($oiFields, $modelName.'_image');
+        $modelWrapped['subModels'][] = array(
+            'fkId' => 'occurrence_id',
+            'model' => $oiMod
+        );
+      }
     }
+
+    //Jim would like an explanation of when the elseif below is used
+    else if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
+      // link image path attribute direct to record.
+      $names = self::handle_media("$modelName:image", false);
+      if (is_array($names)) {
+        $modelWrapped['fields']['path'] = array('value'=>$names[0]);
+      }
+    }
+
     return $modelWrapped;
   }
 
   /**
-   * Takes an uploaded file from the form submission and saves it on the server. Optionally sends it
-   * to Kohana via the data services handle_media method.
+   * Takes uploaded files from the form submission and saves them on the server. Optionally sends it
+   * to the warehouse via the data services handle_media method.
    *
-   * @param String $media_id Name of the file entry in the $_FILES array.
+   * @param String $media_id Base name of the file entry in the $_FILES array e.g. occurrence:image.
+   * Multiple files can be uploaded if they have a suffix 0f :0, :1 ... :n
    * @param Boolean $submit If true (default), then the file is uploaded first into the local
    * server's directory structure, then sent to the Indicia Warehouse using the data services.
    * If false, then it is uploaded to the local server only.
-   * @return String Final filename of the uploaded file so that it can be inserted in a field
+   * @return String Array Final filenames of the uploaded files so that they can be inserted in a field
    * which stores the file path.
    */
   public static function handle_media($media_id, $submit=true) {
-    if (array_key_exists($media_id, $_FILES)) {
-      $uploadpath = parent::$upload_path;
-      $target_url = parent::$base_url."/index.php/services/data/handle_media";
 
-      $name = $_FILES[$media_id]['name'];
-      $fname = $_FILES[$media_id]['tmp_name'];
+    if (array_key_exists($media_id, $_FILES)) {
+      //there is a single media file
+      $files[] = $_FILES[$media_id];
+    }
+    elseif (array_key_exists($media_id .':0', $_FILES)) {
+      //there are multiple media files
+      $i = 0;
+      $key = $media_id .':'. $i;
+      do {
+        $files[] = $_FILES[$key];
+        $i++;
+        $key = $media_id .':'. $i;
+      } while (array_key_exists($key, $_FILES));
+    }
+    else {
+      //there are no media files
+      return false;
+    }
+
+    $uploadpath = parent::$upload_path;
+    $target_url = parent::$base_url."/index.php/services/data/handle_media";
+
+    foreach ($files as $file) {
+      $name = $file['name'];
+      $fname = $file['tmp_name'];
       $parts = explode(".",$name);
       $fext = array_pop($parts);
-      $bname = basename($fname, ".$fext");
+      //$bname = basename($fname, ".$fext");
       // Generate a file id to store the image as
       $destination = time().rand(0,1000).".".$fext;
 
       if (move_uploaded_file($fname, $uploadpath.$destination)) {
         if ($submit) {
+          //send to the warehouse
           $postargs = array();
           if (array_key_exists('auth_token', $_POST)) {
             $postargs['auth_token'] = $_POST['auth_token'];
@@ -271,18 +303,21 @@ class submission_builder extends helper_config {
           }
           $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
           $result = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
-          return $result['output'];
+          $return[] = $result['output'];
         } else {
-          // We are working with a submission on the Warehouse, so when an image file is uploaded,
-          // we need to create the thumbnails or other image sizes.
+          // store locally so create the thumbnails or other image sizes.
           Image::create_image_files($uploadpath, $destination);
-          return $destination;
+          $return[] = $destination;
         }
-      } else {
+      } 
+      else {
+        //move_uploaded_file failed
         //TODO error messaging
         return false;
-      }
+      }      
     }
+    //finished looping through files
+    return $return;
   }
 
   /**
