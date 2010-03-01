@@ -87,7 +87,7 @@ $indicia_templates = array(
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
   'tree_browser_node' => '<span>{caption}</span>',
   'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
-      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {disabled} {title}/>'."\n",
+      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
       {
         minChars : 1,
@@ -3282,10 +3282,12 @@ $('.ui-state-default').live('mouseout', function() {
           if (!array_key_exists('orderby', $options['extraParams'])) {
 		    $dataSvcParams = $dataSvcParams + array('orderby'=>'sort_order');
           }
-          if(!array_key_exists('noBlankText', $options)) {
-		    $attrOptions = $attrOptions + array('blankText' => '');
+          if(array_key_exists('lookUpListCtrl', $options)){
+            $ctrl = $options['lookUpListCtrl'];
+          } else {
+            $ctrl = 'select';
           }
-          $output = self::select($attrOptions + array(
+          $output = call_user_func(array('data_entry_helper', $ctrl), $attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
@@ -3296,7 +3298,7 @@ $('.ui-state-default').live('mouseout', function() {
             break;
     }
 
-    return $output;
+    return str_replace("\n", "", $output);
   }
 
 }
