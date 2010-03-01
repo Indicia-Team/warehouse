@@ -91,7 +91,7 @@
 
         trigger: function(e)
         {
-          var lonlat = div.map.getLonLatFromViewPortPx(e.xy);
+          var lonlat = div.map.getLonLatFromViewPortPx(e.xy);          
           // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
           var precision, metres = div.map.getScale()/200;
           // now round to find appropriate square size
@@ -111,20 +111,39 @@
           if (div.settings.clickedSrefPrecisionMax!=='') {
             precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
           }
-          $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
-            "?wkt=POINT(" + lonlat.lon + "  " + lonlat.lat + ")"+
-            "&system=" + _getSystem() +
-            "&precision=" + precision +
-            "&callback=?", function(data)
-            {
-              $('#'+opts.srefId).val(data.sref);
-              div.map.editLayer.destroyFeatures();
-              $('#'+opts.geomId).val(data.wkt);
-              var parser = new OpenLayers.Format.WKT();
-              var feature = parser.read(data.wkt);
-              div.map.editLayer.addFeatures([feature]);
+          var sref, outputSystem = _getSystem();
+          if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
+            // no transform required
+            if (div.map.getUnits()=='m') {
+	      // in metres, so we can round (no need for sub-metre precision)
+              sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
+            } else {
+              sref = lonlat.lat + ', ' + lonlat.lon;
             }
-          );
+            if (outputSystem != '900913') {
+              lonlat.transform(div.map.projection, new OpenLayers.Projection('EPSG:900913'));
+            }
+            var wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+            _setClickPoint({
+	      'sref' : sref,
+	      'wkt' : wkt
+            }, div);
+          } else {
+            if (div.map.projection.getCode() != 'EPSG:900913') {
+              // Indicia expects the WKT in 900913 (it's internal format)
+              lonlat.transform(div.map.projection, new OpenLayers.Projection('EPSG:900913'));
+            }
+            var wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+            $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
+	                  "?wkt=" + wkt +
+	                  "&system=" + outputSystem +
+	                  "&precision=" + precision +
+	                  "&callback=?", function(data)
+	    {
+	      _setClickPoint(data, div);
+	    });          
+
+          }
         }
       });
 
@@ -178,6 +197,22 @@
           }
         );
       });
+    }
+    
+    function _setClickPoint(data, div) {
+      $('#'+opts.srefId).val(data.sref);
+      div.map.editLayer.destroyFeatures();
+      $('#'+opts.geomId).val(data.wkt);
+      var parser = new OpenLayers.Format.WKT();
+      var feature = parser.read(data.wkt);
+      if (div.map.projection.getCode() != 'EPSG:900913') {
+        feature.geometry.transform(new OpenLayers.Projection('EPSG:900913'), div.map.projection);
+      }
+      var proj = div.map.projection.getCode();
+      if (proj!='900913') {
+        feature.geometry.transform(new OpenLayers.Projection('EPSG:900913'), new OpenLayers.Projection('EPSG:' + proj));
+      }
+      div.map.editLayer.addFeatures([feature]);
     }
 
     function _georeference(div) {
