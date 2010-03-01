@@ -105,15 +105,16 @@ class iform_basic_1 {
 	if ($args['preferred']) {
 	  $extraParams += array('preferred' => 't');
 	}
-    $species_list_args=array(
+  $species_list_args=array(
         'label'=>'Species',
+        'itemTemplate' => 'select_species',
         'fieldname'=>'occurrence:taxa_taxon_list_id',
         'table'=>'taxa_taxon_list',
         'captionField'=>'taxon',
         'valueField'=>'id',
         'columns'=>2,
-        'extraParams'=>$extraParams
-    );
+        'extraParams'=>$extraParams 
+    );    
     // Dynamically generate the species selection control required.        
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     $r .= "</div>\n";

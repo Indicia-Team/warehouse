@@ -48,12 +48,13 @@ $indicia_templates = array(
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="checkbox" id="{id}" name="{fieldname}"{class}{checked}{disabled} {title} />'."\n",
   'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
-  'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{options}</select>',
-  'select_option' => '<option value="{value}" {selected} >{caption}</option>',
-  'select_option_selected' => 'selected="selected"',
+  'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
+  'select_item' => '<option value="{value}" {selected} >{caption}</option>',
+  'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
+  'select_item_selected' => 'selected="selected"',
   'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{options}</select>',
-  'listbox_option' => '<option value="{value}" {selected} >{caption}</option>',
-  'listbox_option_selected' => 'selected="selected"',
+  'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
+  'listbox_item_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} {disabled}>{caption}</span>{sep}',
@@ -239,20 +240,1590 @@ class data_entry_helper extends helper_config {
     'occurrence:taxa_taxon_list_id'=>array('required')
   );
 
+/**********************************/
+/* Start of main controls section */
+/**********************************/
+
+ /**
+  * Helper function to generate an autocomplete box from an Indicia core service query.
+  * Because this generates a hidden ID control as well as a text input control, the HTML label you
+  * associate with this control should be of the form "$id:$caption" rather than just the $id which
+  * is normal for other controls. For example:
+  * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
+  * <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
+  * <br/>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. This should be left to its default value for
+  * integration with other mapping controls to work correctly.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the autocomplete options.</li>
+  * <li><b>captionField</b><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>template</b><br/>
+  * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the autocomplete control.
+  *
+  * @link http://code.google.com/p/indicia/wiki/DataModel
+  */
+  public static function autocomplete() {
+    global $indicia_templates;
+    $options = self::check_arguments(func_get_args(), array(
+        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default'
+    ));
+    if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
+    $options['inputId'] = $options['id'].':'.$options['captionField'];
+    $options = array_merge(array(
+      'template' => 'autocomplete',
+      'url' => parent::$base_url."/index.php/services/data",
+      'inputId' => $options['id'].':'.$options['captionField'],
+      // Escape the ids for jQuery selectors
+      'escaped_input_id' => str_replace(':', '\\\\:', $options['inputId']),
+      'escaped_id' => str_replace(':', '\\\\:', $options['id']),
+      'defaultCaption' => self::check_default_value($options['inputId'],
+          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : '') 
+    ), $options);
+    self::add_resource('autocomplete');
+    // Escape the id for jQuery selectors
+    $escaped_id=str_replace(':','\\\\:',$options['id']);
+    // Do stuff with extraParams
+    $sParams = '';
+    foreach ($options['extraParams'] as $a => $b){
+      $sParams .= "$a : '$b',";
+    }
+    // lop the comma off the end
+    $options['sParams'] = substr($sParams, 0, -1);
+    $replaceTags=array();
+    foreach(array_keys($options) as $option) {
+      array_push($replaceTags, '{'.$option.'}');
+    }
+    $options['extraParams']=null;
+    self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
+
+    $r = self::apply_template($options['template'], $options);
+    return $r;
+  }
+
+ /**
+  * Helper function to output an HTML checkbox control. This includes re-loading of existing values
+  * and displaying of validation error messages.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>template</b><br/>
+  * Optional. Name of the template entry used to build the HTML for the control. Defaults to checkbox.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the checkbox control.
+  */
+  public static function checkbox($options) {
+    $default = self::check_default_value($options['fieldname'],
+        array_key_exists('default', $options) ? $options['default'] : null);
+    if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
+    if ($default=='on') {
+      $options['checked']=' checked="checked"';
+    }
+    $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox'
+    return self::apply_template($options['template'], $options);
+  }
+
+ /**
+  * Helper function to generate a list of checkboxes from a Indicia core service query.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><b>captionField</b><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>template</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for the outer control.</li>
+  * <li><b>itemTemplate</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for each item in the control.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the group of checkboxes.
+  */
+  public static function checkbox_group() {
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
+    return self::check_or_radio_group($options, 'checkbox');
+  }
+
+ /**
+  * Helper function to insert a date picker control.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, for example 'sample:date'.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>allowFuture</b><br/>
+  * Optional. If true, then future dates are allowed. Default is false.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the date picker control.
+  */
+  public static function date_picker() {
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
+
+    self::add_resource('jquery_ui');
+    $escaped_id=str_replace(':','\\\\:',$options['id']);
+    self::$javascript .= "jQuery('#$escaped_id').datepicker({
+  dateFormat : 'yy-mm-dd',
+  constrainInput: false";
+    // Filter out future dates
+    if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
+      self::$javascript .= ",
+  maxDate: '0'";
+    }
+    // If the validation plugin is running, we need to trigger it when the datepicker closes.
+    if (self::$validated_form_id) {
+      self::$javascript .= ",
+  onClose: function() {
+    $(this).valid();
+  }";
+    }
+    self::$javascript .= "\n});\n";
+
+    if (!array_key_exists('default', $options) || $options['default']=='') {
+      $options['default']=lang::get('click here');
+    }
+    // Enforce a class on the control called date
+    if (!array_key_exists('class', $options)) {
+      $options['class']='';
+    }
+    return self::apply_template('date_picker', $options);
+  }
+
+ /**
+  * Generates a text input control with a search button that looks up an entered place against a georeferencing
+  * web service. At this point in time only the Yahoo! GeoPlanet service is supported. The control is automatically
+  * linked to any map panel added to the page.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Optional. The name of the database field this control is bound to if any.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>georefPreferredArea</b><br/>
+  * Optional. Hint provided to the locality search service as to which area to look for the place name in. Any example usage of this
+  * would be to set it to the name of a region for a survey based in that region. Note that this is only a hint, and the search
+  * service may still return place names outside the region. Defaults to gb.</li>
+  * <li><b>georefCountry</b><br/>
+  * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
+  * <li><b>georefLang</b><br/>
+  * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the georeference lookup control.
+  */
+  public static function georeference_lookup($options) {
+    $options = self::check_options($options);
+    $options = array_merge(array(
+      'id' => 'imp-georef-search',
+      'georefPreferredArea' => 'gb',
+      'georefCountry' => 'United Kingdom',
+      'georefLang' => 'en-EN',
+      // Internationalise the labels here, because if we do this directly in the template setup code it is too early for any custom
+      // language files to be loaded.
+      'search' => lang::get('search'),
+      'close' => lang::get('close'),
+    ), $options);
+
+    self::$javascript .= "indicia_url='".self::$base_url."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea='".$options['georefPreferredArea']."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry='".$options['georefCountry']."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefLang='".$options['georefLang']."';\n";
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey='".parent::$geoplanet_api_key."';\n";
+    return self::apply_template('georeference_lookup', $options);
+  }
+
+ /**
+  * Helper function to support image upload by inserting a file path upload control.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the file upload control.
+  */
+  public static function image_upload() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    return self::apply_template('image_upload', $options);
+  }
+
+ /**
+  * Outputs an autocomplete control that is dedicated to listing locations and which is bound to any map panel
+  * added to the page. Although it is possible to set all the options of a normal autocomplete, generally
+  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
+  * sample's location_id field so can normally also be left.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Optional. The name of the database field this control is bound to.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>extraParams</b><br/>
+  * Required. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the location select control.
+  */
+  public static function location_autocomplete($options) {
+    $options = self::check_options($options);
+    $options = array_merge(array(
+        'table'=>'location',
+        'fieldname'=>'sample:location_id',
+        'valueField'=>'id',
+        'captionField'=>'name',
+        'id'=>'imp-location'
+        ), $options);
+
+    return self::autocomplete($options);
+  }
+
+ /**
+  * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
+  * added to the page. Although it is possible to set all the options of a normal select control, generally
+  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
+  * sample's location_id field so can normally also be left.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Optional. The name of the database field this control is bound to.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>extraParams</b><br/>
+  * Required. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the location select control.
+  */
+  public static function location_select($options) {
+    $options = self::check_options($options);
+    // Apply location type filter if specified.
+    if (array_key_exists('location_type_id', $options)) {
+      $options['extraParams'] += array('location_type_id' => $options['location_type_id']);
+    }
+    $options = array_merge(array(
+        'table'=>'location',
+        'fieldname'=>'sample:location_id',
+        'valueField'=>'id',
+        'captionField'=>'name',
+        'id'=>'imp-location'
+        ), $options);
+    return self::select($options);
+  }
+
+ /**
+  * Helper function to generate a list box from a Indicia core service query. The list box can
+  * be linked to populate itself when an item is selected in another control by specifying the
+  * parentControlId and filterField options.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><b>captionField</b><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>size</b><br/>
+  * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
+  * <li><b>multiselect</b><br/>
+  * Optional. Allow multi-select in the list box. Defaults to false.</li>
+  * <li><b>parentControlId</b><br/>
+  * Optional. Specifies a parent control for linked lists. If specified then this control is not
+  * populated until the parent control's value is set. The parent control's value is used to
+  * filter this control's options against the field specified by filterField.</li>
+  * <li><b>filterField</b><br/>
+  * Optional. Specifies the field to filter this control's content against when using a parent
+  * control value to set up linked lists. Defaults to parent_id though this is not active
+  * unless a parentControlId is specified.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>template</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for the outer control.</li>
+  * <li><b>itemTemplate</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for each item in the control.</li>
+  * <li><b>selectedItemTemplate</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for the selected item in the control.</li></ul>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the listbox control.
+  */
+  public static function listbox()
+  {
+    $options = self::check_arguments(func_get_args(), array(
+        'fieldname', 'table', 'captionField', 'size', 'multiselect', 'valueField', 'extraParams', 'default'
+    ));
+    // blank text option not applicable to list box
+    unset($options['blankText']);
+    $options = array_merge(
+      array(
+        'template' => 'listbox',
+        'itemTemplate' => 'listbox_item',
+        'selectedItemTemplate' => 'listbox_item_selected'
+      ),
+      $options
+    );
+    return self::select_or_listbox($options);
+  }
+
   /**
-   * Call the enable_validation method to turn on client-side validation for any controls with
-   * validation rules defined. To specify validation on each control, set the control's options array
-   * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
-   * validation format. For example, 'validation' => array('required', 'email').
-   * @param string @form_id Id of the form the validation is being attached to.
-   *
-   */
+  * Helper function to list the output from a request against the data services, using an HTML template
+  * for each item. As an example, the following outputs an unordered list of surveys:
+  * <pre>echo data_entry_helper::list_in_template(array(
+  *     'label'=>'template',
+  *     'table'=>'survey',
+  *     'extraParams' => $readAuth,
+  *     'template'=>'<li>|title|</li>'
+  * ));</pre>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>template</b><br/>
+  * Required. HTML template which will be emitted for each item. Fields from the data are identified
+  * by wrapping them in ||. For example, |term| would result in the field called term's value being placed inside
+  * the HTML.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the generated list.
+  */
+  public static function list_in_template() {
+    $options = self::check_arguments(func_get_args(), array('table', 'extraParams', 'template'));
+    $response = self::get_population_data($options);
+    $items = "";
+    if (!array_key_exists('error', $response)){
+      foreach ($response as $row){
+        $item = $options['template'];
+        foreach ($row as $field => $value) {
+          $value = htmlspecialchars($value, ENT_QUOTES);
+          $item = str_replace("|$field|", $value, $item);
+        }
+        $items .= $item;
+      }
+      $options['items']=$items;
+      return self::apply_template('list_in_template', $options);
+    }
+    else
+      return lang::get("error loading control");
+  }
+
+ /**
+  * Generates a map control, with optional data entry fields and location finder powered by the
+  * Yahoo! geoservices API. This is just a shortcut to building a control using a map_panel and the
+  * associated controls.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>presetLayers</b><br/>
+  * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
+  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth', 'multimap_default', 'multimap_landranger'</li>
+  * <li><b>edit</b><br/>
+  * True or false to include the edit controls for picking spatial references.</li>
+  * <li><b>locate</b><br/>
+  * True or false to include the geolocate controls.</li>
+  * <li><b>wkt</b><br/>
+  * Well Known Text of a spatial object to add to the map at startup.</li>
+  */
+  public static function map() {
+    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
+    $options = array_merge(array(
+        'div'=>'map',
+        'presetLayers'=>array('multimap_landranger','google_physical','google_satellite'),
+        'edit'=>true,
+        'locate'=>true,
+        'wkt'=>null
+    ), $options);
+    $r = '';
+    if ($options['edit']) {
+      $r .= self::sref_and_system(array(
+          'label'=>lang::get('spatial ref'),
+      ));
+    }
+    if ($options['locate']) {
+      $r .= self::georeference_lookup(array(
+          'label'=>lang::get('search for place on map')
+      ));
+    }
+    $r .= self::map_panel(array('presetLayers' => $options['presetLayers'], 'initialFeatureWkt' => $options['wkt']));
+    return $r;
+  }
+
+ /**
+  * Outputs a map panel.
+  * The map panel can be augmented by adding any of the following controls which automatically link themselves
+  * to the map:
+  * <ul>
+  * <li>{@link sref_textbox()}</ul>
+  * </ul>{@link sref_system_select()}</ul>
+  * </ul>{@link sref_and_system()}</ul>
+  * </ul>{@link georeference_lookup()}</ul>
+  * </ul>{@link location_select()}</ul>
+  * </ul>{@link location_autocomplete()}</li>
+  * </ul>{@link postcode_textbox()}</li>
+  * </ul>
+  *
+  * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
+  * Has the following possible options:
+  * <li><b>indiciaSvc</b><br/>
+  * </li>
+  * <li><b>indiciaGeoSvc</b><br/>
+  * </li>
+  * <li><b>readAuth</b><br/>
+  * </li>
+  * <li><b>height</b><br/>
+  * </li>
+  * <li><b>width</b><br/>
+  * </li>
+  * <li><b>initial_lat</b><br/>
+  * </li>
+  * <li><b>initial_long</b><br/>
+  * </li>
+  * <li><b>initial_zoom</b><br/>
+  * </li>
+  * <li><b>scroll_wheel_zoom</b><br/>
+  * </li>
+  * <li><b>proxy</b><br/>
+  * </li>
+  * <li><b>displayFormat</b><br/>
+  * </li>
+  * <li><b>presetLayers</b><br/>
+  * </li>
+  * <li><b>indiciaWMSLayers</b><br/>
+  * </li>
+  * <li><b>indiciaWFSLayers</b><br/>
+  * </li>
+  * <li><b>layers</b><br/>
+  * </li>
+  * <li><b>controls</b><br/>
+  * </li>
+  * <li><b>editLayer</b><br/>
+  * </li>
+  * <li><b>editLayerName</b><br/>
+  * </li>
+  * <li><b>initialFeatureWkt</b><br/>
+  * </li>
+  * <li><b>defaultSystem</b><br/>
+  * </li>
+  * <li><b>srefId</b><br/>
+  * </li>
+  * <li><b>srefSystemId</b><br/>
+  * </li>
+  * <li><b>geomId</b><br/>
+  * </li>
+  * <li><b>clickedSrefPrecisionMin</b><br/>
+  * </li>
+  * <li><b>clickedSrefPrecisionMax</b><br/>
+  * </li>
+  * <li><b>msgGeorefSelectPlace</b><br/>
+  * </li>
+  * <li><b>msgGeorefNothingFound</b><br/>
+  * </li>
+  * <li><b>projection</b><br/>
+  * EPSG code of the required projection. Defaults to 900913. Note that if this is changed, most of the preset layers will not work as they
+  * do not support reprojection. Ensure that all base layers available support the projection you define.
+  * </li>
+  */
+  public static function map_panel($options) {
+    if (!$options) {
+      return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
+    } else {
+      global $indicia_templates;
+      self::add_resource('indiciaMapPanel');
+      $options = array_merge(array(
+          'indiciaSvc'=>self::$base_url,
+          'indiciaGeoSvc'=>self::$geoserver_url,
+          'divId'=>'map',
+          'class'=>'',
+          'width'=>600,
+          'height'=>470,
+          'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+      ), $options);
+
+      if (array_key_exists('readAuth', $options)) {
+        // Convert the readAuth into a query string so it can pass straight to the JS class.
+        $options['readAuth']=self::array_to_query_string($options['readAuth']);
+        str_replace('&', '&amp;', $options['readAuth']);
+      }
+
+      // Autogenerate the links to the various mapping libraries as required
+      if (array_key_exists('presetLayers', $options)) {
+        foreach ($options['presetLayers'] as $layer)
+        {
+          $a = explode('_', $layer);
+          $a = strtolower($a[0]);
+          switch($a)
+          {
+            case 'google':
+              self::add_resource('googlemaps');
+              break;
+            case 'multimap':
+              self::add_resource('multimap');
+              break;
+            case 'virtual':
+              self::add_resource('virtualearth');
+              break;
+          }
+        }
+      }
+      // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
+      // and controls, not the string class names.
+      $json_insert='';
+      if (array_key_exists('controls', $options)) {
+        $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
+        unset($options['controls']);
+      }
+      if (array_key_exists('layers', $options)) {
+        $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
+        unset($options['layers']);
+      }
+      $json=substr(json_encode($options), 0, -1).$json_insert.'}';
+      if (array_key_exists('projection', $options)) {
+        self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
+      }
+      self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+      $r = str_replace(
+          array('{divId}','{class}','{widthStyle}','{height}'),
+          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
+          $indicia_templates['map_panel']
+      );
+      return $r;
+    }
+  }
+
+ /**
+  * Helper function to output a textbox for determining a locality from an entered postcode.
+  *
+  * <p>The textbox optionally includes hidden fields for the latitude and longitude and can
+  * link to an address control for automatic generation of address information. When the focus
+  * leaves the textbox, the Google AJAX Search API is used to obtain the latitude and longitude
+  * so they can be saved with the record.</p>
+  *
+  * <p>The following example displays a postcode box and an address box, which is auto-populated
+  * when a postcode is given. The spatial reference controls are "hidden" from the user but
+  * are available to post into the database.</p>
+  * <code>
+  * <?php echo data_entry_helper::postcode_textbox(array(
+  *     'label'=>'Postcode',
+  *     'fieldname'=>'smpAttr:8',
+  *     'linkedAddressBoxId'=>'address'
+  * ); ?>
+  * <br />
+  * <label for="address">Address:</label>
+  * <textarea name="address" id="address"></textarea>
+  * <br />
+  * </code>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. This should be left to its default value for
+  * integration with other mapping controls to work correctly.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>hiddenFields</b><br/>
+  * Optional. Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
+  * should be separate sref_textbox and sref_system_textbox controls elsewhere on the page. Defaults to true.
+  * <li><b>srefField</b><br/>
+  * Optional. Name of the spatial reference hidden field that will be output by this control if hidddenFields is true.</li>
+  * <li><b>systemField</b><br/>
+  * Optional. Name of the spatial reference system hidden field that will be output by this control if hidddenFields is true.</li>
+  * <li><b>linkedAddressBoxId</b><br/>
+  * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the postcode control.
+  */
+  public static function postcode_textbox($options) {
+    // The id field default must take precedence over using the fieldname as the id
+    $options = array_merge(array('id'=>'imp-postcode'), $options);
+    $options = self::check_options($options);
+    // Merge in the defaults
+    $options = array_merge(array(
+        'srefField'=>'sample:entered_sref',
+        'systemField'=>'sample:entered_sref_system',
+        'hiddenFields'=>true,
+        'linkedAddressBoxId'=>''
+        ), $options);
+    self::add_resource('google_search');
+    $options['default'] = self::check_default_value($options['fieldname'],
+        array_key_exists('default', $options) ? $options['default'] : '');
+    $r = self::apply_template('postcode_textbox', $options);
+    if ($options['hiddenFields']) {
+      $defaultSref=self::check_default_value($options['srefField']);
+      $defaultSystem=self::check_default_value($options['systemField'], '4326');
+      $r .= "<input type='hidden' name='".$options['srefField']."' id='imp-sref' value='$defaultSref' />";
+      $r .= "<input type='hidden' name='".$options['systemField']."' id='imp-sref-system' value='$defaultSystem' />";
+    }
+    $r .= self::check_errors($options['fieldname']);
+    return $r;
+  }
+
+ /**
+  * Helper function to generate a radio group from a Indicia core service query.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><b>captionField</b><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>template</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for the outer control.</li>
+  * <li><b>itemTemplate</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for each item in the control.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the group of radio buttons.
+  */
+  public static function radio_group() {
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
+    return self::check_or_radio_group($options, 'radio');
+  }
+
+ /**
+  * Helper function to generate a select control from a Indicia core service query. The select control can
+  * be linked to populate itself when an item is selected in another control by specifying the
+  * parentControlId and filterField options.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>  *
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the select options.</li>
+  * <li><b>captionField</b><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>parentControlId</b><br/>
+  * Optional. Specifies a parent control for linked lists. If specified then this control is not
+  * populated until the parent control's value is set. The parent control's value is used to
+  * filter this control's options against the field specified by filterField.</li>
+  * <li><b>filterField</b><br/>
+  * Optional. Specifies the field to filter this control's content against when using a parent
+  * control value to set up linked lists. Defaults to parent_id though this is not active
+  * unless a parentControlId is specified.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>blankText</b><br/>
+  * Optional. If specified then the first option in the drop down is the blank text, used when there is no value.</li>
+  * <li><b>template</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for the outer control.</li>
+  * <li><b>itemTemplate</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for each item in the control.</li>
+  * <li><b>selectedItemTemplate</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for the selected item in the control.</li></ul>
+  *
+  * @return string HTML code for a select control.
+  */
+  public static function select()
+  {
+    $options = self::check_arguments(func_get_args(), array(
+        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'default'
+    ));
+    $options = array_merge(
+      array(
+        'template' => 'select',
+        'itemTemplate' => 'select_item',
+        'selectedItemTemplate' => 'select_item_selected'
+      ),
+      $options
+    );
+    return self::select_or_listbox($options);
+  }
+
+ /**
+  * Outputs a spatial reference input box and a drop down select control populated with a list of
+  * spatial reference systems for the user to select from. If there is only 1 system available then
+  * the system drop down is ommitted since it is not required.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. Name of the database field that spatial reference will be posted to. Defaults to
+  * sample:entered_sref. The system field is automatically constructed from this.</li>
+  * <li><b>systems</b>
+  * Optional. List of spatial reference systems to display. Associative array with the key
+  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+  * the description to display.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the spatial reference and system selection control.
+  */
+  public static function sref_and_system($options) {
+    $options = array_merge(array(
+      'fieldname'=>'sample:entered_sref'
+    ), $options);
+    // Force no separate lines for the 2 controls
+    if (!array_key_exists('systems',$options) || count($options['systems'])!=1) {
+      $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
+    } else {
+      $srefOptions = $options;
+    }
+    $r = self::sref_textbox($srefOptions);
+    // tweak the options passed to the system selector
+    $options['fieldname']=$options['fieldname']."_system";
+    unset($options['label']);
+    if (array_key_exists('systems', $options) && count($options['systems']) == 1) {
+      // Hidden field for the system
+      $keys = array_keys($options['systems']);
+      $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
+    }
+    else {
+      $r .= self::sref_system_select($options);
+    }
+    return $r;
+  }
+
+ /**
+  * Outputs a drop down select control populated with a list of spatial reference systems
+  * for the user to select from.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref_system.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>systems</b>
+  * Optional. List of spatial reference systems to display. Associative array with the key
+  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
+  * the description to display.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the spatial reference systems selection control.
+  */
+  public static function sref_system_select($options) {
+    global $indicia_templates;    
+    $options = array_merge(array(
+        'fieldname'=>'sample:entered_sref_system',
+        'systems'=>array('OSGB'=>lang::get('british national grid'), '4326'=>lang::get('lat long 4326')),
+        'id'=>'imp-sref-system'
+    ), $options);
+    $options = self::check_options($options);
+    $opts = "";
+    foreach ($options['systems'] as $system=>$caption){
+      $selected = ($options['default'] == $system ? $indicia_templates['select_item_selected'] : '');
+      $opts .= str_replace(
+          array('{value}', '{caption}', '{selected}'),
+          array($system, $caption, $selected),
+          $indicia_templates['select_item']
+      );
+    }
+    $options['items'] = $opts;
+    return self::apply_template('select', $options);
+  }
+
+ /**
+  * Creates a textbox for entry of a spatial reference.
+  * Also generates the hidden geom field required to properly post spatial data. The
+  * box is automatically linked to a map_panel if one is added to the page.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the spatial reference control.
+  */
+  public static function sref_textbox($options) {
+    // get the table and fieldname
+    $tokens=explode(':', $options['fieldname']);
+    // Merge the default parameters
+    $options = array_merge(array(
+        'srefField'=>'sample:entered_sref',
+        'systemfield'=>'sample:entered_sref_system',
+        'hiddenFields'=>true,
+        'id'=>'imp-sref',
+        'table'=>$tokens[0],
+        'default'=>self::check_default_value($options['fieldname']),
+        'defaultGeom'=>self::check_default_value($tokens[0].':geom')
+    ), $options);
+    $options = self::check_options($options);
+    $r = self::apply_template('sref_textbox', $options);
+    return $r;
+  }
+
+ /**
+  * Helper function to generate a species checklist from a given taxon list.
+  *
+  * <p>This function will generate a flexible grid control with one row for each species
+  * in the specified list. For each row, the control will display the list preferred term
+  * for that species, a checkbox to indicate its presence, and a series of cells for a set
+  * of occurrence attributes passed to the control.</p>
+  *
+  * <p>Further, the control will incorporate the functionality to add extra terms to the
+  * control from the parent list of the one given. This will take the form of an autocomplete
+  * box against the parent list which will add an extra row to the control upon selection.</p>
+  *
+  * <p>To change the format of the label displayed for each taxon, use the global $indicia_templates variable
+  * to set the value for the entry 'taxon_label'. The tags available in the template are {taxon},
+  * {authority} and {common}.</p>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>listId</b><br/>
+  * Required. The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
+  * <li><b>occAttrs</b><br/>
+  * Integer array, where each entry corresponds to the id of the desired attribute in the
+  * occurrence_attributes table.</li>
+  * <li><b>occAttrClasses</b><br/>
+  * String array, where each entry corresponds to the css class(es) to apply to the corresponding
+  * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
+  * occAttrs then all remaining controls re-use the last class.</li>
+  * <li><b>extraParams</b><br/>
+  * Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>lookupListId</b><br/>
+  * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
+  * rows to the grid. If specified, then an autocomplete text box and Add Row button are generated
+  * automatically allowing the user to pick a species to add as an extra row.</li>
+  * <li><b>header</b><br/>
+  * Include a header row in the grid? Defaults to true.</li>
+  * <li><b>columns</b><br/>
+  * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
+  * Defaults to 1.</li>
+  * <li><b>checkboxCol</b><br/>
+  * Include a presence checkbox column in the grid. If present, then this contains a checkbox for each row which must be ticked for the
+  * row to be saved. Otherwise any row containing data in an attribute gets saved.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>cachetimeout</b><br/>
+  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
+  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
+  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
+  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
+  * if this is not specified then 1 hour.</li>
+  * <li><b>survey_id</b><br/>
+  * Optional. Used to determine which attributes are valid for this website/survey combination</li>
+  * </ul>
+  */
+  public static function species_checklist()
+  {
+    global $indicia_templates;
+    $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
+    // Apply default values
+    $options = array_merge(array(
+        'header'=>'true',
+        'columns'=>1,
+        'checkboxCol'=>'true'
+    ), $options);
+    self::add_resource('json');
+    self::add_resource('autocomplete');
+    $occAttrControls = array();
+    $occAttrs = array();
+    if (array_key_exists('listId', $options)) {
+      $options['extraParams']['taxon_list_id']=$options['listId'];
+    }
+    $options['extraParams'] = array_merge(array(
+      'preferred'=>'t', // default to preferred taxa only
+      'orderby'=>'taxon' // default sort by taxon name
+    ), $options['extraParams']);
+    if (array_key_exists('readAuth', $options)) {
+      $options['extraParams'] += $options['readAuth'];
+    } else {
+      $options['readAuth'] = array(
+          'auth_token' => $options['extraParams']['auth_token'],
+          'nonce' => $options['extraParams']['nonce']
+      );
+    }
+    $options['table']='taxa_taxon_list';
+    $taxalist = self::get_population_data($options);
+    $url = parent::$base_url."index.php/services/data";
+
+    // Get the list of occurrence attributes
+    if (array_key_exists('occAttrs', $options)) {
+      $idx=0;
+      $class='';
+      foreach ($options['occAttrs'] as $occAttr)
+      {
+        $a = self::get_population_data(array(
+            'table'=>'occurrence_attribute',
+            'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
+        ));
+        if (count($a)>0 && !array_key_exists('error', $a))
+        {
+          $b = $a[0];
+          $occAttrs[$occAttr] = $b['caption'];
+          // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
+          $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;
+          // Build the correct control
+          switch ($b['data_type'])
+          {
+            case 'L':
+              $tlId = $b['termlist_id'];
+              $occAttrControls[$occAttr] = data_entry_helper::select(array(
+                  'fieldname' => 'oa:'.$occAttr,
+                  'table'=>'termlists_term',
+                  'captionField'=>'term',
+                  'valueField'=>'id',
+                  'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
+                  'class' => $class,
+                  'blankText' => ''
+              ));
+              break;
+            case 'D':
+            case 'V':
+              // Date-picker control
+              $occAttrControls[$occAttr] = "<input type='text' class='date $class' id='oa:$occAttr' name='oa:$occAttr' " .
+                  "value='".lang::get('click here')."'/>";
+              break;
+            default:
+              $occAttrControls[$occAttr] =
+                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr' class='$class' value=\"\"/>";
+              break;
+          }
+        }
+        $idx++;
+      }
+    }
+    // Build the grid
+    if (! array_key_exists('error', $taxalist))
+    {
+      $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>";
+      if ($options['checkboxCol']=='true') {
+        $grid .= "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
+      }
+      foreach ($occAttrControls as $oc) {
+        $grid .= "<td class='scOccAttrCell'>$oc</td>";
+      }
+      $grid .= "</tr></tbody></table>";
+      $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'">';
+      if ($options['header']) {
+        $grid .= "<thead class=\"ui-widget-header\"><tr>";
+        for ($i=0; $i<$options['columns']; $i++) {
+          $grid .= "<th>".lang::get('species_checklist.species')."</th>";
+          if ($options['checkboxCol']=='true') {
+            $grid .= "<th>".lang::get('species_checklist.present')."</th>";
+          }
+          foreach ($occAttrs as $a) {
+            $grid .= "<th>$a</th>";
+          }
+        }
+        $grid .= '</tr></thead>';
+      }
+      $rows = array();
+      $rowIdx = 0;
+      foreach ($taxalist as $taxon) {
+        $id = $taxon['id'];
+        $row = "\n<td class='scTaxonCell ui-state-default'>".self::mergeParamsIntoTemplate($taxon, 'taxon_label')."</td>";
+        // go through list in entity to load and find first entry for this taxon, then extract the
+        // record ID if if exists.
+        $existing_record_id = '';
+        if(self::$entity_to_load){
+          foreach(self::$entity_to_load as $key => $value){
+            $parts = explode(':', $key);
+            if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
+              $existing_record_id = $parts[2];
+              break;
+            }
+          }
+        }
+        $attributes = self::getAttributes(array(
+          'id' => $existing_record_id
+           ,'valuetable'=>'occurrence_attribute_value'
+           ,'attrtable'=>'occurrence_attribute'
+           ,'key'=>'occurrence_id'
+           ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
+           ,'extraParams'=>$options['readAuth']
+           ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
+        ));
+        if ($options['checkboxCol']=='true') {
+          if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
+            $checked = ' checked="checked"';
+          } else {
+            $checked='';
+          }
+          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:$existing_record_id:present' $checked /></td>";
+        }
+        foreach ($occAttrControls as $oc) {
+          preg_match('/oa:(\d+)/', $oc, $matches); // matches 1 holds the occurrence_attribute_id
+//          $ctrlId = "sc:$id:$existing_record_id:occAttr:".$matches[1];
+          $ctrlId = $attributes[$matches[1]]['fieldname'];
+          $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
+          // If there is an existing value to load for this control, we need to put the value in the control.
+          $existing_value = '';
+          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
+              && !empty(self::$entity_to_load[$ctrlId])) {
+                $existing_value = self::$entity_to_load[$ctrlId];
+          } else if(array_key_exists('default', $attributes[$matches[1]])){
+                $existing_value = $attributes[$matches[1]]['default'];
+          }
+          if($existing_value){
+            // For select controls, specify which option is selected from the existing value
+            if (substr($oc, 0, 7)=='<select') {
+              $oc = str_replace('value="'.$existing_value.'"',
+                  'value="'.$existing_value.'" '.$indicia_templates['select_item_selected'], $oc);
+            } else {
+              $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+            }
+          }
+          $row .= "\n<td class='scOccAttrCell ui-widget-content'>".$oc."</td>";
+        }
+        if ($rowIdx < count($taxalist)/$options['columns']) {
+          $rows[$rowIdx]=$row;
+        } else {
+          $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
+        }
+        $rowIdx++;
+      }
+      $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
+      $grid .= '</tbody></table>';
+
+      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
+      // selecting the species from this list. Add the required controls for this.
+      if (isset($options['lookupListId'])) {
+        // Javascript to add further rows to the grid
+        self::add_resource('addrowtogrid');
+        self::$javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
+            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'});
+        jQuery('#addRowButton').click(addRowFn);\r\n";
+
+        // Drop an autocomplete box against the parent termlist
+        $grid .= '<label for="addSpeciesBox">'.lang::get('enter additional species').':</label>';
+        $grid .= data_entry_helper::autocomplete('addSpeciesBox',
+            'taxa_taxon_list', 'taxon', 'id', $options['readAuth'] +
+            array('taxon_list_id' => $options['lookupListId']));
+        $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
+      }
+      if ($options['checkboxCol']=='true') { // need to tag if checkboxes active so can delete entry if needed
+        $grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
+      }
+      return $grid;
+    } else {
+      return $taxalist['error'];
+    }
+
+  }
+
+ /**
+  * Helper function to output an HTML textarea. This includes re-loading of existing values
+  * and displaying of validation error messages.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>rows</b><br/>
+  * Optional. HTML rows attribute. Defaults to 4.</li>
+  * <li><b>cols</b><br/>
+  * Optional. HTML cols attribute. Defaults to 80.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the textarea control.
+  */
+  public static function textarea() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options = array_merge(array(
+        'cols'=>'80',
+        'rows'=>'4'
+    ), $options);
+    return self::apply_template('textarea', $options);
+  }
+  
+ /**
+  * Helper function to output an HTML text input. This includes re-loading of existing values
+  * and displaying of validation error messages.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the text input control.
+  */
+  public static function text_input() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options = array_merge(array(
+      'default'=>''
+    ), $options);
+    return self::apply_template('text_input', $options);
+  }
+
+  /**
+  * Helper function to generate a treeview from a given list
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
+  * NB the tree itself will have an id of "tr$fieldname".</li>
+  * <li><b>id</b><br/>
+  * Optional. ID of the control. Defaults to the fieldname.</li>
+  * <li><b>table</b><br/>
+  * Required. Name (Kohana-style) of the database entity to be queried.</li>
+  * <li><b>view</b><br/>
+  * Name of the view of the table required (list, detail).</li>
+  * <li><b>captionField</b><br/>
+  * Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Field to draw values to return from the control from. Defaults
+  * to the value of $captionField.</li>
+  * <li><b>parentField</b><br/>
+  * Field used to indicate parent within tree for a record.</li>
+  * <li><b>default</b><br/>
+  * Initial value to set the control to (not currently used).</li>
+  * <li><b>extraParams</b><br/>
+  * Array of key=>value pairs which will be passed to the service
+  * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
+  * queries to the data services.</li>
+  * <li><b>extraClass</b><br/>
+  * main class to be added to UL tag - currently can be treeview, treeview-red,
+  * treeview_black, treeview-gray. The filetree class although present, does not work properly.</li>
+  * </ul>
+  *
+  * TODO
+  * Need to do initial value.
+  */
+  public static function treeview()
+  {
+    global $indicia_templates;
+    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField',
+        'topField', 'topValue', 'parentField', 'default', 'extraParams', 'class'));
+    self::add_resource('treeview');
+    // Declare the data service
+    $url = parent::$base_url."index.php/services/data";
+    // Setup some default values
+    $options = array_merge(array(
+      'valueField'=>$options['captionField'],
+      'class'=>'treeview',
+      'id'=>$options['fieldname'],
+      'view'=>'list'
+    ), $options);
+    $default = self::check_default_value($options['fieldname'],
+        array_key_exists('default', $options) ? $options['default'] : null);
+    // Do stuff with extraParams
+    $sParams = '';
+    foreach ($options['extraParams'] as $a => $b){
+      $sParams .= "$a : '$b',";
+    }
+    // lop the comma off the end
+    $sParams = substr($sParams, 0, -1);
+    extract($options, EXTR_PREFIX_ALL, 'o');
+    self::$javascript .= "jQuery('#tr$o_fieldname').treeview({
+      url: '$url/$o_table',
+      extraParams : {
+        orderby : '$o_captionField',
+        mode : 'json',
+        $sParams
+      },
+      valueControl: '$o_fieldname',
+      valueField: '$o_valueField',
+      captionField: '$o_captionField',
+      view: '$o_view',
+      parentField: '$o_parentField',
+      dataType: 'jsonp',
+      nodeTmpl: '".$indicia_templates['treeview_node']."'
+    });\n";
+
+    $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_fieldname.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
+    $tree .= self::check_errors($o_fieldname);
+    return $tree;
+  }
+
+  /**
+  * Helper function to generate a browser control from a given list. The browser
+  * behaves similarly to a treeview, except that the child lists are appended to the control
+  * rather than inserted as list children. This allows controls to be created which allow
+  * selection of an item, then the control is updated with the new list of options after each
+  * item is clicked.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
+  * NB the tree itself will have an id of "tr$fieldname".</li>
+  * <li><b>id</b><br/>
+  * Optional. ID of the hidden input which contains the value. Defaults to the fieldname.</li>
+  * <li><b>divId</b><br/>
+  * Optional. ID of the outer div. Defaults to div_ plus the fieldname.</li>
+  * <li><b>table</b><br/>
+  * Required. Name (Kohana-style) of the database entity to be queried.</li>
+  * <li><b>view</b><br/>
+  * Name of the view of the table required (list, detail).</li>
+  * <li><b>captionField</b><br/>
+  * Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Field to draw values to return from the control from. Defaults
+  * to the value of $captionField.</li>
+  * <li><b>parentField</b><br/>
+  * Field used to indicate parent within tree for a record.</li>
+  * <li><b>default</b><br/>
+  * Initial value to set the control to (not currently used).</li>
+  * <li><b>extraParams</b><br/>
+  * Array of key=>value pairs which will be passed to the service
+  * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
+  * queries to the data services.</li>
+  * <li><b>outerClass</b><br/>
+  * Class to be added to the control's outer div.</li>
+  * <li><b>class</b><br/>
+  * Class to be added to the input control (hidden).</li>
+  * <li><b>label</b><br/>
+  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value for the underlying control.</li>
+  * </ul>
+  *
+  * TODO
+  * Need to do initial value.
+  */
+  public static function tree_browser($options) {
+    global $indicia_templates;
+    self::add_resource('treeBrowser');
+    // Declare the data service
+    $url = parent::$base_url."index.php/services/data";
+    // Apply some defaults to the options
+    $options = array_merge(array(
+      'valueField' => $options['captionField'],
+      'id' => $options['fieldname'],
+      'divId' => 'div_'.$options['fieldname'],
+      'singleLayer' => true,
+      'outerClass' => 'ui-widget ui-corner-all ui-widget-content tree-browser',
+      'listItemClass' => 'ui-widget ui-corner-all ui-state-default',
+      'default' => self::check_default_value($options['fieldname'],
+          array_key_exists('default', $options) ? $options['default'] : ''),
+      'view'=>'list'
+    ), $options);
+    $escaped_divId=str_replace(':','\\\\:',$options['divId']);
+    // Do stuff with extraParams
+    $sParams = '';
+    foreach ($options['extraParams'] as $a => $b){
+      $sParams .= "$a : '$b',";
+    }
+    // lop the comma off the end
+    $sParams = substr($sParams, 0, -1);
+    extract($options, EXTR_PREFIX_ALL, 'o');
+    self::$javascript .= "
+$('div#$escaped_divId').indiciaTreeBrowser({
+  url: '$url/$o_table',
+  extraParams : {
+    orderby : '$o_captionField',
+    mode : 'json',
+    $sParams
+  },
+  valueControl: '$o_id',
+  valueField: '$o_valueField',
+  captionField: '$o_captionField',
+  view: '$o_view',
+  parentField: '$o_parentField',
+  nodeTmpl: '".$indicia_templates['tree_browser_node']."',
+  singleLayer: '$o_singleLayer',
+  backCaption: '".lang::get('back')."',
+  listItemClass: '$o_listItemClass',
+  defaultValue: '$o_default'
+});\n";
+    return self::apply_template('tree_browser', $options);
+  }
+
+  /**
+  * Insert buttons which, when clicked, displays the next or previous tab. Insert this inside the tab divs
+  * on each tab you want to have a next or previous button, excluding the last tab.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>divId</b><br/>
+  * The id of the div which is tabbed and whose next tab should be selected.</li>
+  * <li><b>captionNext</b><br/>
+  * Optional. The untranslated caption of the next button. Defaults to next step.</li>
+  * <li><b>captionPrev</b><br/>
+  * Optional. The untranslated caption of the previous button. Defaults to prev step.</li>
+  * <li><b>class</b><br/>
+  * Optional. Additional classes to add to the div containing the buttons. Use left, right or
+  * centre to position the div, making sure the containing element is either floated, or has
+  * overflow: auto applied to its style. Default is right.</li>
+  * <li><b>buttonClass</b><br/>
+  * Class to add to the button elements.</li>
+  * <li><b>page</b><br/>
+  * Specify first, middle or last to indicate which page this is for. Use middle (the default) for
+  * all pages other than the first or last.</li>
+  *
+  * @link http://docs.jquery.com/UI/Tabs
+  */
+  public static function wizard_buttons($options=array()) {
+    // Default captions
+    $options = array_merge(array(
+      'captionNext' => 'next step',
+      'captionPrev' => 'prev step',
+      'captionSave' => 'save',
+      'buttonClass' => 'ui-widget-content ui-state-default ui-corner-all indicia-button',
+      'class'       => 'right',
+      'page'        => 'middle',
+      'suffixTemplate' => 'nosuffix'
+    ), $options);
+    $options['class'] .= ' buttons';
+    // localise the captions
+    $options['captionNext'] = lang::get($options['captionNext']);
+    $options['captionPrev'] = lang::get($options['captionPrev']);
+    $options['captionSave'] = lang::get($options['captionSave']);
+    // Output the buttons
+    $r = '<div class="'.$options['class'].'">';
+    $buttonClass=$options['buttonClass'];
+    if (array_key_exists('divId', $options)) {
+      if ($options['page']!='first') {
+        $options['class']=$buttonClass." tab-prev";
+        $r .= self::apply_template('tab_prev_button', $options);
+      }
+      if ($options['page']!='last') {
+        $options['class']=$buttonClass." tab-next";
+        $r .= self::apply_template('tab_next_button', $options);
+      } else {
+        $options['class']=$buttonClass;
+        $r .= self::apply_template('submit_button', $options);
+      }
+    }
+    $r .= '</div>';
+    return $r;
+  }
+
+/********************************/
+/* End of main controls section */
+/********************************/
+
+ /**
+  * Call the enable_validation method to turn on client-side validation for any controls with
+  * validation rules defined. To specify validation on each control, set the control's options array
+  * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
+  * validation format. For example, 'validation' => array('required', 'email').
+  * @param string @form_id Id of the form the validation is being attached to.
+  *
+  */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
     self::add_resource('validation');
   }
 
  /**
+  * Takes a list of validation rules in Indicia format, and converts them to the jQuery validaiotn
+  * plugin metadata format.
+  * @param array $rules List of validation rules to be converted.
+  * @return string Validation metadata classes to add to the input element.
+  * @access private
+  */
+  private static function convert_to_jquery_val_metadata($rules) {
+    $converted = array();
+    foreach ($rules as $rule) {
+      // Detect the rules that can simply be passed through
+      if    ($rule=='required'
+          || $rule=='dateISO'
+          || $rule=='email'
+          || $rule=='url') {
+        $converted[] = $rule;
+       }
+       // Now any rules which need parsing or convertion
+    }
+    return implode(' ', $converted);
+  }
+
+/**
  * Removes any data entry values persisted into the $_SESSION by Indicia.
  *
  * @link	http://code.google.com/p/indicia/wiki/TutorialDataEntryWizard
@@ -483,753 +2054,30 @@ class data_entry_helper extends helper_config {
   }
 
   /**
-   * Takes a list of validation rules in Indicia format, and converts them to the jQuery validaiotn
-   * plugin metadata format.
-   * @param array $rules List of validation rules to be converted.
-   * @return string Validation metadata classes to add to the input element.
-   * @access private
-   */
-  private static function convert_to_jquery_val_metadata($rules) {
-    $converted = array();
-    foreach ($rules as $rule) {
-      // Detect the rules that can simply be passed through
-      if    ($rule=='required'
-          || $rule=='dateISO'
-          || $rule=='email'
-          || $rule=='url') {
-        $converted[] = $rule;
-       }
-       // Now any rules which need parsing or convertion
-    }
-    return implode(' ', $converted);
-  }
-
-  /**
-  * Helper function to support image upload by inserting a file path upload control.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the file upload control.
-  */
-  public static function image_upload() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
-    return self::apply_template('image_upload', $options);
-  }
-
- /**
-  * Helper function to output an HTML text input. This includes re-loading of existing values
-  * and displaying of validation error messages.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the text input control.
-  */
-  public static function text_input() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
-    $options = array_merge(array(
-      'default'=>''
-    ), $options);
-    return self::apply_template('text_input', $options);
-  }
-
- /**
-  * Helper function to output an HTML textarea. This includes re-loading of existing values
-  * and displaying of validation error messages.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, e.g. occurrence:image.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>rows</b><br/>
-  * Optional. HTML rows attribute. Defaults to 4.</li>
-  * <li><b>cols</b><br/>
-  * Optional. HTML cols attribute. Defaults to 80.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the textarea control.
-  */
-  public static function textarea() {
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
-    $options = array_merge(array(
-        'cols'=>'80',
-        'rows'=>'4'
-    ), $options);
-    return self::apply_template('textarea', $options);
-  }
-
-  /**
-  * Helper function to output an HTML checkbox control. This includes re-loading of existing values
-  * and displaying of validation error messages.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the checkbox control.
-  */
-  public static function checkbox($options) {
-    $default = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : null);
-    if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
-    if ($default=='on') {
-      $options['checked']=' checked="checked"';
-    }
-    return self::apply_template('checkbox', $options);
-  }
-
-  /**
-   * Helper function to generate a species checklist from a given taxon list.
-   *
-   * <p>This function will generate a flexible grid control with one row for each species
-   * in the specified list. For each row, the control will display the list preferred term
-   * for that species, a checkbox to indicate its presence, and a series of cells for a set
-   * of occurrence attributes passed to the control.</p>
-   *
-   * <p>Further, the control will incorporate the functionality to add extra terms to the
-   * control from the parent list of the one given. This will take the form of an autocomplete
-   * box against the parent list which will add an extra row to the control upon selection.</p>
-   *
-   * <p>To change the format of the label displayed for each taxon, use the global $indicia_templates variable
-   * to set the value for the entry 'taxon_label'. The tags available in the template are {taxon},
-   * {authority} and {common}.</p>
-   *
-   * @param array $options Options array with the following possibilities:<ul>
-   * <li><b>listId</b><br/>
-   * Required. The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
-   * <li><b>occAttrs</b><br/>
-   * Integer array, where each entry corresponds to the id of the desired attribute in the
-   * occurrence_attributes table.</li>
-   * <li><b>occAttrClasses</b><br/>
-   * String array, where each entry corresponds to the css class(es) to apply to the corresponding
-   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
-   * occAttrs then all remaining controls re-use the last class.</li>
-   * <li><b>extraParams</b><br/>
-   * Associative array of items to pass via the query string to the service. This
-   * should at least contain the read authorisation array.</li>
-   * <li><b>lookupListId</b><br/>
-   * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
-   * rows to the grid. If specified, then an autocomplete text box and Add Row button are generated
-   * automatically allowing the user to pick a species to add as an extra row.</li>
-   * <li><b>header</b><br/>
-   * Include a header row in the grid? Defaults to true.</li>
-   * <li><b>columns</b><br/>
-   * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
-   * Defaults to 1.</li>
-   * <li><b>checkboxCol</b><br/>
-   * Include a presence checkbox column in the grid. If present, then this contains a checkbox for each row which must be ticked for the
-   * row to be saved. Otherwise any row containing data in an attribute gets saved.</li>
-   * <li><b>class</b><br/>
-   * Optional. CSS class names to add to the control.</li>
-   * <li><b>cachetimeout</b><br/>
-   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-   * if this is not specified then 1 hour.</li>
-   * <li><b>survey_id</b><br/>
-   * Optional. Used to determine which attributes are valid for this website/survey combination</li>
-   * </ul>
-   */
-  public static function species_checklist()
-  {
-    global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
-    // Apply default values
-    $options = array_merge(array(
-        'header'=>'true',
-        'columns'=>1,
-        'checkboxCol'=>'true'
-    ), $options);
-    self::add_resource('json');
-    self::add_resource('autocomplete');
-    $occAttrControls = array();
-    $occAttrs = array();
-    if (array_key_exists('listId', $options)) {
-      $options['extraParams']['taxon_list_id']=$options['listId'];
-    }
-    $options['extraParams'] = array_merge(array(
-      'preferred'=>'t', // default to preferred taxa only
-      'orderby'=>'taxon' // default sort by taxon name
-    ), $options['extraParams']);
-    if (array_key_exists('readAuth', $options)) {
-      $options['extraParams'] += $options['readAuth'];
-    } else {
-      $options['readAuth'] = array(
-          'auth_token' => $options['extraParams']['auth_token'],
-          'nonce' => $options['extraParams']['nonce']
-      );
-    }
-    $options['table']='taxa_taxon_list';
-    $taxalist = self::get_population_data($options);
-    $url = parent::$base_url."index.php/services/data";
-
-    // Get the list of occurrence attributes
-    if (array_key_exists('occAttrs', $options)) {
-      $idx=0;
-      $class='';
-      foreach ($options['occAttrs'] as $occAttr)
-      {
-        $a = self::get_population_data(array(
-            'table'=>'occurrence_attribute',
-            'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
-        ));
-        if (count($a)>0 && !array_key_exists('error', $a))
-        {
-          $b = $a[0];
-          $occAttrs[$occAttr] = $b['caption'];
-          // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-          $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;
-          // Build the correct control
-          switch ($b['data_type'])
-          {
-            case 'L':
-              $tlId = $b['termlist_id'];
-              $occAttrControls[$occAttr] = data_entry_helper::select(array(
-                  'fieldname' => 'oa:'.$occAttr,
-                  'table'=>'termlists_term',
-                  'captionField'=>'term',
-                  'valueField'=>'id',
-                  'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
-                  'class' => $class,
-                  'blankText' => ''
-              ));
-              break;
-            case 'D':
-            case 'V':
-              // Date-picker control
-              $occAttrControls[$occAttr] = "<input type='text' class='date $class' id='oa:$occAttr' name='oa:$occAttr' " .
-                  "value='".lang::get('click here')."'/>";
-              break;
-            default:
-              $occAttrControls[$occAttr] =
-                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr' class='$class' value=\"\"/>";
-              break;
-          }
-        }
-        $idx++;
-      }
-    }
-    // Build the grid
-    if (! array_key_exists('error', $taxalist))
-    {
-      $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>";
-      if ($options['checkboxCol']=='true') {
-        $grid .= "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
-      }
-      foreach ($occAttrControls as $oc) {
-        $grid .= "<td class='scOccAttrCell'>$oc</td>";
-      }
-      $grid .= "</tr></tbody></table>";
-      $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'">';
-      if ($options['header']) {
-        $grid .= "<thead class=\"ui-widget-header\"><tr>";
-        for ($i=0; $i<$options['columns']; $i++) {
-          $grid .= "<th>".lang::get('species_checklist.species')."</th>";
-          if ($options['checkboxCol']=='true') {
-            $grid .= "<th>".lang::get('species_checklist.present')."</th>";
-          }
-          foreach ($occAttrs as $a) {
-            $grid .= "<th>$a</th>";
-          }
-        }
-        $grid .= '</tr></thead>';
-      }
-      $rows = array();
-      $rowIdx = 0;
-      foreach ($taxalist as $taxon) {
-        $id = $taxon['id'];
-        $row = "\n<td class='scTaxonCell ui-state-default'>".self::getTaxonLabel($taxon)."</td>";
-        // go through list in entity to load and find first entry for this taxon, then extract the
-        // record ID if if exists.
-        $existing_record_id = '';
-        if(self::$entity_to_load){
-          foreach(self::$entity_to_load as $key => $value){
-            $parts = explode(':', $key);
-            if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
-              $existing_record_id = $parts[2];
-              break;
-            }
-          }
-        }
-        $attributes = self::getAttributes(array(
-          'id' => $existing_record_id
-           ,'valuetable'=>'occurrence_attribute_value'
-           ,'attrtable'=>'occurrence_attribute'
-           ,'key'=>'occurrence_id'
-           ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
-           ,'extraParams'=>$options['readAuth']
-           ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
-        ));
-        if ($options['checkboxCol']=='true') {
-          if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
-            $checked = ' checked="checked"';
-          } else {
-            $checked='';
-          }
-          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:$existing_record_id:present' $checked /></td>";
-        }
-        foreach ($occAttrControls as $oc) {
-          preg_match('/oa:(\d+)/', $oc, $matches); // matches 1 holds the occurrence_attribute_id
-//          $ctrlId = "sc:$id:$existing_record_id:occAttr:".$matches[1];
-          $ctrlId = $attributes[$matches[1]]['fieldname'];
-          $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
-          // If there is an existing value to load for this control, we need to put the value in the control.
-          $existing_value = '';
-          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
-              && !empty(self::$entity_to_load[$ctrlId])) {
-                $existing_value = self::$entity_to_load[$ctrlId];
-          } else if(array_key_exists('default', $attributes[$matches[1]])){
-                $existing_value = $attributes[$matches[1]]['default'];
-          }
-          if($existing_value){
-            // For select controls, specify which option is selected from the existing value
-            if (substr($oc, 0, 7)=='<select') {
-              $oc = str_replace('value="'.$existing_value.'"',
-                  'value="'.$existing_value.'" '.$indicia_templates['select_option_selected'], $oc);
-            } else {
-              $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
-            }
-          }
-          $row .= "\n<td class='scOccAttrCell ui-widget-content'>".$oc."</td>";
-        }
-        if ($rowIdx < count($taxalist)/$options['columns']) {
-          $rows[$rowIdx]=$row;
-        } else {
-          $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
-        }
-        $rowIdx++;
-      }
-      $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
-      $grid .= '</tbody></table>';
-
-      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
-      // selecting the species from this list. Add the required controls for this.
-      if (isset($options['lookupListId'])) {
-        // Javascript to add further rows to the grid
-        self::add_resource('addrowtogrid');
-        self::$javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
-            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'});
-        jQuery('#addRowButton').click(addRowFn);\r\n";
-
-        // Drop an autocomplete box against the parent termlist
-        $grid .= '<label for="addSpeciesBox">'.lang::get('enter additional species').':</label>';
-        $grid .= data_entry_helper::autocomplete('addSpeciesBox',
-            'taxa_taxon_list', 'taxon', 'id', $options['readAuth'] +
-            array('taxon_list_id' => $options['lookupListId']));
-        $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
-      }
-      if ($options['checkboxCol']=='true') { // need to tag if checkboxes active so can delete entry if needed
-        $grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
-      }
-      return $grid;
-    } else {
-      return $taxalist['error'];
-    }
-
-  }
-
-  /**
-   * Applies a template to build the output label for each taxon in a taxon grid.
+   * Applies a output template to an array. This is used to build the output for each item in a list, 
+   * such as a species checklist grid or a radio group.
    *
    * @access private
-   * @param $taxon Array holding the taxon attributes.
-   * @return string HTML for the taxon label
+   * @param array $item Array holding the item attributes.
+   * @param string $template Name of the template to use
+   * @return string HTML for the item label
    */
-  private static function getTaxonLabel($taxon) {
+  private static function mergeParamsIntoTemplate($item, $template) {
     global $indicia_templates;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
     $replaceValues=array();
-    foreach (array_keys($taxon) as $option) {
-      if (!is_array($taxon[$option])) {
+    foreach (array_keys($item) as $option) {
+      if (!is_array($item[$option])) {
         array_push($replaceTags, '{'.$option.'}');
-        array_push($replaceValues, $taxon[$option]);
+        array_push($replaceValues, htmlSpecialChars($item[$option]));
       }
-    }
-    return str_replace($replaceTags, $replaceValues, $indicia_templates['taxon_label']);
+    }    
+    return str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);    
   }
 
 
-  /**
-  * Helper function to generate a treeview from a given list
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
-  * NB the tree itself will have an id of "tr$fieldname".</li>
-  * <li><b>id</b><br/>
-  * Optional. ID of the control. Defaults to the fieldname.</li>
-  * <li><b>table</b><br/>
-  * Required. Name (Kohana-style) of the database entity to be queried.</li>
-  * <li><b>view</b><br/>
-  * Name of the view of the table required (list, detail).</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from. Defaults
-  * to the value of $captionField.</li>
-  * <li><b>parentField</b><br/>
-  * Field used to indicate parent within tree for a record.</li>
-  * <li><b>default</b><br/>
-  * Initial value to set the control to (not currently used).</li>
-  * <li><b>extraParams</b><br/>
-  * Array of key=>value pairs which will be passed to the service
-  * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
-  * queries to the data services.</li>
-  * <li><b>extraClass</b><br/>
-  * main class to be added to UL tag - currently can be treeview, treeview-red,
-  * treeview_black, treeview-gray. The filetree class although present, does not work properly.</li>
-  * </ul>
-  *
-  * TODO
-  * Need to do initial value.
-  */
-  public static function treeview()
-  {
-    global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField',
-        'topField', 'topValue', 'parentField', 'default', 'extraParams', 'class'));
-    self::add_resource('treeview');
-    // Declare the data service
-    $url = parent::$base_url."index.php/services/data";
-    // Setup some default values
-    $options = array_merge(array(
-      'valueField'=>$options['captionField'],
-      'class'=>'treeview',
-      'id'=>$options['fieldname'],
-      'view'=>'list'
-    ), $options);
-    $default = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : null);
-    // Do stuff with extraParams
-    $sParams = '';
-    foreach ($options['extraParams'] as $a => $b){
-      $sParams .= "$a : '$b',";
-    }
-    // lop the comma off the end
-    $sParams = substr($sParams, 0, -1);
-    extract($options, EXTR_PREFIX_ALL, 'o');
-    self::$javascript .= "jQuery('#tr$o_fieldname').treeview({
-      url: '$url/$o_table',
-      extraParams : {
-        orderby : '$o_captionField',
-        mode : 'json',
-        $sParams
-      },
-      valueControl: '$o_fieldname',
-      valueField: '$o_valueField',
-      captionField: '$o_captionField',
-      view: '$o_view',
-      parentField: '$o_parentField',
-      dataType: 'jsonp',
-      nodeTmpl: '".$indicia_templates['treeview_node']."'
-    });\n";
-
-    $tree = '<input type="hidden" class="hidden" id="'.$o_id.'" name="'.$o_fieldname.'" /><ul id="tr'.$o_id.'" class="'.$o_class.'"></ul>';
-    $tree .= self::check_errors($o_fieldname);
-    return $tree;
-  }
-
-  /**
-  * Helper function to generate a browser control from a given list. The browser
-  * behaves similarly to a treeview, except that the child lists are appended to the control
-  * rather than inserted as list children. This allows controls to be created which allow
-  * selection of an item, then the control is updated with the new list of options after each
-  * item is clicked.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, for example 'occurrence:taxa_taxon_list_id'.
-  * NB the tree itself will have an id of "tr$fieldname".</li>
-  * <li><b>id</b><br/>
-  * Optional. ID of the hidden input which contains the value. Defaults to the fieldname.</li>
-  * <li><b>divId</b><br/>
-  * Optional. ID of the outer div. Defaults to div_ plus the fieldname.</li>
-  * <li><b>table</b><br/>
-  * Required. Name (Kohana-style) of the database entity to be queried.</li>
-  * <li><b>view</b><br/>
-  * Name of the view of the table required (list, detail).</li>
-  * <li><b>captionField</b><br/>
-  * Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Field to draw values to return from the control from. Defaults
-  * to the value of $captionField.</li>
-  * <li><b>parentField</b><br/>
-  * Field used to indicate parent within tree for a record.</li>
-  * <li><b>default</b><br/>
-  * Initial value to set the control to (not currently used).</li>
-  * <li><b>extraParams</b><br/>
-  * Array of key=>value pairs which will be passed to the service
-  * as GET parameters. Needs to specify the read authorisation key/value pair, needed for making
-  * queries to the data services.</li>
-  * <li><b>outerClass</b><br/>
-  * Class to be added to the control's outer div.</li>
-  * <li><b>class</b><br/>
-  * Class to be added to the input control (hidden).</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value for the underlying control.</li>
-  * </ul>
-  *
-  * TODO
-  * Need to do initial value.
-  */
-  public static function tree_browser($options) {
-    global $indicia_templates;
-    self::add_resource('treeBrowser');
-    // Declare the data service
-    $url = parent::$base_url."index.php/services/data";
-    // Apply some defaults to the options
-    $options = array_merge(array(
-      'valueField' => $options['captionField'],
-      'id' => $options['fieldname'],
-      'divId' => 'div_'.$options['fieldname'],
-      'singleLayer' => true,
-      'outerClass' => 'ui-widget ui-corner-all ui-widget-content tree-browser',
-      'listItemClass' => 'ui-widget ui-corner-all ui-state-default',
-      'default' => self::check_default_value($options['fieldname'],
-          array_key_exists('default', $options) ? $options['default'] : ''),
-      'view'=>'list'
-    ), $options);
-    $escaped_divId=str_replace(':','\\\\:',$options['divId']);
-    // Do stuff with extraParams
-    $sParams = '';
-    foreach ($options['extraParams'] as $a => $b){
-      $sParams .= "$a : '$b',";
-    }
-    // lop the comma off the end
-    $sParams = substr($sParams, 0, -1);
-    extract($options, EXTR_PREFIX_ALL, 'o');
-    self::$javascript .= "
-$('div#$escaped_divId').indiciaTreeBrowser({
-  url: '$url/$o_table',
-  extraParams : {
-    orderby : '$o_captionField',
-    mode : 'json',
-    $sParams
-  },
-  valueControl: '$o_id',
-  valueField: '$o_valueField',
-  captionField: '$o_captionField',
-  view: '$o_view',
-  parentField: '$o_parentField',
-  nodeTmpl: '".$indicia_templates['tree_browser_node']."',
-  singleLayer: '$o_singleLayer',
-  backCaption: '".lang::get('back')."',
-  listItemClass: '$o_listItemClass',
-  defaultValue: '$o_default'
-});\n";
-    return self::apply_template('tree_browser', $options);
-  }
-
-  /**
-  * Helper function to insert a date picker control.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to, for example 'sample:date'.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * <li><b>allowFuture</b><br/>
-  * Optional. If true, then future dates are allowed. Default is false.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the date picker control.
-  */
-  public static function date_picker() {
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
-
-    self::add_resource('jquery_ui');
-    $escaped_id=str_replace(':','\\\\:',$options['id']);
-    self::$javascript .= "jQuery('#$escaped_id').datepicker({
-  dateFormat : 'yy-mm-dd',
-  constrainInput: false";
-    // Filter out future dates
-    if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
-      self::$javascript .= ",
-  maxDate: '0'";
-    }
-    // If the validation plugin is running, we need to trigger it when the datepicker closes.
-    if (self::$validated_form_id) {
-      self::$javascript .= ",
-  onClose: function() {
-    $(this).valid();
-  }";
-    }
-    self::$javascript .= "\n});\n";
-
-    if (!array_key_exists('default', $options) || $options['default']=='') {
-      $options['default']=lang::get('click here');
-    }
-    // Enforce a class on the control called date
-    if (!array_key_exists('class', $options)) {
-      $options['class']='';
-    }
-    return self::apply_template('date_picker', $options);
-  }
-
- /**
-  * Helper function to generate a select control from a Indicia core service query. The select control can
-  * be linked to populate itself when an item is selected in another control by specifying the
-  * parentControlId and filterField options.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>  *
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
-  * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>parentControlId</b><br/>
-  * Optional. Specifies a parent control for linked lists. If specified then this control is not
-  * populated until the parent control's value is set. The parent control's value is used to
-  * filter this control's options against the field specified by filterField.</li>
-  * <li><b>filterField</b><br/>
-  * Optional. Specifies the field to filter this control's content against when using a parent
-  * control value to set up linked lists. Defaults to parent_id though this is not active
-  * unless a parentControlId is specified.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * <li><b>blankText</b><br/>
-  * Optional. If specified then the first option in the drop down is the blank text, used when there is no value.</li>
-  * </ul>
-  *
-  * @return string HTML code for a select control.
-  */
-  public static function select()
-  {
-    $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'default'
-    ));
-    return self::select_or_listbox($options, 'select', 'select_option', 'select_option_selected');
-  }
-
- /**
-  * Helper function to generate a list box from a Indicia core service query. The list box can
-  * be linked to populate itself when an item is selected in another control by specifying the
-  * parentControlId and filterField options.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
-  * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>size</b><br/>
-  * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
-  * <li><b>multiselect</b><br/>
-  * Optional. Allow multi-select in the list box. Defaults to false.</li>
-  * <li><b>parentControlId</b><br/>
-  * Optional. Specifies a parent control for linked lists. If specified then this control is not
-  * populated until the parent control's value is set. The parent control's value is used to
-  * filter this control's options against the field specified by filterField.</li>
-  * <li><b>filterField</b><br/>
-  * Optional. Specifies the field to filter this control's content against when using a parent
-  * control value to set up linked lists. Defaults to parent_id though this is not active
-  * unless a parentControlId is specified.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the listbox control.
-  */
-  public static function listbox()
-  {
-    $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'size', 'multiselect', 'valueField', 'extraParams', 'default'
-    ));
-    // blank text option not applicable to list box
-    unset($options['blankText']);
-    return self::select_or_listbox($options, 'listbox', 'listbox_option', 'listbox_option_selected');
-  }
-
-
+ 
   /**
    * Private function to fetch a validated timeout value from passed in options array
    * @param array $options Options array with the following possibilities:<ul>
@@ -1381,7 +2229,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    *
    * @access private
    */
-  private static function select_or_listbox($options, $outerTmpl, $itemTmpl, $selectTmpl) {
+  private static function select_or_listbox($options) {
     global $indicia_templates;
     self::add_resource('json');
     $options = array_merge(array(
@@ -1390,7 +2238,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     ), $options);
     if (array_key_exists('parentControlId', $options)) {
       // no options for now
-      $options['options'] = '';
+      $options['items'] = '';
       self::init_linked_lists($options);
     } else {
       $response = self::get_population_data($options);
@@ -1400,26 +2248,24 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           $opts .= str_replace(
               array('{value}', '{caption}', '{selected}'),
               array('', $options['blankText']),
-              $indicia_templates[$itemTmpl]
+              $indicia_templates[$options['itemTemplate']]
           );
         }
         foreach ($response as $item){
           if (array_key_exists($options['captionField'], $item) &&
               array_key_exists($options['valueField'], $item))
           {
-            $selected = ($options['default'] == $item[$options['valueField']]) ? $indicia_templates[$selectTmpl] : '';
-            $opts .= str_replace(
-                array('{value}', '{caption}', '{selected}'),
-                array($item[$options['valueField']], htmlspecialchars($item[$options['captionField']]), $selected),
-                $indicia_templates[$itemTmpl]
-            );
+            $item['selected'] = ($options['default'] == $item[$options['valueField']]) ? $indicia_templates[$options['selectedItemTemplate']] : '';
+            $item['value'] = $item[$options['valueField']];
+            $item['caption'] = $item[$options['captionField']];
+            $opts .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
           }
         }
-        $options['options'] = $opts;
+        $options['items'] = $opts;
     } else
         echo $response['error'];
     }
-    return self::apply_template($outerTmpl, $options);
+    return self::apply_template($options['template'], $options);
   }
 
  /**
@@ -1446,294 +2292,19 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
   /**
-  * Helper function to generate an autocomplete box from an Indicia core service query.
-  * Because this generates a hidden ID control as well as a text input control, the HTML label you
-  * associate with this control should be of the form "$id:$caption" rather than just the $id which
-  * is normal for other controls. For example:
-  * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
-  * <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
-  * <br/>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. This should be left to its default value for
-  * integration with other mapping controls to work correctly.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the autocomplete options.</li>
-  * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the autocomplete control.
-  *
-  * @link http://code.google.com/p/indicia/wiki/DataModel
-  */
-  public static function autocomplete() {
-    global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default'
-    ));
-    self::add_resource('autocomplete');
-    $options['url'] = parent::$base_url."/index.php/services/data";
-    // Escape the id for jQuery selectors
-    $escaped_id=str_replace(':','\\\\:',$options['id']);
-    // Do stuff with extraParams
-    $sParams = '';
-    foreach ($options['extraParams'] as $a => $b){
-      $sParams .= "$a : '$b',";
-    }
-    // lop the comma off the end
-    $options['sParams'] = substr($sParams, 0, -1);
-    $options['defaultCaption'] = self::check_default_value($options['captionField'],
-        array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : '');
-    $options['inputId'] = $options['id'].':'.$options['captionField'];
-    // Escape the ids for jQuery selectors
-    $options['escaped_id']=str_replace(':','\\\\:',$options['id']);
-    $options['escaped_input_id']=str_replace(':','\\\\:',$options['inputId']);
-    $replaceTags=array();
-    foreach(array_keys($options) as $option) {
-      array_push($replaceTags, '{'.$option.'}');
-    }
-    $options['extraParams']=null;
-    self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
-
-    $r = self::apply_template('autocomplete', $options);
-    return $r;
-  }
-
- /**
-  * Helper function to output a textbox for determining a locality from an entered postcode.
-  *
-  * <p>The textbox optionally includes hidden fields for the latitude and longitude and can
-  * link to an address control for automatic generation of address information. When the focus
-  * leaves the textbox, the Google AJAX Search API is used to obtain the latitude and longitude
-  * so they can be saved with the record.</p>
-  *
-  * <p>The following example displays a postcode box and an address box, which is auto-populated
-  * when a postcode is given. The spatial reference controls are "hidden" from the user but
-  * are available to post into the database.</p>
-  * <code>
-  * <?php echo data_entry_helper::postcode_textbox(array(
-  * 		'label'=>'Postcode',
-  * 		'fieldname'=>'smpAttr:8',
-  * 		'linkedAddressBoxId'=>'address'
-  * ); ?>
-  * <br />
-  * <label for="address">Address:</label>
-  * <textarea name="address" id="address"></textarea>
-  * <br />
-  * </code>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. This should be left to its default value for
-  * integration with other mapping controls to work correctly.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>hiddenFields</b><br/>
-  * Optional. Set to true to insert hidden inputs to receive the latitude and longitude. Otherwise there
-  * should be separate sref_textbox and sref_system_textbox controls elsewhere on the page. Defaults to true.
-  * <li><b>srefField</b><br/>
-  * Optional. Name of the spatial reference hidden field that will be output by this control if hidddenFields is true.</li>
-  * <li><b>systemField</b><br/>
-  * Optional. Name of the spatial reference system hidden field that will be output by this control if hidddenFields is true.</li>
-  * <li><b>linkedAddressBoxId</b><br/>
-  * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the postcode control.
-  */
-  public static function postcode_textbox($options) {
-    // The id field default must take precedence over using the fieldname as the id
-    $options = array_merge(array('id'=>'imp-postcode'), $options);
-    $options = self::check_options($options);
-    // Merge in the defaults
-    $options = array_merge(array(
-        'srefField'=>'sample:entered_sref',
-        'systemField'=>'sample:entered_sref_system',
-        'hiddenFields'=>true,
-        'linkedAddressBoxId'=>''
-        ), $options);
-    self::add_resource('google_search');
-    $options['default'] = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : '');
-    $r = self::apply_template('postcode_textbox', $options);
-    if ($options['hiddenFields']) {
-      $defaultSref=self::check_default_value($options['srefField']);
-      $defaultSystem=self::check_default_value($options['systemField'], '4326');
-      $r .= "<input type='hidden' name='".$options['srefField']."' id='imp-sref' value='$defaultSref' />";
-      $r .= "<input type='hidden' name='".$options['systemField']."' id='imp-sref-system' value='$defaultSystem' />";
-    }
-    $r .= self::check_errors($options['fieldname']);
-    return $r;
-  }
-
-  /**
-  * Helper function to list the output from a request against the data services, using an HTML template
-  * for each item. As an example, the following outputs an unordered list of surveys:
-  * <pre>echo data_entry_helper::list_in_template(array(
-  *     'label'=>'template',
-  *     'table'=>'survey',
-  *     'extraParams' => $readAuth,
-  *     'template'=>'<li>|title|</li>'
-  * ));</pre>
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>template</b><br/>
-  * Required. HTML template which will be emitted for each item. Fields from the data are identified
-  * by wrapping them in ||. For example, |term| would result in the field called term's value being placed inside
-  * the HTML.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the generated list.
-  */
-  public static function list_in_template() {
-    $options = self::check_arguments(func_get_args(), array('table', 'extraParams', 'template'));
-    $response = self::get_population_data($options);
-    $items = "";
-    if (!array_key_exists('error', $response)){
-      foreach ($response as $row){
-        $item = $options['template'];
-        foreach ($row as $field => $value) {
-          $value = htmlspecialchars($value, ENT_QUOTES);
-          $item = str_replace("|$field|", $value, $item);
-        }
-        $items .= $item;
-      }
-      $options['items']=$items;
-      return self::apply_template('list_in_template', $options);
-    }
-    else
-      return lang::get("error loading control");
-  }
-
-  /**
-  * Helper function to generate a radio group from a Indicia core service query.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
-  * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the group of radio buttons.
-  */
-  public static function radio_group() {
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
-    return self::check_or_radio_group($options, 'radio');
-  }
-
- /**
-  * Helper function to generate a list of checkboxes from a Indicia core service query.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
-  * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the group of checkboxes.
-  */
-  public static function checkbox_group() {
-    $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
-    return self::check_or_radio_group($options, 'checkbox');
-  }
-
-  /**
    * Internal method to output either a checkbox group or a radio group.
    */
   private static function check_or_radio_group($options, $type) {
     global $indicia_templates;
-    $options = array_merge(array('sep' => ''), $options);
-    if ($options['class']=='') {
-      // default class is control-box
-      $options['class']='control-box';
-    }
+    $options = array_merge(
+      array(
+        'sep' => '',
+        'template' => 'check_or_radio_group',
+        'itemTemplate' => 'check_or_radio_group_item',
+        'class' => 'control-box'
+      ),
+      $options
+    );
     $url = parent::$base_url."/index.php/services/data";
     // Execute a request to the service
     $response = self::get_population_data($options);
@@ -1741,469 +2312,24 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
         if (array_key_exists($options['captionField'], $item) && array_key_exists($options['valueField'], $item)) {
-
-          $name = htmlspecialchars($item[$options['captionField']], ENT_QUOTES);
-          $checked = ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '';
-          $disabled = isset($options['disabled']) ?  $options['disabled'] : '';
-
-          $items .= str_replace(
-              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}'),
-              array($type, $options['fieldname'], $item[$options['valueField']], $checked, $name, $options['sep'], $disabled),
-              $indicia_templates['check_or_radio_group_item']
+          $item = array_merge(
+            $options, 
+            $item, 
+            array(
+              'disabled' => isset($options['disabled']) ?  $options['disabled'] : '',
+              'checked' => ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '',
+              'type' => $type,
+              'caption' => $item[$options['captionField']],
+              'value' => $item[$options['valueField']]
+            )
           );
+          $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
         }
       }
     }
     $options['items']=$items;
-    return self::apply_template('check_or_radio_group', $options);
+    return self::apply_template($options['template'], $options);
   }
-
-  /**
-  * Generates a map control, with optional data entry fields and location finder powered by the
-  * Yahoo! geoservices API. This is just a shortcut to building a control using a map_panel and the
-  * associated controls.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>presetLayers</b><br/>
-  * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
-  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth', 'multimap_default', 'multimap_landranger'</li>
-  * <li><b>edit</b><br/>
-  * True or false to include the edit controls for picking spatial references.</li>
-  * <li><b>locate</b><br/>
-  * True or false to include the geolocate controls.</li>
-  * <li><b>wkt</b><br/>
-  * Well Known Text of a spatial object to add to the map at startup.</li>
-  */
-  public static function map() {
-    $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
-    $options = array_merge(array(
-        'div'=>'map',
-        'presetLayers'=>array('multimap_landranger','google_physical','google_satellite'),
-        'edit'=>true,
-        'locate'=>true,
-        'wkt'=>null
-    ), $options);
-    $r = '';
-    if ($options['edit']) {
-      $r .= self::sref_and_system(array(
-          'label'=>lang::get('spatial ref'),
-      ));
-    }
-    if ($options['locate']) {
-      $r .= self::georeference_lookup(array(
-          'label'=>lang::get('search for place on map')
-      ));
-    }
-    $r .= self::map_panel(array('presetLayers' => $options['presetLayers'], 'initialFeatureWkt' => $options['wkt']));
-    return $r;
-  }
-
-/**
- * Outputs a map panel.
- * The map panel can be augmented by adding any of the following controls which automatically link themselves
- * to the map:
- * <ul>
- * <li>{@link sref_textbox()}</ul>
- * </ul>{@link sref_system_select()}</ul>
- * </ul>{@link sref_and_system()}</ul>
- * </ul>{@link georeference_lookup()}</ul>
- * </ul>{@link location_select()}</ul>
- * </ul>{@link location_autocomplete()}</li>
- * </ul>{@link postcode_textbox()}</li>
- * </ul>
- *
- * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
- * Has the following possible options:
- * <li><b>indiciaSvc</b><br/>
- * </li>
- * <li><b>indiciaGeoSvc</b><br/>
- * </li>
- * <li><b>readAuth</b><br/>
- * </li>
- * <li><b>height</b><br/>
- * </li>
- * <li><b>width</b><br/>
- * </li>
- * <li><b>initial_lat</b><br/>
- * </li>
- * <li><b>initial_long</b><br/>
- * </li>
- * <li><b>initial_zoom</b><br/>
- * </li>
- * <li><b>scroll_wheel_zoom</b><br/>
- * </li>
- * <li><b>proxy</b><br/>
- * </li>
- * <li><b>displayFormat</b><br/>
- * </li>
- * <li><b>presetLayers</b><br/>
- * </li>
- * <li><b>indiciaWMSLayers</b><br/>
- * </li>
- * <li><b>indiciaWFSLayers</b><br/>
- * </li>
- * <li><b>layers</b><br/>
- * </li>
- * <li><b>controls</b><br/>
- * </li>
- * <li><b>editLayer</b><br/>
- * </li>
- * <li><b>editLayerName</b><br/>
- * </li>
- * <li><b>initialFeatureWkt</b><br/>
- * </li>
- * <li><b>defaultSystem</b><br/>
- * </li>
- * <li><b>srefId</b><br/>
- * </li>
- * <li><b>srefSystemId</b><br/>
- * </li>
- * <li><b>geomId</b><br/>
- * </li>
- * <li><b>clickedSrefPrecisionMin</b><br/>
- * </li>
- * <li><b>clickedSrefPrecisionMax</b><br/>
- * </li>
- * <li><b>msgGeorefSelectPlace</b><br/>
- * </li>
- * <li><b>msgGeorefNothingFound</b><br/>
- * </li>
- * <li><b>projection</b><br/>
- * EPSG code of the required projection. Defaults to 900913. Note that if this is changed, most of the preset layers will not work as they
- * do not support reprojection. Ensure that all base layers available support the projection you define.
- * </li>
- */
-    public static function map_panel($options) {
-      if (!$options) {
-        return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
-      } else {
-        global $indicia_templates;
-        self::add_resource('indiciaMapPanel');
-        $options = array_merge(array(
-          'indiciaSvc'=>self::$base_url,
-          'indiciaGeoSvc'=>self::$geoserver_url,
-          'divId'=>'map',
-          'class'=>'',
-          'width'=>600,
-          'height'=>470,
-          'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
-        ), $options);
-
-        if (array_key_exists('readAuth', $options)) {
-          // Convert the readAuth into a query string so it can pass straight to the JS class.
-          $options['readAuth']=self::array_to_query_string($options['readAuth']);
-          str_replace('&', '&amp;', $options['readAuth']);
-        }
-
-        // Autogenerate the links to the various mapping libraries as required
-        if (array_key_exists('presetLayers', $options)) {
-          foreach ($options['presetLayers'] as $layer)
-          {
-            $a = explode('_', $layer);
-            $a = strtolower($a[0]);
-            switch($a)
-            {
-              case 'google':
-                self::add_resource('googlemaps');
-                break;
-              case 'multimap':
-                self::add_resource('multimap');
-                break;
-              case 'virtual':
-                self::add_resource('virtualearth');
-                break;
-            }
-          }
-        }
-        // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
-        // and controls, not the string class names.
-        $json_insert='';
-        if (array_key_exists('controls', $options)) {
-          $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
-          unset($options['controls']);
-        }
-        if (array_key_exists('layers', $options)) {
-          $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
-          unset($options['layers']);
-        }
-        $json=substr(json_encode($options), 0, -1).$json_insert.'}';
-        if (array_key_exists('projection', $options)) {
-          self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
-        }
-        self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-
-        $r = str_replace(
-              array('{divId}','{class}','{widthStyle}','{height}'),
-              array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
-              $indicia_templates['map_panel']
-          );
-        return $r;
-      }
-  }
-
- /**
-  * Creates a textbox for entry of a spatial reference.
-  * Also generates the hidden geom field required to properly post spatial data. The
-  * box is automatically linked to a map_panel if one is added to the page.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the spatial reference control.
-  */
-  public static function sref_textbox($options) {
-    // get the table and fieldname
-    $tokens=explode(':', $options['fieldname']);
-    // Merge the default parameters
-    $options = array_merge(array(
-        'srefField'=>'sample:entered_sref',
-        'systemfield'=>'sample:entered_sref_system',
-        'hiddenFields'=>true,
-        'id'=>'imp-sref',
-        'table'=>$tokens[0],
-        'default'=>self::check_default_value($options['fieldname']),
-        'defaultGeom'=>self::check_default_value($tokens[0].':geom')
-    ), $options);
-    $options = self::check_options($options);
-    $r = self::apply_template('sref_textbox', $options);
-    return $r;
-  }
-
- /**
-  * Outputs a drop down select control populated with a list of spatial reference systems
-  * for the user to select from.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to. Defaults to sample:entered_sref_system.</li>
-  * <li><b>id</b><br/>
-  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * <li><b>systems</b>
-  * Optional. List of spatial reference systems to display. Associative array with the key
-  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
-  * the description to display.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the spatial reference systems selection control.
-  */
-  public static function sref_system_select($options) {
-    global $indicia_templates;
-    $options = array_merge(array(
-        'fieldname'=>'sample:entered_sref_system',
-        'systems'=>array('OSGB'=>lang::get('british national grid'), '4326'=>lang::get('lat long 4326')),
-        'id'=>'imp-sref-system'
-    ), $options);
-    $options = self::check_options($options);
-    $opts = "";
-    foreach ($options['systems'] as $system=>$caption){
-      $selected = ($options['default'] == $system ? $indicia_templates['select_option_selected'] : '');
-      $opts .= str_replace(
-          array('{value}', '{caption}', '{selected}'),
-          array($system, $caption, $selected),
-          $indicia_templates['select_option']
-      );
-    }
-    $options['options'] = $opts;
-    return self::apply_template('select', $options);
-  }
-
- /**
-  * Outputs a spatial reference input box and a drop down select control populated with a list of
-  * spatial reference systems for the user to select from. If there is only 1 system available then
-  * the system drop down is ommitted since it is not required.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Required. Name of the database field that spatial reference will be posted to. Defaults to
-  * sample:entered_sref. The system field is automatically constructed from this.</li>
-  * <li><b>systems</b>
-  * Optional. List of spatial reference systems to display. Associative array with the key
-  * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
-  * the description to display.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the spatial reference and system selection control.
-  */
-  public static function sref_and_system($options) {
-    $options = array_merge(array(
-      'fieldname'=>'sample:entered_sref'
-    ), $options);
-    // Force no separate lines for the 2 controls
-    if (!array_key_exists('systems',$options) || count($options['systems'])!=1) {
-      $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
-    } else {
-      $srefOptions = $options;
-    }
-    $r = self::sref_textbox($srefOptions);
-    // tweak the options passed to the system selector
-    $options['fieldname']=$options['fieldname']."_system";
-    unset($options['label']);
-    if (array_key_exists('systems', $options) && count($options['systems']) == 1) {
-      // Hidden field for the system
-      $keys = array_keys($options['systems']);
-      $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
-    }
-    else {
-      $r .= self::sref_system_select($options);
-    }
-    return $r;
-  }
-
- /**
-  * Generates a text input control with a search button that looks up an entered place against a georeferencing
-  * web service. At this point in time only the Yahoo! GeoPlanet service is supported. The control is automatically
-  * linked to any map panel added to the page.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Optional. The name of the database field this control is bound to if any.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>georefPreferredArea</b><br/>
-  * Optional. Hint provided to the locality search service as to which area to look for the place name in. Any example usage of this
-  * would be to set it to the name of a region for a survey based in that region. Note that this is only a hint, and the search
-  * service may still return place names outside the region. Defaults to gb.</li>
-  * <li><b>georefCountry</b><br/>
-  * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
-  * <li><b>georefLang</b><br/>
-  * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the georeference lookup control.
-  */
-  public static function georeference_lookup($options) {
-    $options = self::check_options($options);
-    $options = array_merge(array(
-      'id' => 'imp-georef-search',
-      'georefPreferredArea' => 'gb',
-      'georefCountry' => 'United Kingdom',
-      'georefLang' => 'en-EN',
-      // Internationalise the labels here, because if we do this directly in the template setup code it is too early for any custom
-      // language files to be loaded.
-      'search' => lang::get('search'),
-      'close' => lang::get('close'),
-    ), $options);
-
-    self::$javascript .= "indicia_url='".self::$base_url."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea='".$options['georefPreferredArea']."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry='".$options['georefCountry']."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefLang='".$options['georefLang']."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey='".parent::$geoplanet_api_key."';\n";
-    return self::apply_template('georeference_lookup', $options);
-  }
-
- /**
-  * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
-  * added to the page. Although it is possible to set all the options of a normal select control, generally
-  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
-  * sample's location_id field so can normally also be left.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Optional. The name of the database field this control is bound to.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>extraParams</b><br/>
-  * Required. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the location select control.
-  */
-  public static function location_select($options) {
-    $options = self::check_options($options);
-    // Apply location type filter if specified.
-    if (array_key_exists('location_type_id', $options)) {
-      $options['extraParams'] += array('location_type_id' => $options['location_type_id']);
-    }
-    $options = array_merge(array(
-        'table'=>'location',
-        'fieldname'=>'sample:location_id',
-        'valueField'=>'id',
-        'captionField'=>'name',
-        'id'=>'imp-location'
-        ), $options);
-    return self::select($options);
-  }
-
-
- /**
-  * Outputs an autocomplete control that is dedicated to listing locations and which is bound to any map panel
-  * added to the page. Although it is possible to set all the options of a normal autocomplete, generally
-  * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
-  * sample's location_id field so can normally also be left.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>fieldname</b><br/>
-  * Optional. The name of the database field this control is bound to.</li>
-  * <li><b>default</b><br/>
-  * Optional. The default value to assign to the control. This is overridden when reloading a
-  * record with existing data for this control.</li>
-  * <li><b>class</b><br/>
-  * Optional. CSS class names to add to the control.</li>
-  * <li><b>extraParams</b><br/>
-  * Required. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
-  * <li><b>cachetimeout</b><br/>
-  * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
-  * after a request for data to the Indicia Warehouse before a new request will refetch the data,
-  * rather than use a locally stored (cached) copy of the previous request. This speeds things up
-  * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
-  * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
-  * </ul>
-  *
-  * @return string HTML to insert into the page for the location select control.
-  */
-  public static function location_autocomplete($options) {
-    $options = self::check_options($options);
-    $options = array_merge(array(
-        'table'=>'location',
-        'fieldname'=>'sample:location_id',
-        'valueField'=>'id',
-        'captionField'=>'name',
-        'id'=>'imp-location'
-        ), $options);
-
-    return self::autocomplete($options);
-  }
-
 
  /**
   * Helper method to enable the support for tabbed interfaces for a div. The jQuery documentation
@@ -2276,58 +2402,6 @@ if (errors.length>0) {
     }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);
-  }
-
-  /**
-  * Insert a button which, when clicked, displays the next tab. Insert this inside the tab divs
-  * on each tab you want to have a next button, excluding the last tab.
-  *
-  * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>divId</b><br/>
-  * The id of the div which is tabbed and whose next tab should be selected.</li>
-  * <li><b>caption</b><br/>
-  * Optional. The untranslated caption of the button. Defaults to next step.</li>
-  * <li><b>class</b><br/>
-  * Optional. Additional classes to add to the div containing the buttons. Use left, right or
-  * centre to position the div, making sure the containing element is either floated, or has
-  * overflow: auto applied to its style. Default is right.
-  *
-  * @link http://docs.jquery.com/UI/Tabs
-  */
-  public static function wizard_buttons($options=array()) {
-    // Default captions
-    $options = array_merge(array(
-      'captionNext' => 'next step',
-      'captionPrev' => 'prev step',
-      'captionSave' => 'save',
-      'buttonClass' => 'ui-widget-content ui-state-default ui-corner-all indicia-button',
-      'class'       => 'right',
-      'page'        => 'middle',
-      'suffixTemplate' => 'nosuffix'
-    ), $options);
-    $options['class'] .= ' buttons';
-    // localise the captions
-    $options['captionNext'] = lang::get($options['captionNext']);
-    $options['captionPrev'] = lang::get($options['captionPrev']);
-    $options['captionSave'] = lang::get($options['captionSave']);
-    // Output the buttons
-    $r = '<div class="'.$options['class'].'">';
-    $buttonClass=$options['buttonClass'];
-    if (array_key_exists('divId', $options)) {
-      if ($options['page']!='first') {
-        $options['class']=$buttonClass." tab-prev";
-        $r .= self::apply_template('tab_prev_button', $options);
-      }
-      if ($options['page']!='last') {
-        $options['class']=$buttonClass." tab-next";
-        $r .= self::apply_template('tab_next_button', $options);
-      } else {
-        $options['class']=$buttonClass;
-        $r .= self::apply_template('submit_button', $options);
-      }
-    }
-    $r .= '</div>';
-    return $r;
   }
 
   /* Insert a button which, when clicked, displays the previous tab. Insert this inside the tab divs
