@@ -428,7 +428,7 @@ locStyleMap = new OpenLayers.StyleMap({
                 \"default\": new OpenLayers.Style({
                     fillColor: \"Green\",
                     strokeColor: \"Black\",
-                    fillOpacity: 0.3,
+                    fillOpacity: 0.2,
                     strokeWidth: 1
                   })
   });
@@ -1013,6 +1013,10 @@ locationChange = function(obj){
         {
           if(data[i].centroid_geom){
             ".self::readBoundaryJs('data[i].centroid_geom', $args['map_projection'])."
+            feature.style = {label: data[i].name,
+						     strokeColor: \"Green\",
+                             strokeWidth: 2,
+                             fillOpacity: 0};
             centre = feature.geometry.getCentroid();
             centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name});
             locationLayer.addFeatures([feature, centrefeature]);

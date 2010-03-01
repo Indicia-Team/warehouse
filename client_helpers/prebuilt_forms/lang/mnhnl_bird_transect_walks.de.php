@@ -34,7 +34,7 @@ $custom_terms = array(
 	'LANG_Allocate_Locations' => 'Allocate Locations',
 	'LANG_Transect' => 'Transekt',
 	'LANG_Date' => 'Datum',
-	'LANG_Visit_No' => 'Begehungsnummer',
+	'LANG_Visit_No' => 'Begehung No',
 	'LANG_Num_Occurrences' => '# Feststellungen',
 	'LANG_Num_Species' => '# Arten',
 	'LANG_Show' => 'Anzeigen',
@@ -56,7 +56,7 @@ $custom_terms = array(
 	'LANG_Click_on_map' => 'Auf Karte klicken um Koordinaten festzulegen',
 	'LANG_Comment' => 'Kommentar',
 	'LANG_Save_Occurrence_Details' => 'Feststellung speichern',
-	'LANG_Territorial' => 'Revieranzeigend',
+	'LANG_Territorial' => 'Revieranz.',
 	'LANG_Count' => 'Anzahl',
 	'LANG_Highlight' => 'Hervorheben',
 	'LANG_Download' => 'Reports and Downloads',
@@ -75,13 +75,6 @@ $custom_terms = array(
 	'LANG_Return' => 'Zurück zum Haupterfassungsschirm',
 	'validation_required' => 'Bitte einen Wert für dieses Feld eingeben',
 
-
-	// Can also add entries for 'Yes' and 'No' for the boolean attributes,
-	//   and one for each of the attribute captions. As these are in English
-	//   they are omitted from this file. Note these do not have LANG_ prefixes.
-
-
-
 	'Atlas Code' => 'Brutstatus',
 	'Approximation?' => 'Schätzung?',
 	'Overflying' => 'Überfliegend',
@@ -93,14 +86,13 @@ $custom_terms = array(
 	'No' => 'Nein',
 	'validation_required' => 'Bitte einen Wert für dieses Feld eingeben',
 	'Precipitation' => 'Niederschlag',
-	'Reliability of this data' => 'Eigene Einschätzung der Daten',
+	'Reliability of this data' => 'Einschätzung dieser Daten',
 	'Start Time' => 'Startzeit',
 	'Temperature (Celsius)' => 'Temperatur (Celsius)',
 	'Territorial' => 'Revieranzeigend',
-	'Visit number in year' => 'Begehungsnummer',
+	'Visit number in year' => 'Begehung',
 	'Walk started at end' => 'Wegverlauf',
 	'Wind Force' => 'Windstärke',
 	'Yes' => 'Ja'
-
 
 );
