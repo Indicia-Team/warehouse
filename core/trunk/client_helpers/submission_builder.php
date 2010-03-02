@@ -217,28 +217,25 @@ class submission_builder extends helper_config {
     }
     // Does it have an image?
     $names = self::handle_media("$modelName:image");
-    if (is_array($names)) {
-      foreach ($names as $name)
-      {
-        // Add image model for a detail table record to be created.
-        // TODO Get a caption for the image
-        $oiFields = array(
-            'path' => $name,
-            'caption' => 'Default caption'
-        );
-        $oiMod = self::wrap($oiFields, $modelName.'_image');
-        $modelWrapped['subModels'][] = array(
-            'fkId' => 'occurrence_id',
-            'model' => $oiMod
-        );
-      }
+    foreach ($names as $name) {
+      // Add image model for a detail table record to be created.
+      // TODO Get a caption for the image
+      $oiFields = array(
+          'path' => $name,
+          'caption' => 'Default caption'
+      );
+      $oiMod = self::wrap($oiFields, $modelName.'_image');
+      $modelWrapped['subModels'][] = array(
+          'fkId' => 'occurrence_id',
+          'model' => $oiMod
+      );
     }
-
-    //Jim would like an explanation of when the elseif below is used
-    else if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
+ 
+    // Alternate action if upload is happening on the warehouse.
+    if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
       // link image path attribute direct to record.
-      $names = self::handle_media("$modelName:image", false);
-      if (is_array($names)) {
+      $names = self::handle_media('image_upload', false);
+      if (count($names) != 0) {
         $modelWrapped['fields']['path'] = array('value'=>$names[0]);
       }
     }
@@ -260,25 +257,8 @@ class submission_builder extends helper_config {
    */
   public static function handle_media($media_id, $submit=true) {
 
-    if (array_key_exists($media_id, $_FILES)) {
-      //there is a single media file
-      $files[] = $_FILES[$media_id];
-    }
-    elseif (array_key_exists($media_id .':0', $_FILES)) {
-      //there are multiple media files
-      $i = 0;
-      $key = $media_id .':'. $i;
-      do {
-        $files[] = $_FILES[$key];
-        $i++;
-        $key = $media_id .':'. $i;
-      } while (array_key_exists($key, $_FILES));
-    }
-    else {
-      //there are no media files
-      return false;
-    }
-
+    $files = self::get_uploaded_files($media_id);
+    $return = array();
     $uploadpath = parent::$upload_path;
     $target_url = parent::$base_url."/index.php/services/data/handle_media";
 
@@ -287,11 +267,11 @@ class submission_builder extends helper_config {
       $fname = $file['tmp_name'];
       $parts = explode(".",$name);
       $fext = array_pop($parts);
-      //$bname = basename($fname, ".$fext");
       // Generate a file id to store the image as
       $destination = time().rand(0,1000).".".$fext;
 
       if (move_uploaded_file($fname, $uploadpath.$destination)) {
+        //successfully stored locally
         if ($submit) {
           //send to the warehouse
           $postargs = array();
@@ -313,11 +293,49 @@ class submission_builder extends helper_config {
       else {
         //move_uploaded_file failed
         //TODO error messaging
-        return false;
       }      
     }
     //finished looping through files
     return $return;
+  }
+
+  /**
+   * Interprets the $_FILES information and returns an array of files uploaded
+   * @param String $media_id Base name of the file entry in the $_FILES array e.g. occurrence:image.
+   * Multiple upload fields can exist on a form if they have a suffix 0f :0, :1 ... :n
+   * @access private
+   * @return Array of file details of the uploaded files.
+   */
+  private static function get_uploaded_files($media_id) {
+
+    $files = array();
+
+    if (array_key_exists($media_id, $_FILES)) {
+      //there is a single upload field
+      if($_FILES[$media_id]['name'] != '') {
+        //that field has a file
+        $files[] = $_FILES[$media_id];
+      }
+    }
+    elseif (array_key_exists($media_id .':0', $_FILES)) {
+      //there are multiple upload fields
+      $i = 0;
+      $key = $media_id .':'. $i;
+      do {
+        //loop through those fields
+        if($_FILES[$key]['name'] != '') {
+          //the field has a file
+          $files[] = $_FILES[$key];
+        }
+        $i++;
+        $key = $media_id .':'. $i;
+      } while (array_key_exists($key, $_FILES));
+    }
+    else {
+      //there are no upload fields so an empty array is returned
+    }
+
+    return $files;
   }
 
   /**
