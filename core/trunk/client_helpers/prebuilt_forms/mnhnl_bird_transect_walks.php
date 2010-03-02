@@ -264,7 +264,7 @@ class iform_mnhnl_bird_transect_walks {
    * Return the generated form output.
    * @return Form HTML.
    */
-  public static function get_form($args, $node) {
+  public static function get_form($args, $node, $response=null) {
     global $user;
     $logged_in = $user->uid>0;
     $r = '';
@@ -313,10 +313,15 @@ class iform_mnhnl_bird_transect_walks {
       if(array_key_exists('website_id', $_POST)) { // Indicia POST, already handled.
       if (array_key_exists('newSample', $_GET)){
         if(!is_null(data_entry_helper::$entity_to_load)){
-        $mode = 1; // errors with new sample, entity poulated with post, so display this data.
-        $parentSample = data_entry_helper::$entity_to_load;
-        $parentErrors = $saveErrors;
-        } // else new sample, we don't have the id, so need to go back to gridview: default mode 0
+          $mode = 1; // errors with new sample, entity poulated with post, so display this data.
+          $parentSample = data_entry_helper::$entity_to_load;
+          $parentErrors = $saveErrors;
+        } else {
+          // else new sample just saved
+          $mode = 2;
+          $parentLoadID = $response['outer_id'];
+        }
+
     } else {
       // could have saved parent sample or child sample/occurrence pair.
       if (array_key_exists('sample:parent_id', $_POST)){ // have saved child sample/occurrence pair
