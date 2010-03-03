@@ -21,6 +21,7 @@
  */
 
 require_once('includes/language_utils.php');
+require_once('includes/user.php');
 
 /**
  * Prebuilt Indicia data entry form.
@@ -57,7 +58,8 @@ class iform_mnhnl_bird_transect_walks {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {
-    return array(
+    return array_merge(
+      iform_user_get_user_parameters(), array(
       array(
         'name'=>'survey_id',
         'caption'=>'Survey ID',
@@ -131,70 +133,70 @@ class iform_mnhnl_bird_transect_walks {
         'name'=>'sample_walk_direction_id',
         'caption'=>'Sample Walk Direction Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Walk Direction.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_reliability_id',
         'caption'=>'Sample Data Reliability Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Data Reliability.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_visit_number_id',
         'caption'=>'Sample Visit Number Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Visit Number.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_wind_id',
         'caption'=>'Sample Wind Force Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Wind Force.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_precipitation_id',
         'caption'=>'Sample Precipitation Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Precipitation.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_temperature_id',
         'caption'=>'Sample Temperature Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Temperature.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_cloud_id',
         'caption'=>'Sample Cloud Cover Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Cloud Cover.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_start_time_id',
         'caption'=>'Sample Start Time Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the Start Time.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_end_time_id',
         'caption'=>'Sample End Time Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for the End Time.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'sample_closure_id',
         'caption'=>'Sample Closed Custom Attribute ID',
         'description'=>'The Indicia ID for the Sample Custom Attribute for Closure: this is used to determine whether the sample is editable.',
-        'group'=>'Sample Attribute IDs',
+        'group'=>'Sample Attributes',
         'type'=>'int'
       ),
       array(
@@ -207,45 +209,45 @@ class iform_mnhnl_bird_transect_walks {
         'name'=>'occurrence_confidence_id',
         'caption'=>'Occurrence Confidence Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for the Data Confidence.',
-        'group'=>'Occurrence Attribute IDs',
+        'group'=>'Occurrence Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'occurrence_count_id',
         'caption'=>'Occurrence Count Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for the Count of the particular species.',
-        'group'=>'Occurrence Attribute IDs',
+        'group'=>'Occurrence Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'occurrence_approximation_id',
         'caption'=>'Occurrence Approximation Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for whether the count is approximate.',
-        'group'=>'Occurrence Attribute IDs',
+        'group'=>'Occurrence Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'occurrence_territorial_id',
         'caption'=>'Occurrence Territorial Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for [TODO].',
-        'group'=>'Occurrence Attribute IDs',
+        'group'=>'Occurrence Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'occurrence_atlas_code_id',
         'caption'=>'Occurrence Atlas Code Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for [TODO].',
-        'group'=>'Occurrence Attribute IDs',
+        'group'=>'Occurrence Attributes',
         'type'=>'int'
       ),
       array(
         'name'=>'occurrence_overflying_id',
         'caption'=>'Occurrence Overflying Custom Attribute ID',
         'description'=>'The Indicia ID for the Occurrence Custom Attribute for [TODO].',
-        'group'=>'Occurrence Attribute IDs',
+        'group'=>'Occurrence Attributes',
         'type'=>'int'
       )
-    );
+    ));
   }
 
   /**
@@ -260,7 +262,7 @@ class iform_mnhnl_bird_transect_walks {
     return array('IForm node '.$nid.' admin');
   }
 
-/**
+  /**
    * Return the generated form output.
    * @return Form HTML.
    */
@@ -272,9 +274,9 @@ class iform_mnhnl_bird_transect_walks {
     // Get authorisation tokens to update and read from the Warehouse.
     $writeAuth = data_entry_helper::get_auth($args['website_id'], $args['password']);
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-  $svcUrl = data_entry_helper::$base_url.'/index.php/services';
+    $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
-  $presetLayers = array();
+    $presetLayers = array();
     // read out the activated preset layers
     if(isset($args['preset_layers'])) {
       foreach($args['preset_layers'] as $layer => $active) {
@@ -311,42 +313,40 @@ class iform_mnhnl_bird_transect_walks {
                 // careful with selection object, as geom in wrong format.
     if ($_POST) {
       if(array_key_exists('website_id', $_POST)) { // Indicia POST, already handled.
-      if (array_key_exists('newSample', $_GET)){
-        if(!is_null(data_entry_helper::$entity_to_load)){
-          $mode = 1; // errors with new sample, entity poulated with post, so display this data.
-          $parentSample = data_entry_helper::$entity_to_load;
-          $parentErrors = $saveErrors;
-        } else {
-          // else new sample just saved
-          $mode = 2;
-          $parentLoadID = $response['outer_id'];
-        }
-
-    } else {
-      // could have saved parent sample or child sample/occurrence pair.
-      if (array_key_exists('sample:parent_id', $_POST)){ // have saved child sample/occurrence pair
-        $parentLoadID = $_POST['sample:parent_id']; // load the parent sample.
-        $mode = 3;
-        if(isset(data_entry_helper::$entity_to_load)){ // errors so display Edit Occurrence page.
-          $childSample = data_entry_helper::$entity_to_load;
-          $childErrors = $saveErrors;
-          $displayThisOcc = false;
-          if($childSample['occurrence:id']){
-            $thisOccID=$childSample['occurrence:id'];
+        if (array_key_exists('newSample', $_GET)){
+          if(!is_null(data_entry_helper::$entity_to_load)){
+            $mode = 1; // errors with new sample, entity populated with post, so display this data.
+            $parentSample = data_entry_helper::$entity_to_load;
+            $parentErrors = $saveErrors;
+          } else {
+            // else new sample just saved, so reload it ready to add occurrences
+            // OR, child sample/occurrence saved against new parent sample, in which case parent sample is in the post.
+            $mode = 2;
+            $parentLoadID = array_key_exists('sample:parent_id', $_POST) ? $_POST['sample:parent_id'] : $response['outer_id'];
           }
-//    			} else {
-//					$mode = 4; //display occurrence list
-          }
-      } else { // saved parent record. display updated parent, no child.
-        $mode=2; // display parent sample details, whether errors or not.
-        if(isset(data_entry_helper::$entity_to_load)){ // errors so use posted data.
-          $parentSample = data_entry_helper::$entity_to_load;
-          $parentErrors = $saveErrors;
         } else {
-          $parentLoadID = $_POST['sample:id']; // load the parent sample.
+          // could have saved parent sample or child sample/occurrence pair.
+          if (array_key_exists('sample:parent_id', $_POST)){ // have saved child sample/occurrence pair
+            $parentLoadID = $_POST['sample:parent_id']; // load the parent sample.
+            $mode = 3;
+            if(isset(data_entry_helper::$entity_to_load)){ // errors so display Edit Occurrence page.
+              $childSample = data_entry_helper::$entity_to_load;
+              $childErrors = $saveErrors;
+              $displayThisOcc = false;
+              if($childSample['occurrence:id']){
+                $thisOccID=$childSample['occurrence:id'];
+              }
+            }
+          } else { // saved parent record. display updated parent, no child.
+            $mode=2; // display parent sample details, whether errors or not.
+            if(isset(data_entry_helper::$entity_to_load)){ // errors so use posted data.
+              $parentSample = data_entry_helper::$entity_to_load;
+              $parentErrors = $saveErrors;
+            } else {
+              $parentLoadID = $_POST['sample:id']; // load the parent sample.
+            }
+          }
         }
-      }
-    }
       } else { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
         if(iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnlbtw', $_POST)){
           iform_loctools_deletelocations($node);
@@ -362,13 +362,13 @@ class iform_mnhnl_bird_transect_walks {
       if (array_key_exists('sample_id', $_GET)){
         $mode = 2;
         $parentLoadID = $_GET['sample_id'];
-    } else if (array_key_exists('occurrence_id', $_GET)){
-      $mode = 3;
+      } else if (array_key_exists('occurrence_id', $_GET)){
+        $mode = 3;
         $childLoadID = $_GET['occurrence_id'];
         $thisOccID = $childLoadID;
-    } else if (array_key_exists('newSample', $_GET)){
-      $mode = 1;
-    } // else default to mode 0
+      } else if (array_key_exists('newSample', $_GET)){
+        $mode = 1;
+      } // else default to mode 0
     }
 
     // define layers for all maps.
@@ -450,31 +450,31 @@ occStyleMap = new OpenLayers.StyleMap({
 occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_Layer")."\",
                                     {styleMap: occStyleMap});
 ";
-  // Work out list of locations this user can see.
-  $locations = iform_loctools_listlocations($node);
+    // Work out list of locations this user can see.
+    $locations = iform_loctools_listlocations($node);
     ///////////////////////////////////////////////////////////////////
     // default mode 0 : display survey selector and locations allocator
     ///////////////////////////////////////////////////////////////////
     if($mode == 0){
 
-    // If the user has permissions, add tabs so can choose to see
-    // locations allocator
-    $tabs = array('#surveyList'=>lang::get('LANG_Surveys'));
-    if(iform_loctools_checkaccess($node,'admin')){
-      $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
-    }
-    if(iform_loctools_checkaccess($node,'superuser')){
-      $tabs['#downloads'] = lang::get('LANG_Download');
-    }
-    if(count($tabs) > 1){
+      // If the user has permissions, add tabs so can choose to see
+      // locations allocator
+      $tabs = array('#surveyList'=>lang::get('LANG_Surveys'));
+      if(iform_loctools_checkaccess($node,'admin')){
+        $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
+      }
+      if(iform_loctools_checkaccess($node,'superuser')){
+        $tabs['#downloads'] = lang::get('LANG_Download');
+      }
+      if(count($tabs) > 1){
         $r .= "<div id=\"controls\">\n";
-      $r .= data_entry_helper::enable_tabs(array(
+        $r .= data_entry_helper::enable_tabs(array(
               'divId'=>'controls',
-            'active'=>'#surveyList'
+              'active'=>'#surveyList'
         ));
-         $r .= "<div id=\"temp\"></div>";
-         $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
-    }
+        $r .= "<div id=\"temp\"></div>";
+        $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
+      }
 
 
     if($locations == 'all'){
@@ -637,7 +637,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     }
     ///////////////////////////////////////////////////////////////////
 
-  $occReadOnly = false;
+    $occReadOnly = false;
     if($childLoadID){
       $url = $svcUrl.'/data/occurrence/'.$childLoadID;
       $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
@@ -661,8 +661,8 @@ $('#controls').bind('tabsshow', function(event, ui) {
       }
       $childSample['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
       $thisOccID = $childLoadID; // this will be used to load the occurrence into the editlayer.
-    $childSample['taxon']=$childSample['occurrence:taxon'];
-    $parentLoadID=$childSample['sample:parent_id'];
+      $childSample['taxon']=$childSample['occurrence:taxon'];
+      $parentLoadID=$childSample['sample:parent_id'];
     }
     if($parentLoadID){
       $url = $svcUrl.'/data/sample/'.$parentLoadID;
@@ -677,7 +677,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       if(is_array($locations) && !in_array($entity[0]["location_id"], $locations)){
       return '<p>'.lang::get('LANG_No_Access_To_Location').'</p>';
     }
-      if($entity[0]["parent_id"]){
+    if($entity[0]["parent_id"]){
       return '<p>'.lang::get('LANG_No_Access_To_Sample').'</p>';
     }
     $parentSample['sample:date'] = $parentSample['sample:date_start']; // bit of a bodge
@@ -712,7 +712,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     data_entry_helper::enable_validation('SurveyForm');
     $r .= "<div id=\"controls\">\n";
     $activeTab = 'survey';
-    if($mode == 3){
+    if($mode == 3 || $mode == 2){
       $activeTab = 'occurrence';
     }
 
@@ -739,6 +739,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
     $r .= $writeAuth;
     $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
+    $r .= iform_user_get_hidden_inputs($args);
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
       $r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";
     }
@@ -929,7 +930,6 @@ $('#controls').bind('tabsshow', function(event, ui) {
 setAtlasStatus = function() {
   if (jQuery(\"input[name='".$escaped_terr_id."']:checked\").val() == '0') {
       jQuery('#".$escaped_atlas_id."').val('');
-      jQuery('#".$escaped_atlas_id."').attr('disabled','disabled');
   } else {
       if(jQuery('#".$escaped_atlas_id."').val() == '') {
         // Find the BB02 option (depends on the language what val it has)
@@ -942,7 +942,6 @@ setAtlasStatus = function() {
         });
         jQuery('#".$escaped_atlas_id."').val(bb02);
       }
-      jQuery('#".$escaped_atlas_id."').attr('disabled','');
   }
 };
 setAtlasStatus();
@@ -1159,7 +1158,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
     return $r;
   }
 
-    /**
+  /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values.
    * @param array $args iform parameters.
