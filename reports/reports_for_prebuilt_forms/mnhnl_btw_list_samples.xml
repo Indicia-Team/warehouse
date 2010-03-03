@@ -9,7 +9,11 @@
   		s.date_end,
   		s.date_type,
   		tvisit.term as num_visit,
-  		(select count(*) as num_occurrences from samples cs where cs.parent_id = s.id and cs.deleted = FALSE) as num_occurrences,
+  		(select  count(distinct o.id) as num_taxa
+  			 from  samples cs, occurrences o, taxa_taxon_lists ttl
+  			where cs.parent_id = s.id and cs.deleted = FALSE
+  				AND o.sample_id = cs.id and o.deleted = FALSE
+  				AND ttl.id=o.taxa_taxon_list_id and ttl.deleted = FALSE) as num_occurrences,
   		(select count(distinct ttl.taxon_meaning_id) as num_taxa
   			from samples cs, occurrences o, taxa_taxon_lists ttl
   			where cs.parent_id = s.id and cs.deleted = FALSE
