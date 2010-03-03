@@ -4,7 +4,7 @@ $lang = array (
   'address' => Array (
     'length' => 'The address must be a maximum of 200 characters in length.',
     'default' => 'Invalid Input.',
-  ),  
+  ),
   'caption' => Array (
     'required' => 'The caption cannot be blank.',
   ),
@@ -24,11 +24,11 @@ $lang = array (
   'date_type' => Array (
     'required' => 'Please supply a date for your observation.',
     'default' => 'Unrecognised vague date type',
-  ),  
+  ),
   'deleted' => Array (
     'has_terms' => 'There are terms belonging to this list.',
     'has_taxa' => 'There are species belonging to this list.',
-  ),  
+  ),
   'description' => Array (
     'standard_text' => 'Only standard characters are allowed.',
     'default' => 'Invalid Input.',
@@ -36,7 +36,7 @@ $lang = array (
   'determiner_id' => Array (
     'required' => 'The determiner cannot be blank.',
     'default' => 'Invalid Input.',
-  ),  
+  ),
   'email_address' => Array (
     'required' => 'The email address cannot be blank.',
     'email' => 'This must be a valid email address.',
@@ -50,11 +50,14 @@ $lang = array (
   ),
   'entered_sref_system' => Array (
     'sref_system' => 'The spatial reference system is not a valid EPSG or notation code.',
-  ),  
+  ),
   'first_name' => Array (
     'required' => 'The first name cannot be blank.',
     'length' => 'The first name must be between 1 and 30 letters.',
     'default' => 'Invalid Input.',
+  ),
+  'float_value' => Array (
+    'default' => 'This must be a valid number.'
   ),
   'geom' => array (
     'required' => 'The spatial reference must be supplied.',
@@ -126,7 +129,7 @@ $lang = array (
     'standard_text' => 'Only standard characters are allowed.',
     'length' => 'The title supplied is too long.', // note that the title name is used for fields which are of different max lengths, so can't be more specific
     'default' => 'Invalid Input.',
-  ),  
+  ),
   'url' => Array (
     'required' => 'The website URL cannot be blank.',
     'url' => 'This must be a valid URL including the http:// prefix.',
