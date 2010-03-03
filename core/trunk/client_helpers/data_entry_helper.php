@@ -857,7 +857,6 @@ class data_entry_helper extends helper_config {
       return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
     } else {
       global $indicia_templates;
-      self::add_resource('indiciaMapPanel');
       $options = array_merge(array(
           'indiciaSvc'=>self::$base_url,
           'indiciaGeoSvc'=>self::$geoserver_url,
@@ -894,6 +893,10 @@ class data_entry_helper extends helper_config {
           }
         }
       }
+
+      // This resource has a dependency on the googlemaps resource so has to be added afterwards.
+      self::add_resource('indiciaMapPanel');
+
       // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
       // and controls, not the string class names.
       $json_insert='';
