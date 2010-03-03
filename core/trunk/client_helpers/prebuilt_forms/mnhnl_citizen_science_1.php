@@ -21,23 +21,25 @@
  */
 
 require_once('includes/map.php');
+require_once('includes/user.php');
 
 /**
  * Prebuilt Indicia data entry form that presents taxon search box, date control, map picker,
  * survey selector and comment entry controls.
- * 
+ *
  * @package	Client
  * @subpackage PrebuiltForms
  */
 class iform_mnhnl_citizen_science_1 {
-  
+
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
    */
-  public static function get_parameters() {   
+  public static function get_parameters() {
     return array_merge(
-      iform_map_get_map_parameters(), 
+      iform_map_get_map_parameters(),
+      iform_user_get_user_parameters(),
       array(
         array(
           'name'=>'interface',
@@ -51,7 +53,7 @@ class iform_mnhnl_citizen_science_1 {
             'one_page' => 'All One Page'
           ),
           'group' => 'User Interface'
-        ),      
+        ),
         array(
         	'name'=>'species_ctrl',
           'caption'=>'Species Control Type',
@@ -75,7 +77,7 @@ class iform_mnhnl_citizen_science_1 {
           'options' => array(
             'select' => 'Select',
             'listbox' => 'List box',
-            'radio_group' => 'Radio group'          
+            'radio_group' => 'Radio group'
           ),
           'group'=>'User Interface'
         ),
@@ -99,109 +101,88 @@ class iform_mnhnl_citizen_science_1 {
           'description'=>'The Indicia ID for the survey that data is saved into.',
           'type'=>'int',
           'group'=>'Misc'
-        ),      
-        array(
-          'name'=>'uid_attr_id',
-          'caption'=>'User ID Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the CMS User ID.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(      
-          'name'=>'username_attr_id',
-          'caption'=>'Username Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the user\'s username.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
-          'name'=>'email_attr_id',
-          'caption'=>'Email Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the user\'s email.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
         ),
         array(
           'name'=>'first_name_attr_id',
-          'caption'=>'First Name Attribute ID',      
+          'caption'=>'First Name Attribute ID',
           'description'=>'Indicia ID for the sample attribute that stores the user\'s first name.',
           'type'=>'smpAttr',
           'group'=>'Sample Attributes'
         ),
         array(
           'name'=>'surname_attr_id',
-          'caption'=>'Surname Attribute ID',      
+          'caption'=>'Surname Attribute ID',
           'description'=>'Indicia ID for the sample attribute that stores the user\'s surname.',
           'type'=>'smpAttr',
           'group'=>'Sample Attributes'
         ),
         array(
           'name'=>'phone_attr_id',
-          'caption'=>'Phone Attribute ID',      
+          'caption'=>'Phone Attribute ID',
           'description'=>'Indicia ID for the sample attribute that stores the user\'s phone.',
           'type'=>'smpAttr',
           'group'=>'Sample Attributes'
         ),
         array(
           'name'=>'contact_attr_id',
-          'caption'=>'Contactable Attribute ID',      
+          'caption'=>'Contactable Attribute ID',
           'description'=>'Indicia ID for the sample attribute that if the user has opted in for being contacted regarding this record.',
           'type'=>'smpAttr',
           'group'=>'Sample Attributes'
         ),
         array(
           'name'=>'abundance_attr_id',
-          'caption'=>'Abundance Attribute ID',      
+          'caption'=>'Abundance Attribute ID',
           'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
           'type'=>'occAttr',
           'group'=>'Occurrence Attributes'
         ),
         array(
           'name'=>'abundance_termlist_id',
-          'caption'=>'Abundance Termlist ID',      
+          'caption'=>'Abundance Termlist ID',
           'description'=>'Indicia ID for the termlist that contains the options to select from when specifying the approximate abundance.',
           'type'=>'termlist',
           'group'=>'Termlists'
         ),
         array(
           'name'=>'map_layers',
-          'caption'=>'Available Map Layers',      
-          'description'=>'List of available map background layers, comma separated. Options are '. 
+          'caption'=>'Available Map Layers',
+          'description'=>'List of available map background layers, comma separated. Options are '.
               'openlayers_wms, nasa_mosaic, virtual_earth, multimap_default, multimap_landranger, google_physical, google_streets, google_hybrid or google_satellite.',
           'type'=>'string',
           'group'=>'Map'
         ),
         array(
           'name'=>'map_centroid_lat',
-          'caption'=>'Centre of Map Latitude',      
+          'caption'=>'Centre of Map Latitude',
           'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
           'type'=>'string',
           'group'=>'Map'
         ),
         array(
           'name'=>'map_centroid_long',
-          'caption'=>'Centre of Map Longitude',      
+          'caption'=>'Centre of Map Longitude',
           'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
           'type'=>'string',
           'group'=>'Map'
         ),
         array(
           'name'=>'map_zoom',
-          'caption'=>'Map Zoom Level',      
+          'caption'=>'Map Zoom Level',
           'description'=>'Zoom level of the initially displayed map.',
           'type'=>'int',
           'group'=>'Map'
         ),
         array(
           'name'=>'spatial_systems',
-          'caption'=>'Allowed Spatial Ref Systems',      
+          'caption'=>'Allowed Spatial Ref Systems',
           'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
           'type'=>'string',
           'group'=>'Map'
         ),
         array(
           'name'=>'georefPreferredArea',
-          'caption'=>'Preferred area for georeferencing.',      
+          'caption'=>'Preferred area for georeferencing.',
           'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
           'type'=>'string',
           'default'=>'gb',
@@ -209,7 +190,7 @@ class iform_mnhnl_citizen_science_1 {
         ),
         array(
           'name'=>'georefCountry',
-          'caption'=>'Preferred country for georeferencing.',      
+          'caption'=>'Preferred country for georeferencing.',
           'description'=>'Preferred country to look within when trying to resolve a place name.',
           'type'=>'string',
           'default'=>'United Kingdom',
@@ -218,24 +199,24 @@ class iform_mnhnl_citizen_science_1 {
       )
     );
   }
-  
-  /** 
+
+  /**
    * Return the form title.
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'MNHNL Citizen Science 1 - form designed for citizen science projects.';  
+    return 'MNHNL Citizen Science 1 - form designed for citizen science projects.';
   }
-  
+
   /**
    * Return the generated form output.
    * @return Form HTML.
    */
   public static function get_form($args) {
     global $user;
-    $logged_in = $user->uid>0;    
-    
-    $r = "<form method=\"post\" id=\"entry_form\">\n";        
+    $logged_in = $user->uid>0;
+
+    $r = "<form method=\"post\" id=\"entry_form\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
     $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
@@ -247,32 +228,24 @@ class iform_mnhnl_citizen_science_1 {
 
     if ($logged_in) {
       // If logged in, output some hidden data about the user
-      $uid = $user->uid;
-      $email = $user->mail;
-      $username = $user->name;
-      $uid_attr_id = $args['uid_attr_id'];      
-      $email_attr_id = $args['email_attr_id'];
-      $username_attr_id = $args['username_attr_id'];      
-      $r .= "<input type=\"hidden\" name=\"smpAttr:$uid_attr_id\" value=\"$uid\" />\n";
-      $r .= "<input type=\"hidden\" name=\"smpAttr:$email_attr_id\" value=\"$email\" />\n";
-      $r .= "<input type=\"hidden\" name=\"smpAttr:$username_attr_id\" value=\"$username\" />\n";    
+      $r .= iform_user_get_hidden_inputs($args);
     }
     $r .= "<div id=\"controls\">\n";
-    
-    if ($args['interface']!='one_page') {    	
+
+    if ($args['interface']!='one_page') {
       $r .= "<ul>\n";
       if (!$logged_in) {
-        $r .= '  <li><a href="#about_you"><span>'.lang::get('about you')."</span></a></li>\n";      
+        $r .= '  <li><a href="#about_you"><span>'.lang::get('about you')."</span></a></li>\n";
       }
-      $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";      
+      $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";
       $r .= '  <li><a href="#place"><span>'.lang::get('where was it')."</span></a></li>\n";
       $r .= '  <li><a href="#other"><span>'.lang::get('other information')."</span></a></li>\n";
-      $r .= "</ul>\n";      
+      $r .= "</ul>\n";
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
           'style'=>$args['interface']
       ));
-    }   
+    }
     if ($user->uid==0) {
       $r .= "<div id=\"about_you\">\n";
       $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('about you tab instructions')."</p>";
@@ -280,17 +253,17 @@ class iform_mnhnl_citizen_science_1 {
         'label'=>lang::get('first name'),
         'fieldname'=>'smpAttr:'.$args['first_name_attr_id'],
         'class'=>'control-width-4'
-      ));  
+      ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('surname'),
         'fieldname'=>'smpAttr:'.$args['surname_attr_id'],
         'class'=>'control-width-4'
-      ));  
+      ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('email'),
         'fieldname'=>'smpAttr:'.$args['email_attr_id'],
         'class'=>'control-width-4'
-      )); 
+      ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('phone number'),
         'fieldname'=>'smpAttr:'.$args['phone_attr_id'],
@@ -300,9 +273,9 @@ class iform_mnhnl_citizen_science_1 {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
           'page'=>'first'
-        ));      
+        ));
       }
-      $r .= "</div>\n";      
+      $r .= "</div>\n";
     }
     $r .= "<div id=\"species\">\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('species tab instructions')."</p>";
@@ -328,14 +301,14 @@ class iform_mnhnl_citizen_science_1 {
     	    '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
     	    '<span>{caption}</span>';
     }
-    // Dynamically generate the species selection control required.        
+    // Dynamically generate the species selection control required.
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls',
-        'page'=>($user->id==0) ? 'first' : 'middle'        
+        'page'=>($user->id==0) ? 'first' : 'middle'
       ));
-    }    
+    }
     $r .= "</div>\n";
     $r .= "<div id=\"place\">\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('place tab instructions')."</p>";
@@ -344,7 +317,7 @@ class iform_mnhnl_citizen_science_1 {
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
-    }    
+    }
     $r .= data_entry_helper::sref_and_system(array(
       'label' => lang::get('sample:entered_sref'),
       'systems' => $systems
@@ -360,9 +333,9 @@ class iform_mnhnl_citizen_science_1 {
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls'
-      ));      
+      ));
     }
-    $r .= "</div>\n";    
+    $r .= "</div>\n";
     $r .= "<div id=\"other\">\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('other tab instructions')."</p>";
     $r .= data_entry_helper::date_picker(array(
@@ -378,9 +351,9 @@ class iform_mnhnl_citizen_science_1 {
       'valueField'=>'id',
       'extraParams'=>$readAuth + array('termlist_id' => $args['abundance_termlist_id']),
       'size'=>6, // for listboxes
-      'sep'=>'<br/>'      
-    ); 
-    $r .= call_user_func(array('data_entry_helper', $args['abundance_ctrl']), $abundance_args);    
+      'sep'=>'<br/>'
+    );
+    $r .= call_user_func(array('data_entry_helper', $args['abundance_ctrl']), $abundance_args);
     $r .= data_entry_helper::textarea(array(
         'label'=>lang::get('sample:comment'),
         'fieldname'=>'sample:comment',
@@ -396,24 +369,24 @@ class iform_mnhnl_citizen_science_1 {
         'divId'=>'controls',
         'page'=>'last'
       ));
-    } else { 
+    } else {
       $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save\" />\n";
     }
-    $r .= "</div>\n";        
-    $r .= "</div>\n";    
+    $r .= "</div>\n";
+    $r .= "</div>\n";
     $r .= "</form>";
-        
+
     return $r;
   }
-  
+
   /**
    * Handles the construction of a submission array from a set of form values.
-   * @param array $values Associative array of form data values. 
-   * @param array $args iform parameters. 
+   * @param array $values Associative array of form data values.
+   * @param array $args iform parameters.
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    return data_entry_helper::build_sample_occurrence_submission($values);     
-  } 
-  
+    return data_entry_helper::build_sample_occurrence_submission($values);
+  }
+
 }
