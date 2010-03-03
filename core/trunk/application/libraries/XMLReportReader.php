@@ -33,13 +33,13 @@ class XMLReportReader_Core implements ReportReader
   private $automagic = false;
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
-  
+
   /**
   * <p> Constructs a reader for the specified report. </p>
   */
   public function __construct($report)
   {
-    Kohana::log('info', "Constructing XMLReportReader for report $report.");
+    Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
     {
       $a = explode('/', $report);
@@ -179,7 +179,7 @@ class XMLReportReader_Core implements ReportReader
     $j=0;
 	for($i = 0; $i < count($this->tables); $i++){
 	  // In download mode make sure that the occurrences id is in the list
-	  
+
       foreach($this->tables[$i]['columns'] as $column){
 		if ($j != 0) $query .= ",";
 		if ($column['func']=='') {
@@ -199,7 +199,7 @@ class XMLReportReader_Core implements ReportReader
     		if ($this->tables[$i]['join'] != null) {
     			$query .= " LEFT OUTER JOIN ";
        		} else {
-    			$query .= " INNER JOIN ";     
+    			$query .= " INNER JOIN ";
     		}
     		$query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
     		if($this->tables[$i]['where'] != null) {
@@ -316,7 +316,7 @@ class XMLReportReader_Core implements ReportReader
   {
   	return $this->vagueDateProcessing;
   }
-  
+
   public function getDownloadDetails()
   {
  	$thisDefn = new stdClass;
@@ -359,14 +359,14 @@ class XMLReportReader_Core implements ReportReader
     			$query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
     		    if($this->tables[$i]['where'] != null) {
     			    $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
- 			    } 
+ 			    }
     		    $query .= ") ";
     		}
 		}
 	}
     $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
-    $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE) ";	
+    $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE) ";
   	// where list
 	$previous=false;
 	if($this->tables[0]['where'] != null) {
@@ -374,12 +374,12 @@ class XMLReportReader_Core implements ReportReader
 		$previous = true;
 	}
 	if($attributes->where != null) {
-		$query .= ($previous ? " AND " : " WHERE ").$attributes->where;		
+		$query .= ($previous ? " AND " : " WHERE ").$attributes->where;
 	}
     $query .= " ORDER BY lt".$attributes->parentTableIndex.".id";
     return $query;
   }
-  
+
   private function mergeParam($name, $display = '', $type = '', $description = '', $query='', $lookup_values='')
   {
     if (array_key_exists($name, $this->params))
@@ -461,7 +461,7 @@ class XMLReportReader_Core implements ReportReader
 	$this->tableIndex=$this->nextTableIndex;
     $this->nextTableIndex++;
   }
-  
+
   private function mergeTabColumn($name, $func = '', $display = '', $style = '', $class='', $visible='', $autodef=false)
   {
     $found = false;
@@ -483,13 +483,13 @@ class XMLReportReader_Core implements ReportReader
     }
     $this->mergeColumn('lt'.$this->tableIndex."_".$name, $display, $style, $class, $visible, $autodef);
   }
-  
+
   private function setMergeTabColumn($name, $tablename, $separator, $where = '', $display = '')
   {
   	// in this case the data for the column in merged into one, if there are more than one records
   	// To do this we highjack the attribute handling functionality.
     $tableKey = (inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
-  	
+
     $thisDefn = new stdClass;
 	$thisDefn->caption = 'caption';
 	$thisDefn->main_id = $tableKey; // main_id is the name of the column in the subquery holding the PK value of the parent table.
@@ -498,17 +498,17 @@ class XMLReportReader_Core implements ReportReader
    	$thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = 'false';
    	$thisDefn->columnPrefix = 'merge_'.count($this->attributes);
-        
+
 	if($display == ''){
 		$display = $tablename.' '.$name;
 	}
-    
+
     $thisDefn->query =  "SELECT ".$tableKey.", '".$display."' as caption, '' as id, 'T' as data_type, ".$name." as text_value, 't' as multi_value FROM ".$tablename.($where == '' ? '' : " WHERE ".$where);
     $this->attributes[] = $thisDefn;
     // Make sure id column of parent table is in list of columns returned from query.
     $this->mergeTabColumn('id', '', '', '', '', 'false', true);
   }
-  
+
   private function setAttributes($where, $separator, $hideVagueDateFields)
   {
   	$thisDefn = new stdClass;
@@ -522,18 +522,18 @@ class XMLReportReader_Core implements ReportReader
     // folowing is used the query builder only
    	$thisDefn->parentTableIndex = $this->tableIndex;
     $thisDefn->where = $where;
-    
+
   	$thisDefn->query = $this->buildAttributeQuery($thisDefn);
     $this->attributes[] = $thisDefn;
     // Make sure id column of parent table is in list of columns returned from query.
     $this->mergeTabColumn('id', '', '', '', '', 'false', true);
   }
-  
+
   private function setDownload($mode)
   {
   	$this->download = $mode;
   }
- 
+
  /**
   * Infers parameters such as column names and parameters from the query string.
   */

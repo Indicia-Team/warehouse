@@ -110,7 +110,6 @@ class Report_Controller extends Data_Service_Base_Controller {
     	$params = $_GET;
     }
     $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
-    kohana::log('debug', kohana::debug($data));
     $this->view_columns = $data['content']['columns'];
     return $data['content']['data'];
   }

@@ -34,7 +34,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
    * to filter the response.
    */
   protected $website_id = null;
-  
+
   /**
    * @var boolean Defines if the user is logged into the warehouse.
    */
@@ -76,7 +76,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $authentic = ($auth->logged_in() || $auth->auto_login());
       $this->in_warehouse = $authentic;
     }
-  
+
     if (!$authentic)
     {
       Kohana::log('info', "Unable to authenticate.");
@@ -208,7 +208,6 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     	}
     	$result .= $this->get_csv(array_values($row));
     }
-    kohana::log('info', $result);
     return $result;
   }
 

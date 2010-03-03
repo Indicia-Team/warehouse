@@ -86,7 +86,7 @@ class ReportEngine {
     $this->providedParams = $params;
     Kohana::log('debug', "Received request for report: $report, source: $reportSource");
 
-    if ($reportSource == null) {    	
+    if ($reportSource == null) {
     	$reportSource='local';
     }
     if ($report == null)
@@ -176,13 +176,13 @@ class ReportEngine {
   {
     if (!is_int((int)$detail) || $detail < 0 || $detail > 3)
     {
-      Kohana::log('info', "Invalid reporting level : $detail.");
+      Kohana::log('error', "Invalid reporting level : $detail.");
       $detail = 2;
     }
-    Kohana::log('info', "Listing reports at level $detail.");
+    Kohana::log('debug', "Listing reports at level $detail.");
     if ($detail == 0)
     {
-      Kohana::log('info', "Listing local reports in report directory ".$this->localReportDir.".");
+      Kohana::log('debug', "Listing local reports in report directory ".$this->localReportDir.".");
       $reportList = Array();
       // All we do here is return the list of tiles - don't bother interrogating the reports
       $dh = opendir($this->localReportDir);
@@ -261,7 +261,7 @@ class ReportEngine {
   /**
    * Takes the data and columns lists, and carries out any post query processing.
    * This includes vague date processing, and any other defined by the
-   * report reader. 
+   * report reader.
    */
   private function post_process(&$data, &$columns) {
   	$this->merge_attribute_data($data, $columns, $this->providedParams);
@@ -282,7 +282,7 @@ class ReportEngine {
    	foreach ($this->providedParams as $name => $value)
     {
     	$vagueDateProcessing = preg_replace("/#$name#/", $value, $vagueDateProcessing);
-    }	
+    }
   	return !($vagueDateProcessing == 'false');
   }
 
@@ -291,11 +291,11 @@ class ReportEngine {
    	foreach ($this->providedParams as $name => $value)
     {
   	    $downloadProcessing->mode = preg_replace("/#$name#/", $value, $downloadProcessing->mode);
-    }	
+    }
   	return $downloadProcessing;
   }
-  
-  
+
+
   /**
    * Takes the data and columns lists, and looks for a vague date column set.
    * If one is found, inserts a new column for the processed date string.
@@ -348,7 +348,7 @@ class ReportEngine {
       }
     }
   }
-  
+
   public function merge_attribute_data(&$data, &$columns, $providedParams)
   {
   	/* attributes are extra pieces of information associated with data rows. These can have multiple values within each field,
@@ -409,7 +409,7 @@ class ReportEngine {
    	  		}
   	  	}
   	  	// Build an index of the attribute data: nb that the attribute data has been sorted in main_id order.
-  	  	// We need the index of first record for each main_id value (there may be many) 
+  	  	// We need the index of first record for each main_id value (there may be many)
       	$index = array();
       	for ($r=0; $r<count($attrData); $r++) {
       		if(!isset($index[$attrData[$r][$attributeDefn->main_id]])){
@@ -451,7 +451,7 @@ class ReportEngine {
 		              	$data[$r][$column."_date_start"] = $attrData[$rowIndex]['date_start_value'];
 		              	$data[$r][$column."_date_end"] = $attrData[$rowIndex]['date_end_value'];
 		              	$data[$r][$column."_date_type"] = $attrData[$rowIndex]['date_type_value'];
-				        break;		
+				        break;
   	  			}
   	  			$rowIndex++;
   	  		}
@@ -466,7 +466,7 @@ class ReportEngine {
       	}
     }
   }
-  
+
   private function mergeColumnData(&$data, $value){
 	if(is_array($data)){
 		$data[] = $value;
@@ -479,7 +479,7 @@ class ReportEngine {
    * the following restrictions are enforced:
    * 1) the updates are not data driven. The only thing updated is the downloaded column in the occurrences table, and this
    *    is hardcoded.
-   *    
+   *
    */
   private function setDownloaded($data, $downloadDetails)
   {
@@ -497,7 +497,7 @@ class ReportEngine {
   		$this->updateDownloaded($idList, $downloadDetails->mode);
   	}
   }
-  
+
   private function updateDownloaded($idList, $mode)
   {
   	if(!is_array($idList) || count($idList) == 0)
@@ -514,18 +514,18 @@ class ReportEngine {
     					'downloaded_on' => $downloaded_on));
     $db->query('COMMIT;');
   }
-  
+
   private function fetchLocalReport($request)
   {
     if (is_dir($this->localReportDir) ||
       is_file($this->localReportDir.'/'.$request))
       {
         $this->report = $this->localReportDir.'/'.$request;
-        Kohana::log('info', "Setting local report ".$this->report.".");
+        Kohana::log('debug', "Setting local report ".$this->report.".");
       }
       else
       {
-        Kohana::log('info', "Unable to find report $request in ".$this->localReportDir.".");
+        Kohana::log('error', "Unable to find report $request in ".$this->localReportDir.".");
         // Throw an error - something has gone wrong
         // TODO
       }
