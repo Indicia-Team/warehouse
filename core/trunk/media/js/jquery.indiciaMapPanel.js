@@ -487,7 +487,7 @@ $.fn.indiciaMapPanel.presetLayers = {
 // only enable these layers if the Google constants are available.
 if (typeof G_PHYSICAL_MAP != "undefined") {
   $.fn.indiciaMapPanel.presetLayers.google_physical =
-      function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': 'true'}); };
+      function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': true}); };
   $.fn.indiciaMapPanel.presetLayers.google_streets =
       function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
   $.fn.indiciaMapPanel.presetLayers.google_hybrid =
