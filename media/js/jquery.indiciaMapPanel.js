@@ -367,7 +367,7 @@
 
       if (this.settings.editLayer) {
         // Add an editable layer to the map
-        var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: false});
+        var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher});
         div.map.editLayer = editLayer;
         div.map.addLayers([div.map.editLayer]);
 
@@ -431,6 +431,7 @@ $.fn.indiciaMapPanel.defaults = {
     controls: [],
     editLayer: true,
     editLayerName: 'Selection layer',
+    editLayerInSwitcher: false,
     initialFeatureWkt: null,
     defaultSystem: 'OSGB',
     srefId: 'imp-sref',
