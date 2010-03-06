@@ -93,6 +93,33 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
+  * Provides the /service/data/location_attribute service.
+  * Retrieves details of location attributes.
+  */
+  public function location_attribute()
+  {
+    $this->handle_call('location_attribute');
+  }
+
+  /**
+  * Provides the /service/data/location_attribute_value service.
+  * Retrieves details of location attribute values.
+  */
+  public function location_attribute_value()
+  {
+  $this->handle_call('location_attribute_value');
+  }
+
+  /**
+  * Provides the /service/data/location_image service.
+  * Retrieves details of location images.
+  */
+  public function location_image()
+  {
+  $this->handle_call('location_image');
+  }
+  
+  /**
   * Provides the /services/data/occurrence service.
   * Retrieves details of occurrences.
   */
@@ -110,6 +137,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   $this->handle_call('occurrence_attribute');
   }
 
+  /**
+  * Provides the /service/data/occurrence_attribute_value service.
+  * Retrieves details of occurrence attribute values.
+  */
+  public function occurrence_attribute_value()
+  {
+  $this->handle_call('occurrence_attribute_value');
+  }
+  
+  /**
+  * Provides the /service/data/occurrence_image service.
+  * Retrieves details of occurrence images.
+  */
+  public function occurrence_image()
+  {
+  $this->handle_call('occurrence_image');
+  }
+  
   /**
   * Provides the /services/data/person service.
   * Retrieves details of a single person.
@@ -146,14 +191,6 @@ class Data_Controller extends Data_Service_Base_Controller {
   $this->handle_call('sample_attribute_value');
   }
 
-  /**
-  * Provides the /service/data/sample_attribute_value service.
-  * Retrieves details of sample attribute values.
-  */
-  public function occurrence_attribute_value()
-  {
-  $this->handle_call('occurrence_attribute_value');
-  }
 
   /**
   * Provides the /services/data/survey service.
