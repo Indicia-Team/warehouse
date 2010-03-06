@@ -1,0 +1,121 @@
+label {
+  display: inline-block;
+  line-height: 1.8;
+  vertical-align: top;
+  width: 200px; /* Width of labels */
+}
+
+.poll-section {
+  margin-top: 4px;
+}
+
+.poll-section-title {
+  background-color:#878787;
+  border-bottom:white thin solid;
+}
+
+.poll-section-body {
+  border-bottom: #878787 3px solid;
+  border-left: #878787 3px solid;
+  padding-left: 10px;
+}
+
+.poll-session-title {
+  background-color:#c0c0c0;
+  border-bottom:white thin solid;
+}
+
+.poll-button-1 {
+  border-left:white medium solid;
+  padding-left: 10px;
+  padding-right: 10px;
+  background-color:#878787;
+  cursor:default;
+}
+
+.poll-image {
+  height: 300px;
+  width: 300px;
+  background-color:#878787;
+  border:black thin solid;
+}
+
+.radio-error {
+	color: red;
+	width: auto;
+	margin-left: 1em;
+}
+
+p.radio-error {
+  margin-top: 0em;  
+}
+
+div#cc-1-summary {
+  margin-top: 3px;
+}
+
+#cc-1-title-details {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#cc-1-protocol-details {
+  border-right:white medium solid;
+  border-left:white medium solid;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#cc-2-flower-image {
+  height: 300px;
+  width: 300px;
+  background-color:#878787;
+}
+
+#cc-2-environment-image {
+  height: 300px;
+  width: 300px;
+  background-color:#878787;
+}
+
+
+#cc-4-insect {
+  border-left: #878787 3px solid;
+  padding-left: 10px;
+}
+
+#cc-4-insect-picture {
+  width: 400px;
+  display: inline-block;
+}
+	
+#cc-4-insect-image {
+  height: 300px;
+  width: 300px;
+  background-color:#878787;
+  border: #878787 thin solid;
+}
+
+#cc-4-insect-identify {
+  display: inline-block;
+}
+	
+.thumb {
+  height: 50px;
+  width: 50px;
+  margin: 3px;
+  border: #878787 thin solid;
+  background-color:#878787;
+  display: inline-block;
+}
+
+.currentPhoto {
+  border: red thin solid;
+}
+
+.photoReelContainer {
+  border: black thin solid;
+}
+
+.loading {  background: transparent url(../../../../../../../misc/throbber.gif) no-repeat 0px -18px;}
+

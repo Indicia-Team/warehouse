@@ -351,7 +351,7 @@ class data_entry_helper extends helper_config {
     if ($default=='on') {
       $options['checked']=' checked="checked"';
     }
-    $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox'
+    $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
   }
 
@@ -2073,7 +2073,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     foreach (array_keys($item) as $option) {
       if (!is_array($item[$option])) {
         array_push($replaceTags, '{'.$option.'}');
-        array_push($replaceValues, htmlSpecialChars($item[$option]));
+        // allow sep to have <br/>
+        array_push($replaceValues, $option == 'sep' ? $item[$option] : htmlSpecialChars($item[$option]));
       }
     }    
     return str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);    
@@ -3319,12 +3320,12 @@ $('.ui-state-default').live('mouseout', function() {
   public static function outputAttribute($item, $options=array()) {
     $attrOptions = array('label'=>$item['caption'],
               'fieldname'=>$item['fieldname'],
-                'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
+              'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
     if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
     if(isset($item['default'])) $attrOptions['default']= $item['default'];
     else if(isset($options['default'])) $attrOptions['default']= $options['default'];
     if(isset($options['validation'])) $attrOptions['validation'] = $options['validation'];
-
+    if(isset($options['sep'])) $attrOptions['sep'] = $options['sep'];
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
@@ -3352,6 +3353,7 @@ $('.ui-state-default').live('mouseout', function() {
           if(!array_key_exists('noBlankText', $options)){
             $attrOptions = $attrOptions + array('blankText' => '');
           }
+          $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
           $dataSvcParams = array('termlist_id' => $item['termlist_id']);
           if (array_key_exists('language', $options)) {
             $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);

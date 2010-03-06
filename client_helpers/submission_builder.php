@@ -226,7 +226,7 @@ class submission_builder extends helper_config {
       );
       $oiMod = self::wrap($oiFields, $modelName.'_image');
       $modelWrapped['subModels'][] = array(
-          'fkId' => 'occurrence_id',
+          'fkId' => $modelName.'_id',
           'model' => $oiMod
       );
     }
@@ -238,8 +238,18 @@ class submission_builder extends helper_config {
       if (count($names) != 0) {
         $modelWrapped['fields']['path'] = array('value'=>$names[0]);
       }
+    } else if (array_key_exists($modelName."_image:path", $values)){
+      // TODO Get a caption for the image
+      $oiFields = array('path' => $values[$modelName."_image:path"]);
+      if(array_key_exists($modelName."_image:id", $values)){
+      	$oiFields['id'] = $values[$modelName."_image:id"];
+      }
+      $oiMod = self::wrap($oiFields, $modelName.'_image');
+      $modelWrapped['subModels'][] = array(
+          'fkId' => $modelName.'_id',
+          'model' => $oiMod
+      );
     }
-
     return $modelWrapped;
   }
 
