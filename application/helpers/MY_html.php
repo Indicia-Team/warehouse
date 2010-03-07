@@ -96,13 +96,19 @@ class html extends html_Core {
     * outputs a delete button if the $allowDelete parameter is true.
     * 
     * @param boolean $allowDelete If true, then a delete button is included in the output.
+    * @param boolean $readOnly If true, then the only button is a form cancel button.
     */
-   public static function form_buttons($allowDelete) {      
+   public static function form_buttons($allowDelete, $readOnly=false) {      
      $r = '<fieldset class="button-set">'."\n";
+     if ($readOnly) {
+       $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.cancel').'" class="ui-corner-all ui-state-default button" />'."\n";
+       
+     } else {
      $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.save').'" class="ui-corner-all ui-state-default button ui-priority-primary" />'."\n"; 
-     $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.cancel').'" class="ui-corner-all ui-state-default button" />'."\n";
-     if ($allowDelete) {
-       $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.delete').'" onclick="if (!confirm(\''.kohana::lang('misc.confirm_delete').'\')) {return false;}" class="ui-corner-all ui-state-default button" />'."\n";
+       $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.cancel').'" class="ui-corner-all ui-state-default button" />'."\n";
+       if ($allowDelete) {
+         $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.delete').'" onclick="if (!confirm(\''.kohana::lang('misc.confirm_delete').'\')) {return false;}" class="ui-corner-all ui-state-default button" />'."\n";
+       }
      }
      $r .= '</fieldset>';
      return $r;

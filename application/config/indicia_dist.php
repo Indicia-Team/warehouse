@@ -100,12 +100,4 @@ $config['image_handling']=array(
   )
 );
 
-/**
- * For developers of indicia only!
- * In a production release this var must be set to bool false!!
- * During the development process each dev has to set this var
- *  to the version upgrade folder (string) of the setup module
- */
-$config['devUpgradeFolder'] = 'upgrade_0_1_to_0_2';
-
 ?>

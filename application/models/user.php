@@ -61,6 +61,10 @@ class User_Model extends ORM {
       'email_visible',
       'view_common_names',
       'person_id');
+    if (!array_key_exists('core_role_id', $array->as_array())) {
+    	// if core role id is blank, make sure it is nulled out.
+      $array['core_role_id'] = null;    
+    }
     return parent::validate($array, $save);
   }
 
@@ -106,7 +110,8 @@ class User_Model extends ORM {
       foreach ($websites as $website) {
         $users_websites = ORM::factory('users_website', array(
           'user_id' => $this->id,
-          'website_id' => $website->id
+          'website_id' => $website->id,
+          'deleted' => 'false'
         ));
         $save_array = array(
           'id' => $users_websites->object_name,
@@ -120,13 +125,11 @@ class User_Model extends ORM {
         if ($users_websites->loaded || is_numeric($this->droppedFields['website_'.$website->id]['value'])) {
           // If this is an existing users_websites record, preserve the id.
           if ($users_websites->loaded)
-              $save_array['fields']['id'] = array('value' => $users_websites->id);
+            $save_array['fields']['id'] = array('value' => $users_websites->id);
           $save_array['fields']['site_role_id'] = array(
-            'value' => (
-                is_numeric($this->droppedFields['website_'.$website->id]['value']) ?
+            'value' => is_numeric($this->droppedFields['website_'.$website->id]['value']) ?
                   $this->droppedFields['website_'.$website->id]['value'] :
                   null
-            )
           );
           $users_websites->submission = $save_array;
           $users_websites->submit();

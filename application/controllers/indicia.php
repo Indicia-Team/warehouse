@@ -138,7 +138,7 @@ class Indicia_Controller extends Template_Controller {
    * @access private   
    */
   protected function showEditPage($values) {    
-    $other = $this->prepareOtherViewData();            
+    $other = $this->prepareOtherViewData($values);            
     $mn = $this->model->object_name;
     $this->setView($mn."/".$mn."_edit", $this->model->caption(), array(
     	'values'=>$values,
@@ -151,9 +151,10 @@ class Indicia_Controller extends Template_Controller {
    * not depend on the specific record. This includes preparing the list of terms to preload 
    * into lookup lists or combo boxes. 
    * 
+   * @param array $values Existing data values for the view.
    * @return array Array of additional data items required, or null.
    */
-  protected function prepareOtherViewData()
+  protected function prepareOtherViewData($values)
   {    
     return null;   
   }

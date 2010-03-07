@@ -36,7 +36,7 @@ class Upgrade_Model extends Model
       // version in the file system
       $new_version = kohana::config('version.version');
       // version in the database
-      $old_version = $system->getVersion();  
+      $old_version = $system->getVersion();
       // Downgrade not possible if the new version is lower than the database version      
       if (1 == version_compare($old_version, $new_version) )
       {

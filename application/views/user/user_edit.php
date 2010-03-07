@@ -55,7 +55,7 @@
 </li>
 <li>
 <label class="wide" for="core_role_id">Role within Warehouse</label>
-<select class="narrow" id="core_role_id" name="core_role_id" >
+<select class="narrow" id="core_role_id" name="user:core_role_id" >
   <option>None</option>
 <?php
   $core_roles = ORM::factory('core_role')->orderby('title','asc')->find_all();
