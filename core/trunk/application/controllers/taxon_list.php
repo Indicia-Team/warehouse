@@ -75,6 +75,25 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     }   
     return $r;    
   }
+  
+  /**
+   * Get a list of the websites that the user is allowed to assign this checklist to.
+   */
+  protected function prepareOtherViewData($values)
+  { 
+    $websites = ORM::factory('website');
+    $parent_id=html::initial_value($values, 'taxon_list:parent_id');    
+    if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
+      // parent list already has a link to a website, so we can't change it 
+      $websites = $websites->in('id',$values['parent_website_id']);
+    } else {
+	    if (!$this->auth->logged_in('CoreAdmin'))
+	      $websites = $websites->in('id',$this->auth_filter['values']);	    
+    }
+    return array(
+      'websites' => $websites->orderby('title','asc')->find_all()
+    );
+  }
 
   /**
    * Auxilliary function for handling Ajax requests from the edit method child lists gridview component
@@ -125,6 +144,13 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     } else {
       return $this->model->object_name;
     }
+  }
+  
+  protected function get_read_only($values) {
+    // existing entries owned by warehouse are read only, unless you are core admin
+    return (html::initial_value($values, 'taxon_list:id') && 
+      !$this->auth->logged_in('CoreAdmin') && 
+      !html::initial_value($values, 'taxon_list:website_id'));
   }
 }
 ?>

@@ -45,10 +45,10 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->pageNoUriSegment = 3;
     $this->base_filter = array('deleted' => 'f');
     $this->auth_filter = null;
-    $this->gen_auth_filter = null;
     $this->pagetitle = "Abstract gridview class - override this title!";
 
     parent::__construct();
+    $this->get_auth();
   }
 
   protected function page_authorised()
@@ -84,7 +84,6 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   }
 
   protected function prepare_grid_view() {
-    $this->get_auth_websites();
     $this->view = new View($this->viewname);
     $this->gridmodel = ORM::factory($this->gridmodelname);
     if (!$this->columns) {
@@ -121,9 +120,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
 
   /**
    * Retrieve the list of websites the user has access to. The list is then stored in
-   * $this->gen_auth_filter.
+   * $this->gen_auth_filter. Also checks if the user is core admin.
    */
-  protected function get_auth_websites() {
+  protected function get_auth() {
     // If not logged in as a Core admin, restrict access to available websites.
     if(!$this->auth->logged_in('CoreAdmin')){
       $site_role = (new Site_role_Model('Admin'));
@@ -132,10 +131,11 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
               'site_role_id' => $site_role->id))->find_all();
       $website_id_values = array();
       foreach($websites as $website)
-      $website_id_values[] = $website->website_id;
+        $website_id_values[] = $website->website_id;
       $website_id_values[] = null;
       $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
     }
+    else $this->gen_auth_filter = null;    
   }
 
   /**
@@ -147,6 +147,14 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->upload_csv_form->staticFields = null;
     $this->upload_csv_form->controllerpath = $this->controllerpath;
     $this->view->upload_csv_form = $this->upload_csv_form;
+  }
+  
+  /**
+   * Overridable function to determine if an edit page should be read only or not.
+   * @return boolean True if edit page should be read only.
+   */
+  protected function get_read_only($values) {
+    return false;   
   }
 
   /**

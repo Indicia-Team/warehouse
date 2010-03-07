@@ -352,15 +352,8 @@ class ORM extends ORM_Core {
          } else {
            return $arr;
          }');
-
     // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
-    // and strip nulls
-    foreach ($vArray as $key=>$val) {
-      if ($val==null) {
-        unset($vArray[$key]);
-      }
-    }
     $this->submission['fields']=array_intersect_key(
         $this->submission['fields'],
         $this->table_columns

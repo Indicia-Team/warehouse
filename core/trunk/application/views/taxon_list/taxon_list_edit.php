@@ -34,7 +34,7 @@
 <?php
 $id = html::initial_value($values, 'taxon_list:id');
 $parent_id = html::initial_value($values, 'taxon_list:parent_id');
-
+$disabled = $this->get_read_only($values) ? 'disabled="disabled" ' : '';
 if ($parent_id != null) : ?>
 <h1>Subset of:
 <a href="<?php echo url::site() ?>taxon_list/edit/<?php echo $parent_id ?>" >
@@ -51,7 +51,10 @@ if ($parent_id != null) : ?>
 <?php endif; ?>
   </ul>
 <div id="details">
-<form class="cmxform" action="<?php echo url::site().'taxon_list/save' ?>" method="post">
+<?php if ($this->get_read_only($values)) : ?>
+<div class="page-notice ui-state-highlight ui-corner-all">You do not have the required privileges to edit this record.</div>
+<?php endif; ?>
+<form class="cmxform" action="<?php echo url::site().'taxon_list/save' ?>" method="post" >
 <?php echo $metadata ?>
 <fieldset>
 <legend>List Details</legend>
@@ -60,35 +63,35 @@ if ($parent_id != null) : ?>
 <input type="hidden" name="id" id="id" value="<?php echo $id; ?>" />
 <input type="hidden" name="parent_id" id="parent_id" value="<?php echo $parent_id; ?>" />
 <label for="title">Title</label>
-<input id="title" name="taxon_list:title" value="<?php echo html::initial_value($values, 'taxon_list:title'); ?>"/>
+<input id="title" name="taxon_list:title" <?php echo $disabled; ?>value="<?php echo html::initial_value($values, 'taxon_list:title'); ?>"/>
 <?php echo html::error_message($model->getError('taxon_list:title')); ?>
 </li>
 <li>
 <label for="description">Description</label>
-<textarea rows=7 id="description" name="taxon_list:description"><?php echo html::initial_value($values, 'taxon_list:description'); ?></textarea>
+<textarea rows="7" <?php echo $disabled; ?> id="description" name="taxon_list:description"><?php echo html::initial_value($values, 'taxon_list:description'); ?></textarea>
 <?php echo html::error_message($model->getError('taxon_list:description')); ?>
 </li>
 <li>
 <label for="website">Owned by</label>
 <select id="website_id" name="taxon_list:website_id" 
-<?php if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
-  echo "disabled='disabled'";
+<?php 
+echo $disabled;
+if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
   $website_id=$values['parent_website_id']; 
 } else {
   $website_id = html::initial_value($values, 'taxon_list:website_id');
-} ?> >
-  <option value=''>&lt;Warehouse&gt;</option>
-<?php
-  if (!is_null($this->auth_filter))
-    $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
-  else
-    $websites = ORM::factory('website')->orderby('title','asc')->find_all();
-  foreach ($websites as $website) {
-    echo '	<option value="'.$website->id.'" ';
+  if ($this->auth->logged_in('CoreAdmin') || (!$website_id && $id !== null)) {
+    // Core admin can select Warehouse as owner. Other users can only have this option in the list if the
+    // list is already assigned to the warehouse in which case the list is read only.
+    echo "<option>&lt;Warehouse&gt;</option>";
+  } 
+  foreach ($other_data['websites'] as $website) {
+    echo '  <option value="'.$website->id.'" ';
     if ($website->id==$website_id)
       echo 'selected="selected" ';
     echo '>'.$website->title.'</option>';
   }
+}
 ?>
 </select>
 <?php echo html::error_message($model->getError('taxon_list:website_id')); ?>
@@ -96,7 +99,7 @@ if ($parent_id != null) : ?>
 </ol>
 </fieldset>
 <?php 
-echo html::form_buttons(html::initial_value($values, 'taxon_list:id')!=null);
+  echo html::form_buttons(html::initial_value($values, 'taxon_list:id')!=null, $this->get_read_only($values));
 ?>
 </form>
 </div>
