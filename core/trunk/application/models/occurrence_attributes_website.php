@@ -43,11 +43,7 @@ class Occurrence_attributes_website_Model extends ORM
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
 
     $array->pre_filter('trim');
-
-    $this->occurrence_attribute_id = $array['occurrence_attribute_id'];
-    $this->website_id = $array['website_id'];
-    $this->restrict_to_survey_id = $array['restrict_to_survey_id'];
-
+    $this->unvalidatedFields = array('occurrence_attribute_id', 'website_id', 'restrict_to_survey_id');
     return parent::validate($array, $save);
   }
 
