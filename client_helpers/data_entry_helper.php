@@ -58,7 +58,7 @@ $indicia_templates = array(
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} {disabled}>{caption}</span>{sep}',
-  'map_panel' => "<div id=\"{divId}\" style=\"{widthStyle} height: {height}px;\"{class}></div>\n<br/>\n",
+  'map_panel' => "<div id=\"{divId}\" style=\"{widthStyle} height: {height}px;\"{class}></div>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\"><div id=\"imp-georef-output-div\">\n".
@@ -913,11 +913,38 @@ class data_entry_helper extends helper_config {
         self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
       }
       self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-      $r = str_replace(
-          array('{divId}','{class}','{widthStyle}','{height}'),
-          array($options['divId'], empty($options['class']) ? '' : ' class="'.$options['class'].'"', $options['width'] == 'auto' ? '' : "width: ".$options['width']."px;", $options['height']),
-          $indicia_templates['map_panel']
-      );
+
+      //generate html
+      $r = '';
+      //add a prefix
+      if (array_key_exists('prefixTemplate', $options)) {
+        if (array_key_exists($options['prefixTemplate'], $indicia_templates))
+          $r .= $indicia_templates[$options['prefixTemplate']];
+        else
+          $r .= $indicia_templates['prefix'].'<span class="ui-state-error">Code error: prefix template '.$options['prefixTemplate'].' not in list of known templates.</span>';
+      } else {
+        $r .= $indicia_templates['prefix'];
+      }
+      //add map div
+	    $r .= str_replace(
+	          array('{divId}','{class}','{widthStyle}','{height}'),
+	          array($options['divId'],
+                  empty($options['class']) ? '' : ' class="'.$options['class'].'"',
+                  $options['width'] == 'auto' ? '' : "width: ".$options['width'].";",
+                  $options['height']
+            ),
+	          $indicia_templates['map_panel']
+	    );
+      //add a suffix
+      if (array_key_exists('suffixTemplate', $options)) {
+        if (array_key_exists($options['suffixTemplate'], $indicia_templates))
+          $r .= $indicia_templates[$options['suffixTemplate']];
+        else
+          $r .= $indicia_templates['suffix'].'<span class="ui-state-error">Code error: suffix template '.$options['suffixTemplate'].' not in list of known templates.</span>';
+      } else {
+        $r .= $indicia_templates['suffix'];
+      }
+
       return $r;
     }
   }
@@ -2017,7 +2044,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     $r = '';
     if (array_key_exists('prefixTemplate', $options)) {
-      $r .= $indicia_templates[$options['prefixTemplate']];
+      if (array_key_exists($options['prefixTemplate'], $indicia_templates))
+        $r .= $indicia_templates[$options['prefixTemplate']];
+      else
+        $r .= $indicia_templates['prefix'].'<span class="ui-state-error">Code error: prefix template '.$options['prefixTemplate'].' not in list of known templates.</span>';
     } else {
       $r .= $indicia_templates['prefix'];
     }
