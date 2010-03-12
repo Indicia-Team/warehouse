@@ -186,10 +186,10 @@
             // convert JSON text to an object
             response=eval("(" + response + ")");
             $.each(response[setName].photo, function(photo_id) {
-              // this refers to the photo in the each loop. The div includes an anchored image, with thickbox applied,
+              // this refers to the photo in the each loop. The div includes an anchored image, with fancybox applied,
               // plus a caption, date and select button. In addition, a hidden input contains the photo's data to use when
               // it is selected.
-              $(div).append('<div class="f-photo ' + div.settings.photoClass+'"><a class="thickbox" href="http://farm'+
+              $(div).append('<div class="f-photo ' + div.settings.photoClass+'"><a class="fancybox" href="http://farm'+
                     this.farm+'.static.flickr.com/'+this.server+'/'+ this.id+'_'+this.secret+div.settings.largePhotoSize + '.jpg">' +
                     '<img alt="'+this.title+'" src="http://farm'+this.farm+'.static.flickr.com/'+this.server+'/'+
                     this.id+'_'+this.secret+div.settings.photoSize+'.jpg" /></a><p>'+this.title+'<br/>' + this.datetaken + '</p>'+
@@ -205,7 +205,7 @@
               function() { $(this).addClass(div.settings.hoverClass); },
               function() { $(this).removeClass(div.settings.hoverClass); }
             );
-            tb_init('a.thickbox');
+            jQuery('a.fancybox').fancybox();
             // Click event handler for selection of a photo
             $('button.f-select').click(
               function() {
@@ -228,13 +228,13 @@
 
                   clear(div);
                   // Put a thumbnail for the selected image into the div.
-                  $(div).append('<a class="f-photo thickbox" href="http://farm'+
+                  $(div).append('<a class="f-photo fancybox" href="http://farm'+
                       obj.flickr.farm+'.static.flickr.com/'+obj.flickr.server+'/'+ obj.flickr.id+'_'+obj.flickr.secret+
                       div.settings.largePhotoSize+'.jpg">' +
                       '<img alt="'+obj.flickr.title+'" src="http://farm'+obj.flickr.farm+'.static.flickr.com/'+obj.flickr.server+'/'+
                       obj.flickr.id+'_'+obj.flickr.secret + '_t.jpg" />'+
                       '</div>');
-                  tb_init('a.thickbox');
+                  jQuery('a.fancybox').fancybox();
                 } finally {
                   return false;
                 }

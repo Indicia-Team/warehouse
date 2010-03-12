@@ -3022,8 +3022,7 @@ $('.ui-state-default').live('mouseout', function() {
           )
       ),
       'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
-      'thickbox' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."thickbox.js")),
-      'flickr' => array('deps' => array('thickbox'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.flickr.js")),
+      'flickr' => array('deps' => array('fancybox'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.flickr.js")),
       'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
       'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
@@ -3038,7 +3037,7 @@ $('.ui-state-default').live('mouseout', function() {
    * @todo Document the list of resources. See the _RESOURCES method.
    */
   public static function add_resource($resource)
-  {
+  { 
     global $indicia_resources;
     if (!isset($indicia_resources)) $indicia_resources = array();
     // If this is an available resource and we have not already included it, then add it to the list
