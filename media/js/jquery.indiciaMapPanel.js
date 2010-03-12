@@ -314,9 +314,9 @@
       this.settings = opts;
 
       // Sizes the div
-      $(this).css('height', this.settings.height+'px');
+      $(this).css('height', this.settings.height);
       if(this.settings.width != 'auto') {
-    	  $(this).css('width', this.settings.width+'px')
+    	  $(this).css('width', this.settings.width)
       };
 
       // If we're using a proxy

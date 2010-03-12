@@ -58,7 +58,7 @@ $indicia_templates = array(
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} {disabled}>{caption}</span>{sep}',
-  'map_panel' => "<div id=\"{divId}\" style=\"{widthStyle} height: {height};\"{class}></div>\n",
+  'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />\n".
       "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\"><div id=\"imp-georef-output-div\">\n".
@@ -914,6 +914,12 @@ class data_entry_helper extends helper_config {
       }
       self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
+      //width and height may be numeric, which is interpreted as pixels, or a css string, e.g. '50%'
+      if (is_numeric($options['height']))
+        $options['height'] .= 'px';
+      if (is_numeric($options['width']))
+        $options['width'] .= 'px';
+
       //generate html
       $r = '';
       //add a prefix
@@ -930,7 +936,7 @@ class data_entry_helper extends helper_config {
 	          array('{divId}','{class}','{widthStyle}','{height}'),
 	          array($options['divId'],
                   empty($options['class']) ? '' : ' class="'.$options['class'].'"',
-                  $options['width'] == 'auto' ? '' : "width: ".$options['width'].";",
+                  $options['width'],
                   $options['height']
             ),
 	          $indicia_templates['map_panel']
