@@ -116,7 +116,7 @@ class html extends html_Core {
    
    /** 
     * Output a thumbnail or other size of an image, with a link to the full sized image suitable 
-    * for the thickbox jQuery plugin.
+    * for the fancybox jQuery plugin.
     * @param string $filename Name of a file within the upload folder.
     * @param string $size Name of the file size, normally thumb or med depending on the image handling config.
     * @return string HTML to insert into the page, with the anchored image element.
@@ -133,7 +133,7 @@ class html extends html_Core {
          $sizing .= ' height="'.$img_config[$size]['height'].'"';
        
      }
-     return '<a href="'.url::base()."upload/$filename\" class=\"thickbox\">".
+     return '<a href="'.url::base()."upload/$filename\" class=\"fancybox\">".
          '<img src="'.url::base()."upload/$size-$filename\"$sizing /></a>";
      
    }

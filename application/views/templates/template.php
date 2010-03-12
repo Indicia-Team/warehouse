@@ -41,7 +41,7 @@ echo html::stylesheet(
   array(
     'media/css/site',
     'media/css/forms',
-    'media/css/thickbox',
+    'media/js/fancybox/jquery.fancybox.css',
     'media/css/jquery.autocomplete',
     'media/themes/'.$theme.'/jquery-ui.custom'
   ),
@@ -54,7 +54,7 @@ echo html::stylesheet(
       'media/js/json2.js',
       'media/js/jquery.js',
       'media/js/jquery.url.js',
-      'media/js/thickbox-compressed.js',
+      'media/js/fancybox/jquery.fancybox.pack.js',
       'media/js/hasharray.js',
       'media/js/superfish.js',
       'media/js/jquery-ui.custom.min.js'
@@ -74,14 +74,13 @@ echo html::stylesheet(
     $('.ui-state-default').live('mouseout', function() { 
       $(this).removeClass('ui-state-hover'); 
     });
-    // create a jQuery live event to attach the thickbox plugin to image links that appear on the page,
-    // even if loaded by AJAX.
-    $('a.thickbox').live('click', function(){
-      var t = this.title || this.name || null;
-      var a = this.href || this.alt;
-      var g = this.rel || false;
-      tb_show(t,a,g);
-      this.blur();
+    // Hack to get fancybox working as a jQuery live, because some of our images load from AJAX calls,
+    // e.g. on the species checklist taxa tab. So we temporarily create a dummy link to our image and click it.
+    $('a.fancybox').live('click', function() {
+      jQuery("body").after('<a id="link_fancybox" style="display: hidden;" href="'+jQuery(this).attr('href')+'">dummy</a>');
+      jQuery('#link_fancybox').fancybox(); 
+      jQuery('#link_fancybox').click();
+      jQuery('#link_fancybox').remove();
       return false;
     });
   });

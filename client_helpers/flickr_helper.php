@@ -62,6 +62,7 @@ class flickr_helper extends helper_config {
    * @return string HTML to insert into the web-page for the Flickr control.
    */
   public static function flickr_selector($div_id='flickr') {
+    data_entry_helper::add_resource('flickr');
     if (array_key_exists('phpFlickr_auth_token', $_SESSION) &&
         !empty($_SESSION['phpFlickr_auth_token'])) {
       data_entry_helper::$javascript .= "(function($) {

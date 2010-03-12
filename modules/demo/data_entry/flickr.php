@@ -13,7 +13,6 @@ if (flickr_helper::$flickr_api_key!='') {
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
     <title>Indicia demonstrations</title>
-    <link rel="stylesheet" type="text/css" href="../../../media/css/thickbox.css" />
     <link rel="stylesheet" type="text/css" href="demo.css" />
     <link rel="stylesheet" type="text/css" href="../../../media/css/default_site.css" />
     <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
@@ -59,7 +58,5 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 <?php
 echo data_entry_helper::dump_javascript();
 ?>
-    <script type='text/javascript' src='http://localhost/indicia/media/js/jquery.flickr.js'></script>
-    <script type='text/javascript' src='http://localhost/indicia/media/js/thickbox.js'></script>
 </body>
 </html>
