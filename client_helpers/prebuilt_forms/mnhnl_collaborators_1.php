@@ -382,9 +382,9 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         'columns'=>1,
         'view'=>'detail',
         'parentField'=>'parent_id',
-  		'occAttrs'=> explode(',', $args['checklist_attributes']),
+        'occAttrs'=> explode(',', $args['checklist_attributes']),
         'extraParams'=>$extraParams,
-    	'survey_id'=>$args['survey_id']
+        'survey_id'=>$args['survey_id']
     );
     $r .= data_entry_helper::species_checklist($species_list_args);
     $r .= "<label for=\"sample:comment\">".lang::get('LANG_Sample_Comment_Label')."</label><input type=\"text\" id=\"sample:comment\" name=\"sample:comment\" value=\"".data_entry_helper::$entity_to_load['sample:comment']."\" />\n";
