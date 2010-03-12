@@ -1263,7 +1263,7 @@ class data_entry_helper extends helper_config {
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>listId</b><br/>
-  * Required. The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
+  * The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
   * <li><b>occAttrs</b><br/>
   * Integer array, where each entry corresponds to the id of the desired attribute in the
   * occurrence_attributes table.</li>
@@ -1405,7 +1405,7 @@ class data_entry_helper extends helper_config {
       $rows = array();
       $rowIdx = 0;
       foreach ($taxalist as $taxon) {
-        $id = $taxon['id'];
+        $id = $taxon['id'];        
         $row = "\n<td class='scTaxonCell ui-state-default'>".self::mergeParamsIntoTemplate($taxon, 'taxon_label')."</td>";
         // go through list in entity to load and find first entry for this taxon, then extract the
         // record ID if if exists.
@@ -1466,7 +1466,7 @@ class data_entry_helper extends helper_config {
           $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
         }
         $rowIdx++;
-      }
+      }      
       $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
       $grid .= '</tbody></table>';
 
@@ -2350,6 +2350,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             )
           );
           $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
+          
         }
       }
     }
@@ -3020,7 +3021,9 @@ $('.ui-state-default').live('mouseout', function() {
             self::$js_path."google_search.js"
           )
       ),
-      'flickr' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.flickr.js",self::$js_path."thickbox-compressed.js")),
+      'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
+      'thickbox' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."thickbox.js")),
+      'flickr' => array('deps' => array('thickbox'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.flickr.js")),
       'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
       'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
@@ -3028,26 +3031,24 @@ $('.ui-state-default').live('mouseout', function() {
   }
 
   /**
-   * Internal method to link up the external css or js files associated with a set of code.
+   * Method to link up the external css or js files associated with a set of code.
    * Ensures each file is only linked once.
    *
    * @param string $resource Name of resource to link.
+   * @todo Document the list of resources. See the _RESOURCES method.
    */
-  private static function add_resource($resource)
+  public static function add_resource($resource)
   {
     global $indicia_resources;
     if (!isset($indicia_resources)) $indicia_resources = array();
-    if (array_key_exists($resource, self::_RESOURCES()))
-    {
-      if (!in_array($resource, $indicia_resources))
+    // If this is an available resource and we have not already included it, then add it to the list
+    if (array_key_exists($resource, self::_RESOURCES()) && !in_array($resource, $indicia_resources)) {
+      $RESOURCES = self::_RESOURCES();
+      foreach ($RESOURCES[$resource]['deps'] as $dep)
       {
-        $RESOURCES = self::_RESOURCES();
-        foreach ($RESOURCES[$resource]['deps'] as $dep)
-        {
-          self::add_resource($dep);
-        }
-        $indicia_resources[] = $resource;
+        self::add_resource($dep);
       }
+      $indicia_resources[] = $resource;
     }
   }
 
