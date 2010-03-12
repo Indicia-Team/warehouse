@@ -920,38 +920,7 @@ class data_entry_helper extends helper_config {
       if (is_numeric($options['width']))
         $options['width'] .= 'px';
 
-      //generate html
-      $r = '';
-      //add a prefix
-      if (array_key_exists('prefixTemplate', $options)) {
-        if (array_key_exists($options['prefixTemplate'], $indicia_templates))
-          $r .= $indicia_templates[$options['prefixTemplate']];
-        else
-          $r .= $indicia_templates['prefix'].'<span class="ui-state-error">Code error: prefix template '.$options['prefixTemplate'].' not in list of known templates.</span>';
-      } else {
-        $r .= $indicia_templates['prefix'];
-      }
-      //add map div
-	    $r .= str_replace(
-	          array('{divId}','{class}','{widthStyle}','{height}'),
-	          array($options['divId'],
-                  empty($options['class']) ? '' : ' class="'.$options['class'].'"',
-                  $options['width'],
-                  $options['height']
-            ),
-	          $indicia_templates['map_panel']
-	    );
-      //add a suffix
-      if (array_key_exists('suffixTemplate', $options)) {
-        if (array_key_exists($options['suffixTemplate'], $indicia_templates))
-          $r .= $indicia_templates[$options['suffixTemplate']];
-        else
-          $r .= $indicia_templates['suffix'].'<span class="ui-state-error">Code error: suffix template '.$options['suffixTemplate'].' not in list of known templates.</span>';
-      } else {
-        $r .= $indicia_templates['suffix'];
-      }
-
-      return $r;
+      return self::apply_template('map_panel', $options);
     }
   }
 
@@ -2049,14 +2018,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
     $r = '';
-    if (array_key_exists('prefixTemplate', $options)) {
-      if (array_key_exists($options['prefixTemplate'], $indicia_templates))
-        $r .= $indicia_templates[$options['prefixTemplate']];
-      else
-        $r .= $indicia_templates['prefix'].'<span class="ui-state-error">Code error: prefix template '.$options['prefixTemplate'].' not in list of known templates.</span>';
-    } else {
-      $r .= $indicia_templates['prefix'];
-    }
+    //Add prefix
+    $r .= self::apply_static_template('prefix', $options);
+
     // Add a label only if specified in the options array. Link the label to the inputId if available,
     // otherwise the fieldname (as the fieldname control could be a hidden control).
     if (array_key_exists('label', $options)) {
@@ -2081,13 +2045,37 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (in_array('message', $options['validation_mode'])) {
       $r .= $error;
     }
-    if (array_key_exists('suffixTemplate', $options)) {
-      if (array_key_exists($options['suffixTemplate'], $indicia_templates))
-        $r .= $indicia_templates[$options['suffixTemplate']];
+
+    //Add suffix
+    $r .= self::apply_static_template('suffix', $options);
+
+    return $r;
+  }
+
+ /**
+  * Returns a static template which is either a default template or one
+  * specified in the options
+  * @param string $name The static template type. e.g. prefix or suffix.
+  * @param array $options Array of options which may contain a template name.
+  * @return string Template value.
+  * @access private
+  */
+  private static function apply_static_template($name, $options) {
+    global $indicia_templates;
+    $key = $name .'Template';
+    $r = '';
+
+    if (array_key_exists($key, $options)) {
+      //a template has been specified
+      if (array_key_exists($options[$key], $indicia_templates))
+        //the specified template exists
+        $r = $indicia_templates[$options[$key]];
       else
-        $r .= $indicia_templates['suffix'].'<span class="ui-state-error">Code error: suffix template '.$options['suffixTemplate'].' not in list of known templates.</span>';
+        $r = $indicia_templates[$name] .
+        '<span class="ui-state-error">Code error: suffix template '.$options[$key].' not in list of known templates.</span>';
     } else {
-      $r .= $indicia_templates['suffix'];
+      //no template specified
+      $r = $indicia_templates[$name];
     }
     return $r;
   }
@@ -2115,8 +2103,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }    
     return str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);    
   }
-
-
  
   /**
    * Private function to fetch a validated timeout value from passed in options array
