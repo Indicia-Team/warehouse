@@ -74,6 +74,29 @@
       }
     }
 
+    /*
+     * An OpenLayers vector style object
+     */
+    function style() {
+      this.fillColor = opts.fillColor;
+      this.fillOpacity = opts.fillOpacity;
+      this.hoverFillColor = opts.hoverFillColor;
+      this.hoverFillOpacity = opts.hoverFillOpacity;
+      this.strokeColor = opts.strokeColor;
+      this.strokeOpacity = opts.strokeOpacity;
+      this.strokeWidth = opts.strokeWidth;
+      this.strokeLinecap = opts.strokeLinecap;
+      this.strokeDashstyle = opts.strokeDashstyle;
+      this.hoverStrokeColor = opts.hoverStrokeColor;
+      this.hoverStrokeOpacity = opts.hoverStrokeOpacity;
+      this.hoverStrokeWidth = opts.hoverStrokeWidth;
+      this.pointRadius = opts.pointRadius;
+      this.hoverPointRadius = opts.hoverPointRadius;
+      this.hoverPointUnit = opts.hoverPointUnit;
+      this.pointerEvents = opts.pointerEvents;
+      this.cursor = opts.cursor;
+    }
+
     /**
      * Use jQuery selectors to locate any other related controls on the page which need to have events
      * bound to them to associate them with the map.
@@ -205,6 +228,7 @@
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(data.wkt);
+      feature.style = new style();
       if (div.map.projection.getCode() != 'EPSG:900913') {
         feature.geometry.transform(new OpenLayers.Projection('EPSG:900913'), div.map.projection);
       }
@@ -440,7 +464,26 @@ $.fn.indiciaMapPanel.defaults = {
     clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
     clickedSrefPrecisionMax: '',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
-    msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.'
+    msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
+
+    //options for OpenLayers. Feature. Vector. style
+    fillColor: '#ee9900',
+    fillOpacity: 0.4,
+    hoverFillColor: 'white',
+    hoverFillOpacity: 0.8,
+    strokeColor: '#ee9900',
+    strokeOpacity: 1,
+    strokeWidth: 1,
+    strokeLinecap: 'round',
+    strokeDashstyle: 'solid',
+    hoverStrokeColor: 'red',
+    hoverStrokeOpacity: 1,
+    hoverStrokeWidth: 0.2,
+    pointRadius: 6,
+    hoverPointRadius: 1,
+    hoverPointUnit: '%',
+    pointerEvents: 'visiblePainted',
+    cursor: ''
 
     /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a
      * displayedSrefPrecisionMin and Mx for a square size output into a list box as you hover. Both of these could either be
