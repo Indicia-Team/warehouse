@@ -867,6 +867,13 @@ class data_entry_helper extends helper_config {
           'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
       ), $options);
 
+      //width and height may be numeric, which is interpreted as pixels, or a css string, e.g. '50%'
+      //width in % is causing problems with panning in Firefox currently. 13/3/2010.
+      if (is_numeric($options['height']))
+        $options['height'] .= 'px';
+      if (is_numeric($options['width']))
+        $options['width'] .= 'px';
+
       if (array_key_exists('readAuth', $options)) {
         // Convert the readAuth into a query string so it can pass straight to the JS class.
         $options['readAuth']=self::array_to_query_string($options['readAuth']);
@@ -913,12 +920,6 @@ class data_entry_helper extends helper_config {
         self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
       }
       self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-
-      //width and height may be numeric, which is interpreted as pixels, or a css string, e.g. '50%'
-      if (is_numeric($options['height']))
-        $options['height'] .= 'px';
-      if (is_numeric($options['width']))
-        $options['width'] .= 'px';
 
       return self::apply_template('map_panel', $options);
     }
