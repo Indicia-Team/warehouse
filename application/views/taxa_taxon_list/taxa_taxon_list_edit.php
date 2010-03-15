@@ -158,8 +158,12 @@ echo $metadata;
 <?php echo html::error_message($model->getError('taxon:taxon_group_id')); ?>
 </li>
 <li>
-<label for="description">Description:</label>
+<label for="description">General description:</label>
 <textarea rows="3"  cols="40" id="description" name="taxon:description"><?php echo html::initial_value($values, 'taxon:description'); ?></textarea>
+</li>
+<li>
+<label for="description">Description specific to this list:</label>
+<textarea rows="3"  cols="40" id="list_description" name="taxa_taxon_list:description"><?php echo html::initial_value($values, 'taxa_taxon_list:description'); ?></textarea>
 </li>
 <li>
 <label for="external_key">External Key:</label>
