@@ -141,7 +141,9 @@ jQuery('#{parentControlId}').change();\n",
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
   'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
-        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'
+        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />',
+  'attribute_cell' => "\n<td class='scOccAttrCell ui-widget-content'>{content}</td>",
+  'taxon_label_cell' => "\n<td class='scTaxonCell ui-state-default'>{content}</td>"
 );
 
 
@@ -1297,6 +1299,13 @@ class data_entry_helper extends helper_config {
   * if this is not specified then 1 hour.</li>
   * <li><b>survey_id</b><br/>
   * Optional. Used to determine which attributes are valid for this website/survey combination</li>
+  * <li><b>attrCellTemplate</b><br/>
+  * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
+  * for each cell containing an attribute input control. Valid replacements are {label} and {content}.
+  * Default is attribute_cell.</li>
+  * <li><b>PHPtaxonLabel</b></li>
+  * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each 
+  * taxon's label. Otherwise the template should be plain HTML. Defaults to false.
   * </ul>
   */
   public static function species_checklist()
@@ -1307,7 +1316,9 @@ class data_entry_helper extends helper_config {
     $options = array_merge(array(
         'header'=>'true',
         'columns'=>1,
-        'checkboxCol'=>'true'
+        'checkboxCol'=>'true',
+        'attrCellTemplate'=>'attribute_cell',
+        'PHPtaxonLabel' => false
     ), $options);
     self::add_resource('json');
     self::add_resource('autocomplete');
@@ -1406,8 +1417,13 @@ class data_entry_helper extends helper_config {
       $rows = array();
       $rowIdx = 0;
       foreach ($taxalist as $taxon) {
-        $id = $taxon['id'];        
-        $row = "\n<td class='scTaxonCell ui-state-default'>".self::mergeParamsIntoTemplate($taxon, 'taxon_label')."</td>";
+        $id = $taxon['id'];
+        // Get the cell content from the taxon_label template
+        $firstCell = self::mergeParamsIntoTemplate($taxon, 'taxon_label');
+        // If the taxon label template is PHP, evaluate it.
+        if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
+        // Now create the table cell to contain this.
+        $row = str_replace('{content}', $firstCell, $indicia_templates['taxon_label_cell']);
         // go through list in entity to load and find first entry for this taxon, then extract the
         // record ID if if exists.
         $existing_record_id = '';
@@ -1439,7 +1455,6 @@ class data_entry_helper extends helper_config {
         }
         foreach ($occAttrControls as $oc) {
           preg_match('/oa:(\d+)/', $oc, $matches); // matches 1 holds the occurrence_attribute_id
-//          $ctrlId = "sc:$id:$existing_record_id:occAttr:".$matches[1];
           $ctrlId = $attributes[$matches[1]]['fieldname'];
           $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
           // If there is an existing value to load for this control, we need to put the value in the control.
@@ -1459,7 +1474,7 @@ class data_entry_helper extends helper_config {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
           }
-          $row .= "\n<td class='scOccAttrCell ui-widget-content'>".$oc."</td>";
+          $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$matches[1]]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
         }
         if ($rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
