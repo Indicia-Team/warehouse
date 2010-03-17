@@ -57,7 +57,9 @@ $lang = array (
     'default' => 'Invalid Input.',
   ),
   'float_value' => Array (
-    'default' => 'This must be a valid number.'
+    'default' => 'This must be a valid number.',
+    'maximum' => 'The value specified for this number is too high',
+    'minimum' => 'The value specified for this number is too low'
   ),
   'geom' => array (
     'required' => 'The spatial reference must be supplied.',
@@ -69,7 +71,7 @@ $lang = array (
   ),
   'int_value' => Array (
     'maximum' => 'The value specified for this number is too high',
-    'minumum' => 'The value specified for this number is too low',
+    'minimum' => 'The value specified for this number is too low',
   ),
   'iso' => Array (
     'default' => 'Invalid ISO 639-2 language code.',
