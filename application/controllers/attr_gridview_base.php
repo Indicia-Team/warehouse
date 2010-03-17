@@ -113,7 +113,7 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
    * Returns some addition information required by the edit view, which is not associated with 
    * a particular record. 
    */
-  protected function prepareOtherViewData()
+  protected function prepareOtherViewData($values)
   {    
     return array(
       'filter_type' => $this->input->get('filter_type', null),
@@ -143,7 +143,7 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
    * @access private   
    */
   protected function showEditPage($values) {    
-    $other = $this->prepareOtherViewData();            
+    $other = $this->prepareOtherViewData($values);            
     $mn = 'custom_attribute';      
     $this->setView($mn."/".$mn."_edit", $this->model->caption(), array(
     	'values'=>$values,

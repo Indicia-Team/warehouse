@@ -54,7 +54,7 @@ class Location_Controller extends Gridview_Base_Controller {
   /**
    * Get the list of terms ready for the location types list. 
    */
-  protected function prepareOtherViewData()
+  protected function prepareOtherViewData($values)
   {    
     return array(
       'type_terms' => $this->get_termlist_terms('indicia:location_types')    
