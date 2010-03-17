@@ -28,21 +28,3 @@ $(document).ready(function(){
 </div>
 </body>
 </html>
-<?php
-/*
-include '../../../client_helpers/data_entry_helper.php';
-include '../data_entry_config.php';
-
-$url='http://localhost/indicia/index.php/services/report/requestReport?report=occurrences_by_survey.xml&reportSource=local&mode=csv';
-$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
-if (array_key_exists('auth_token', $readAuth))
-  $url .= '&auth_token='.$readAuth['auth_token'];
-if (array_key_exists('nonce', $readAuth))
-  $url .= '&nonce='.$readAuth['nonce'];
-echo $url;
-print_r(data_entry_helper::http_post(
-  $url,
-  $postargs
-));
-*/
-?>
