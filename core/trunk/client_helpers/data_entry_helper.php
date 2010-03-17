@@ -3240,8 +3240,10 @@ $('.ui-state-default').live('mouseout', function() {
     if (curl_errno($session) || strpos($response, 'HTTP/1.1 200 OK')===false) {
       if ($output_errors) {
         echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>';
-        if (curl_errno($session))
+        if (curl_errno($session)) {
           echo 'Error number: '.curl_errno($session).'<br/>';
+          echo 'Error message: '.curl_error($session).'<br/>';
+        }
         echo "Server response<br/>";
         echo $response.'</div>';
       }
