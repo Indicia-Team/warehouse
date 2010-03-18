@@ -3279,7 +3279,7 @@ $('.ui-state-default').live('mouseout', function() {
     foreach ($response as $item){
         $retVal[$item['id']] = array(
             'caption' => lang::get($item['caption']),
-            'fieldname' => $options['fieldprefix'].':'.$item['id'],
+            'fieldname' => $options['fieldprefix'].':'.$item['id'].($item['multi_value'] == 't' ? '[]' : ''),
             'data_type' => $item['data_type'],
             'termlist_id' => $item['termlist_id']);
     }
@@ -3291,7 +3291,7 @@ $('.ui-state-default').live('mouseout', function() {
       foreach ($response as $item){
           $retVal[$item['id']] = array(
             'caption' => lang::get($item['caption']),
-            'fieldname' => $options['fieldprefix'].':'.$item['id'],
+            'fieldname' => $options['fieldprefix'].':'.$item['id'].($item['multi_value'] == 't' ? '[]' : ''),
             'data_type' => $item['data_type'],
             'termlist_id' => $item['termlist_id']);
       }
@@ -3394,7 +3394,7 @@ $('.ui-state-default').live('mouseout', function() {
             $attrOptions = $attrOptions + array('blankText' => '');
           }
           $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
-          $dataSvcParams = array('termlist_id' => $item['termlist_id']);
+          $dataSvcParams = array('termlist_id' => $item['termlist_id'], 'view' => 'detail');
           if (array_key_exists('language', $options)) {
             $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);
           }
@@ -3409,7 +3409,7 @@ $('.ui-state-default').live('mouseout', function() {
           $output = call_user_func(array('data_entry_helper', $ctrl), $attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
-                  'valueField'=>'id',
+                  'valueField'=>'meaning_id',
                   'extraParams' => $options['extraParams'] + $dataSvcParams));
           break;
         default:

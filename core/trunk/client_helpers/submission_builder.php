@@ -172,9 +172,16 @@ class submission_builder extends helper_config {
         $a = explode(':', $key);
         // Attribute in the form occAttr:36 for attribute with attribute id
         // of 36.
-        $oap[] = array(
-          $entity."_attribute_id" => $a[1], 'value' => $value
-        );
+        // for multiple values where existing value did not exist, the value will be an array.
+        if(is_array($value)){
+    		foreach ($value as $individual) {
+	    	    $oap[] = array($entity."_attribute_id" => $a[1], 'value' => $individual);
+    		}
+        } else {
+	        $oap[] = array(
+    	      $entity."_attribute_id" => $a[1], 'value' => $value
+        	);
+        }
         // If it is an existing attribute value, we need to also put the ID in the array so it
         // can update the same value rather than create a new one
         if (count($a)>2) {
