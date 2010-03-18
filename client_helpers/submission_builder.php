@@ -255,7 +255,8 @@ class submission_builder extends helper_config {
 
   /**
    * Takes uploaded files from the form submission and saves them on the server. Optionally sends it
-   * to the warehouse via the data services handle_media method.
+   * to the warehouse via the data services handle_media method, in which case the local copy is
+   * deleted.
    *
    * @param String $media_id Base name of the file entry in the $_FILES array e.g. occurrence:image.
    * Multiple files can be uploaded if they have a suffix 0f :0, :1 ... :n
@@ -294,6 +295,8 @@ class submission_builder extends helper_config {
           $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
           $result = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
           $return[] = $result['output'];
+          //remove local copy
+          unlink($uploadpath.$destination);
         } else {
           // store locally so create the thumbnails or other image sizes.
           Image::create_image_files($uploadpath, $destination);
