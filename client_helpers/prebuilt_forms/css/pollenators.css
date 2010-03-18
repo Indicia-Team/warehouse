@@ -64,6 +64,13 @@ label {
   background-color:#878787;
   border:black thin solid;
 }
+.poll-latlong {
+	display: inline-block;
+}
+
+.poll-latlong input {
+  width: 30px;
+}
 
 .radio-error, .required-error {
 	color: red;
