@@ -151,6 +151,10 @@ $lang = array (
     'length' => 'The website URL must be a maximum of 1000 characters in length.',
     'default' => 'Invalid Input.',
   ),
+  'media_upload' => Array (
+    'size' => 'The file exceeds the maximum allowed by the warehouse.',
+    'type' => 'The file is not one of the allowed types [png,gif,jpg].',
+  ),
 );
 
 ?>

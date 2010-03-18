@@ -368,30 +368,36 @@ class Data_Controller extends Data_Service_Base_Controller {
    */
   public function handle_media()
   {    
-    // Ensure we have write permissions.
-    $this->authenticate();
-    // We will be using a POST array to send data, and presumably a FILES array for the
-    // media.
-    // Upload size
-    $ups = Kohana::config('indicia.maxUploadSize');
-    $_FILES = Validation::factory($_FILES)->add_rules(
-      'media_upload', 'upload::valid', 'upload::required',
-      'upload::type[png,gif,jpg]', "upload::size[$ups]"
-    );
-    if ($_FILES->validate())
+    try
     {
-      $fTmp = upload::save('media_upload');
-      Image::create_image_files(dirname($fTmp), basename($fTmp));
-      $this->response=basename($fTmp);
-      kohana::log('debug', 'Successfully uploaded media to '. basename($fTmp));
-      $this->send_response();
+      // Ensure we have write permissions.
+      $this->authenticate();
+      // We will be using a POST array to send data, and presumably a FILES array for the
+      // media.
+      // Upload size
+      $ups = Kohana::config('indicia.maxUploadSize');
+      $_FILES = Validation::factory($_FILES)->add_rules(
+        'media_upload', 'upload::valid', 'upload::required',
+        'upload::type[png,gif,jpg]', "upload::size[$ups]"
+      );
+      if ($_FILES->validate())
+      {
+        $fTmp = upload::save('media_upload');
+        Image::create_image_files(dirname($fTmp), basename($fTmp));
+        $this->response=basename($fTmp);
+        kohana::log('debug', 'Successfully uploaded media to '. basename($fTmp));
+        $this->send_response();
+      }
+      else
+      {
+        kohana::log('info', 'Validation errors uploading media '. $_FILES['media_upload']['name']);
+        Throw new ArrayException('Validation error', $_FILES->errors('form_error_messages'));
+      }
     }
-    else
+    catch (Exception $e)
     {
-      // TODO better error message
-      echo "Some sort of problem!";
+      $this->handle_error($e);
     }
-
   }
 
   /**
