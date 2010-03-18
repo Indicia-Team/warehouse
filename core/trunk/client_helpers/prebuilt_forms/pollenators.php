@@ -606,9 +606,19 @@ $('#cc-1-reinit-button').click(function() {
  		<input type="text" name="place:postcode" value="" /><br />
  	    <label for="place:INSEE">'.lang::get('LANG_Or').'</label>
  		<input type="text" name="place:INSEE" value="" /><br />
- 	    <label for="place:latlong">'.lang::get('LANG_Or').'</label>
- 		<input type="text" name="place:latlong" value="" /><br />
-      </div>
+ 	    <label for="place:latlong">'.lang::get('LANG_Lat').'</label>
+ 		<div class="poll-latlong">
+ 	    <input type="text" name="place:latDeg" value="" />
+ 		<input type="text" name="place:latMin" value="" />
+ 		<input type="text" name="place:latSec" value="" /><br />
+ 		<input type="text" name="place:longDeg" value="" />
+ 		<input type="text" name="place:longMin" value="" />
+ 		<input type="text" name="place:longSec" value="" /><br />
+ 		</div>
+ 		<div>
+	 		<span id="cc-2-valid-location-button" class="poll-button-1">'.lang::get('LANG_Validate_Location').'</span><br />
+	 	</div>
+ 	  </div>
       <div id="cc-2-loc-description"></div>
     </div>
     <div class="poll-break"></div>
@@ -641,6 +651,32 @@ $('#cc-1-reinit-button').click(function() {
  	data_entry_helper::$javascript .= "
 
 showSessionsPanel = true;
+
+jQuery('#cc-2-valid-location-button').click(function(){
+	var lat = 0;
+	var long = 0;
+	var tmp = parseFloat(jQuery('[name=place\\:latDeg]').val());
+	if(!isNaN(tmp)) lat = tmp;
+	else jQuery('[name=place\\:latDeg]').val(0);
+	tmp = parseFloat(jQuery('[name=place\\:latMin]').val());
+	if(!isNaN(tmp)) lat = lat + tmp/60;
+	else jQuery('[name=place\\:latMin]').val(0);
+	tmp = parseFloat(jQuery('[name=place\\:latSec]').val());
+	if(!isNaN(tmp)) lat = lat + tmp/3600;
+	else jQuery('[name=place\\:latSec]').val(0);
+	
+	tmp = parseFloat(jQuery('[name=place\\:longDeg]').val());
+	if(!isNaN(tmp)) long = tmp;
+	else jQuery('[name=place\\:longDeg]').val(0);
+	tmp = parseFloat(jQuery('[name=place\\:longMin]').val());
+	if(!isNaN(tmp)) long = lat + tmp/60;
+	else jQuery('[name=place\\:longMin]').val(0);
+	tmp = parseFloat(jQuery('[name=place\\:longSec]').val());
+	if(!isNaN(tmp)) long = lat + tmp/3600;
+	else jQuery('[name=place\\:longSec]').val(0);
+	
+	jQuery('#imp-sref').val(lat.toString() + ', ' +long.toString()).change();
+});
 
 validateStationPanel = function(){
 	var myPanel = jQuery('#cc-2');
