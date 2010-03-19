@@ -25,6 +25,7 @@
 require_once('lang.php');
 require_once('helper_config.php');
 require_once('submission_builder.php');
+require_once("libcurlEmulator/libcurlemu.inc.php");
 
 global $indicia_templates;
 
@@ -3209,6 +3210,14 @@ $('.ui-state-default').live('mouseout', function() {
         $r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
             implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
       }
+	  // Test we have a writeable upload directory
+	  if (!is_dir(parent::$upload_path)) {
+	    $r .= '<li class="ui-state-error">The upload path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
+      } elseif (!is_writeable($path)) {
+	    $r .= '<li class="ui-state-error">The upload path setting in helper_config.php points to a read only directory (' . parent::$upload_path . '). This will result in slow form loading performance.</li>';
+  	} elseif ($fullInfo) {
+        $r .= '<li>Success: Upload directory is present and writeable.</li>';
+      }
     }
     $r .= '</ul></div>';
     return $r;
@@ -3226,18 +3235,19 @@ $('.ui-state-default').live('mouseout', function() {
    * Sends a POST using the cUrl library
    */
   public static function http_post($url, $postargs, $output_errors=true) {
-    $session = curl_init($url);
+    $session = curl_init();
     // Set the POST options.
-    curl_setopt ($session, CURLOPT_POST, true);
+	curl_setopt ($session, CURLOPT_URL, $url);    
     if ($postargs!==null) {
+	  curl_setopt ($session, CURLOPT_POST, true);
       curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
     }
     curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-
-    // Do the POST and then close the session
+    // Do the POST and then close the session	
     $response = curl_exec($session);
-    if (curl_errno($session) || strpos($response, 'HTTP/1.1 200 OK')===false) {
+	// Check for an error, or check if the http response was not OK. Note that the cUrl emulator only returns connection: close.
+    if (curl_errno($session) || (strpos($response, 'HTTP/1.1 200 OK')===false && strpos($response, 'Connection: close')===false)) {
       if ($output_errors) {
         echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>';
         if (curl_errno($session)) {
