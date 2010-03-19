@@ -58,3 +58,8 @@
   margin: 0 1em 0.5em 0.5em;
   padding-top: 2px;
 }
+
+.footer label.auto {
+  display: inline;
+  margin-top: 0.5em;
+}
