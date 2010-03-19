@@ -47,9 +47,9 @@ class submission_builder extends helper_config {
   private static $location_image=array();
 
   /**
-   * @var string Image that has been uploaded by warehouse.
+   * @var array List of images that have been uploaded by warehouse.
    */
-  private static $image_upload;
+  private static $image_upload=array();
 
   /**
    * Helper function to simplify building of a submission. Does simple submissions that do not involve
