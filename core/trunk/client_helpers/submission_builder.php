@@ -47,6 +47,11 @@ class submission_builder extends helper_config {
   private static $location_image=array();
 
   /**
+   * @var array List of species images that have been uploaded.
+   */
+  private static $taxa_taxon_list_image=array();
+
+  /**
    * @var array List of images that have been uploaded by warehouse.
    */
   private static $image_upload=array();
@@ -244,6 +249,9 @@ class submission_builder extends helper_config {
     }
 
     // Does it have an image?
+
+    // First search for input controls with names of type $modelName:image
+    // This is typically what you get on a client form.
     $media_var = $modelName .'_image';
     if (count(self::$$media_var) == 0) {
       //images have not yet been uploaded
@@ -265,14 +273,18 @@ class submission_builder extends helper_config {
       );
     }
  
-    // Alternate action if upload is happening on the warehouse.
+    // Now search for an input controls with the name image_upload
+    // I gather this is what you get in the warehouse. I don't know where (Jim 19/3/2010).
     if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
-      // link image path attribute direct to record.
+      // link image path attribute direct to record i.e. not a subModel.
       $names = self::handle_media('image_upload', false);
       if (count($names) != 0) {
         $modelWrapped['fields']['path'] = array('value'=>$names[0]);
       }
-    } else if (array_key_exists($modelName."_image:path", $values)){
+    }
+    // And this adds an already uploaded image to the model based on two fields
+    // which could be text fields or hidden fields
+    else if (array_key_exists($modelName."_image:path", $values)){
       // TODO Get a caption for the image
       $oiFields = array('path' => $values[$modelName."_image:path"]);
       if(array_key_exists($modelName."_image:id", $values)){
@@ -334,7 +346,8 @@ class submission_builder extends helper_config {
           $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
           $response = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
           $output = json_decode($response['output'], true);
-          if ($output) {
+          if (is_array($output)) {
+            //an array signals an error
             if (array_key_exists('error', $output)) {
               $return['error'] = $output['error'];
               //attach the errors to the control that caused them
@@ -342,10 +355,11 @@ class submission_builder extends helper_config {
               if (array_key_exists('errors', $output)) {
                 $return['errors']["$media_id:$i"] = $output['errors']['media_upload'];
               }
-            } else {
-              //filenames are returned directly
-              self::${$media_var}[] = $output;
             }
+          } else {
+            //filenames are returned without structure
+            //the output of json_decode may not be valid.
+            self::${$media_var}[] = $response['output'];
           }
           //remove local copy
           unlink($uploadpath.$destination);
