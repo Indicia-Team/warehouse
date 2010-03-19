@@ -32,6 +32,26 @@ require_once('data_entry_helper.php');
 class submission_builder extends helper_config {
 
   /**
+   * @var array List of sample images that have been uploaded.
+   */
+  private static $sample_image=array();
+
+  /**
+   * @var array List of occurrence images that have been uploaded.
+   */
+  private static $occurrence_image=array();
+
+  /**
+   * @var array List of location images that have been uploaded.
+   */
+  private static $location_image=array();
+
+  /**
+   * @var string Image that has been uploaded by warehouse.
+   */
+  private static $image_upload;
+
+  /**
    * Helper function to simplify building of a submission. Does simple submissions that do not involve
    * species checklist grids.
    * @param array $values List of the posted values to create the submission from.
@@ -222,8 +242,15 @@ class submission_builder extends helper_config {
         $modelWrapped['metaFields'][self::get_attr_entity_prefix($modelName).'Attributes']['value']=$attrs;
       }
     }
+
     // Does it have an image?
-    $names = self::handle_media("$modelName:image");
+    $media_var = $modelName .'_image';
+    if (count(self::$$media_var) == 0) {
+      //images have not yet been uploaded
+      $response = self::handle_media($modelName .':image');
+    }
+    $names = self::$$media_var;
+
     foreach ($names as $name) {
       // Add image model for a detail table record to be created.
       // TODO Get a caption for the image
@@ -270,8 +297,9 @@ class submission_builder extends helper_config {
    * @param Boolean $submit If true (default), then the file is uploaded first into the local
    * server's directory structure, then sent to the Indicia Warehouse using the data services.
    * If false, then it is uploaded to the local server only.
-   * @return String Array Final filenames of the uploaded files so that they can be inserted in a field
-   * which stores the file path.
+   * @return Array Returns with key success or error with details of errors encountered when uploading.
+   * At the same time self::$model_mediaType is populated with final filenames of the uploaded files
+   * so that they can be inserted in a field which stores the file path.
    */
   public static function handle_media($media_id, $submit=true) {
 
@@ -279,6 +307,10 @@ class submission_builder extends helper_config {
     $return = array();
     $uploadpath = parent::$upload_path;
     $target_url = parent::$base_url."/index.php/services/data/handle_media";
+    $i = 0;
+
+    //determine where to store uploaded file names
+    $media_var = str_replace(':', '_', $media_id);
 
     foreach ($files as $file) {
       $name = $file['name'];
@@ -300,22 +332,40 @@ class submission_builder extends helper_config {
             $postargs['nonce'] = $_POST['nonce'];
           }
           $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
-          $result = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
-          $return[] = $result['output'];
+          $response = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
+          $output = json_decode($response['output'], true);
+          if ($output) {
+            if (array_key_exists('error', $output)) {
+              $return['error'] = $output['error'];
+              //attach the errors to the control that caused them
+              //PROBLEM assumes numeric suffix
+              if (array_key_exists('errors', $output)) {
+                $return['errors']["$media_id:$i"] = $output['errors']['media_upload'];
+              }
+            } else {
+              //filenames are returned directly
+              self::${$media_var}[] = $output;
+            }
+          }
           //remove local copy
           unlink($uploadpath.$destination);
         } else {
           // store locally so create the thumbnails or other image sizes.
           Image::create_image_files($uploadpath, $destination);
-          $return[] = $destination;
+          self::${$media_var}[] = $destination;
         }
       } 
       else {
-        //move_uploaded_file failed
-        //TODO error messaging
+        $return['error'] = 'Upload error';
+        //attach the errors to the control that caused them
+        //PROBLEM assumes numeric suffix
+        $return['errors']["$media_id:$i"] = 'Sorry, there was a problem uploading this file.';
       }      
+      $i++;
     }
     //finished looping through files
+    if (count($return) == 0)
+      $return['success'] = true;
     return $return;
   }
 

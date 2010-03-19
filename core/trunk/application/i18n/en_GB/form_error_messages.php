@@ -152,7 +152,7 @@ $lang = array (
     'default' => 'Invalid Input.',
   ),
   'media_upload' => Array (
-    'size' => 'The file exceeds the maximum allowed by the warehouse.',
+    'size' => 'The file size exceeds the maximum allowed.',
     'type' => 'The file is not one of the allowed types [png,gif,jpg].',
   ),
 );
