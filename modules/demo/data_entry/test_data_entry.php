@@ -105,10 +105,17 @@ echo data_entry_helper::select(array(
 </fieldset>
 <fieldset>
 <legend>Sample attributes</legend>
-<label for='<?php echo $config['weather']; ?>'>Weather:</label>
-<input type='text' name='<?php echo $config['weather']; ?>' class="wide" id='<?php echo $config['weather']; ?>'/><br />
-<label for='<?php echo $config['temperature']; ?>'>Temperature (Celsius):</label>
-<input type='text' name='<?php echo $config['temperature']; ?>' id='<?php echo $config['temperature']; ?>'/><br />
+<?php 
+echo data_entry_helper::text_input(array(
+  'label' => 'Weather',
+  'fieldname' => $config['weather'],
+  'class' => 'control-width-6'
+)); 
+echo data_entry_helper::text_input(array(
+  'label' => 'Temperature (Celcius)',
+  'fieldname' => $config['temperature']
+));
+?>
 <?php 
 echo data_entry_helper::radio_group(array(
   'label' => 'Surroundings',

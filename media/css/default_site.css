@@ -85,6 +85,10 @@ input, select, textarea {
 	width: 300px;
 }
 
+.control-width-6 {
+  width: 500px;
+}
+
 .auto {
   width: auto
 }

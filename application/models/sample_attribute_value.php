@@ -51,8 +51,13 @@ class Sample_Attribute_Value_Model extends ORM {
       case 'T':
         $vf = 'text_value';
         break;
+      case 'I':
+        $vf = 'int_value';
+        $array->add_rules('int_value', 'digit');
+        break;
       case 'F':
         $vf = 'float_value';
+        $array->add_rules('float_value', 'numeric');
         break;
       case 'D':
         $array->add_rules('date_end_value', 'required');
