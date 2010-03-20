@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
 /**
  * Model class for the Location_Attribute_Values table.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Location_Attribute_Value_Model extends ORM {
 
@@ -50,33 +50,38 @@ class Location_Attribute_Value_Model extends ORM {
       $id = $id['location_attribute_id'];
       $oam = ORM::factory('location_attribute', $id);
       switch ($oam->data_type) {
-	      case 'T':
-	        $vf = 'text_value';
-	        break;
-	      case 'F':
-	        $vf = 'float_value';
-	        break;
-	      case 'D':	        
-	        $array->add_rules('date_end_value', 'required');
-	        $array->add_rules('date_type_value', 'required');
-	        $vf = 'date_start_value';
-	        break;
-	      case 'V':
-	        // Vague date - presumably already validated?	        
-	        $array->add_rules('date_end_value', 'required');
-	        $array->add_rules('date_type_value', 'required');
-	        $vf = 'date_start_value';
-	        break;
-	      case 'B':
-	      	// Boolean
-	      	// The checkbox html control actually posts the value on
+      case 'T':
+        $vf = 'text_value';
+        break;
+      case 'I':
+        $vf = 'int_value';
+        $array->add_rules('int_value', 'digit');
+        break;
+      case 'F':
+        $vf = 'float_value';
+        $array->add_rules('float_value', 'numeric');
+        break;
+        case 'D':          
+          $array->add_rules('date_end_value', 'required');
+          $array->add_rules('date_type_value', 'required');
+          $vf = 'date_start_value';
+          break;
+        case 'V':
+          // Vague date - presumably already validated?          
+          $array->add_rules('date_end_value', 'required');
+          $array->add_rules('date_type_value', 'required');
+          $vf = 'date_start_value';
+          break;
+        case 'B':
+          // Boolean
+          // The checkbox html control actually posts the value on
           if ($array->int_value=='on') $array->int_value=1;
-      		$array->add_rules('int_value', 'minimum[0]');
-      		$array->add_rules('int_value', 'maximum[1]');
-      		$vf = 'int_value';
-	      	break;
-	      default:
-	        $vf = 'int_value';
+          $array->add_rules('int_value', 'minimum[0]');
+          $array->add_rules('int_value', 'maximum[1]');
+          $vf = 'int_value';
+          break;
+        default:
+          $vf = 'int_value';
       }
       // Require the field with the value in
       if ($vf != null) $array->add_rules($vf, 'required');

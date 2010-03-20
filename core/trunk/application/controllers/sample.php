@@ -56,13 +56,17 @@ class Sample_Controller extends Gridview_Base_Controller
    * This adds the custome attributes list to the data available for the view. 
    */
   protected function getDefaults() {
-  	$r = parent::getDefaults();
-  	if (array_key_exists('sample:id', $_POST)) { 
-  	  $this->loadOccurrences($r);
-  	}
-  	$this->loadAttributes($r);
-  	$r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
-  	return $r;
+    $r = parent::getDefaults();
+    if (array_key_exists('sample:id', $_POST)) { 
+      $this->loadOccurrences($r);
+    }
+    $this->loadAttributes($r);
+    if (array_key_exists('sample:survey_id', $_POST)) { 
+      $this->loadOccurrences($r);
+      $r['sample:survey_id'] = $_POST['sample:survey_id'];
+      $r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
+    }
+    return $r;
   }
   
   /** 
@@ -81,6 +85,10 @@ class Sample_Controller extends Gridview_Base_Controller
     $r['occurrences'] = $occ_grid->display();
   }
   
+  /**
+   * Loads the custom attributes for this sample into the load array. Also sets up
+   * any lookup lists required.
+   */
   private function loadAttributes(&$r) {
     // Grab all the custom attribute data
     $attrs = $this->db->

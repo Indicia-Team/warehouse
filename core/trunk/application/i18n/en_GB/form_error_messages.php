@@ -70,6 +70,7 @@ $lang = array (
     'default' => 'Invalid Input.',
   ),
   'int_value' => Array (
+    'digit' => 'This must be a valid whole number.',
     'maximum' => 'The value specified for this number is too high',
     'minimum' => 'The value specified for this number is too low',
   ),
