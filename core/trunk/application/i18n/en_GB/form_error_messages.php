@@ -73,6 +73,7 @@ $lang = array (
     'digit' => 'This must be a valid whole number.',
     'maximum' => 'The value specified for this number is too high',
     'minimum' => 'The value specified for this number is too low',
+    'default' => 'The value must be a valid whole number.',
   ),
   'iso' => Array (
     'default' => 'Invalid ISO 639-2 language code.',
@@ -120,6 +121,7 @@ $lang = array (
   ),
   'text_value' => array (
     'regex' => 'The value is not of the correct format.',
+    'default' => 'The value is not of the correct format.',
   ),
   'term' => array (
     'required' => 'The term must be specified.',
