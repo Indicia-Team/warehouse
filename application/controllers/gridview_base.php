@@ -81,6 +81,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     // Templating
     $this->template->title = $this->pagetitle;
     $this->template->content = $this->view;
+    
+    // Setup breadcrumbs
+    $this->page_breadcrumbs[] = html::anchor($this->gridmodelname, $this->pagetitle);
   }
 
   protected function prepare_grid_view() {
@@ -245,4 +248,5 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     }
 
   }
+
 }
