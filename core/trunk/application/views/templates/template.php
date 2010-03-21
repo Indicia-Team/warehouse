@@ -138,7 +138,9 @@ echo html::stylesheet(
 
     <!-- BEGIN: page level content -->
     <div id="content">
-
+    <div id="breadcrumbs">
+<?php echo $this->get_breadcrumbs(); ?>
+</div>
         <h1><?php echo $title; ?></h1>
 <?php
   $info = $this->session->get('flash_info', null);

@@ -35,6 +35,12 @@ class Indicia_Controller extends Template_Controller {
 
   // Template view name
   public $template = 'templates/template';
+  
+  /**
+   * Array of page specific breadcrumbs. Subclasses can append to this as required. 
+   * @var array $page_breadcrumbs
+   */
+  protected $page_breadcrumbs = array();
 
   public function __construct()
   {
@@ -144,6 +150,9 @@ class Indicia_Controller extends Template_Controller {
     	'values'=>$values,
       'other_data'=>$other
     )); 
+    // Setup breadcrumbs
+    $this->page_breadcrumbs[] = html::anchor($this->gridmodelname, $this->pagetitle);
+    $this->page_breadcrumbs[] = $this->model->caption();
   }
   
   /**
@@ -426,4 +435,30 @@ class Indicia_Controller extends Template_Controller {
     return $arr;
   }
   
+  public function get_breadcrumbs()
+  {
+    $breadcrumbHtml = '';
+    $breadcrumbList = array_merge(array(
+      html::anchor('', 'Home')
+    ), $this->page_breadcrumbs); 
+    while (current($breadcrumbList))
+    {
+      // Check if we have reached the last crumb
+      if(key($breadcrumbList) < (count($breadcrumbList)-1))
+      {
+        // If we haven't, add a breadcrumb separator
+        $breadcrumbHtml .= current($breadcrumbList).' >> ';
+      }
+      else
+      {
+        // If we have, remove the anchor from the breadcrumb and make it bold
+        $breadcrumbHtml .= strip_tags(current($breadcrumbList));
+      }
+
+      next($breadcrumbList);
+    }
+    return $breadcrumbHtml;
+  }
+
 }
+

@@ -148,7 +148,10 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     $this->setView($mn."/".$mn."_edit", $this->model->caption(), array(
     	'values'=>$values,
       'other_data'=>$other
-    )); 
+    ));
+    // Setup breadcrumbs
+    $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
+    $this->page_breadcrumbs[] = $this->model->caption();
   }
   
   public function save() {       
@@ -203,6 +206,9 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     // Templating
     $this->template->title = $this->pagetitle;
     $this->template->content = $this->view;
+    
+    // Setup breadcrumbs
+    $this->page_breadcrumbs[] = $this->pagetitle;
   }
 
   public function page_gv($page_no) {

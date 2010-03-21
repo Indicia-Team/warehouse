@@ -252,3 +252,8 @@ fieldset.button-set {
 fieldset.filter select {
   width: 200px;
 }
+
+#breadcrumbs {
+  font-size: 90%;
+  margin-bottom: 0.5em;
+}
