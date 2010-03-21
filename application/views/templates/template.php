@@ -77,7 +77,7 @@ echo html::stylesheet(
     // Hack to get fancybox working as a jQuery live, because some of our images load from AJAX calls,
     // e.g. on the species checklist taxa tab. So we temporarily create a dummy link to our image and click it.
     $('a.fancybox').live('click', function() {
-      jQuery("body").after('<a id="link_fancybox" style="display: hidden;" href="'+jQuery(this).attr('href')+'">dummy</a>');
+      jQuery("body").after('<a id="link_fancybox" style="display: hidden;" href="'+jQuery(this).attr('href')+'"></a>');
       jQuery('#link_fancybox').fancybox(); 
       jQuery('#link_fancybox').click();
       jQuery('#link_fancybox').remove();

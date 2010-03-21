@@ -47,6 +47,10 @@ echo data_entry_helper::date_picker(array(
     'label'=>'Date',
     'fieldname'=>'sample:date'
 ));
+echo data_entry_helper::text_input(array(
+	'label' => 'Temperature',
+	'fieldname' => 'smpAttr:2'
+));
 echo data_entry_helper::map();
 echo data_entry_helper::select(array(
     'label'=>'Survey',

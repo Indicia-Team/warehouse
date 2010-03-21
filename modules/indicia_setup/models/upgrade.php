@@ -40,7 +40,7 @@ class Upgrade_Model extends Model
       // Downgrade not possible if the new version is lower than the database version      
       if (1 == version_compare($old_version, $new_version) )
       {
-        Kohana::log('error', 'Current script version is lower than the database version. Downgrade not possible.');
+        Kohana::log('error', "Current application version ($new_version) is lower than the database version ($old_version). Downgrade not possible.");
         return Kohana::lang('setup.error_downgrade_not_possible');
       }
       // This upgrade process was only introduced in version 0.2.3
