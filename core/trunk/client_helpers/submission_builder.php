@@ -32,31 +32,6 @@ require_once('data_entry_helper.php');
 class submission_builder extends helper_config {
 
   /**
-   * @var array List of sample images that have been uploaded.
-   */
-  private static $sample_image=array();
-
-  /**
-   * @var array List of occurrence images that have been uploaded.
-   */
-  private static $occurrence_image=array();
-
-  /**
-   * @var array List of location images that have been uploaded.
-   */
-  private static $location_image=array();
-
-  /**
-   * @var array List of species images that have been uploaded.
-   */
-  private static $taxa_taxon_list_image=array();
-
-  /**
-   * @var array List of images that have been uploaded by warehouse.
-   */
-  private static $image_upload=array();
-
-  /**
    * Helper function to simplify building of a submission. Does simple submissions that do not involve
    * species checklist grids.
    * @param array $values List of the posted values to create the submission from.
@@ -247,39 +222,44 @@ class submission_builder extends helper_config {
         $modelWrapped['metaFields'][self::get_attr_entity_prefix($modelName).'Attributes']['value']=$attrs;
       }
     }
-
-    // Does it have an image?
-
-    // First search for input controls with names of type $modelName:image
-    // This is typically what you get on a client form.
-    $media_var = $modelName .'_image';
-    if (count(self::$$media_var) == 0) {
-      //images have not yet been uploaded
-      $response = self::handle_media($modelName .':image');
+    
+    /* Handle uploading of image files. There are several methods of doing this:
+     *  1) If the model name is one of the image tables (e.g. taxon_image or occurrence_image), then
+     *  the path to the image can be supplied in the path attribute as a normal attribute value. However 
+     *  if there is a file attached to the submission called image_upload this file will be uploaded and
+     *  its path stored in the path attribute.
+     *  2) A shortcut to uploading is to provide a file upload in the submission with the same model name as the "owner"
+     *  model and the attribute name "image", for example "occurrence:image". In this case the file is uploaded and 
+     *  used to create a submodel for occurrence_image. Futhermore it is possible to upload multiple images using this techinque
+     *  if each image file's name has a unique, zero indexed consecutive suffix, e.g. occurrence:image:0, occurrence_image:1.
+     */
+    
+    // Ask for media to be handled when the file name is the model name plus :image (the shortcut method).
+    $response = self::handle_media("$modelName:image");
+    // Any files uploaded of this form need to be wrapped in a model
+    if ($response['success']) {
+      foreach ($response['files'] as $name) {
+        // Add image model for a detail table record to be created.
+        // TODO Get a caption for the image
+        $oiFields = array(
+            'path' => $name,
+            'caption' => 'Default caption'
+        );
+        $oiMod = self::wrap($oiFields, $modelName.'_image');
+        $modelWrapped['subModels'][] = array(
+            'fkId' => $modelName.'_id',
+            'model' => $oiMod
+        );
+      }
     }
-    $names = self::$$media_var;
 
-    foreach ($names as $name) {
-      // Add image model for a detail table record to be created.
-      // TODO Get a caption for the image
-      $oiFields = array(
-          'path' => $name,
-          'caption' => 'Default caption'
-      );
-      $oiMod = self::wrap($oiFields, $modelName.'_image');
-      $modelWrapped['subModels'][] = array(
-          'fkId' => $modelName.'_id',
-          'model' => $oiMod
-      );
-    }
- 
-    // Now search for an input controls with the name image_upload
-    // I gather this is what you get in the warehouse. I don't know where (Jim 19/3/2010).
+    // Now search for an input controls with the name image_upload.
+    // For example, this occurs on the taxon_image edit page of the Warehouse.
     if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
-      // link image path attribute direct to record i.e. not a subModel.
-      $names = self::handle_media('image_upload', false);
-      if (count($names) != 0) {
-        $modelWrapped['fields']['path'] = array('value'=>$names[0]);
+      // link image path attribute direct to record i.e. not a subModel.      
+      $response = self::handle_media('image_upload', false);
+      if ($response['success']) {
+        $modelWrapped['fields']['path'] = array('value'=>$response['files'][0]);
       }
     }
     // And this adds an already uploaded image to the model based on two fields
@@ -309,8 +289,9 @@ class submission_builder extends helper_config {
    * @param Boolean $submit If true (default), then the file is uploaded first into the local
    * server's directory structure, then sent to the Indicia Warehouse using the data services.
    * If false, then it is uploaded to the local server only.
-   * @return Array Returns with key success or error with details of errors encountered when uploading.
-   * At the same time self::$model_mediaType is populated with final filenames of the uploaded files
+   * @return Array Returns with key success, set to true if files were uploaded, false if nothing was uploaded or there
+   * was an error. If an error, then there can be a single error key or an array caller errors with details of errors encountered 
+   * when uploading. On success, the return array also has a key 'files' populated with final filenames of the uploaded files 
    * so that they can be inserted in a field which stores the file path.
    */
   public static function handle_media($media_id, $submit=true) {
@@ -320,9 +301,6 @@ class submission_builder extends helper_config {
     $uploadpath = parent::$upload_path;
     $target_url = parent::$base_url."/index.php/services/data/handle_media";
     $i = 0;
-
-    //determine where to store uploaded file names
-    $media_var = str_replace(':', '_', $media_id);
 
     foreach ($files as $file) {
       $name = $file['name'];
@@ -343,7 +321,7 @@ class submission_builder extends helper_config {
           if (array_key_exists('nonce', $_POST)) {
             $postargs['nonce'] = $_POST['nonce'];
           }
-          $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));
+          $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$destination));          
           $response = data_entry_helper::http_post($target_url, $file_to_upload + $postargs);
           $output = json_decode($response['output'], true);
           if (is_array($output)) {
@@ -359,14 +337,14 @@ class submission_builder extends helper_config {
           } else {
             //filenames are returned without structure
             //the output of json_decode may not be valid.
-            self::${$media_var}[] = $response['output'];
+            $return['files'][] = $response['output'];
           }
           //remove local copy
           unlink($uploadpath.$destination);
         } else {
           // store locally so create the thumbnails or other image sizes.
           Image::create_image_files($uploadpath, $destination);
-          self::${$media_var}[] = $destination;
+          $return['files'][] = $destination;
         }
       } 
       else {
@@ -377,9 +355,9 @@ class submission_builder extends helper_config {
       }      
       $i++;
     }
-    //finished looping through files
-    if (count($return) == 0)
-      $return['success'] = true;
+    //finished looping through files. If no errors in the response array, all went well.
+    $return['success'] = !(array_key_exists('error', $return) || array_key_exists('errors', $return)) && count($files)>0;
+
     return $return;
   }
 

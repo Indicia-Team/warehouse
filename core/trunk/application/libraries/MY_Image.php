@@ -37,14 +37,14 @@ class Image extends Image_Core {
   public static function create_image_files($uploadpath, $filename) {
     // First check that the configured graphics library is available.
     // @todo Consider implementing checks if the driver is set to ImageMagick or GraphicsMagick.    
-    if (kohana::config('image.driver') != 'GD' || function_exists('gd_info')) {
+    if (kohana::config('image.driver') != 'GD' || function_exists('gd_info')) {      
       // tolerate path with or withoug trailing slash
       if (substr($uploadpath,-1) != '\\' && substr($uploadpath,-1) != '/')
-        $uploadpath = $uploadpath.'/';
+        $uploadpath = $uploadpath.'/';      
       $fileParts = explode('.', $filename);
-      $ext = array_pop($fileParts);      
+      $ext = strtolower(array_pop($fileParts));
       if (in_array($ext, Image::$allowed_types)) {
-        $config = kohana::config('indicia.image_handling');        
+        $config = kohana::config('indicia.image_handling');
         if (!$config) {
           // Apply a default configuration if not in the file.
           $config = array(
