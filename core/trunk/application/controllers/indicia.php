@@ -1,3 +1,4 @@
+
 <?php
 
 /**
@@ -437,27 +438,27 @@ class Indicia_Controller extends Template_Controller {
   
   public function get_breadcrumbs()
   {
-    $breadcrumbHtml = '';
-    $breadcrumbList = array_merge(array(
-      html::anchor('', 'Home')
-    ), $this->page_breadcrumbs); 
-    while (current($breadcrumbList))
-    {
-      // Check if we have reached the last crumb
-      if(key($breadcrumbList) < (count($breadcrumbList)-1))
+    if ($this->auth->logged_in()) {
+      $breadcrumbHtml = '';
+      $breadcrumbList = array_merge(array(
+        html::anchor('', 'Home')
+      ), $this->page_breadcrumbs); 
+      while (current($breadcrumbList))
       {
-        // If we haven't, add a breadcrumb separator
-        $breadcrumbHtml .= current($breadcrumbList).' >> ';
+        // Check if we have reached the last crumb
+        if(key($breadcrumbList) < (count($breadcrumbList)-1)) {
+          // If we haven't, add a breadcrumb separator
+          $breadcrumbHtml .= current($breadcrumbList).' >> ';
+        }
+        else {
+          // If we have, remove the anchor from the breadcrumb and make it bold
+          $breadcrumbHtml .= strip_tags(current($breadcrumbList));
+        }
+        next($breadcrumbList);
       }
-      else
-      {
-        // If we have, remove the anchor from the breadcrumb and make it bold
-        $breadcrumbHtml .= strip_tags(current($breadcrumbList));
-      }
-
-      next($breadcrumbList);
-    }
-    return $breadcrumbHtml;
+      return $breadcrumbHtml;
+	} else
+	  return '';
   }
 
 }
