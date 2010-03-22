@@ -152,7 +152,7 @@ class Indicia_Controller extends Template_Controller {
       'other_data'=>$other
     )); 
     // Setup breadcrumbs
-    $this->page_breadcrumbs[] = html::anchor($this->gridmodelname, $this->pagetitle);
+    $this->page_breadcrumbs[] = html::anchor($mn, $this->pagetitle);
     $this->page_breadcrumbs[] = $this->model->caption();
   }
   
