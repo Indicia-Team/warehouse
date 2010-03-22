@@ -73,7 +73,8 @@ $indicia_templates = array(
       '<span>{captionNext}</span><span class="ui-icon ui-icon-circle-arrow-e"></span></div>',
   'tab_prev_button' => '<div{class}/>'.
       '<span class="ui-icon ui-icon-circle-arrow-w"></span><span>{captionPrev}</span></div>',
-  'submit_button' => '<input type="submit"{class} id="test" value="{captionSave}"/>',
+  'submit_button' => '<div{class}/>'.
+      '<span>{captionSave}</span><span class="ui-icon ui-icon-check"></span></div>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
