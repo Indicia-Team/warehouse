@@ -142,7 +142,7 @@ input, select, textarea {
 }
 
 .indicia-button {
-  padding: 0em 0.3em;
+  padding: 0 0.3em;
   margin: 0em 0.3em;
   min-height: 23px;
   text-decoration: none;
@@ -150,12 +150,19 @@ input, select, textarea {
   display:inline-block;
   zoom:1;
   *display:inline;
+  line-height: 1.75em;
 }
 
 .indicia-button span {
-	display:inline-block;
+  display:inline-block;
   zoom:1;
   *display:inline;
+  vertical-align: middle;
+  position: relative;
+}
+
+.indicia-button .ui-icon {
+  margin: 2px 4px 0px 4px;
 }
 
 .buttons {
