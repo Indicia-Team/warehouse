@@ -86,7 +86,8 @@ class iform_my_dot_map {
             'none' => 'No Filter',
             'taxa_taxon_list_id' => 'Species',
             'external_key' => 'Species using External Key',
-            'survey_id' => 'Survey'
+            'survey_id' => 'Survey',
+            'sample_id' => 'Submitted data'
           ),
           'group'=>'Distribution Layer 1',
           'required'=>false
@@ -155,7 +156,8 @@ class iform_my_dot_map {
             'none' => 'No Filter',
             'taxa_taxon_list_id' => 'Species',
             'external_key' => 'Species using External Key',
-            'survey_id' => 'Survey'
+            'survey_id' => 'Survey',
+            'sample_id' => 'Submitted data'
           ),
           'group'=>'Distribution Layer 2',
           'required'=>false
@@ -224,7 +226,8 @@ class iform_my_dot_map {
             'none' => 'No Filter',
             'taxa_taxon_list_id' => 'Species',
             'external_key' => 'Species using External Key',
-            'survey_id' => 'Survey'
+            'survey_id' => 'Survey',
+            'sample_id' => 'Submitted data'
           ),
           'group'=>'Distribution Layer 3',
           'required'=>false
@@ -278,17 +281,16 @@ class iform_my_dot_map {
       // @todo Error handling on the response
       $occurrence = data_entry_helper::get_population_data($fetchOpts);      
     }
-    // Add the 3 distribution layers if present
-    $layerName = self::build_distribution_layer(1, $args, $occurrence);
+    // Add the 3 distribution layers if present. Reverse the order so 1st layer is topmost
+    $layerName = self::build_distribution_layer(3, $args, $occurrence);
     if ($layerName) $options['layers'][] = $layerName;
     $layerName = self::build_distribution_layer(2, $args, $occurrence);
     if ($layerName) $options['layers'][] = $layerName;
-    $layerName = self::build_distribution_layer(3, $args, $occurrence);
+    $layerName = self::build_distribution_layer(1, $args, $occurrence);
     if ($layerName) $options['layers'][] = $layerName;
     // Now output a grid of the occurrences that were just saved.
     if (isset($occurrence)) {
-      $r = '<div class="page-notice ui-widget ui-corner-all">';
-      $r .= "<table><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
+      $r .= "<table class=\"submission\"><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
       $r .= "<tbody>\n";      
       foreach ($occurrence as $record) {
         $r .= "<tr><td>".$record['taxon']."</td><td>".$record['date_start']."</td><td>".$record['entered_sref']."</td></tr>\n";
