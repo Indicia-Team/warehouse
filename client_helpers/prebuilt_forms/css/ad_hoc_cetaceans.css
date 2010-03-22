@@ -59,7 +59,10 @@
   padding-top: 2px;
 }
 
+.footer {
+  margin-top: 1.5em;
+}
+
 .footer label.auto {
-  display: inline;
-  margin-top: 0.5em;
+  width: 450px;
 }
