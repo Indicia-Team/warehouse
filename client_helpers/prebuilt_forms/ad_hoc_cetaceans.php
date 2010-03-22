@@ -155,7 +155,7 @@ class iform_ad_hoc_cetaceans {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
-    global $indicia_templates; 
+    global $indicia_templates, $user; 
     $r = "<form method=\"post\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
     $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
@@ -247,7 +247,13 @@ class iform_ad_hoc_cetaceans {
     $indicia_templates['taxon_label_cell'] = "\n<td class='scTaxonCell'>{content}</td>";
     // Also template the attribute controls to show the label in place.
     $indicia_templates['attribute_cell'] = "\n<td class='scOccAttrCell'><label>{label}:</label><br/>{content}</td>";
-    $r .= data_entry_helper::species_checklist($species_list_args);    
+    $r .= data_entry_helper::species_checklist($species_list_args);
+    if ($args['interface']=='wizard') {
+      $r .= data_entry_helper::wizard_buttons(array(
+        'divId'=>'controls',
+        'page' => ($user->id==0) ? 'first' : 'middle'
+      ));
+    }
     $r .= "</fieldset>\n";
     
     // --Place tab--
@@ -300,7 +306,13 @@ class iform_ad_hoc_cetaceans {
         }
       }
     );'."\n";
-    $r .= "</div></div></fieldset>";
+    $r .= '</div></div>';
+    if ($args['interface']=='wizard') {
+      $r .= data_entry_helper::wizard_buttons(array(
+        'divId'=>'controls'
+      ));
+    }
+    $r .= '</fieldset>';
     
     // --Other information tab--
     $r .= "<fieldset id=\"other\">\n";
