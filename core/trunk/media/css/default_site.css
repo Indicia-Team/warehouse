@@ -243,3 +243,7 @@ li.ui-state-error {
 .ui-tabs-panel {
   overflow: auto;
 }
+
+.olMap img {
+  border: none !important;
+}
