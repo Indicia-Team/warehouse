@@ -325,7 +325,7 @@ class iform_ad_hoc_cetaceans {
     $indicia_templates['timeFormat'] = '<label>hh:mm</label><br/>';
     $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('Sighting Time'),
-        'fieldname'=>'smpAttr'.$args['sample_time_attr_id'],
+        'fieldname'=>'smpAttr:'.$args['sample_time_attr_id'],
         'class' => 'control-width-1',
         'suffixTemplate' => 'timeFormat'
     ));
@@ -357,7 +357,8 @@ class iform_ad_hoc_cetaceans {
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    return data_entry_helper::build_sample_occurrence_submission($values);
+    // pass true to the submission build, as it will include rows with any data (as the checkbox is hidden).
+    return data_entry_helper::build_sample_occurrences_list_submission($values, true);
   } 
   
   
