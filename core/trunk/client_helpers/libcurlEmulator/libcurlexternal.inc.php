@@ -437,7 +437,8 @@ function curl_exec($ch) {
 	$verbose = $opt["verbose"];
 	
 	// ask commandline CURL to return its statistics at the end of its output
-	$opt["settings"]["write-out"] = "%{http_code}|%{time_total}|%{time_namelookup}|%{time_connect}|%{time_pretransfer}|%{time_starttransfer}|%{size_download}|%{size_upload}|%{size_header}|%{size_request}|%{speed_download}|%{speed_upload}|||||||%{content_type}|%{url_effective}";
+	/*** Removed for Indicia, as it does not seem to work 22/03/2010 ***/
+	//$opt["settings"]["write-out"] = "%{http_code}|%{time_total}|%{time_namelookup}|%{time_connect}|%{time_pretransfer}|%{time_starttransfer}|%{size_download}|%{size_upload}|%{size_header}|%{size_request}|%{speed_download}|%{speed_upload}|||||||%{content_type}|%{url_effective}";
 	$writeout_order = array(
 		CURLINFO_HTTP_CODE,
 		CURLINFO_TOTAL_TIME,
@@ -520,16 +521,9 @@ function curl_exec($ch) {
 			die; // couldn't get result code!
 		}
 	}
-	
-	// pull the statistics out from the output
-	$stats = explode('|',array_pop($output));
-	foreach ($writeout_order as $k=>$item) {
-		$opt["stats"][$item] = $stats[$k];
-	}
 
 	// build the response string
 	$output = implode("\r\n",$output);
-
 	
 	// find the header end position if needed
 	if ($strip_headers || $strip_body || isset($opt["header_handle"])) {
@@ -541,7 +535,7 @@ function curl_exec($ch) {
 	if (isset($opt["header_handle"])) {
 		$headers = substr($output,0,$headerpos);
 		fwrite($opt["header_handle"],$headers);
-	}
+	}	
 	
 	// if the caller did not request headers in the output, strip them
 	if ($strip_headers) {

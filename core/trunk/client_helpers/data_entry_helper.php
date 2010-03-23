@@ -296,7 +296,7 @@ class data_entry_helper extends helper_config {
     $options['inputId'] = $options['id'].':'.$options['captionField'];
     $options = array_merge(array(
       'template' => 'autocomplete',
-      'url' => parent::$base_url."/index.php/services/data",
+      'url' => parent::$base_url."index.php/services/data",
       'inputId' => $options['id'].':'.$options['captionField'],
       // Escape the ids for jQuery selectors
       'escaped_input_id' => str_replace(':', '\\\\:', $options['inputId']),
@@ -2233,7 +2233,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   public static function get_population_data($options) {
     $url = parent::$base_url."index.php/services/data";
-    $request = "$url/".$options['table']."?mode=json";
+    $request = "$url/".$options['table']."?mode=json";	
 
     if (array_key_exists('extraParams', $options)) {
       $cacheOpts = $options['extraParams'];
@@ -2261,8 +2261,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
     $r = json_decode($response['output'], true);
     if (!is_array($r)) {
-      echo '<div class="ui-state-error"><strong>Invalid response received from Indicia Warehouse.</strong><br/>'.print_r($response, true).'</div>';
-    }
+      throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
+    }	
     return $r;
   }
 
@@ -2348,7 +2348,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       ),
       $options
     );
-    $url = parent::$base_url."/index.php/services/data";
+    $url = parent::$base_url."index.php/services/data";
     // Execute a request to the service
     $response = self::get_population_data($options);
     $items = "";
@@ -2519,7 +2519,7 @@ if (errors.length>0) {
   public static function forward_post_to($entity, $array = null) {
     if ($array == null)
       $array = submission_builder::wrap($_POST, $entity);
-    $request = parent::$base_url."/index.php/services/data/$entity";
+    $request = parent::$base_url."index.php/services/data/$entity";
     $postargs = 'submission='.json_encode($array);
     // passthrough the authentication tokens as POST data
     if (array_key_exists('auth_token', $_POST))
@@ -2915,7 +2915,7 @@ $onload_javascript
   */
   public static function get_auth($website_id, $password) {
     $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'/index.php/services/security/get_nonce', $postargs);
+    $response = self::http_post(parent::$base_url.'index.php/services/security/get_nonce', $postargs);
     $nonce = $response['output'];
     $result = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
         'value="'.sha1("$nonce:$password").'" />'."\r\n";
@@ -2934,7 +2934,7 @@ $onload_javascript
   public static function get_read_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */
     $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs);
+    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);	
     $nonce = $response['output'];
     return array(
         'auth_token' => sha1("$nonce:$password"),
@@ -3170,7 +3170,7 @@ $('.ui-state-default').live('mouseout', function() {
       }
       // Test we have full access to the server - it doesn't matter what website id we pass here.'
       $postargs = "website_id=0";
-      $curl_check = self::http_post(parent::$base_url.'/index.php/services/security/get_read_nonce', $postargs, false);
+      $curl_check = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs, false);
       if ($curl_check['result']) {
         if ($fullInfo) {
           $r .= '<li>Success: Indicia Warehouse URL responded to a POST request.</li>';
@@ -3261,7 +3261,7 @@ $('.ui-state-default').live('mouseout', function() {
           'result'=>false,
           'output'=> curl_errno($session) ? curl_error($session) : $response,
           'errno'=>curl_errno($session));
-    } else {
+    } else {	  
       $arr_response = explode("\r\n\r\n",$response);
       // last part of response is the actual data
       $return = array('result'=>true,'output'=>array_pop($arr_response));
@@ -3280,7 +3280,7 @@ $('.ui-state-default').live('mouseout', function() {
     $retVal = array();
     self::add_resource('json');
 
-  $attrOptions = array(
+    $attrOptions = array(
           'table'=>$options['attrtable']
            ,'extraParams'=> $options['extraParams']+ array('deleted' => 'f', 'website_deleted' => 'f', 'restrict_to_survey_id' => 'NULL'));
     $response = self::get_population_data($attrOptions);
