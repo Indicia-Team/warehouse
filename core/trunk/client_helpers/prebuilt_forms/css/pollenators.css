@@ -36,6 +36,7 @@ label {
   background-color:#c0c0c0;
   border-bottom:white thin solid;
 }
+
 .poll-session-form {
   border-bottom: #c0c0c0 3px solid;
   border-left: #c0c0c0 3px solid;
@@ -95,16 +96,19 @@ div#cc-1-summary {
   padding-right: 10px;
 }
 
-#cc-2-flower-picture {
+#cc-2-flower-picture,#cc-2-environment-picture,.poll-map-container,#cc-4-insect-picture {
 	float: left;
 	padding-right: 20px;
 	padding-bottom: 10px;
 }
 
-#cc-2-environment-picture {
-	float: left;
-	padding-right: 20px;
-	padding-bottom: 10px;
+#cc-2-location-entry {
+  border-left: #c0c0c0 3px solid;
+  padding-left: 10px;
+}
+
+#cc-2-loc-description {
+	clear: both;
 }
 
 .poll-break {
@@ -113,12 +117,6 @@ div#cc-1-summary {
 	margin-bottom: 10px;
 	background-color:#c0c0c0;
 	height: 3px;
-}
-
-#cc-4-insect-picture {
-	float: left;
-	padding-right: 20px;
-	padding-bottom: 10px;
 }
 	
 .thumb {

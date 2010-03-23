@@ -299,8 +299,8 @@ class iform_pollenators {
   <div id="cc-1-body" class="poll-section-body">
    <form id="cc-1-collection-details" action="'.iform_ajaxproxy_url($node, 'loc-sample').'" method="POST">
     <input type="hidden" id="website_id"       name="website_id" value="'.$args['website_id'].'" />
-    <input type="hidden" id="imp-sref"         name="location:centroid_sref"  value="46.60361, 1.88806" />
-    <input type="hidden" id="imp-geom"         name="location:centroid_geom" value="POINT(46.60361 1.88806)" />
+    <input type="hidden" id="imp-sref"         name="location:centroid_sref"  value="" />
+    <input type="hidden" id="imp-geom"         name="location:centroid_geom" value="" />
     <input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
     <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
     <label for="location:name">'.lang::get('LANG_Collection_Name_Label').'</label>
@@ -540,7 +540,28 @@ $('#cc-1-reinit-button').click(function() {
 //      'georefCountry' => $args['georefCountry'],
 //      'georefLang' => $args['language']
 //    ));
+
+ 	data_entry_helper::$javascript .= "
+// Create vector layer to display the location onto
+// the default edit layer is used for the sample itself
+locStyleMap = new OpenLayers.StyleMap({
+                \"default\": new OpenLayers.Style({
+                    pointRadius: 3,
+                    fillColor: \"Red\",
+                    fillOpacity: 0.3,
+                    strokeColor: \"Red\",
+                    strokeWidth: 1
+          })
+  });
+locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
+                                    {styleMap: locStyleMap});
+";
+
     $options = iform_map_get_map_options($args, $readAuth);
+    // The maps internal projection will be left at its default of 900913.
+    $options['layers'][] = 'locationLayer';
+    $options['initialFeatureWkt'] = null;
+//  $options['scroll_wheel_zoom'] = false;
     $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id']);
     $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
@@ -595,17 +616,23 @@ $('#cc-1-reinit-button').click(function() {
     <div class="poll-break"></div>
     <div>
  	  <div>'.lang::get('LANG_Location_Notes').'</div>
+ 	  <div class="poll-map-container">
     ';
     $r .= data_entry_helper::map_panel($options);
     $r .= '
-      <div id="cc-2-location-entry">
-	 	<input type="text" name="place:name" value="Nom"
-	 		onclick="if(this.value==\'Nom\'){this.value=\'\'; this.style.color=\'#000\'}"  
-            onblur="if(this.value==\'\'){this.value=\'Nom\'; this.style.color=\'#555\'}" /><br />
+      </div>
+      <div><div id="cc-2-location-entry">
+	 	<input type="text" name="place:name" value="Nom de la commue"
+	 		onclick="if(this.value==\'Nom de la commue\'){this.value=\'\'; this.style.color=\'#000\'}"  
+            onblur="if(this.value==\'\'){this.value=\'Nom de la commue\'; this.style.color=\'#555\'}" /><br />
         <label for="place:postcode">'.lang::get('LANG_Or').'</label>
- 		<input type="text" name="place:postcode" value="" /><br />
+ 		<input type="text" name="place:postcode" value="code postal"
+	 		onclick="if(this.value==\'code postal\'){this.value=\'\'; this.style.color=\'#000\'}"  
+            onblur="if(this.value==\'\'){this.value=\'code postal\'; this.style.color=\'#555\'}" /><br />
  	    <label for="place:INSEE">'.lang::get('LANG_Or').'</label>
- 		<input type="text" name="place:INSEE" value="" /><br />
+ 		<input type="text" name="place:INSEE" value="INSEE No."
+	 		onclick="if(this.value==\'INSEE No.\'){this.value=\'\'; this.style.color=\'#000\'}"  
+            onblur="if(this.value==\'\'){this.value=\'INSEE No.\'; this.style.color=\'#555\'}" /><br />
  	    <label for="place:latlong">'.lang::get('LANG_Lat').'</label>
  		<div class="poll-latlong">
  	    <input type="text" name="place:latDeg" value="" />
@@ -616,9 +643,9 @@ $('#cc-1-reinit-button').click(function() {
  		<input type="text" name="place:longSec" value="" /><br />
  		</div>
  		<div>
-	 		<span id="cc-2-valid-location-button" class="poll-button-1">'.lang::get('LANG_Validate_Location').'</span><br />
+	 		<span id="cc-2-display-location-button" class="poll-button-1">'.lang::get('LANG_Display_Location').'</span><br />
 	 	</div>
- 	  </div>
+ 	  </div></div>
       <div id="cc-2-loc-description"></div>
     </div>
     <div class="poll-break"></div>
@@ -652,7 +679,7 @@ $('#cc-1-reinit-button').click(function() {
 
 showSessionsPanel = true;
 
-jQuery('#cc-2-valid-location-button').click(function(){
+jQuery('#cc-2-display-location-button').click(function(){
 	var lat = 0;
 	var long = 0;
 	var tmp = parseFloat(jQuery('[name=place\\:latDeg]').val());
@@ -669,13 +696,22 @@ jQuery('#cc-2-valid-location-button').click(function(){
 	if(!isNaN(tmp)) long = tmp;
 	else jQuery('[name=place\\:longDeg]').val(0);
 	tmp = parseFloat(jQuery('[name=place\\:longMin]').val());
-	if(!isNaN(tmp)) long = lat + tmp/60;
+	if(!isNaN(tmp)) long = long + tmp/60;
 	else jQuery('[name=place\\:longMin]').val(0);
 	tmp = parseFloat(jQuery('[name=place\\:longSec]').val());
-	if(!isNaN(tmp)) long = lat + tmp/3600;
+	if(!isNaN(tmp)) long = long + tmp/3600;
 	else jQuery('[name=place\\:longSec]').val(0);
 	
-	jQuery('#imp-sref').val(lat.toString() + ', ' +long.toString()).change();
+    locationLayer.destroyFeatures();
+    // We are keeping to ESPG:4326 as this is used by GPS equipment. The map is in 900913.
+    var geom = new OpenLayers.Geometry.Point(long, lat);
+    geom.transform(new OpenLayers.Projection('EPSG:4326'), new OpenLayers.Projection('EPSG:900913'));
+    var lonLat = new OpenLayers.LonLat(long, lat);
+    lonLat.transform(new OpenLayers.Projection('EPSG:4326'), new OpenLayers.Projection('EPSG:900913'));
+    var feature = new OpenLayers.Feature.Vector(geom);
+	locationLayer.addFeatures([feature]);
+	// Translate but do not zoom to this feature.
+	locationLayer.map.setCenter(lonLat);
 });
 
 validateStationPanel = function(){
@@ -718,7 +754,8 @@ $('#cc-2-flower-upload').ajaxForm({
         	$('#cc-2-flower-image').addClass('loading')
         },
         success:   function(data){
-        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.filename);
+        	// There is only one file
+        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.files[0]);
         	var img = new Image();
         	$(img)
         		.load(function () {
@@ -727,7 +764,7 @@ $('#cc-2-flower-upload').ajaxForm({
         			$(this).fadeIn();
 			    })
 			    .error(function () { }) // L3 TODO
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.filename)
+			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.files[0])
 			    .attr('width', $('#cc-2-flower-image').width()).attr('height', $('#cc-2-flower-image').height());
 			jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
   		} 
@@ -742,7 +779,7 @@ $('#cc-2-environment-upload').ajaxForm({
         	$('#cc-2-environment-image').addClass('loading')
         },
         success:   function(data){
-        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.filename);
+        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.files[0]);
         	var img = new Image();
         	$(img)
         		.load(function () {
@@ -752,7 +789,7 @@ $('#cc-2-environment-upload').ajaxForm({
 			    })
 			    .error(function () { // L3 TODO
 			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.filename)
+			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.files[0])
 			    .attr('width', $('#cc-2-environment-image').width()).attr('height', $('#cc-2-environment-image').height());
 			jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
         } 
@@ -1089,7 +1126,7 @@ $('#cc-4-insect-upload').ajaxForm({
         	$('#cc-4-insect-image').addClass('loading')
         },
         success:   function(data){
-			jQuery('form#cc-4-main-form > input[name=occurrence_image\\:path]').val(data.filename);
+			jQuery('form#cc-4-main-form > input[name=occurrence_image\\:path]').val(data.files[0]);
         	var img = new Image();
         	$(img)
         		.load(function () {
@@ -1099,7 +1136,7 @@ $('#cc-4-insect-upload').ajaxForm({
 			    })
 			    .error(function () { // L3 TODO
 			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.filename)
+			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.files[0])
 			    .attr('width', 300).attr('height', 300);
 			jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
         } 
