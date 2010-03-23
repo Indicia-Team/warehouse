@@ -359,7 +359,7 @@ class ORM extends ORM_Core {
         $this->table_columns
     );
     Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
-    Kohana::log("debug", kohana::debug($vArray));
+    Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
     // If we're editing an existing record.
     if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
       $this->find($vArray['id']);
@@ -832,7 +832,17 @@ class ORM extends ORM_Core {
   public function getDefaults() {
     return array();
   }
-
+  
+  /**
+  * Convert an array of field data (a record) into a sanitised version, with email and password hidden.
+  */
+  private function sanitise($array) { 
+    // make a copy of the array
+    $r = $array;  
+	if (array_key_exists('password', $r)) $r['password'] = '********';
+	if (array_key_exists('email', $r)) $r['email'] = '********';
+	return $r; 
+  }
 }
 
 ?>
