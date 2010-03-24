@@ -155,8 +155,9 @@ class iform_ad_hoc_cetaceans {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
-    global $indicia_templates, $user; 
-    $r = "<form method=\"post\">\n";
+    global $indicia_templates, $user;
+    data_entry_helper::enable_validation('entry_form'); 
+    $r = "<form method=\"post\" id=\"entry_form\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
     $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
@@ -185,12 +186,14 @@ class iform_ad_hoc_cetaceans {
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('first name'),
         'fieldname'=>'smpAttr:'.$args['first_name_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'validation'=>array('required')
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('surname'),
         'fieldname'=>'smpAttr:'.$args['surname_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4',
+        'validation'=>array('required')
       ));
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('phone number'),
@@ -269,7 +272,8 @@ class iform_ad_hoc_cetaceans {
       'extraParams' => $readAuth + array('termlist_id' => $args['platform_termlist_id']),
       'sep' => '<br />',
       'labelClass' => 'auto',
-      'class' => 'inline sighting-platform'
+      'class' => 'inline sighting-platform',
+      'validation'=>array('required')
     ));
     $r .= '<div id="place_wrapper" style="display: none">';
     // Some instructions only visible when entering data from a boat
@@ -289,8 +293,8 @@ class iform_ad_hoc_cetaceans {
     // checked radio button to see the value
     data_entry_helper::$javascript .= 'jQuery(".sighting-platform input").click(
       function() {
-        var $platformId = jQuery("input[name=smpAttr\\\\:'.$args['platform_attr_id'].']:checked").val();
-        if ($platformId == '.$args['platform_mapped_term_id'].') {
+        var platformId = jQuery("input[name=smpAttr\\\\:'.$args['platform_attr_id'].']:checked").val();
+        if (platformId == '.$args['platform_mapped_term_id'].') {
           jQuery("#place_wrapper").show();
           jQuery(".shore_mode").show();
           jQuery(".boat_mode").hide();
@@ -299,13 +303,16 @@ class iform_ad_hoc_cetaceans {
 ';
         $r .= data_entry_helper::map_panel($options);
         data_entry_helper::$javascript .= '}
-        } else {
+        } else {          
           jQuery("#place_wrapper").show();
           jQuery(".shore_mode").hide();
           jQuery(".boat_mode").show();
         }
       }
     );'."\n";
+    data_entry_helper::$javascript .= '
+    jQuery("input[name=smpAttr\\\\:'.$args['platform_attr_id'].']:checked").trigger("click");
+    ';
     $r .= '</div></div>';
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(

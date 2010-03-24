@@ -58,7 +58,7 @@ $indicia_templates = array(
   'listbox_item_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
-  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{checked} {disabled}>{caption}</span>{sep}',
+  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{class}{checked} {disabled}>{caption}</span>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />\n".
@@ -241,6 +241,16 @@ class data_entry_helper extends helper_config {
     'sample:date'=>array('required', 'dateISO'),
     'sample:entered_sref'=>array('required'),
     'occurrence:taxa_taxon_list_id'=>array('required')
+  );
+  
+  /**
+   * Array of html attributes. When replacing items in a template, these get automatically wrapped. E.g. 
+   * a template replacement for the class will be converted to class="value". The key is the parameter name, 
+   * and the value is the html attribute it will be wrapped into. 
+   */
+  private static $html_attributes = array(
+    'class' => 'class',
+    'outerClass' => 'class'
   );
 
 /**********************************/
@@ -2006,25 +2016,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     // add validation metadata to the control if specified, as long as control has a fieldname
     if (array_key_exists('fieldname', $options)) {
-      // First check for predefined rules
-      $rules = (array_key_exists('validation', $options) ? $options['validation'] : array());
-      if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
-        $rules = array_merge($rules, self::$default_validation_rules[$options['fieldname']]);
-      }
-      // Convert these rules into jQuery format.
-      $options['class'] .= ' '.self::convert_to_jquery_val_metadata($rules);
-      // Build internationalised validation messages for jQuery to use
-      foreach ($rules as $rule) {
-        self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"),
-          lang::get($options['fieldname']));
+      $options['class'] .= ' '.self::build_validation_class($options);
+    }
+    // replace html attributes with their wrapped versions, e.g. a class becomes class="..."
+    foreach (self::$html_attributes as $name => $attr) {
+      if (!empty($options[$name])) {
+        $options[$name]=' '.$attr.'="'.$options[$name].'"';
       }
     }
-    if (!empty($options['class'])) {
-      $options['class']=' class="'.$options['class'].'"';
-    }
-    if (!empty($options['outerClass'])) {
-      $options['outerClass']=' class="'.$options['outerClass'].'"';
-    }
+    
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
     $replaceValues=array();
@@ -2115,7 +2115,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (!is_array($item[$option])) {
         array_push($replaceTags, '{'.$option.'}');
         // allow sep to have <br/>
-        array_push($replaceValues, $option == 'sep' ? $item[$option] : htmlSpecialChars($item[$option]));
+        $value = $option == 'sep' ? $item[$option] : htmlSpecialChars($item[$option]);
+        // HTML attributes get automatically wrapped
+        if (in_array($option, self::$html_attributes))
+          $value = " $option=\"$value\"";
+        array_push($replaceValues, $value);
       }
     }    
     return str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);    
@@ -2348,10 +2352,17 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       ),
       $options
     );
+    // We want to apply validation to the inner items, not the outer control
+    if (array_key_exists('validation', $options)) {
+      $itemClass = self::build_validation_class($options);
+      unset($options['validation']);      
+    } else {
+      $itemClass='';
+    }
     $url = parent::$base_url."index.php/services/data";
     // Execute a request to the service
     $response = self::get_population_data($options);
-    $items = "";
+    $items = "";    
     if (!array_key_exists('error', $response)){
       foreach ($response as $item) {
         if (array_key_exists($options['captionField'], $item) && array_key_exists($options['valueField'], $item)) {
@@ -2363,7 +2374,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
               'checked' => ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '',
               'type' => $type,
               'caption' => $item[$options['captionField']],
-              'value' => $item[$options['valueField']]
+              'value' => $item[$options['valueField']],
+              'class' => $itemClass
             )
           );
           $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
@@ -2401,7 +2413,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs on the current tab and validate them.
       if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  if (!$('#".self::$validated_form_id." div > div:eq('+current+') input').valid()) {\n    return; \n}";
+        self::$javascript .= "  if (!$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input').valid()) {\n    return; \n}";
       }
       // If all is well, move to the next tab.
       self::$javascript .= "  $('#$divId').tabs('select', current+1);
@@ -2510,6 +2522,28 @@ if (errors.length>0) {
         "$(panel).removeClass('loading-hide');\n".
         "$(panel).fadeIn('slow');\n";
     return $indicia_templates['loading_block_end'];
+  }
+  
+  /**
+   * Converts the validation rules in an options array into a string that can be used as the control class, 
+   * to trigger the jQuery validation plugin.
+   * @param $options
+   * @return string The validation rules formatted as a class. 
+   */
+  private static function build_validation_class($options) {
+    global $custom_terms;
+    $rules = (array_key_exists('validation', $options) ? $options['validation'] : array());
+    if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
+      $rules = array_merge($rules, self::$default_validation_rules[$options['fieldname']]);
+    }
+    // Build internationalised validation messages for jQuery to use, if the fields have internationalisation strings specified
+    foreach ($rules as $rule) {
+      if (array_key_exists($options['fieldname'], $custom_terms))
+        self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"),
+          lang::get($options['fieldname']));
+    }
+    // Convert these rules into jQuery format.
+    return self::convert_to_jquery_val_metadata($rules);
   }
 
   /**
