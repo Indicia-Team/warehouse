@@ -42,7 +42,8 @@ echo data_entry_helper::species_checklist(array(
     'listId'=>$config['species_checklist_taxon_list'],
     'occAttrs'=>$config['species_checklist_occ_attributes'],
     'extraParams'=>$readAuth,
-    'columns'=>2
+    'columns'=>2,
+	'survey_id'=>$config['survey_id']
 ));
 ?>
 </div>
