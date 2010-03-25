@@ -123,10 +123,14 @@ class Sample_Model extends ORM_Tree
         !(array_key_exists('geom', $this->submission['fields']) && $this->submission['fields']['geom']['value']) &&
         $this->submission['fields']['entered_sref']['value'] &&
         $this->submission['fields']['entered_sref_system']['value']) {                    
-      $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
-          $this->submission['fields']['entered_sref']['value'],
-          $this->submission['fields']['entered_sref_system']['value']
-      );
+      try {
+        $this->submission['fields']['geom']['value'] = spatial_ref::sref_to_internal_wkt(
+            $this->submission['fields']['entered_sref']['value'],
+            $this->submission['fields']['entered_sref_system']['value']
+        );
+      } catch (Exception $e) {
+        $this->errors['entered_sref'] = $e->getMessage();
+      }
     }
     return parent::presubmit();
   }
