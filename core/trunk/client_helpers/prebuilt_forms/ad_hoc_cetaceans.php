@@ -203,7 +203,8 @@ class iform_ad_hoc_cetaceans {
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('email'),
         'fieldname'=>'smpAttr:'.$args['email_attr_id'],
-        'class'=>'control-width-4'
+        'class'=>'control-width-4 optional',
+        'validation' => array('email')
       ));
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
@@ -254,11 +255,10 @@ class iform_ad_hoc_cetaceans {
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls',
-        'page' => ($user->id==0) ? 'first' : 'middle'
+        'page' => ($user->id==0) ? 'middle' : 'first'
       ));
     }
-    $r .= "</fieldset>\n";
-    
+    $r .= "</fieldset>";
     // --Place tab--
     $r .= "<fieldset id=\"place\">\n";
     if ($args['interface']=='one_page') 

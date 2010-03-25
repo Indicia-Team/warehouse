@@ -2527,12 +2527,14 @@ if (errors.length>0) {
   /**
    * Converts the validation rules in an options array into a string that can be used as the control class, 
    * to trigger the jQuery validation plugin.
-   * @param $options
+   * @param $options. For validation to be applied should contain a validation entry, containing a single 
+   * validation string or an array of strings. 
    * @return string The validation rules formatted as a class. 
    */
   private static function build_validation_class($options) {
     global $custom_terms;
     $rules = (array_key_exists('validation', $options) ? $options['validation'] : array());
+    if (!is_array($rules)) $rules = array($rules);
     if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
       $rules = array_merge($rules, self::$default_validation_rules[$options['fieldname']]);
     }
