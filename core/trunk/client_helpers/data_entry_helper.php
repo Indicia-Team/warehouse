@@ -1487,6 +1487,11 @@ class data_entry_helper extends helper_config {
             } else {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
+            $error = self::check_errors(array_pop(explode('::', $ctrlId)));
+            if ($error) {              
+              $oc = str_replace("class='", "class='ui-state-error ", $oc);
+              $oc .= $error;
+            }
           }
           $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$matches[1]]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
         }
@@ -2543,7 +2548,7 @@ if (errors.length>0) {
     }
     // Build internationalised validation messages for jQuery to use, if the fields have internationalisation strings specified
     foreach ($rules as $rule) {
-      if (array_key_exists($options['fieldname'], $custom_terms))
+      if (isset($custom_terms) && array_key_exists($options['fieldname'], $custom_terms))
         self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"),
           lang::get($options['fieldname']));
     }
