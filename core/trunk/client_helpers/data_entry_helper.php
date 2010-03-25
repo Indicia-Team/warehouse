@@ -1466,6 +1466,9 @@ class data_entry_helper extends helper_config {
         }
         foreach ($occAttrControls as $oc) {
           preg_match('/oa:(\d+)/', $oc, $matches); // matches 1 holds the occurrence_attribute_id
+          // test that this occurrence attribute is linked to the survey
+          if (!array_key_exists($matches[1], $attributes)) throw new Exception('The occurrence attributes requested for the grid are not '.
+              'linked with the survey.');
           $ctrlId = $attributes[$matches[1]]['fieldname'];
           $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
           // If there is an existing value to load for this control, we need to put the value in the control.
