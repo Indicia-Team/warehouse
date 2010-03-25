@@ -30,6 +30,7 @@
 .scTaxonCell {
   padding-right: 0;
   border-bottom: dashed 1px #aaaaff;
+  width: 440px;
 }
 
 .scOccAttrCell {
