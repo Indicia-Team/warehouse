@@ -58,7 +58,7 @@ $indicia_templates = array(
   'listbox_item_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
-  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{class}{checked} {disabled}>{caption}</span>{sep}',
+  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{class}{checked} {disabled}/>{caption}</span>{sep}',
   'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>\n",
   'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
       "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />\n".
@@ -69,9 +69,9 @@ $indicia_templates = array(
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
       "\n/* ]]> */</script>\n".
       "<noscript><ul>{tabs}</ul></noscript>\n",
-  'tab_next_button' => '<div{class}/>'.
+  'tab_next_button' => '<div{class}>'.
       '<span>{captionNext}</span><span class="ui-icon ui-icon-circle-arrow-e"></span></div>',
-  'tab_prev_button' => '<div{class}/>'.
+  'tab_prev_button' => '<div{class}>'.
       '<span class="ui-icon ui-icon-circle-arrow-w"></span><span>{captionPrev}</span></div>',
   'submit_button' => '<input type="submit"{class} id="test" value="{captionSave}"/>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
@@ -361,9 +361,7 @@ class data_entry_helper extends helper_config {
     $default = self::check_default_value($options['fieldname'],
         array_key_exists('default', $options) ? $options['default'] : null);
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
-    if ($default=='on') {
-      $options['checked']=' checked="checked"';
-    }
+    $options['checked'] = $default=='on' ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
   }
@@ -1842,11 +1840,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
  /**
-  * Takes a list of validation rules in Indicia format, and converts them to the jQuery validaiotn
+  * Takes a list of validation rules in Kohana/Indicia format, and converts them to the jQuery validation
   * plugin metadata format.
   * @param array $rules List of validation rules to be converted.
   * @return string Validation metadata classes to add to the input element.
   * @access private
+  * @todo Implement a more complete list of validation rules.
   */
   private static function convert_to_jquery_val_metadata($rules) {
     $converted = array();
@@ -1857,6 +1856,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           || $rule=='email'
           || $rule=='url') {
         $converted[] = $rule;
+       } else if ($rule='digit') {
+         $converted[] = 'digits';
        }
        // Now any rules which need parsing or convertion
     }
