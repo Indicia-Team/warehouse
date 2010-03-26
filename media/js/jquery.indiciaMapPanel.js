@@ -362,7 +362,7 @@
         if ($.fn.indiciaMapPanel.presetLayers.hasOwnProperty(item))
         {
           var layer = $.fn.indiciaMapPanel.presetLayers[item]();
-          div.map.addLayers([layer]);
+          div.map.addLayer(layer);
           if (item=='multimap_landranger') {
             // Landranger is not just a simple layer - need to set a Multimap option
             _enableMMLandranger();
@@ -393,7 +393,7 @@
         // Add an editable layer to the map
         var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher});
         div.map.editLayer = editLayer;
-        div.map.addLayers([div.map.editLayer]);
+        div.map.addLayer(div.map.editLayer);
 
         if (this.settings.initialFeatureWkt === null ) {
           // if no initial feature specified, but there is a populated imp-geom hidden input,
