@@ -156,18 +156,14 @@ class iform_ad_hoc_cetaceans {
    */
   public static function get_form($args, $node, $response=null) {
     global $indicia_templates, $user;
-    data_entry_helper::enable_validation('entry_form'); 
-    $r = "<form method=\"post\" id=\"entry_form\">\n";
-    // Get authorisation tokens to update and read from the Warehouse.
-    $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
+    data_entry_helper::enable_validation('entry_form');
+    $url = (!empty($_SERVER['HTTPS'])) ? "https://".$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'] : "http://".$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$url\">\n";
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
     $r .= "<div id=\"controls\">\n";
     if ($args['interface']!='one_page') {
       $r .= "<ul>\n";
-      if (!$logged_in) {
+      if ($user->uid==0) {
         $r .= '  <li><a href="#about_you"><span>'.lang::get('about you')."</span></a></li>\n";
       }
       $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";
@@ -240,8 +236,8 @@ class iform_ad_hoc_cetaceans {
     data_entry_helper::add_resource('fancybox');
     data_entry_helper::$javascript .= "jQuery('a.fancybox').fancybox();\n";
     $indicia_templates['taxon_label'] = 'return \'<div class="taxon-cell">'.
-        '<a href="'.data_entry_helper::$base_url.'upload/{image_path}" class="fancybox" alt="{taxon}" >'.
-        '<img src="'.data_entry_helper::$base_url.'upload/med-{image_path}" width="250"/></a>'.
+        '<a href="'.data_entry_helper::$base_url.'upload/{image_path}" class="fancybox" >'.
+        '<img alt="{taxon}" src="'.data_entry_helper::$base_url.'upload/med-{image_path}" width="250"/></a>'.
         '<div>{taxon}</div></div>'.
         '<div class="taxon-desc"><ul><li>\'.str_replace("\n", "</li><li>","{description_in_list}").\'</li></ul>'.
         '<a href="http://www.marine-life.org.uk/northeastcetaceans/?q=\'.
@@ -255,7 +251,7 @@ class iform_ad_hoc_cetaceans {
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls',
-        'page' => ($user->id==0) ? 'middle' : 'first'
+        'page' => ($user->uid==0) ? 'middle' : 'first'
       ));
     }
     $r .= "</fieldset>";
@@ -264,7 +260,7 @@ class iform_ad_hoc_cetaceans {
     if ($args['interface']=='one_page') 
         $r .= '<legend>'.lang::get('where was it').'</legend>';
     $r .= data_entry_helper::radio_group(array(
-      'label' => 'Were were you when you made the sighting?',
+      'label' => 'Where were you when you made the sighting?',
       'fieldname'=>'smpAttr:'.$args['platform_attr_id'],
       'table'=>'termlists_term',
       'captionField'=>'term',
@@ -275,36 +271,32 @@ class iform_ad_hoc_cetaceans {
       'class' => 'inline sighting-platform',
       'validation'=>array('required')
     ));
-    $r .= '<div id="place_wrapper" style="display: none">';
+    $r .= '<div id="place_wrapper" class="hidden">';
     // Some instructions only visible when entering data from a boat
-    $r .= '<p class="boat_mode page-notice ui-state-highlight ui-corner-all" style="display: none">'.lang::get('Instructions for when on boat').'</p>';
+    $r .= '<p class="boat_mode page-notice ui-state-highlight ui-corner-all">'.lang::get('Instructions for when on boat').'</p>';
     // Some instructions only visible when entering data from the shore
-    $r .= '<p class="shore_mode page-notice ui-state-highlight ui-corner-all" style="display: none">'.lang::get('Instructions for clicking on map').'</p>';
+    $r .= '<p class="shore_mode page-notice ui-state-highlight ui-corner-all">'.lang::get('Instructions for clicking on map').'</p>';
     $r .= data_entry_helper::sref_and_system(array(
       'label' => lang::get('sample:entered_sref')
     ));
     
     // Initially, we hide the map. Only show it when the user selects the sighting was from the shore,
     // as a click on the map for boat recordings will not be accurate.
-    $r .= '<div class="shore_mode" style="display:none;">';
+    $r .= '<div class="shore_mode">';
     $options = iform_map_get_map_options($args, $readAuth);
-     // Now, add some JavaScript to show or hide the map. Show it for when the sighting was from the shore.
+    $r .= data_entry_helper::map_panel($options);
+    // Now, add some JavaScript to show or hide the map. Show it for when the sighting was from the shore.
     // Hide it for boat based sightings as we want a GPS coordinate in this case. The JavaScript looks for the 
     // checked radio button to see the value
     data_entry_helper::$javascript .= 'jQuery(".sighting-platform input").click(
       function() {
         var platformId = jQuery("input[name=smpAttr\\\\:'.$args['platform_attr_id'].']:checked").val();
         if (platformId == '.$args['platform_mapped_term_id'].') {
-          jQuery("#place_wrapper").show();
+          jQuery("#place_wrapper").removeClass("hidden");
           jQuery(".shore_mode").show();
           jQuery(".boat_mode").hide();
-          // Following is inserted here to fix issue http://trac.openlayers.org/ticket/2350
-          if (typeof jQuery("#map")[0].map=="undefined") {
-';
-        $r .= data_entry_helper::map_panel($options);
-        data_entry_helper::$javascript .= '}
         } else {          
-          jQuery("#place_wrapper").show();
+          jQuery("#place_wrapper").removeClass("hidden");
           jQuery(".shore_mode").hide();
           jQuery(".boat_mode").show();
         }
@@ -323,6 +315,11 @@ class iform_ad_hoc_cetaceans {
     
     // --Other information tab--
     $r .= "<fieldset id=\"other\">\n";
+    // Get authorisation tokens to update and read from the Warehouse.
+    $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
+    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
+    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
+    $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
     if ($args['interface']=='one_page') 
         $r .= '<legend>'.lang::get('other information').'</legend>';
     $r .= data_entry_helper::date_picker(array(
@@ -351,8 +348,7 @@ class iform_ad_hoc_cetaceans {
     } else {
       $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save\" />\n";
     }
-    $r .= "</div>\n";
-    $r .= "</fieldset";
+    $r .= "</fieldset></div>";
     $r .= "</form>";
     return $r;
   }
