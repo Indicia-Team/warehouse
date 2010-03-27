@@ -43,10 +43,13 @@ class Occurrence_controller extends Gridview_Base_Controller {
     );
     $this->columns = array
     (
+      'website' => 'Website',
+      'survey' => 'Survey',
       'taxon' => 'Taxon',
       'entered_sref' => 'Spatial Ref',
       'date_start' => 'Date'
     );
+    $this->auth_filter = $this->gen_auth_filter;
   }
 
   /**

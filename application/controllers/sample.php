@@ -41,6 +41,7 @@ class Sample_Controller extends Gridview_Base_Controller
       'location' => 'Location',
       'date_start' => 'Date'
     );
+    $this->auth_filter = $this->gen_auth_filter;
   }
 
   protected function getModelValues() {
