@@ -36,8 +36,9 @@ class Sample_Controller extends Gridview_Base_Controller
     $this->model = ORM::factory('sample');
     $this->columns = array
     (
-      'title' => 'Survey',
-    	'entered_sref' => 'Spatial Ref.',
+      'website' => 'Website',
+      'survey' => 'Survey',
+      'entered_sref' => 'Spatial Ref.',
       'location' => 'Location',
       'date_start' => 'Date'
     );
