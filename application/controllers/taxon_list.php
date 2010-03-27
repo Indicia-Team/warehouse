@@ -91,7 +91,7 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
 	      $websites = $websites->in('id',$this->auth_filter['values']);	    
     }
     return array(
-      'websites' => $websites->orderby('title','asc')->find_all()
+      'websites' => $websites->where('deleted','false')->orderby('title','asc')->find_all()
     );
   }
 
