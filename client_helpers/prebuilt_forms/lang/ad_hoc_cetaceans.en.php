@@ -27,8 +27,9 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-  'Instructions for clicking on map' => 'Please enter the spatial reference if you know it. If not, you can click on the map to set the location of the sighting. '.
-      'Doublie-click the map to zoom in and drag with the mouse to pan.',
+  'Instructions for clicking on map' => 'Please enter the GPS coordinates if you know it. If not, you can click on the map to set the location of the sighting. '.
+      'A circle will appear on the map to help you check that the sighting is in the correct place - you can click again on the map if the position needs to be changed. '.
+      'Double-click the map to zoom in and drag with the mouse to pan.',
   'Instructions for when on boat' => 'For sightings made on a boat, please enter the GPS coordinates of the sighting.',
   'happy for contact' => 'In some cases we may wish to contact you to confirm your sighting. Please tick this box if you are happy for this to happen',
   'Abundance count' => 'Number seen'
