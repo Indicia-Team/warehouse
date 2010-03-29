@@ -277,7 +277,8 @@ class iform_ad_hoc_cetaceans {
     // Some instructions only visible when entering data from the shore
     $r .= '<p class="shore_mode page-notice ui-state-highlight ui-corner-all">'.lang::get('Instructions for clicking on map').'</p>';
     $r .= data_entry_helper::sref_and_system(array(
-      'label' => lang::get('sample:entered_sref')
+      'label' => lang::get('sample:entered_sref'),
+      'systems' => array(4326 => lang::get('Latitude, Longitude'))
     ));
     
     // Initially, we hide the map. Only show it when the user selects the sighting was from the shore,
