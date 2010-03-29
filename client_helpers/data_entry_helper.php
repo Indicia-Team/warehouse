@@ -252,6 +252,12 @@ class data_entry_helper extends helper_config {
     'class' => 'class',
     'outerClass' => 'class'
   );
+  
+  /**
+   * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the 
+   * list, allowing our CSS to override other stuff.
+   */
+  private static $default_styles = false;
 
 /**********************************/
 /* Start of main controls section */
@@ -928,9 +934,9 @@ class data_entry_helper extends helper_config {
       }
       $json=substr(json_encode($options), 0, -1).$json_insert.'}';
       if (array_key_exists('projection', $options)) {
-        self::$javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
+        self::$onload_javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
       }
-      self::$javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+      self::$onload_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
       return self::apply_template('map_panel', $options);
     }
@@ -2808,6 +2814,8 @@ if (errors.length>0) {
   */
   public static function dump_javascript() {
     global $indicia_resources, $indicia_templates;
+    // Add the default stylesheet to the end of the list, so it has highest CSS priority
+    if (self::$default_styles) self::add_resource('defaultStylesheet');
     // If required, setup jQuery validation. We can't prep this JavaScript earlier since we would
     // not know all the control messages.
     // In the following block, we set the validation plugin's error class to our template.
@@ -3029,7 +3037,7 @@ $('.ui-state-default').live('mouseover', function() {
 $('.ui-state-default').live('mouseout', function() {
   $(this).removeClass('ui-state-hover');
 });\n";
-    self::add_resource('defaultStylesheet');
+    self::$default_styles = true;
   }
 
   /**
