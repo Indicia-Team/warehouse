@@ -67,7 +67,7 @@
       bounds.left = bounds.left - dx;
       // if showing a point, don't zoom in too far
       if (dy===0 && dx===0) {
-        div.map.setCenter(bounds.getCenterLonLat(), 13);
+        div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
       } else {
         // Set the default view to show something triple the size of the grid square
         div.map.zoomToExtent(bounds);
@@ -138,7 +138,7 @@
           if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
             // no transform required
             if (div.map.getUnits()=='m') {
-	      // in metres, so we can round (no need for sub-metre precision)
+	          // in metres, so we can round (no need for sub-metre precision)
               sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
             } else {
               sref = lonlat.lat + ', ' + lonlat.lon;
@@ -148,8 +148,8 @@
             }
             var wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
             _setClickPoint({
-	      'sref' : sref,
-	      'wkt' : wkt
+             'sref' : sref,
+             'wkt' : wkt
             }, div);
           } else {
             if (div.map.projection.getCode() != 'EPSG:900913') {
@@ -161,6 +161,7 @@
 	                  "?wkt=" + wkt +
 	                  "&system=" + outputSystem +
 	                  "&precision=" + precision +
+	                  "&output=" + div.settings.latLongFormat +
 	                  "&callback=?", function(data)
 	    {
 	      _setClickPoint(data, div);
@@ -180,15 +181,20 @@
       
       // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefId).change(function() {
-        $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
-          "?sref=" + $(this).val() +
-          "&system=" + _getSystem() +
-          "&callback=?", function(data) {
-            // store value in saved field?
-            _showWktFeature(div, data.wkt);
-            $('#'+opts.geomId).val(data.wkt);
+        _handleEnteredSref($(this).val(), div);
+      });
+      // If the spatial ref latitude or longitude input control exists, bind it to the map, so entering a ref updates the map
+      $('#'+opts.srefLatId).change(function() {
+        // Only do something if the long is also populated
+        if ($('#'+opts.srefLongId).val()!='') {
+          _handleEnteredSref($(this).val() + ', ' + $('#'+opts.srefLongId).val(), div);
+        }
+      });
+      $('#'+opts.srefLongId).change(function() {
+          // Only do something if the long is also populated
+          if ($('#'+opts.srefLatId).val()!='') {
+            _handleEnteredSref($('#'+opts.srefLatId).val() + ', ' + $(this).val(), div);
           }
-        );
       });
 
       // If a place search (georeference) control exists, bind it to the map.
@@ -222,8 +228,29 @@
       });
     }
     
+    function _handleEnteredSref(value, div) {
+      $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
+          "?sref=" + value +
+          "&system=" + _getSystem() +
+          "&callback=?", function(data) {
+            // store value in saved field?
+            _showWktFeature(div, data.wkt);
+            $('#'+opts.geomId).val(data.wkt);
+          }
+      );
+    }
+    
+    /**
+     * Having clicked on the map, and asked warehouse services to transform this to a WKT, add the feature to the map.
+     */
     function _setClickPoint(data, div) {
       $('#'+opts.srefId).val(data.sref);
+      // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
+      if (data.sref.indexOf(' ')!==-1) {
+        var parts=data.sref.split(' ');
+        $('#'+opts.srefLatId).val(parts[0]);
+        $('#'+opts.srefLongId).val(parts[1]);
+      }
       div.map.editLayer.destroyFeatures();
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
@@ -458,13 +485,17 @@ $.fn.indiciaMapPanel.defaults = {
     editLayerInSwitcher: false,
     initialFeatureWkt: null,
     defaultSystem: 'OSGB',
+    latLongFormat: 'D',
     srefId: 'imp-sref',
+    srefLatId: 'imp-sref-lat',
+    srefLongId: 'imp-sref-long',
     srefSystemId: 'imp-sref-system',
     geomId: 'imp-geom',
     clickedSrefPrecisionMin: '', // depends on sref system, but for OSGB this would be 2,4,6,8,10 etc = length of grid reference
     clickedSrefPrecisionMax: '',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
+    maxZoom: 13,
 
     //options for OpenLayers. Feature. Vector. style
     fillColor: '#ee9900',
