@@ -143,6 +143,12 @@ jQuery('#{parentControlId}').change();\n",
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
   'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />',
+  'sref_textbox_latlong' => '<label for="{idLat}">{labelLat}:</label>'.
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /><br />' .
+        '<label for="{idLong}">{labelLong}:</label>'.
+        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" />' .
+        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
+        '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />',
   'attribute_cell' => "\n<td class='scOccAttrCell ui-widget-content'>{content}</td>",
   'taxon_label_cell' => "\n<td class='scTaxonCell ui-state-default'>{content}</td>"
 );
@@ -850,6 +856,9 @@ class data_entry_helper extends helper_config {
   * </li>
   * <li><b>defaultSystem</b><br/>
   * </li>
+  * <li><b>latLongFormat</b><br/>
+  * Override the format for display of lat long references. Select from D (decimal degrees, the default), DM (degrees and decimal minutes)
+  * or DMS (degrees, minutes and decimal seconds).</li>
   * <li><b>srefId</b><br/>
   * </li>
   * <li><b>srefSystemId</b><br/>
@@ -864,6 +873,9 @@ class data_entry_helper extends helper_config {
   * </li>
   * <li><b>msgGeorefNothingFound</b><br/>
   * </li>
+  * <li><b>maxZoom</b><br/>
+  * Limit the maximum zoom used when clicking on the map to set a point spatial reference. Use this to prevent over zooming on 
+  * background maps.</li>
   * <li><b>projection</b><br/>
   * EPSG code of the required projection. Defaults to 900913. Note that if this is changed, most of the preset layers will not work as they
   * do not support reprojection. Ensure that all base layers available support the projection you define.
@@ -1241,9 +1253,12 @@ class data_entry_helper extends helper_config {
   * Optional. CSS class names to add to the control.</li>
   * <li><b>label</b><br/>
   * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+  * <li><b>splitLatLong</b><br/>
+  * Optional. If set to true, then 2 boxes are created, one for the latitude and one for the longitude.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the spatial reference control.
+  * @todo This does not work for reloading data at the moment, when using split lat long mode.
   */
   public static function sref_textbox($options) {
     // get the table and fieldname
@@ -1256,10 +1271,21 @@ class data_entry_helper extends helper_config {
         'id'=>'imp-sref',
         'table'=>$tokens[0],
         'default'=>self::check_default_value($options['fieldname']),
-        'defaultGeom'=>self::check_default_value($tokens[0].':geom')
+        'defaultGeom'=>self::check_default_value($tokens[0].':geom'),
+        'splitLatLong'=>false
     ), $options);
     $options = self::check_options($options);
-    $r = self::apply_template('sref_textbox', $options);
+    if ($options['splitLatLong']) {
+      // Outputting separate lat and long fields, so we need a few more options 
+      $options = array_merge(array(
+        'labelLat' => lang::get('Latitude'),
+        'labelLong' => lang::get('Longitude'),
+        'idLat'=>'imp-sref-lat',
+        'idLong'=>'imp-sref-long'
+      ), $options);
+      $r = self::apply_template('sref_textbox_latlong', $options);
+    } else
+      $r = self::apply_template('sref_textbox', $options);
     return $r;
   }
 

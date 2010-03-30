@@ -277,14 +277,17 @@ class iform_ad_hoc_cetaceans {
     // Some instructions only visible when entering data from the shore
     $r .= '<p class="shore_mode page-notice ui-state-highlight ui-corner-all">'.lang::get('Instructions for clicking on map').'</p>';
     $r .= data_entry_helper::sref_and_system(array(
-      'label' => lang::get('sample:entered_sref'),
-      'systems' => array(4326 => lang::get('Latitude, Longitude'))
+      'systems' => array(4326 => lang::get('Latitude, Longitude')),
+      'splitLatLong' => true
     ));
     
     // Initially, we hide the map. Only show it when the user selects the sighting was from the shore,
     // as a click on the map for boat recordings will not be accurate.
     $r .= '<div class="shore_mode">';
     $options = iform_map_get_map_options($args, $readAuth);
+    $options['maxZoom'] = 9;
+    // Switch to degrees and decimal minutes for lat long.
+    $options['latLongFormat'] = 'DM';
     $r .= data_entry_helper::map_panel($options);
     // Now, add some JavaScript to show or hide the map. Show it for when the sighting was from the shore.
     // Hide it for boat based sightings as we want a GPS coordinate in this case. The JavaScript looks for the 
@@ -318,9 +321,9 @@ class iform_ad_hoc_cetaceans {
     $r .= "<fieldset id=\"other\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
     $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
-    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
+    $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
+    $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
+    $r .= "<input type=\"hidden\" name=\"occurrence:record_status\" value=\"C\" />\n";
     if ($args['interface']=='one_page') 
         $r .= '<legend>'.lang::get('other information').'</legend>';
     $r .= data_entry_helper::date_picker(array(
