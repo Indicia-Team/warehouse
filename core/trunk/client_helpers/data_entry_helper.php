@@ -3246,6 +3246,7 @@ $('.ui-state-default').live('mouseout', function() {
       // Run through the expected configuration settings, checking they are present and not empty
       self::check_config('$base_url', isset(self::$base_url), empty(self::$base_url), $missing_configs, $blank_configs);
       self::check_config('$upload_path', isset(self::$upload_path), empty(self::$upload_path), $missing_configs, $blank_configs);
+      self::check_config('$indicia_upload_path', isset(self::$indicia_upload_path), empty(self::$indicia_upload_path), $missing_configs, $blank_configs);
       self::check_config('$geoserver_url', isset(self::$geoserver_url), empty(self::$geoserver_url), $missing_configs, $blank_configs);
       self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
       self::check_config('$google_search_api_key', isset(self::$google_search_api_key), empty(self::$google_search_api_key), $missing_configs, $blank_configs);
