@@ -110,6 +110,14 @@ class iform_my_dot_map {
           'group'=>'Distribution Layer 1',
           'required'=>false
         ),
+        array(
+          'name' => 'wms_dist_1_opacity',
+          'caption' => 'Opacity',
+          'description' => 'Opacity of layer 1, ranging from 0 (not visible) to 1 (fully opaque).',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 1',
+          'required'=>false
+        ),
         // Distribution layer 2
         array(
           'name' => 'wms_dist_2_title',
@@ -176,6 +184,14 @@ class iform_my_dot_map {
           'caption' => 'Style',
           'description' => 'Name of the style to load for this layer (e.g. the style registered on GeoServer you want to use). This style must exist, '.
               'and the setting is case sensitive.',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 2',
+          'required'=>false
+        ),
+        array(
+          'name' => 'wms_dist_2_opacity',
+          'caption' => 'Opacity',
+          'description' => 'Opacity of layer 2, ranging from 0 (not visible) to 1 (fully opaque).',
           'type' => 'textfield',
           'group'=>'Distribution Layer 2',
           'required'=>false
@@ -248,7 +264,15 @@ class iform_my_dot_map {
           'type' => 'textfield',
           'group'=>'Distribution Layer 3',
           'required'=>false
-        )
+        ),
+        array(
+          'name' => 'wms_dist_3_opacity',
+          'caption' => 'Opacity',
+          'description' => 'Opacity of layer 3, ranging from 0 (not visible) to 1 (fully opaque).',
+          'type' => 'textfield',
+          'group'=>'Distribution Layer 3',
+          'required'=>false
+        ),
       )
     );
   }
@@ -349,12 +373,14 @@ var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);\n";
       $url = $args["wms_dist_$layerId"."_internal"] ? data_entry_helper::$geoserver_url.'wms' : $args["wms_dist_$layerId"."_url"];
       // Get the style if there is one selected
       $style = $args["wms_dist_$layerId"."_style"] ? ", styles: '".$args["wms_dist_$layerId"."_style"]."'" : '';
+      // and also the opacity
+      $opacity = $args["wms_dist_$layerId"."_opacity"] ? $args["wms_dist_$layerId"."_opacity"] : 0.5;
 
       data_entry_helper::$javascript .= "var distLayer$layerId = new OpenLayers.Layer.WMS(
         '".$args["wms_dist_$layerId"."_title"]."',
         '$url',
         {layers: '".$args["wms_dist_$layerId"."_layer"]."', transparent: true, filter: filter $style},
-        {isBaseLayer: false, opacity: 0.5, sphericalMercator: true, singleTile: true}
+        {isBaseLayer: false, opacity: $opacity, sphericalMercator: true, singleTile: true}
       );\n";
       return "distLayer$layerId";
     }
