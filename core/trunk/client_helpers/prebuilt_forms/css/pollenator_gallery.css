@@ -1,0 +1,12 @@
+.ui-accordion-header {
+	padding: 4px;
+}
+
+.addn-info-label {
+	width: 160;
+}
+
+#new-id label {
+	display: block;
+	width: auto;
+}
