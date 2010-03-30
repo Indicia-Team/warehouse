@@ -61,7 +61,8 @@ class Data_Controller extends Data_Service_Base_Controller {
                   'location',
                   'occurrence',
                   'occurrence_comment',
-                   'person',
+                  'determination',
+  				  'person',
                   'sample',
                     'survey',
                   'user'
@@ -153,6 +154,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function occurrence_image()
   {
   $this->handle_call('occurrence_image');
+  }
+  
+  /**
+  * Provides the /service/data/occurrence_attribute service.
+  * Retrieves details of occurrence attributes.
+  */
+  public function determination()
+  {
+  $this->handle_call('determination');
   }
   
   /**
