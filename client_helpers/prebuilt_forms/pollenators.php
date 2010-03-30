@@ -764,7 +764,7 @@ $('#cc-2-flower-upload').ajaxForm({
         			$(this).fadeIn();
 			    })
 			    .error(function () { }) // L3 TODO
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.files[0])
+			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
 			    .attr('width', $('#cc-2-flower-image').width()).attr('height', $('#cc-2-flower-image').height());
 			jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
   		} 
@@ -789,7 +789,7 @@ $('#cc-2-environment-upload').ajaxForm({
 			    })
 			    .error(function () { // L3 TODO
 			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.files[0])
+			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
 			    .attr('width', $('#cc-2-environment-image').width()).attr('height', $('#cc-2-environment-image').height());
 			jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
         } 
@@ -1136,7 +1136,7 @@ $('#cc-4-insect-upload').ajaxForm({
 			    })
 			    .error(function () { // L3 TODO
 			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+data.files[0])
+			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
 			    .attr('width', 300).attr('height', 300);
 			jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
         } 
@@ -1215,7 +1215,7 @@ addToPhotoReel = function(occId){
    			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
 		if (imageData.length>0) {
 			var img = new Image();
-			$(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."thumb-'+imageData[0].path)
+			$(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    .attr('width', 50).attr('height', 50).appendTo(container).click(function () {setInsect(this, imageData[0].occurrence_id)});
 		}
 	});
@@ -1270,7 +1270,7 @@ setPhoto = function(occId, filename){
 	// var filename = jQuery('#cc-4-main-form input[name=occurrence_image\\:path]').val();
     var img = new Image();
 	var temp=jQuery('.currentPhoto').empty().removeClass('blankPhoto');
-    $(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."thumb-'+filename)
+    $(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+filename)
 			    .attr('width', 50).attr('height', 50).appendTo(temp).click(function () {setInsect(this, occId)});
 	// TODO fetch the occurrence determination: if indeterminate set div to include a question mark
 	// TODO set a click event to populate the form dependant on occurrence_id.
@@ -1447,7 +1447,7 @@ loadImage = function(imageTable, key, keyName, keyValue, target){
 			    })
 			    .error(function () { // L3 TODO
 			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$upload_path)."med-'+imageData[0].path)
+			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+imageData[0].path)
 			    .attr('width', $(target).width()).attr('height', $(target).height());
 		}
 	});

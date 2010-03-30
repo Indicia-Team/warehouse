@@ -20,10 +20,15 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
+/*
+ * The indicia upload path should mirror the value for directory in the upload config file. The value in
+ * this file is relative to the base_url, and indicates the upload directory on the warehouse.
+ * The upload_path is relative to the website install.
+ */
 class helper_config {
   static $base_url='*base_url*';
   static $upload_path = './upload/';
+  static $indicia_upload_path = 'upload/';
   static $geoserver_url = '*geoserver_url*';
   static $geoplanet_api_key='*geoplanet_api_key*';
   static $google_search_api_key='*google_search_api_key*';
