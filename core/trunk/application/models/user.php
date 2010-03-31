@@ -110,8 +110,7 @@ class User_Model extends ORM {
       foreach ($websites as $website) {
         $users_websites = ORM::factory('users_website', array(
           'user_id' => $this->id,
-          'website_id' => $website->id,
-          'deleted' => 'false'
+          'website_id' => $website->id
         ));
         $save_array = array(
           'id' => $users_websites->object_name,
