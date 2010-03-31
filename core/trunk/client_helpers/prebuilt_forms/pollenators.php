@@ -241,6 +241,8 @@ class iform_pollenators {
 //    	}
 //    }
 	drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
+	data_entry_helper::link_default_stylesheet();
+	data_entry_helper::add_resource('jquery_ui');
 	data_entry_helper::enable_validation('cc-1-collection-details'); // don't care about ID itself, just want resources
 	
 	// The only things that will be editable after the collection is saved will be the identifiaction of the flower/insects.
@@ -291,8 +293,8 @@ class iform_pollenators {
   	<span id="cc-1-protocol-details"></span>
     <div class="right">
       <div>
-        <span id="cc-1-reinit-button" class="reinit-button poll-button-1">'.lang::get('LANG_Reinitialise').'</span>
-        <span id="cc-1-mod-button" class="mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
+        <span id="cc-1-reinit-button" class="ui-state-default ui-corner-all reinit-button poll-button-1">'.lang::get('LANG_Reinitialise').'</span>
+        <span id="cc-1-mod-button" class="ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
       </div>
     </div>
   </div>
@@ -319,7 +321,7 @@ class iform_pollenators {
     </form>
   </div>
   <div id="cc-1-footer" class="poll-section-footer">
-    <div id="cc-1-valid-button" class="right poll-button-1">'.lang::get('LANG_Validate').'</div><br />
+    <div id="cc-1-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate').'</div><br />
   </div>
   
 </div>
@@ -579,7 +581,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 <div id="cc-2" class="poll-section">
   <div id="cc-2-title" class="poll-section-title"><span>'.lang::get('LANG_Flower_Station').'</span>
     <div class="right">
-      <span id="cc-2-mod-button" class="mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
+      <span id="cc-2-mod-button" class="ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
     </div>
   </div>
   <div id="cc-2-body" class="poll-section-body">
@@ -643,7 +645,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
  		<input type="text" name="place:longSec" value="" /><br />
  		</div>
  		<div>
-	 		<span id="cc-2-display-location-button" class="poll-button-1">'.lang::get('LANG_Display_Location').'</span><br />
+	 		<span id="cc-2-display-location-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Display_Location').'</span><br />
 	 	</div>
  	  </div></div>
       <div id="cc-2-loc-description"></div>
@@ -671,7 +673,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
    </form>
   </div>
   <div id="cc-2-footer" class="poll-section-footer">
-    <div id="cc-2-valid-button" class="right poll-button-1">'.lang::get('LANG_Validate_Flower').'</div><br />
+    <div id="cc-2-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div><br />
   </div>
 </div>';
 	// NB the distance attribute is left blank at the moment if unknown: TODO put in a checkbox : checked if blank for nsp
@@ -754,19 +756,33 @@ $('#cc-2-flower-upload').ajaxForm({
         	$('#cc-2-flower-image').addClass('loading')
         },
         success:   function(data){
-        	// There is only one file
-        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.files[0]);
-        	var img = new Image();
-        	$(img)
-        		.load(function () {
-        			$(this).hide();
-        			$('#cc-2-flower-image').removeClass('loading').append(this);
-        			$(this).fadeIn();
-			    })
-			    .error(function () { }) // L3 TODO
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-			    .attr('width', $('#cc-2-flower-image').width()).attr('height', $('#cc-2-flower-image').height());
-			jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
+        	if(data.success == true){
+	        	// There is only one file
+	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.files[0]);
+	        	var img = new Image();
+	        	$(img).load(function () {
+        				$(this).hide();
+        				$('#cc-2-flower-image').removeClass('loading').append(this);
+        				$(this).fadeIn();
+			    	})
+				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
+				    .attr('width', $('#cc-2-flower-image').width()).attr('height', $('#cc-2-flower-image').height());
+				jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
+			} else {
+				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val('');
+				$('#cc-2-flower-image').removeClass('loading');
+				if(data.error){
+					errorString = errorString + ' : ' + data.error;
+				}
+				if(data.errors){
+					for (var i in data.errors)
+					{
+						errorString = errorString + ' : ' + data.errors[i];
+					}				
+				}
+				alert(errorString);
+			}
   		} 
 });
 
@@ -779,19 +795,33 @@ $('#cc-2-environment-upload').ajaxForm({
         	$('#cc-2-environment-image').addClass('loading')
         },
         success:   function(data){
-        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.files[0]);
-        	var img = new Image();
-        	$(img)
-        		.load(function () {
-        			$(this).hide();
-        			$('#cc-2-environment-image').removeClass('loading').append(this);
-        			$(this).fadeIn();
-			    })
-			    .error(function () { // L3 TODO
-			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-			    .attr('width', $('#cc-2-environment-image').width()).attr('height', $('#cc-2-environment-image').height());
-			jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
+        	if(data.success == true){
+	        	// There is only one file
+	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.files[0]);
+	        	var img = new Image();
+	        	$(img).load(function () {
+        				$(this).hide();
+        				$('#cc-2-environment-image').removeClass('loading').append(this);
+        				$(this).fadeIn();
+			    	})
+				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
+				    .attr('width', $('#cc-2-environment-image').width()).attr('height', $('#cc-2-environment-image').height());
+				jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
+			} else {
+				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val('');
+				$('#cc-2-environment-image').removeClass('loading');
+				if(data.error){
+					errorString = errorString + ' : ' + data.error;
+				}
+				if(data.errors){
+					for (var i in data.errors)
+					{
+						errorString = errorString + ' : ' + data.errors[i];
+					}				
+				}
+				alert(errorString);
+			}
         } 
 });
 
@@ -867,13 +897,13 @@ $('#cc-2-valid-button').click(function() {
     $r .= '
 <div id="cc-3" class="poll-section">
   <div id="cc-3-title" class="poll-section-title"><span>'.lang::get('LANG_Sessions_Title').'</span>
-    <div id="cc-3-mod-button" class="right mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
+    <div id="cc-3-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
   </div>
   <div id="cc-3-body" class="poll-section-body">
   </div>
   <div id="cc-3-footer" class="poll-section-footer">
-    <div id="cc-3-valid-button" class="right poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
-	<div id="cc-3-add-button" class="right poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div><br />
+    <div id="cc-3-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
+	<div id="cc-3-add-button" class="right ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div><br />
   </div>
 </div>';
 
@@ -923,7 +953,7 @@ addSession = function(){
 		.appendTo('#cc-3-body');
 	var newTitle = jQuery('<div class=\"poll-session-title\">".lang::get('LANG_Session')." '+sessionCounter+'</div>')
 		.appendTo(newSession);
-	var newModButton = jQuery('<div class=\"right poll-button-1\">".lang::get('LANG_Modify')."</div><br />')
+	var newModButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1\">".lang::get('LANG_Modify')."</div><br />')
 		.appendTo(newTitle).hide();
 	newModButton.click(function() {
 		if(!validateAndSubmitOpenSessions()) return false;
@@ -956,7 +986,7 @@ addSession = function(){
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	var newFooter = jQuery('<div id=\"cc-3-session-footer-'+sessionCounter+'\" class=\"poll-session-footer\" />').appendTo(newSession);
-	var newDeleteButton = jQuery('<div class=\"right poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div><br /><br />')
+	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div><br /><br />')
 		.appendTo(newFooter);	
 	newDeleteButton.click(function() {
 		$(this).parent().parent().remove();
@@ -1063,7 +1093,7 @@ jQuery('.mod-button').click(function() {
  	$r .= '
 <div id="cc-4" class="poll-section">
   <div id="cc-4-title" class="poll-section-title">'.lang::get('LANG_Photos').'
-    <div id="cc-4-mod-button" class="right mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
+    <div id="cc-4-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
   </div>
   <div id="cc-4-photo-reel" class="photoReelContainer" >
   </div>
@@ -1106,10 +1136,10 @@ jQuery('.mod-button').click(function() {
  	.data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],
  			$defAttrOptions).'
     </form>
-    <span id="cc-4-valid-insect-button" class="poll-button-1">'.lang::get('LANG_Validate_Insect').'</span><br />
+    <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Insect').'</span><br />
   </div>
   <div id="cc-4-footer" class="poll-section-footer">
-    <div id="cc-4-valid-photo-button" class="right poll-button-1">'.lang::get('LANG_Validate_Photos').'</div><br />
+    <div id="cc-4-valid-photo-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div><br />
   </div>
 </div>';
 
@@ -1126,19 +1156,33 @@ $('#cc-4-insect-upload').ajaxForm({
         	$('#cc-4-insect-image').addClass('loading')
         },
         success:   function(data){
-			jQuery('form#cc-4-main-form > input[name=occurrence_image\\:path]').val(data.files[0]);
-        	var img = new Image();
-        	$(img)
-        		.load(function () {
-        			$(this).hide();
-        			$('#cc-4-insect-image').removeClass('loading').append(this);
-        			$(this).fadeIn();
-			    })
-			    .error(function () { // L3 TODO
-			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-			    .attr('width', 300).attr('height', 300);
-			jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
+        	if(data.success == true){
+	        	// There is only one file
+	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val(data.files[0]);
+	        	var img = new Image();
+	        	$(img).load(function () {
+        				$(this).hide();
+        				$('#cc-4-insect-image').removeClass('loading').append(this);
+        				$(this).fadeIn();
+			    	})
+				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
+				    .attr('width', $('#cc-4-insect-image').width()).attr('height', $('#cc-4-insect-image').height());
+				jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
+			} else {
+				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val('');
+				$('#cc-4-insect-image').removeClass('loading');
+				if(data.error){
+					errorString = errorString + ' : ' + data.error;
+				}
+				if(data.errors){
+					for (var i in data.errors)
+					{
+						errorString = errorString + ' : ' + data.errors[i];
+					}				
+				}
+				alert(errorString);
+			}
         } 
 });
 
@@ -1326,7 +1370,7 @@ $('#cc-4-valid-photo-button').click(function(){
    </div>
   </div>
   <div id="cc-5-footer" class="poll-section-footer">
-    <div id="cc-5-complete-collection" class="right poll-button-1">'.lang::get('LANG_Complete_Collection').'</div><br />
+    <div id="cc-5-complete-collection" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Complete_Collection').'</div><br />
   </div>
   <div id="cc-5-trailer" class="poll-section-trailer">
     <p>'.lang::get('LANG_Trailer_Head').'</p>
@@ -1370,8 +1414,8 @@ $('#cc-5-complete-collection').click(function(){
    <p>'.lang::get('LANG_Final_2').'</p> 
    </div>
   <div id="cc-6-footer" class="poll-section-footer">
-    <span id="cc-6-consult-collection" class="poll-button-1">'.lang::get('LANG_Consult_Collection').'</span>
-    <span id="cc-6-new-collection" class="poll-button-1">'.lang::get('LANG_Create_New_Collection').'</span>
+    <span id="cc-6-consult-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Consult_Collection').'</span>
+    <span id="cc-6-new-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Create_New_Collection').'</span>
     </div>
 </div>';
 

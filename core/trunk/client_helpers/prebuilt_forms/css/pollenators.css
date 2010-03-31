@@ -46,19 +46,7 @@ label {
 .poll-session-footer {
   margin-top: -2em;
 }
-.poll-button-1 {
-  border-left:white medium solid;
-  padding-left: 10px;
-  padding-right: 10px;
-  background-color:#878787;
-  cursor:default;
-}
-.poll-session-title .poll-button-1 {
-  background-color:#c0c0c0;
-}
-.poll-session-footer .poll-button-1 {
-  background-color:#c0c0c0;
-}
+
 .poll-image {
   height: 240px;
   width: 320px;
