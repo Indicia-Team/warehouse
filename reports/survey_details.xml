@@ -15,7 +15,6 @@
       <table tablename="samples" where="#this#.survey_id = #survey# and #this#.deleted = FALSE " >
 		  <subTable tablename="locations" join='LEFT' where="#this#.deleted = FALSE" >
 			<tabColumn name='name' />
-			<tabColumn name='boundary_geom' />
 		  </subTable>
 		  <tabColumn name='date_start' />
 		  <tabColumn name='date_end' />
@@ -31,9 +30,8 @@
 			  <tabColumn name='term' display='Sample Method' />
 		    </subTable>
 		  </subTable>
-		  <tabColumn name='geom' />
 		  <tabColumn name='recorder_names' />
-          <attributes where="rt.restrict_to_survey_id = #survey#" separator='|' />
+          <attributes  separator='|' />
           <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE and #this#.record_status in ('C', 'V')" 
           			 >
 		    <subTable tablename='people' parentKey='determiner_id' join='LEFT' where="#this#.deleted = FALSE" >
