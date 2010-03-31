@@ -339,14 +339,14 @@ class iform_my_dot_map {
       // @todo support passing an occurrence ID.
       if ($args["wms_dist_$layerId"."_filter_against"]!='none' && array_key_exists('table', $_GET) && $_GET['table']=='sample') {
         // Build a list of filters for each record. If there are multiple, then wrap in an OR filter.
-        data_entry_helper::$javascript .= "var filters = new Array();\n";
+        data_entry_helper::$onload_javascript .= "var filters = new Array();\n";
         $filterField = $args["wms_dist_$layerId"."_internal"] ? $args["wms_dist_$layerId"."_filter_against"] : $args["wms_dist_$layerId"."_filter_field"];
         // Use an array of handled values so we only build each distinct filter once
         $handled = array();
         foreach($occurrence as $record) {
           $filterValue = $record[$args["wms_dist_$layerId"."_filter_against"]];
           if (!in_array($filterValue, $handled)) {
-            data_entry_helper::$javascript .= "filters.push(new OpenLayers.Filter.Comparison({
+            data_entry_helper::$onload_javascript .= "filters.push(new OpenLayers.Filter.Comparison({
                 type: OpenLayers.Filter.Comparison.EQUAL_TO,
                 property: '".$filterField."',
                 value: '".$filterValue."'
@@ -355,7 +355,7 @@ class iform_my_dot_map {
           }
         }
         // JavaScript to build the filter as XML. If many filter rows, wrap them in an OR logical filter.
-        data_entry_helper::$javascript .= "
+        data_entry_helper::$onload_javascript .= "
 var filterObj;
 if (filters.length==1) {
   filterObj = filters[0];
@@ -367,7 +367,7 @@ if (filters.length==1) {
 }
 var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);\n";
       } else {
-        data_entry_helper::$javascript .= "var filter = null;\n";
+        data_entry_helper::$onload_javascript .= "var filter = null;\n";
       }
       // Get the url, either the external one specified, or our internally registered GeoServer
       $url = $args["wms_dist_$layerId"."_internal"] ? data_entry_helper::$geoserver_url.'wms' : $args["wms_dist_$layerId"."_url"];
@@ -376,7 +376,7 @@ var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);\n";
       // and also the opacity
       $opacity = $args["wms_dist_$layerId"."_opacity"] ? $args["wms_dist_$layerId"."_opacity"] : 0.5;
 
-      data_entry_helper::$javascript .= "var distLayer$layerId = new OpenLayers.Layer.WMS(
+      data_entry_helper::$onload_javascript .= "var distLayer$layerId = new OpenLayers.Layer.WMS(
         '".$args["wms_dist_$layerId"."_title"]."',
         '$url',
         {layers: '".$args["wms_dist_$layerId"."_layer"]."', transparent: true, filter: filter $style},
