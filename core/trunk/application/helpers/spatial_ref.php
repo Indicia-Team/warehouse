@@ -90,28 +90,28 @@ class spatial_ref {
 			return $wkt;
 	}
 
-	/*
-	 * Converts a internal WKT value to any output sref - either a notation, or a transformed WKT
-	 */
-	public static function internal_wkt_to_sref($wkt, $sref_system, $precision=null)
-	{
-		$system = strtolower($sref_system);
-		if (is_numeric($system))
-			$srid = $system;
-		else
-			$srid = call_user_func("$system::get_srid");
-		$db = new Database;
-		$result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText(" .
-				"'$wkt',".kohana::config('sref_notations.internal_srid')."),$srid)) AS wkt;")->current();
-		if (is_numeric($system)) {
-			// NB the handed in precision is ignored, and the rounding is determined by the system in use
-			if(array_key_exists($system, kohana::config('sref_notations.lat_long_systems')))
-				return self::point_to_lat_long($result->wkt, $system);
-			else
-				return self::point_to_x_y($result->wkt, $system);
-		} else
-			return call_user_func("$system::wkt_to_sref", $result->wkt, $precision);
-	}
+  /*
+   * Converts a internal WKT value to any output sref - either a notation, or a transformed WKT
+   */
+  public static function internal_wkt_to_sref($wkt, $sref_system, $precision=null, $output=null)
+  {
+    $system = strtolower($sref_system);
+    if (is_numeric($system))
+      $srid = $system;
+    else
+      $srid = call_user_func("$system::get_srid");
+    $db = new Database;
+    $result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText(" .
+        "'$wkt',".kohana::config('sref_notations.internal_srid')."),$srid)) AS wkt;")->current();
+    if (is_numeric($system)) {
+      // NB the handed in precision is ignored, and the rounding is determined by the system in use
+      if(array_key_exists($system, kohana::config('sref_notations.lat_long_systems')))
+        return self::point_to_lat_long($result->wkt, $system, $output);
+      else
+        return self::point_to_x_y($result->wkt, $system);
+    } else
+      return call_user_func("$system::wkt_to_sref", $result->wkt, $precision, $output);
+  }
 
 	/**
 	 * Convert a point wkt into a x, y representation.
@@ -200,72 +200,81 @@ class spatial_ref {
 		return $wkt;
 	}
 
-	protected static function point_to_lat_long($wkt, $system)
-	{
-		$locale=localeconv();
-		if ((bool) preg_match(
-					'/^POINT\([-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+\)$/D', $wkt)) {
-			$lat_res = '';
-			$long_res = '';
-			$coords = explode(' ', substr($wkt, 6, strlen($wkt)-7));
-			$long = abs($coords[0]);
-			$lat = abs($coords[1]);
-			$lat_long_details = kohana::config('sref_notations.lat_long_systems');
-			$lat_long_detail = $lat_long_details[$system];
-			if (array_key_exists('default_output', $lat_long_detail))
-				$default_output = $lat_long_detail['default_output'];
-			else
-				$default_output = 'D';
-			if (array_key_exists('indicator', $lat_long_detail))
-				$indicator = $lat_long_detail['indicator'];
-			else
-				$indicator = 'Prefix_NSEW';
-			$roundings = kohana::config('sref_notations.roundings');
-			if (array_key_exists($system, $roundings))
-				$round = $roundings[$system];
-			else
-				$round = 0;
-			if ($indicator == 'PlusMinus') {
-				$long_res .= ($coords[0] < 0 ? '-' : '+');
-				$lat_res .= ($coords[1] < 0 ? '-' : '+');
-			} else if ($indicator == 'Minus') {
-				$long_res .= ($coords[0] < 0 ? '-' : '');
-				$lat_res .= ($coords[1] < 0 ? '-' : '');
-			} else if ($indicator == 'Prefix_NSEW') {
-				$long_res .= ($coords[0] < 0 ? 'W' : 'E');
-				$lat_res .= ($coords[1] < 0 ? 'S' : 'N');
-			}
-			// when rounding for DMS & DM, the accuracy is reduced unless we increase the number of digits by one. 
-			// This is because rounding in base 60 gives less accuracy than in base 100. To do this we show both minutes when rounding is 1, etc.
-			if ($default_output == 'DMS') {
-				$long_deg = floor($long);
-				$long_min = ($round == 0 ? 0 : floor(($long-$long_deg)*60));
-				$long_sec = ($round < 1 ? 0 : round((3600*($long-$long_deg)-$long_min*60), $round <= 3 ? 0 : $round - 3));
-				$long_res .= $long_deg.(Kohana::lang('misc.d_m_s_separator')).$long_min.(Kohana::lang('misc.d_m_s_separator')).$long_sec;
-				$lat_deg = floor($lat);
-				$lat_min = ($round == 0 ? 0 : floor(($lat-$lat_deg)*60));
-				$lat_sec = ($round < 1 ? 0 : round((3600*($lat-$lat_deg)-$lat_min*60), $round <= 3 ? 0 : $round - 3));
-				$lat_res .= $lat_deg.(Kohana::lang('misc.d_m_s_separator')).$lat_min.(Kohana::lang('misc.d_m_s_separator')).$lat_sec;
-			} else if ($default_output == 'DM') {
-				$long_deg = floor($long);		
-				$long_min = ($round == 0 ? 0 : round(($long-$long_deg)*60, $round <= 1 ? 0 : $round - 1));
-				$long_res .= $long_deg.Kohana::lang('misc.d_m_s_separator').$long_min;
-				$lat_deg = floor($lat);		
-				$lat_min = ($round == 0 ? 0 : round(($lat-$lat_deg)*60, $round <= 1 ? 0 : $round - 1));
-				$lat_res .= $lat_deg.Kohana::lang('misc.d_m_s_separator').$lat_min;
-			}else {
-				$long_res .= round($long,$round);
-				$lat_res .= round($lat,$round);
-			}
-			if ($indicator == 'Postfix_NSEW') {
-				$long_res .= ($coords[0] < 0 ? 'W' : 'E');
-				$lat_res .= ($coords[1] < 0 ? 'S' : 'N');
-			}
-			return $lat_res.' '.$long_res;
-		} else {
-			throw new Exception('point_to_lat_long passed invalid wkt - '.$wkt);
-		}
-	}
+  /**
+   * Convert a lat/long point WKT to a latitude and longitude display representation. 
+   * @param string $wkt The well known text for a lat long point.
+   * @param string $system The latitude and longitude system for both the input and output, normally 4326 for GPS/WGS84 lat longs.
+   * @param string $output The optional output format if overriding the default for this system. Options are DMS, DM, or D for degrees, minutes, seconds,
+   * degrees and minutes, or decimal degrees (default). 
+   */
+  protected static function point_to_lat_long($wkt, $system, $output=null)
+  {
+    $locale=localeconv();
+    if ((bool) preg_match(
+          '/^POINT\([-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+[ ]*[-+]?[0-9]*\\'.$locale['decimal_point'].'?[0-9]+\)$/D', $wkt)) {
+      $lat_res = '';
+      $long_res = '';
+      $coords = explode(' ', substr($wkt, 6, strlen($wkt)-7));
+      $long = abs($coords[0]);
+      $lat = abs($coords[1]);
+      $lat_long_details = kohana::config('sref_notations.lat_long_systems');
+      $lat_long_detail = $lat_long_details[$system];
+      if ($output==null) {
+        if (array_key_exists('default_output', $lat_long_detail))
+          $output = $lat_long_detail['default_output'];
+        else
+          $output = 'D';
+      }
+      if (array_key_exists('indicator', $lat_long_detail))
+        $indicator = $lat_long_detail['indicator'];
+      else
+        $indicator = 'Prefix_NSEW';
+      $roundings = kohana::config('sref_notations.roundings');
+      if (array_key_exists($system, $roundings))
+        $round = $roundings[$system];
+      else
+        $round = 0;
+      if ($indicator == 'PlusMinus') {
+        $long_res .= ($coords[0] < 0 ? '-' : '+');
+        $lat_res .= ($coords[1] < 0 ? '-' : '+');
+      } else if ($indicator == 'Minus') {
+        $long_res .= ($coords[0] < 0 ? '-' : '');
+        $lat_res .= ($coords[1] < 0 ? '-' : '');
+      } else if ($indicator == 'Prefix_NSEW') {
+        $long_res .= ($coords[0] < 0 ? 'W' : 'E');
+        $lat_res .= ($coords[1] < 0 ? 'S' : 'N');
+      }
+      // when rounding for DMS & DM, the accuracy is reduced unless we increase the number of digits by one. 
+      // This is because rounding in base 60 gives less accuracy than in base 100. To do this we show both minutes when rounding is 1, etc.
+      if ($output == 'DMS') {
+        $long_deg = floor($long);
+        $long_min = ($round == 0 ? 0 : floor(($long-$long_deg)*60));
+        $long_sec = ($round < 1 ? 0 : round((3600*($long-$long_deg)-$long_min*60), $round <= 3 ? 0 : $round - 3));
+        $long_res .= $long_deg.(Kohana::lang('misc.d_m_s_separator')).$long_min.(Kohana::lang('misc.d_m_s_separator')).$long_sec;
+        $lat_deg = floor($lat);
+        $lat_min = ($round == 0 ? 0 : floor(($lat-$lat_deg)*60));
+        $lat_sec = ($round < 1 ? 0 : round((3600*($lat-$lat_deg)-$lat_min*60), $round <= 3 ? 0 : $round - 3));
+        $lat_res .= $lat_deg.(Kohana::lang('misc.d_m_s_separator')).$lat_min.(Kohana::lang('misc.d_m_s_separator')).$lat_sec;
+      } else if ($output == 'DM') {
+        $long_deg = floor($long);    
+        $long_min = ($round == 0 ? 0 : round(($long-$long_deg)*60, $round <= 1 ? 0 : $round - 1));
+        $long_res .= $long_deg.Kohana::lang('misc.d_m_s_separator').$long_min;
+        $lat_deg = floor($lat);    
+        $lat_min = ($round == 0 ? 0 : round(($lat-$lat_deg)*60, $round <= 1 ? 0 : $round - 1));
+        $lat_res .= $lat_deg.Kohana::lang('misc.d_m_s_separator').$lat_min;
+      }else {
+        $long_res .= round($long,$round);
+        $lat_res .= round($lat,$round);
+      }
+      if ($indicator == 'Postfix_NSEW') {
+        $long_res .= ($coords[0] < 0 ? 'W' : 'E');
+        $lat_res .= ($coords[1] < 0 ? 'S' : 'N');
+      }
+      return $lat_res.' '.$long_res;
+    } else {
+      throw new Exception('point_to_lat_long passed invalid wkt - '.$wkt);
+    }
+  }
 }
 
 ?>
