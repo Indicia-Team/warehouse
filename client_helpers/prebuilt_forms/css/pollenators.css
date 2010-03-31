@@ -1,3 +1,7 @@
+.ui-accordion-header {
+	padding: 4px;
+}
+
 label {
   display: inline-block;
   line-height: 1.8;
@@ -19,17 +23,6 @@ label {
 
 .poll-section {
   margin-top: 4px;
-}
-
-.poll-section-title {
-  background-color:#878787;
-  border-bottom:white thin solid;
-}
-
-.poll-section-body {
-  border-bottom: #878787 3px solid;
-  border-left: #878787 3px solid;
-  padding-left: 10px;
 }
 
 .poll-session-title {

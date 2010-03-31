@@ -288,7 +288,7 @@ class iform_pollenators {
 	
  	$r .= '
 <div id="cc-1" class="poll-section">
-  <div id="cc-1-title" class="poll-section-title">
+  <div id="cc-1-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title">
   	<span id="cc-1-title-details">'.lang::get('LANG_Collection_Details').'</span>
   	<span id="cc-1-protocol-details"></span>
     <div class="right">
@@ -298,7 +298,7 @@ class iform_pollenators {
       </div>
     </div>
   </div>
-  <div id="cc-1-body" class="poll-section-body">
+  <div id="cc-1-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">
    <form id="cc-1-collection-details" action="'.iform_ajaxproxy_url($node, 'loc-sample').'" method="POST">
     <input type="hidden" id="website_id"       name="website_id" value="'.$args['website_id'].'" />
     <input type="hidden" id="imp-sref"         name="location:centroid_sref"  value="" />
@@ -320,7 +320,7 @@ class iform_pollenators {
     <input type="hidden" id="sample:id"        name="sample:id" value="" disabled="disabled" />
     </form>
   </div>
-  <div id="cc-1-footer" class="poll-section-footer">
+  <div id="cc-1-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <div id="cc-1-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate').'</div><br />
   </div>
   
@@ -579,12 +579,12 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     
     $r .= '
 <div id="cc-2" class="poll-section">
-  <div id="cc-2-title" class="poll-section-title"><span>'.lang::get('LANG_Flower_Station').'</span>
+  <div id="cc-2-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title"><span>'.lang::get('LANG_Flower_Station').'</span>
     <div class="right">
       <span id="cc-2-mod-button" class="ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
     </div>
   </div>
-  <div id="cc-2-body" class="poll-section-body">
+  <div id="cc-2-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">
     <div id="cc-2-flower" >
       <div id="cc-2-flower-picture">
 		<form id="cc-2-flower-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
@@ -658,12 +658,12 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     <input type="hidden" name="location:centroid_sref" />
     <input type="hidden" name="location:centroid_geom" />
     <input type="hidden" name="location:centroid_sref_system" value="4326" />
-    <input type="hidden" id="location_image:id" name="location_image:id" value="" disabled="disabled" />
     <input type="hidden" id="location_image:path" name="location_image:path" value="" />
     <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
     <input type="hidden" id="sample:id" name="sample:id" value=""/>
     <input type="hidden" name="sample:date" value="2010-01-01"/>
     <input type="hidden" name="occurrence:taxa_taxon_list_id" value=""/>    
+    <input type="hidden" id="location_image:id" name="location_image:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence:id" name="occurrence:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
@@ -672,7 +672,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
  	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ')).'  	 	
    </form>
   </div>
-  <div id="cc-2-footer" class="poll-section-footer">
+  <div id="cc-2-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <div id="cc-2-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div><br />
   </div>
 </div>';
@@ -847,7 +847,7 @@ $('#cc-2-floral-station').ajaxForm({
 		}
 		data[3].value = jQuery('#imp-sref').val();
 		data[4].value = jQuery('#imp-geom').val();
-		data[11].value = jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val();
+		data[10].value = jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val();
 		return true;
 	},
     success:   function(data){
@@ -896,12 +896,12 @@ $('#cc-2-valid-button').click(function() {
 	// TODO L4 Help
     $r .= '
 <div id="cc-3" class="poll-section">
-  <div id="cc-3-title" class="poll-section-title"><span>'.lang::get('LANG_Sessions_Title').'</span>
+  <div id="cc-3-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title"><span>'.lang::get('LANG_Sessions_Title').'</span>
     <div id="cc-3-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
   </div>
-  <div id="cc-3-body" class="poll-section-body">
+  <div id="cc-3-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">
   </div>
-  <div id="cc-3-footer" class="poll-section-footer">
+  <div id="cc-3-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <div id="cc-3-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
 	<div id="cc-3-add-button" class="right ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div><br />
   </div>
@@ -1092,12 +1092,12 @@ jQuery('.mod-button').click(function() {
 	);
  	$r .= '
 <div id="cc-4" class="poll-section">
-  <div id="cc-4-title" class="poll-section-title">'.lang::get('LANG_Photos').'
+  <div id="cc-4-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title">'.lang::get('LANG_Photos').'
     <div id="cc-4-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
   </div>
-  <div id="cc-4-photo-reel" class="photoReelContainer" >
+  <div id="cc-4-photo-reel" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active photoReelContainer" >
   </div>
-  <div id="cc-4-body" class="poll-section-body">  
+  <div id="cc-4-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">  
     <div id="cc-4-insect">
       <div id="cc-4-insect-picture">
 		<form id="cc-4-insect-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
@@ -1138,7 +1138,7 @@ jQuery('.mod-button').click(function() {
     </form>
     <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Insect').'</span><br />
   </div>
-  <div id="cc-4-footer" class="poll-section-footer">
+  <div id="cc-4-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <div id="cc-4-valid-photo-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div><br />
   </div>
 </div>';
@@ -1356,7 +1356,7 @@ $('#cc-4-valid-photo-button').click(function(){
     
  	$r .= '
 <div id="cc-5" class="poll-section">
-  <div id="cc-5-body" class="poll-section-body"> 
+  <div id="cc-5-body" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-body"> 
    <p>TBD - post multiple determinations</p> 
    <div style="display:none" />
     <form id="cc-5-collection" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
@@ -1369,7 +1369,7 @@ $('#cc-4-valid-photo-button').click(function(){
     </form>
    </div>
   </div>
-  <div id="cc-5-footer" class="poll-section-footer">
+  <div id="cc-5-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <div id="cc-5-complete-collection" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Complete_Collection').'</div><br />
   </div>
   <div id="cc-5-trailer" class="poll-section-trailer">
@@ -1409,11 +1409,11 @@ $('#cc-5-complete-collection').click(function(){
 
  	$r .= '
 <div id="cc-6" class="poll-section">
-  <div id="cc-6-body" class="poll-section-body"> 
+  <div id="cc-6-body" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-body"> 
    <p>'.lang::get('LANG_Final_1').'</p> 
    <p>'.lang::get('LANG_Final_2').'</p> 
    </div>
-  <div id="cc-6-footer" class="poll-section-footer">
+  <div id="cc-6-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <span id="cc-6-consult-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Consult_Collection').'</span>
     <span id="cc-6-new-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Create_New_Collection').'</span>
     </div>
