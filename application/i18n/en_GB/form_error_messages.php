@@ -155,8 +155,11 @@ $lang = array (
     'default' => 'Invalid Input.',
   ),
   'media_upload' => Array (
-    'size' => 'The file size exceeds the maximum allowed.',
+    'valid' => 'The file is being tagged as invalid.',
+  	'required' => 'The file must be provided.',
+  	'size' => 'The file size exceeds the maximum allowed.',
     'type' => 'The file is not one of the allowed types [png,gif,jpg].',
+    'default' => 'Invalid File.',
   ),
 );
 
