@@ -354,12 +354,16 @@ $.fn.unFoldPanel = function(){
 	// any reinit button is left in place
 };
 
+// because the map has to be generated in a properly sized div, we can't use the normal hide/show functions.
+// just move the panels off to the side.
 $.fn.showPanel = function(){
-	// if already visible, user has gone back and modified previous panel. Leave in current state.
-	if(this.filter(':visible').length > 0) return;
-	this.show();
-	this.find('.reinit-button').hide(); // hide on first display
+	this.removeClass('poll-section-hide');
 	this.unFoldPanel();
+};
+
+$.fn.hidePanel = function(){
+	this.addClass('poll-section-hide'); 
+//	this.hide();
 };
 
 $.fn.resetPanel = function(){
@@ -405,7 +409,7 @@ checkProtocolStatus = function(){
         jQuery('#cc-1-protocol-details').empty().show().text('".lang::get('LANG_Protocol_Title_Label')." : ' + checkedProtocol[0].textContent.split('(')[0]);
     } else {
         jQuery('#cc-1-title-details').empty().text('".lang::get('LANG_Collection_Details')."');
-        // TODO autogenerate a
+        // TODO autogenerate a name
         jQuery('#cc-1-protocol-details').empty().hide();
     }
 };
@@ -507,13 +511,14 @@ $('#cc-1-delete-collection').ajaxForm({
         	return true;
   		},
         success:   function(data){
-			$('.poll-section').resetPanel();
+			jQuery('.poll-section').resetPanel();
 			sessionCounter = 0;
 			addSession();
 			checkProtocolStatus();
-			$('.poll-section').hide();
-			$('.poll-image').empty();
-			$('#cc-1').showPanel();
+			jQuery('.poll-section').hidePanel();
+			jQuery('.poll-image').empty();
+			jQuery('#cc-1').showPanel();
+			jQuery('.reinit-button').hide();
   		} 
 });
 
@@ -1192,6 +1197,7 @@ $('#cc-4-main-form').ajaxForm({
     	var valid = true;
 		if (!jQuery('form#cc-4-main-form > input').valid()) { valid = false; }
 		if (!validateRequiredField('insect\\:taxa_taxon_list_id', '#cc-4-insect-identify')) { valid = false; }
+		if (!validateRequiredField('occurrence\\:sample_id', 'form#cc-4-main-form')) { valid = false; }
 		if (!validateRadio('occAttr\\:".$args['number_attr_id']."', obj)) { valid = false; }
     	if(data[1].value == '' ){
 			alert('".lang::get('LANG_Must_Provide_Insect_Picture')."');
@@ -1334,7 +1340,8 @@ validateInsect = function(){
     if (!jQuery('form#cc-4-main-form > input').valid()) { return false; }
   	if (!validateRadio('occAttr\\:".$args['number_attr_id']."', 'form#cc-4-main-form')) { valid = false; }
 	if (!validateRequiredField('insect\\:taxa_taxon_list_id', '#cc-4-insect-identify')) { valid = false; }
-  	if(jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val() == ''){
+	if (!validateRequiredField('occurrence\\:sample_id', 'form#cc-4-main-form')) { valid = false; }
+	if(jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val() == ''){
 		alert('".lang::get('LANG_Must_Upload_Insect_Picture')."');
 		valid = false;;
 	}
@@ -1400,7 +1407,7 @@ $('#cc-5-collection').ajaxForm({
   		} 
 });
 $('#cc-5-complete-collection').click(function(){
-	jQuery('#cc-2,#cc-3,#cc-4,#cc-5').hide();
+	jQuery('#cc-2,#cc-3,#cc-4,#cc-5').hidePanel();
 	jQuery('.reinit-button').show();
 	jQuery('.mod-button').show();
 	jQuery('#cc-5-collection').submit();
@@ -1430,9 +1437,10 @@ $('#cc-6-new-collection').click(function(){
 ";
 data_entry_helper::$javascript .= "
  			
-// Default state: fold everything except the collection details block.
-$('.poll-section').hide();
-$('#cc-1').showPanel();
+// Default state: hide everything except the collection details block.
+jQuery('.poll-section').hidePanel();
+jQuery('#cc-1').showPanel();
+jQuery('.reinit-button').hide();
 
 loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, prefix){
 	var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();

@@ -156,7 +156,7 @@ $lang = array (
   ),
   'media_upload' => Array (
     'valid' => 'The file is being tagged as invalid.',
-  	'required' => 'The file must be provided.',
+  	'required' => 'The file has not been uploaded to the warehouse. One possible reason is that its size may exceed the server upload limits.',
   	'size' => 'The file size exceeds the maximum allowed.',
     'type' => 'The file is not one of the allowed types [png,gif,jpg].',
     'default' => 'Invalid File.',

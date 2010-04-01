@@ -25,6 +25,11 @@ label {
   margin-top: 4px;
 }
 
+.poll-section-hide {
+	position: absolute;
+	left: -10000px;
+}
+
 .poll-session-title {
   background-color:#c0c0c0;
   border-bottom:white thin solid;
