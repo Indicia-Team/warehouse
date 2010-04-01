@@ -258,7 +258,7 @@ li.ui-state-error {
   display: block !important;
 }
 
-.hint {
+.helpText {
   color:gray;
   font-size:80%;
   margin:0 0 0.4em 160px;
