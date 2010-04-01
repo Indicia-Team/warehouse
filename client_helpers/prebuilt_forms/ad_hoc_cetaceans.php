@@ -158,8 +158,9 @@ class iform_ad_hoc_cetaceans {
     global $indicia_templates, $user;
     data_entry_helper::enable_validation('entry_form');
     $url = (!empty($_SERVER['HTTPS'])) ? "https://".$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'] : "http://".$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'];
-    $r = "<form method=\"post\" id=\"entry_form\" action=\"$url\">\n";
-    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    $r = data_entry_helper::loading_block_start();    
+    $r .= "<form method=\"post\" id=\"entry_form\" action=\"$url\">\n";
+    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);    
     $r .= "<div id=\"controls\">\n";
     if ($args['interface']!='one_page') {
       $r .= "<ul>\n";
@@ -276,11 +277,13 @@ class iform_ad_hoc_cetaceans {
     $r .= '<p class="boat_mode page-notice ui-state-highlight ui-corner-all">'.lang::get('Instructions for when on boat').'</p>';
     // Some instructions only visible when entering data from the shore
     $r .= '<p class="shore_mode page-notice ui-state-highlight ui-corner-all">'.lang::get('Instructions for clicking on map').'</p>';
+    $r .= '<div class="boat_mode">';
     $r .= data_entry_helper::sref_and_system(array(
       'systems' => array(4326 => lang::get('Latitude, Longitude')),
-      'splitLatLong' => true
+      'splitLatLong' => true,
+      'hint' => lang::get('Instructions for latlong')
     ));
-    
+    $r .= '</div>';
     // Initially, we hide the map. Only show it when the user selects the sighting was from the shore,
     // as a click on the map for boat recordings will not be accurate.
     $r .= '<div class="shore_mode">';
@@ -297,12 +300,12 @@ class iform_ad_hoc_cetaceans {
         var platformId = jQuery("input[name=smpAttr\\\\:'.$args['platform_attr_id'].']:checked").val();
         if (platformId == '.$args['platform_mapped_term_id'].') {
           jQuery("#place_wrapper").removeClass("hidden");
-          jQuery(".shore_mode").show();
-          jQuery(".boat_mode").hide();
+          jQuery(".shore_mode").removeClass("hidden");
+          jQuery(".boat_mode").addClass("hidden");
         } else {          
           jQuery("#place_wrapper").removeClass("hidden");
-          jQuery(".shore_mode").hide();
-          jQuery(".boat_mode").show();
+          jQuery(".shore_mode").addClass("hidden");
+          jQuery(".boat_mode").removeClass("hidden");
         }
       }
     );'."\n";
@@ -354,6 +357,7 @@ class iform_ad_hoc_cetaceans {
     }
     $r .= "</fieldset></div>";
     $r .= "</form>";
+    $r .= data_entry_helper::loading_block_end();
     return $r;
   }
  
