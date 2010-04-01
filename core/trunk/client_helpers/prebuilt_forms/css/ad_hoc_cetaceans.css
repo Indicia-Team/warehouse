@@ -19,16 +19,22 @@
 
 .taxon-desc {
   float: right;
-  width: 150px;
+  width: 170px;
   vertical-align: top;
 }
 
 .taxon-desc ul {
-  padding-left: 1.3em;
+  padding-left: 0;
+}
+
+.taxon-desc ul li {
+  list-style-type: none;
+  padding: 0.2em 0;
+  background: none;
 }
 
 .scTaxonCell {
-  padding-right: 0;
+  padding-right: 1em;
   border-bottom: dashed 1px #aaaaff;
   width: 440px;
 }

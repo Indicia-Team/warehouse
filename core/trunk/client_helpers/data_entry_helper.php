@@ -2106,6 +2106,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
     //Add suffix
     $r .= self::apply_static_template('suffix', $options);
+    
+    // If options contain a help text, output it at the end
+    if (array_key_exists('helpText', $options)) {
+      $r .= '<p class="helpText">'.$options['helpText'].'</p>';
+    }
 
     return $r;
   }
@@ -2536,8 +2541,9 @@ if (errors.length>0) {
   public static function loading_block_start() {
     global $indicia_templates, $indicia_theme_path, $indicia_theme;
     self::add_resource('jquery_ui');
-    // For clean code, the jquery_ui stuff should have gone out in the page header, but just in case...
-    if (!in_array('jquery_ui', self::$dumped_resources)) {
+    // For clean code, the jquery_ui stuff should have gone out in the page header, but just in case.
+    // Don't bother from inside Drupal, since the header is added after the page code runs
+    if (!in_array('jquery_ui', self::$dumped_resources) && !defined('DRUPAL_BOOTSTRAP_CONFIGURATION')) {
       $r = self::internal_dump_javascript('', '', '', array('jquery_ui'));
       array_push(self::$dumped_resources, 'jquery_ui');
     } else {
@@ -2557,7 +2563,7 @@ if (errors.length>0) {
   public static function loading_block_end() {
     global $indicia_templates;
     // First hide the message, then hide the form, slide it into view, then show it.
-    self::$javascript .= "$('.loading-panel').remove();\n".
+    self::$onload_javascript .= "$('.loading-panel').remove();\n".
         "var panel=$('.loading-hide')[0];\n".
         "$(panel).hide();\n".
         "$(panel).removeClass('loading-hide');\n".
