@@ -153,6 +153,10 @@ input, select, textarea {
   line-height: 1.75em;
 }
 
+input.indicia-button {
+  padding: 4px 4px 2px 4px;
+}
+
 .indicia-button span {
   display:inline-block;
   zoom:1;
@@ -207,7 +211,7 @@ li.ui-state-error {
 } 
 
 .loading-hide {
-  left:-999em; position: relative;
+  left:-999em; position: absolute;
 }
 
 #imp-georef-div {
@@ -249,7 +253,13 @@ li.ui-state-error {
 }
 
 .ui-tabs .ui-tabs-hide {
-    position: absolute;
-    left: -10000px;
-    display: block !important;
+  position: absolute;
+  left: -10000px;
+  display: block !important;
+}
+
+.hint {
+  color:gray;
+  font-size:80%;
+  margin:0 0 0.4em 160px;
 }
