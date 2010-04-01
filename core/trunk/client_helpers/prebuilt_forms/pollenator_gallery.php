@@ -49,12 +49,6 @@ class iform_pollenator_gallery {
    */
   public static function get_parameters() {
     $retVal = array(
-      array(
-      	'name'=>'primary_node_id',
-        'caption'=>'Primary Node',
-        'description'=>'The Drupal node number of the main pollenator filter form.',
-        'type'=>'int'
-      ),
      array(
       	'name'=>'survey_id',
         'caption'=>'Survey ID',
@@ -120,7 +114,7 @@ class iform_pollenator_gallery {
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'Pollenators: Focus on one insect';
+    return 'Pollenators: Gallery Filter and Focus on Collection and Insect';
   }
 
 /**
@@ -205,8 +199,111 @@ class iform_pollenator_gallery {
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
     	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'])
 	);
-	
+	$flower_ctrl_args=array(
+    	    'label'=>lang::get('LANG_Flower_Species'),
+        	'fieldname'=>'flower:taxa_taxon_list_id',
+	        'table'=>'taxa_taxon_list',
+    	    'captionField'=>'taxon',
+        	'valueField'=>'id',
+	        'columns'=>2,
+    		'blankText'=>lang::get('LANG_Choose_Taxon'),
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'])
+	);
+	$insect_ctrl_args=array(
+    	    'label'=>lang::get('LANG_Insect_Species'),
+        	'fieldname'=>'insect:taxa_taxon_list_id',
+	        'table'=>'taxa_taxon_list',
+    	    'captionField'=>'taxon',
+        	'valueField'=>'id',
+	        'columns'=>2,
+    		'blankText'=>lang::get('LANG_Choose_Taxon'),
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'])
+	);
  	$r .= '
+<div id="filter" class="ui-accordion ui-widget ui-helper-reset">
+	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
+	  	<div id="results-collections-title">
+	  		<span>TBD Filter Collections</span>
+    	</div>
+	</div>
+	<div id="filter-spec" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+	  <div class="ui-accordion ui-widget ui-helper-reset">
+		<div id="general-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+	  		<div id="reset-general-button" class="right ui-state-default ui-corner-all reset-general-button">'.lang::get('LANG_Reset_Filter').'</div>
+			<div id="general-filter-title">
+		  		<span>TBD General</span>
+      		</div>
+		</div>
+	    <div id="general-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
+    	</div>
+		<div id="flower-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+	  		<div id="reset-flower-button" class="right ui-state-default ui-corner-all reset-flower-button">'.lang::get('LANG_Reset_Filter').'</div>
+			<div id="flower-filter-title">
+		  		<span>TBD Flowers</span>
+      		</div>
+		</div>
+		<div id="flower-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
+		'.data_entry_helper::select($flower_ctrl_args).'
+    	</div>
+		<div id="insect-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+	  		<div id="reset-insect-button" class="right ui-state-default ui-corner-all reset-insect-button">'.lang::get('LANG_Reset_Filter').'</div>
+			<div id="insect-filter-title">
+		  		<span>TBD Insects</span>
+      		</div>
+		</div>
+		<div id="insect-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
+		'.data_entry_helper::select($insect_ctrl_args).'
+		</div>
+		<div id="location-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+	  		<div id="reset-location-button" class="right ui-state-default ui-corner-all reset-location-button">'.lang::get('LANG_Reset_Filter').'</div>
+			<div id="location-filter-title">
+		  		<span>TBD Location</span>
+      		</div>
+		</div>
+		<div id="location-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
+    	</div>
+      </div>
+    </div>
+    <div id="filter-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
+	  <div id="search-insects-button" class="right ui-state-default ui-corner-all search-insects-button">'.lang::get('LANG_Search_Insects').'</div>
+      <div id="search-collections-button" class="right ui-state-default ui-corner-all search-collections-button">'.lang::get('LANG_Search_Collections').'</div>
+    </div>
+	<div id="results-collections-header" class="ui-accordion-header ui-helper-reset ui-corner-top">
+	  <div id="results-collections-title">
+	  	<span>TBD Collections Filter results</span>
+      </div>
+	</div>
+	<div id="results-collections-results" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom">
+    </div>
+	<div id="results-insects-header" class="ui-accordion-header ui-helper-reset ui-corner-top">
+	  <div id="results-insects-title">
+	  	<span>TBD Insect Filter results</span>
+      </div>
+	</div>
+	<div id="results-insects-results" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom">
+    </div>
+</div>
+<div id="focus-collection" class="ui-accordion ui-widget ui-helper-reset">
+	<div id="collection-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+	  <div id="collection-title">
+	  	<span>TBD Breadcrumb</span>
+      </div>
+	</div>
+	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+	  <div id="flower-image">
+      </div>
+      <div id="map">
+      </div>
+	  <div id="collection-description">
+      </div>
+	  <div id="environment-image">
+      </div>
+    </div>
+	<div id="collection-insects" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+    </div>
+	<div id="collection-comments" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+    </div>
+</div>
 <div id="focus-insect" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="insect-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	  <div class="right">
@@ -225,7 +322,6 @@ class iform_pollenator_gallery {
 	      <span id="preferred-insect-button" class="ui-state-default ui-corner-all next-button">'.lang::get('LANG_Add_Preferred_Insect').'</span>
 	  </div>
     </div>
-	
 	<div id="insect-identification" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	  <div id="new-id-button" class="right ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>
 	  <div id="doubt-button" class="right ui-state-default ui-corner-all doubt-button">'.lang::get('LANG_Doubt').'</div>
