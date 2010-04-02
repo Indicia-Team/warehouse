@@ -281,7 +281,7 @@ class iform_ad_hoc_cetaceans {
     $r .= data_entry_helper::sref_and_system(array(
       'systems' => array(4326 => lang::get('Latitude, Longitude')),
       'splitLatLong' => true,
-      'hint' => lang::get('Instructions for latlong')
+      'helpText' => lang::get('Instructions for latlong')
     ));
     $r .= '</div>';
     // Initially, we hide the map. Only show it when the user selects the sighting was from the shore,
@@ -309,7 +309,8 @@ class iform_ad_hoc_cetaceans {
         }
       }
     );'."\n";
-    data_entry_helper::$javascript .= '
+    // Force existing setting of the radio buttons to reload when showign page after validation failure
+    data_entry_helper::$onload_javascript .= '
     jQuery("input[name=smpAttr\\\\:'.$args['platform_attr_id'].']:checked").trigger("click");
     ';
     $r .= '</div></div>';

@@ -150,14 +150,38 @@ jQuery('#{parentControlId}').change();\n",
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
         '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />',
   'attribute_cell' => "\n<td class='scOccAttrCell ui-widget-content'>{content}</td>",
-  'taxon_label_cell' => "\n<td class='scTaxonCell ui-state-default'>{content}</td>"
+  'taxon_label_cell' => "\n<td class='scTaxonCell ui-state-default'>{content}</td>",
+  'helpText' => "\n<p class=\"helpText\">{helpText}</p>"
 );
 
 
 /**
- * Static helper class that provides automatic HTML and JavaScript generation for Indicia online
- * recording website data entry controls. Examples include auto-complete text boxes that are populated
- * by Indicia species lists, maps for spatial reference selection and date pickers.
+ * <p>Static helper class that provides automatic HTML and JavaScript generation for Indicia online
+ * recording website data entry controls.</p>
+ * <p>Examples include auto-complete text boxes that are populated
+ * by Indicia species lists, maps for spatial reference selection and date pickers. All controls in this 
+ * class support the following entries in their $options array parameter:</p>
+ * <ul>
+ * <li><b>label</b><br/>
+ * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
+ * <li><b>helpText</b><br/>
+ * Optional. Defines help text to be displayed alongside the control. The position of the text is defined by 
+ * data_entry_helper::$helpTextPos, which can be set to before or after (default). The template is defined by
+ * global $indicia_templates['helpText'] and can be replaced on an instance by instance basis by specifying an 
+ * option 'helpTextTemplate' for the control.
+ * <li><b>helpTextTemplate</b></li>
+ * If helpText is supplied but you need to change the template for this control only, set this to refer to the name of an 
+ * alternate template you have added to the $indicia_templates array. The template should contain a {helpText} replacement
+ * string.</li>
+ * <li><b>prefixTemplate</b></li>
+ * If you need to change the prefix for this control only, set this to refer to the name of an alternate template you 
+ * have added to the global $indicia_templates array. To change the prefix for all controls, you can update the value of 
+ * $indicia_templates['prefix'] before building the form.</li>
+ * <li><b>suffixTemplate</b></li>
+ * If you need to change the suffix for this control only, set this to refer to the name of an alternate template you 
+ * have added to the global $indicia_templates array. To change the suffix for all controls, you can update the value of 
+ * $indicia_templates['suffix'] before building the form.</li>
+ * </ul>
  *
  * @package	Client
  */
@@ -178,6 +202,12 @@ class data_entry_helper extends helper_config {
    * messages on the next line so this is the default behaviour.
    */
   public static $validation_mode=array('message', 'colour');
+  
+  /**
+   * @var string Helptext positioning. Determines where the information is displayed when helpText is defined for a control.
+   * Options are before, after.
+   */
+  public static $helpTextPos='after';
 
   /**
    * @var string JavaScript text to be emitted after the data entry form. Each control that
@@ -299,10 +329,8 @@ class data_entry_helper extends helper_config {
   * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>template</b><br/>
-  * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
+  * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li> 
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -361,8 +389,6 @@ class data_entry_helper extends helper_config {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>template</b><br/>
   * Optional. Name of the template entry used to build the HTML for the control. Defaults to checkbox.</li>
   * </ul>
@@ -407,8 +433,6 @@ class data_entry_helper extends helper_config {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>template</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the outer control.</li>
@@ -437,8 +461,6 @@ class data_entry_helper extends helper_config {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>allowFuture</b><br/>
   * Optional. If true, then future dates are allowed. Default is false.</li>
   * </ul>
@@ -495,8 +517,6 @@ class data_entry_helper extends helper_config {
   * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
   * <li><b>georefLang</b><br/>
   * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the georeference lookup control.
@@ -532,8 +552,6 @@ class data_entry_helper extends helper_config {
   * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the file upload control.
@@ -566,8 +584,6 @@ class data_entry_helper extends helper_config {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
@@ -608,8 +624,6 @@ class data_entry_helper extends helper_config {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the location select control.
@@ -673,8 +687,6 @@ class data_entry_helper extends helper_config {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>template</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the outer control.</li>
@@ -734,8 +746,6 @@ class data_entry_helper extends helper_config {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the generated list.
@@ -997,8 +1007,6 @@ class data_entry_helper extends helper_config {
   * Optional. Name of the spatial reference system hidden field that will be output by this control if hidddenFields is true.</li>
   * <li><b>linkedAddressBoxId</b><br/>
   * Optional. Id of the separate textarea control that will be populated with an address when a postcode is looked up.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the postcode control.
@@ -1057,8 +1065,6 @@ class data_entry_helper extends helper_config {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>template</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the outer control.</li>
@@ -1113,8 +1119,6 @@ class data_entry_helper extends helper_config {
   * rather than use a locally stored (cached) copy of the previous request. This speeds things up
   * and reduces the loading on the Indicia Warehouse. Defaults to the global website-wide value:
   * if this is not specified then 1 hour.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>blankText</b><br/>
   * Optional. If specified then the first option in the drop down is the blank text, used when there is no value.</li>
   * <li><b>template</b><br/>
@@ -1158,8 +1162,6 @@ class data_entry_helper extends helper_config {
   * Optional. List of spatial reference systems to display. Associative array with the key
   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
   * the description to display.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the spatial reference and system selection control.
@@ -1203,14 +1205,10 @@ class data_entry_helper extends helper_config {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>systems</b>
   * Optional. List of spatial reference systems to display. Associative array with the key
   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
   * the description to display.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the spatial reference systems selection control.
@@ -1251,8 +1249,6 @@ class data_entry_helper extends helper_config {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>splitLatLong</b><br/>
   * Optional. If set to true, then 2 boxes are created, one for the latitude and one for the longitude.</li>
   * </ul>
@@ -1579,8 +1575,6 @@ class data_entry_helper extends helper_config {
   * Optional. HTML rows attribute. Defaults to 4.</li>
   * <li><b>cols</b><br/>
   * Optional. HTML cols attribute. Defaults to 80.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the textarea control.
@@ -1608,8 +1602,6 @@ class data_entry_helper extends helper_config {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the text input control.
@@ -1738,8 +1730,6 @@ class data_entry_helper extends helper_config {
   * Class to be added to the control's outer div.</li>
   * <li><b>class</b><br/>
   * Class to be added to the input control (hidden).</li>
-  * <li><b>label</b><br/>
-  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
   * <li><b>default</b><br/>
   * Optional. The default value for the underlying control.</li>
   * </ul>
@@ -2075,7 +2065,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         array_push($replaceValues, $options[$option]);
       }
     }
-    $r = '';
+    // If options contain a help text, output it at the end if that is the preferred position    
+    $r = self::get_help_text($options, 'before');
     //Add prefix
     $r .= self::apply_static_template('prefix', $options);
 
@@ -2107,12 +2098,23 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     //Add suffix
     $r .= self::apply_static_template('suffix', $options);
     
-    // If options contain a help text, output it at the end
-    if (array_key_exists('helpText', $options)) {
-      $r .= '<p class="helpText">'.$options['helpText'].'</p>';
-    }
+    // If options contain a help text, output it at the end if that is the preferred position    
+    $r .= self::get_help_text($options, 'after');
 
     return $r;
+  }
+  
+  /**
+   * Returns templated help text for a control, but only if the position matches the $helpTextPos value, and 
+   * the $options array contains a helpText entry.
+   * @param array $options Control's options array
+   * @param string $pos Either before or after. Defines the position that is being requested.
+   * @return string Templated help text, or nothinbg. 
+   */
+  private static function get_help_text($options, $pos) {
+    if (array_key_exists('helpText', $options) && self::$helpTextPos == $pos) {
+      return str_replace('{helpText}', $options['helpText'], self::apply_static_template('helpText', $options));
+    }
   }
 
  /**
