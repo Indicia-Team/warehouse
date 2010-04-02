@@ -187,14 +187,18 @@
       $('#'+opts.srefLatId).change(function() {
         // Only do something if the long is also populated
         if ($('#'+opts.srefLongId).val()!='') {
-          _handleEnteredSref($(this).val() + ', ' + $('#'+opts.srefLongId).val(), div);
+          // copy the complete sref into the sref field
+          $('#'+opts.srefId).val($(this).val() + ', ' + $('#'+opts.srefLongId).val());
+          _handleEnteredSref($('#'+opts.srefId).val(), div);
         }
       });
       $('#'+opts.srefLongId).change(function() {
-          // Only do something if the long is also populated
-          if ($('#'+opts.srefLatId).val()!='') {
-            _handleEnteredSref($('#'+opts.srefLatId).val() + ', ' + $(this).val(), div);
-          }
+        // Only do something if the long is also populated
+        if ($('#'+opts.srefLatId).val()!='') {
+          // copy the complete sref into the sref field
+          $('#'+opts.srefId).val($('#'+opts.srefLatId).val() + ', ' + $(this).val());
+          _handleEnteredSref($('#'+opts.srefId).val(), div);
+        }
       });
 
       // If a place search (georeference) control exists, bind it to the map.
