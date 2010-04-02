@@ -278,6 +278,13 @@ class iform_ad_hoc_cetaceans {
     // Some instructions only visible when entering data from the shore
     $r .= '<p class="shore_mode page-notice ui-state-highlight ui-corner-all">'.lang::get('Instructions for clicking on map').'</p>';
     $r .= '<div class="boat_mode">';
+    // Add help examples to the lat and long boxes
+    $indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /> <label>e.g. 55:12.345N</label><br />' .
+        '<label for="{idLong}">{labelLong}:</label>'.
+        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" /> <label>e.g. 0:45.678W</label>' .
+        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
+        '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />';
     $r .= data_entry_helper::sref_and_system(array(
       'systems' => array(4326 => lang::get('Latitude, Longitude')),
       'splitLatLong' => true,
@@ -341,7 +348,11 @@ class iform_ad_hoc_cetaceans {
         'class' => 'control-width-1',
         'suffixTemplate' => 'timeFormat'
     ));
-    
+    $r .= data_entry_helper::textarea(array(
+        'label' => lang::get('Any other information'),
+        'fieldname' => 'sample:comment',
+        'class' => 'control-width-6',
+    ));
     $r .= '<div class="footer">'.data_entry_helper::checkbox(array(
         'label'=>lang::get('happy for contact'),
         'labelClass'=>'auto',

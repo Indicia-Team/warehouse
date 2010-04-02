@@ -79,3 +79,7 @@
   left: -9999px;
   border: solid red 1px;
 }
+
+#entry_form label {
+  margin-top: 7px;
+}
