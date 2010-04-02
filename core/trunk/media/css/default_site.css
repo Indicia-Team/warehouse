@@ -151,12 +151,7 @@ input, select, textarea {
   zoom:1;
   *display:inline;
   line-height: 1.75em;
-}
-
-input.indicia-button {
-  padding: 3px 4px 4px 4px;
-  line-height: normal;
-  min-height: 18px;
+  cursor: pointer;
 }
 
 .indicia-button span {
