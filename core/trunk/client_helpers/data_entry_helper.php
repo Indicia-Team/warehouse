@@ -73,7 +73,8 @@ $indicia_templates = array(
       '<span>{captionNext}</span><span class="ui-icon ui-icon-circle-arrow-e"></span></div>',
   'tab_prev_button' => '<div{class}>'.
       '<span class="ui-icon ui-icon-circle-arrow-w"></span><span>{captionPrev}</span></div>',
-  'submit_button' => '<input type="submit"{class} id="test" value="{captionSave}"/>',
+  'submit_button' => '<div{class}>'.
+      '<span>{captionSave}</span></div>',
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
@@ -1836,7 +1837,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options['class']=$buttonClass." tab-next";
         $r .= self::apply_template('tab_next_button', $options);
       } else {
-        $options['class']=$buttonClass;
+        $options['class']=$buttonClass." tab-submit";
         $r .= self::apply_template('submit_button', $options);
       }
     }
@@ -2457,6 +2458,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
+      self::$javascript .= "\n$('.tab-submit').click(function() {
+      var form = $(this).parents('form:first');
+      form.submit();
+      });";
       self::$javascript .= "\n$('.tab-next').click(function() {\n";
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs on the current tab and validate them.
