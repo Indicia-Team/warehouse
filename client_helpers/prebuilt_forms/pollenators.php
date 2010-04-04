@@ -275,6 +275,9 @@ class iform_pollenators {
     				'lookUpListCtrl' => 'radio_group',
     				'validation' => array('required'),
     				'language' => iform_lang_iso_639_2($args['language']));
+    
+    $r .= data_entry_helper::loading_block_start();
+    
 	// note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
 	// For security reasons we don't want to give the user the ability to generate their own nonce, so we use
 	// the fact that the user is logged in to drupal as the main authentication/authorisation/identification
@@ -341,15 +344,15 @@ class iform_pollenators {
 var sessionCounter = 0;
 
 $.fn.foldPanel = function(){
-	this.find('.poll-section-body').hide();
-	this.find('.poll-section-footer').hide();
+	this.find('.poll-section-body').addClass('poll-hide');
+	this.find('.poll-section-footer').addClass('poll-hide');
 	this.find('.reinit-button').show();
 	this.find('.mod-button').show();
 };
 
 $.fn.unFoldPanel = function(){
-	this.find('.poll-section-body').show();
-	this.find('.poll-section-footer').show();
+	this.find('.poll-section-body').removeClass('poll-hide');
+	this.find('.poll-section-footer').removeClass('poll-hide');
 	this.find('.mod-button').hide();
 	// any reinit button is left in place
 };
@@ -357,22 +360,21 @@ $.fn.unFoldPanel = function(){
 // because the map has to be generated in a properly sized div, we can't use the normal hide/show functions.
 // just move the panels off to the side.
 $.fn.showPanel = function(){
-	this.removeClass('poll-section-hide');
+	this.removeClass('poll-hide');
 	this.unFoldPanel();
 };
 
 $.fn.hidePanel = function(){
-	this.addClass('poll-section-hide'); 
-//	this.hide();
+	this.addClass('poll-hide'); 
 };
 
 $.fn.resetPanel = function(){
-	this.find('.poll-section-body').show();
-	this.find('.poll-section-footer').show();
+	this.find('.poll-section-body').removeClass('poll-hide');
+	this.find('.poll-section-footer').removeClass('poll-hide');
 	this.find('.reinit-button').show();
 	this.find('.mod-button').show();
 	this.find('.poll-image').empty();
-	this.find('.#poll-session').empty();
+	this.find('.poll-session').empty();
 
 	// resetForm does not reset the hidden fields. record_status, imp-sref-system, website_id and survey_id are not altered so do not reset.
 	// hidden Attributes generally hold unchanging data, but the name needs to be reset (does it for non hidden as well).
@@ -420,8 +422,8 @@ showStationPanel = true;
 // this is the one called when we don't want the panel following to be opened automatically.
 validateCollectionPanel = function(){
 	var myPanel = jQuery('#cc-1');
-	if(myPanel.filter(':visible').length < 1) return true; // panel is not visible so no data to fail validation.
-	if(myPanel.find('.poll-section-body:visible').length < 1) return true; // body hidden so data already been validated successfully.
+	if(myPanel.filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
+	if(myPanel.find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
 	if(!myPanel.find('form > input').valid()){ return false; }
 	// no need to check protocol - if we are this far, we've already filled it in.
   	showStationPanel = false;
@@ -724,8 +726,8 @@ jQuery('#cc-2-display-location-button').click(function(){
 validateStationPanel = function(){
 	var myPanel = jQuery('#cc-2');
 	var valid = true;
-	if(myPanel.filter(':visible').length < 1) return true; // panel is not visible so no data to fail validation.
-	if(myPanel.find('.poll-section-body:visible').length < 1) return true; // body hidden so data already been validated successfully.
+	if(myPanel.filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
+	if(myPanel.find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
 	// If no data entered also return true: this can only be the case when pressing the modify button on the collections panel
 	if(jQuery('form#cc-2-floral-station > input[name=location_image\\:path]').val() == '' &&
 			jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val() == '' &&
@@ -917,7 +919,7 @@ $('#cc-2-valid-button').click(function() {
 populateSessionSelect = function(){
 	var insectSessionSelect = jQuery('form#cc-4-main-form > select[name=occurrence\\:sample_id]');
 	var value = insectSessionSelect.val();
-	insectSessionSelect.empty().append('<option/>');
+	// insectSessionSelect.empty().append('<option/>');
 	// NB at this point the attributes have been loaded so have full name.
 	$('.poll-session-form').each(function(i){
 		jQuery('<option value=\"'+
@@ -1029,8 +1031,8 @@ addSession = function(){
 addSession();
 
 validateSessionsPanel = function(){
-	if(jQuery('#cc-3').filter(':visible').length < 1) return true; // panel is not visible so no data to fail validation.
-	if(jQuery('#cc-3').find('.poll-section-body:visible').length < 1) return true; // body hidden so data already been validated successfully.
+	if(jQuery('#cc-3').filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
+	if(jQuery('#cc-3').find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
 	var openSession = jQuery('.poll-session-form:visible');
 	if(openSession.length > 0){
 		if(jQuery('input[name=sample\\:id]', openSession).val() == '' &&
@@ -1232,10 +1234,8 @@ $('#cc-4-main-form').ajaxForm({
 });
 
 validateInsectPanel = function(){
-	if(jQuery('#cc-4:visible').length < 1)
-		return true; // panel is not visible so no data to fail validation.
-	if(jQuery('#cc-4-body:visible').length < 1)
-		return true; // body hidden so data already been validated successfully.
+	if(jQuery('#cc-4').filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
+	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
 	if(!validateInsect()){ return false; }
   	jQuery('#cc-4').foldPanel();
 	return true;
@@ -1275,7 +1275,8 @@ setInsect = function(context, id){
 	// first close all the other panels, ensuring any data is saved.
 	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
 		return;
-	if(jQuery('#cc-4-body:visible').length < 1)
+		
+	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0)
 		jQuery('div#cc-4').unFoldPanel();
 	else {
 		resetInsectPanel=false;
@@ -1302,7 +1303,8 @@ setNoInsect = function(context, id){
 	// first close all the other panels, ensuring any data is saved.
 	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
 		return;
-	if(jQuery('#cc-4-body:visible').length < 1)
+		
+	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0)
 		jQuery('div#cc-4').unFoldPanel();
 	else
 		if(!validateInsect()){ return false; }
@@ -1425,7 +1427,7 @@ $('#cc-5-complete-collection').click(function(){
     <span id="cc-6-new-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Create_New_Collection').'</span>
     </div>
 </div>';
-
+ 
  data_entry_helper::$javascript .= "
 
 $('#cc-6-consult-collection').click(function(){
@@ -1524,7 +1526,8 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 			\"&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."\" + 
 			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", function(data) {
 	if (data.length>0) {
-       	for (var i=0;i<data.length;i++) {
+		var i;
+       	for ( i=0;i<data.length;i++) {
        		if(data[i].completed == '0'){
        			// load up collection details: existing ID, location name and TODO protocol
        			jQuery('#cc-1,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
@@ -1592,17 +1595,38 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 								}
 								populateSessionSelect();
  					  		}
+ 					  		$('.loading-panel').remove();
+							$('.loading-hide').removeClass('loading-hide');
 						});
+    	   			} else {
+    	   				$('.loading-panel').remove();
+						$('.loading-hide').removeClass('loading-hide');
     	   			}
   				});
 				// only use the first one which is not complete..
 				break;
 			}
 		}
+		if (i >= data.length) {
+			$('.loading-panel').remove();
+			$('.loading-hide').removeClass('loading-hide');
+  		}
+	} else {
+		$('.loading-panel').remove();
+		$('.loading-hide').removeClass('loading-hide');
 	}
 });
   
   ";
+// because of the use of getJson to retrieve the data - which is asynchronous, the use of the normal loading_block_end
+// is not practical - it will do its stuff before the data is loaded, defeating the purpose. Also it uses hide (display:none)
+// which is a no-no in relation to the map. This means we have to dispense with the slow fade in.
+// it is also complicated by the attibutes and images being loaded asynchronously - and non-linearly.
+// Do the best we can! 
+
+
+	global $indicia_templates;
+	$r .= $indicia_templates['loading_block_end'];
 //    if (!$('#".self::$validated_form_id." div > div:eq('+current+') input').valid()) {\n    return; \n}
 //    $('#$divId').tabs('select', current+1);  
     return $r;
