@@ -25,7 +25,7 @@ label {
   margin-top: 4px;
 }
 
-.poll-section-hide {
+.poll-hide {
 	position: absolute;
 	left: -10000px;
 }
