@@ -87,5 +87,8 @@ $custom_terms = array(
 	,'validation_required' => "S'il vous plaît entrer une valeur"
 	,'Yes' => 'Oui'
 	,'No' => 'Non'
+	,'LANG_Help_Button' => '?'
+	,'LANG_Georef_Label' => 'Nom'
+	
 	
 );

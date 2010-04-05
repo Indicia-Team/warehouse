@@ -44,7 +44,11 @@ label {
 .poll-session-footer {
   margin-top: -2em;
 }
-
+.poll-help-button {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+	
 .poll-image {
   height: 240px;
   width: 320px;
