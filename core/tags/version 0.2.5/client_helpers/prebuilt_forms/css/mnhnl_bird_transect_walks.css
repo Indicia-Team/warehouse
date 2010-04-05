@@ -1,0 +1,31 @@
+.deh-required {
+  color:red;
+}
+
+.mnhnl-btw-datapanel {
+  float: left;
+  position: relative;
+  width: 420px;
+  padding: 1em 0.5em !important;
+}
+
+.mnhnl-btw-mappanel {
+  margin-left: 435px;
+  height: 490px;
+}
+
+.mnhnl-btw-highlight {
+  background-color: #eeeeee;
+}
+
+textarea {
+  width: 240px;
+}
+
+#smp_grid {
+  font-size: 90%;
+}
+
+#occurrence label {
+  width: 95px;
+}
