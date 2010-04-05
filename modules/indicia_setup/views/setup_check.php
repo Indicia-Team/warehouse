@@ -50,7 +50,8 @@ if ($failures>0) {
 <div class="page-notice ui-widget-content ui-corner-all">
 <div class="ui-widget-header ui-corner-all"><span class="ui-icon ui-icon-alert"></span>
 Installation Complete</div>
-<p>Congratulations! The Indicia Warehouse has been successfully installed.</p>
+<p>Congratulations! The Indicia Warehouse has been successfully installed. An admin account has been created for you with username=admin and no password and 
+you will be asked to enter a password when you first log in.</p>
 <a href="<?php echo url::base(); ?>index.php" class="button ui-state-default ui-corner-all">Proceed to the login page</a>
 </div>
 <?php } ?>
