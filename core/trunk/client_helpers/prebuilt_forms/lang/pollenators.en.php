@@ -85,4 +85,7 @@ $custom_terms = array(
 	,'LANG_Trailer_Point_3' => "you may modify the identification of the insects through 'My Collections'"
 	,'LANG_Trailer_Point_4' => "you may create a new collection"
 	
+	,'LANG_Help_Button' => '?'
+	,'LANG_Georef_Label' => 'Location'
+	
 );

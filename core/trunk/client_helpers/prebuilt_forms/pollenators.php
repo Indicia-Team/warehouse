@@ -32,6 +32,9 @@ require_once('includes/map.php');
 require_once('includes/language_utils.php');
 require_once('includes/user.php');
 
+function test_help() {
+}
+
 class iform_pollenators {
 
 	/* TODO
@@ -59,6 +62,23 @@ class iform_pollenators {
 //          'type'=>'string',
 //          'group'=>'Map'
 //        ),
+        array(
+          'name'=>'georefPreferredArea',
+          'caption'=>'Preferred area for georeferencing.',
+          'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
+          'type'=>'string',
+          'default'=>'fr',
+          'group'=>'Map'
+        ),
+        array(
+          'name'=>'georefCountry',
+          'caption'=>'Preferred country for georeferencing.',
+          'description'=>'Preferred country to look within when trying to resolve a place name.',
+          'type'=>'string',
+          'default'=>'France',
+          'group'=>'Map'
+        ),
+     
       array(
       	'name'=>'survey_id',
         'caption'=>'Survey ID',
@@ -192,7 +212,72 @@ class iform_pollenators {
           'caption'=>'Foraging Attribute ID',
           'description'=>'The Indicia ID for the occurrence attribute that stores the foraging flag.',
           'type'=>'int',
-          'group'=>'Insect Attributes'
+          'group'=>'Insect AttributesX'
+      ),
+
+      array(
+          'name'=>'help_module',
+          'caption'=>'Help DRUPAL Module',
+          'description'=>'The DRUPAL module which contains the context sensitive help functionality.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'help_inclusion_function',
+          'caption'=>'Help Module inclusion function',
+          'description'=>'The DRUPAL PHP function which is used to include the relevant Javascript into the page.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'help_function',
+          'caption'=>'Help Module invocation function',
+          'description'=>'The Javascript function which is called when the help buttons are clicked.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'help_collection_arg',
+          'caption'=>'Collection Help argument',
+          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Create a collection" is clicked.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'help_flower_arg',
+          'caption'=>'Flower Identification Help argument',
+          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Flower Identification" is clicked.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'help_location_arg',
+          'caption'=>'Location Help argument',
+          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Location" is clicked.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'help_session_arg',
+          'caption'=>'Session Help argument',
+          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Session" is clicked.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'help_insect_arg',
+          'caption'=>'Insect Identification Help argument',
+          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Insect Identification" is clicked.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
       )
       
       ) 
@@ -209,6 +294,15 @@ class iform_pollenators {
     return 'Pollenators';
   }
 
+  private function help_button($use_help, $id, $func, $arg) {
+  	if($use_help == false) return '';
+  	data_entry_helper::$javascript .= "
+jQuery('#".$id."').click(function(){
+	".$func."(".$arg.");
+});
+";
+  	return '<div id="'.$id.'" class="right ui-state-default ui-corner-all poll-help-button">'.lang::get('LANG_Help_Button').'</div>';
+  }
 /**
    * Return the generated form output.
    * @return Form HTML.
@@ -244,7 +338,14 @@ class iform_pollenators {
 	data_entry_helper::link_default_stylesheet();
 	data_entry_helper::add_resource('jquery_ui');
 	data_entry_helper::enable_validation('cc-1-collection-details'); // don't care about ID itself, just want resources
-	
+
+    if($args['help_module'] != '' && $args['help_inclusion_function'] != '' && module_exists($args['help_module']) && function_exists($args['help_inclusion_function'])) {
+    	$use_help = true;
+    	call_user_func($args['help_inclusion_function']);
+    } else {
+    	$use_help = false;
+    }
+
 	// The only things that will be editable after the collection is saved will be the identifiaction of the flower/insects.
 	// no id - just getting the attributes, rest will be filled in using AJAX
 	$sample_attributes = data_entry_helper::getAttributes(array(
@@ -277,8 +378,8 @@ class iform_pollenators {
     				'language' => iform_lang_iso_639_2($args['language']));
     
     $r .= data_entry_helper::loading_block_start();
-    
-	// note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
+
+    // note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
 	// For security reasons we don't want to give the user the ability to generate their own nonce, so we use
 	// the fact that the user is logged in to drupal as the main authentication/authorisation/identification
 	// process for the user. The proxy packages the post into the correct format
@@ -308,6 +409,7 @@ class iform_pollenators {
     <input type="hidden" id="imp-geom"         name="location:centroid_geom" value="" />
     <input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
     <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
+    '.iform_pollenators::help_button($use_help, "collection-help-button", $args['help_function'], $args['help_collection_arg']).'
     <label for="location:name">'.lang::get('LANG_Collection_Name_Label').'</label>
  	<input type="text" id="location:name"      name="location:name" value="" class="required"/><br />
     <input type="hidden" id="sample:location_name" name="sample:location_name" value=""/>
@@ -564,6 +666,7 @@ locStyleMap = new OpenLayers.StyleMap({
   });
 locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
                                     {styleMap: locStyleMap});
+
 ";
 
     $options = iform_map_get_map_options($args, $readAuth);
@@ -603,7 +706,8 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
  	    </div>
  	  </div>
  	  <div id="cc-2-flower-identify">
-        <p><strong>'.lang::get('LANG_Identify_Flower').'</strong></p>
+        '.iform_pollenators::help_button($use_help, "flower-help-button", $args['help_function'], $args['help_flower_arg']).'
+ 	    <p><strong>'.lang::get('LANG_Identify_Flower').'</strong></p>
         <p>'.lang::get('LANG_Flower_ID_Key_label').'</p>
         <p>TBD '.lang::get('LANG_Launch_ID_Key').'</p>
         '.data_entry_helper::select($species_ctrl_args).'
@@ -624,16 +728,20 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
  	</div>
     <div class="poll-break"></div>
     <div>
- 	  <div>'.lang::get('LANG_Location_Notes').'</div>
+      '.iform_pollenators::help_button($use_help, "location-help-button", $args['help_function'], $args['help_location_arg']).'
+      <div>'.lang::get('LANG_Location_Notes').'</div>
  	  <div class="poll-map-container">
     ';
     $r .= data_entry_helper::map_panel($options);
     $r .= '
       </div>
       <div><div id="cc-2-location-entry">
-	 	<input type="text" name="place:name" value="Nom de la commue"
-	 		onclick="if(this.value==\'Nom de la commue\'){this.value=\'\'; this.style.color=\'#000\'}"  
-            onblur="if(this.value==\'\'){this.value=\'Nom de la commue\'; this.style.color=\'#555\'}" /><br />
+        '.data_entry_helper::georeference_lookup(array(
+      		'label' => lang::get('LANG_Georef_Label'),
+      		'georefPreferredArea' => $args['georefPreferredArea'],
+      		'georefCountry' => $args['georefCountry'],
+      		'georefLang' => $args['language']
+    		)).'
         <label for="place:postcode">'.lang::get('LANG_Or').'</label>
  		<input type="text" name="place:postcode" value="code postal"
 	 		onclick="if(this.value==\'code postal\'){this.value=\'\'; this.style.color=\'#000\'}"  
@@ -683,6 +791,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     <div id="cc-2-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div><br />
   </div>
 </div>';
+
 	// NB the distance attribute is left blank at the moment if unknown: TODO put in a checkbox : checked if blank for nsp
  	data_entry_helper::$javascript .= "
 
@@ -919,7 +1028,7 @@ $('#cc-2-valid-button').click(function() {
 populateSessionSelect = function(){
 	var insectSessionSelect = jQuery('form#cc-4-main-form > select[name=occurrence\\:sample_id]');
 	var value = insectSessionSelect.val();
-	// insectSessionSelect.empty().append('<option/>');
+	insectSessionSelect.empty();
 	// NB at this point the attributes have been loaded so have full name.
 	$('.poll-session-form').each(function(i){
 		jQuery('<option value=\"'+
@@ -975,6 +1084,7 @@ addSession = function(){
 	jQuery('<input type=\"hidden\" name=\"sample:parent_id\" />').appendTo(newForm).val(jQuery('#cc-1-collection-details > input[name=sample\\:id]').val());
 	jQuery('<input type=\"hidden\" name=\"sample:location_id\" />').appendTo(newForm).val(jQuery('#cc-1-collection-details > input[name=location\\:id]').val());
 	jQuery('<input type=\"hidden\" name=\"sample:id\" value=\"\" disabled=\"disabled\" />').appendTo(newForm);
+	// TODO put in session help
 	var dateAttr = '".str_replace("\n", "", data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'),
     						'id' => '<id>',
 							'fieldname' => 'sample:date',
@@ -1116,6 +1226,7 @@ jQuery('.mod-button').click(function() {
  	    </div>
  	  </div>
  	  <div id="cc-4-insect-identify">
+ 	    '.iform_pollenators::help_button($use_help, "insect-help-button", $args['help_function'], $args['help_insect_arg']).'
         <p><strong>'.lang::get('LANG_Identify_Insect').'</strong></p>
         <p>'.lang::get('LANG_Insect_ID_Key_label').'</p>
         <p>TBD '.lang::get('LANG_Launch_ID_Key').'</p>
@@ -1332,7 +1443,6 @@ validateInsect = function(){
 	// TODO will have to expand when use key or when identify later.
 	if(jQuery('form#cc-4-main-form > input[name=occurrence\\:id]').val() == '' &&
 			jQuery('form#cc-4-main-form > input[name=occurrence_image\\:path]').val() == '' &&
-			jQuery('form#cc-4-main-form > [name=occurrence\\:sample_id]').val() == '' &&
 			jQuery('[name=insect\\:taxa_taxon_list_id]').val() == '' &&
 			jQuery('form#cc-4-main-form > textarea[name=occurrence\\:comment]').val() == '' &&
 			jQuery('[name=occAttr\\:".$args['number_attr_id']."],[name^=occAttr\\:".$args['number_attr_id']."\\:]').filter('[checked]').length == 0){
