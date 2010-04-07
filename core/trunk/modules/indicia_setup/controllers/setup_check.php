@@ -39,7 +39,12 @@ class Setup_Check_Controller extends Template_Controller {
    *
    * @var string $template
    */
-public $template = 'templates/template';
+  public $template = 'templates/template';
+  
+  public function get_breadcrumbs()
+  {
+    return '';
+  }
 
   public function __construct()
   {
