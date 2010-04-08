@@ -31,7 +31,8 @@
 class Occurrence_Model extends ORM
 {
   protected $has_many=array(
-    'occurrence_attribute_values'
+    'occurrence_attribute_values',
+    'determinations'
   );
   protected $belongs_to=array(
     'determiner'=>'person',
@@ -55,7 +56,10 @@ class Occurrence_Model extends ORM
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
-    $array->add_rules('taxa_taxon_list_id', 'required');
+    $fieldlist = $array->as_array();
+    if(!array_key_exists('use_determination', $fieldlist) || $fieldlist['use_determination'] == 'N') {
+        $array->add_rules('taxa_taxon_list_id', 'required');
+    }
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
       'comment',
@@ -65,10 +69,11 @@ class Occurrence_Model extends ORM
       'downloaded_flag',
       'verified_by_id',
       'verified_on',
-      'confidential'
+      'confidential',
+      'use_determination'
     );
-    if(array_key_exists('id', $array)) {
-      $existingRecord = ORM::factory('occurrence', $array['id']);
+    if(array_key_exists('id', $fieldlist)) {
+      $existingRecord = ORM::factory('occurrence', $fieldlist['id']);
       if($existingRecord->downloaded_flag == 'F'){
       	// downloaded_flag set to 'F' - this record has been downloaded out of the system, so now read only.
         $this->errors['downloaded_flag']='Download flag set: record is now read only';

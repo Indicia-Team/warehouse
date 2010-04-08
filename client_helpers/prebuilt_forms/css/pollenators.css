@@ -29,21 +29,7 @@ label {
 	position: absolute;
 	left: -10000px;
 }
-
-.poll-session-title {
-  background-color:#c0c0c0;
-  border-bottom:white thin solid;
-}
-
-.poll-session-form {
-  border-bottom: #c0c0c0 3px solid;
-  border-left: #c0c0c0 3px solid;
-  padding-left: 10px;
-  margin-bottom: 0px;
-}
-.poll-session-footer {
-  margin-top: -2em;
-}
+	
 .poll-help-button {
 	padding-left: 10px;
 	padding-right: 10px;
