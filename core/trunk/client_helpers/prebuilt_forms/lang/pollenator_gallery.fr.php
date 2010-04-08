@@ -42,7 +42,8 @@ $custom_terms = array(
 	,'LANG_Launch_ID_Key' => "Lancer la clé d'identification"
 	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la Liste"
 	,'LANG_Identify_Insect' => 'Indiquer le nom de cet insecte:'
-	,'LANG_Insect_Species' => "Vous connaissez le taxon correspondant à cet insecte"
+	,'LANG_Flower_Species' => "Nom de la Fleur"
+	,'LANG_Insect_Species' => "Nom de l'insecte"
 	,'LANG_History_Title' => 'Ancienne identification [champ "commentaire" Indicia]'
 	
 	,'LANG_Additional_Info_Title' => 'INFORMATIONS COMPLÉMENTAIRES'
@@ -56,11 +57,12 @@ $custom_terms = array(
 	
 	,'LANG_Comments_Title' => 'COMMENTAIRES DES INTERNAUTES'
 	,'LANG_New_Comment' => 'ajouter un commentaire'
-	,'LANG_Username' => 'Nom'
+	,'LANG_Username' => 'Pseudo'
 	,'LANG_Email' => 'EMAIL'
 	,'LANG_Comment' => 'Commentaire'
 	,'LANG_Submit_Comment' => 'ajouter'
 	,'LANG_Comment_By' => "par : "
+	,'LANG_Reset_Filter' => 'réinitialiser'
 	
 	,'validation_required' => "S'il vous plaît entrer une valeur"
 	,'Yes' => 'Oui'
