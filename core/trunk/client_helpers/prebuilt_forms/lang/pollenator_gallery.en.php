@@ -60,7 +60,9 @@ $custom_terms = array(
 	,'LANG_Submit_Comment' => 'Submit'
 	,'LANG_Comment_By' => "by : "
 	,'LANG_Reset_Filter' => 'Reset Filter'
-	
+	,'LANG_General' => 'General'
+	,'LANG_Created_Between' => 'Created Between'
+	,'LANG_And' => 'and'
 	,'validation_required' => "Please provide a value"
 	
 );

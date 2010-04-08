@@ -262,7 +262,7 @@ class iform_pollenator_gallery {
 	$options2 = $options;
 	$options2['divId'] = "map2";
     $options['layers'] = array('searchLayer');
-	
+
  	$r .= '
 <div id="filter" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
@@ -273,16 +273,21 @@ class iform_pollenator_gallery {
 	<div id="filter-spec" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	  <div class="ui-accordion ui-widget ui-helper-reset">
 		<div id="general-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
-	  		<div id="reset-general-button" class="right ui-state-default ui-corner-all reset-general-button">'.lang::get('LANG_Reset_Filter').'</div>
 			<div id="general-filter-title">
-		  		<span>TBD General</span>
+		  		<span>'.lang::get('LANG_General').'</span>
       		</div>
 		</div>
 	    <div id="general-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
-    	'.data_entry_helper::text_input(array(
+	  		<div id="reset-general-button" class="right ui-state-default ui-corner-all reset-general-button">'.lang::get('LANG_Reset_Filter').'</div>
+	    '.data_entry_helper::text_input(array(
         	'label'=>lang::get('LANG_Username'),
-        	'fieldname'=>'username')).'</div>
-		<div id="flower-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+        	'fieldname'=>'username')).'
+        		<label for="start_date" >'.lang::get('LANG_Created_Between').':</label>
+  				<input type="text" size="10" id="start_date" name="start_date" value="'.lang::get('click here').'" />
+        		&nbsp;'.lang::get('LANG_And').'&nbsp;
+  				<input type="text" size="10" id="end_date" name="end_date" value="'.lang::get('click here').'" />
+  			</div>
+    		<div id="flower-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	  		<div id="reset-flower-button" class="right ui-state-default ui-corner-all reset-flower-button">'.lang::get('LANG_Reset_Filter').'</div>
 			<div id="flower-filter-title">
 		  		<span>TBD Flowers</span>
@@ -444,6 +449,17 @@ class iform_pollenator_gallery {
 ';
 
     data_entry_helper::$javascript .= "
+jQuery('#start_date').datepicker({
+  dateFormat : 'yy-mm-dd',
+  constrainInput: false,
+  maxDate: '0'
+});
+jQuery('#end_date').datepicker({
+  dateFormat : 'yy-mm-dd',
+  constrainInput: false,
+  maxDate: '0'
+});
+  
 jQuery('#filter-header').click(function(){
     jQuery('#filter-header').addClass('ui-state-active');
 	jQuery('#filter-spec,#filter-footer').removeClass('filter-hide');
@@ -456,6 +472,12 @@ jQuery('#results-collections-header').click(function(){
     jQuery('#filter-header').removeClass('ui-state-active');
 	jQuery('#filter-spec,#filter-footer,#focus-insect,#focus-collection,#results-insects-results').addClass('filter-hide');
 });
+jQuery('#reset-general-button').click(function(){
+	jQuery('[name=username]').val('');
+	jQuery('[name=start_date]').val('".lang::get('click here')."');
+	jQuery('[name=end_date]').val('".lang::get('click here')."');
+});
+
 jQuery('#general-filter-header').click(function(){
 	jQuery('#general-filter-header').toggleClass('ui-state-active');
     jQuery('#general-filter-body').toggleClass('filter-hide');
@@ -607,6 +629,22 @@ jQuery('#search-collections-button').click(function(){
   			type: OpenLayers.Filter.Comparison.EQUAL_TO ,
     		property: 'owner',
     		value: user
+  		}));
+  	}
+  	var start_date = jQuery('input[name=start_date]').val();
+  	var end_date = jQuery('input[name=end_date]').val();
+  	if(start_date != '".lang::get('click here')."'){
+  		filters.push(new OpenLayers.Filter.Comparison({
+  			type: OpenLayers.Filter.Comparison.GREATER_THAN  ,
+    		property: 'updated_on',
+    		value: start_date
+  		}));
+  	}
+  	if(end_date != '".lang::get('click here')."'){
+  		filters.push(new OpenLayers.Filter.Comparison({
+  			type: OpenLayers.Filter.Comparison.LESS_THAN  ,
+    		property: 'updated_on',
+    		value: end_date
   		}));
   	}
   	var flower = jQuery('select[name=flower\\:taxa_taxon_list_id]').val();
