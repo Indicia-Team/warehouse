@@ -48,7 +48,8 @@ echo data_entry_helper::date_picker(array(
 echo data_entry_helper::file_box(array(
     'caption' => 'Upload your photos',
     'resizeWidth' => 1024,
-    'resizeHeight' => 768 
+    'resizeHeight' => 768,
+    'table' => 'occurrence_image'
 ));
 echo data_entry_helper::map();
 echo data_entry_helper::select(array(

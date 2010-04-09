@@ -40,6 +40,10 @@ Simple data entry form, enhanced with a Flickr photo link tool allowing Flickr i
 this page you must have a Flickr account and you will be asked to authenticate when you first access the page.
 View the source code in <a href="viewsource.php?file=data_entry/flickr.php">flickr.php</a>.</p>
 </li>
+<li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="data_entry/file_upload.php">Uploading image files</a></div>
+Same as the basic data entry tutorial form but with an additional file_box control for uploading image files.
+View the source code in <a href="viewsource.php?file=data_entry/file_upload.php">file_upload.php</a>.</p>
+</li>
 <li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="advanced_data_entry/header.php">Data entry wizard</a></div>
 <p>A demonstration data entry "mini-site" which includes a wizard for entering a checklist of species found at a place and a distribution map
 as a reward after a record has been contributed. The map also has a toolbar to allow switching to a mode for capturing polygon shaped occurrences

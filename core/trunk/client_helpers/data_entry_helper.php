@@ -603,7 +603,8 @@ class data_entry_helper extends helper_config {
       'destinationFolder' => $relpath . $interim_image_folder,
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
-      'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M')
+      'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
+      'jsPath' => self::$js_path
     );
     if ($indicia_templates['file_box']!='') 
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];

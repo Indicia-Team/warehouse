@@ -4,6 +4,7 @@ $allowed = array(
   'data_entry/species_checklist.php',
   'data_entry/basic_data_entry_tutorial.php',
   'data_entry/flickr.php',
+  'data_entry/file_upload.php',
   'map_default.php',
   'map_modular.php',
   'occurrence_grid.php',
