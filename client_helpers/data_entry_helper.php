@@ -44,7 +44,8 @@ $indicia_templates = array(
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'error_class' => 'inline-error',
-  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n",
+  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n".
+      '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="checkbox" id="{id}" name="{fieldname}"{class}{checked}{disabled} {title} />'."\n",
@@ -152,7 +153,11 @@ jQuery('#{parentControlId}').change();\n",
         '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />',
   'attribute_cell' => "\n<td class='scOccAttrCell ui-widget-content'>{content}</td>",
   'taxon_label_cell' => "\n<td class='scTaxonCell ui-state-default'>{content}</td>",
-  'helpText' => "\n<p class=\"helpText\">{helpText}</p>"
+  'helpText' => "\n<p class=\"helpText\">{helpText}</p>",
+  'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
+  'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.  
+  'file_box_initial_file_info' => '', // the JQuery plugin default will apply, this is just a placeholder for template overrides.
+  'file_box_uploaded_image' => ''     // the JQuery plugin default will apply, this is just a placeholder for template overrides.
 );
 
 
@@ -299,6 +304,8 @@ class data_entry_helper extends helper_config {
 /**********************************/
 /* Start of main controls section */
 /**********************************/
+
+
 
  /**
   * Helper function to generate an autocomplete box from an Indicia core service query.
@@ -500,6 +507,147 @@ class data_entry_helper extends helper_config {
     return self::apply_template('date_picker', $options);
   }
 
+/**
+  * <p>Outputs a file upload control suitable for linking images to records. The control allows selection
+  * of multiple files, and depending on the browser functionality it gives progress feedback.</p>
+  * <p>The control uses Google Gears, Flash, Silverlight, Browserplus or HTML5 to enhance the functionality 
+  * where available. The output of the control can be configured by changing the content of the templates called
+  * file_box, file_box_initial_file_info, file_box_uploaded_image and button.</p> 
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>table</b><br/>
+  * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
+  * Defaults to occurrence_image.
+  * <li><b>caption</b><br/>
+  * </li>
+  * <li><b>uploadSelectBtnCaption</b><br/>
+  * Set this to override the caption for the button for selecting files to upload.
+  * </li>
+  * <li><b>flickrSelectBtnCaption</b><br/>
+  * Set this to override the caption for the button for selecting files from Flickr.
+  * </li>
+  * <li><b>uploadStartBtnCaption</b><br/>
+  * Set this to override the caption for the start upload button, which is only visible if autoUpload is false.
+  * </li>
+  * <li><b>useFancybox</b><br/>
+  * Defaults to true. If true, then image previews use the Fancybox plugin to display a "lightbox" effect when clicked on.
+  * </li>
+  * <li><b>imageWidth</b><br/>
+  * Defaults to 200. Number of pixels wide the image previews should be.
+  * </li>
+  * <li><b>resizeWidth</b><br/>
+  * If set, then the file will be resized before upload using this as the maximum pixels width.
+  * </li>
+  * <li><b>resizeHeight</b><br/>
+  * If set, then the file will be resized before upload using this as the maximum pixels height.
+  * </li>
+  * <li><b>resizeQuality</b><br/>
+  * Defines the quality of the resize operation (from 1 to 100). Has no effect unless either resizeWidth or resizeHeight are non-zero.
+  * </li>
+  * <li><b>upload</b><br/>
+  * </li>
+  * <li><b>flickr</b><br/>
+  * Not implemented.
+  * </li>
+  * <li><b>autoupload</b><br/>
+  * Defaults to true. If false, then a button is displayed which the user must click to initiate upload of the files
+  * currently in the queue.
+  * </li>
+  * <li><b>msgUploadError</b><br/>
+  * Use this to override the message displayed for a generic file upload error.
+  * </li>
+  * <li><b>msgFileTooBig</b><br/>
+  * Use this to override the message displayed when the file is larger than the size limit allowed on the Warehouse.
+  * </li>
+  * <li><b>uploadScript</b><br/>
+  * Specify the script used to handle image uploads on the server (relative to the client_helpers folder). You should not 
+  * normally need to change this. Defaults to upload.php.
+  * </li>
+  * <li><b>runtimes</b><br/>
+  * Comma separated list of runtimes that the file upload component will use in order of priority. Defaults to 
+  * 'gears,silverlight,browserplus,html5,flash,html4'. You should not normally need to change this.
+  * </li>
+  * <li><b>destinationFolder</b><br/>
+  * Override the destination folder for uploaded files. You should not normally need to change this.</li>
+  * </li>
+  * </ul>
+  * 
+  * @todo max file count
+  * @todo Internet Explorer fix/ html4 fix
+  * @todo select file button pointer overriden by the flash shim
+  * @todo flickr
+  * @todo if using a normal file input, after validation, the input needs to show that the file upload has worked.
+  * @todo Cleanup uploaded files that never got submitted because of validation failure elsewhere.
+  * @todo Ensure existing data reloads properly when editing records.
+  */
+  public static function file_box($options) {
+    global $indicia_templates;
+    // Upload directory defaults to client_helpers/upload, but can be overriden.
+    $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+    $relpath = self::relative_client_helper_path();
+    // Allow options to be defaulted and overridden
+    $defaults = array(
+      'caption' => lang::get('Files'),
+      'upload' => true,
+      'autoupload' => false,
+      'flickr' => false,
+      'uploadSelectBtnCaption' => lang::get('Select file(s)'),
+      'flickrSelectBtnCaption' => lang::get('Choose photo from Flickr'),
+      'startUploadBtnCaption' => lang::get('Start upload'),
+      'msgUploadError' => lang::get('upload error'),
+      'msgFileTooBig' => lang::get('file too big for warehouse'),
+      'runtimes' => array('gears','silverlight','browserplus','html5','flash','html4'),
+      'autoupload' => true,
+      'imagewidth' => 250,
+      'uploadScript' => $relpath . 'upload.php',
+      'destinationFolder' => $relpath . $interim_image_folder,
+      'buttonTemplate' => $indicia_templates['button'],
+      'table' => 'occurrence_image',
+      'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M')
+    );
+    if ($indicia_templates['file_box']!='') 
+      $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
+    if ($indicia_templates['file_box_initial_file_info']!='') 
+      $defaults['file_box_initial_file_infoTemplate'] = $indicia_templates['file_box_initial_file_info'];
+    if ($indicia_templates['file_box_uploaded_image']!='') 
+      $defaults['file_box_uploaded_imageTemplate'] = $indicia_templates['file_box_uploaded_image'];
+    $options = array_merge($defaults, $options);
+    self::add_resource('plupload');
+    foreach($options['runtimes'] as $runtime) {
+      self::add_resource("plupload_$runtime");
+    }
+    // convert runtimes list to plupload format
+    $options['runtimes'] = implode(',', $options['runtimes']);
+    self::$onload_javascript .= "\n$('.file-box').uploader({";
+    // Just pass the options array through
+    $idx = 0;
+    foreach($options as $option=>$value) {
+      if (is_array($value)) {
+        $value = "{ " . implode(" : true, ",$value) . " : true }";
+      }
+      else 
+        // not an array, so wrap as string
+        $value = "'$value'";
+      self::$onload_javascript .= "\n  $option : $value";
+      // comma separated, except last entry
+      if ($idx < count($options)-1) self::$onload_javascript .= ',';
+      $idx++;
+    }
+    // add in any reloaded items, when editing or after validation failure
+    if (self::$entity_to_load) {
+      $images = self::extract_image_data(self::$entity_to_load, $options['table']);
+      self::$onload_javascript .= ",\n  existingFiles : ".json_encode($images);
+    }
+    self::$onload_javascript .= "\n});\n";
+    // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
+    // version.
+    return '<div class="file-box"></div><noscript>'.self::image_upload(array(
+      'label' => $options['caption'],
+      'id' => str_replace('_', ':', $options['table']),
+      'fieldname' => str_replace('_', ':', $options['table'])
+    )).'</noscript>';
+  }
+
  /**
   * Generates a text input control with a search button that looks up an entered place against a georeferencing
   * web service. At this point in time only the Yahoo! GeoPlanet service is supported. The control is automatically
@@ -544,7 +692,9 @@ class data_entry_helper extends helper_config {
   }
 
  /**
-  * Helper function to support image upload by inserting a file path upload control.
+  * Helper function to support image upload by inserting a file path upload control. Note that when using this control, 
+  * it is essential that the form's HTML enctype attribute is set to enctype="multipart/form-data" so that the image file
+  * is included in the form data.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -559,7 +709,20 @@ class data_entry_helper extends helper_config {
   */
   public static function image_upload() {
     $options = self::check_arguments(func_get_args(), array('fieldname'));
-    return self::apply_template('image_upload', $options);
+    $pathField = $pathField = str_replace(':image','_image:path', $options['fieldname']);
+    $alreadyUploadedFile = self::check_default_value($pathField);
+    $options = array_merge(array(
+      'pathFieldName' => $pathField,
+      'pathFieldValue' => $alreadyUploadedFile
+    ), $options);
+    $r = self::apply_template('image_upload', $options);
+    if ($alreadyUploadedFile) {
+      // The control is being reloaded after a validation failure. So we can display a thumbnail of the 
+      // already uploaded file, so the user knows not to re-upload.
+      $interimImageFolder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+      $r .= '<img width="100" src="$interimImageFolder$alreadyUploadedFile"/>'."\n";
+    }
+    return $r;
   }
 
  /**
@@ -791,7 +954,6 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
     $options = array_merge(array(
         'div'=>'map',
-        'presetLayers'=>array('multimap_landranger','google_physical','google_satellite'),
         'edit'=>true,
         'locate'=>true,
         'wkt'=>null
@@ -807,7 +969,9 @@ class data_entry_helper extends helper_config {
           'label'=>lang::get('search for place on map')
       ));
     }
-    $r .= self::map_panel(array('presetLayers' => $options['presetLayers'], 'initialFeatureWkt' => $options['wkt']));
+    $mapPanelOptions = array('initialFeatureWkt' => $options['wkt']);
+    if (array_key_exists('presetLayers', $options)) $mapPanelOptions['presetLayers'] = $options['presetLayers'];
+    $r .= self::map_panel($mapPanelOptions);
     return $r;
   }
 
@@ -897,6 +1061,22 @@ class data_entry_helper extends helper_config {
       return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
     } else {
       global $indicia_templates;
+      $presetLayers = array();
+      // If the caller has not specified the background layers, then default to the ones we have an API key for
+      if (!array_key_exists('presetLayers', $options)) {
+        if (parent::$multimap_api_key != '') {
+          $defaultLayers [] = 'multimap_landranger';
+        }
+        if (parent::$google_api_key != '') {
+          $presetLayers[] = 'google_satellite';
+          $presetLayers[] = 'google_hybrid';
+          $presetLayers[] = 'google_physical';
+        }
+        // Fallback as we don't need a key for this.
+        $presetLayers[] = 'virtual_earth';
+      } else {
+        $options['presetLayers'] = $presetLayers;
+      }
       $options = array_merge(array(
           'indiciaSvc'=>self::$base_url,
           'indiciaGeoSvc'=>self::$geoserver_url,
@@ -904,7 +1084,7 @@ class data_entry_helper extends helper_config {
           'class'=>'',
           'width'=>600,
           'height'=>470,
-          'presetLayers'=>array('multimap_landranger','google_physical','google_satellite')
+          'presetLayers'=>$presetLayers
       ), $options);
 
       //width and height may be numeric, which is interpreted as pixels, or a css string, e.g. '50%'
@@ -2570,11 +2750,14 @@ if (errors.length>0) {
   public static function loading_block_end() {
     global $indicia_templates;
     // First hide the message, then hide the form, slide it into view, then show it.
-    self::$onload_javascript .= "$('.loading-panel').remove();\n".
+    // This script must precede the other scripts onload, otherwise they may have problems because
+    // of assumptions that the controls are visible.
+    self::$onload_javascript = "$('.loading-panel').remove();\n".
         "var panel=$('.loading-hide')[0];\n".
         "$(panel).hide();\n".
         "$(panel).removeClass('loading-hide');\n".
-        "$(panel).fadeIn('slow');\n";
+        "$(panel).fadeIn('slow');\n" .
+        self::$onload_javascript;
     return $indicia_templates['loading_block_end'];
   }
   
@@ -2603,30 +2786,45 @@ if (errors.length>0) {
   }
 
   /**
-   * Either takes the passed in array, or the post data if this is null, and forwards it to the data services
-   * for saving as a member of the entity identified.
+   * Either takes the passed in submission, or creates it from the post data if this is null, and forwards 
+   * it to the data services for saving as a member of the entity identified.
    */
-  public static function forward_post_to($entity, $array = null) {
-    if ($array == null)
-      $array = submission_builder::wrap($_POST, $entity);
-    $request = parent::$base_url."index.php/services/data/$entity";
-    $postargs = 'submission='.json_encode($array);
-    // passthrough the authentication tokens as POST data
-    if (array_key_exists('auth_token', $_POST))
-      $postargs .= '&auth_token='.$_POST['auth_token'];
-    if (array_key_exists('nonce', $_POST))
-      $postargs .= '&nonce='.$_POST['nonce'];
-    $response = self::http_post($request, $postargs);
-    // The response should be in JSON if it worked
-    $output = json_decode($response['output'], true);
-    // If this is not JSON, it is an error, so just return it as is.
-    if (!$output)
-      $output = $response['output'];
-    return $output;
-  }
-
-  public static function handle_media($media_id) {
-    return submission_builder::handle_media($media_id);
+  public static function forward_post_to($entity, $submission = null) {
+    if (self::$validation_errors==null) {
+      if ($submission == null)
+        $submission = submission_builder::wrap($_POST, $entity);
+      $images = self::extract_image_data($_POST);
+      $request = parent::$base_url."index.php/services/data/$entity";
+      $postargs = 'submission='.urlencode(json_encode($submission));
+      // passthrough the authentication tokens as POST data
+      if (array_key_exists('auth_token', $_POST))
+        $postargs .= '&auth_token='.$_POST['auth_token'];
+      if (array_key_exists('nonce', $_POST))
+        $postargs .= '&nonce='.$_POST['nonce'];
+      // if there are images, we will send them after the main post, so we need to persist the write nonce
+      if (count($images)>0) 
+        $postargs .= '&persist_auth=true';
+      $response = self::http_post($request, $postargs);
+      // The response should be in JSON if it worked
+      $output = json_decode($response['output'], true);
+      // If this is not JSON, it is an error, so just return it as is.
+      if (!$output)
+        $output = $response['output'];
+      if (is_array($output) && array_key_exists('success', $output)) {
+        // submission succeeded. So we also need to move the images to the warehouse.
+        foreach ($images as $image) {
+          // SET PERSIST_AUTH false if last file
+          $success = self::send_file_to_warehouse($image['path'], true);
+          if ($success!==true) {
+            return array('error' => lang::get('submit ok but file failed').
+                "<br/>$success");
+          }
+        }
+      }
+      return $output;
+    }
+    else
+      return array('error' => 'Pre-validation failed', 'errors' => self::$validation_errors); 
   }
 
   /**
@@ -3135,6 +3333,11 @@ $('.ui-state-default').live('mouseout', function() {
       'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
       'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
+      'plupload' => array('deps' => array('jquery_ui','fancybox'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js')),
+      'plupload_gears' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/gears_init.js', self::$js_path.'plupload/js/plupload.gears.min.js')),
+      'plupload_flash' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.flash.min.js')),
+      'plupload_html5' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.html5.min.js')),
+      'plupload_html4' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.html4.min.js'))
     );
   }
 
@@ -3271,7 +3474,7 @@ $('.ui-state-default').live('mouseout', function() {
         // Some sort of cUrl problem occurred
         if ($curl_check['errno']) {
           $r .= '<li class="ui-state-error">Warning: The cUrl PHP library could not access the Indicia Warehouse. The error was reported as:';
-          $r .= $curl_check['output'].'</br>';
+          $r .= $curl_check['output'].'<br/>';
           $r .= 'Please ensure that this web server is not prevented from accessing the server identified by the ' .
               'helper_config.php $base_url setting by a firewall. The current setting is '.parent::$base_url.'</li>';
         } else {
@@ -3306,7 +3509,7 @@ $('.ui-state-default').live('mouseout', function() {
 	  // Test we have a writeable upload directory
 	  if (!is_dir(parent::$upload_path)) {
 	    $r .= '<li class="ui-state-error">The upload path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
-      } elseif (!is_writeable($path)) {
+      } elseif (!is_writeable(parent::$upload_path)) {
 	    $r .= '<li class="ui-state-error">The upload path setting in helper_config.php points to a read only directory (' . parent::$upload_path . '). This will result in slow form loading performance.</li>';
   	} elseif ($fullInfo) {
         $r .= '<li>Success: Upload directory is present and writeable.</li>';
@@ -3502,7 +3705,7 @@ $('.ui-state-default').live('mouseout', function() {
             $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);
           }
           if (!array_key_exists('orderby', $options['extraParams'])) {
-		    $dataSvcParams = $dataSvcParams + array('orderby'=>'sort_order');
+            $dataSvcParams = $dataSvcParams + array('orderby'=>'sort_order');
           }
           if(array_key_exists('lookUpListCtrl', $options)){
             $ctrl = $options['lookUpListCtrl'];
@@ -3521,6 +3724,214 @@ $('.ui-state-default').live('mouseout', function() {
     }
 
     return str_replace("\n", "", $output);
+  }
+  
+  /**
+   * Takes a file that has been uploaded to the client website upload folder, and moves it to the warehouse upload folder using the
+   * data services.
+   * 
+   * @param string $path Path to the file to upload, relative to the interim image path folder (normally the 
+   * client_helpers/upload folder.
+   * @param boolean $persist_auth Allows the write nonce to be preserved after sending the file, useful when several files
+   * are being uploaded.
+   * @return string Error message, or true if successful. 
+   */
+  private static function send_file_to_warehouse($path, $persist_auth=false) {
+    $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+    $uploadpath = data_entry_helper::relative_client_helper_path() . $interim_image_folder;
+    $serviceUrl = parent::$base_url."/index.php/services/data/handle_media";
+    // This is used by the file box control which renames uploaded files using a guid system, so disable renaming on the server.
+    $postargs = array('name_is_guid' => 'true');
+    // attach authentication details
+    if (array_key_exists('auth_token', $_POST)) 
+      $postargs['auth_token'] = $_POST['auth_token'];
+    if (array_key_exists('nonce', $_POST)) 
+      $postargs['nonce'] = $_POST['nonce'];
+    if ($persist_auth) 
+      $postargs['persist_auth'] = 'true';
+    $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));
+    $response = data_entry_helper::http_post($serviceUrl, $file_to_upload + $postargs);
+    $output = json_decode($response['output'], true);
+    $r = true; // default is success
+    if (is_array($output)) {
+      //an array signals an error
+      if (array_key_exists('error', $output)) {
+        // return the most detailed bit of error information
+        if (isset($output['errors']['media_upload']))
+          $r = $output['errors']['media_upload'];
+        else 
+          $r = $output['error']; 
+      }
+    }
+    //remove local copy
+    unlink(realpath($uploadpath.$path));
+    return $r;
+  }
+  
+  /**
+   * Calculates the relative path to the client_helpers folder from wherever the current PHP script is.
+   */
+  public static function relative_client_helper_path() {
+    // get the paths to the client helper folder and php file folder as an array of tokens
+    $clientHelperFolder = explode(DIRECTORY_SEPARATOR, realpath(dirname(__FILE__)));
+    $currentPhpFileFolder = explode(DIRECTORY_SEPARATOR, realpath(dirname($_SERVER['SCRIPT_FILENAME'])));
+    // Find the first part of the paths that is not the same
+    for($i = 0; $i<min(count($currentPhpFileFolder), count($clientHelperFolder)); $i++) {
+      if ($clientHelperFolder[$i] != $currentPhpFileFolder[$i]) {
+        break;
+      }
+    }
+    // step back up the path to the point where the 2 paths differ
+    $path = str_repeat('../', count($currentPhpFileFolder)-$i);
+    // add back in the different part of the path to the client helper folder
+    for ($j = $i; $j < count($clientHelperFolder); $j++) {
+      $path .= $clientHelperFolder[$j] . '/';
+    }
+    return $path;
+  }
+  
+  /**
+   * Retrieves an array of just the image data from a $_POST or set of control values.
+   * 
+   * @param arraay $values
+   * @param string $modelName The singular name of the image table, e.g. location_image or occurrence_image etc. If
+   * null, then any image model will be used.
+   * @param boolean $simpleFileInputs If true, then allows a file input with name=occurrence:image (or similar)
+   * to be used to point to an image file. The file is uploaded to the interim image folder to ensure that it
+   * can be handled in the same way as a pre-uploaded file.
+   * @param boolean $moveSimpleFiles If true, then any file uploaded by normal means to the server (via multipart form submission
+   * for a field named occurrence:image[:n] or similar) will be moved to the interim image upload folder.
+   */
+  public static function extract_image_data($values, $modelName=null, $simpleFileInputs=false, $moveSimpleFiles=false) {
+    $r = array();
+    foreach ($values as $key => $value) {
+      if (!empty($value)) {
+        // If the field is a path, and the model name matches or we are not filtering on model name
+        $pathPos = strpos($key, ':path:');
+        if ($pathPos !== false)
+          // Found an image path. Anything after path is the unique id. We include the colon in this.
+          $uniqueId = substr($key, $pathPos + 5);
+        else {
+          // look for a :path field with no suffix (i.e. a single image upload field after a validation failure, 
+          // when it stores the path in a hidden field so it is not lost).
+          if (substr($key, -5)==':path') {
+            $uniqueId = '';
+            $pathPos = strlen($key)-5;
+          }
+        }
+        if ($pathPos !==false && ($modelName === null || $modelName == substr($key, 0, strlen($modelName)))) {
+          $prefix = substr($key, 0, $pathPos);
+          $r[] = array(
+            // Id is set only when saving over an existing record.
+            'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ? 
+                $values[$prefix.':id'.$uniqueId] : '',
+            'path' => $value,
+            'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : ''
+          );
+        }
+      }
+    }
+    
+    // Now look for image file inputs, called something like occurrence:image[:n]
+    if ($simpleFileInputs) {
+      foreach($_FILES as $key => $file) {
+        if (substr($key, 0, strlen($modelName))==str_replace('_', ':', $modelName)) {
+          if ($file['error']=='1') {
+            // file too big error dur to php.ini setting
+            if (self::$validation_errors==null) self::$validation_errors = array();
+            self::$validation_errors[$key] = lang::get('file too big for webserver');
+          }
+          elseif (!self::check_upload_size($file)) {
+            // even if file uploads Ok to interim location, the Warehouse may still block it.
+            if (self::$validation_errors==null) self::$validation_errors = array();
+            self::$validation_errors[$key] = lang::get('file too big for warehouse');
+          } 
+          elseif ($file['error']=='0') {
+            // no file upload error
+            $fname = isset($file['tmp_name']) ? $file['tmp_name'] : '';
+            if ($fname && $moveSimpleFiles) {
+              // Get the original file's extension
+              $parts = explode(".",$file['name']);
+              $fext = array_pop($parts);
+              // Generate a file id to store the image as
+              $destination = time().rand(0,1000).".".$fext;
+              $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+              $uploadpath = self::relative_client_helper_path().$interim_image_folder;
+              if (move_uploaded_file($fname, $uploadpath.$destination)) {
+                $r[] = array(
+                  // Id is set only when saving over an existing record. This will always be a new record
+                  'id' => '',
+                  'path' => $destination,
+                  'caption' => ''
+                );
+                // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
+                $_FILES[$key]['name'] = $destination;
+                $pathField = str_replace(':image','_image:path', $key);
+                $_POST[$pathField] = $destination;                
+              }
+            } else {
+              // Not moving the file, as it should already be moved.
+              $r[] = array(
+                // Id is set only when saving over an existing record. This will always be a new record
+                'id' => '',
+                // This should be a file already in the interim image upload folder.
+                'path' => $_FILES[$key]['name'],
+                'caption' => ''
+              );
+            }
+          }
+        }
+      }
+    }
+    return $r;
+  }
+  
+/**
+   * Validation rule to test if an uploaded file is allowed by file size.
+   * File sizes are obtained from the helper_config maxUploadSize, and defined as: 
+   * SB, where S is the size (1, 15, 300, etc) and
+   * B is the byte modifier: (B)ytes, (K)ilobytes, (M)egabytes, (G)igabytes.
+   * Eg: to limit the size to 1MB or less, you would use "1M".
+   *
+   * @param   array    $_FILES item
+   * @param   array    maximum file size
+   * @return  bool
+   */
+  private static function check_upload_size(array $file)
+  {
+    if ((int) $file['error'] !== UPLOAD_ERR_OK)
+      return TRUE;
+    
+    if (isset(parent::$maxUploadSize))
+      $size = parent::$maxUploadSize;
+    else 
+      $size = '1M'; // default
+
+    if ( ! preg_match('/[0-9]++[BKMG]/', $size))
+      return FALSE;
+      
+    $size = self::convert_to_bytes($size);
+    
+    // Test that the file is under or equal to the max size
+    return ($file['size'] <= $size);
+  }
+  
+  /**
+   * Utility method to convert a memory size string (e.g. 1K, 1M) into the number of bytes.
+   *
+   * @param string $size Size string to convert. Valid suffixes as G (gigabytes), M (megabytes), K (kilobytes) or nothing.
+   * @return integer Number of bytes.
+   */
+  private static function convert_to_bytes($size) {
+    // Make the size into a power of 1024
+    switch (substr($size, -1))
+    {
+      case 'G': $size = intval($size) * pow(1024, 3); break;
+      case 'M': $size = intval($size) * pow(1024, 2); break;
+      case 'K': $size = intval($size) * pow(1024, 1); break;
+      default:  $size = intval($size);                break;
+    }
+    return $size; 
   }
 
 }

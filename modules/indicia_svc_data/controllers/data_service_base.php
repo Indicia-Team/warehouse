@@ -91,10 +91,15 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected function delete_nonce()
   {
     $array = array_merge($_POST, $_GET);
-    if (array_key_exists('nonce', $array))
-    {
-      $nonce = $array['nonce'];
-      $this->cache->delete($nonce);
+    // Unless the request explicitly requests that the nonce should persist, delete it as a write nonce is 
+    // one time only. The exception to this is when a submission contains images which are sent afterwards,
+    // in which case the last image will delete the nonce
+    if (!array_key_exists('persist_auth', $array) || $array['persist_auth']!='true') {
+      if (array_key_exists('nonce', $array))
+      {
+        $nonce = $array['nonce'];
+        $this->cache->delete($nonce);
+      }
     }
   }
 

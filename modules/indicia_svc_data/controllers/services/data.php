@@ -375,6 +375,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
    * Handle uploaded files in the $_FILES array by moving them to the upload folder. Images
    * get resized and duplicated as specified in the indicia config file.
+   * If the $_POST array contains name_is_guid=true, then the image file will not be renamed as the name
+   * should already be globally unique. Otherwise the current time is prefixed to the name to make it unique.
    */
   public function handle_media()
   {    
@@ -392,11 +394,15 @@ class Data_Controller extends Data_Service_Base_Controller {
       );
       if ($_FILES->validate())
       {
-        $fTmp = upload::save('media_upload', time().strtolower($_FILES['media_upload']['name']));
+        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true') 
+          $finalName = strtolower($_FILES['media_upload']['name']);
+        else
+          $finalName = time().strtolower($_FILES['media_upload']['name']);
+        $fTmp = upload::save('media_upload', $finalName);
         Image::create_image_files(dirname($fTmp), basename($fTmp));
         $this->response=basename($fTmp);
-        kohana::log('debug', 'Successfully uploaded media to '. basename($fTmp));
         $this->send_response();
+        kohana::log('debug', 'Successfully uploaded media to '. basename($fTmp));
       }
       else
       {
@@ -641,6 +647,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           case 'json':
             $s = json_decode($_POST['submission'], true);
         }
+        kohana::log('info', 'submission '.print_r($_POST['submission'], true));
         $id = $this->submit($s);
       }
       // return a success message plus the id of the topmost record, e.g. the sample created.

@@ -94,8 +94,10 @@ echo data_entry_helper::select(array(
 <?php echo data_entry_helper::autocomplete('occurrence:determiner_id', 'person', 'caption', 'id', $readAuth); ?>
 <br />
 <?php echo data_entry_helper::textarea(array('label'=>'Comment', 'fieldname'=>'sample:comment')); ?>
-<label for='occurrence_image'>Image Upload:</label>
-<?php echo data_entry_helper::image_upload('occurrence:image'); ?>
+<?php echo data_entry_helper::image_upload(array(
+  'label' => 'Image Upload',
+  'fieldname' => 'occurrence:image'
+)); ?>
 <fieldset>
 <legend>Occurrence attributes</legend>
 <label for='<?php echo $config['dafor']; ?>'>Abundance DAFOR:</label>
