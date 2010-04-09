@@ -24,7 +24,11 @@
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
     var opts = $.extend({}, $.fn.uploader.defaults, options);
-
+    
+    if (typeof opts.jsPath == "undefined") {
+      alert('The file_box control requires a jsPath setting to operate correctly. It should point to the URL '+
+          'path of the media/js folder.');
+    }
     return this.each(function() {
       var uploadSelectBtn='', flickrSelectBtn='', uploadStartBtn='', id=Math.floor((Math.random())*0x10000);
       this.settings = opts;
@@ -64,10 +68,6 @@
         ],
         // limit the max file size to the Indicia limit, unless it is first resized.
         max_file_size : resize ? '10mb' : plupload.formatSize(this.settings.maxUploadSize)
-      });
-      
-      this.uploader.bind('Init', function(up, params) {
-        $('#filelist').append('<div>Current runtime: ' + params.runtime + '</div>');
       });
       
       if (this.settings.autoupload) {
