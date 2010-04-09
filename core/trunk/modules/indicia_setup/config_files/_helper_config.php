@@ -27,8 +27,9 @@
  */
 class helper_config {
   static $base_url='*base_url*';
-  static $upload_path = './upload/';
-  static $indicia_upload_path = 'upload/';
+  static $upload_path = './upload/';        // this is relative to the php file using the data_entry_helper
+  static $interim_image_folder = 'upload/'  // relative to the client_helpers folder. Code referring to this should use upload/ as default if missing
+  static $indicia_upload_path = 'upload/';  // this is relative to the indicia installation directory
   static $geoserver_url = '*geoserver_url*';
   static $geoplanet_api_key='*geoplanet_api_key*';
   static $google_search_api_key='*google_search_api_key*';
@@ -36,6 +37,7 @@ class helper_config {
   static $multimap_api_key='*multimap_api_key*';
   static $flickr_api_key='*flickr_api_key*';
   static $flickr_api_secret='*flickr_api_secret*';
+  static $maxUploadSize='1MB'; // max image upload size. Should match setting on the Warehouse config/indicia.php file.
 }
 
 ?>

@@ -131,6 +131,7 @@ input, select, textarea {
   *display:inline;
   margin: 1em;
   padding: 0.5em;
+  vertical-align: top;
 }
 
 .photo img {
@@ -139,6 +140,14 @@ input, select, textarea {
 
 .photo p {
   text-align: center;
+}
+
+.photo label {
+  margin-bottom: 0px;
+}
+
+.photo input {
+  margin-top: 0px;
 }
 
 .indicia-button {
@@ -259,4 +268,12 @@ li.ui-state-error {
   color:gray;
   font-size:80%;
   margin:0 0 0.4em 160px;
+}
+
+.progress {
+  width: 100%;
+}
+
+.plupload input {
+  cursor: pointer;
 }

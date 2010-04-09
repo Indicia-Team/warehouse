@@ -13,10 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Client
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link 	http://code.google.com/p/indicia/
+ * @package  Client
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL 3.0
+ * @link   http://code.google.com/p/indicia/
  */
 
 require_once('lang.php');
@@ -26,7 +26,7 @@ require_once('data_entry_helper.php');
 /**
  * Provides a helper to build submissions.
  *
- * @package	Client
+ * @package  Client
  */
 
 class submission_builder extends helper_config {
@@ -39,15 +39,15 @@ class submission_builder extends helper_config {
    * array(
    *     'model' => 'main model name',
    *     'fieldPrefix' => 'Optional prefix for HTML form fields in the main model. If not specified then the main model name is used.',
-   *     'subModels' => array('child model name' =>	array(
-   *     		'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
-   *     		'fk' => 'foreign key name',
-   *     		'image_entity' => 'name of image entity if present'
+   *     'subModels' => array('child model name' =>  array(
+   *         'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
+   *         'fk' => 'foreign key name',
+   *         'image_entity' => 'name of image entity if present'
    *     )),
-   *     'superModels' => array('child model name' =>	array(
-   *     		'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
-   *     		'fk' => 'foreign key name',
-   *     		'image_entity' => 'name of image entity if present'
+   *     'superModels' => array('child model name' =>  array(
+   *         'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
+   *         'fk' => 'foreign key name',
+   *         'image_entity' => 'name of image entity if present'
    *     )),
    *     'metaFields' => array('fieldname1', 'fieldname2', ...),
    *     'joinsTo' => array('model that this has a many to many join with', ...)
@@ -147,7 +147,7 @@ class submission_builder extends helper_config {
         $key = str_replace("$entity:", '', $key);
         // This should be a field in the model.
         // Add a new field to the save array
-        $sa['fields'][$key] = array('value' => $value);
+        $sa['fields'][$key] = array('value' => utf8_encode($value));
       }
     }
     return $sa;
@@ -174,13 +174,13 @@ class submission_builder extends helper_config {
         // of 36.
         // for multiple values where existing value did not exist, the value will be an array.
         if(is_array($value)){
-    		foreach ($value as $individual) {
-	    	    $oap[] = array($entity."_attribute_id" => $a[1], 'value' => $individual);
-    		}
+        foreach ($value as $individual) {
+            $oap[] = array($entity."_attribute_id" => $a[1], 'value' => $individual);
+        }
         } else {
-	        $oap[] = array(
-    	      $entity."_attribute_id" => $a[1], 'value' => $value
-        	);
+          $oap[] = array(
+            $entity."_attribute_id" => $a[1], 'value' => $value
+          );
         }
         // If it is an existing attribute value, we need to also put the ID in the array so it
         // can update the same value rather than create a new one
@@ -208,9 +208,28 @@ class submission_builder extends helper_config {
    * then custom attributes will also be wrapped. Furthermore, any attribute called $modelName:image can
    * contain an image upload (as long as a suitable entity is available to store the image in).
    */
-  public static function wrap_with_attrs($values, $modelName, $field_prefix=null) {
+  public static function wrap_with_attrs($values, $modelName, $fieldPrefix=null) {
+    // Now search for an input controls with the name image_upload.
+    // For example, this occurs on the taxon_image edit page of the Warehouse.
+    // We do this first so the uploaded image path can be put into the submission
+    if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
+      $file = $_FILES['image_upload'];
+      // Get the original file's extension
+      $parts = explode(".",$file['name']);
+      $fext = array_pop($parts);
+      // Generate a file id to store the image as
+      $destination = time().rand(0,1000).".".$fext;
+      $uploadpath = 'C:/webserver/apache/htdocs/indicia/upload/';
+      if (move_uploaded_file($file['tmp_name'], $uploadpath.$destination)) {
+        // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
+        $_FILES['image_upload']['name'] = $destination;
+        $values['path'] = $destination;
+        // This is the final file destination, so create the image files.
+        Image::create_image_files($uploadpath, $destination);
+      } 
+    }
     // Get the parent model into JSON
-    $modelWrapped = self::wrap($values, $modelName, $field_prefix);
+    $modelWrapped = self::wrap($values, $modelName, $fieldPrefix);
     // Might it have custom attributes?
     if (strcasecmp($modelName, 'occurrence')==0 ||
         strcasecmp($modelName, 'sample')==0 ||
@@ -222,62 +241,19 @@ class submission_builder extends helper_config {
         $modelWrapped['metaFields'][self::get_attr_entity_prefix($modelName).'Attributes']['value']=$attrs;
       }
     }
-    
-    /* Handle uploading of image files. There are several methods of doing this:
-     *  1) If the model name is one of the image tables (e.g. taxon_image or occurrence_image), then
-     *  the path to the image can be supplied in the path attribute as a normal attribute value. However 
-     *  if there is a file attached to the submission called image_upload this file will be uploaded and
-     *  its path stored in the path attribute.
-     *  2) A shortcut to uploading is to provide a file upload in the submission with the same model name as the "owner"
-     *  model and the attribute name "image", for example "occurrence:image". In this case the file is uploaded and 
-     *  used to create a submodel for occurrence_image. Futhermore it is possible to upload multiple images using this techinque
-     *  if each image file's name has a unique, zero indexed consecutive suffix, e.g. occurrence:image:0, occurrence_image:1.
-     */
-    
-    // Ask for media to be handled when the file name is the model name plus :image (the shortcut method).
-    $response = self::handle_media("$modelName:image");
-    // Any files uploaded of this form need to be wrapped in a model
-    if ($response['success']) {
-      foreach ($response['files'] as $name) {
-        // Add image model for a detail table record to be created.
-        // TODO Get a caption for the image
-        $oiFields = array(
-            'path' => $name,
-            'caption' => 'Default caption'
-        );
-        $oiMod = self::wrap($oiFields, $modelName.'_image');
-        $modelWrapped['subModels'][] = array(
-            'fkId' => $modelName.'_id',
-            'model' => $oiMod
-        );
-      }
-    }
-
-    // Now search for an input controls with the name image_upload.
-    // For example, this occurs on the taxon_image edit page of the Warehouse.
-    if (array_key_exists('image_upload', $_FILES) && $_FILES['image_upload']['name']) {
-      // link image path attribute direct to record i.e. not a subModel.      
-      $response = self::handle_media('image_upload', false);
-      if ($response['success']) {
-        $modelWrapped['fields']['path'] = array('value'=>$response['files'][0]);
-      }
-    }
-    // And this adds an already uploaded image to the model based on two fields
-    // which could be text fields or hidden fields
-    else if (array_key_exists($modelName."_image:path", $values)){
-      // TODO Get a caption for the image
-      $oiFields = array('path' => $values[$modelName."_image:path"]);
-      if(array_key_exists($modelName."_image:id", $values)){
-      	$oiFields['id'] = $values[$modelName."_image:id"];
-      }
-      $oiMod = self::wrap($oiFields, $modelName.'_image');
+    // Build sub-models for the image files. Don't post to the warehouse until after validation success. This 
+    // also moves any simple uploaded files to the interim image upload folder.
+    $images = data_entry_helper::extract_image_data($values, $modelName.'_image', true, true);
+    foreach ($images as $image) {
+      $imageWrap = self::wrap($image, $modelName.'_image');      
       $modelWrapped['subModels'][] = array(
           'fkId' => $modelName.'_id',
-          'model' => $oiMod
+          'model' => $imageWrap
       );
     }
     return $modelWrapped;
   }
+  
 
   /**
    * Takes uploaded files from the form submission and saves them on the server. Optionally sends it
@@ -360,7 +336,7 @@ class submission_builder extends helper_config {
 
     return $return;
   }
-
+ 
   /**
    * Interprets the $_FILES information and returns an array of files uploaded
    * @param String $media_id Base name of the file entry in the $_FILES array e.g. occurrence:image.

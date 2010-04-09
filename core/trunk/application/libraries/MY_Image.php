@@ -62,7 +62,7 @@ class Image extends Image_Core {
             $imagePath = $uploadpath.$filename;
           else
             $imagePath = $uploadpath.$imageName.'-'.$filename;
-          $img->save($imagePath);          
+          $img->save($imagePath);
         }
       }
     }
