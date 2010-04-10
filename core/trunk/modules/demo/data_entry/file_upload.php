@@ -10,7 +10,6 @@ require '../data_entry_config.php';
 ?>
 <title>File Upload Example</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
-<link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
 <?php echo data_entry_helper::dump_header(); ?>
 </head>
 <body>
