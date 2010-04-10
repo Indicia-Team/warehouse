@@ -42,6 +42,7 @@ $config['taxon_group'] = 'taxon_group/page/1';
 $config['language'] = 'language/page/1';
 // Location
 $config['location'] = 'location/page/1';
+$config['location_image/([0-9]+)'] = 'location_image/page/1/$1';
 // Termlists_term
 $config['termlists_term/([0-9]+)'] = 'termlists_term/page/1/$1';
 $config['termlists_term/page/([0-9]+)'] = 'termlists_term/page/1/$1';
@@ -61,6 +62,7 @@ $config['location_attribute'] = 'location_attribute/page/1';
 $config['occurrence'] = 'occurrence/page/1';
 $config['occurrence_image/([0-9]+)'] = 'occurrence_image/page/1/$1';
 $config['sample'] = 'sample/page/1';
+$config['sample_image/([0-9]+)'] = 'sample_image/page/1/$1';
 // Title
 $config['title'] = 'title/page/1';
 

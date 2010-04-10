@@ -35,10 +35,10 @@ class Location_Controller extends Gridview_Base_Controller {
   {
     parent::__construct('location', 'location', 'location/index');
     $this->columns = array(
-                        'name'=>'',
-                        'code'=>'',
-                        'centroid_sref'=>'');
-        $this->pagetitle = "Locations";
+        'name'=>'',
+        'code'=>'',
+        'centroid_sref'=>'');
+    $this->pagetitle = "Locations";
 
     // Get the list of locations the user is allowed to see.
     // @todo Is this a performance bottleneck with large lists of locations?
@@ -68,6 +68,12 @@ class Location_Controller extends Gridview_Base_Controller {
       return (in_array($id, $this->auth_filter['values']));
     }
     return true;
+  }
+  
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    $this->loadAttributes($r);
+    return $r;      
   }
   
 }

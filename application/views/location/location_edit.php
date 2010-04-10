@@ -37,6 +37,11 @@ $centroid_geom = html::initial_value($values, 'location:centroid_geom');
 <script type="text/javascript">
 
 jQuery(document).ready(function() {
+  var $tabs=$("#tabs").tabs();
+  var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
+  if (initTab!='') {
+    $tabs.tabs('select', '#' + initTab);
+  }
   init_map('<?php echo url::base(); ?>', <?php 
       if ($id && $boundary_geom) 
         echo "'$boundary_geom'"; 
@@ -80,6 +85,15 @@ jQuery(document).ready(function() {
 </script>
 <p>This page allows you to specify the details of a location.</p>
 <form class="cmxform" action="<?php echo url::site().'location/save'; ?>" method="post">
+<div id="tabs">
+  <ul>
+    <li><a href="#details"><span>Location Details</span></a></li>
+    <li><a href="#attrs"><span>Additional Attributes</span></a></li>
+    <?php if ($id != null) : 
+      ?><li><a href="<?php echo url::site()."location_image/$id" ?>" title="images"><span>Images</span></a></li>
+    <?php endif; ?>
+  </ul>
+<div id="details">
 <?php echo $metadata; ?>
 <fieldset>
 <input type="hidden" name="location:id" value="<?php echo html::initial_value($values, 'location:id'); ?>" />
@@ -150,7 +164,44 @@ spatial reference. The more you zoom in, the more accurate the reference will be
 ?>
 </ol>
 </fieldset>
+</div>
+<div id="attrs">
+<fieldset>
+ <legend>Additional Attributes</legend>
+ <ol>
+ <?php
+foreach ($values['attributes'] as $attr) {
+  $name = 'smpAttr:'.$attr['location_attribute_id'];
+  // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+  if ($attr['id']) $name .= ':'.$attr['id'];
+  echo '<li><label for="">'.$attr['caption']."</label>\n";
+  switch ($attr['data_type']) {
+    case 'Specific Date':
+      echo form::input($name, $attr['value'], 'class="date-picker"');
+      break;
+    case 'Vague Date':
+      echo form::input($name, $attr['value'], 'class="vague-date-picker"');
+      break;
+    case 'Lookup List':     
+      echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);
+      break;
+    case 'Boolean':
+      echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);
+      break;
+    default:
+      echo form::input($name, $attr['value']);
+  }
+  echo '<br/>'.html::error_message($model->getError($name)).'</li>';
+  
+}
+ ?>
+ </ol>
+ </fieldset>
+</div>
+<div id="images">
+</div>
 <?php 
 echo html::form_buttons(html::initial_value($values, 'location:id')!=null);
 ?>
 </form>
+  

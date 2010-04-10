@@ -134,6 +134,11 @@ input, select, textarea {
   vertical-align: top;
 }
 
+.photo .ui-widget-header {
+  padding: 0.2em;
+  margin-bottom: 0.2em;
+}
+
 .photo img {
   display: block;
 }

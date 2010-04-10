@@ -66,10 +66,10 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     }
     $this->prepare_grid_view();
     $this->add_upload_csv_form();
-
+    
     $grid =  Gridview_Controller::factory($this->gridmodel,
-    $page_no,
-    $this->pageNoUriSegment);
+        $page_no,
+        $this->pageNoUriSegment);
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
     $grid->columns = array_intersect_key($this->columns, $grid->columns);
@@ -247,6 +247,27 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       }
     }
 
+  }
+  
+/**
+   * Loads the custom attributes for a sample, location or occurrence into the load array. Also sets up
+   * any lookup lists required.
+   * This is only called by sub-classes for entities that have associated attributes.
+   */
+  protected function loadAttributes(&$r) {
+    // Grab all the custom attribute data
+    $attrs = $this->db->
+        from('list_'.$this->model->object_name.'_attribute_values')->
+        where($this->model->object_name.'_id', $this->model->id)->
+        get()->as_array(false);
+    $r['attributes'] = $attrs;
+    foreach ($attrs as $attr) {
+      // if there are any lookup lists in the attributes, preload the options     
+      if (!empty($attr['termlist_id'])) {
+        $r['terms_'.$attr['termlist_id']]=$this->get_termlist_terms($attr['termlist_id']);
+        $r['terms_'.$attr['termlist_id']][0] = '-no value-';
+      }
+    }
   }
 
 }
