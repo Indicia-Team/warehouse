@@ -200,7 +200,7 @@ $.fn.uploader.defaults = {
   buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
   file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div id="filelist"></div>' +
                  '{uploadStartBtn}</fieldset>',
-  file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo">{filename} ({filesize}) <div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div><div class="progress-percent"></div></div><br/><span class="photo-wrapper"></span></div>',
+  file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all">{filename} ({filesize})</div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div><div class="progress-percent"></div></div><span class="photo-wrapper"></span></div>',
   file_box_uploaded_imageTemplate : '<a class="fancybox" href="{filepath}"><img src="{filepath}" width="{imagewidth}"/></a>' +
       '<input type="hidden" name="{idField}" id="{idField}" value="{idValue}" />' +
       '<input type="hidden" name="{pathField}" id="{pathField}" value="{pathValue}" />' +

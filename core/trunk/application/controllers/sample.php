@@ -86,26 +86,6 @@ class Sample_Controller extends Gridview_Base_Controller
     $occ_grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
     $r['occurrences'] = $occ_grid->display();
   }
-  
-  /**
-   * Loads the custom attributes for this sample into the load array. Also sets up
-   * any lookup lists required.
-   */
-  private function loadAttributes(&$r) {
-    // Grab all the custom attribute data
-    $attrs = $this->db->
-        from('list_sample_attribute_values')->
-        where('sample_id', $this->model->id)->
-        get()->as_array(false);
-    $r['attributes'] = $attrs;
-    foreach ($attrs as $attr) {
-      // if there are any lookup lists in the attributes, preload the options    	
-      if (!empty($attr['termlist_id'])) {
-        $r['terms_'.$attr['termlist_id']]=$this->get_termlist_terms($attr['termlist_id']);
-        $r['terms_'.$attr['termlist_id']][0] = '-no value-';
-      }
-    }
-  }
 
   public function edit_gv($id = null, $page_no)
   {

@@ -1,4 +1,4 @@
-<?php
+<?php defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -14,20 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package Core
- * @subpackage Config
- * @author  Indicia Team
- * @license http://www.gnu.org/licenses/gpl.html GPL
- * @link  http://code.google.com/p/indicia/
+ * @package	Core
+ * @subpackage GridModels
+ * @author	Indicia Team
+ * @license	http://www.gnu.org/licenses/gpl.html GPL
+ * @link 	http://code.google.com/p/indicia/
  */
-
-defined('SYSPATH') or die('No direct script access.');
 
 /**
- * @var string The application files version number.
+ * Declares a model simply to expose the gv_sample_images view to ORM.
+ *
+ * @package	Core
+ * @subpackage GridModels
  */
-$config['version'] = '0.3.0';
-$config['release_date']  = '2010-04-10';
-$config['repository'] = 'http://indicia.googlecode.com/svn/core/tags/version_0_3_0';
+class Gv_sample_image_Model extends ORM {
 
-?>
+}

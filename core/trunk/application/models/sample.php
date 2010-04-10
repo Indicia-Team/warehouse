@@ -31,7 +31,7 @@
 class Sample_Model extends ORM_Tree
 {
   protected $ORM_Tree_children = "samples";
-  protected $has_many=array('occurrences', 'sample_attribute_values');
+  protected $has_many=array('occurrences', 'sample_attribute_values', 'sample_images');
   protected $belongs_to=array
   (
     'survey',
