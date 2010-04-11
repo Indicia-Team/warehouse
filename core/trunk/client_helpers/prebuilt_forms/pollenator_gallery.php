@@ -177,6 +177,7 @@ class iform_pollenator_gallery {
 	// collection_id: display the given sample.
 	$occID= '';
 	$smpID = '';
+	$userID = '';
 	$mode = 'FILTER';
 	if (array_key_exists('insect_id', $_GET)){
         $occID = $_GET['insect_id'];
@@ -184,6 +185,8 @@ class iform_pollenator_gallery {
 	} else if (array_key_exists('collection_id', $_GET)){
         $smpID = $_GET['collection_id'];
         $mode = 'COLLECTION';
+	} else if (array_key_exists('user_id', $_GET)){
+        $userID = $_GET['user_id'];
 	}
 	
 //	data_entry_helper::enable_validation('cc-1-collection-details'); // don't care about ID itself, just want resources
@@ -274,23 +277,21 @@ class iform_pollenator_gallery {
 	  <div class="ui-accordion ui-widget ui-helper-reset">
 		<div id="general-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 			<div id="general-filter-title">
-		  		<span>'.lang::get('LANG_General').'</span>
+		  		<span>'.lang::get('LANG_General_Filter_Title').'</span>
       		</div>
 		</div>
 	    <div id="general-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
 	  		<div id="reset-general-button" class="right ui-state-default ui-corner-all reset-general-button">'.lang::get('LANG_Reset_Filter').'</div>
-	    '.data_entry_helper::text_input(array(
-        	'label'=>lang::get('LANG_Username'),
-        	'fieldname'=>'username')).'
-        		<label for="start_date" >'.lang::get('LANG_Created_Between').':</label>
-  				<input type="text" size="10" id="start_date" name="start_date" value="'.lang::get('click here').'" />
-        		&nbsp;'.lang::get('LANG_And').'&nbsp;
-  				<input type="text" size="10" id="end_date" name="end_date" value="'.lang::get('click here').'" />
-  			</div>
-    		<div id="flower-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+	        '.data_entry_helper::text_input(array('label'=>lang::get('LANG_Username'),'fieldname'=>'username')).'
+        	<label for="start_date" >'.lang::get('LANG_Created_Between').':</label>
+  			<input type="text" size="10" id="start_date" name="start_date" value="'.lang::get('click here').'" />
+        	&nbsp;'.lang::get('LANG_And').'&nbsp;
+  			<input type="text" size="10" id="end_date" name="end_date" value="'.lang::get('click here').'" />
+  		</div>
+    	<div id="flower-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	  		<div id="reset-flower-button" class="right ui-state-default ui-corner-all reset-flower-button">'.lang::get('LANG_Reset_Filter').'</div>
 			<div id="flower-filter-title">
-		  		<span>TBD Flowers</span>
+		  		<span>'.lang::get('LANG_Flower_Filter_Title').'</span>
       		</div>
 		</div>
 		<div id="flower-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
@@ -299,7 +300,7 @@ class iform_pollenator_gallery {
 		<div id="insect-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	  		<div id="reset-insect-button" class="right ui-state-default ui-corner-all reset-insect-button">'.lang::get('LANG_Reset_Filter').'</div>
 			<div id="insect-filter-title">
-		  		<span>TBD Insects</span>
+		  		<span>'.lang::get('LANG_Insect_Filter_Title').'</span>
       		</div>
 		</div>
 		<div id="insect-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
@@ -477,11 +478,27 @@ jQuery('#reset-general-button').click(function(){
 	jQuery('[name=start_date]').val('".lang::get('click here')."');
 	jQuery('[name=end_date]').val('".lang::get('click here')."');
 });
-
 jQuery('#general-filter-header').click(function(){
 	jQuery('#general-filter-header').toggleClass('ui-state-active');
     jQuery('#general-filter-body').toggleClass('filter-hide');
 });
+
+jQuery('#reset-flower-button').click(function(){
+	jQuery('[name=flower\\:taxa_taxon_list_id]').val('');
+});
+jQuery('#flower-filter-header').click(function(){
+	jQuery('#flower-filter-header').toggleClass('ui-state-active');
+    jQuery('#flower-filter-body').toggleClass('filter-hide');
+});
+
+jQuery('#reset-insect-button').click(function(){
+	jQuery('[name=insect\\:taxa_taxon_list_id]').val('');
+});
+jQuery('#insect-filter-header').click(function(){
+	jQuery('#insect-filter-header').toggleClass('ui-state-active');
+    jQuery('#insect-filter-body').toggleClass('filter-hide');
+});
+
 loadCollection = function(id){
     jQuery('#focus-insect,#filter-spec,#filter-footer,#results-insects-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
 	jQuery('#focus-collection').removeClass('filter-hide');
@@ -933,6 +950,13 @@ jQuery('#next-button').click(function(){
     		data_entry_helper::$javascript .= "
     		jQuery('#focus-insect,#focus-collection,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
     		";
+    		if($userID != ''){
+    			$thisuser = user_load($userID);
+    			data_entry_helper::$onload_javascript .= "
+    			jQuery('[name=username]').val('".($thisuser->name)."');
+    			jQuery('#search-collections-button').click();
+    			";
+    		}
        		break;
     }
     return $r;

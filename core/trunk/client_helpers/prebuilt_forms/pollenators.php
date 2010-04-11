@@ -1532,8 +1532,23 @@ $('#cc-5-collection').ajaxForm({
         	// TODO put catch in to abandon if sample_id is not set. Low priority
   			// Warning this assumes that the data is fixed position:
        		data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
-       		data[3].value = jQuery('#cc-1-collection-details input[name=sample\\:date]').val();
-       		data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
+       		var date_start = '';
+       		var date_end = '';
+       		jQuery('.poll-session').find([name=sample\\:date]).each(function(index, el){
+       			if(date_start == '' || date_start > this.val()) {
+       				date_start = this.val();
+       			}
+       			if(date_end == '' || date_end < this.val()) {
+       				date_end = this.val();
+       			}
+  			});
+  			if(date_start == date_end){
+	       		data[3].value = date_start;
+	       	} else {
+	       		data[3].value = date_start+' to '+date_end;
+  			}
+	       	jQuery('[name=sample\\:date]:hidden').val(data[3].value);
+  			data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
        		data[5].name = jQuery('#cc-1-collection-details input[name^=smpAttr\\:".$args['complete_attr_id']."\\:]').attr('name');
         	return true;
   		},
