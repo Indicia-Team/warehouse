@@ -1075,8 +1075,6 @@ class data_entry_helper extends helper_config {
         }
         // Fallback as we don't need a key for this.
         $presetLayers[] = 'virtual_earth';
-      } else {
-        $options['presetLayers'] = $presetLayers;
       }
       $options = array_merge(array(
           'indiciaSvc'=>self::$base_url,
