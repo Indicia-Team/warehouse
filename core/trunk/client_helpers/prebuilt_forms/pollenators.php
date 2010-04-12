@@ -1534,7 +1534,7 @@ $('#cc-5-collection').ajaxForm({
        		data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
        		var date_start = '';
        		var date_end = '';
-       		jQuery('.poll-session').find([name=sample\\:date]).each(function(index, el){
+       		jQuery('.poll-session').find('[name=sample\\:date]').each(function(index, el){
        			if(date_start == '' || date_start > this.val()) {
        				date_start = this.val();
        			}
