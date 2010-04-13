@@ -243,7 +243,7 @@ class iform_ad_hoc_cetaceans {
         '<div class="taxon-desc"><ul><li>\'.str_replace("\n", "</li><li>","{description_in_list}").\'</li></ul>'.
         '<a href="http://www.marine-life.org.uk/northeastcetaceans/?q=\'.
         strtolower(str_replace(array(" ", "\\\'"), array("-", ""), "{taxon}")).
-        \'" target="_blank" class="ui-state-default ui-corner-all indicia-button">More info...</a></div>\';';
+        \'" target="_blank" class="ui-state-default ui-corner-all indicia-button">'.lang::get('More Info').'...</a></div>\';';
     // Template the taxon label cell
     $indicia_templates['taxon_label_cell'] = "\n<td class='scTaxonCell'>{content}</td>";
     // Also template the attribute controls to show the label in place.
