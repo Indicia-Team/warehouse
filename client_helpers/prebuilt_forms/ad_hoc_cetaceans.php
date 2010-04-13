@@ -280,9 +280,9 @@ class iform_ad_hoc_cetaceans {
     $r .= '<div class="boat_mode">';
     // Add help examples to the lat and long boxes
     $indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
-        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /> <label>e.g. 55:12.345N</label><br />' .
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /> <p class="helpText">e.g. 55:12.345N</p>' .
         '<label for="{idLong}">{labelLong}:</label>'.
-        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" /> <label>e.g. 0:45.678W</label>' .
+        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" /> <p class="helpText">e.g. 0:45.678W</p>' .
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
         '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />';
     $r .= data_entry_helper::sref_and_system(array(
