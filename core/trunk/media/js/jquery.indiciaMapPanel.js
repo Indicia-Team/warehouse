@@ -417,8 +417,12 @@
 	  
 	  // This hack fixes an IE8  bug where it won't display Google layers when switching using the Layer Switcher.
 	  div.map.events.register('changebaselayer', null, function(e) {
-        div.style.height = (parseInt(div.style.height) - 1) + 'px';
-        setTimeout("div.style.height = (parseInt(div.style.height) + 1) + 'px'", 500);
+	    // trigger layer redraw by changing the map size
+	    div.style.height = (parseInt(div.style.height)-1) + 'px';
+		// keep a local reference to the map div, so we can access it from the timeout
+		tmp=div;
+		// after half a second, reset the map size
+        setTimeout("tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px'", 500);
       }); 
 
       // Centre the map
