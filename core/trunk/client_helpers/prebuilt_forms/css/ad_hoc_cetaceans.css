@@ -83,3 +83,7 @@
 #entry_form label {
   margin-top: 7px;
 }
+
+p.inline-error {
+  margin-bottom:0;
+}
