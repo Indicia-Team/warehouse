@@ -414,6 +414,12 @@
       });
 
       div.map.addLayers(this.settings.layers);
+	  
+	  // This hack fixes an IE8  bug where it won't display Google layers when switching using the Layer Switcher.
+	  div.map.events.register('changebaselayer', null, function(e) {
+        div.style.height = (parseInt(div.style.height) - 1) + 'px';
+        setTimeout("div.style.height = (parseInt(div.style.height) + 1) + 'px'", 500);
+      }); 
 
       // Centre the map
       var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
