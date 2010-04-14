@@ -239,7 +239,7 @@ class iform_pollenators {
       array(
           'name'=>'help_collection_arg',
           'caption'=>'Collection Help argument',
-          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Create a collection" is clicked.',
+          'description'=>'The argument(s) passed to the Help Module invocation function when the help button in "Create a collection" is clicked.',
           'type'=>'string',
           'group'=>'Help',
       	  'required'=>false
@@ -247,7 +247,7 @@ class iform_pollenators {
       array(
           'name'=>'help_flower_arg',
           'caption'=>'Flower Identification Help argument',
-          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Flower Identification" is clicked.',
+          'description'=>'The argument(s) passed to the Help Module invocation function when the help button in "Flower Identification" is clicked.',
           'type'=>'string',
           'group'=>'Help',
       	  'required'=>false
@@ -255,7 +255,7 @@ class iform_pollenators {
       array(
           'name'=>'help_location_arg',
           'caption'=>'Location Help argument',
-          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Location" is clicked.',
+          'description'=>'The argument(s) passed to the Help Module invocation function when the help button in "Location" is clicked.',
           'type'=>'string',
           'group'=>'Help',
       	  'required'=>false
@@ -263,7 +263,7 @@ class iform_pollenators {
       array(
           'name'=>'help_session_arg',
           'caption'=>'Session Help argument',
-          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Session" is clicked.',
+          'description'=>'The argument(s) passed to the Help Module invocation function when the help button in "Session" is clicked.',
           'type'=>'string',
           'group'=>'Help',
       	  'required'=>false
@@ -271,9 +271,50 @@ class iform_pollenators {
       array(
           'name'=>'help_insect_arg',
           'caption'=>'Insect Identification Help argument',
-          'description'=>'The argument passed to the Help Module invocation function when the help buttons in "Insect Identification" is clicked.',
+          'description'=>'The argument(s) passed to the Help Module invocation function when the help button in "Insect Identification" is clicked.',
           'type'=>'string',
           'group'=>'Help',
+      	  'required'=>false
+      ),
+
+      array(
+          'name'=>'ID_tool_module',
+          'caption'=>'Species ID Tool Module',
+          'description'=>'The DRUPAL module which contains the Species Identification Tool functionality.',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'ID_tool_inclusion_function',
+          'caption'=>'Species ID Tool Module inclusion function',
+          'description'=>'The DRUPAL PHP function which is used to include the relevant Javascript into the page.',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'ID_tool_function',
+          'caption'=>'Species ID Tool Module invocation function',
+          'description'=>'The Javascript function which is called when the Launch ID Tool buttons are clicked.',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'ID_tool_flower_arg',
+          'caption'=>'Flower Species ID Tool argument',
+          'description'=>'The argument(s) passed to the Species ID Tool JS invocation function when the Launch ID Tool button in "Flower Identification" is clicked.',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'ID_tool_insect_arg',
+          'caption'=>'Insect Identification Help argument',
+          'description'=>'The argument(s) passed to the Species ID Tool JS invocation function when the Launch ID Tool button in "Insect Identification" is clicked.',
+          'type'=>'string',
+          'group'=>'ID Tool',
       	  'required'=>false
       )
       
@@ -300,6 +341,17 @@ jQuery('#".$id."').click(function(){
 ";
   	return '<div id="'.$id.'" class="right ui-state-default ui-corner-all poll-help-button">'.lang::get('LANG_Help_Button').'</div>';
   }
+  
+  private function ID_tool_button($use_ID_tool, $id, $func, $arg, $label, $text) {
+  	if($use_help == false) return '';
+  	data_entry_helper::$javascript .= "
+jQuery('#".$id."').click(function(){
+	".$func."(".$arg.");
+});
+";
+  	return '<label for="'.$id.'">'.$label.' :</label><span id="'.$id.'" class="ui-state-default ui-corner-all poll-id-button">'.$text.'</span>';
+  }
+  
 /**
    * Return the generated form output.
    * @return Form HTML.
@@ -342,7 +394,13 @@ jQuery('#".$id."').click(function(){
     } else {
     	$use_help = false;
     }
-
+    if($args['ID_tool_module'] != '' && $args['ID_tool_inclusion_function'] != '' && module_exists($args['ID_tool_module']) && function_exists($args['ID_tool_inclusion_function'])) {
+    	$use_ID_tool = true;
+    	call_user_func($args['ID_tool_inclusion_function']);
+    } else {
+    	$use_ID_tool = false;
+    }
+    
 	// The only things that will be editable after the collection is saved will be the identifiaction of the flower/insects.
 	// no id - just getting the attributes, rest will be filled in using AJAX
 	$sample_attributes = data_entry_helper::getAttributes(array(
@@ -628,7 +686,8 @@ $('#cc-1-delete-collection').ajaxForm({
         	return true;
   		},
         success:   function(data){
-			jQuery('.poll-section').resetPanel();
+			jQuery('#cc-3-body').empty();
+        	jQuery('.poll-section').resetPanel();
 			sessionCounter = 0;
 			addSession();
 			checkProtocolStatus();
@@ -722,9 +781,8 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
  	  <div id="cc-2-flower-identify" class="poll-dummy-form">
         '.iform_pollenators::help_button($use_help, "flower-help-button", $args['help_function'], $args['help_flower_arg']).'
  	    <p><strong>'.lang::get('LANG_Identify_Flower').'</strong></p>
-        <p>'.lang::get('LANG_Flower_ID_Key_label').'</p>
-        <p>TBD '.lang::get('LANG_Launch_ID_Key').'</p>
-        '.data_entry_helper::select($species_ctrl_args).'
+        '.iform_pollenators::ID_tool_button($use_ID_tool, "flower-id-button", $args['ID_tool_function'], $args['ID_tool_flower_arg'], lang::get('LANG_Flower_ID_Key_label'), lang::get('LANG_Launch_ID_Key')).'
+ 	    '.data_entry_helper::select($species_ctrl_args).'
  	  </div>
  	</div>
     <div class="poll-break"></div>
@@ -746,6 +804,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       <div>'.lang::get('LANG_Location_Notes').'</div>
  	  <div class="poll-map-container">
     ';
+
     $r .= data_entry_helper::map_panel($options);
     $r .= '
       </div>
@@ -1166,8 +1225,6 @@ addSession = function(){
     return(newSession);
 };
 
-addSession();
-
 validateSessionsPanel = function(){
 	if(jQuery('#cc-3').filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
 	if(jQuery('#cc-3').find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
@@ -1256,8 +1313,7 @@ jQuery('.mod-button').click(function() {
  	  <div id="cc-4-insect-identify" class="poll-dummy-form">
  	    '.iform_pollenators::help_button($use_help, "insect-help-button", $args['help_function'], $args['help_insect_arg']).'
         <p><strong>'.lang::get('LANG_Identify_Insect').'</strong></p>
-        <p>'.lang::get('LANG_Insect_ID_Key_label').'</p>
-        <p>TBD '.lang::get('LANG_Launch_ID_Key').'</p>
+        '.iform_pollenators::ID_tool_button($use_ID_tool, "insect-id-button", $args['ID_tool_function'], $args['ID_tool_insect_arg'],lang::get('LANG_Insect_ID_Key_label'),lang::get('LANG_Launch_ID_Key')).'
         '.data_entry_helper::select($species_ctrl_args).'
       </div>
     </div>
@@ -1687,6 +1743,7 @@ jQuery('.poll-section').resetPanel();
 jQuery('.poll-section').hidePanel();
 jQuery('#cc-1').showPanel();
 jQuery('.reinit-button').hide();
+addSession();
 
 jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collections.xml&reportSource=local&mode=json\" +
 			\"&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."\" + 
