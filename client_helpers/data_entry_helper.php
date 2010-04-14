@@ -1259,6 +1259,146 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
     return self::check_or_radio_group($options, 'radio');
   }
+  
+  /**
+  * <p>Outputs a grid that loads the content of a report or Indicia table.</p> 
+  * <p>The grid supports a simple pagination footer as well as column title sorting through PHP. If
+  * used as a PHP grid, note that the current web page will reload when you page or sort the grid, with the 
+  * same $_GET parameters but no $_POST information. If you need 2 grids on one page, then you must define a different
+  * id in the options for each grid.</p>
+  * <p>The grid operation will be handled by AJAX calls when possible to avoid reloading the web page.</p>
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>mode</b><br/>
+  * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
+  * <li><b>readAuth</b><br/>
+  * Read authorisation tokens.</li>
+  * <li><b>dataSource</b><br/>
+  * Name of the report file or table/view.</li>
+  * <li><b>columns</b><br/>
+  * Columns will be output in a default form unless an entry is passed in this array parameter for the column. The array key
+  * is the field name, and the value is a sub-array containing the caption and visible state (both optional). For example:<br/>
+  * array('id' => array('visible' => false), 'title' => array('caption', 'My Survey'))<br/>
+  * will hide the id column and rename the title column to My Survey.</li>
+  * @todo AJAXification
+  */
+  public static function report_grid($options) {
+    // Generate a unique number for this grid, in case there are 2 on a page.
+    $uniqueId = rand(0,10000);
+    // If the caller has specified a grid ID, then we can allow multiple grids on a page with their own pagination
+    $useIdInUrls = isset($options['id']);
+    $options = array_merge(array(
+      'mode' => 'report',
+      'id' => 'grid-'.$uniqueId,
+      'itemsPerPage' => 20,
+      'class' => 'ui-widget ui-widget-content',
+      'thClass' => 'header',
+      'altRowClass' => 'odd',
+    ), $options);
+    $r = '<div id="'.$options['id'].'">';
+    // Now build the grid in PHP. We request limit 1 higher than actually needed, so we know if the 
+    // next page link is required.
+    if ($options['mode']=='report') {
+      $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
+    } elseif ($options['mode']=='direct') {
+      $serviceCall = 'data/'.$options['dataSource'].'?';
+    } else {
+      throw new Exception('Invalid mode parameter for call to report_grid');
+    }
+    $request = parent::$base_url.'index.php/services/'.
+        $serviceCall.
+        'mode=json&nonce='.$options['readAuth']['nonce'].
+        '&auth_token='.$options['readAuth']['auth_token'].
+        '&limit='.($options['itemsPerPage']+1);
+    // if the caller has not specified the grid ID, then we can't support pagination across multiple grids on one page.
+    // Get the $_GET variable name for the page, orderby and sortdir.
+    $pageKey = 'page' . ($useIdInUrls ? $options['id'] : '');
+    if (isset($_GET[$pageKey]) && $_GET[$pageKey]>0) 
+      $page = $_GET[$pageKey];
+    else
+      $page = 0;
+    if ($page)
+      $request .= '&offset='.($page * $options['itemsPerPage']);
+    $orderbyKey = 'orderby' . ($useIdInUrls ? $options['id'] : '');    
+    if (isset($_GET[$orderbyKey])) 
+      $orderby = $_GET[$orderbyKey];
+    else
+      $orderby = null;
+    if ($orderby)
+      $request .= "&orderby=$orderby";
+    $sortdirKey = 'sortdir' . ($useIdInUrls ? $options['id'] : '');
+    if (isset($_GET[$sortdirKey])) 
+      $sortdir = $_GET[$sortdirKey];
+    else
+      $sortdir = null;
+    if ($sortdir)
+      $request .= "&sortdir=$sortdir";
+    
+    $response = self::http_post($request, null);
+    $data = json_decode($response['output'], true);
+    
+    // Build a basic URL path back to this page, but with the page, sortdir and orderby removed
+    $pageUrl = 'http'.((empty($_SERVER['HTTPS']) && $_SERVER['SERVER_PORT']!=443) ? '' : 's').'://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'].'?';
+    // include any $_GET parameters to reload the same page, except the page & sort parameters which will be added to each link
+    foreach ($_GET as $key => $value) {
+      if ($key != $pageKey && $key != $orderbyKey && $key != $sortdirKey)
+        $pageUrl .= "$key=$value&";
+    }
+    
+    $thClass = $options['thClass'];
+    $r .= "\n<table class=\"".$options['class']."\" id=\"idg".$uniqueId."\"><thead class=\"ui-widget-header\"><tr>\n";
+    // build a URL with just the sort order bit missing, so it can be added for each table heading link
+    $sortUrl = $pageUrl . ($page ? "$pageKey=$page&" : '');
+    if (count($data)>0)
+      foreach ($data[0] as $field=>$value) {
+        if (isset($options['columns'][$field]['visible']) && $options['columns'][$field]['visible']===false)
+          continue; // skip this column as marked invisible
+        // allow the caption to be overriden in the column specification
+        $caption = isset($options['columns'][$field]['caption']) ? $options['columns'][$field]['caption'] : $field;
+        $sortLink = "$sortUrl$orderbyKey=$field";
+        // reverse sort order if already sorted by this field in ascending dir
+        if ($orderby==$field && $sortdir!='DESC')
+          $sortLink = "$sortLink&$sortdirKey=DESC";
+        $r .= "<th class=\"$thClass\"><a href=\"$sortLink\" title=\"Sort by $caption\">$caption</a></th>\n";
+      }
+    $r .= "</tr></thead><tbody>\n";
+    $rowClass = '';
+    $outputCount = 0;
+    foreach ($data as $row) {
+      // Don't output the additional row we requested just to check if the next page link is required.
+      if ($outputCount>=$options['itemsPerPage'])
+        break;
+      $r .= "<tr $rowClass>";
+      foreach ($row as $field=>$value) {
+        if (isset($options['columns'][$field]['visible']) && $options['columns'][$field]['visible']===false)
+          continue; // skip this column as marked invisible
+        $r .= "<td>$value</td>\n";
+      }
+      $r .= '</tr>';
+      $rowClass = empty($rowClass) ? ' class="'.$options['altRowClass'].'"' : '';
+      $outputCount++;
+    }
+    $r .= "</tbody></table>\n";
+    // Output pagination links
+    $pageUrl .= $orderby ? "$orderbyKey=$orderby&" : '';
+    $pageUrl .= $sortdir ? "$sortdirKey=$sortdir&" : '';
+    $r .= "<div class=\"pager\">\n";
+    // If not on first page, we can go back.
+    if ($page>0) {
+      $prev = max(0, $page-1);
+      $r .= "<a class=\"prev\" href=\"$pageUrl$pageKey=$prev\">&#171 previous</a> \n";
+    }
+    // pagination separator if both links are present
+    if ($page>0 && count($data)>$options['itemsPerPage'])
+      $r .= ' &#166; ';
+    // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
+    if (count($data)>$options['itemsPerPage']) {
+      $next = $page + 1;
+      $r .= "<a class=\"next\" href=\"$pageUrl$pageKey=$next\">&#187 next</a> \n";
+    }
+    $r .= "</div></div>\n";
+    return $r;
+  }
 
  /**
   * Helper function to generate a select control from a Indicia core service query. The select control can
@@ -2637,6 +2777,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
+      // Scroll to the top of the page. This may be required if subsequent tab pages are longer than the first one, meaning the
+      // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
+      // drags the scroll bar while the page is loading.
+      self::$javascript .= "\nscroll(0,0);";
       self::$javascript .= "\n$('.tab-submit').click(function() {
       var form = $(this).parents('form:first');
       form.submit();
@@ -2649,10 +2793,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
       // If all is well, move to the next tab.
       self::$javascript .= "  $('#$divId').tabs('select', current+1);
+  scroll(0,0);
 });
 $('.tab-prev').click(function() {
   var obj=$('#$divId').tabs();
   obj.tabs('select', obj.tabs('option', 'selected')-1);
+  scroll(0,0);
 });\n";
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
