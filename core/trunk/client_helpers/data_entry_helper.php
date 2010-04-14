@@ -1269,6 +1269,9 @@ class data_entry_helper extends helper_config {
   * <p>The grid operation will be handled by AJAX calls when possible to avoid reloading the web page.</p>
   * 
   * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>id</b><br/>
+  * Optional unique identifier for the grid. This is required if there is more than one grid on a single
+  * web page to allow separation of the page and sort $_GET parameters in the URLs generated.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
   * <li><b>readAuth</b><br/>
@@ -1280,7 +1283,11 @@ class data_entry_helper extends helper_config {
   * is the field name, and the value is a sub-array containing the caption and visible state (both optional). For example:<br/>
   * array('id' => array('visible' => false), 'title' => array('caption', 'My Survey'))<br/>
   * will hide the id column and rename the title column to My Survey.</li>
+  * </ul>
   * @todo AJAXification
+  * @todo Templates
+  * @todo style for sorted column titles
+  * @todo Action column or other configurable links in grid
   */
   public static function report_grid($options) {
     // Generate a unique number for this grid, in case there are 2 on a page.
@@ -1296,46 +1303,31 @@ class data_entry_helper extends helper_config {
       'altRowClass' => 'odd',
     ), $options);
     $r = '<div id="'.$options['id'].'">';
-    // Now build the grid in PHP. We request limit 1 higher than actually needed, so we know if the 
-    // next page link is required.
-    if ($options['mode']=='report') {
-      $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
-    } elseif ($options['mode']=='direct') {
-      $serviceCall = 'data/'.$options['dataSource'].'?';
-    } else {
-      throw new Exception('Invalid mode parameter for call to report_grid');
-    }
-    $request = parent::$base_url.'index.php/services/'.
-        $serviceCall.
-        'mode=json&nonce='.$options['readAuth']['nonce'].
-        '&auth_token='.$options['readAuth']['auth_token'].
-        '&limit='.($options['itemsPerPage']+1);
-    // if the caller has not specified the grid ID, then we can't support pagination across multiple grids on one page.
-    // Get the $_GET variable name for the page, orderby and sortdir.
+    // Build the part of the data request URL that will specify the sort order and pagination
+    $extra = '&limit='.($options['itemsPerPage']+1);
     $pageKey = 'page' . ($useIdInUrls ? $options['id'] : '');
+    // Get the $_GET variable name for the page, orderby and sortdir.
     if (isset($_GET[$pageKey]) && $_GET[$pageKey]>0) 
       $page = $_GET[$pageKey];
     else
       $page = 0;
     if ($page)
-      $request .= '&offset='.($page * $options['itemsPerPage']);
+      $extra .= '&offset='.($page * $options['itemsPerPage']);
     $orderbyKey = 'orderby' . ($useIdInUrls ? $options['id'] : '');    
     if (isset($_GET[$orderbyKey])) 
       $orderby = $_GET[$orderbyKey];
     else
       $orderby = null;
     if ($orderby)
-      $request .= "&orderby=$orderby";
+      $extra .= "&orderby=$orderby";
     $sortdirKey = 'sortdir' . ($useIdInUrls ? $options['id'] : '');
     if (isset($_GET[$sortdirKey])) 
       $sortdir = $_GET[$sortdirKey];
     else
       $sortdir = null;
     if ($sortdir)
-      $request .= "&sortdir=$sortdir";
-    
-    $response = self::http_post($request, null);
-    $data = json_decode($response['output'], true);
+      $extra .= "&sortdir=$sortdir";
+    $data = self::get_report_data($options, $extra);
     
     // Build a basic URL path back to this page, but with the page, sortdir and orderby removed
     $pageUrl = 'http'.((empty($_SERVER['HTTPS']) && $_SERVER['SERVER_PORT']!=443) ? '' : 's').'://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'].'?';
@@ -1397,6 +1389,109 @@ class data_entry_helper extends helper_config {
       $r .= "<a class=\"next\" href=\"$pageUrl$pageKey=$next\">&#187 next</a> \n";
     }
     $r .= "</div></div>\n";
+    return $r;
+  }
+  
+  /**
+  * <p>Outputs a div that contains a chart.</p>
+  * <p>The chart is rendered by the jqplot plugin.</p> 
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>mode</b><br/>
+  * Pass report to retrieve the underlying chart data from a report, or direct for an Indicia table or view. Default is report.</li>
+  * <li><b>readAuth</b><br/>
+  * Read authorisation tokens.</li>
+  * <li><b>dataSource</b><br/>
+  * Name of the report file or table/view to retrieve underlying data.</li>
+  * <li><b>class</b><br/>
+  * CSS class to apply to the outer div.</li>
+  * <li><b>headerClass</b><br/>
+  * CSS class to apply to the box containing the header.</li>
+  * <li><b>height</b><br/>
+  * Chart height in pixels.</li>
+  * <li><b>width</b><br/>
+  * Chart width in pixels.</li>
+  * <li><b>chartType</b><br/>
+  * Currently supports line, bar or pie.</li>
+  * <li><b>rendererOptions</b><br/>
+  * Associative array of options to pass to the jqplot renderer.</li>
+  * @link http://www.jqplot.com/docs/files/plugins/jqplot-barRenderer-js.html
+  * @link http://www.jqplot.com/docs/files/plugins/jqplot-lineRenderer-js.html
+  * @link http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html
+  * </li>  
+  * <li><b>legendOptions</b><br/>
+  * Associative array of options to pass to the jqplot legend. For more information see links below.
+  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
+  * </li>
+  * <li><b>yValues</b><br/>
+  * Report or table field name which contains the data values for the y-axis (or the pie segment sizes).</li>
+  * <li><b>xValues</b><br/>
+  * Report or table field name which contains the data values for the x-axis. Only used where the x-axis has a numerical value
+  * rather than showing arbitrary categories.</li>
+  * <li><b>xLabels</b><br/>
+  * When the x-axis shows arbitrary category names (e.g. a bar chart), then this indicates the report or view/table
+  * field which contains the labels. Also used for pie chart segment names.</li>
+  * </ul>
+  */
+  public static function report_chart($options) {
+    $options = array_merge(array(
+      'mode' => 'report',
+      'id' => 'chartdiv',
+      'class' => 'ui-widget ui-widget-content ui-corner-all',
+      'headerClass' => 'ui-widget-header ui-corner-all',
+      'height' => 400,
+      'width' => 400,
+      'chartType' => 'line', // bar, pie
+      'rendererOptions' => array(),
+      'legendOptions' => array()
+    ), $options);
+    // @todo Check they have supplied a valid set of data & label field names 
+    self::add_resource('jqplot');
+    $opts = array();
+    switch ($options['chartType']) {
+      case 'bar' :
+        self::add_resource('jqplot_bar');
+        $renderer='$.jqplot.BarRenderer';
+        break;
+      case 'pie' :
+        self::add_resource('jqplot_pie');
+        $renderer='$.jqplot.PieRenderer';
+        break;
+      // default is line
+    }
+    if (isset($options['xLabels'])) {
+      self::add_resource('jqplot_category_axis_renderer');
+    }
+    $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['legendOptions'])."}"; 
+    $opts[] = 'legend:'.json_encode($options['legendOptions']);
+    $data=self::get_report_data($options);
+    $values=array();
+    $xLabels=array();
+    foreach ($data as $row) {
+      if (isset($options['xValues']))
+        // 2 dimensional data
+        $values[] = '['.$row[$options['xValues']].','.$row[$options['yValues']].']';
+      else {
+        // 1 dimensional data, so we should have labels. For a pie chart these are use as x data values. For other charts they are axis labels.
+        if ($options['chartType']=='pie') {
+          $values[] = '["'.$row[$options['xLabels']].'",'.$row[$options['yValues']].']';
+        } else {
+          $values[] = $row[$options['yValues']];
+          if (isset($options['xLabels']))
+            $xLabels[] = $row[$options['xLabels']];
+        }
+      }
+    }
+    if (isset($options['xLabels']) && $options['chartType']!='pie') {
+      // make a renderer to output x axis labels
+      $opts[] = 'axes:{xaxis:{renderer:$.jqplot.CategoryAxisRenderer, ticks:["'.implode('","',$xLabels).'"]}}';
+    }
+    self::$javascript .= "$.jqplot('".$options['id']."',  [[".implode(',', $values)."]], \n{".implode(",\n", $opts)."});\n";
+    $r = '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
+    if (isset($options['title'])) 
+      $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
+    $r .= '<div id="'.$options['id'].'" style="height:'.$options['height'].';width:'.$options['width'].'; "></div>'."\n";
+    $r .= "</div>\n";
     return $r;
   }
 
@@ -3239,7 +3334,11 @@ if (errors.length>0) {
           }
           foreach ($resourceList[$resource]['javascript'] as $j)
           {
-            $libraries .= "<script type='text/javascript' src='$j'></script>\n";
+            // look out for a condition that this script is IE only.
+            if (substr($j, 0, 4)=='[IE]')
+              $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
+            else
+              $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
@@ -3482,7 +3581,11 @@ $('.ui-state-default').live('mouseout', function() {
       'plupload_gears' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/gears_init.js', self::$js_path.'plupload/js/plupload.gears.min.js')),
       'plupload_flash' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.flash.min.js')),
       'plupload_html5' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.html5.min.js')),
-      'plupload_html4' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.html4.min.js'))
+      'plupload_html4' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.html4.min.js')),
+      'jqplot' => array('deps' => array(), 'stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
+      'jqplot_bar' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
+      'jqplot_pie' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
+      'jqplot_category_axis_renderer' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js'))
     );
   }
 
@@ -4077,6 +4180,31 @@ $('.ui-state-default').live('mouseout', function() {
       default:  $size = intval($size);                break;
     }
     return $size; 
+  }
+  
+/**
+   * Private method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
+   * @param array $options Options array for the control. Can contain a datasource (report or table/view name),
+   * mode (direct or report) and readAuth entries.
+   * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
+   */
+  private static function get_report_data($options, $extra='') {
+    if ($options['mode']=='report') {
+      $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
+    } elseif ($options['mode']=='direct') {
+      $serviceCall = 'data/'.$options['dataSource'].'?';
+    } else {
+      throw new Exception('Invalid mode parameter for call to report_grid');
+    }
+    // We request limit 1 higher than actually needed, so we know if the next page link is required.
+    $request = parent::$base_url.'index.php/services/'.
+        $serviceCall.
+        'mode=json&nonce='.$options['readAuth']['nonce'].
+        '&auth_token='.$options['readAuth']['auth_token'].
+        $extra;
+    
+    $response = self::http_post($request, null);
+    return json_decode($response['output'], true);
   }
 
 }
