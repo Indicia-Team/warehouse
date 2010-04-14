@@ -82,14 +82,19 @@ class submission_builder extends helper_config {
     $modelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $structure) ? $structure['fieldPrefix'] : $structure['model']);
     // Attach the specially handled fields to the model
     if (array_key_exists('metaFields', $structure)) {
-      $modelWrapped['metaFields']=$metaFields;
+      // need to be careful merging metafields in the structure and those auto generated in wrap_with_attrs (ie sample/location/occurrence attributes)
+      if(!array_key_exists('metaFields', $modelWrapped))
+	      $modelWrapped['metaFields']=array();
+	  foreach ($metaFields as $metaField) {$modelWrapped['metaFields'][]=$metaField;}
     }
     if (array_key_exists('joinsTo', $structure)) {
       $modelWrapped['joinsTo']=$joinsTo;
     }
     // Handle the child model if present
     if (array_key_exists('subModels', $structure)) {
-      $modelWrapped['subModels']=array();
+      // need to be careful merging submodels in the structure and those auto generated in wrap_with_attrs (ie images)
+      if(!array_key_exists('subModels', $modelWrapped))
+	      $modelWrapped['subModels']=array();
       foreach ($structure['subModels'] as $name => $struct) {
         $submodelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $name);
         // Join the parent and child models together

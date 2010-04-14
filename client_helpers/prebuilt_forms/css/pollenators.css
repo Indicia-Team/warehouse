@@ -21,6 +21,10 @@ label {
   width: auto; /* Width of labels */
 }
 
+#cc-4-insect-identify label .follow-on {
+  display: inline-block;
+}
+
 .poll-section {
   margin-top: 4px;
 }
