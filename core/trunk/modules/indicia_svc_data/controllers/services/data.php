@@ -58,22 +58,23 @@ class Data_Controller extends Data_Service_Base_Controller {
   //
   // default to no updates allowed - must explicity allow updates.
   protected $allow_updates = array(
-                  'location',
-                  'occurrence',
-                  'occurrence_comment',
-                  'determination',
-  				  'person',
-                  'sample',
-                    'survey',
-                  'user'
-                  );
+      'location',
+      'occurrence',
+      'occurrence_comment',
+      'determination',
+      'person',
+      'sample',
+      'survey',
+      'user'
+  );
+  
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
   // and website_id, so that we can work out whether access to a particular record is allowed.
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
-                    'taxa_taxon_list'
-                    );
+      'taxa_taxon_list'
+  );
 
   /**
   * Provides the /services/data/language service.
