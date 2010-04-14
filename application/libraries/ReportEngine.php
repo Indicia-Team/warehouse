@@ -129,12 +129,15 @@ class ReportEngine {
 
     // What parameters do we expect?
     $this->expectedParams = $this->reportReader->getParams();
-	// ensure that only those expected params are passed through to the report.
-	foreach($this->providedParams as $key => $value){
-		if(!isset($this->expectedParams[$key])){
-			unset($this->providedParams[$key]);
-		}
-	}
+    // Pull out special case params for limit and offset
+    $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : null;
+    $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
+    // ensure that only those expected params are passed through to the report.
+    foreach($this->providedParams as $key => $value){
+      if(!isset($this->expectedParams[$key])){
+        unset($this->providedParams[$key]);
+      }
+    }
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
       'content' => $this->compileReport()
@@ -201,21 +204,19 @@ class ReportEngine {
       $handle = opendir($this->localReportDir);
       while ($file = readdir($handle))
       {
-  $a = explode('.', $file);
-  $ext = $a[count($a) - 1];
-  switch ($ext)
-  {
-    case 'xml':
-      Kohana::log('debug', "Invoking XMLReportReader to handle $file.");
-      $this->fetchLocalReport($file);
-      $this->reportReader = new XMLReportReader($this->report);
-      break;
-    default:
-      continue 2;
-  }
-
-  $reportList[] = $this->reportReader->describeReport($detail);
-
+        $a = explode('.', $file);
+        $ext = $a[count($a) - 1];
+        switch ($ext)
+        {
+          case 'xml':
+            Kohana::log('debug', "Invoking XMLReportReader to handle $file.");
+            $this->fetchLocalReport($file);
+            $this->reportReader = new XMLReportReader($this->report);
+            break;
+          default:
+            continue 2;
+        }
+        $reportList[] = $this->reportReader->describeReport($detail);
       }
     }
 
@@ -621,6 +622,11 @@ class ReportEngine {
         $query .= " ORDER BY $order_by";
       }
     }
+    $this->query = $query;
+    if ($this->limit) 
+      $query .= ' limit '.$this->limit;
+    if ($this->offset) 
+      $query .= ' offset '.$this->offset;
     $this->query = $query;
   }
 
