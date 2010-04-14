@@ -1432,6 +1432,8 @@ class data_entry_helper extends helper_config {
   * When the x-axis shows arbitrary category names (e.g. a bar chart), then this indicates the report or view/table
   * field which contains the labels. Also used for pie chart segment names.</li>
   * </ul>
+  * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
+  * @todo multiple chart series support.
   */
   public static function report_chart($options) {
     $options = array_merge(array(
