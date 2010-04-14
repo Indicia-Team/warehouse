@@ -37,13 +37,14 @@ class iform_pollenators {
 	/* TODO
 	 * Functionality shortfalls:
 	 *	Location look ups.
-	 *	Identify Later on flower and insects. Put question mark over pictures.
+	 *	Carry out checks on completion.
 	 *	ID tool results storage.
 	 *	Sessions context sensitive help
 	 *  when deleting a session:
 	 * 		need to check if there are any insects/photos attached to the session
 	 * 		when a sample_id exists in the form, set a deleted flag in the db, and submit, then delete dom
 	 * 		put up a confirmation alert on Deleting
+	 *  Change map so all locations searched for go on location layer, not editLayer.
 	 * Functionality nice to haves:
 	 *	Ajaxform error handling, also image loading and json. Also put in checks if setting data[] that we are setting the correct entries.
 	 *	nsp on floral station - "do not know"
@@ -53,8 +54,6 @@ class iform_pollenators {
 	 *	Images size handling: controlled by container div size. 
 	 *	Confirm insect radio button attributes: validation, reset values after saving, restore values when selecting from photoreel.
 	 *	find out if habitat descriptions are required.
-	 * Checks:
-	 *	Check record status on occurrences.
 	 */
   /**
    * Get the list of parameters for this form.
@@ -451,7 +450,6 @@ jQuery('#".$id."').click(function(){
 	// the fact that the user is logged in to drupal as the main authentication/authorisation/identification
 	// process for the user. The proxy packages the post into the correct format
 	// 
-	
     // There are 2 types of submission:
     // When a user validates a panel using the validate button, the following panel is opened on success
     // When a user presses a modify button, the open panel gets validated, and the panel to be modified is opened.
@@ -675,11 +673,23 @@ $('#cc-1-collection-details').ajaxForm({
    	       					loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data[0].id, 'smpAttr');
 						}
 				});
-        	}
-        	checkProtocolStatus();
-        	$('#cc-1').foldPanel();
-    		if(showStationPanel){ $('#cc-2').showPanel(); }
-	    	showStationPanel = true;
+			   	checkProtocolStatus();
+        		$('#cc-1').foldPanel();
+    			if(showStationPanel){ $('#cc-2').showPanel(); }
+		    	showStationPanel = true;
+        	}  else {
+				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+				if(data.error){
+					errorString = errorString + ' : ' + data.error;
+				}
+				if(data.errors){
+					for (var i in data.errors)
+					{
+						errorString = errorString + ' : ' + data.errors[i];
+					}				
+				}
+				alert(errorString);
+			}
         } 
 });
 
@@ -863,6 +873,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     <input type="hidden" name="determination:email_address" value="'.$email.'" />
     <input type="hidden" name="determination:person_name" value="'.$username.'" />  
     <input type="hidden" name="occurrence:use_determination" value="Y"/>    
+    <input type="hidden" name="occurrence:record_status" value="C" />
     <input type="hidden" id="location_image:id" name="location_image:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence:id" name="occurrence:id" value="" disabled="disabled" />
     <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
@@ -1340,7 +1351,7 @@ jQuery('.mod-button').click(function() {
 </div>';
 
     data_entry_helper::$javascript .= "
-resetInsectPanel = true;
+loadInsectPanel = null;
     
 // Insect upload picture form.
 $('#cc-4-insect-upload').ajaxForm({ 
@@ -1404,28 +1415,18 @@ $('#cc-4-main-form').ajaxForm({
     success:   function(data){
        	if(data.success == 'multiple records' && data.outer_table == 'occurrence'){
        		// if the currently highlighted thumbnail is blank, add the new insect.
-       		if(jQuery('.currentPhoto.blankPhoto').length > 0){
+       		var thumbnail = jQuery('[occId='+data.outer_id+']');
+       		if(thumbnail.length == 0){
        			addToPhotoReel(data.outer_id);
-       		}
-			if(resetInsectPanel){
-	       		setEmptyPhoto();
-    	   		jQuery('#cc-4-main-form').resetForm();
-       			jQuery('[name=insect\\:taxa_taxon_list_id]').val('');
-       			jQuery('#id-insect-later').removeAttr('checked').removeAttr('disabled');
-       			jQuery('#cc-4-main-form').find('[name=determination:cms_ref]').val('".$uid."');
-       			jQuery('#cc-4-main-form').find('[name=determination:email_address]').val('".$email."');
-       			jQuery('#cc-4-main-form').find('[name=determination:person_name]').val('".$username."'); 
-       			jQuery('#cc-4-main-form').find('[name=occurrence_image\\:path]').val('');
-				jQuery('#cc-4-main-form').find('[name=occurrence\\:id],[name=occurrence_image\\:id],[name=determination\\:id]').val('').attr('disabled', 'disabled');
-    	   		jQuery('#cc-4-main-form').find('[name=occurrence_image\\:path]').val('');
-				jQuery('#cc-4-main-form').find('[name^=occAttr\\:]').each(function(){
-					var name = jQuery(this).attr('name').split(':');
-					jQuery(this).attr('name', name[0]+':'+name[1]);
-				});
-       		
-				jQuery('#cc-4-insect-image').empty();
+       		} else {
+       			updatePhotoReel(thumbnail, data.outer_id);
+  			}
+			if(loadInsectPanel == null){
+				clearInsect();
+			} else {
+				loadInsect(loadInsectPanel);
 			}
-			resetInsectPanel=true;
+			loadInsectPanel=null;
         }
 	}
 });
@@ -1438,54 +1439,25 @@ validateInsectPanel = function(){
 	return true;
 };
 
-setEmptyPhoto = function(){
-	jQuery('.currentPhoto').removeClass('currentPhoto');
-	if(jQuery('.blankPhoto').length == 0) {
-		jQuery('<div/>').addClass('blankPhoto thumb currentPhoto').appendTo('#cc-4-photo-reel');
-	} else {
-		jQuery('.blankPhoto').addClass('currentPhoto');
-	}
-}
-
-createPhotoReel = function(){
-	jQuery('#cc-4-photo-reel').empty();
-	setEmptyPhoto();
-}
-
-createPhotoReel();
-
-addToPhotoReel = function(occId){
-	// last photo in list is the blank empty one. Add to just before this.
-	var container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto');
-	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
-		if (imageData.length>0) {
-			var img = new Image();
-			$(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
-			    .attr('width', 50).attr('height', 50).appendTo(container).click(function () {setInsect(this, imageData[0].occurrence_id)});
-		}
+clearInsect = function(){
+	jQuery('#cc-4-main-form').resetForm();
+	jQuery('[name=insect\\:taxa_taxon_list_id]').val('');
+    jQuery('#id-insect-later').removeAttr('checked').removeAttr('disabled');
+    jQuery('#cc-4-main-form').find('[name=determination:cms_ref]').val('".$uid."');
+    jQuery('#cc-4-main-form').find('[name=determination:email_address]').val('".$email."');
+    jQuery('#cc-4-main-form').find('[name=determination:person_name]').val('".$username."'); 
+    jQuery('#cc-4-main-form').find('[name=occurrence_image\\:path]').val('');
+	jQuery('#cc-4-main-form').find('[name=occurrence\\:id],[name=occurrence_image\\:id],[name=determination\\:id]').val('').attr('disabled', 'disabled');
+    jQuery('#cc-4-main-form').find('[name=occurrence_image\\:path]').val('');
+	jQuery('#cc-4-main-form').find('[name^=occAttr\\:]').each(function(){
+		var name = jQuery(this).attr('name').split(':');
+		jQuery(this).attr('name', name[0]+':'+name[1]);
 	});
-}
+    jQuery('#cc-4-insect-image').empty();
+};
 
-setInsect = function(context, id){
-	// first close all the other panels, ensuring any data is saved.
-	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
-		return;
-		
-	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0)
-		jQuery('div#cc-4').unFoldPanel();
-	else {
-		resetInsectPanel=false;
-		if(!validateInsect()){
-			resetInsectPanel=true; 
-			return false;
-  		}	
-	}
-	resetInsectPanel=true;
-	jQuery('.currentPhoto').removeClass('currentPhoto');
-	$(context).parent().addClass('currentPhoto');
-	jQuery('#id-insect-later').attr('checked', 'checked').removeAttr('disabled');
+loadInsect = function(id){
+	clearInsect();
 	$.getJSON(\"".$svcUrl."/data/occurrence/\" + id +
           \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?\", function(data) {
 	    if (data.length>0) {
@@ -1505,10 +1477,58 @@ setInsect = function(context, id){
 	        jQuery('form#cc-4-main-form > input[name=determination\\:email_address]').val(data[0].email_address);
 	        jQuery('form#cc-4-main-form > input[name=determination\\:person_name]').val(data[0].person_name);
        		jQuery('[name=insect\\:taxa_taxon_list_id]').val(data[0].taxa_taxon_list_id);
-  		}
+  		} else
+  			jQuery('#id-insect-later').attr('checked', 'checked').removeAttr('disabled');
 	});	
+}
+
+updatePhotoReel = function(container, occId){
+	container.empty();
+	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
+   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
+		if (imageData.length>0) {
+			var img = new Image();
+			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
+			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
+		}
+	});
+	$.getJSON(\"".$svcUrl."/data/determination\" + 
+    		\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
+    		\"&occurrence_id=\" + occId + \"&deleted=f&callback=?\", function(detData) {
+	    if (detData.length==0) {
+	    	// no determination records, so no attempt made at identification. Put up a question mark.
+			jQuery('<span>?</span>').addClass('thumb-text').appendTo(container);
+		}
+	});
+}
+
+addToPhotoReel = function(occId){
+	// last photo in list is the blank empty one. Add to just before this.
+	var container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', occId.toString()).click(function () {setInsect(this, occId)});
+	updatePhotoReel(container, occId);
+}
+
+setInsect = function(context, id){
+	// first close all the other panels, ensuring any data is saved.
+	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
+		return;
+		
+	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0) {
+		jQuery('div#cc-4').unFoldPanel();
+		loadInsect(id);
+	} else {
+		loadInsectPanel=id;
+		if(!validateInsect()){
+			loadInsectPanel=null;
+			return;
+		} 
+	}
+	jQuery('.currentPhoto').removeClass('currentPhoto');
+	jQuery('[occId='+id+']').addClass('currentPhoto');
 };
-setNoInsect = function(context, id){
+
+setNoInsect = function(){
 	// first close all the other panels, ensuring any data is saved.
 	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
 		return;
@@ -1516,27 +1536,20 @@ setNoInsect = function(context, id){
 	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0)
 		jQuery('div#cc-4').unFoldPanel();
 	else
-		if(!validateInsect()){ return false; }
-	// At his point the empty panel is displayed.	
+		if(!validateInsect()){ return ; }
+	// At this point the empty panel is displayed, as it is reset after a successful validate.	
 	jQuery('.currentPhoto').removeClass('currentPhoto');
-	$(context).parent().addClass('currentPhoto');
-	jQuery('#id-insect-later').removeAttr('checked').removeAttr('disabled');
+	jQuery('.blankPhoto').addClass('currentPhoto');
 };
-jQuery('.blankPhoto').click(setNoInsect);
+
+createPhotoReel = function(div){
+	jQuery(div).empty();
+	jQuery('<div/>').addClass('blankPhoto thumb currentPhoto').appendTo(div).click(setNoInsect);
+}
+
+createPhotoReel('#cc-4-photo-reel');
 
 // TODO separate photoreel out into own js
-
-// set the current thumbnail to specified filename.
-setPhoto = function(occId, filename){
-	// fetch the occurrence_image and set the image to the path
-	// var filename = jQuery('#cc-4-main-form input[name=occurrence_image\\:path]').val();
-    var img = new Image();
-	var temp=jQuery('.currentPhoto').empty().removeClass('blankPhoto');
-    $(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+filename)
-			    .attr('width', 50).attr('height', 50).appendTo(temp).click(function () {setInsect(this, occId)});
-	// TODO fetch the occurrence determination: if indeterminate set div to include a question mark
-	// TODO set a click event to populate the form dependant on occurrence_id.
-}
 
 validateInsect = function(){
 	// TODO will have to expand when use key or when identify later.
@@ -1545,6 +1558,10 @@ validateInsect = function(){
 			jQuery('[name=insect\\:taxa_taxon_list_id]').val() == '' &&
 			jQuery('form#cc-4-main-form > textarea[name=occurrence\\:comment]').val() == '' &&
 			jQuery('[name=occAttr\\:".$args['number_attr_id']."],[name^=occAttr\\:".$args['number_attr_id']."\\:]').filter('[checked]').length == 0){
+		if(loadInsectPanel != null){
+			loadInsect(loadInsectPanel);
+		}
+		loadInsectPanel=null;
 		return true;
 	}
 	var valid = true;
@@ -1807,7 +1824,7 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 									thisSession.children(':first').show().children().show();
 									thisSession.children().not(':first').hide();
 									$.getJSON(\"".$svcUrl."/data/occurrence/\" +
-          									\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+          									\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&orderby=id\" +
           									\"&sample_id=\"+sessiondata[i].id+\"&callback=?\", function(insectData) {
 		    							if (insectData.length>0) {
  											for (var j=0;j<insectData.length;j++){
