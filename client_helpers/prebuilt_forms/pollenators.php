@@ -438,7 +438,7 @@ jQuery('#".$id."').click(function(){
     </form>
 </div>
 ';
-
+ 	
     data_entry_helper::$javascript .= "
 var sessionCounter = 0;
 
@@ -467,6 +467,17 @@ $.fn.hidePanel = function(){
 	this.addClass('poll-hide'); 
 };
 
+defaultSref = '".
+    		((int)$args['map_centroid_lat'] > 0 ? $args['map_centroid_lat'].'N' : (-((int)$args['map_centroid_lat'])).'S').' '.
+    		((int)$args['map_centroid_long'] > 0 ? $args['map_centroid_long'].'E' : (-((int)$args['map_centroid_long'])).'W')."';
+defaultGeom = '';
+$.getJSON('".$svcUrl."' + 'index.php/services/spatial/sref_to_wkt'+
+        			'?sref=' + defaultSref +
+          			'&system=' + jQuery('#imp-sref-system').val() +
+          			'&callback=?', function(data) {
+            	defaultGeom = data.wkt;
+        	});
+
 $.fn.resetPanel = function(){
 	this.find('.poll-section-body').removeClass('poll-hide');
 	this.find('.poll-section-footer').removeClass('poll-hide');
@@ -477,12 +488,11 @@ $.fn.resetPanel = function(){
 
 	// resetForm does not reset the hidden fields. record_status, imp-sref-system, website_id and survey_id are not altered so do not reset.
 	// hidden Attributes generally hold unchanging data, but the name needs to be reset (does it for non hidden as well).
-	// leave the map/geom pointing to the same place.
 	// hidden location:name are set in code anyway.
 	this.find('form').each(function(){
 		jQuery(this).resetForm();
 		jQuery(this).find('[name=sample\\:location_name],[name=location_image\\:path],[name=occurrence_image\\:path]').val('');
-		jQuery(this).find('#cc-1-collection-details').find('[name=sample\\:id],[name=location\\:id]').val('').attr('disabled', 'disabled');
+		jQuery(this).filter('#cc-1-collection-details').find('[name=sample\\:id],[name=location\\:id]').val('').attr('disabled', 'disabled');
 		jQuery(this).find('[name=location_image\\:id],[name=occurrence\\:id],[name=occurrence_image\\:id]').val('').attr('disabled', 'disabled');
 		jQuery(this).find('[name=sample\\:date]:hidden').val('2010-01-01');		
         jQuery(this).find('input[name=locations_website\\:website_id]').removeAttr('disabled');
@@ -490,7 +500,9 @@ $.fn.resetPanel = function(){
 			var name = jQuery(this).attr('name').split(':');
 			jQuery(this).attr('name', name[0]+':'+name[1]);
 		});
-	});	
+		jQuery(this).find('input[name=location\\:centroid_sref]').val('');
+		jQuery(this).find('input[name=location\\:centroid_geom]').val('');
+    });	
 	this.find('.poll-dummy-form > input').val('');
 	this.find('.poll-dummy-form > select').val('');
   };
@@ -574,7 +586,9 @@ $('#cc-1-collection-details').ajaxForm({
   			// 1) the location:name is the sixth field in the form.
   			// 1) the sample:location_name is the seventh field in the form.
   			data[6].value = data[5].value;
-        	jQuery('#cc-2-floral-station > input[name=location\\:name]').val(data[5].value);
+  			if(data[1].value=='') data[1].value=defaultSref;
+  			if(data[2].value=='') data[2].value=defaultGeom;
+  			jQuery('#cc-2-floral-station > input[name=location\\:name]').val(data[5].value);
         	return true;
   		},
         success:   function(data){
@@ -622,6 +636,7 @@ $('#cc-1-delete-collection').ajaxForm({
 			jQuery('.poll-image').empty();
 			jQuery('#cc-1').showPanel();
 			jQuery('.reinit-button').hide();
+			jQuery('#map')[0].map.editLayer.destroyFeatures();
   		} 
 });
 
@@ -857,6 +872,10 @@ validateStationPanel = function(){
 		alert('".lang::get('LANG_Must_Provide_Pictures')."');
 		valid = false;
 	}
+    if(jQuery('#imp-geom').val() == '') {
+		alert('".lang::get('LANG_Must_Provide_Location')."');
+		valid = false;
+	}
 	if (!validateRequiredField('flower\\:taxa_taxon_list_id', '#cc-2-flower-identify')) { valid = false; }
 	if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
    	if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
@@ -953,6 +972,10 @@ $('#cc-2-floral-station').ajaxForm({
     	if(jQuery('form#cc-2-floral-station > input[name=location_image\\:path]').val() == '' ||
 					jQuery('form#cc-2-floral-station > input[name=occurrence_image\\:path]').val() == '' ){
 			alert('".lang::get('LANG_Must_Provide_Pictures')."');
+			valid = false;
+		}
+		if(jQuery('#imp-geom').val() == '') {
+			alert('".lang::get('LANG_Must_Provide_Location')."');
 			valid = false;
 		}
 		if (!validateRequiredField('flower\\:taxa_taxon_list_id', '#cc-2-flower-identify')) { valid = false; }
