@@ -132,7 +132,7 @@ class ReportEngine {
     // Pull out special case params for limit and offset
     $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : null;
     $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
-    $this->offset = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : null;
+    $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : null;
     $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : null;
     // ensure that only those expected params are passed through to the report.
     foreach($this->providedParams as $key => $value){
@@ -616,8 +616,8 @@ class ReportEngine {
       $query = preg_replace("/#$name#/", $value, $query);
     }
     // allow the URL to provide a sort order override
-    if ($this->$orderby)
-      $order_by = $this->$orderby . ($this->sortdir ? ' '.$this->sortdir : '');
+    if (isset($this->orderby))
+      $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
     else
       $order_by=$this->reportReader->getOrderClause();
     if ($order_by) {
@@ -628,7 +628,6 @@ class ReportEngine {
         $query .= " ORDER BY $order_by";
       }
     }
-    $this->query = $query;
     if ($this->limit) 
       $query .= ' limit '.$this->limit;
     if ($this->offset) 

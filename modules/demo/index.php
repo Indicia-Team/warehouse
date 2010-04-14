@@ -77,6 +77,10 @@ View the source code in <a href="viewsource.php?file=map_polygon_capture.php">ma
 <li>
 <h2>Report Demonstrations</h2>
 <ol>
+<li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="reports/reports_and_charts.php">Reports and Charts</a></div>
+<p>Demonstration of a simple report grid, as well as each of the chart options.
+View the source code in <a href="viewsource.php?file=reports/reports_and_charts.php">reports_and_charts.php</a>.</p>
+</li>
 <li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="reports/report_1.php">Report grid</a></div>
 <p>Displays a report loaded into a grid.
 View the source code in <a href="viewsource.php?file=reports/report_1.php">report_1.php</a>.</p>
