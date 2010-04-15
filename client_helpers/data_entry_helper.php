@@ -60,12 +60,18 @@ $indicia_templates = array(
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{class}{checked} {disabled}/>{caption}</span>{sep}',
-  'map_panel' => "<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>\n",
-  'georeference_lookup' => "<input id=\"imp-georef-search\"{class} />\n".
-      "<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />\n".
-      "<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\"><div id=\"imp-georef-output-div\">\n".
-      "</div><a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">{close}</a>\n".
-      "</div>",
+  'map_panel' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
+    "/* ]]> */</script>",
+  'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<input id=\"imp-georef-search\"{class} />');\n".
+    "document.write('<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />');\n".
+    "document.write('<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\">');\n".
+    "document.write('  <div id=\"imp-georef-output-div\">');\n".
+    "document.write('  </div>');\n".
+    "document.write('  <a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">{close}</a>');\n".
+    "document.write('</div>');".
+    "\n/* ]]> */</script>",
   'tab_header' => '<script type="text/javascript">/* <![CDATA[ */'."\n".
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
       "\n/* ]]> */</script>\n".
