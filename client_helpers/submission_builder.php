@@ -82,10 +82,7 @@ class submission_builder extends helper_config {
     $modelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $structure) ? $structure['fieldPrefix'] : $structure['model']);
     // Attach the specially handled fields to the model
     if (array_key_exists('metaFields', $structure)) {
-      // need to be careful merging metafields in the structure and those auto generated in wrap_with_attrs (ie sample/location/occurrence attributes)
-      if(!array_key_exists('metaFields', $modelWrapped))
-	      $modelWrapped['metaFields']=array();
-	  foreach ($metaFields as $metaField) {$modelWrapped['metaFields'][]=$metaField;}
+      $modelWrapped['metaFields']=$metaFields;
     }
     if (array_key_exists('joinsTo', $structure)) {
       $modelWrapped['joinsTo']=$joinsTo;
