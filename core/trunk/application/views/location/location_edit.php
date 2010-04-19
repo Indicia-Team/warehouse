@@ -88,9 +88,9 @@ jQuery(document).ready(function() {
 <div id="tabs">
   <ul>
     <li><a href="#details"><span>Location Details</span></a></li>
-    <li><a href="#attrs"><span>Additional Attributes</span></a></li>
-    <?php if ($id != null) : 
-      ?><li><a href="<?php echo url::site()."location_image/$id" ?>" title="images"><span>Images</span></a></li>
+    <?php if ($id != null) :
+    ?><li><a href="#attrs"><span>Additional Attributes</span></a></li>
+    <li><a href="<?php echo url::site()."location_image/$id" ?>" title="images"><span>Images</span></a></li>
     <?php endif; ?>
   </ul>
 <div id="details">
@@ -131,7 +131,7 @@ jQuery(document).ready(function() {
   echo "<option value=\"$notation\"$selected>$caption</option>";}
 ?>
 </select>
-<input type="hidden" name="location:centroid_geom" id="centroid_geom" />
+<input type="hidden" name="location:centroid_geom" id="centroid_geom" value="<?php echo $centroid_geom; ?>"/>
 <?php echo html::error_message($model->getError('location:centroid_sref')); ?>
 <?php echo html::error_message($model->getError('location:centroid_sref_system')); ?>
 <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
@@ -165,6 +165,7 @@ spatial reference. The more you zoom in, the more accurate the reference will be
 </ol>
 </fieldset>
 </div>
+<?php if ($id != null) : ?>
 <div id="attrs">
 <fieldset>
  <legend>Additional Attributes</legend>
@@ -201,6 +202,7 @@ foreach ($values['attributes'] as $attr) {
 <div id="images">
 </div>
 <?php 
+endif;
 echo html::form_buttons(html::initial_value($values, 'location:id')!=null);
 ?>
 </form>
