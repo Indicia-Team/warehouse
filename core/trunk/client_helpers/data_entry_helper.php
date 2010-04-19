@@ -570,8 +570,8 @@ class data_entry_helper extends helper_config {
   * normally need to change this. Defaults to upload.php.
   * </li>
   * <li><b>runtimes</b><br/>
-  * Comma separated list of runtimes that the file upload component will use in order of priority. Defaults to 
-  * 'gears,silverlight,browserplus,html5,flash,html4'. You should not normally need to change this.
+  * Array of runtimes that the file upload component will use in order of priority. Defaults to 
+  * array('gears','silverlight','browserplus','html5','flash','html4'). You should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.</li>
