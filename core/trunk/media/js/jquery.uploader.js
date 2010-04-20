@@ -61,8 +61,8 @@
         browse_button : 'upload-select-btn-'+id,
         url : this.settings.uploadScript,
         resize : resize,
-        flash_swf_url : this.settings.jsPath + 'plupload/js/plupload.flash.swf',
-        silverlight_xap_url : this.settings.jsPath + 'plupload/js/plupload.silverlight.xap',
+        flash_swf_url : this.settings.swfAndXapFolder + 'plupload.flash.swf',
+        silverlight_xap_url : this.settings.swfAndXapFolder + 'plupload.silverlight.xap',
         filters : [
           {title : "Image files", extensions : "jpg,gif,png"}
         ],
@@ -76,28 +76,28 @@
         });
       }
       // make the main object accessible
-      div = this;
+      var div = this;
       
       // load the existing data if there is any
       var existing, uniqueId;
       $.each(div.settings.existingFiles, function(i, file) {
         uniqueId = file.path.split('.')[0];
         existing = div.settings.file_box_initial_file_infoTemplate.replace('{id}', uniqueId)
-            .replace(/{filename}/g, file.caption)
-            .replace(/{filesize}/g, 'Uploaded')
-            .replace(/{imagewidth}/g, div.settings.imageWidth);
+            .replace(/\{filename\}/g, file.caption)
+            .replace(/\{filesize\}/g, 'Uploaded')
+            .replace(/\{imagewidth\}/g, div.settings.imageWidth);
         $('#filelist').append(existing);
         var filepath = div.settings.destinationFolder + file.path;
         $('#' + uniqueId + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
-              .replace(/{id}/g, uniqueId)
-              .replace(/{filepath}/g, filepath)
-              .replace(/{imagewidth}/g, div.settings.imageWidth)
-              .replace(/{captionField}/g, div.settings.table + ':caption:' + uniqueId)
-              .replace(/{captionValue}/g, file.caption.replace(/\"/g, '&quot;'))
-              .replace(/{pathField}/g, div.settings.table + ':path:' + uniqueId)
-              .replace(/{pathValue}/g, file.path)
-              .replace(/{idField}/g, div.settings.table + ':id:' + uniqueId) 
-              .replace(/{idValue}/g, file.id) // If ID is set, the picture is uploaded to the server
+              .replace(/\{id\}/g, uniqueId)
+              .replace(/\{filepath\}/g, filepath)
+              .replace(/\{imagewidth\}/g, div.settings.imageWidth)
+              .replace(/\{captionField\}/g, div.settings.table + ':caption:' + uniqueId)
+              .replace(/\{captionValue\}/g, file.caption.replace(/\"/g, '&quot;'))
+              .replace(/\{pathField\}/g, div.settings.table + ':path:' + uniqueId)
+              .replace(/\{pathValue\}/g, file.path)
+              .replace(/\{idField\}/g, div.settings.table + ':id:' + uniqueId) 
+              .replace(/\{idValue\}/g, file.id) // If ID is set, the picture is uploaded to the server
         );
       });
       
@@ -109,9 +109,9 @@
             alert(div.settings.msgFileTooBig);
           } else {
             $('#filelist').append(div.settings.file_box_initial_file_infoTemplate.replace('{id}', file.id)
-                .replace(/{filename}/g, file.name)
-                .replace(/{filesize}/g, plupload.formatSize(file.size))
-                .replace(/{imagewidth}/g, div.settings.imageWidth)
+                .replace(/\{filename\}/g, file.name)
+                .replace(/\{filesize\}/g, plupload.formatSize(file.size))
+                .replace(/\{imagewidth\}/g, div.settings.imageWidth)
             );
             // change the file name to be unique
             file.name=plupload.guid() + '.jpg';
@@ -135,7 +135,7 @@
       this.uploader.bind('FileUploaded', function(uploader, file, response) {
         $('#' + file.id + ' .progress').remove();
         // check the JSON for errors
-        var resp = eval('['+response.response+']')
+        var resp = eval('['+response.response+']');
         if (resp[0].error) {
           $('#' + file.id).remove();
           alert(div.settings.msgUploadError + ' ' + resp[0].error.message);
@@ -143,15 +143,15 @@
           var filepath = div.settings.destinationFolder + file.name;
           // Show the uploaded file, and also set the mini-form values to contain the file details.
           $('#' + file.id + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
-                .replace(/{id}/g, file.id)
-                .replace(/{filepath}/g, filepath)
-                .replace(/{imagewidth}/g, div.settings.imageWidth)
-                .replace(/{captionField}/g, div.settings.table + ':caption:' + file.id)
-                .replace(/{captionValue}/g, '')
-                .replace(/{pathField}/g, div.settings.table + ':path:' + file.id)
-                .replace(/{pathValue}/g, '')
-                .replace(/{idField}/g, div.settings.table + ':id:' + file.id) 
-                .replace(/{idValue}/g, '') // Set ID to blank, as this is a new record.
+                .replace(/\{id\}/g, file.id)
+                .replace(/\{filepath\}/g, filepath)
+                .replace(/\{imagewidth\}/g, div.settings.imageWidth)
+                .replace(/\{captionField\}/g, div.settings.table + ':caption:' + file.id)
+                .replace(/\{captionValue\}/g, '')
+                .replace(/\{pathField\}/g, div.settings.table + ':path:' + file.id)
+                .replace(/\{pathValue\}/g, '')
+                .replace(/\{idField\}/g, div.settings.table + ':id:' + file.id) 
+                .replace(/\{idValue\}/g, '') // Set ID to blank, as this is a new record.
           );
           // Copy the path into the hidden path input. Watch colon escaping for jQuery selectors.
           $('#' + div.settings.table + '\\:path\\:' + file.id).val(file.name);
@@ -209,5 +209,6 @@ $.fn.uploader.defaults = {
   msgFileTooBig : 'The file is too big to upload. Please resize it then try again.',
   uploadScript : 'upload.php',
   destinationFolder : '',
+  swfAndXapFolder : '',
   runtimes : 'gears,silverlight,browserplus,html5,flash,html4'
-}
+};

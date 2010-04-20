@@ -576,6 +576,10 @@ class data_entry_helper extends helper_config {
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.</li>
   * </li>
+  * <li><b>swfAndXapFolder</b><br/>
+  * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not 
+  * normally need to change this.</li>
+  * </li>
   * </ul>
   * 
   * @todo max file count
@@ -607,6 +611,7 @@ class data_entry_helper extends helper_config {
       'imagewidth' => 250,
       'uploadScript' => $relpath . 'upload.php',
       'destinationFolder' => $relpath . $interim_image_folder,
+      'swfAndXapFolder' => $relpath . 'plupload/',
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
@@ -3585,11 +3590,8 @@ $('.ui-state-default').live('mouseout', function() {
       'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
       'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
-      'plupload' => array('deps' => array('jquery_ui','fancybox'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js')),
-      'plupload_gears' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/gears_init.js', self::$js_path.'plupload/js/plupload.gears.min.js')),
-      'plupload_flash' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.flash.min.js')),
-      'plupload_html5' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.html5.min.js')),
-      'plupload_html4' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'plupload/js/plupload.html4.min.js')),
+      'plupload' => array('deps' => array('jquery_ui','fancybox'), 'stylesheets' => array(), 'javascript' => array(
+          self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')), // last file contains a bugfix
       'jqplot' => array('deps' => array(), 'stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
       'jqplot_bar' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
       'jqplot_pie' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),

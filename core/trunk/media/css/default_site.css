@@ -134,7 +134,7 @@ input, select, textarea {
   vertical-align: top;
 }
 
-.photo .ui-widget-header {
+.photo > .ui-widget-header {
   padding: 0.2em;
   margin-bottom: 0.2em;
 }
@@ -281,4 +281,8 @@ li.ui-state-error {
 
 .plupload input {
   cursor: pointer;
+}
+
+.plupload_iframe input {
+  margin: 0;
 }
