@@ -60,7 +60,7 @@ class config_test {
    * @param boolean $problems_only Set to true to report only the problems, not the successful
    * checks. False reports both failures and successes.
    */
-  private static function check_db(&$messages, $problems_only) {
+  public static function check_db(&$messages, $problems_only) {
     // The Indicia config file is only created after a successful db creation.
     $config=kohana::config_load('indicia', false);
     if (!$config) {
