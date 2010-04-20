@@ -3488,6 +3488,31 @@ $onload_javascript
         'nonce' => $nonce
     );
   }
+  
+/**
+  * Retrieves read and write nonce tokens from the warehouse. 
+  * @param string $website_id Indicia ID for the website.
+  * @param string $password Indicia password for the website.
+  * @return Returns an array containing:
+  * 'read' => the read authorisation array,
+  * 'write' => the write authorisation input controls to insert into your form.
+  */
+  public static function get_read_write_auth($website_id, $password) {
+    $postargs = "website_id=$website_id";
+    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_write_nonces', $postargs);
+    $nonces = json_decode($response['output'], true);
+    $write = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
+        'value="'.sha1($nonces['write'].':'.$password).'" />'."\r\n";
+    $write .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
+        'value="'.$nonces['write'].'" />'."\r\n";
+    return array(
+      'write' => $write,
+      'read' => array(
+        'auth_token' => sha1($nonces['read'].':'.$password),
+        'nonce' => $nonces['read']
+      )
+    );
+  }
 
   /**
    * Takes an associative array and converts it to a list of params for a query string.
