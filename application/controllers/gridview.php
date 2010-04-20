@@ -84,7 +84,15 @@ class Gridview_Controller extends Controller {
       $arrfilters = explode(',',$filters);
       if (count($arrcols)==count($arrfilters)){
         $client_filter = array_combine($arrcols,$arrfilters);
-        $lists = $lists->like($client_filter);
+        // For id filters, use a WHERE filter for exact match
+        if (isset($client_filter['id'])) {
+          $lists = $lists->where(array('id' => $client_filter['id']));
+          unset($client_filter['id']);
+        }
+        // Other filters are a LIKE filter.
+        if (count($client_filter)>0)
+          $lists = $lists->like($client_filter);
+        
       }
     }    
     $limit = kohana::config('pagination.default.items_per_page');
