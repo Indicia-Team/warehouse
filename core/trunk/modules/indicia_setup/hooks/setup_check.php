@@ -23,11 +23,13 @@
 
 class setup_check {
 
+  /**
+   * If not in the setup pages, but the indicia config file is missing, go to system setup.
+   */
   public static function _setup_check() {
-    // Perform some system checks
     $uri = URI::instance();
-    $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' ||
-        count(config_test::check_config(true))==0;
+    $isOk = $uri->segment(1) == 'setup' || $uri->segment(1) == 'setup_check' || 
+        kohana::config('indicia.private_key', false, false) !== null;
     if (!$isOk) {
       url::redirect('setup_check');
     }
@@ -35,6 +37,6 @@ class setup_check {
 
 }
 
- Event::add('system.pre_controller', array('setup_check', '_setup_check'));
+Event::add('system.pre_controller', array('setup_check', '_setup_check'));
 
  ?>
