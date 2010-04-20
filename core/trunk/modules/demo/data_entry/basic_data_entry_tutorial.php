@@ -29,8 +29,9 @@ echo data_entry_helper::loading_block_start();
 <form method="post">
 <?php
   // Get authorisation tokens to update and read from the Warehouse.
-  echo data_entry_helper::get_auth($config['website_id'], $config['password']);
-  $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
+  $auth = data_entry_helper::get_read_write_auth($config['website_id'], $config['password']);
+  echo $auth['write'];
+  $readAuth = $auth['read'];
 ?>
 <input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
 <input type='hidden' id='record_status' name='record_status' value='C' />

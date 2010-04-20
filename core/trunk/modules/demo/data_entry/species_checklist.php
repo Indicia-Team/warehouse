@@ -23,9 +23,10 @@ if ($_POST){
 
 <form method='post'>
 <?php
-// Get authentication information
-echo data_entry_helper::get_auth($config['website_id'], $config['password']);
-$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
+  // Get authorisation tokens to update and read from the Warehouse.
+  $auth = data_entry_helper::get_read_write_auth($config['website_id'], $config['password']);
+  echo $auth['write'];
+  $readAuth = $auth['read'];
 ?>
 <input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
 <input type='hidden' id='survey_id' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
