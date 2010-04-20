@@ -228,36 +228,44 @@ class Setup_Check_Controller extends Template_Controller {
    * Display the database configuration form.
    */
   public function config_db() {
-    $this->template->title = 'Database Configuration';
-    $this->template->content = new View('fixers/config_db');
-    $this->template->content->error = $this->error;
-
-    // init and default values of view vars
-    $this->view_var = array();
-
-    $this->template->content->description = str_replace('*code*',
-        '<span class="code">CREATE DATABASE indicia TEMPLATE=template_postgis;</span>',
-        Kohana::lang('setup.description'));
-    // Assign default settings if the user has not yet updated the db config
-    $db_config=kohana::config('database');
-    if ($db_config['default']['connection']['type']=='mysql') {
-      $this->template->content->host     = 'localhost';
-      $this->template->content->port     = '5432';
-      $this->template->content->user     = '';
-      $this->template->content->password = '';
-      $this->template->content->reportuser     = '';
-      $this->template->content->reportpassword = '';
-      $this->template->content->schema   = '';
-      $this->template->content->database = '';
+    // We need to know if the db is already configured. If so, just redirect back, otherwise it could be maliciously overwritten.
+    $messages = array();
+    config_test::check_db($messages, true);
+    if (count($messages)==0) {
+      url::redirect('setup_check');
     } else {
-      $this->template->content->host     = $db_config['default']['connection']['host'];
-      $this->template->content->port     = $db_config['default']['connection']['port'];
-      $this->template->content->user     = $db_config['default']['connection']['user'];
-      $this->template->content->password = $db_config['default']['connection']['pass'];
-      $this->template->content->reportuser     = $db_config['report']['connection']['user'];
-      $this->template->content->reportpassword = $db_config['report']['connection']['pass'];
-      $this->template->content->schema   = $db_config['default']['schema'];
-      $this->template->content->database = $db_config['default']['connection']['database'];
+      // Db does indeed need to be configured.
+      $this->template->title = 'Database Configuration';
+      $this->template->content = new View('fixers/config_db');
+      $this->template->content->error = $this->error;
+  
+      // init and default values of view vars
+      $this->view_var = array();
+  
+      $this->template->content->description = str_replace('*code*',
+          '<span class="code">CREATE DATABASE indicia TEMPLATE=template_postgis;</span>',
+          Kohana::lang('setup.description'));
+      // Assign default settings if the user has not yet updated the db config
+      $db_config=kohana::config('database');
+      if ($db_config['default']['connection']['type']=='mysql') {
+        $this->template->content->host     = 'localhost';
+        $this->template->content->port     = '5432';
+        $this->template->content->user     = '';
+        $this->template->content->password = '';
+        $this->template->content->reportuser     = '';
+        $this->template->content->reportpassword = '';
+        $this->template->content->schema   = '';
+        $this->template->content->database = '';
+      } else {
+        $this->template->content->host     = $db_config['default']['connection']['host'];
+        $this->template->content->port     = $db_config['default']['connection']['port'];
+        $this->template->content->user     = $db_config['default']['connection']['user'];
+        $this->template->content->password = $db_config['default']['connection']['pass'];
+        $this->template->content->reportuser     = $db_config['report']['connection']['user'];
+        $this->template->content->reportpassword = $db_config['report']['connection']['pass'];
+        $this->template->content->schema   = $db_config['default']['schema'];
+        $this->template->content->database = $db_config['default']['connection']['database'];
+      }
     }
   }
 
