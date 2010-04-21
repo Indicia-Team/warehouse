@@ -266,6 +266,7 @@ li.ui-state-error {
 .ui-tabs .ui-tabs-hide {
   position: absolute;
   left: -10000px;
+  max-width: 2000px;
   display: block !important;
 }
 
