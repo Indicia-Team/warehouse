@@ -145,35 +145,6 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'Termlists'
         ),
         array(
-          'name'=>'map_layers',
-          'caption'=>'Available Map Layers',
-          'description'=>'List of available map background layers, comma separated. Options are '.
-              'openlayers_wms, nasa_mosaic, virtual_earth, multimap_default, multimap_landranger, google_physical, google_streets, google_hybrid or google_satellite.',
-          'type'=>'string',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'map_centroid_lat',
-          'caption'=>'Centre of Map Latitude',
-          'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
-          'type'=>'string',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'map_centroid_long',
-          'caption'=>'Centre of Map Longitude',
-          'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
-          'type'=>'string',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'map_zoom',
-          'caption'=>'Map Zoom Level',
-          'description'=>'Zoom level of the initially displayed map.',
-          'type'=>'int',
-          'group'=>'Map'
-        ),
-        array(
           'name'=>'spatial_systems',
           'caption'=>'Allowed Spatial Ref Systems',
           'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
@@ -218,8 +189,10 @@ class iform_mnhnl_citizen_science_1 {
 
     $r = "<form method=\"post\" id=\"entry_form\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
-    $r .= data_entry_helper::get_auth($args['website_id'], $args['password']);
-    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    $auth = data_entry_helper::get_read_write_auth($config['website_id'], $config['password']);
+    $r .= $auth['write'];
+    $readAuth = $auth['read'];
+    
     $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
