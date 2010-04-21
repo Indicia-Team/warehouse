@@ -227,7 +227,7 @@ class iform_ad_hoc_cetaceans {
         'parentField'=>'parent_id',
         'checkboxCol'=>false,
         'occAttrs'=> array($args['abundance_attr_id']),
-        'extraParams'=>$readAuth + array('view'=>'detail'),
+        'extraParams'=>$readAuth + array('view'=>'detail','orderby'=>'taxonomic_sort_order'),
         'survey_id'=>$args['survey_id'],
         'header' => false,
         'view' => 'detail',
@@ -352,6 +352,7 @@ class iform_ad_hoc_cetaceans {
         'label' => lang::get('Any other information'),
         'fieldname' => 'sample:comment',
         'class' => 'control-width-6',
+        'helpText' => lang::get('Instructions for any other info')
     ));
     $r .= '<div class="footer">'.data_entry_helper::checkbox(array(
         'label'=>lang::get('happy for contact'),

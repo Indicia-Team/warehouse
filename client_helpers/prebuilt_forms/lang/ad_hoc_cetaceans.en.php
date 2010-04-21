@@ -32,6 +32,7 @@ $custom_terms = array(
       'Double-click the map to zoom in and drag with the mouse to pan.',
   'Instructions for when on boat' => 'For sightings made on a boat, please enter the GPS coordinates when the sighting occurred.',
   'Instructions for latlong' => 'Enter latitude and longitude in the format degrees:decimal minutes.',
+  'Instructions for any other info' => 'Also use this box to tell us about any unidentified or rare species seen.',
   'happy for contact' => 'In some cases we may wish to contact you to confirm your sighting. Please tick this box if you are happy for this to happen',
   'Abundance count' => 'Number seen'
   
