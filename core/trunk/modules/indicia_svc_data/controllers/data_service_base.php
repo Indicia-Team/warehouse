@@ -52,24 +52,37 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     // Read calls are done using get values, so we merge the two arrays
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE; // default
+    kohana::log('debug', 'authenticating');
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
     {
+      kohana::log('debug', 'got nonce '.$array['nonce']);
+      kohana::log('debug', 'got token '.$array['auth_token']);
+      
       $nonce = $array['nonce'];
       $this->cache = new Cache;
-      $nonces = $this->cache->find($mode);
-      if (array_key_exists($nonce, $nonces))
-      {
-        $website_id = $nonces[$nonce];
-        $website = ORM::factory('website', $website_id);
-        if ($website->id) {
-          $password = $website->password;
-          if (sha1("$nonce:$password")==$array['auth_token'])
-          {
-            Kohana::log('info', "Authentication successful.");
-            $authentic=TRUE;
-            $this->website_id = $website_id;
+      // get all cache entries that match this nonce
+      $paths = $this->cache->exists($nonce);
+      
+      foreach($paths as $path) {
+        kohana::log('debug', 'path: '.$path);
+        // Find the parts of each file name, which is the cache entry ID, then the mode. 
+        $tokens = split('~', basename($path));
+        // check this cached nonce is for the correct read or write operation.
+        if ($mode = $tokens[1]) {
+          $website_id = $this->cache->get($tokens[0]);
+          $website = ORM::factory('website', $website_id);
+          if ($website->id) {
+            $password = $website->password;
+            // calculate the auth token from the nonce and the website's password. Does it match the request's auth token?
+            if (sha1("$nonce:$password")==$array['auth_token'])
+            {
+              Kohana::log('info', "Authentication successful.");
+              $authentic=TRUE;
+              $this->website_id = $website_id;
+            }
           }
         }
+        
       }
     } else {
     	$auth = new Auth();
