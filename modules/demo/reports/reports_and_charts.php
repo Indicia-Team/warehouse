@@ -26,14 +26,8 @@ $svcUrl = data_entry_helper::$base_url.'index.php/services';
 <body>
 <?php
 data_entry_helper::link_default_stylesheet();
-$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']); 
-echo data_entry_helper::report_grid(array(
-  'dataSource' => 'occurrences_by_survey',
-  'mode' => 'report',
-  'readAuth' => $readAuth,
-  'columns' => array('survey'=>array('caption' => 'Survey Title'), 'count' => array('caption' => 'Number of Occurrences')),
-  'itemsPerPage' => 10
-));
+$readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
+
 echo "<div id=\"charts\">\n";
 echo data_entry_helper::report_chart(array(
   'title' => 'Bar chart of record count per survey',
@@ -44,18 +38,20 @@ echo data_entry_helper::report_chart(array(
   'chartType' => 'bar',
   'yValues' => 'count',
   'xLabels' => 'survey',
-  'width' => 600
+  'width' => 600,
+  'axesOptions' => array('yaxis'=>array('min' => 0, 'max' => '3', 'tickInterval' => 1))
 ));
 echo data_entry_helper::report_chart(array(
   'title' => 'Demonstration line chart (y=survey website id, x=survey id)',
   'id' => 'lineChart',
-  'dataSource' => 'survey',
+  'dataSource' => array('survey', 'term'),
   'mode' => 'direct',
   'readAuth' => $readAuth,
   'chartType' => 'line',
-  'yValues' => 'website_id',
+  'yValues' => array('website_id', 'language_id'),
   'xValues' => 'id',
-  'width' => 600
+  'width' => 600,
+  'legendOptions' => array('show'=>true)
 ));
 echo data_entry_helper::report_chart(array(
   'title' => 'Demonstration pie chart of occurrences per survey',
@@ -70,6 +66,7 @@ echo data_entry_helper::report_chart(array(
   'width' => 500
 ));
 echo "</div>";
+
 echo data_entry_helper::dump_javascript();
 ?> 
 </body>
