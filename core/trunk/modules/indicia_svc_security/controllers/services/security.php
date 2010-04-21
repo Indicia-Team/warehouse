@@ -52,7 +52,6 @@ class Security_Controller extends Service_Base_Controller {
   public function get_read_write_nonces() {
     $writeNonce = $this->create_nonce('write');
     $readNonce = $this->create_nonce('read');
-    kohana::log('debug', '{"read":"'.$readNonce.'","write":"'.$writeNonce.'"}');
     echo '{"read":"'.$readNonce.'","write":"'.$writeNonce.'"}';
   }
   
