@@ -583,7 +583,6 @@ class data_entry_helper extends helper_config {
   * </ul>
   * 
   * @todo max file count
-  * @todo Internet Explorer fix/ html4 fix
   * @todo select file button pointer overriden by the flash shim
   * @todo flickr
   * @todo if using a normal file input, after validation, the input needs to show that the file upload has worked.
@@ -1405,7 +1404,22 @@ class data_entry_helper extends helper_config {
   
   /**
   * <p>Outputs a div that contains a chart.</p>
-  * <p>The chart is rendered by the jqplot plugin.</p> 
+  * <p>The chart is rendered by the jqplot plugin.</p>
+  * <p>The chart loads its data from a report, table or view indicated by the dataSource parameter, and the 
+  * method of loading is indicated by xValues, xLabels and yValues. Each of these can be an array to define
+  * a multi-series chart. The largest array from these 4 options defines the total series count. If an option
+  * is not an array, or the array is smaller than the total series count, then the last option is used to fill
+  * in the missing values. For example, by setting:<br/>
+  * 'dataSource' => array('report_1', 'report_2'),<br/>
+  * 'yValues' => 'count',<br/>
+  * 'xLabels' => 'month'<br/>
+  * then you get a chart of count by month, with 2 series' loaded separately from report 1 and report 2. Alternatively 
+  * you can use a single report, with 2 different columns for count to define the 2 series:<br/>
+  * 'dataSource' => 'combined_report',<br/>
+  * 'yValues' => array('count_1','count_2'),<br/>
+  * 'xLabels' => 'month'<br/>
+  * The latter is obviuosly slightly more efficient as only a single report is run. Pie charts will always revert to a 
+  * single series.</p>
   * 
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>mode</b><br/>
@@ -1413,7 +1427,7 @@ class data_entry_helper extends helper_config {
   * <li><b>readAuth</b><br/>
   * Read authorisation tokens.</li>
   * <li><b>dataSource</b><br/>
-  * Name of the report file or table/view to retrieve underlying data.</li>
+  * Name of the report file or table/view(s) to retrieve underlying data. Can be an array for multi-series charts.</li>
   * <li><b>class</b><br/>
   * CSS class to apply to the outer div.</li>
   * <li><b>headerClass</b><br/>
@@ -1434,17 +1448,30 @@ class data_entry_helper extends helper_config {
   * Associative array of options to pass to the jqplot legend. For more information see links below.
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
   * </li>
+  * <li><b>seriesOptions</b><br/>
+  * For line and bar charts, associative array of options to pass to the jqplot series. For example:<br/>
+  * 'seriesOptions' => array(array('label'=>'My first series','label'=>'My 2nd series'))<br/>
+  * For more information see links below.
+  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Series
+  * </li>
+  * <li><b>axesOptions</b><br/>
+  * For line and bar charts, associative array of options to pass to the jqplot axes. For example:<br/>
+  * 'axesOptions' => array('yaxis'=>array('min' => 0, 'max' => '3', 'tickInterval' => 1))<br/>
+  * For more information see links below.
+  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Axes
+  * </li>
   * <li><b>yValues</b><br/>
-  * Report or table field name which contains the data values for the y-axis (or the pie segment sizes).</li>
+  * Report or table field name(s) which contains the data values for the y-axis (or the pie segment sizes). Can be
+  * an array for multi-series charts.</li>
   * <li><b>xValues</b><br/>
-  * Report or table field name which contains the data values for the x-axis. Only used where the x-axis has a numerical value
-  * rather than showing arbitrary categories.</li>
+  * Report or table field name(s) which contains the data values for the x-axis. Only used where the x-axis has a numerical value
+  * rather than showing arbitrary categories. Can be an array for multi-series charts.</li>
   * <li><b>xLabels</b><br/>
   * When the x-axis shows arbitrary category names (e.g. a bar chart), then this indicates the report or view/table
-  * field which contains the labels. Also used for pie chart segment names.</li>
+  * field(s) which contains the labels. Also used for pie chart segment names. Can be an array for multi-series 
+  * charts.</li>
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
-  * @todo multiple chart series support.
   */
   public static function report_chart($options) {
     $options = array_merge(array(
@@ -1456,7 +1483,9 @@ class data_entry_helper extends helper_config {
       'width' => 400,
       'chartType' => 'line', // bar, pie
       'rendererOptions' => array(),
-      'legendOptions' => array()
+      'legendOptions' => array(),
+      'seriesOptions' => array(),
+      'axesOptions' => array()
     ), $options);
     // @todo Check they have supplied a valid set of data & label field names 
     self::add_resource('jqplot');
@@ -1475,31 +1504,70 @@ class data_entry_helper extends helper_config {
     if (isset($options['xLabels'])) {
       self::add_resource('jqplot_category_axis_renderer');
     }
-    $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['legendOptions'])."}"; 
+    $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}"; 
     $opts[] = 'legend:'.json_encode($options['legendOptions']);
-    $data=self::get_report_data($options);
-    $values=array();
-    $xLabels=array();
-    foreach ($data as $row) {
-      if (isset($options['xValues']))
-        // 2 dimensional data
-        $values[] = '['.$row[$options['xValues']].','.$row[$options['yValues']].']';
-      else {
-        // 1 dimensional data, so we should have labels. For a pie chart these are use as x data values. For other charts they are axis labels.
-        if ($options['chartType']=='pie') {
-          $values[] = '["'.$row[$options['xLabels']].'",'.$row[$options['yValues']].']';
-        } else {
-          $values[] = $row[$options['yValues']];
-          if (isset($options['xLabels']))
-            $xLabels[] = $row[$options['xLabels']];
+    $opts[] = 'series:'.json_encode($options['seriesOptions']);
+    // make yValues, xValues, xLabels and dataSources into arrays of the same length so we can treat single and multi-series the same
+    $yValues = is_array($options['yValues']) ? $options['yValues'] : array($options['yValues']);
+    $dataSources = is_array($options['dataSource']) ? $options['dataSource'] : array($options['dataSource']);
+    if (isset($options['xValues'])) $xValues = is_array($options['xValues']) ? $options['xValues'] : array($options['xValues']);
+    if (isset($options['xLabels'])) $xLabels = is_array($options['xLabels']) ? $options['xLabels'] : array($options['xLabels']);
+    // What is this biggest array? This is our series count.
+    $seriesCount = max(
+        count($yValues), 
+        count($dataSources), 
+        (isset($xValues) ? count($xValues) : 0), 
+        (isset($xLabels) ? count($xLabels) : 0)
+    );
+    // any array that is too short must be padded out with the last entry
+    if (count($yValues)<$seriesCount) $yValues = array_pad($yValues, $seriesCount, $yValues[count($yValues)-1]); 
+    if (count($dataSources)<$seriesCount) $dataSources = array_pad($dataSources, $seriesCount, $dataSources[count($dataSources)-1]);
+    if (isset($xValues) && count($xValues)<$seriesCount) $xValues = array_pad($xValues, $seriesCount, $xValues[count($xValues)-1]);
+    if (isset($xLabels) && count($xLabels)<$seriesCount) $xLabels = array_pad($xLabels, $seriesCount, $xLabels[count($xLabels)-1]);
+    // build the series data
+    $seriesData = array();
+    $lastRequestSource = '';
+    for ($idx=0; $idx<$seriesCount; $idx++) {
+      // copy the array data back into the options array to make a normal request for report data
+      $options['yValues'] = $yValues[$idx];
+      $options['dataSource'] = $dataSources[$idx];
+      if (isset($xValues)) $options['xValues'] = $xValues[$idx];
+      if (isset($xLabels)) $options['xLabels'] = $xLabels[$idx];
+      // now request the report data, only if the last request was not for the same data
+      if ($lastRequestSource != $options['dataSource'])
+        $data=self::get_report_data($options);
+      $lastRequestSource = $options['dataSource'];
+      $values=array();
+      $xLabelsForSeries=array();
+      foreach ($data as $row) {
+        if (isset($options['xValues']))
+          // 2 dimensional data
+          $values[] = '['.$row[$options['xValues']].','.$row[$options['yValues']].']';
+        else {
+          // 1 dimensional data, so we should have labels. For a pie chart these are use as x data values. For other charts they are axis labels.
+          if ($options['chartType']=='pie') {
+            $values[] = '["'.$row[$options['xLabels']].'",'.$row[$options['yValues']].']';
+          } else {
+            $values[] = $row[$options['yValues']];
+            if (isset($options['xLabels']))
+              $xLabelsForSeries[] = $row[$options['xLabels']];
+          }
         }
       }
+      // each series will occupy an entry in $seriesData
+      $seriesData[] = '['.implode(',', $values).']';
     }
     if (isset($options['xLabels']) && $options['chartType']!='pie') {
       // make a renderer to output x axis labels
-      $opts[] = 'axes:{xaxis:{renderer:$.jqplot.CategoryAxisRenderer, ticks:["'.implode('","',$xLabels).'"]}}';
+      $options['axesOptions']['xaxis']['renderer'] = '$.jqplot.CategoryAxisRenderer';
+      $options['axesOptions']['xaxis']['ticks'] = $xLabelsForSeries;
     }
-    self::$javascript .= "$.jqplot('".$options['id']."',  [[".implode(',', $values)."]], \n{".implode(",\n", $opts)."});\n";
+    // We need to fudge the json so the renderer class is not a string
+    $opts[] = str_replace('"$.jqplot.CategoryAxisRenderer"', '$.jqplot.CategoryAxisRenderer',
+        'axes:'.json_encode($options['axesOptions']));
+
+    // Finally, dump out the Javascript with our constructed parameters
+    self::$javascript .= "$.jqplot('".$options['id']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});\n";
     $r = '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
     if (isset($options['title'])) 
       $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
