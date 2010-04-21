@@ -76,12 +76,24 @@ $indicia_templates = array(
       'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
       "\n/* ]]> */</script>\n".
       "<noscript><ul>{tabs}</ul></noscript>\n",
-  'tab_next_button' => '<div{class}>'.
-      '<span>{captionNext}</span><span class="ui-icon ui-icon-circle-arrow-e"></span></div>',
-  'tab_prev_button' => '<div{class}>'.
-      '<span class="ui-icon ui-icon-circle-arrow-w"></span><span>{captionPrev}</span></div>',
-  'submit_button' => '<div{class}>'.
-      '<span>{captionSave}</span></div>',
+  'tab_next_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div{class}>');\n".
+    "document.write('  <span>{captionNext}</span>');\n".
+    "document.write('  <span class=\"ui-icon ui-icon-circle-arrow-e\"></span>');\n".
+    "document.write('</div>');\n".
+    "/* ]]> */</script>\n",
+  'tab_prev_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div{class}>');\n".
+    "document.write('  <span class=\"ui-icon ui-icon-circle-arrow-w\"></span>');\n".
+    "document.write('  <span>{captionPrev}</span>');\n".
+    "document.write('</div>');\n".
+    "/* ]]> */</script>\n",
+  'submit_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div{class}>');\n".
+    "document.write('  <span>{captionSave}</span>');\n".
+    "document.write('</div>');\n".
+    "/* ]]> */</script>\n".
+    "<noscript><input type=\"submit\" value=\"{captionSave}\" /></noscript>\n",
   'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
       '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
