@@ -187,22 +187,14 @@ class iform_mnhnl_citizen_science_1 {
     global $user;
     $logged_in = $user->uid>0;
 
-    $r = "<form method=\"post\" id=\"entry_form\">\n";
+    $r = "\n<form method=\"post\" id=\"entry_form\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
-    $auth = data_entry_helper::get_read_write_auth($config['website_id'], $config['password']);
-    $r .= $auth['write'];
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $readAuth = $auth['read'];
     
-    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
-
-    if ($logged_in) {
-      // If logged in, output some hidden data about the user
-      $r .= iform_user_get_hidden_inputs($args);
-    }
+    
     $r .= "<div id=\"controls\">\n";
 
     if ($args['interface']!='one_page') {
@@ -251,6 +243,15 @@ class iform_mnhnl_citizen_science_1 {
       $r .= "</div>\n";
     }
     $r .= "<div id=\"species\">\n";
+    // Output all our hidden data here
+    $r .= $auth['write'];
+    if ($logged_in) {
+      // If logged in, output some hidden data about the user
+      $r .= iform_user_get_hidden_inputs($args);
+    }
+    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
+    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
+    $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('species tab instructions')."</p>";
 	  $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
 	  if ($args['preferred']) {
@@ -314,6 +315,12 @@ class iform_mnhnl_citizen_science_1 {
     $r .= data_entry_helper::date_picker(array(
         'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
+    ));
+    echo data_entry_helper::file_box(array(
+        'caption' => 'Upload your photos',
+        'resizeWidth' => 1024,
+        'resizeHeight' => 768,
+        'table' => 'occurrence_image'
     ));
     // Dynamically create a control for the abundance
     $abundance_args = array(
