@@ -36,7 +36,6 @@ class iform_pollenators {
 
 	/* TODO
 	 * Functionality shortfalls:
-	 *	Location look ups.
 	 *	Carry out checks on completion.
 	 *	ID tool results storage.
 	 *	Sessions context sensitive help
@@ -44,7 +43,6 @@ class iform_pollenators {
 	 * 		need to check if there are any insects/photos attached to the session
 	 * 		when a sample_id exists in the form, set a deleted flag in the db, and submit, then delete dom
 	 * 		put up a confirmation alert on Deleting
-	 *  Change map so all locations searched for go on location layer, not editLayer.
 	 * Functionality nice to haves:
 	 *	Ajaxform error handling, also image loading and json. Also put in checks if setting data[] that we are setting the correct entries.
 	 *	nsp on floral station - "do not know"
@@ -220,7 +218,7 @@ class iform_pollenators {
           'caption'=>'Foraging Attribute ID',
           'description'=>'The Indicia ID for the occurrence attribute that stores the foraging flag.',
           'type'=>'int',
-          'group'=>'Insect AttributesX'
+          'group'=>'Insect Attributes'
       ),
 
       array(
@@ -327,7 +325,36 @@ class iform_pollenators {
           'type'=>'string',
           'group'=>'ID Tool',
       	  'required'=>false
+      ),
+      array(
+          'name'=>'INSEE_url',
+          'caption'=>'URL for INSEE Search WFS service',
+          'description'=>'The URL used for the WFS feature lookup when search for INSEE numbers.',
+          'type'=>'string',
+          'group'=>'INSEE Search'
+      ),
+      array(
+          'name'=>'INSEE_prefix',
+          'caption'=>'Feature type prefix for INSEE Search',
+          'description'=>'The Feature type prefix used for the WFS feature lookup when search for INSEE numbers.',
+          'type'=>'string',
+          'group'=>'INSEE Search'
+      ),
+      array(
+          'name'=>'INSEE_type',
+          'caption'=>'Feature type for INSEE Search',
+          'description'=>'The Feature type used for the WFS feature lookup when search for INSEE numbers.',
+          'type'=>'string',
+          'group'=>'INSEE Search'
+      ),
+      array(
+          'name'=>'INSEE_ns',
+          'caption'=>'Name space for INSEE Search',
+          'description'=>'The Name space used for the WFS feature lookup when search for INSEE numbers.',
+          'type'=>'string',
+          'group'=>'INSEE Search'
       )
+
       
       ) 
     );
@@ -533,6 +560,8 @@ $.fn.showPanel = function(){
 $.fn.hidePanel = function(){
 	this.addClass('poll-hide'); 
 };
+
+inseeLayer = null;
 
 defaultSref = '".
     		((int)$args['map_centroid_lat'] > 0 ? $args['map_centroid_lat'].'N' : (-((int)$args['map_centroid_lat'])).'S').' '.
@@ -743,27 +772,11 @@ $('#cc-1-reinit-button').click(function() {
 //      'georefLang' => $args['language']
 //    ));
 
- 	data_entry_helper::$javascript .= "
-// Create vector layer to display the location onto
-// the default edit layer is used for the sample itself
-locStyleMap = new OpenLayers.StyleMap({
-                \"default\": new OpenLayers.Style({
-                    pointRadius: 3,
-                    fillColor: \"Red\",
-                    fillOpacity: 0.3,
-                    strokeColor: \"Red\",
-                    strokeWidth: 1
-          })
-  });
-locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
-                                    {styleMap: locStyleMap});
-
-";
-
     $options = iform_map_get_map_options($args, $readAuth);
     // The maps internal projection will be left at its default of 900913.
-    $options['layers'][] = 'locationLayer';
+    $options['searchLayer'] = 'true';
     $options['initialFeatureWkt'] = null;
+    $options['proxy'] = '';
 //  $options['scroll_wheel_zoom'] = false;
     $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id']);
     $species_ctrl_args=array(
@@ -833,15 +846,13 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       		'georefCountry' => $args['georefCountry'],
       		'georefLang' => $args['language']
     		)).'
-        <label for="place:postcode">'.lang::get('LANG_Or').'</label>
- 		<input type="text" name="place:postcode" value="code postal"
-	 		onclick="if(this.value==\'code postal\'){this.value=\'\'; this.style.color=\'#000\'}"  
-            onblur="if(this.value==\'\'){this.value=\'code postal\'; this.style.color=\'#555\'}" /><br />
+    	<span>(LANG TBD This may be a village/town/city name, region, department or 5 digit postcode.)</span>
  	    <label for="place:INSEE">'.lang::get('LANG_Or').'</label>
- 		<input type="text" name="place:INSEE" value="INSEE No."
-	 		onclick="if(this.value==\'INSEE No.\'){this.value=\'\'; this.style.color=\'#000\'}"  
-            onblur="if(this.value==\'\'){this.value=\'INSEE No.\'; this.style.color=\'#555\'}" /><br />
- 	    <label for="place:latlong">'.lang::get('LANG_Lat').'</label>
+ 		<input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
+	 		onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
+            onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
+    	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default indicia-button" value="Search" /><br />
+        <label for="place:latlong">'.lang::get('LANG_Lat').'</label>
  		<div class="poll-latlong">
  	    <input type="text" name="place:latDeg" value="" />
  		<input type="text" name="place:latMin" value="" />
@@ -917,16 +928,81 @@ jQuery('#cc-2-display-location-button').click(function(){
 	if(!isNaN(tmp)) long = long + tmp/3600;
 	else jQuery('[name=place\\:longSec]').val(0);
 	
-    locationLayer.destroyFeatures();
+    jQuery('#map')[0].map.searchLayer.destroyFeatures();
     // We are keeping to ESPG:4326 as this is used by GPS equipment. The map is in 900913.
     var geom = new OpenLayers.Geometry.Point(long, lat);
     geom.transform(new OpenLayers.Projection('EPSG:4326'), new OpenLayers.Projection('EPSG:900913'));
     var lonLat = new OpenLayers.LonLat(long, lat);
     lonLat.transform(new OpenLayers.Projection('EPSG:4326'), new OpenLayers.Projection('EPSG:900913'));
     var feature = new OpenLayers.Feature.Vector(geom);
-	locationLayer.addFeatures([feature]);
+	jQuery('#map')[0].map.searchLayer.addFeatures([feature]);
 	// Translate but do not zoom to this feature.
-	locationLayer.map.setCenter(lonLat);
+	jQuery('#map')[0].map.setCenter(lonLat);
+});
+
+jQuery('#search-insee-button').click(function(){
+	if(inseeLayer != null)
+		inseeLayer.destroy();
+	var filters = [];
+  	var place = jQuery('input[name=place\\:INSEE]').val();
+  	if(place == '".lang::get('LANG_INSEE')."') return;
+  	filters.push(new OpenLayers.Filter.Comparison({
+  			type: OpenLayers.Filter.Comparison.EQUAL_TO ,
+    		property: 'INSEE_NEW',
+    		value: place
+  		}));
+  	filters.push(new OpenLayers.Filter.Comparison({
+  			type: OpenLayers.Filter.Comparison.EQUAL_TO ,
+    		property: 'INSEE_OLD',
+    		value: place
+  		}));
+
+	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
+	var styleMap = new OpenLayers.StyleMap({
+                \"default\": new OpenLayers.Style({
+                    fillColor: \"Red\",
+                    strokeColor: \"Red\",
+                    fillOpacity: 0.4,
+                    strokeWidth: 1
+                  })
+	});
+	inseeLayer = new OpenLayers.Layer.Vector('INSEE Layer', {
+		  styleMap: styleMap,
+          strategies: [strategy],
+          displayInLayerSwitcher: false,
+	      protocol: new OpenLayers.Protocol.WFS({
+              url:  '".$args['INSEE_url']."',
+              featurePrefix: '".$args['INSEE_prefix']."',
+              featureType: '".$args['INSEE_type']."',
+              geometryName:'the_geom',
+              featureNS: '".$args['INSEE_ns']."',
+              srsName: 'EPSG:900913',
+              version: '1.1.0'                  
+      		  ,propertyNames: ['the_geom']
+  			})
+    });
+	inseeLayer.events.register('featuresadded', {}, function(a1){
+		var div = jQuery('#map')[0];
+		div.map.searchLayer.destroyFeatures();
+		var bounds=inseeLayer.getDataExtent();
+    	var dy = (bounds.top-bounds.bottom)/10;
+    	var dx = (bounds.right-bounds.left)/10;
+    	bounds.top = bounds.top + dy;
+    	bounds.bottom = bounds.bottom - dy;
+    	bounds.right = bounds.right + dx;
+    	bounds.left = bounds.left - dx;
+    	// if showing a point, don't zoom in too far
+    	if (dy===0 && dx===0) {
+    		div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+    	} else {
+    		div.map.zoomToExtent(bounds);
+    	}
+    });
+	jQuery('#map')[0].map.addLayer(inseeLayer);
+	strategy.load({filter: new OpenLayers.Filter.Logical({
+			      type: OpenLayers.Filter.Logical.OR,
+			      filters: filters
+		  	  })});
 });
 
 validateStationPanel = function(){
@@ -1866,6 +1942,10 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 // it is also complicated by the attibutes and images being loaded asynchronously - and non-linearly.
 // Do the best we can! 
 
+    data_entry_helper::$onload_javascript .= "jQuery('#map')[0].map.searchLayer.events.register('featuresadded', {}, function(a1){
+	if(inseeLayer != null)
+		inseeLayer.destroyFeatures();
+});\n";
 
 	global $indicia_templates;
 	$r .= $indicia_templates['loading_block_end'];

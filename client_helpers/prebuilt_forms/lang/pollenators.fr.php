@@ -46,6 +46,7 @@ $custom_terms = array(
 	,'LANG_Environment_Notes' => "Cett image doit rendre compte de l'environnement botanique de la fleur (typiquement un champ de 2 mètre de large)" 
 	,'LANG_Location_Notes' => 'Localiser la fleur : placer votre repère sur la carte ou utilise les champs ci-dessous :'
 	,'LANG_Or' => 'ou :'
+	,'LANG_INSEE' => 'INSEE No.'
 	,'Flower Type' => "Il s'agit d'une fleur"
 	,'Habitat' => "Il s'agit d'un habitat"
 	,'Nearest House' => "Distance approximative entre votre fleur et la ruche d'abeille domestique la plus proche (mètre)"

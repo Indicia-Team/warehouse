@@ -50,21 +50,31 @@
      * Add a well known text definition of a feature to the map.
      * @access private
      */
-    function _showWktFeature(div, wkt) {
-      var editlayer = div.map.editLayer;
+    function _showWktFeature(div, wkt, layer, invisible) {
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
-      var bounds=feature.geometry.getBounds();
-
-      editlayer.destroyFeatures();
-      editlayer.addFeatures([feature]);
-      // extend the boundary to include a buffer, so the map does not zoom too tight.
+      if ( opts.searchLayer && layer == div.map.searchLayer) feature.style = new style(true);
+      layer.destroyFeatures();
+      var features = [feature];
+      if(invisible != null){
+          $.each(invisible, function(i,corner){
+        	  feature = parser.read(corner);
+        	  feature.style = new style(true);
+        	  feature.style.pointRadius = 0;
+        	  features.push(feature);
+          });
+      }
+      layer.addFeatures(features);
+      var bounds=layer.getDataExtent();
       var dy = (bounds.top-bounds.bottom)/1.5;
       var dx = (bounds.right-bounds.left)/1.5;
-      bounds.top = bounds.top + dy;
-      bounds.bottom = bounds.bottom - dy;
-      bounds.right = bounds.right + dx;
-      bounds.left = bounds.left - dx;
+      if(invisible == null) { // invisible marks the boundary of what to display.
+          // extend the boundary to include a buffer, so the map does not zoom too tight.
+    	  bounds.top = bounds.top + dy;
+    	  bounds.bottom = bounds.bottom - dy;
+    	  bounds.right = bounds.right + dx;
+    	  bounds.left = bounds.left - dx;
+      }
       // if showing a point, don't zoom in too far
       if (dy===0 && dx===0) {
         div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
@@ -72,17 +82,19 @@
         // Set the default view to show something triple the size of the grid square
         div.map.zoomToExtent(bounds);
       }
+//      layer.destroyFeatures(features.slice(1));
+
     }
 
     /*
      * An OpenLayers vector style object
      */
-    function style() {
-      this.fillColor = opts.fillColor;
+    function style(isSearch) {
+      this.fillColor = isSearch ? opts.fillColorSearch : opts.fillColor;
       this.fillOpacity = opts.fillOpacity;
       this.hoverFillColor = opts.hoverFillColor;
       this.hoverFillOpacity = opts.hoverFillOpacity;
-      this.strokeColor = opts.strokeColor;
+      this.strokeColor = isSearch ? opts.strokeColorSearch : opts.strokeColor;
       this.strokeOpacity = opts.strokeOpacity;
       this.strokeWidth = opts.strokeWidth;
       this.strokeLinecap = opts.strokeLinecap;
@@ -225,7 +237,7 @@
           "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
             // store value in saved field?
             if (data.length>0) {
-              _showWktFeature(div, data[0].centroid_geom);
+              _showWktFeature(div, data[0].centroid_geom, div.map.editLayer, null);
             }
           }
         );
@@ -238,14 +250,14 @@
           "&system=" + _getSystem() +
           "&callback=?", function(data) {
             // store value in saved field?
-            _showWktFeature(div, data.wkt);
+            _showWktFeature(div, data.wkt, div.map.editLayer, null);
             $('#'+opts.geomId).val(data.wkt);
           }
       );
     }
     
     /**
-     * Having clicked on the map, and asked warehouse services to transform this to a WKT, add the feature to the map.
+     * Having clicked on the map, and asked warehouse services to transform this to a WKT, add the feature to the map editlayer.
      */
     function _setClickPoint(data, div) {
       $('#'+opts.srefId).val(data.sref);
@@ -259,7 +271,7 @@
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(data.wkt);
-      feature.style = new style();
+      feature.style = new style(false);
       if (div.map.projection.getCode() != 'EPSG:900913') {
         feature.geometry.transform(new OpenLayers.Projection('EPSG:900913'), div.map.projection);
       }
@@ -278,6 +290,8 @@
       $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).hide();
       $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId).empty();
       var ref;
+      var corner1;
+      var corner2;
       var searchtext = $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchId).val();
       if (searchtext != '') {
         var request = 'http://where.yahooapis.com/v1/places.q("' +
@@ -299,13 +313,17 @@
           });
           if (found.count==1 && found.places[0].name.toLowerCase()==searchtext.toLowerCase()) {
             ref=found.places[0].centroid.latitude + ', ' + found.places[0].centroid.longitude;
-            _displayLocation(div, ref);
+            corner1=found.places[0].boundingBox.northEast.latitude + ', ' + found.places[0].boundingBox.northEast.longitude;
+            corner2=found.places[0].boundingBox.southWest.latitude + ', ' + found.places[0].boundingBox.southWest.longitude;
+            _displayLocation(div, ref, corner1, corner2);
           } else if (found.count!==0) {
             $('<p>'+opts.msgGeorefSelectPlace+'</p>')
                     .appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
             var ol=$('<ol>'), placename;
             $.each(found.places, function(i,place){
               ref= place.centroid.latitude + ', ' + place.centroid.longitude;
+              corner1=place.boundingBox.northEast.latitude + ', ' + place.boundingBox.northEast.longitude;
+              corner2=place.boundingBox.southWest.latitude + ', ' + place.boundingBox.southWest.longitude;
               placename = place.name+' (' + place.placeTypeName + ')';
               if (place.admin1!='') {
                 placename = placename + ', '+place.admin1;
@@ -318,7 +336,7 @@
                 $("<a href='#'>" + placename + "</a>").click((
                   function(ref){
                     return function() { 
-                      _displayLocation(div, ref);
+                      _displayLocation(div, ref, corner1, corner2);
                     };
                   }
                 )(ref))
@@ -338,13 +356,15 @@
     * After georeferencing a place, display a point on the map representing that place.
     * @access private
     */
-    function _displayLocation(div, ref)
+    function _displayLocation(div, ref, corner1, corner2)
     {
-      $.getJSON(
-        opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + ref + "&system=4326" + "&callback=?", function(data) {
-          _showWktFeature(div, data.wkt);
-        }
-      );
+      $.getJSON(opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + ref + "&system=4326" + "&callback=?", function(dataref) {
+        $.getJSON(opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + corner1 + "&system=4326" + "&callback=?", function(datac1) {
+          $.getJSON(opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + corner2 + "&system=4326" + "&callback=?", function(datac2) {
+            _showWktFeature(div, dataref.wkt, div.map.searchLayer, [datac1.wkt, datac2.wkt]);
+          });
+        });
+      });
     }
 
     /**
@@ -445,10 +465,17 @@
         // Draw the feature to be loaded on startup, if present
         if (this.settings.initialFeatureWkt)
         {
-          _showWktFeature(this, this.settings.initialFeatureWkt);
+          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null);
         }
       }
-
+      if (this.settings.searchLayer) {
+          // Add an editable layer to the map
+          var searchLayer = new OpenLayers.Layer.Vector(this.settings.searchLayerName, {style: this.settings.searchStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.searchLayerInSwitcher});
+          div.map.searchLayer = searchLayer;
+          div.map.addLayer(div.map.searchLayer);
+      } else {
+    	  div.map.searchLayer = div.map.editLayer;
+      }
       // Add any map controls
       $.each(this.settings.controls, function(i, item) {
         div.map.addControl(item);
@@ -497,6 +524,9 @@ $.fn.indiciaMapPanel.defaults = {
     editLayer: true,
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
+    searchLayer: false, // determines whether we have a separate layer for the display of location searches, eg georeferencing. Defaults to editLayer.
+    searchLayerName: 'Search layer',
+    searchLayerInSwitcher: false,
     initialFeatureWkt: null,
     defaultSystem: 'OSGB',
     latLongFormat: 'D',
@@ -528,11 +558,15 @@ $.fn.indiciaMapPanel.defaults = {
     hoverPointRadius: 1,
     hoverPointUnit: '%',
     pointerEvents: 'visiblePainted',
-    cursor: ''
+    cursor: '',
 
     /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a
      * displayedSrefPrecisionMin and Mx for a square size output into a list box as you hover. Both of these could either be
      * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
+	// Additional options for OpenLayers.Feature.Vector.style on the search layer.
+    fillColorSearch: '#ee0000',
+    strokeColorSearch: '#ee0000'
+
 };
 
 /**
