@@ -38,6 +38,7 @@ $custom_terms = array(
 
 	,'LANG_Flower_Station' => "YOUR FLORAL STATION"
 	,'LANG_Upload_Flower' => 'Upload a picture of the Flower'
+	,'LANG_ID_Flower_Later' => 'You would prefer to identify it later:'
 	,'LANG_Identify_Flower' => 'Select the name of this flower'
 	,'LANG_Flower_Species' => "You know the taxon for this flower"
 	,'LANG_Choose_Taxon' => "Choose a Taxon from the list"
@@ -47,6 +48,8 @@ $custom_terms = array(
 	,'LANG_Environment_Notes' => 'This image must reflect the botanical environment of the flower (typically a 2 meter wide area)'
 	,'LANG_Location_Notes' => 'Flower Location : click on the map or use the fields below:'
 	,'LANG_Or' => 'or :'
+	,'LANG_INSEE' => 'INSEE No.'
+	,'LANG_Lat' => 'Lat./Long.'
 	,'Flower Type' => "The Flower is"
 	,'Habitat' => "The habitat is"
 	,'Nearest House' => "Approximate distance between your flower and the nearest honeybee hive (metres)"
@@ -78,7 +81,9 @@ $custom_terms = array(
 	,'LANG_Validate_Photos' => 'Save Photos'
 	
 	,'validation_required' => 'Please enter a value for this field'
-		
+	
+	,'LANG_Can_Complete_Msg' => 'You have identified the Flower and a sufficient number of insects, so you may now close the collection'
+	,'LANG_Cant_Complete_Msg' => 'You have either: not identified the Flower, AND/OR not identified a sufficient number of insects. You will need to correct this before you can close the collection.'
 	,'LANG_Trailer_Head' => 'After closing this collection'
 	,'LANG_Trailer_Point_1' => "you can no longer add to this collection's list of insects: are you sure there are no more?"
 	,'LANG_Trailer_Point_2' => "you can no longer change the different values describing this floral station, sessions and photos."
