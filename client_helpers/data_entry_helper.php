@@ -2803,7 +2803,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
     $cacheOpts['table'] = $options['table'];
     $cacheOpts['indicia_website_id'] = self::$website_id;
-    /* If present 'auth_token' amd 'nonce' are ignored as these are session dependant. */
+    /* If present 'auth_token' and 'nonce' are ignored as these are session dependant. */
     if (array_key_exists('auth_token', $cacheOpts)) {
       unset($cacheOpts['auth_token']);
     }
@@ -2812,8 +2812,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
 
     $cacheTimeOut = self::_getCacheTimeOut($options);
-    /* TODO : confirm if upload directory is best place for cache files */
-    $cacheFile = self::_getCacheFileName(parent::$upload_path, $cacheOpts, $cacheTimeOut);
+    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+    $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
     if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
       $response = self::http_post($request, null);
     self::_timeOutCacheFile($cacheFile, $cacheTimeOut);
@@ -3869,13 +3869,14 @@ $('.ui-state-default').live('mouseout', function() {
         $r .= '<li class="ui-widget ui-state-error">Warning: The following configuration entries are not specified in helper_config.php : '.
             implode(', ', $blank_configs).'. This means the respective areas of functionality will not be available.</li>';
       }
-	  // Test we have a writeable upload directory
-	  if (!is_dir(parent::$upload_path)) {
-	    $r .= '<li class="ui-state-error">The upload path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
-      } elseif (!is_writeable(parent::$upload_path)) {
-	    $r .= '<li class="ui-state-error">The upload path setting in helper_config.php points to a read only directory (' . parent::$upload_path . '). This will result in slow form loading performance.</li>';
-  	} elseif ($fullInfo) {
-        $r .= '<li>Success: Upload directory is present and writeable.</li>';
+    // Test we have a writeable cache directory
+    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+    if (!is_dir($cacheFolder)) {
+      $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
+      } elseif (!is_writeable($cacheFolder)) {
+      $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . parent::$upload_path . '). This will result in slow form loading performance.</li>';
+    } elseif ($fullInfo) {
+        $r .= '<li>Success: Cache directory is present and writeable.</li>';
       }
     }
     $r .= '</ul></div>';
