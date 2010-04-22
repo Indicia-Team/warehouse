@@ -169,9 +169,7 @@ input, select, textarea {
 }
 
 .indicia-button span {
-  display:inline-block;
-  zoom:1;
-  *display:inline;
+  float: left;
   vertical-align: middle;
   position: relative;
 }
@@ -253,10 +251,6 @@ li.ui-state-error {
   display:inline-block;
   zoom:1;
   *display:inline;
-}
-
-.ui-tabs-panel {
-  overflow: auto;
 }
 
 .olMap img {
