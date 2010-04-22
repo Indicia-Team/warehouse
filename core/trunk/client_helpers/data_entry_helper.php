@@ -2348,7 +2348,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $r .= self::apply_template('submit_button', $options);
       }
     }
-    $r .= '</div>';
+    $r .= '</div><div style="clear:both"></div>';
     return $r;
   }
 
