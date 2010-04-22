@@ -156,7 +156,7 @@
               sref = lonlat.lat + ', ' + lonlat.lon;
             }
             if (outputSystem != '900913') {
-              lonlat.transform(div.map.projection, new OpenLayers.Projection('EPSG:900913'));
+              lonlat.transform(div.map.projection, div.indiciaProjection);
             }
             var wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
             _setClickPoint({
@@ -164,21 +164,21 @@
              'wkt' : wkt
             }, div);
           } else {
-            if (div.map.projection.getCode() != 'EPSG:900913') {
+            if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
               // Indicia expects the WKT in 900913 (it's internal format)
-              lonlat.transform(div.map.projection, new OpenLayers.Projection('EPSG:900913'));
+              lonlat.transform(div.map.projection, div.indiciaProjection);
             }
             var wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
             $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
-	                  "?wkt=" + wkt +
-	                  "&system=" + outputSystem +
-	                  "&precision=" + precision +
-	                  "&output=" + div.settings.latLongFormat +
-	                  "&callback=?", function(data)
-	    {
-	      _setClickPoint(data, div);
-	    });          
-
+                    "?wkt=" + wkt +
+                    "&system=" + outputSystem +
+                    "&precision=" + precision +
+                    "&output=" + div.settings.latLongFormat +
+                    "&callback=?", function(data)
+              {
+                _setClickPoint(data, div);
+              }
+            );
           }
         }
       });
@@ -272,12 +272,8 @@
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(data.wkt);
       feature.style = new style(false);
-      if (div.map.projection.getCode() != 'EPSG:900913') {
-        feature.geometry.transform(new OpenLayers.Projection('EPSG:900913'), div.map.projection);
-      }
-      var proj = div.map.projection.getCode();
-      if (proj!='900913') {
-        feature.geometry.transform(new OpenLayers.Projection('EPSG:900913'), new OpenLayers.Projection('EPSG:' + proj));
+      if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+        feature.geometry.transform(div.indiciaProjection, div.map.projection);
       }
       div.map.editLayer.addFeatures([feature]);
     }
@@ -402,6 +398,9 @@
 
       // Keep a reference to this, to simplify scoping issues.
       var div = this;
+      
+      // Create a projection to represent data in the Indicia db
+      div.indiciaProjection = new OpenLayers.Projection('EPSG:900913');
 
       // Constructs the map
       div.map = new OpenLayers.Map($(this)[0], olOpts);
