@@ -56,29 +56,34 @@
       if ( opts.searchLayer && layer == div.map.searchLayer) feature.style = new style(true);
       layer.destroyFeatures();
       var features = [feature];
+
       if(invisible != null){
-          $.each(invisible, function(i,corner){
-        	  feature = parser.read(corner);
-        	  feature.style = new style(true);
-        	  feature.style.pointRadius = 0;
-        	  features.push(feature);
-          });
+        //there are invisible features that define the map extent
+        $.each(invisible, function(i,corner){
+          feature = parser.read(corner);
+          feature.style = new style(true);
+          feature.style.pointRadius = 0;
+          features.push(feature);
+        });
       }
       layer.addFeatures(features);
       var bounds=layer.getDataExtent();
-      var dy = (bounds.top-bounds.bottom)/1.5;
-      var dx = (bounds.right-bounds.left)/1.5;
-      if(invisible == null) { // invisible marks the boundary of what to display.
-          // extend the boundary to include a buffer, so the map does not zoom too tight.
+
+      if(invisible == null) {
+        // extend the boundary to include a buffer, so the map does not zoom too tight.
+        var dy = (bounds.top-bounds.bottom) * div.settings.maxZoomBuffer;
+        var dx = (bounds.right-bounds.left) * div.settings.maxZoomBuffer;
     	  bounds.top = bounds.top + dy;
     	  bounds.bottom = bounds.bottom - dy;
     	  bounds.right = bounds.right + dx;
     	  bounds.left = bounds.left - dx;
       }
-      // if showing a point, don't zoom in too far
-      if (dy===0 && dx===0) {
+
+      if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+        // if showing something small, don't zoom in too far
         div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
-      } else {
+      }
+      else {
         // Set the default view to show something triple the size of the grid square
         div.map.zoomToExtent(bounds);
       }
@@ -538,7 +543,8 @@ $.fn.indiciaMapPanel.defaults = {
     clickedSrefPrecisionMax: '',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
-    maxZoom: 13,
+    maxZoom: 13, //maximum zoom when relocating to gridref, postcode etc.
+    maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
 
     //options for OpenLayers. Feature. Vector. style
     fillColor: '#ee9900',
