@@ -21,7 +21,9 @@
 /**
 * jQuery datagrid that hooks up to Indicia data services.
 * We apply this to some sort of container - all elements will be dropped into this.
+* Note, this plugin is deprecated, use the data_entry_helper::report_grid method instead.
 * @requires jQuery v1.2.3
+* @deprecated
 */
 
 (function($) {
