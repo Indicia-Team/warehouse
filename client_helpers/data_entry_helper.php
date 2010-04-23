@@ -268,6 +268,42 @@ class data_entry_helper extends helper_config {
    * @var array List of all error messages returned from an attempt to save.
    */
   public static $validation_errors=null;
+  
+  /**
+   * @var integer Length of time in seconds after which cached Warehouse responses will start to expire.
+   */
+  public static $cache_timeout=3600;
+  
+  /**
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is 
+   * cached but older than the cache timeout, the cached data will be refreshed. This introduces a random element to 
+   * cache refreshes so that no single form load event is responsible for refreshing all cached content.
+   */
+  public static $cache_chance_refresh_file=5;
+  
+  /**
+   * @var integer On average, every 1 in $cache_chance_purge times the Warehouse is called for data, all files
+   * older than 5 times the cache_timeout will be purged, apart from the most recent $cache_allowed_file_count files. 
+   */
+  public static $cache_chance_purge=100;
+  
+  /**
+   * @var integer Number of recent files allowed in the cache which the cache will not bother clearing during a deletion operation.
+   * They will be refreshed occasionally when requested anyway. 
+   */
+  public static $cache_allowed_file_count=50;
+  
+  /**
+   * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
+   * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
+   * finally submitted. 
+   */
+  public static $interim_image_chance_purge=100;
+  
+  /**
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is 
+   */ 
+  public static $interim_image_expiry=14400;
 
   /**
    * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
@@ -2690,18 +2726,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _getCacheTimeOut($options)
   {
-    global $indicia_cachetimeout;
-    $ret_value = 3600; /* this is the default timeout period if none specified anywhere
-                          This should be red flagged to all users, so they know the consequences:
-                          by default changes to species lists etc will take up to 1 hour to be visible
-                          on the website */
-
-    if (isset($indicia_cachetimeout)) {
-      if (is_numeric($indicia_cachetimeout) && $indicia_cachetimeout > 0) {
-        $ret_value = $indicia_cachetimeout;
-      } else {
-        $ret_value = false;
-      }
+    if (is_numeric(self::$cache_timeout) && self::$cache_timeout > 0) {
+      $ret_value = self::$cache_timeout;
+    } else {
+      $ret_value = false;
     }
     if (isset($options['cachetimeout'])) {
       if (is_numeric($options['cachetimeout']) && $options['cachetimeout'] > 0) {
@@ -2743,7 +2771,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _getCachedResponse($file, $timeout, $options)
   {
-    if ($timeout && $file && is_file($file) && filemtime($file) >= (time() - $timeout)) {
+    // Note the random element, we only timeout a cached file sometimes. 
+    if ($timeout && $file && is_file($file) && 
+        (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout))
+    ) {
       $response = array();
       $handle = fopen($file, 'rb');
       $tags = fgets($handle);
@@ -2751,6 +2782,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       fclose($handle);
       if ($tags == self::array_to_query_string($options)."\n")
         return($response);
+    } else {
+      self::_timeOutCacheFile($file, $timeout);
     }
     return false;
   }
@@ -2816,13 +2849,67 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
     if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
       $response = self::http_post($request, null);
-    self::_timeOutCacheFile($cacheFile, $cacheTimeOut);
     self::_cacheResponse($cacheFile, $response, $cacheOpts);
-
+    self::_purgeCache();
+    self::_purgeImages();
     $r = json_decode($response['output'], true);
     if (!is_array($r)) {
       throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
     }	
+    return $r;
+  }
+  
+  /**
+   * Internal function to ensure old cache files are purged periodically.
+   */
+  private static function _purgeCache() {
+    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+    self::_purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
+  }
+  
+  /**
+   * Internal function to ensure old image files are purged periodically.
+   */
+  private static function _purgeImages() {
+    $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
+    self::_purgeFiles(1, $interimImageFolder, self::$interim_image_expiry);
+  }
+  
+  private static function _purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
+    // don't do this every time.
+    if (rand(1, $chanceOfPurge)==1) {
+      // First, get an array of files sorted by date
+      $files = array();
+      $dir =  opendir($folder);
+      if ($dir) {
+        while ($filename = readdir($dir)) {
+          if ($filename == '.' || $filename == '..' || is_dir($filename))
+            continue;
+          $lastModified = filemtime($folder . $filename);
+          $files[] = array($folder .$filename, $lastModified);
+        }
+      }
+      // sort the file array by date, oldest first
+      usort($files, array('data_entry_helper', '_DateCmp'));
+      // iterate files, ignoring the number of files we allow in the cache without caring.
+      for ($i=0; $i<count($files)-$allowedFileCount; $i++) {
+        // if we have reached a file that is not old enough to expire, don't go any further
+        if ($files[$i][1] > (time() - $timeout)) {
+          break;
+        }
+        // clear out the old file
+        unlink($files[$i][0]);
+      }
+    }
+  }
+  
+  private static function _DateCmp($a, $b)
+  {
+    if ($a[1]<$b[1]) 
+      $r = -1;
+    else if ($a[1]>$b[1]) 
+      $r = 1;
+    else $r=0;
     return $r;
   }
 
