@@ -54,10 +54,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $authentic = FALSE; // default
     kohana::log('debug', 'authenticating');
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
-    {
-      kohana::log('debug', 'got nonce '.$array['nonce']);
-      kohana::log('debug', 'got token '.$array['auth_token']);
-      
+    {      
       $nonce = $array['nonce'];
       $this->cache = new Cache;
       // get all cache entries that match this nonce
@@ -82,7 +79,6 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
             }
           }
         }
-        
       }
     } else {
     	$auth = new Auth();

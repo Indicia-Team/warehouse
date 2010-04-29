@@ -573,6 +573,7 @@ class data_entry_helper extends helper_config {
   * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
   * Defaults to occurrence_image.
   * <li><b>caption</b><br/>
+  * Caption to display at the top of the uploader box. Defaults to the translated string for "Files".
   * </li>
   * <li><b>uploadSelectBtnCaption</b><br/>
   * Set this to override the caption for the button for selecting files to upload.
@@ -599,9 +600,13 @@ class data_entry_helper extends helper_config {
   * Defines the quality of the resize operation (from 1 to 100). Has no effect unless either resizeWidth or resizeHeight are non-zero.
   * </li>
   * <li><b>upload</b><br/>
+  * Boolean, defaults to true. Set to false when implementing a Flickr image control without file upload capability.
   * </li>
   * <li><b>flickr</b><br/>
   * Not implemented.
+  * </li>
+  * <li><b>maxFileCount</b><br/>
+  * Maximum number of files to allow upload for. Defaults to 4. Set to false to allow unlimited files.
   * </li>
   * <li><b>autoupload</b><br/>
   * Defaults to true. If false, then a button is displayed which the user must click to initiate upload of the files
@@ -612,6 +617,10 @@ class data_entry_helper extends helper_config {
   * </li>
   * <li><b>msgFileTooBig</b><br/>
   * Use this to override the message displayed when the file is larger than the size limit allowed on the Warehouse.
+  * </li>
+  * <li><b>msgTooManyFiles</b><br/>
+  * Use this to override the message displayed when attempting to upload more files than the maxFileCount allows. Use a 
+  * replacement string [0] to specify the maxFileCount value.
   * </li>
   * <li><b>uploadScript</b><br/>
   * Specify the script used to handle image uploads on the server (relative to the client_helpers folder). You should not 
@@ -646,6 +655,7 @@ class data_entry_helper extends helper_config {
     $defaults = array(
       'caption' => lang::get('Files'),
       'upload' => true,
+      'maxFileCount' => 4,
       'autoupload' => false,
       'flickr' => false,
       'uploadSelectBtnCaption' => lang::get('Select file(s)'),
@@ -1336,16 +1346,36 @@ class data_entry_helper extends helper_config {
   * Read authorisation tokens.</li>
   * <li><b>dataSource</b><br/>
   * Name of the report file or table/view.</li>
+  * <li><b>itemsPerPage</b><br/>
+  * Number of rows to display per page. Defaults to 20.</li>
   * <li><b>columns</b><br/>
-  * Columns will be output in a default form unless an entry is passed in this array parameter for the column. The array key
-  * is the field name, and the value is a sub-array containing the caption and visible state (both optional). For example:<br/>
-  * array('id' => array('visible' => false), 'title' => array('caption', 'My Survey'))<br/>
-  * will hide the id column and rename the title column to My Survey.</li>
+  * Specify a list of the columns you want to output if you need more control over the columns, for example to 
+  * specify the order, change the caption or build a column with a configurable data display using a template.
+  * Pass an array to this option, with each array entry containing an associative array that specifies the
+  * information about the column represented by the position within the array. The associative array for the column can contain
+  * the following keys:
+  *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
+  *  - caption: caption of the column, which defaults to the fieldname if not specified
+  *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
+  *  of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
+  *  Note that template columns are note sortable by clicking grid headers.
+  * An example array for the columns option is:
+  * array(
+  *   array('fieldname' => 'survey', 'caption' => 'Survey Title'),
+  *   array('caption' => 'action', 'template' => '<a href="www.mysite.com\survey\{id}\edit">Edit</a>'
+  * )   
+  * </li>
+  * <li><b>IncludeAllColumns</b>
+  * Defaults to true. If true, then any columns in the report, view or table which are not in the columns
+  * option array are automatically added to the grid after any columns specified in the columns option array.
+  * Therefore the default state for a report_grid control is to include all the report, view or table columns
+  * in their default state, since the columns array will be empty.</li>
   * </ul>
-  * @todo AJAXification
-  * @todo Templates
-  * @todo style for sorted column titles
   * @todo Action column or other configurable links in grid
+  * @todo Allow additional params to filter by table column or report parameters
+  * @todo Display a filter form for direct mode
+  * @todo For report mode, provide an AJAX/PHP button that can load the report from parameters
+  * in a form on the page. 
   */
   public static function report_grid($options) {
     // Generate a unique number for this grid, in case there are 2 on a page.
@@ -1359,7 +1389,10 @@ class data_entry_helper extends helper_config {
       'class' => 'ui-widget ui-widget-content',
       'thClass' => 'header',
       'altRowClass' => 'odd',
+      'columns' => array(),
+      'includeAllColumns' => true
     ), $options);
+    // Output a div to keep the grid and pager together
     $r = '<div id="'.$options['id'].'">';
     // Build the part of the data request URL that will specify the sort order and pagination
     $extra = '&limit='.($options['itemsPerPage']+1);
@@ -1371,7 +1404,7 @@ class data_entry_helper extends helper_config {
       $page = 0;
     if ($page)
       $extra .= '&offset='.($page * $options['itemsPerPage']);
-    $orderbyKey = 'orderby' . ($useIdInUrls ? $options['id'] : '');    
+    $orderbyKey = 'orderby' . ($useIdInUrls ? $options['id'] : '');
     if (isset($_GET[$orderbyKey])) 
       $orderby = $_GET[$orderbyKey];
     else
@@ -1382,10 +1415,24 @@ class data_entry_helper extends helper_config {
     if (isset($_GET[$sortdirKey])) 
       $sortdir = $_GET[$sortdirKey];
     else
-      $sortdir = null;
-    if ($sortdir)
+      $sortdir = 'ASC';
+    if ($sortdir && $orderby)
       $extra .= "&sortdir=$sortdir";
     $data = self::get_report_data($options, $extra);
+    
+    // Add any columns that don't have a column definition to the end of the columns list, by first
+    // building an array of the column names of the columns we did specify, then adding any missing fields
+    // from the results to the end of the options['columns'] array.
+    if ($options['includeAllColumns']) {
+      $specifiedCols = array();
+      foreach ($options['columns'] as $col) {
+        if (isset($col['fieldname'])) $specifiedCols[] = $col['fieldname'];
+      }
+      foreach ($data[0] as $resultField => $value) {
+        if (!in_array($resultField, $specifiedCols))
+          $options['columns'][]=array('fieldname'=>$resultField);
+      }
+    }
     
     // Build a basic URL path back to this page, but with the page, sortdir and orderby removed
     $pageUrl = 'http'.((empty($_SERVER['HTTPS']) && $_SERVER['SERVER_PORT']!=443) ? '' : 's').'://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'].'?';
@@ -1396,21 +1443,32 @@ class data_entry_helper extends helper_config {
     }
     
     $thClass = $options['thClass'];
-    $r .= "\n<table class=\"".$options['class']."\" id=\"idg".$uniqueId."\"><thead class=\"ui-widget-header\"><tr>\n";
+    $r .= "\n<table class=\"".$options['class']."\"><thead class=\"ui-widget-header\"><tr>\n";
     // build a URL with just the sort order bit missing, so it can be added for each table heading link
     $sortUrl = $pageUrl . ($page ? "$pageKey=$page&" : '');
-    if (count($data)>0)
-      foreach ($data[0] as $field=>$value) {
-        if (isset($options['columns'][$field]['visible']) && $options['columns'][$field]['visible']===false)
+    if (count($data)>0) {
+      foreach ($options['columns'] as $field) {
+        if (isset($field['visible']) && $field['visible']===false)
           continue; // skip this column as marked invisible
         // allow the caption to be overriden in the column specification
-        $caption = isset($options['columns'][$field]['caption']) ? $options['columns'][$field]['caption'] : $field;
-        $sortLink = "$sortUrl$orderbyKey=$field";
-        // reverse sort order if already sorted by this field in ascending dir
-        if ($orderby==$field && $sortdir!='DESC')
-          $sortLink = "$sortLink&$sortdirKey=DESC";
-        $r .= "<th class=\"$thClass\"><a href=\"$sortLink\" title=\"Sort by $caption\">$caption</a></th>\n";
+        $caption = isset($field['caption']) ? $field['caption'] : $field['fieldname'];
+        if (isset($field['fieldname'])) {
+          $sortLink = "$sortUrl$orderbyKey=$field";
+          // reverse sort order if already sorted by this field in ascending dir99
+          if ($orderby==$field && $sortdir!='DESC')
+            $sortLink = "$sortLink&$sortdirKey=DESC";
+          $caption = "<a href=\"$sortLink\" title=\"Sort by $caption\">$caption</a>";
+          // set a style for the sort order
+          $orderStyle = ($orderby==$field) ? ' '.strtolower($sortdir) : '';
+          $fieldId = ' id="' . $options['id'] . '-th-' . $field['fieldname'] . '"';
+        } else {
+          $orderStyle = '';
+          $fieldId = '';
+        }
+        
+        $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
       }
+    }
     $r .= "</tr></thead><tbody>\n";
     $rowClass = '';
     $outputCount = 0;
@@ -1419,9 +1477,13 @@ class data_entry_helper extends helper_config {
       if ($outputCount>=$options['itemsPerPage'])
         break;
       $r .= "<tr $rowClass>";
-      foreach ($row as $field=>$value) {
-        if (isset($options['columns'][$field]['visible']) && $options['columns'][$field]['visible']===false)
+      foreach ($options['columns'] as $field) {
+        if (isset($field['visible']) && $field['visible']===false)
           continue; // skip this column as marked invisible
+        if (isset($field['template']))
+          $value = self::mergeParamsIntoTemplate($row, $field['template'], true);
+        else
+          $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
         $r .= "<td>$value</td>\n";
       }
       $r .= '</tr>';
@@ -1430,13 +1492,13 @@ class data_entry_helper extends helper_config {
     }
     $r .= "</tbody></table>\n";
     // Output pagination links
-    $pageUrl .= $orderby ? "$orderbyKey=$orderby&" : '';
-    $pageUrl .= $sortdir ? "$sortdirKey=$sortdir&" : '';
+    $pagLinkUrl = $pageUrl.($orderby ? "$orderbyKey=$orderby&" : '');
+    $pagLinkUrl .= $sortdir ? "$sortdirKey=$sortdir&" : '';
     $r .= "<div class=\"pager\">\n";
     // If not on first page, we can go back.
     if ($page>0) {
       $prev = max(0, $page-1);
-      $r .= "<a class=\"prev\" href=\"$pageUrl$pageKey=$prev\">&#171 previous</a> \n";
+      $r .= "<a class=\"prev\" href=\"$pagLinkUrl$pageKey=$prev\">&#171 previous</a> \n";
     }
     // pagination separator if both links are present
     if ($page>0 && count($data)>$options['itemsPerPage'])
@@ -1444,9 +1506,28 @@ class data_entry_helper extends helper_config {
     // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
     if (count($data)>$options['itemsPerPage']) {
       $next = $page + 1;
-      $r .= "<a class=\"next\" href=\"$pageUrl$pageKey=$next\">&#187 next</a> \n";
+      $r .= "<a class=\"next\" href=\"$pagLinkUrl$pageKey=$next\">next &#187</a> \n";
     }
     $r .= "</div></div>\n";
+    // Now AJAXify the grid
+    self::add_resource('reportgrid');
+    self::$javascript .= "$('#".$options['id']."').reportgrid({
+  mode: '".$options['mode']."',
+  dataSource: '".$options['dataSource']."',
+  itemsPerPage: ".$options['itemsPerPage'].",
+  auth_token: '".$options['readAuth']['auth_token']."',
+  nonce: '".$options['readAuth']['nonce']."',
+  url: '".parent::$base_url."',
+  altRowClass: '".$options['altRowClass']."'";
+    if (isset($orderby)) 
+      self::$javascript .= ",
+  orderby: '".$orderby."'";
+    if (isset($sortdir)) 
+      self::$javascript .= ",
+  sortdir: '".$sortdir."'";
+    if (isset($options['columns'])) 
+      self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
+});\n";
     return $r;
   }
   
@@ -2695,10 +2776,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    *
    * @access private
    * @param array $item Array holding the item attributes.
-   * @param string $template Name of the template to use
+   * @param string $template Name of the template to use, or actual template text if
+   * $useTemplateAsIs is set to true.
+   * @param boolean $useTemplateAsIs If true then the template parameter contains the actual 
+   * template text, otherwise it is the name of a template in the $indicia_templates array. Default false.
    * @return string HTML for the item label
    */
-  private static function mergeParamsIntoTemplate($item, $template) {
+  private static function mergeParamsIntoTemplate($item, $template, $useTemplateAsIs=false) {
     global $indicia_templates;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -2713,8 +2797,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           $value = " $option=\"$value\"";
         array_push($replaceValues, $value);
       }
-    }    
-    return str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);    
+    }
+    if (!$useTemplateAsIs) $template = $indicia_templates[$template];
+    return str_replace($replaceTags, $replaceValues, $template);    
   }
  
   /**
@@ -3787,7 +3872,8 @@ $('.ui-state-default').live('mouseout', function() {
       'jqplot' => array('deps' => array(), 'stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
       'jqplot_bar' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
       'jqplot_pie' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
-      'jqplot_category_axis_renderer' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js'))
+      'jqplot_category_axis_renderer' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
+      'reportgrid' => array('deps' => array('jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.reportgrid.js')),
     );
   }
 
@@ -3984,16 +4070,16 @@ $('.ui-state-default').live('mouseout', function() {
   public static function http_post($url, $postargs, $output_errors=true) {
     $session = curl_init();
     // Set the POST options.
-	curl_setopt ($session, CURLOPT_URL, $url);    
+    curl_setopt ($session, CURLOPT_URL, $url);    
     if ($postargs!==null) {
-	  curl_setopt ($session, CURLOPT_POST, true);
+      curl_setopt ($session, CURLOPT_POST, true);
       curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
     }
     curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     // Do the POST and then close the session	
     $response = curl_exec($session);
-	// Check for an error, or check if the http response was not OK. Note that the cUrl emulator only returns connection: close.
+    // Check for an error, or check if the http response was not OK. Note that the cUrl emulator only returns connection: close.
     if (curl_errno($session) || (strpos($response, 'HTTP/1.1 200 OK')===false && strpos($response, 'Connection: close')===false)) {
       if ($output_errors) {
         echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>';
@@ -4405,7 +4491,10 @@ $('.ui-state-default').live('mouseout', function() {
         'mode=json&nonce='.$options['readAuth']['nonce'].
         '&auth_token='.$options['readAuth']['auth_token'].
         $extra;
-    
+    if (isset($options['extraParams'])) {
+    	foreach ($options['extraParams'] as $key=>$value)
+    	  $request .= "&$key=".urlencode($value);
+    }
     $response = self::http_post($request, null);
     return json_decode($response['output'], true);
   }
