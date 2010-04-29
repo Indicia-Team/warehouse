@@ -6,11 +6,6 @@ $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['pas
 $svcUrl = data_entry_helper::$base_url.'index.php/services';
 ?>
 <head>
-<link rel='stylesheet' type='text/css' href='../../../media/css/datagrid.css' />
-<link rel='stylesheet' type='text/css' href='../../../media/themes/default/jquery-ui.custom.css' />
-<script type='text/javascript' src='../../../media/js/jquery.js' ></script>
-<script type='text/javascript' src='../../../media/js/hasharray.js' ></script>
-<script type='text/javascript' src='../../../media/js/jquery.datagrid.js' ></script>
 <title>Report Grid Demo</title>
 <style type="text/css">
 #charts .ui-widget-header {
@@ -27,7 +22,19 @@ $svcUrl = data_entry_helper::$base_url.'index.php/services';
 <?php
 data_entry_helper::link_default_stylesheet();
 $readAuth = data_entry_helper::get_read_auth($config['website_id'], $config['password']);
-
+echo data_entry_helper::report_grid(array(
+  'dataSource' => 'occurrences_by_survey',
+  'mode' => 'report',
+  'readAuth' => $readAuth,
+  'columns' => array(
+      array('fieldname' => 'survey', 'caption' => 'Survey Title'),
+      array('fieldname' => 'count', 'caption' => 'Number of Occurrences'),
+      array('caption' => 'Template', 'template' => '{survey} has {count} occurrences')
+  ),
+  'includeAllColumns' => false,
+  'itemsPerPage' => 5,
+  'extraParams' => array('survey'=>'A')
+));
 echo "<div id=\"charts\">\n";
 echo data_entry_helper::report_chart(array(
   'title' => 'Bar chart of record count per survey',
@@ -66,7 +73,6 @@ echo data_entry_helper::report_chart(array(
   'width' => 500
 ));
 echo "</div>";
-
 echo data_entry_helper::dump_javascript();
 ?> 
 </body>

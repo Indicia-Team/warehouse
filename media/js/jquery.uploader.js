@@ -103,6 +103,16 @@
       
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
       this.uploader.bind('FilesAdded', function(up, files) {
+        // Find any files over the upload limit
+        existingCount = $('#filelist')[0].childElementCount;
+        extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
+        if (extras.length!==0) {
+          alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
+          // remove the extras from the queue
+          $.each(extras, function(file) {
+            div.uploader.removeFile(file);
+          });
+        }
         $.each(files, function(i, file) {
           if (resize===null && file.size>div.settings.maxUploadSize) {
             // We are not resizing, and the file is too big for the Indicia server. So display a warning.
@@ -196,6 +206,7 @@ $.fn.uploader.defaults = {
   upload : true,
   flickr : true,
   autoupload : true,
+  maxFileCount : 4,
   existingFiles : [],
   buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
   file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div id="filelist"></div>' +
@@ -207,6 +218,7 @@ $.fn.uploader.defaults = {
       '<label for="{captionField}">Caption:</label><br/><input type="text" maxlength="100" style="width: {imagewidth}px" name="{captionField}" id="{captionField}" value="{captionValue}"/>',
   msgUploadError : 'An error occurred uploading the file.',
   msgFileTooBig : 'The file is too big to upload. Please resize it then try again.',
+  msgTooManyFiles : 'Only [0] files can be uploaded.',
   uploadScript : 'upload.php',
   destinationFolder : '',
   swfAndXapFolder : '',

@@ -281,3 +281,19 @@ li.ui-state-error {
 .plupload_iframe input {
   margin: 0;
 }
+
+.ui-widget-header th {
+  padding-right: 16px;
+}
+
+.ui-widget-header th.asc {
+  background: url(../images/asc.gif) no-repeat right;
+}
+
+.ui-widget-header th.desc {
+  background: url(../images/desc.gif) no-repeat right;
+}
+
+tr.odd {
+  background-color: #eeeeee;
+}
