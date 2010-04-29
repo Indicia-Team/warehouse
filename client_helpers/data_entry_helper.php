@@ -3153,14 +3153,18 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         self::$javascript .= "  if (!$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input').valid()) {\n    return; \n}";
       }
       // If all is well, move to the next tab.
-      self::$javascript .= "  $('#$divId').tabs('select', current+1);
+      self::$javascript .= "  var a = $('ul:first a', $divId)[current+1];
+  $(a).click();
   scroll(0,0);
-});
-$('.tab-prev').click(function() {
-  var obj=$('#$divId').tabs();
-  obj.tabs('select', obj.tabs('option', 'selected')-1);
+});";
+
+      self::$javascript .= "\n$('.tab-prev').click(function() {
+  var current=$('#$divId').tabs('option', 'selected');
+  var a = $('ul:first a', $divId)[current-1];
+  $(a).click();
   scroll(0,0);
 });\n";
+
       // We put this javascript into $late_javascript so that it can come after the other controls.
       // This prevents some obscure bugs - e.g. OpenLayers maps cannot be centered properly on hidden
       // tabs because they have no size.
@@ -3193,7 +3197,14 @@ if (errors.length>0) {
     $tabs = "";
     foreach($options['tabs'] as $link => $caption) {
       $tabId=substr("$link-tab",1);
-      $tabs .= "<li id=\"$tabId\"><a href=\"$link\"><span>$caption</span></a></li>";
+
+      //rel="address:..." enables use of jQuery.address module (http://www.asual.com/jquery/address/)
+      if ($tabs == ""){
+        $address = "";
+      } else {
+        $address = (substr($link, 0, 1) == '#') ? substr($link, 1) : $link;
+      }
+      $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:$address\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);
