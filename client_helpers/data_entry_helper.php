@@ -1460,6 +1460,7 @@ class data_entry_helper extends helper_config {
           $caption = "<a href=\"$sortLink\" title=\"Sort by $caption\">$caption</a>";
           // set a style for the sort order
           $orderStyle = ($orderby==$field) ? ' '.strtolower($sortdir) : '';
+		  $orderStyle .= ' sortable';
           $fieldId = ' id="' . $options['id'] . '-th-' . $field['fieldname'] . '"';
         } else {
           $orderStyle = '';

@@ -126,7 +126,7 @@
       div=this;
       
       // Define clicks on column headers to apply sort 
-      $(this).find('th').click(function(e) {
+      $(this).find('th.sortable').click(function(e) {
         e.preventDefault();
         if (div.loading) {return;}
         div.loading = true;

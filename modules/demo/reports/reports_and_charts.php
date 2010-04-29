@@ -29,7 +29,7 @@ echo data_entry_helper::report_grid(array(
   'columns' => array(
       array('fieldname' => 'survey', 'caption' => 'Survey Title'),
       array('fieldname' => 'count', 'caption' => 'Number of Occurrences'),
-      array('caption' => 'Template', 'template' => '{survey} has {count} occurrences')
+      array('caption' => 'Custom column', 'template' => '{survey} has {count} occurrences')
   ),
   'includeAllColumns' => false,
   'itemsPerPage' => 5,
