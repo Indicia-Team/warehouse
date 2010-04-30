@@ -3204,7 +3204,7 @@ if (errors.length>0) {
       } else {
         $address = (substr($link, 0, 1) == '#') ? substr($link, 1) : $link;
       }
-      $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:$address\"><span>$caption</span></a></li>";
+      $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);
