@@ -152,7 +152,7 @@ class submission_builder extends helper_config {
         $key = str_replace("$entity:", '', $key);
         // This should be a field in the model.
         // Add a new field to the save array
-        $sa['fields'][$key] = array('value' => utf8_encode($value));
+        $sa['fields'][$key] = array('value' => $value);
       }
     }
     return $sa;
