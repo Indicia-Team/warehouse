@@ -249,7 +249,6 @@ class Indicia_Controller extends Template_Controller {
       // Were we instructed to delete the post?
       $deletion = $_POST['submit'] == 'Delete';    
       $_POST['deleted'] = $deletion ? 't' : 'f';
-  
       // Pass the post object to the model and then submit it
       $this->model->set_submission_data($_POST);       
       $this->submit($deletion);

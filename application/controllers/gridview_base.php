@@ -214,7 +214,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
           if (isset($data[$index])) {
             if ($attr!='<please select>') {
               // Add the data to the record save array
-              $saveArray[$attr] = $data[$index];
+              $saveArray[$attr] = utf8_encode($data[$index]);
             }
           } else {
             // This is one of our static fields at the end
