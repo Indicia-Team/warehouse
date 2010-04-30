@@ -2935,13 +2935,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
     if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
       $response = self::http_post($request, null);
-    self::_cacheResponse($cacheFile, $response, $cacheOpts);
-    self::_purgeCache();
-    self::_purgeImages();
     $r = json_decode($response['output'], true);
     if (!is_array($r)) {
       throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
-    }	
+    }
+    // Only cache valid responses
+    self::_cacheResponse($cacheFile, $response, $cacheOpts);
+    self::_purgeCache();
+    self::_purgeImages();
     return $r;
   }
   

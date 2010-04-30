@@ -440,7 +440,7 @@ jQuery('#".$id."').click(function(){
     }
     if($args['ID_tool_module'] != '' && $args['ID_tool_inclusion_function'] != '' && module_exists($args['ID_tool_module']) && function_exists($args['ID_tool_inclusion_function'])) {
     	$use_ID_tool = true;
-    	call_user_func($args['ID_tool_inclusion_function']);
+    	data_entry_helper::$javascript .= call_user_func($args['ID_tool_inclusion_function']);
     } else {
     	$use_ID_tool = false;
     }
@@ -573,7 +573,7 @@ defaultSref = '".
     		((int)$args['map_centroid_lat'] > 0 ? $args['map_centroid_lat'].'N' : (-((int)$args['map_centroid_lat'])).'S').' '.
     		((int)$args['map_centroid_long'] > 0 ? $args['map_centroid_long'].'E' : (-((int)$args['map_centroid_long'])).'W')."';
 defaultGeom = '';
-$.getJSON('".$svcUrl."' + 'index.php/services/spatial/sref_to_wkt'+
+$.getJSON('".$svcUrl."' + '/spatial/sref_to_wkt'+
         			'?sref=' + defaultSref +
           			'&system=' + jQuery('#imp-sref-system').val() +
           			'&callback=?', function(data) {
@@ -897,9 +897,9 @@ $('#cc-1-reinit-button').click(function() {
     <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
-    '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; '))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; '))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ')).'  	 	
+    '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language'])))
+ 	.data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language'])))
+ 	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']))).'  	 	
    </form>
   </div>
   <div id="cc-2-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
@@ -1208,7 +1208,7 @@ $('#cc-2-valid-button').click(function() {
   </div>
 </div>';
 
- 	$defAttrOptions = array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'validation' => array('required')); 	
+ 	$defAttrOptions = array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'validation' => array('required'), 'language' => iform_lang_iso_639_2($args['language'])); 	
     data_entry_helper::$javascript .= "
 populateSessionSelect = function(){
 	var insectSessionSelect = jQuery('form#cc-4-main-form > select[name=occurrence\\:sample_id]');
@@ -1910,7 +1910,8 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 								jQuery('form#cc-2-floral-station > input[name=determination\\:person_name]').val(detData[0].person_name);
 								jQuery('select[name=flower\\:taxa_taxon_list_id]').val(detData[0].taxa_taxon_list_id);
 							} else
-					  			jQuery('#id-flower-later').attr('checked', 'checked').removeAttr('disabled');		
+	    			  			jQuery('form#cc-2-floral-station > input[name=determination\\:id]').val('').attr('disabled', 'disabled');
+								jQuery('#id-flower-later').attr('checked', 'checked').removeAttr('disabled');		
   						});
 
     	   				$.getJSON(\"".$svcUrl."/data/sample\" + 
