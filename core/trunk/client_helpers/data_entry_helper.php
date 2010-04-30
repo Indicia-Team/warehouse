@@ -3154,14 +3154,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         self::$javascript .= "  if (!$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input').valid()) {\n    return; \n}";
       }
       // If all is well, move to the next tab.
-      self::$javascript .= "  var a = $('ul:first a', $divId)[current+1];
+      self::$javascript .= "  var a = $('ul.ui-tabs-nav a', $divId)[current+1];
   $(a).click();
   scroll(0,0);
 });";
 
       self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
-  var a = $('ul:first a', $divId)[current-1];
+  var a = $('ul.ui-tabs-nav a', $divId)[current-1];
   $(a).click();
   scroll(0,0);
 });\n";
