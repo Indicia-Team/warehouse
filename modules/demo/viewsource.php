@@ -7,6 +7,7 @@ $allowed = array(
   'data_entry/file_upload.php',
   'map_default.php',
   'map_modular.php',
+  'map_tilecache.php',
   'occurrence_grid.php',
   'occurrence.php',
   'map_polygon_capture.php',

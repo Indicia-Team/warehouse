@@ -384,7 +384,14 @@
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
     var opts = $.extend({}, $.fn.indiciaMapPanel.defaults, options);
-    var olOpts = $.extend({}, $.fn.indiciaMapPanel.openLayersDefaults, olOptions);
+    if (typeof olOptions == "undefined") {
+      // Don't merge the default OpenLayers options, as if you supply any settings for this you
+      // will need to be responsible for the whole lot.
+      olOptions = $.fn.indiciaMapPanel.openLayersDefaults;
+    }
+    
+    olOptions.projection = new OpenLayers.Projection("EPSG:"+olOptions.projection);
+    olOptions.displayProjection = new OpenLayers.Projection("EPSG:"+olOptions.displayProjection);
 
     return this.each(function() {
       this.settings = opts;
@@ -408,7 +415,14 @@
       div.indiciaProjection = new OpenLayers.Projection('EPSG:900913');
 
       // Constructs the map
-      div.map = new OpenLayers.Map($(this)[0], olOpts);
+      div.map = new OpenLayers.Map($(this)[0], olOptions);
+      
+      // Add any tile cache layers
+      var tcLayer;
+      $.each(this.settings.tilecacheLayers, function(i, item) {
+        tcLayer = new OpenLayers.Layer.TileCache(item.caption, item.servers, item.layerName, item.settings);
+        div.map.addLayer(tcLayer);
+      });
 
       // Iterate over the preset layers, adding them to the map
       $.each(this.settings.presetLayers, function(i, item)
@@ -521,6 +535,7 @@ $.fn.indiciaMapPanel.defaults = {
     proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
     displayFormat: "image/png",
     presetLayers: [],
+    tilecacheLayers: [],
     indiciaWMSLayers: {},
     indiciaWFSLayers : {},
     layers: [],
@@ -593,8 +608,8 @@ $.fn.indiciaMapPanel.georeferenceLookupSettings = {
  * Default options to pass to the openlayers map constructor
  */
 $.fn.indiciaMapPanel.openLayersDefaults = {
-    projection: new OpenLayers.Projection("EPSG:900913"),
-    displayProjection: new OpenLayers.Projection("EPSG:4326"),
+    projection: 900913,
+    displayProjection: 4326,
     units: "m",
     numZoomLevels: 18,
     maxResolution: 156543.0339,
