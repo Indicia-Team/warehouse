@@ -1084,6 +1084,13 @@ class data_entry_helper extends helper_config {
   * </li>
   * <li><b>presetLayers</b><br/>
   * </li>
+  * <li><b>tilecacheLayers</b><br/>
+  * Array of layer definitions for tilecaches, which are pre-cached background tiles. They are less flexible but much faster
+  * than typical WMS services. The array is associative, with the following keys:
+  *   caption - The display name of the layer
+  *   servers - array list of server URLs for the cache
+  *   layerName - the name of the layer within the cache
+  *   settings - any other settings that need to be passed to the tilecache, e.g. the server resolutions or file format.</li>
   * <li><b>indiciaWMSLayers</b><br/>
   * </li>
   * <li><b>indiciaWFSLayers</b><br/>
@@ -1124,8 +1131,10 @@ class data_entry_helper extends helper_config {
   * EPSG code of the required projection. Defaults to 900913. Note that if this is changed, most of the preset layers will not work as they
   * do not support reprojection. Ensure that all base layers available support the projection you define.
   * </li>
+  * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or 
+  * displayProjection settings, just pass the EPSG number, e.g. 27700.
   */
-  public static function map_panel($options) {
+  public static function map_panel($options, $olOptions=null) {
     if (!$options) {
       return '<div class="error">Form error. No options supplied to the map_panel method.</div>';
     } else {
@@ -1203,6 +1212,9 @@ class data_entry_helper extends helper_config {
         unset($options['layers']);
       }
       $json=substr(json_encode($options), 0, -1).$json_insert.'}';
+      if ($olOptions) {
+        $json .= ','.json_encode($olOptions);
+      }
       if (array_key_exists('projection', $options)) {
         self::$onload_javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
       }
@@ -3855,7 +3867,7 @@ $('.ui-state-default').live('mouseout', function() {
 
     return array (
       'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.js")),
-      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js")),
+      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js", self::$js_path."Proj4defs.js")),
       'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."addRowToGrid.js")),
       'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
       'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),

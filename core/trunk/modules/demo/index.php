@@ -72,6 +72,10 @@ View the source code in <a href="viewsource.php?file=map_modular.php">map_modula
 <p>A data entry map set up for capture of polygons for occurrences.
 View the source code in <a href="viewsource.php?file=map_polygon_capture.php">map_polygon_capture.php</a>.</p>
 </li>
+<li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="map_tilecache.php">Tilecache layer</a></div>
+<p>Advanced. Demonstrates how to load a tilecache layer as a map background layer for better performance. 
+View the source code in <a href="viewsource.php?file=map_tilecache.php">map_tilecache.php</a>.</p>
+</li>
 </ol>
 </li>
 <li>
