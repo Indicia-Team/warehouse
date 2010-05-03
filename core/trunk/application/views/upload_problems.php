@@ -31,7 +31,6 @@ foreach ($headers as $header) {
   echo "<th>$header</th>";
 }
 ?>
-<th>Problem</th>
 </tr></thead><tbody>
 <?php
 $i=0;
@@ -46,3 +45,4 @@ foreach ($problems as $record) {
 }
 ?>
 </tbody></table>
+<?php echo html::anchor(url::base() . $errorFile,'Download a CSV file containing the records which failed to import.'); ?>
