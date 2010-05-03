@@ -165,9 +165,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * file to be mapped to the appropriate model attributes.
    */
   public function upload_mappings() {
-    $_FILES = Validation::factory($_FILES)
-    ->add_rules('csv_upload', 'upload::valid',
-               'upload::required', 'upload::type[csv]', 'upload::size[1M]');
+    $_FILES = Validation::factory($_FILES)->add_rules(
+        'csv_upload', 'upload::valid', 'upload::required', 'upload::type[csv]', 'upload::size[1M]'
+    );
     if ($_FILES->validate()) {
       // move the file to the upload directory
       $csvTempFile = upload::save('csv_upload');
@@ -183,34 +183,60 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
       $this->template->content = $view;
+      // Setup a breadcrumb
+      $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
+      $this->page_breadcrumbs[] = 'Setup upload';
     } else {
       // TODO: error message needs a back button.
       $this->setError('File missing', 'Please select a CSV file to upload before clicking the Upload button.');
     }
   }
+  
+  /**
+   * Accepts a post array of column to attribute mappings and stores it for use during a chunked upload. This action 
+   * is called by the JavaScript code responsible for a chunked upload, before the upload actually starts.
+   */
+  public function cache_upload_mappings() {
+    $this->auto_render=false;
+    $mappingFile = str_replace('.csv','-map.txt',$_GET['uploaded_csv']);
+    $mappingHandle = fopen(DOCROOT . "upload/$mappingFile", "w");
+    fclose($mappingHandle);
+    echo "OK";
+  }
 
   /**
    * Controller action that performs the import of data in an uploaded CSV file.
+   * Allows $_GET parameters to specify the offset and limit when uploading just a chunk at a time.
+   * This method is called to perform the entire upload when JavaScript is not enabled, or can 
+   * be called to perform part of an AJAX csv upload where only a part of the data is imported
+   * on each call.
    */
   public function upload() {
-    $csvTempFile = $_SESSION['uploaded_csv'];
+    $csvTempFile = isset($_GET['uploaded_csv']) ? DOCROOT . "upload/" . $_GET['uploaded_csv'] : $_SESSION['uploaded_csv'];
+    $mappings = $this->_get_mappings($csvTempFile);
     // make sure the file still exists
     if (file_exists($csvTempFile))
     {
       // Following helps for files from Macs
       ini_set('auto_detect_line_endings',1);
-      // create the file pointer
+      // create the file pointer, plus one for errors
       $handle = fopen ($csvTempFile, "r");
-      // skip the header row
-      $headers = fgetcsv($handle, 1000, ",");
-      $problems = array();
+      $errorHandle = $this->_get_error_file_handle($csvTempFile, $handle);
       $count=0;
-      while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+      $limit = (isset($_GET['limit']) ? $_GET['limit'] : false);
+      $offset = (isset($_GET['offset']) ? $_GET['offset'] : 0);
+      // skip rows to allow for the offset
+      while ($count<$offset && fgetcsv($handle, 1000, ",") !== FALSE) {
+        $count++;
+        kohana::log('info', 'skipping');
+      }
+      $count=0;
+      while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         kohana::log('debug', 'Importing row data: '.implode(' | ', $data));
         $count++;
         $index = 0;
         $saveArray = $this->getDefaults();
-        foreach ($_POST as $col=>$attr) {
+        foreach ($mappings as $col=>$attr) {
           if (isset($data[$index])) {
             if ($attr!='<please select>') {
               // Add the data to the record save array
@@ -226,27 +252,102 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $this->model->clear();
         $this->model->set_submission_data($saveArray, true);
         if (($id = $this->model->submit()) == null) {
-          // Record has errors - now embedded in model
-          array_push($data, implode('<br/>', $this->model->getAllErrors()));
-          array_push($problems, $data);
+          // Record has errors - now embedded in model, so dump them into the error file
+          $data[] = implode('<br/>', $this->model->getAllErrors());
+          $data[] = $count + $offset + 1; // 1 for header
+          fputcsv($errorHandle, $data);
         }
       }
+      // Get percentage progress
+      $progress = ftell($handle) * 100 / filesize($csvTempFile);
       fclose($handle);
-
-      // clean up the uploaded file
-      unlink($csvTempFile);
-      if (count($problems)>0) {
-        $view = new View('upload_problems');
-        $view->headers = $headers;
-        $view->problems = $problems;
-        $this->template->title = "Upload Problems";
-        $this->template->content = $view;
+      fclose($errorHandle);
+      if (request::is_ajax()) {
+        // An AJAX upload request will just receive the number of records uploaded and progress
+        $this->auto_render=false;
+        echo "{uploaded:$count,progress:$progress}";
+        kohana::log('info', "{uploaded:$count,progress:$progress}");
       } else {
-        $this->session->set_flash('flash_info', "The upload was successful. $count records were uploaded.");
-        url::redirect($this->get_return_page());
+        // Normal page access, so need to display the errors page or success.
+        $this->display_upload_result($count + $offset + 1);
       }
     }
+  }
+  
+  /**
+   * Internal function that retrieves the mappings for a CSV upload. For AJAX requests, this comes 
+   * from a cached file. For normal requests, the mappings should be in the $_POST data.
+   */
+  private function _get_mappings($csvTempFile) {
+    // AJAX chunked uploads will have pre-cached the mappings. Normal requests will just post them with the request.
+    if (request::is_ajax()) {
+      $mappingFile = str_replace('.csv','-map.txt', $csvTempFile);
+      $mappingHandle = fopen($mappingFile, "r");
+      $mappings = json_decode(fgets($mappingHandle)); 
+    } else {
+      $mappings = $_POST;
+    }
+    return $mappings;
+  }
+  
+  /**
+   * During a csv upload, this method is called to retrieve a resource handle to a file that can 
+   * contain errors during the upload. The file is created if required, and the headers from the 
+   * uploaded csv file (referred to by handle) are copied into the first row of the new error file
+   * allong with a header for the problem description and row number.
+   * @return resource The error file's handle.
+   */
+  private function _get_error_file_handle($csvTempFile, $handle) {
+    $errorFile = str_replace('.csv','-errors.csv',$csvTempFile);
+    $needHeaders = !file_exists($errorFile);
+    $errorHandle = fopen($errorFile, "a");
+    // skip the header row, but add it to the errors file with additional field for row number.
+    $headers = fgetcsv($handle, 1000, ",");
+    if ($needHeaders) {
+      $headers[] = 'Problem';
+      $headers[] = 'Row no.';
+      fputcsv($errorHandle, $headers);
+    }
+    return $errorHandle;
+  }
+  
+  /**
+   * Display the end result of an upload. Either displayed at the end of a non-AJAX upload, or redirected
+   * to directly by the AJAX code that is performing a chunked upload when the upload completes.
+   * @param integer @count Number of records that were uploaded.
+   */
+  public function display_upload_result($count) {
+    $csvTempFile = isset($_GET['uploaded_csv']) ? DOCROOT . "upload/" . $_GET['uploaded_csv'] : $_SESSION['uploaded_csv'];    
+    $mappingFile = str_replace('.csv','-map.txt', $csvTempFile);
+    // clean up the uploaded file and mapping file, but not the error file as we will make it downloadable.
+    unlink($csvTempFile);    
+    unlink($mappingFile);
 
+    $errorFile = str_replace('.csv','-errors.csv',$csvTempFile);
+    // Grab the errors into a problems array
+    $handle = fopen ($errorFile, "r");
+    // get the header row
+    $headers = fgetcsv($handle, 1000, ",");
+    $problems = array();
+    while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+      $problems[] = $data;
+    }
+    fclose($handle);
+    if (count($problems)>0) {
+      $view = new View('upload_problems');
+      $view->headers = $headers;
+      $view->problems = $problems;
+      $view->errorFile = 'upload/'.basename($errorFile);
+      $this->template->title = "Upload Problems";
+      $this->template->content = $view;
+      // Setup a breadcrumb
+      $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
+      $this->page_breadcrumbs[] = 'Upload result';
+    } else {
+      unlink($errorFile);
+      $this->session->set_flash('flash_info', "The upload was successful. $count records were uploaded.");
+      url::redirect($this->get_return_page());
+    }
   }
   
 /**

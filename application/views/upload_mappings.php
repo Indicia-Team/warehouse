@@ -20,8 +20,53 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+$filename = urlencode(basename($_SESSION['uploaded_csv']));
+?>
+<script type='text/javascript'>
+$(document).ready(function(){
+  var total=0;
+  // handle the upload button to do a chunked upload
+  $('#upload-button').click(function(e) {
+    jQuery('#progress-bar').progressbar ({value: 0});
+    jQuery('#progress').show();
+    e.preventDefault();
+    var mappings = {};
+    jQuery.each($('form.cmxform select'), function(i, item) {
+      mappings[item.id] = item.value;
+    });
+    jQuery.post("<?php echo url::site() . $controllerpath; ?>/cache_upload_mappings?uploaded_csv=<?php echo $filename; ?>",
+        mappings, 
+        function() {
+          jQuery('#progress-text').html('0 records uploaded.');
+          uploadChunk();
+        }
+    );
+    
+  });
 
-echo form::open($controllerpath.'/upload', array('class'=>'cmxform')); ?>
+  /**
+  * Upload a single chunk of a file, by doing an AJAX get. If there is more, then on receiving the response upload the
+  * next chunk.
+  */
+  uploadChunk = function() {
+    var limit=10;
+    jQuery.getJSON("<?php echo url::site() . $controllerpath; ?>/upload?offset="+total+"&limit="+limit+"&uploaded_csv=<?php echo $filename; ?>",
+      function(response) {
+        total = total + response.uploaded;
+        jQuery('#progress-text').html(total + ' records uploaded.');
+        $('#progress-bar').progressbar ('option', 'value', response.progress);
+        if (response.uploaded>=limit) {
+          uploadChunk();
+        } else {
+          jQuery('#progress-text').html('Upload complete.');
+          window.location = "<?php echo url::site() . $controllerpath; ?>/display_upload_result/" + total + "?uploaded_csv=<?php echo $filename; ?>";
+        }
+      }
+    );  
+  };
+});
+</script>
+<?php echo form::open($controllerpath.'/upload', array('class'=>'cmxform')); ?>
 <p>Please map each column in the CSV file you are uploading to the associated attribute in the destination list.</p>
 <br />
 <table class="ui-widget ui-widget-content">
@@ -41,7 +86,12 @@ foreach ($columns as $col):
 <?php endforeach; ?>
 </tbody>
 </table>
-<input type="Submit" value="Upload Data" />
+<input type="Submit" value="Upload Data" id="upload-button" />
+<br/>
+<div id="progress" class="ui-widget ui-widget-content ui-corner-all" style="display: none; ">
+<div id="progress-bar" style="width: 400"></div>
+<div id="progress-text">Preparding to upload.</div>
+</div>
 <?php
 // We stick these at the bottom so that all the other things will be parsed first
 foreach ($this->input->post() as $a => $b) {
