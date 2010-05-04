@@ -2997,7 +2997,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           break;
         }
         // clear out the old file
-        unlink($files[$i][0]);
+        if (is_file($files[$i][0]))
+          unlink($files[$i][0]);
       }
     }
   }
