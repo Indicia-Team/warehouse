@@ -295,10 +295,11 @@ class iform_ad_hoc_cetaceans {
     // as a click on the map for boat recordings will not be accurate.
     $r .= '<div class="shore_mode">';
     $options = iform_map_get_map_options($args, $readAuth);
+    $olOptions = iform_map_get_ol_options($args);
     $options['maxZoom'] = 9;
     // Switch to degrees and decimal minutes for lat long.
     $options['latLongFormat'] = 'DM';
-    $r .= data_entry_helper::map_panel($options);
+    $r .= data_entry_helper::map_panel($options, $olOptions);
     // Now, add some JavaScript to show or hide the map. Show it for when the sighting was from the shore.
     // Hide it for boat based sightings as we want a GPS coordinate in this case. The JavaScript looks for the 
     // checked radio button to see the value

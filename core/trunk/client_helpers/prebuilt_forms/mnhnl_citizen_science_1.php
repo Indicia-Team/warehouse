@@ -82,7 +82,7 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'User Interface'
         ),
         array(
-        	'name'=>'list_id',
+          'name'=>'list_id',
           'caption'=>'Species List ID',
           'description'=>'The Indicia ID for the species list that species can be selected from.',
           'type'=>'int',
@@ -302,8 +302,10 @@ class iform_mnhnl_citizen_science_1 {
       'georefCountry' => $args['georefCountry'],
       'georefLang' => $args['language']
     ));
+    // retrieve options for the IndiciaMapPanel, and optionally options for OpenLayers.
     $options = iform_map_get_map_options($args, $readAuth);
-    $r .= data_entry_helper::map_panel($options);
+    $olOptions = iform_map_get_ol_options($args);
+    $r .= data_entry_helper::map_panel($options, $olOptions);
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls'

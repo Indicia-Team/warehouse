@@ -234,7 +234,7 @@ class iform_mnhnl_collaborators_1 {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['location_name', 'entered_sref', 'date', 'num_occurrences', 'completed'],
     reportColumnTitles: {location_name : '".lang::get('LANG_Location')."', entered_sref : '".lang::get('LANG_Spatial_ref')."', date : '".lang::get('LANG_Date')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', completed : '".lang::get('LANG_Completed')."'},
-    actionColumns: {".lang::get('LANG_Edit')." : \"".url('node/'.($node->nid), array('query' => 'sample_id=£id£'))."\"},
+    actionColumns: {".lang::get('LANG_Edit')." : \"".url('node/'.($node->nid), array('query' => 'sample_id=ï¿½idï¿½'))."\"},
     auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
     parameters : {
     			survey_id : '".$args['survey_id']."',
@@ -427,7 +427,8 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     ));
     $options = iform_map_get_map_options($args, $readAuth);
     $options['layers'][] = 'locationLayer';
-    $r .= data_entry_helper::map_panel($options);
+    $olOptions = iform_map_get_ol_options($args);
+    $r .= data_entry_helper::map_panel($options, $olOptions);
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls'

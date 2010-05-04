@@ -295,6 +295,7 @@ class iform_my_dot_map {
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
+    $olOptions = iform_map_get_ol_options($args);
     if (array_key_exists('table', $_GET) && $_GET['table']=='sample') {
       // Use a cUrl request to get the data from Indicia which contains the value we need to filter against
       // Read the record that was just posted.
@@ -321,7 +322,7 @@ class iform_my_dot_map {
       }
       $r .= "</tbody></table>\n";
     }
-    $r .= data_entry_helper::map_panel($options);
+    $r .= data_entry_helper::map_panel($options, $olOptions);
     return $r;
   }
 
