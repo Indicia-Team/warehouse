@@ -84,7 +84,7 @@ function iform_map_get_map_parameters() {
         'multimap_landranger' => 'Multimap with OS Landranger'
       ),
       'group'=>'Base Map Layers',
-      'required'=>'false'
+      'required'=>false
     ),
     array(
       'name' => 'wms_base_title',
@@ -109,7 +109,25 @@ function iform_map_get_map_parameters() {
       'type' => 'textfield',
       'group'=>'Base Map Layers',
       'required'=>false
+    ),
+    array(
+      'name' => 'tile_cache_layers',
+      'caption' => 'Tile cache JSON',
+      'description' => 'JSON describing the tile cache layers to make available. For advanced users only.',
+      'type' => 'textarea',
+      'group'=>'Advanced Base Map Layers',
+      'required'=>false
+    ),
+    array(
+      'name' => 'openlayers_options',
+      'caption' => 'OpenLayers Options JSON',
+      'description' => 'JSON describing the options to pass through to OpenLayers. For advanced users only, leave blank
+          for default behaviour.',
+      'type' => 'textarea',
+      'group'=>'Advanced Base Map Layers',
+      'required'=>false
     )
+    
   );
 
 }
@@ -149,5 +167,23 @@ function iform_map_get_map_options($args, $readAuth) {
     );\n";
     $options['layers'][] = 'baseLayer';
   }
+  // Also add any tilecaches they have defined
+  if ($args['tile_cache_layers']) {
+    $options['tilecacheLayers'] = json_decode($args['tile_cache_layers']);
+  }
   return $options;
+}
+
+/**
+ * Return a list of OpenLayers options to pass to the data_entry_helper::map_panel method, built from the prebuilt
+ * form arguments.
+ * @param $args
+ * @return array Options array for OpenLayers, or null if not specified.
+ */
+function iform_map_get_ol_options($args) {
+  if ($args['openlayers_options']) {
+    return json_decode($args['openlayers_options']);
+  } else {
+    return null;
+  }
 }
