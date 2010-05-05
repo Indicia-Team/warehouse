@@ -31,25 +31,18 @@
 require_once('includes/map.php');
 require_once('includes/language_utils.php');
 require_once('includes/user.php');
-
+  
 class iform_pollenators {
 
 	/* TODO
 	 * Functionality shortfalls:
-	 *	Carry out checks on completion.
 	 *	ID tool results storage.
-	 *	Sessions context sensitive help
-	 *  when deleting a session:
-	 * 		need to check if there are any insects/photos attached to the session
-	 * 		when a sample_id exists in the form, set a deleted flag in the db, and submit, then delete dom
-	 * 		put up a confirmation alert on Deleting
 	 * Functionality nice to haves:
 	 *	Ajaxform error handling, also image loading and json. Also put in checks if setting data[] that we are setting the correct entries.
 	 *	nsp on floral station - "do not know"
 	 *	convert Image uploads to flash to give progress bar.
 	 *	Autogenerate the name for the collection.
 	 * Look and feel:
-	 *	Images size handling: controlled by container div size. 
 	 *	Confirm insect radio button attributes: validation, reset values after saving, restore values when selecting from photoreel.
 	 *	find out if habitat descriptions are required.
 	 */
@@ -401,7 +394,7 @@ jQuery('#".$id."').click(function(){
 ";
   	return '<label for="'.$id.'">'.$label.' :</label><span id="'.$id.'" class="ui-state-default ui-corner-all poll-id-button">'.$text.'</span>';
   }
-  
+
 /**
    * Return the generated form output.
    * @return Form HTML.
@@ -424,26 +417,18 @@ jQuery('#".$id."').click(function(){
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
 	$svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
-//	$presetLayers = array();
-//    // read out the activated preset layers
-//    if(isset($args['preset_layers'])) {
-//	    foreach($args['preset_layers'] as $layer => $active) {
-//    	  if ($active!==0) {
-//        	$presetLayers[] = $layer;
-//    	  }
-//    	}
-//    }
 	drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
 	data_entry_helper::link_default_stylesheet();
 	data_entry_helper::add_resource('jquery_ui');
 	data_entry_helper::enable_validation('cc-1-collection-details'); // don't care about ID itself, just want resources
 
-    if($args['help_module'] != '' && $args['help_inclusion_function'] != '' && module_exists($args['help_module']) && function_exists($args['help_inclusion_function'])) {
+	if($args['help_module'] != '' && $args['help_inclusion_function'] != '' && module_exists($args['help_module']) && function_exists($args['help_inclusion_function'])) {
     	$use_help = true;
-    	call_user_func($args['help_inclusion_function']);
+    	data_entry_helper::$javascript .= call_user_func($args['help_inclusion_function']);
     } else {
     	$use_help = false;
     }
+
     if($args['ID_tool_module'] != '' && $args['ID_tool_inclusion_function'] != '' && module_exists($args['ID_tool_module']) && function_exists($args['ID_tool_inclusion_function'])) {
     	$use_ID_tool = true;
     	data_entry_helper::$javascript .= call_user_func($args['ID_tool_inclusion_function']);
@@ -565,6 +550,7 @@ $.fn.unFoldPanel = function(){
 	this.find('.poll-section-body').removeClass('poll-hide');
 	this.find('.poll-section-footer').removeClass('poll-hide');
 	this.find('.mod-button').hide();
+	window.scroll(0,0); // force the window to display the top.
 	// any reinit button is left in place
 };
 
@@ -714,6 +700,7 @@ $('#cc-1-collection-details').ajaxForm({
 			          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			          \"&location_id=\"+data.outer_id+\"&parent_id=NULL&callback=?\", function(data) {
 					if (data.length>0) {
+			       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection='+data[0].id);
 			        	    jQuery('#cc-1-collection-details > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
 			        	    jQuery('#cc-2-floral-station > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
 			        	    // In this case we use loadAttributes to set the names of the attributes to include the attribute_value id.
@@ -783,13 +770,6 @@ $('#cc-1-reinit-button').click(function() {
 
  	// Flower Station section.
 
-//    $r .= data_entry_helper::georeference_lookup(array(
-//      'label' => lang::get('LANG_Georef_Label'),
-//      'georefPreferredArea' => $args['georefPreferredArea'],
-//      'georefCountry' => $args['georefCountry'],
-//      'georefLang' => $args['language']
-//    ));
-
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
     // The maps internal projection will be left at its default of 900913.
@@ -798,8 +778,7 @@ $('#cc-1-reinit-button').click(function() {
     $options['proxy'] = '';
     // Switch to degrees, minutes, seconds for lat long.
     $options['latLongFormat'] = 'DMS';
-//  $options['scroll_wheel_zoom'] = false;
-    $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id']);
+    $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'orderby' => 'taxon');
     $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
         	'fieldname'=>'flower:taxa_taxon_list_id',
@@ -992,7 +971,6 @@ jQuery('#search-insee-button').click(function(){
 		  	  })});
 });
 
-
 validateStationPanel = function(){
 	var myPanel = jQuery('#cc-2');
 	var valid = true;
@@ -1048,7 +1026,8 @@ $('#cc-2-flower-upload').ajaxForm({
         				$(this).fadeIn();
 			    	})
 				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-				    .attr('width', $('#cc-2-flower-image').width()).attr('height', $('#cc-2-flower-image').height());
+				    .css('max-width', $('#cc-2-flower-image').width()).css('max-height', $('#cc-2-flower-image').height())
+				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
 			} else {
 				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
@@ -1087,7 +1066,8 @@ $('#cc-2-environment-upload').ajaxForm({
         				$(this).fadeIn();
 			    	})
 				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-				    .attr('width', $('#cc-2-environment-image').width()).attr('height', $('#cc-2-environment-image').height());
+				    .css('max-width', $('#cc-2-environment-image').width()).css('max-height', $('#cc-2-environment-image').height())
+				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
 			} else {
 				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
@@ -1187,10 +1167,31 @@ $('#cc-2-valid-button').click(function() {
     <div id="cc-3-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
 	<div id="cc-3-add-button" class="right ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div><br />
   </div>
+</div>
+<div style="display:none" />
+    <form id="cc-3-delete-session" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
+       <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
+       <input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'" />
+       <input type="hidden" name="sample:id" value="" />
+       <input type="hidden" name="sample:date" value="2010-01-01"/>
+       <input type="hidden" name="sample:location_id" value="" />
+       <input type="hidden" name="sample:deleted" value="t" />
+    </form>
 </div>';
 
  	$defAttrOptions = array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'validation' => array('required'), 'language' => iform_lang_iso_639_2($args['language'])); 	
     data_entry_helper::$javascript .= "
+$('#cc-3-delete-session').ajaxForm({ 
+        dataType:  'json', 
+        beforeSubmit:   function(data, obj, options){
+  			// Warning this assumes that the data is fixed position:
+       		data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
+        	if(data[2].value == '') return false;
+        	return true;
+  		},
+        success:   function(data){
+  		} 
+});
 populateSessionSelect = function(){
 	var insectSessionSelect = jQuery('form#cc-4-main-form > select[name=occurrence\\:sample_id]');
 	var value = insectSessionSelect.val();
@@ -1250,8 +1251,16 @@ addSession = function(){
 	jQuery('<input type=\"hidden\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />').appendTo(newForm);
 	jQuery('<input type=\"hidden\" name=\"sample:parent_id\" />').appendTo(newForm).val(jQuery('#cc-1-collection-details > input[name=sample\\:id]').val());
 	jQuery('<input type=\"hidden\" name=\"sample:location_id\" />').appendTo(newForm).val(jQuery('#cc-1-collection-details > input[name=location\\:id]').val());
-	jQuery('<input type=\"hidden\" name=\"sample:id\" value=\"\" disabled=\"disabled\" />').appendTo(newForm);
-	// TODO put in session help
+	jQuery('<input type=\"hidden\" name=\"sample:id\" value=\"\" disabled=\"disabled\" />').appendTo(newForm);\n";
+    if($use_help){
+        data_entry_helper::$javascript .= "
+	var helpDiv = jQuery('<div class=\"right ui-state-default ui-corner-all poll-help-button\">".lang::get('LANG_Help_Button')."</div>');
+	helpDiv.click(function(){
+		".$args['help_function']."(".$args['help_session_arg'].");
+	});
+	helpDiv.appendTo(newForm);";
+    }
+    data_entry_helper::$javascript .= "
 	var dateAttr = '".str_replace("\n", "", data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'),
     						'id' => '<id>',
 							'fieldname' => 'sample:date',
@@ -1263,7 +1272,7 @@ addSession = function(){
 		constrainInput: false,
 		maxDate: '0'
 	});
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['start_time_attr_id']], $defAttrOptions)."').appendTo(newForm);
+    jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['start_time_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['end_time_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defAttrOptions)."').appendTo(newForm);
@@ -1273,8 +1282,26 @@ addSession = function(){
 	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div><br />')
 		.appendTo(newFooter);	
 	newDeleteButton.click(function() {
-		$(this).parent().parent().remove();
-		checkProtocolStatus();
+		var container = $(this).parent().parent();
+		jQuery('#cc-3-delete-session').find('[name=sample\\:id]').val(container.find('[name=sample\\:id]').val());
+		jQuery('#cc-3-delete-session').find('[name=sample\\:date]').val(container.find('[name=sample\\:date]').val());
+		jQuery('#cc-3-delete-session').find('[name=sample\\:location_id]').val(container.find('[name=sample\\:location_id]').val());
+		if(container.find('[name=sample\\:id]').filter('[disabled]').length == 0){
+			$.getJSON(\"".$svcUrl."/data/occurrence/\" +
+					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+					\"&sample_id=\"+container.find('[name=sample\\:id]').val()+\"&callback=?\", function(insectData) {
+				if (insectData.length>0) {
+					alert(\"".lang::get('LANG_Cant_Delete_Session')."\");
+				} else if(confirm(\"".lang::get('LANG_Confirm_Session_Delete')."\")){
+					jQuery('#cc-3-delete-session').submit();
+					container.remove();
+					checkProtocolStatus();
+				}
+			});
+		} else if(confirm(\"".lang::get('LANG_Confirm_Session_Delete')."\")){
+			container.remove();
+			checkProtocolStatus();
+		}
     });
     newForm.ajaxForm({ 
     	dataType:  'json',
@@ -1349,8 +1376,7 @@ jQuery('.mod-button').click(function() {
 
 ";
 
-
-    $extraParams = $readAuth + array('taxon_list_id' => $args['insect_list_id']);
+    $extraParams = $readAuth + array('taxon_list_id' => $args['insect_list_id'], 'orderby' => 'taxon');
 	$species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Insect_Species'),
         	'fieldname'=>'insect:taxa_taxon_list_id',
@@ -1388,8 +1414,7 @@ jQuery('.mod-button').click(function() {
         '.data_entry_helper::select($species_ctrl_args).'
       </div>
     </div>
-    <div class="poll-break"></div>
-    
+    <div class="poll-break"></div> 
  	<form id="cc-4-main-form" action="'.iform_ajaxproxy_url($node, 'occurrence').'" method="POST" >
     	<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
     	<input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
@@ -1414,11 +1439,21 @@ jQuery('.mod-button').click(function() {
  	.data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],
  			$defAttrOptions).'
     </form>
-    <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Insect').'</span><br />
+    <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Insect').'</span>
+    <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Delete_Insect').'</span><br />
   </div>
   <div id="cc-4-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <div id="cc-4-valid-photo-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div><br />
   </div>
+</div>
+<div style="display:none" />
+    <form id="cc-4-delete-insect" action="'.iform_ajaxproxy_url($node, 'occurrence').'" method="POST">
+       <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
+       <input type="hidden" name="occurrence:use_determination" value="Y"/>    
+       <input type="hidden" name="occurrence:id" value="" />
+       <input type="hidden" name="occurrence:sample_id" value="" />
+       <input type="hidden" name="occurrence:deleted" value="t" />
+    </form>
 </div>';
 
     data_entry_helper::$javascript .= "
@@ -1444,7 +1479,8 @@ $('#cc-4-insect-upload').ajaxForm({
         				$(this).fadeIn();
 			    	})
 				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-				    .attr('width', $('#cc-4-insect-image').width()).attr('height', $('#cc-4-insect-image').height());
+				    .css('max-width', $('#cc-4-insect-image').width()).css('max-height', $('#cc-4-insect-image').height())
+				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
 			} else {
 				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
@@ -1498,6 +1534,7 @@ $('#cc-4-main-form').ajaxForm({
 				loadInsect(loadInsectPanel);
 			}
 			loadInsectPanel=null;
+			window.scroll(0,0);
         }
 	}
 });
@@ -1623,7 +1660,7 @@ createPhotoReel('#cc-4-photo-reel');
 // TODO separate photoreel out into own js
 
 validateInsect = function(){
-	// TODO will have to expand when use key or when identify later.
+	// TODO will have to expand when use key.
 	if(jQuery('form#cc-4-main-form > input[name=occurrence\\:id]').val() == '' &&
 			jQuery('form#cc-4-main-form > input[name=occurrence_image\\:path]').val() == '' &&
 			jQuery('[name=insect\\:taxa_taxon_list_id]').val() == '' &&
@@ -1653,19 +1690,46 @@ validateInsect = function(){
 
 $('#cc-4-valid-insect-button').click(validateInsect);
 
+$('#cc-4-delete-insect-button').click(function() {
+	var container = $(this).parent().parent();
+	jQuery('#cc-4-delete-insect').find('[name=occurrence\\:id]').val(jQuery('#cc-4-main-form').find('[name=occurrence\\:id]').val());
+	jQuery('#cc-4-delete-insect').find('[name=occurrence\\:sample_id]').val(jQuery('#cc-4-main-form').find('[name=occurrence\\:sample_id]').val());
+	if(confirm(\"".lang::get('LANG_Confirm_Insect_Delete')."\")){
+		if(jQuery('#cc-4-main-form').find('[name=occurrence\\:id]').filter('[disabled]').length == 0){
+			jQuery('#cc-4-delete-insect').submit();
+			jQuery('.currentPhoto').remove();
+			jQuery('.blankPhoto').addClass('currentPhoto');
+		}
+		clearInsect();
+	}
+});
+
+$('#cc-4-delete-insect').ajaxForm({ 
+        dataType:  'json', 
+        beforeSubmit:   function(data, obj, options){
+  			// Warning this assumes that the data is fixed position:
+        	if(data[2].value == '') return false;
+        	return true;
+  		},
+        success:   function(data){
+  		} 
+});
+
 $('#cc-4-valid-photo-button').click(function(){
 	if(!validateInsect()) return;
 	jQuery('#cc-4').foldPanel();
 	jQuery('#cc-5').showPanel();
 	var numInsects = jQuery('#cc-4-photo-reel').find('.thumb').length - 1; // ignore blank
 	var numUnidentified = jQuery('#cc-4-photo-reel').find('.thumb-text').length;
-	if(jQuery('#id-flower-later').attr('checked') != '' || numInsects==0 || (numUnidentified/numInsects < ".$args['percent_insects']."/100)){
+	if(jQuery('#id-flower-later').attr('checked') != '' || numInsects==0 || (numUnidentified/numInsects > (1-(".$args['percent_insects']."/100.0)))){
+		jQuery('#cc-5-body').removeClass('ui-corner-top').addClass('ui-corner-all');
 		jQuery('#cc-5-good').hide();
 		jQuery('#cc-5-bad').show();
 		jQuery('#cc-5-footer').hide();
 		jQuery('#cc-5-trailer').hide();
     } else {
-		jQuery('#cc-5-good').show();
+		jQuery('#cc-5-body').removeClass('ui-corner-all').addClass('ui-corner-top');
+    	jQuery('#cc-5-good').show();
 		jQuery('#cc-5-bad').hide();
 		jQuery('#cc-5-footer').show();
 		jQuery('#cc-5-trailer').show();
@@ -1747,20 +1811,11 @@ $('#cc-5-complete-collection').click(function(){
    <p>'.lang::get('LANG_Final_2').'</p> 
    </div>
   <div id="cc-6-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <span id="cc-6-consult-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Consult_Collection').'</span>
-    <span id="cc-6-new-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Create_New_Collection').'</span>
+    <a id="cc-6-consult-collection" href="" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Consult_Collection').'</a>
+    <a href="'.url('node/'.$node->nid).'" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Create_New_Collection').'</a>
     </div>
 </div>';
  
- data_entry_helper::$javascript .= "
-
-$('#cc-6-consult-collection').click(function(){
-	alert('TBD');
-});
-$('#cc-6-new-collection').click(function(){
-	alert('TBD');
-});
-";
 data_entry_helper::$javascript .= "
  			
 loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, prefix){
@@ -1811,21 +1866,17 @@ loadImage = function(imageTable, key, keyName, keyValue, target){
 		if (imageData.length>0) {
 			var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();
 			jQuery('[name='+imageTable+'\\:id]', form).val(imageData[0].id).removeAttr('disabled');
-//			jQuery('[name='+imageTable+'\\:'+key+']', form).val(imageData[0][key]).removeAttr('disabled');
 			jQuery('[name='+imageTable+'\\:path]', form).val(imageData[0].path);
 			var img = new Image();
-			$(img)
-        		.load(function () {
+			$(img).load(function () {
         			$(target).empty().append(this);
 			    })
 			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+imageData[0].path)
-			    .attr('width', $(target).width()).attr('height', $(target).height());
+				.css('max-width', $(target).width()).css('max-height', $(target).height()).css('display', 'block')
+				.css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto');
 		}
 	});
 }
-
-//$('.loading-panel').remove();
-//$('.loading-hide').removeClass('loading-hide');
 
 // load in any existing incomplete collection.
 // general philosophy is that you are taken back to the stage last verified.
@@ -1847,6 +1898,7 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 		var i;
        	for ( i=0;i<data.length;i++) {
        		if(data[i].completed == '0'){
+       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection='+data[i].id);
        			// load up collection details: existing ID, location name and protocol
        			jQuery('#cc-1,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
        			// main sample date is only set when collection is completed, so leave default.
@@ -1899,7 +1951,7 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
   						});
 
     	   				$.getJSON(\"".$svcUrl."/data/sample\" + 
-    	      					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[i].id+\"&deleted=f&callback=?\", function(sessiondata) {
+    	      					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[i].id+\"&callback=?\", function(sessiondata) {
 	    			  		if (sessiondata.length>0) {
 								jQuery('#cc-2').foldPanel();
 								sessionCounter = 0;
@@ -2006,8 +2058,6 @@ jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1
 
 	global $indicia_templates;
 	$r .= $indicia_templates['loading_block_end'];
-//    if (!$('#".self::$validated_form_id." div > div:eq('+current+') input').valid()) {\n    return; \n}
-//    $('#$divId').tabs('select', current+1);  
     return $r;
   }
 
