@@ -96,7 +96,7 @@
      */
     function style(isSearch) {
       this.fillColor = isSearch ? opts.fillColorSearch : opts.fillColor;
-      this.fillOpacity = opts.fillOpacity;
+      this.fillOpacity = isSearch ? opts.fillOpacitySearch : opts.fillOpacity;
       this.hoverFillColor = opts.hoverFillColor;
       this.hoverFillOpacity = opts.hoverFillOpacity;
       this.strokeColor = isSearch ? opts.strokeColorSearch : opts.strokeColor;
@@ -585,6 +585,7 @@ $.fn.indiciaMapPanel.defaults = {
      * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
 	// Additional options for OpenLayers.Feature.Vector.style on the search layer.
     fillColorSearch: '#ee0000',
+    fillOpacitySearch: 0,
     strokeColorSearch: '#ee0000'
 
 };

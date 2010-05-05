@@ -94,7 +94,13 @@ class iform_pollenators {
       array(
       	'name'=>'percent_insects',
         'caption'=>'Insect Identification Percentage',
-        'description'=>'The persentage of insects that must be identified before the collection may be completed.',
+        'description'=>'The percentage of insects that must be identified before the collection may be completed.',
+        'type'=>'int'
+      ),
+      array(
+      	'name'=>'gallery_node',
+        'caption'=>'Gallery Node',
+        'description'=>'The DRUPAL node number for the Gallery/Filter node.',
         'type'=>'int'
       ),
       array(
@@ -475,6 +481,12 @@ jQuery('#".$id."').click(function(){
     				'lookUpListCtrl' => 'radio_group',
     				'validation' => array('required'),
     				'language' => iform_lang_iso_639_2($args['language']));
+
+    global $indicia_templates;
+	$indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /><br />' .
+        '<label for="{idLong}">{labelLong}:</label>'.
+        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" />';
     
     $r .= data_entry_helper::loading_block_start();
 
@@ -779,10 +791,13 @@ $('#cc-1-reinit-button').click(function() {
 //    ));
 
     $options = iform_map_get_map_options($args, $readAuth);
+    $olOptions = iform_map_get_ol_options($args);
     // The maps internal projection will be left at its default of 900913.
     $options['searchLayer'] = 'true';
     $options['initialFeatureWkt'] = null;
     $options['proxy'] = '';
+    // Switch to degrees, minutes, seconds for lat long.
+    $options['latLongFormat'] = 'DMS';
 //  $options['scroll_wheel_zoom'] = false;
     $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id']);
     $species_ctrl_args=array(
@@ -843,7 +858,7 @@ $('#cc-1-reinit-button').click(function() {
  	  <div class="poll-map-container">
     ';
 
-    $r .= data_entry_helper::map_panel($options);
+    $r .= data_entry_helper::map_panel($options, $olOptions);
     $r .= '
       </div>
       <div><div id="cc-2-location-entry">
@@ -859,18 +874,18 @@ $('#cc-1-reinit-button').click(function() {
 	 		onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
             onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
     	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default indicia-button" value="Search" /><br />
-        <label for="place:latlong">'.lang::get('LANG_Lat').'</label>
- 		<div class="poll-latlong">
- 	    <input type="text" name="place:latDeg" value="" />
- 		<input type="text" name="place:latMin" value="" />
- 		<input type="text" name="place:latSec" value="" /><br />
- 		<input type="text" name="place:longDeg" value="" />
- 		<input type="text" name="place:longMin" value="" />
- 		<input type="text" name="place:longSec" value="" /><br />
- 		</div>
- 		<div>
-	 		<span id="cc-2-display-location-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Display_Location').'</span><br />
-	 	</div>
+        '.data_entry_helper::sref_textbox(array(
+		        'srefField'=>'place:entered_sref',
+        		'systemfield'=>'place:entered_sref_system',
+        		'id'=>'place-sref',
+        		'fieldname'=>'place:name',
+        		'splitLatLong'=>true,
+		        'labelLat' => lang::get('Latitude'),
+    			'fieldnameLat' => 'place:lat',
+        		'labelLong' => lang::get('Longitude'),
+    			'fieldnameLong' => 'place:long',
+    			'idLat'=>'imp-sref-lat',
+        		'idLong'=>'imp-sref-long')).'
  	  </div></div>
       <div id="cc-2-loc-description"></div>
     </div>
@@ -912,41 +927,6 @@ $('#cc-1-reinit-button').click(function() {
 
 showSessionsPanel = true;
 
-jQuery('#cc-2-display-location-button').click(function(){
-	var lat = 0;
-	var long = 0;
-	var tmp = parseFloat(jQuery('[name=place\\:latDeg]').val());
-	if(!isNaN(tmp)) lat = tmp;
-	else jQuery('[name=place\\:latDeg]').val(0);
-	tmp = parseFloat(jQuery('[name=place\\:latMin]').val());
-	if(!isNaN(tmp)) lat = lat + tmp/60;
-	else jQuery('[name=place\\:latMin]').val(0);
-	tmp = parseFloat(jQuery('[name=place\\:latSec]').val());
-	if(!isNaN(tmp)) lat = lat + tmp/3600;
-	else jQuery('[name=place\\:latSec]').val(0);
-	
-	tmp = parseFloat(jQuery('[name=place\\:longDeg]').val());
-	if(!isNaN(tmp)) long = tmp;
-	else jQuery('[name=place\\:longDeg]').val(0);
-	tmp = parseFloat(jQuery('[name=place\\:longMin]').val());
-	if(!isNaN(tmp)) long = long + tmp/60;
-	else jQuery('[name=place\\:longMin]').val(0);
-	tmp = parseFloat(jQuery('[name=place\\:longSec]').val());
-	if(!isNaN(tmp)) long = long + tmp/3600;
-	else jQuery('[name=place\\:longSec]').val(0);
-	
-    jQuery('#map')[0].map.searchLayer.destroyFeatures();
-    // We are keeping to ESPG:4326 as this is used by GPS equipment. The map is in 900913.
-    var geom = new OpenLayers.Geometry.Point(long, lat);
-    geom.transform(new OpenLayers.Projection('EPSG:4326'), new OpenLayers.Projection('EPSG:900913'));
-    var lonLat = new OpenLayers.LonLat(long, lat);
-    lonLat.transform(new OpenLayers.Projection('EPSG:4326'), new OpenLayers.Projection('EPSG:900913'));
-    var feature = new OpenLayers.Feature.Vector(geom);
-	jQuery('#map')[0].map.searchLayer.addFeatures([feature]);
-	// Translate but do not zoom to this feature.
-	jQuery('#map')[0].map.setCenter(lonLat);
-});
-
 jQuery('#search-insee-button').click(function(){
 	if(inseeLayer != null)
 		inseeLayer.destroy();
@@ -969,7 +949,7 @@ jQuery('#search-insee-button').click(function(){
                 \"default\": new OpenLayers.Style({
                     fillColor: \"Red\",
                     strokeColor: \"Red\",
-                    fillOpacity: 0.4,
+                    fillOpacity: 0,
                     strokeWidth: 1
                   })
 	});
@@ -1011,6 +991,7 @@ jQuery('#search-insee-button').click(function(){
 			      filters: filters
 		  	  })});
 });
+
 
 validateStationPanel = function(){
 	var myPanel = jQuery('#cc-2');
@@ -1885,6 +1866,9 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 	    				loadAttributes('location_attribute_value', 'location_attribute_id', 'location_id', 'location\\:id', locationdata[0].id, 'locAttr');
     	   				loadImage('location_image', 'location_id', 'location\\:id', locationdata[0].id, '#cc-2-environment-image');
 						jQuery('#imp-sref').change();
+				        var parts=locationdata[0].centroid_sref.split(' ');
+ 						jQuery('input[name=place\\:lat]').val(parts[0]);
+						jQuery('input[name=place\\:long]').val(parts[1]);
   					}
   				});
   				$.getJSON(\"".$svcUrl."/data/occurrence/\" +
@@ -1976,7 +1960,49 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
     data_entry_helper::$onload_javascript .= "jQuery('#map')[0].map.searchLayer.events.register('featuresadded', {}, function(a1){
 	if(inseeLayer != null)
 		inseeLayer.destroyFeatures();
-});\n";
+});
+jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
+	if(inseeLayer != null)
+		inseeLayer.destroy();
+		
+  	var filter = new OpenLayers.Filter.Spatial({
+  			type: OpenLayers.Filter.Spatial.CONTAINS ,
+    		property: 'the_geom',
+    		value: jQuery('#map')[0].map.editLayer.features[0].geometry
+  		});
+
+	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
+	var styleMap = new OpenLayers.StyleMap({
+                \"default\": new OpenLayers.Style({
+                    fillColor: \"Red\",
+                    strokeColor: \"Red\",
+                    fillOpacity: 0,
+                    strokeWidth: 1
+                  })
+	});
+	inseeLayer = new OpenLayers.Layer.Vector('INSEE Layer', {
+		  styleMap: styleMap,
+          strategies: [strategy],
+          displayInLayerSwitcher: false,
+	      protocol: new OpenLayers.Protocol.WFS({
+              url:  '".$args['INSEE_url']."',
+              featurePrefix: '".$args['INSEE_prefix']."',
+              featureType: '".$args['INSEE_type']."',
+              geometryName:'the_geom',
+              featureNS: '".$args['INSEE_ns']."',
+              srsName: 'EPSG:900913',
+              version: '1.1.0'                  
+      		  ,propertyNames: ['the_geom', 'NOM', 'INSEE_NEW', 'DEPT_NUM', 'DEPT_NOM', 'REG_NUM', 'REG_NOM']
+  			})
+    });
+    inseeLayer.events.register('featuresadded', {}, function(a1){
+    	jQuery('#cc-2-loc-description').empty();
+    	jQuery('<span>'+a1.features[0].attributes.NOM+' ('+a1.features[0].attributes.INSEE_NEW+'), '+a1.features[0].attributes.DEPT_NOM+' ('+a1.features[0].attributes.DEPT_NUM+'), '+a1.features[0].attributes.REG_NOM+' ('+a1.features[0].attributes.REG_NUM+')</span>').appendTo('#cc-2-loc-description');
+    });
+	jQuery('#map')[0].map.addLayer(inseeLayer);
+	strategy.load({filter: filter});
+});
+\n";
 
 	global $indicia_templates;
 	$r .= $indicia_templates['loading_block_end'];
