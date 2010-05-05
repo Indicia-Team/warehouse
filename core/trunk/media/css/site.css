@@ -257,3 +257,8 @@ fieldset.filter select {
   font-size: 90%;
   margin-bottom: 0.5em;
 }
+
+#progress {
+  padding: 0.5em;
+  margin-top: 1em;
+}
