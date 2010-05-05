@@ -54,16 +54,16 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $authentic = FALSE; // default
     kohana::log('debug', 'authenticating');
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
-    {      
+    {
       $nonce = $array['nonce'];
       $this->cache = new Cache;
       // get all cache entries that match this nonce
       $paths = $this->cache->exists($nonce);
-      
+
       foreach($paths as $path) {
         kohana::log('debug', 'path: '.$path);
-        // Find the parts of each file name, which is the cache entry ID, then the mode. 
-        $tokens = split('~', basename($path));
+        // Find the parts of each file name, which is the cache entry ID, then the mode.
+        $tokens = explode('~', basename($path));
         // check this cached nonce is for the correct read or write operation.
         if ($mode = $tokens[1]) {
           $website_id = $this->cache->get($tokens[0]);
@@ -100,7 +100,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected function delete_nonce()
   {
     $array = array_merge($_POST, $_GET);
-    // Unless the request explicitly requests that the nonce should persist, delete it as a write nonce is 
+    // Unless the request explicitly requests that the nonce should persist, delete it as a write nonce is
     // one time only. The exception to this is when a submission contains images which are sent afterwards,
     // in which case the last image will delete the nonce
     if (!array_key_exists('persist_auth', $array) || $array['persist_auth']!='true') {
