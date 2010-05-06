@@ -34,6 +34,8 @@ $custom_terms = array(
 	,'LANG_Collection_Details' => 'Détails de la collection'
 	,'LANG_Protocol_Title_Label' => 'protocole'
 	,'LANG_Validate' => 'VALIDER'
+	,'LANG_Unable_To_Reinit' => 'Impossible de réinitialiser parce que les valeurs existantes ne passent pas la validation'
+	,'LANG_Confirm_Reinit' => 'Etes-vous sûr de vouloir réinitialiser? Toutes les données contre cette collection sera supprimé.'
 	
 	,'LANG_Flower_Station' => "VOTRE STATION FLORALE"
 	,'LANG_Upload_Flower' => "Charger l'image de la Fleur"
@@ -45,6 +47,8 @@ $custom_terms = array(
 	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la Liste"
 	,'LANG_Upload_Environment' => "Charger l'image de son environnement"
 	,'LANG_Environment_Notes' => "Cett image doit rendre compte de l'environnement botanique de la fleur (typiquement un champ de 2 mètre de large)" 
+	,'LANG_Georef_Label' => 'Nom'
+	,'LANG_Georef_Notes' => '(Ce peut être un village ou ville, région, département ou code postal.)'
 	,'LANG_Location_Notes' => 'Localiser la fleur : placer votre repère sur la carte ou utilise les champs ci-dessous :'
 	,'LANG_Or' => 'ou :'
 	,'LANG_INSEE' => 'INSEE No.'
@@ -53,6 +57,8 @@ $custom_terms = array(
 	,'Habitat' => "Il s'agit d'un habitat"
 	,'Nearest House' => "Distance approximative entre votre fleur et la ruche d'abeille domestique la plus proche (mètre)"
 	,'LANG_Validate_Flower' => 'VALIDER VOTRE STATION FLORALE'
+	,'LANG_Must_Provide_Pictures' => "Les images doivent être téléchargées pour la fleur et de l'environnement"
+	,'LANG_Must_Provide_Location' => 'Un emplacement doit être choisi'
 	
 	,'LANG_Date' => 'Date'
 	,'LANG_Sessions_Title' => 'VOS SESSIONS'
@@ -73,25 +79,34 @@ $custom_terms = array(
 	,'LANG_Identify_Insect' => 'Indiquer le nom de cet insecte:'
 	,'LANG_Insect_Species' => "Vous connaissez le taxon correspondant à cet insecte"
 	,'LANG_Insect_ID_Key_label' => "Vous ne connaissez pas le nom de cet insecte"
-
 	,'LANG_ID_Insect_Later' => "Vous preferez l'identifier plus tard:"
 	,'LANG_Comment' => 'Commentaire'
 	,'Number Insects' => "Nombre d'insectes de le même espace au moment précis où vous preniez cette photo"
 	,'Foraging'=> "Cochez cette case si vous avez pris en photo cet insecte allieurs que sur la fleur, mais que vous l'y avez vu butiner"
 	,'LANG_Validate_Insect' => "VALIDER L'INSECTE"
 	,'LANG_Validate_Photos' => 'VALIDER VOS PHOTOS'
+	,'LANG_Must_Provide_Insect_Picture' => 'Une image doit être téléchargée pour les insectes'
+	,'LANG_Confirm_Insect_Delete' => 'Etes-vous sûr de vouloir supprimer cet insecte?'
 	
+	,'LANG_Can_Complete_Msg' => "Vous avez identifié la fleur et un nombre suffisant d'insectes, vous pouvez maintenant clôturer la collection"
+	,'LANG_Cant_Complete_Msg' => "Vous avez une ou l'autre: pas identifié la fleur, et / ou non identifié un nombre suffisant d'insectes. Vous devez corriger avant que vous pouvez clôturer la collection."
+	,'LANG_Complete_Collection' => 'Clôturer la collection'
 	,'LANG_Trailer_Head' => 'Après clôture'
 	,'LANG_Trailer_Point_1' => "vous ne pourrez plus ajouter d'insectes à votre collection ; les avez-vous tous téléversé?"
-	,'LANG_Trailer_Point_2' => "TBC"
-	,'LANG_Trailer_Point_3' => "TBC"
+	,'LANG_Trailer_Point_2' => "vous ne pouvez plus modifier les différentes valeurs décrivant cette station floral, sessions et insectes."
+	,'LANG_Trailer_Point_3' => "vous pouvez modifier l'identification des insectes dans «Mes collections»"
 	,'LANG_Trailer_Point_4' => "vous pourrez créer une nouvelle collection"
 	
 	,'validation_required' => "S'il vous plaît entrer une valeur"
 	,'Yes' => 'Oui'
 	,'No' => 'Non'
 	,'LANG_Help_Button' => '?'
-	,'LANG_Georef_Label' => 'Nom'
 	
+	,'LANG_Final_1' => 'Cette collection a été enregistrée et ajoutée à votre ensemble de collections'
+	,'LANG_Final_2' => "Cette collection peut être consultée par rubrique «Mes collections», où vous pouvez changer l'identification de vos insectes"
+	,'LANG_Consult_Collection' => 'Consulter cette collection'
+	,'LANG_Create_New_Collection' => 'Créer la nouvelle collection'
+	
+	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
 	
 );
