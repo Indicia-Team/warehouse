@@ -847,7 +847,7 @@ $('#cc-1-reinit-button').click(function() {
       		'georefCountry' => $args['georefCountry'],
       		'georefLang' => $args['language']
     		)).'
-    	<span>(LANG TBD This may be a village/town/city name, region, department or 5 digit postcode.)</span>
+    	<span>'.lang::get('LANG_Georef_Notes').'</span>
  	    <label for="place:INSEE">'.lang::get('LANG_Or').'</label>
  		<input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
 	 		onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
@@ -1680,7 +1680,7 @@ validateInsect = function(){
 		}
  	if (!validateRequiredField('occurrence\\:sample_id', 'form#cc-4-main-form')) { valid = false; }
 	if(jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val() == ''){
-		alert('".lang::get('LANG_Must_Upload_Insect_Picture')."');
+		alert('".lang::get('LANG_Must_Provide_Insect_Picture')."');
 		valid = false;;
 	}
 	if(valid == false) return false;
@@ -1775,11 +1775,12 @@ $('#cc-5-collection').ajaxForm({
        		var date_start = '';
        		var date_end = '';
        		jQuery('.poll-session').find('[name=sample\\:date]').each(function(index, el){
-       			if(date_start == '' || date_start > this.val()) {
-       				date_start = this.val();
+       			var value = $(this).val();
+       			if(date_start == '' || date_start > value) {
+       				date_start = value;
        			}
-       			if(date_end == '' || date_end < this.val()) {
-       				date_end = this.val();
+       			if(date_end == '' || date_end < value) {
+       				date_end = value;
        			}
   			});
   			if(date_start == date_end){
@@ -1798,8 +1799,8 @@ $('#cc-5-collection').ajaxForm({
 });
 $('#cc-5-complete-collection').click(function(){
 	jQuery('#cc-2,#cc-3,#cc-4,#cc-5').hidePanel();
-	jQuery('.reinit-button').show();
-	jQuery('.mod-button').show();
+	jQuery('.reinit-button').hide();
+	jQuery('.mod-button').hide();
 	jQuery('#cc-5-collection').submit();
 });
 ";
@@ -1945,9 +1946,10 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 								jQuery('form#cc-2-floral-station > input[name=determination\\:email_address]').val(detData[0].email_address);
 								jQuery('form#cc-2-floral-station > input[name=determination\\:person_name]').val(detData[0].person_name);
 								jQuery('select[name=flower\\:taxa_taxon_list_id]').val(detData[0].taxa_taxon_list_id);
-							} else
+							} else {
 	    			  			jQuery('form#cc-2-floral-station > input[name=determination\\:id]').val('').attr('disabled', 'disabled');
-								jQuery('#id-flower-later').attr('checked', 'checked').removeAttr('disabled');		
+								jQuery('#id-flower-later').attr('checked', 'checked').removeAttr('disabled');
+							}
   						});
 
     	   				$.getJSON(\"".$svcUrl."/data/sample\" + 
