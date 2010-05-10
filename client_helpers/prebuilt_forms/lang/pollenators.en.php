@@ -84,6 +84,7 @@ $custom_terms = array(
 	,'LANG_Validate_Photos' => 'Save Photos'
 	,'LANG_Must_Provide_Insect_Picture' => 'A picture of the insect must be provided'
 	,'LANG_Confirm_Insect_Delete' => 'Are you sure you want to delete this insect?'
+	,'LANG_Delete_Insect' => 'Delete Insect'
 	
 	,'validation_required' => 'Please enter a value for this field'
 	
