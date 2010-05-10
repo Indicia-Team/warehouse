@@ -22,6 +22,7 @@
 
 require_once('includes/map.php');
 require_once('includes/user.php');
+require_once('includes/language_utils.php');
 
 /**
  * Prebuilt Indicia data entry form that presents taxon search box, date control, map picker,
@@ -55,7 +56,7 @@ class iform_mnhnl_citizen_science_1 {
           'group' => 'User Interface'
         ),
         array(
-        	'name'=>'species_ctrl',
+          'name'=>'species_ctrl',
           'caption'=>'Species Control Type',
           'description'=>'The type of control that will be available to select a species.',
           'type'=>'select',
@@ -67,6 +68,13 @@ class iform_mnhnl_citizen_science_1 {
             'treeview' => 'Treeview',
             'tree_browser' => 'Tree browser'
           ),
+          'group'=>'User Interface'
+        ),
+        array(
+          'name' => 'restrict_species_to_users_lang',
+          'caption' => 'Restrict species by user\'s language',
+          'description' => 'Only show species that are have common names in the user\'s selected language.',
+          'type' => 'boolean',
           'group'=>'User Interface'
         ),
         array(
@@ -253,10 +261,13 @@ class iform_mnhnl_citizen_science_1 {
     $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('species tab instructions')."</p>";
-	  $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
-	  if ($args['preferred']) {
-	    $extraParams += array('preferred' => 't');
-	  }
+    $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
+    if ($args['preferred']) {
+      $extraParams += array('preferred' => 't');
+    }
+    if ($args['restrict_species_to_users_lang']) {
+      $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
+    }
     $species_list_args=array(
         'label'=>lang::get('occurrence:taxa_taxon_list_id'),
         'fieldname'=>'occurrence:taxa_taxon_list_id',
@@ -271,9 +282,9 @@ class iform_mnhnl_citizen_science_1 {
     if ($args['species_ctrl']=='tree_browser') {
       // change the node template to include images
       global $indicia_templates;
-    	$indicia_templates['tree_browser_node']='<div>'.
-    	    '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
-    	    '<span>{caption}</span>';
+      $indicia_templates['tree_browser_node']='<div>'.
+          '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
+          '<span>{caption}</span>';
     }
     // Dynamically generate the species selection control required.
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
