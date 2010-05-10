@@ -3164,18 +3164,16 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs on the current tab and validate them.
       if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  if (!$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input').valid()) {\n    return; \n}";
+        self::$javascript .= "  if (!$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input').valid()) {\n    return; \n  }\n";
       }
       // If all is well, move to the next tab.
-      self::$javascript .= "  var a = $('ul.ui-tabs-nav a', $divId)[current+1];
-  $(a).click();
+      self::$javascript .= "  $('#$divId').tabs('select', current+1);
   scroll(0,0);
 });";
 
       self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
-  var a = $('ul.ui-tabs-nav a', $divId)[current-1];
-  $(a).click();
+  $('#$divId').tabs('select', current-1);
   scroll(0,0);
 });\n";
 
