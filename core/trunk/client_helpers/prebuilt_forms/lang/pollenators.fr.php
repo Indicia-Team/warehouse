@@ -87,6 +87,7 @@ $custom_terms = array(
 	,'LANG_Validate_Photos' => 'VALIDER VOS PHOTOS'
 	,'LANG_Must_Provide_Insect_Picture' => 'Une image doit être téléchargée pour les insectes'
 	,'LANG_Confirm_Insect_Delete' => 'Etes-vous sûr de vouloir supprimer cet insecte?'
+	,'LANG_Delete_Insect' => 'Supprimer des insectes'
 	
 	,'LANG_Can_Complete_Msg' => "Vous avez identifié la fleur et un nombre suffisant d'insectes, vous pouvez maintenant clôturer la collection"
 	,'LANG_Cant_Complete_Msg' => "Vous avez une ou l'autre: pas identifié la fleur, et / ou non identifié un nombre suffisant d'insectes. Vous devez corriger avant que vous pouvez clôturer la collection."

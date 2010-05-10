@@ -621,9 +621,9 @@ checkProtocolStatus = function(){
   	var checkedProtocol = jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter('[checked]').parent();
     if(jQuery('[name=location\\:name]').val() != '' && checkedProtocol.length > 0) {
         jQuery('#cc-1-title-details').empty().text(jQuery('#cc-1-collection-details input[name=location\\:name]:first').val());
-        jQuery('#cc-1-protocol-details').empty().show().text('".lang::get('LANG_Protocol_Title_Label')." : ' + checkedProtocol[0].textContent.split('(')[0]);
+        jQuery('#cc-1-protocol-details').empty().show().text(\"".lang::get('LANG_Protocol_Title_Label')." : \" + checkedProtocol[0].textContent.split('(')[0]);
     } else {
-        jQuery('#cc-1-title-details').empty().text('".lang::get('LANG_Collection_Details')."');
+        jQuery('#cc-1-title-details').empty().text(\"".lang::get('LANG_Collection_Details')."\");
         // TODO autogenerate a name
         jQuery('#cc-1-protocol-details').empty().hide();
     }
@@ -712,7 +712,7 @@ $('#cc-1-collection-details').ajaxForm({
     			if(showStationPanel){ $('#cc-2').showPanel(); }
 		    	showStationPanel = true;
         	}  else {
-				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
 				if(data.error){
 					errorString = errorString + ' : ' + data.error;
 				}
@@ -989,11 +989,11 @@ validateStationPanel = function(){
 	}
     if(jQuery('form#cc-2-floral-station > input[name=location_image\\:path]').val() == '' ||
 					jQuery('form#cc-2-floral-station > input[name=occurrence_image\\:path]').val() == ''){
-		alert('".lang::get('LANG_Must_Provide_Pictures')."');
+		alert(\"".lang::get('LANG_Must_Provide_Pictures')."\");
 		valid = false;
 	}
     if(jQuery('#imp-geom').val() == '') {
-		alert('".lang::get('LANG_Must_Provide_Location')."');
+		alert(\"".lang::get('LANG_Must_Provide_Location')."\");
 		valid = false;
 	}
 	if (jQuery('#id-flower-later').attr('checked') == ''){
@@ -1030,7 +1030,7 @@ $('#cc-2-flower-upload').ajaxForm({
 				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
 			} else {
-				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
 	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val('');
 				$('#cc-2-flower-image').removeClass('loading');
 				if(data.error){
@@ -1070,7 +1070,7 @@ $('#cc-2-environment-upload').ajaxForm({
 				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
 			} else {
-				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
 	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val('');
 				$('#cc-2-environment-image').removeClass('loading');
 				if(data.error){
@@ -1093,11 +1093,11 @@ $('#cc-2-floral-station').ajaxForm({
 		var valid = true;
     	if(jQuery('form#cc-2-floral-station > input[name=location_image\\:path]').val() == '' ||
 					jQuery('form#cc-2-floral-station > input[name=occurrence_image\\:path]').val() == '' ){
-			alert('".lang::get('LANG_Must_Provide_Pictures')."');
+			alert(\"".lang::get('LANG_Must_Provide_Pictures')."\");
 			valid = false;
 		}
 		if(jQuery('#imp-geom').val() == '') {
-			alert('".lang::get('LANG_Must_Provide_Location')."');
+			alert(\"".lang::get('LANG_Must_Provide_Location')."\");
 			valid = false;
 		}
 		if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
@@ -1483,7 +1483,7 @@ $('#cc-4-insect-upload').ajaxForm({
 				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
 			} else {
-				var errorString = '".lang::get('LANG_Indicia_Warehouse_Error')."';
+				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
 	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val('');
 				$('#cc-4-insect-image').removeClass('loading');
 				if(data.error){
@@ -1508,7 +1508,7 @@ $('#cc-4-main-form').ajaxForm({
 		if (!validateRequiredField('occurrence\\:sample_id', 'form#cc-4-main-form')) { valid = false; }
 		if (!validateRadio('occAttr\\:".$args['number_attr_id']."', obj)) { valid = false; }
     	if(data[1].value == '' ){
-			alert('".lang::get('LANG_Must_Provide_Insect_Picture')."');
+			alert(\"".lang::get('LANG_Must_Provide_Insect_Picture')."\");
 			valid = false;
 		}
 		data[4].value = jQuery('select[name=insect\\:taxa_taxon_list_id]').val();
@@ -1680,7 +1680,7 @@ validateInsect = function(){
 		}
  	if (!validateRequiredField('occurrence\\:sample_id', 'form#cc-4-main-form')) { valid = false; }
 	if(jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val() == ''){
-		alert('".lang::get('LANG_Must_Provide_Insect_Picture')."');
+		alert(\"".lang::get('LANG_Must_Provide_Insect_Picture')."\");
 		valid = false;;
 	}
 	if(valid == false) return false;
