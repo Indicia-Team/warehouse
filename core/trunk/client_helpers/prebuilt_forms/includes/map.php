@@ -127,7 +127,7 @@ function iform_map_get_map_parameters() {
       'group'=>'Advanced Base Map Layers',
       'required'=>false
     )
-    
+
   );
 
 }
@@ -169,7 +169,7 @@ function iform_map_get_map_options($args, $readAuth) {
   }
   // Also add any tilecaches they have defined
   if ($args['tile_cache_layers']) {
-    $options['tilecacheLayers'] = json_decode($args['tile_cache_layers']);
+    $options['tilecacheLayers'] = json_decode($args['tile_cache_layers'], true);
   }
   return $options;
 }
@@ -182,7 +182,7 @@ function iform_map_get_map_options($args, $readAuth) {
  */
 function iform_map_get_ol_options($args) {
   if ($args['openlayers_options']) {
-    return json_decode($args['openlayers_options']);
+    return json_decode($args['openlayers_options'], true);
   } else {
     return null;
   }

@@ -199,10 +199,10 @@ class iform_mnhnl_citizen_science_1 {
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $readAuth = $auth['read'];
-    
+
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
-    
+
     $r .= "<div id=\"controls\">\n";
 
     if ($args['interface']!='one_page') {
@@ -329,7 +329,7 @@ class iform_mnhnl_citizen_science_1 {
         'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
     ));
-    echo data_entry_helper::file_box(array(
+    $r .= data_entry_helper::file_box(array(
         'caption' => 'Upload your photos',
         'resizeWidth' => 1024,
         'resizeHeight' => 768,
