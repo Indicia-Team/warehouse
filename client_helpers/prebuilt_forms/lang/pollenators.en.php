@@ -27,7 +27,8 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_Collection_Name_Label' => 'Name your Collection'
+	'LANG_Insufficient_Privileges' => "You do not have sufficient privileges to have access to the 'Create a Collection' page"
+	,'LANG_Collection_Name_Label' => 'Name your Collection'
 	,'LANG_Validate' => 'Save'
 	,'LANG_Modify' => 'Modify'
 	,'LANG_Reinitialise' => 'Reinitialise'
