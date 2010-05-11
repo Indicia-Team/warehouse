@@ -397,9 +397,6 @@
       olOptions.maxExtent = new OpenLayers.Bounds(olOptions.maxExtent[0], olOptions.maxExtent[1],
             olOptions.maxExtent[2], olOptions.maxExtent[3]);
     }
-    // OpenLayers does not automatically set up a layer switcher for tile cache layers
-    if (this.settings.tilecacheLayers.length>1)
-      div.map.addControl(new OpenLayers.Control.LayerSwitcher());
 
     return this.each(function() {
       this.settings = opts;
@@ -431,6 +428,9 @@
         tcLayer = new OpenLayers.Layer.TileCache(item.caption, item.servers, item.layerName, item.settings);
         div.map.addLayer(tcLayer);
       });
+      // OpenLayers does not automatically set up a layer switcher for tile cache layers
+      if (this.settings.tilecacheLayers.length>1)
+        div.map.addControl(new OpenLayers.Control.LayerSwitcher());
 
       // Iterate over the preset layers, adding them to the map
       $.each(this.settings.presetLayers, function(i, item)
