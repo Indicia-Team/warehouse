@@ -386,30 +386,31 @@ $.Autocompleter = function(input, options) {
 };
 
 $.Autocompleter.defaults = {
-	inputClass: "ac_input",
-	resultsClass: "ac_results",
-	loadingClass: "ac_loading",
-	minChars: 1,
-	delay: 400,
-	matchCase: false,
-	matchSubset: true,
-	matchContains: false,
-	cacheLength: 10,
-	max: 100,
-	mustMatch: false,
-	extraParams: {},
-	selectFirst: true,
-	formatItem: function(row) { return row[0]; },
-	formatMatch: null,
-	autoFill: false,
-	width: 0,
-	multiple: false,
-	multipleSeparator: ", ",
-	highlight: function(value, term) {
-		return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>");
-	},
-    scroll: true,
-    scrollHeight: 180
+  inputClass: "ac_input",
+  resultsClass: "ac_results",
+  loadingClass: "ac_loading",
+  minChars: 1,
+  dataType: 'jsonp',
+  delay: 400,
+  matchCase: false,
+  matchSubset: true,
+  matchContains: false,
+  cacheLength: 10,
+  max: 100,
+  mustMatch: false,
+  extraParams: {},
+  selectFirst: true,
+  formatItem: function(row) { return row[0]; },
+  formatMatch: null,
+  autoFill: false,
+  width: 0,
+  multiple: false,
+  multipleSeparator: ", ",
+  highlight: function(value, term) {
+    return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>");
+  },
+  scroll: true,
+  scrollHeight: 180
 };
 
 $.Autocompleter.Cache = function(options) {

@@ -35,16 +35,24 @@ if ($_POST){
     'label'=>'Date',
     'fieldname'=>'sample:date'
 ));
-echo data_entry_helper::map();
+//echo data_entry_helper::map();
 ?>
 <div class="smaller">
 <?php 
+echo data_entry_helper::autocomplete(array(
+    'label'=>'Species',
+    'fieldname'=>'occurrence:taxa_taxon_list_id',
+    'table'=>'taxa_taxon_list',
+    'captionField'=>'taxon',
+    'valueField'=>'id',
+    'extraParams'=>$readAuth + array('taxon_list_id' => $config['species_checklist_taxon_list'])
+));
 echo data_entry_helper::species_checklist(array(
     'listId'=>$config['species_checklist_taxon_list'],
+    'lookupListId'=>3,
     'occAttrs'=>$config['species_checklist_occ_attributes'],
     'extraParams'=>$readAuth,
-    'columns'=>2,
-	'survey_id'=>$config['survey_id']
+	  'survey_id'=>$config['survey_id']
 ));
 ?>
 </div>
