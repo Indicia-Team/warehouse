@@ -375,6 +375,10 @@ class iform_pollenators {
     return 'Pollenators Data Entry';
   }
 
+  public static function get_perms($nid) {
+    return array('IForm n'.$nid.' access');
+  }
+  
   private function help_button($use_help, $id, $func, $arg) {
   	if($use_help == false) return '';
   	data_entry_helper::$javascript .= "
@@ -411,6 +415,10 @@ jQuery('#".$id."').click(function(){
     $email = $user->mail;
     $username = $user->name;
 
+    if(!user_access('IForm n'.$node->nid.' access')){
+    	return "<p>".lang::get('LANG_Insufficient_Privileges')."</p>";
+    }
+    
   	$r = '';
 
     // Get authorisation tokens to update and read from the Warehouse.

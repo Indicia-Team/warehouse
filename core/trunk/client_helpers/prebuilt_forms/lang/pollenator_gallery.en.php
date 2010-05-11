@@ -45,6 +45,11 @@ $custom_terms = array(
 	,'LANG_Flower_Species' => "Flower name"
 	,'LANG_Insect_Species' => "Insect name"
 	,'LANG_History_Title' => 'Old identifications'
+
+	,'LANG_Main_Title' => 'Filters'
+	,'LANG_Name_Filter_Title' => 'Name'
+	,'LANG_Name' => 'Collection creator Username'
+	,'LANG_Date_Filter_Title' => 'Date'
 	
 	,'LANG_Additional_Info_Title' => 'ADDITIONAL INFORMATION'
 	,'LANG_Date' => 'Date'

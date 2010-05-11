@@ -27,7 +27,8 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_Collection_Name_Label' => 'Nommer votre collection'
+	'LANG_Insufficient_Privileges' => "Vous n'avez pas de privilèges suffisants pour accéder à la page 'Créer d'un Collection'"
+	,'LANG_Collection_Name_Label' => 'Nommer votre collection'
 	,'Protocol' => 'Choisir un protocole'
 	,'LANG_Modify' => 'MODIFIER'
 	,'LANG_Reinitialise' => 'INITIALISER'
