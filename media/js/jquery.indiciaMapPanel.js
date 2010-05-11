@@ -358,14 +358,16 @@
     * @access private
     */
     function _displayLocation(div, ref, corner1, corner2)
-    {
-      $.getJSON(opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + ref + "&system=4326" + "&callback=?", function(dataref) {
-        $.getJSON(opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + corner1 + "&system=4326" + "&callback=?", function(datac1) {
-          $.getJSON(opts.indiciaSvc + "index.php/services/spatial/sref_to_wkt" + "?sref=" + corner2 + "&system=4326" + "&callback=?", function(datac2) {
-            _showWktFeature(div, dataref.wkt, div.map.searchLayer, [datac1.wkt, datac2.wkt]);
-          });
-        });
-      });
+    { 
+      // 4326 is the projection for points obtained from GeoPlanet.
+      var epsg4326=new OpenLayers.Projection("EPSG:4326");
+      refxy = ref.split(', ');
+      dataref = new OpenLayers.LonLat(refxy[1],refxy[0]).transform(epsg4326, div.map.projection);
+      corner1xy = ref.split(', ');
+      datac1 = new OpenLayers.LonLat(corner1xy[1],corner1xy[0]).transform(epsg4326, div.map.projection);
+      corner2xy = ref.split(', ');
+      datac2 = new OpenLayers.LonLat(corner2xy[1],corner2xy[0]).transform(epsg4326, div.map.projection);
+      _showWktFeature(div, dataref.wkt, div.map.searchLayer, [datac1.wkt, datac2.wkt]);
     }
 
     /**
