@@ -392,6 +392,14 @@
     
     olOptions.projection = new OpenLayers.Projection("EPSG:"+olOptions.projection);
     olOptions.displayProjection = new OpenLayers.Projection("EPSG:"+olOptions.displayProjection);
+    if ((typeof olOptions.maxExtent !== "undefined") && (olOptions.maxExtent instanceof Array)) {
+      // if the maxExtent is passed as an array, it could be from JSON on a Drupal settings form. We need an Ol bounds object.
+      olOptions.maxExtent = new OpenLayers.Bounds(olOptions.maxExtent[0], olOptions.maxExtent[1],
+            olOptions.maxExtent[2], olOptions.maxExtent[3]);
+    }
+    // OpenLayers does not automatically set up a layer switcher for tile cache layers
+    if (this.settings.tilecacheLayers.length>1)
+      div.map.addControl(new OpenLayers.Control.LayerSwitcher());
 
     return this.each(function() {
       this.settings = opts;
