@@ -2,6 +2,10 @@
   padding-right: 1em;
 }
 
+.scTaxonCell input {
+  width: 100%;
+}
+
 .scPresenceCell {
   text-align: center;
   padding-left: 1em;

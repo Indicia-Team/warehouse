@@ -103,7 +103,7 @@ $indicia_templates = array(
   'loading_block_end' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
       "document.write('</div>');\n".
       "/* ]]> */</script>",
-  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}'.
+  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority} '.
       '<span class="nobreak vernacular">{common}</span></div>',
   'treeview_node' => '<span>{caption}</span>',
   'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
@@ -112,15 +112,12 @@ $indicia_templates = array(
       '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
   'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
       {
-        minChars : 1,
-        extraParams :
-        {
+        extraParams : {
           orderby : '{captionField}',
           mode : 'json',
           qfield : '{captionField}',
           {sParams}
         },
-        dataType: 'jsonp',
         parse: function(data)
         {
           var results = [];
@@ -137,9 +134,6 @@ $indicia_templates = array(
       formatItem: function(item)
       {
         return item.{captionField};
-      },
-      formatResult: function(item) {
-        return item.{valueField};
       }
     });
     jQuery('input#{escaped_input_id}').result(function(event, data) {
@@ -1987,25 +1981,208 @@ class data_entry_helper extends helper_config {
   {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
+    $options = self::get_species_checklist_options($options);
+    
+    self::add_resource('json');
+    self::add_resource('autocomplete');
+    $occAttrControls = array();
+    $occAttrs = array();
+    
+    $taxaThatExist = array();
+    $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
+    
+    // If we managed to read the species list data we can proceed
+    if (! array_key_exists('error', $taxalist))
+    {
+      $url = parent::$base_url."index.php/services/data";
+      $attributes = self::getAttributes(array(
+          'id' => null
+           ,'valuetable'=>'occurrence_attribute_value'
+           ,'attrtable'=>'occurrence_attribute'
+           ,'key'=>'occurrence_id'
+           ,'fieldprefix'=>"sc:{ttlId}::occAttr"
+           ,'extraParams'=>$options['readAuth']
+           ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
+      ));
+      // Get the attribute and control information required to build the custom occurrence attribute columns
+      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
+      $grid = '';
+      if (isset($options['lookupListId'])) {
+        $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls);
+      }
+      $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'" id="'.$options['id'].'">';
+      if ($options['header']) {
+        $grid .= "<thead class=\"ui-widget-header\"><tr>";
+        for ($i=0; $i<$options['columns']; $i++) {
+          $grid .= "<th>".lang::get('species_checklist.species')."</th>";
+          if ($options['checkboxCol']=='true') {
+            $grid .= "<th>".lang::get('species_checklist.present')."</th>";
+          }
+          foreach ($occAttrs as $a) {
+            $grid .= "<th>$a</th>";
+          }
+        }
+        $grid .= '</tr></thead>';
+      }
+      $rows = array();
+      $rowIdx = 0;      
+      foreach ($taxalist as $taxon) {
+        $id = $taxon['id'];
+        // Get the cell content from the taxon_label template
+        $firstCell = self::mergeParamsIntoTemplate($taxon, 'taxon_label');
+        // If the taxon label template is PHP, evaluate it.
+        if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
+        // Now create the table cell to contain this.
+        $row = str_replace('{content}', $firstCell, $indicia_templates['taxon_label_cell']);
+        // go through list in entity to load and find first entry for this taxon, then extract the
+        // record ID if if exists.
+        $attributesForThisRow = $attributes;
+        $existing_record_id = '';
+        // Are we reloading any data for this row?
+        if(self::$entity_to_load && in_array($id, $taxaThatExist)) {
+          foreach(self::$entity_to_load as $key => $value){
+            $parts = explode(':', $key);
+            if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
+              $existing_record_id = $parts[2];
+              // As this is an existing row, we need to reload the attributes data with the row values
+              // @todo Optimisation to get all the data in one service call
+              $attributesForThisRow = self::getAttributes(array(
+                  'id' => $existing_record_id
+                  ,'valuetable'=>'occurrence_attribute_value'
+                  ,'attrtable'=>'occurrence_attribute'
+                  ,'key'=>'occurrence_id'
+                  ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
+                  ,'extraParams'=>$options['readAuth']
+                  ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
+              ));
+              break;
+            }
+          }
+        }
+        if ($options['checkboxCol']=='true') {
+          if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
+            $checked = ' checked="checked"';
+          } else {
+            $checked='';
+          }
+          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:$existing_record_id:present' $checked /></td>";
+        }
+        foreach ($occAttrControls as $attrId => $control) {
+          $oc = str_replace('{ttlId}', $id, $control);
+          $ctrlId = "sc:$id::occAttr:$attrId";
+          // If there is an existing value to load for this control, we need to put the value in the control.
+          $existing_value = '';
+          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
+              && !empty(self::$entity_to_load[$ctrlId])) {
+                $existing_value = self::$entity_to_load[$ctrlId];
+          } else if(array_key_exists('default', $attributesForThisRow[$attrId])){
+                $existing_value = $attributesForThisRow[$attrId]['default'];
+          }
+          if($existing_value){
+            // For select controls, specify which option is selected from the existing value
+            if (substr($oc, 0, 7)=='<select') {
+              $oc = str_replace('value="'.$existing_value.'"',
+                  'value="'.$existing_value.'" '.$indicia_templates['select_item_selected'], $oc);
+            } else {
+              $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+            }
+            $error = self::check_errors(array_pop(explode('::', $ctrlId)));
+            if ($error) {              
+              $oc = str_replace("class='", "class='ui-state-error ", $oc);
+              $oc .= $error;
+            }
+          }
+          $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributesForThisRow[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
+        }
+        if ($rowIdx < count($taxalist)/$options['columns']) {
+          $rows[$rowIdx]=$row;
+        } else {
+          $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
+        }
+        $rowIdx++;
+      }      
+      $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
+      $grid .= '</tbody></table>';
+      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
+      // selecting the species from this list. Add the required controls for this.
+      if (isset($options['lookupListId'])) {
+        // Javascript to add further rows to the grid
+        self::add_resource('addrowtogrid');
+        self::$javascript .= "addRowToGrid('$url', '".
+            $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
+            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
+            "'".$indicia_templates['taxon_label']."');\r\n";
+      }
+      if ($options['checkboxCol']=='true') { // need to tag if checkboxes active so can delete entry if needed
+        $grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
+      }
+      return $grid;
+    } else {
+      return $taxalist['error'];
+    }
+
+  }
+  
+  /**
+   * Private method to build the list of taxa to add to a species checklist grid.
+   * @param array $options Options array for the control
+   * @param array $taxaThatExist Array that is modified by this method to contain a list of
+   * the taxa_taxon_list_ids for rows which have existing data to load.
+   * @return array The taxon list to store in the grid.
+   */
+  private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
+    // Get the list of species that are always added to the grid
+    $taxalist = self::get_population_data($options);
+    // build a list of the ids we have got from the default list.
+    $taxaLoaded = array();
+    foreach ($taxalist as $taxon) 
+      $taxaLoaded[] = $taxon['id'];
+    // If there are any extra taxa to add to the list, get their details
+    if(self::$entity_to_load) {
+      $extraTaxonOptions = array_merge(array(), $options);
+      unset($extraTaxonOptions['extraParams']['taxon_list_id']);
+      foreach(self::$entity_to_load as $key => $value) {
+        $parts = explode(':', $key);
+        // Is this taxon attribute data?
+        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='{ttlId}') { 
+          // track that this taxon row has existing data to load
+          if (!in_array($parts[1], $taxaThatExist)) $taxaThatExist[] = $parts[1];
+          // If not already loaded
+          if(!in_array($parts[1], $taxaLoaded)) {
+            $taxaLoaded[] = $parts[1];
+            $extraTaxonOptions['extraParams']['id']=$parts[1];
+            // append the taxon to the list to load into the grid
+            $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
+          }
+        }
+      }
+    }
+  	return $taxalist;
+  }
+  
+  /**
+   * Internal method to prepare the options array for a species_checklist control.
+   * 
+   * @param array $options Options array passed to the control
+   * @return array Options array prepared with defaults and other values required by the control.
+   */
+  private static function get_species_checklist_options($options) {
     // Apply default values
     $options = array_merge(array(
         'header'=>'true',
         'columns'=>1,
         'checkboxCol'=>'true',
         'attrCellTemplate'=>'attribute_cell',
-        'PHPtaxonLabel' => false
+        'PHPtaxonLabel' => false,
+        'id' => 'species-grid-'.rand(0,1000)
     ), $options);
-    self::add_resource('json');
-    self::add_resource('autocomplete');
-    $occAttrControls = array();
-    $occAttrs = array();
-    if (array_key_exists('listId', $options)) {
-      $options['extraParams']['taxon_list_id']=$options['listId'];
-    }
     $options['extraParams'] = array_merge(array(
       'preferred'=>'t', // default to preferred taxa only
       'orderby'=>'taxon' // default sort by taxon name
     ), $options['extraParams']);
+    if (array_key_exists('listId', $options)) {
+      $options['extraParams']['taxon_list_id']=$options['listId'];
+    }
     if (array_key_exists('readAuth', $options)) {
       $options['extraParams'] += $options['readAuth'];
     } else {
@@ -2015,15 +2192,22 @@ class data_entry_helper extends helper_config {
       );
     }
     $options['table']='taxa_taxon_list';
-    $taxalist = self::get_population_data($options);
-    $url = parent::$base_url."index.php/services/data";
-
+  	return $options;
+  }
+  
+  /**
+   * Internal function to prepare the list of occurrence attribute columns for a species_checklist control.
+   */
+  private static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
     // Get the list of occurrence attributes
     if (array_key_exists('occAttrs', $options)) {
       $idx=0;
       $class='';
       foreach ($options['occAttrs'] as $occAttr)
       {
+        // test that this occurrence attribute is linked to the survey
+        if (!array_key_exists($occAttr, $attributes)) 
+          throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
         $a = self::get_population_data(array(
             'table'=>'occurrence_attribute',
             'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
@@ -2040,7 +2224,7 @@ class data_entry_helper extends helper_config {
             case 'L':
               $tlId = $b['termlist_id'];
               $occAttrControls[$occAttr] = data_entry_helper::select(array(
-                  'fieldname' => 'oa:'.$occAttr,
+                  'fieldname' => 'sc:{ttlId}::occAttr:'.$occAttr,
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
@@ -2052,147 +2236,39 @@ class data_entry_helper extends helper_config {
             case 'D':
             case 'V':
               // Date-picker control
-              $occAttrControls[$occAttr] = "<input type='text' class='date $class' id='oa:$occAttr' name='oa:$occAttr' " .
-                  "value='".lang::get('click here')."'/>";
+              $occAttrControls[$occAttr] = "<input type=\"text\" class=\"date $class\" " .
+                  "id=\"sc:{ttlId}::occAttr:$occAttr\" name=\"oa:$occAttr\" " .
+                  "value=\"".lang::get('click here')."\"/>";
               break;
             default:
               $occAttrControls[$occAttr] =
-                  "<input type='text' id='oa:$occAttr' name='oa:$occAttr' class='$class' value=\"\"/>";
+                  "<input type=\"text\" id=\"oa:$occAttr\" name=\"oa:$occAttr\" class=\"$class\" value=\"\" />";
               break;
           }
         }
         $idx++;
       }
     }
-    // Build the grid
-    if (! array_key_exists('error', $taxalist))
-    {
-      $grid = "<table style='display: none'><tbody><tr id='scClonableRow'><td class='scTaxonCell'></td>";
-      if ($options['checkboxCol']=='true') {
-        $grid .= "<td class='scPresenceCell'><input type='checkbox' name='' value='' checked='true' /></td>";
-      }
-      foreach ($occAttrControls as $oc) {
-        $grid .= "<td class='scOccAttrCell'>$oc</td>";
-      }
-      $grid .= "</tr></tbody></table>";
-      $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'">';
-      if ($options['header']) {
-        $grid .= "<thead class=\"ui-widget-header\"><tr>";
-        for ($i=0; $i<$options['columns']; $i++) {
-          $grid .= "<th>".lang::get('species_checklist.species')."</th>";
-          if ($options['checkboxCol']=='true') {
-            $grid .= "<th>".lang::get('species_checklist.present')."</th>";
-          }
-          foreach ($occAttrs as $a) {
-            $grid .= "<th>$a</th>";
-          }
-        }
-        $grid .= '</tr></thead>';
-      }
-      $rows = array();
-      $rowIdx = 0;
-      foreach ($taxalist as $taxon) {
-        $id = $taxon['id'];
-        // Get the cell content from the taxon_label template
-        $firstCell = self::mergeParamsIntoTemplate($taxon, 'taxon_label');
-        // If the taxon label template is PHP, evaluate it.
-        if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
-        // Now create the table cell to contain this.
-        $row = str_replace('{content}', $firstCell, $indicia_templates['taxon_label_cell']);
-        // go through list in entity to load and find first entry for this taxon, then extract the
-        // record ID if if exists.
-        $existing_record_id = '';
-        if(self::$entity_to_load){
-          foreach(self::$entity_to_load as $key => $value){
-            $parts = explode(':', $key);
-            if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
-              $existing_record_id = $parts[2];
-              break;
-            }
-          }
-        }
-        $attributes = self::getAttributes(array(
-          'id' => $existing_record_id
-           ,'valuetable'=>'occurrence_attribute_value'
-           ,'attrtable'=>'occurrence_attribute'
-           ,'key'=>'occurrence_id'
-           ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
-           ,'extraParams'=>$options['readAuth']
-           ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
-        ));
-        if ($options['checkboxCol']=='true') {
-          if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
-            $checked = ' checked="checked"';
-          } else {
-            $checked='';
-          }
-          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:$existing_record_id:present' $checked /></td>";
-        }
-        foreach ($occAttrControls as $oc) {
-          preg_match('/oa:(\d+)/', $oc, $matches); // matches 1 holds the occurrence_attribute_id
-          // test that this occurrence attribute is linked to the survey
-          if (!array_key_exists($matches[1], $attributes)) throw new Exception('The occurrence attributes requested for the grid are not '.
-              'linked with the survey.');
-          $ctrlId = $attributes[$matches[1]]['fieldname'];
-          $oc = preg_replace('/oa:(\d+)/', $ctrlId, $oc);
-          // If there is an existing value to load for this control, we need to put the value in the control.
-          $existing_value = '';
-          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
-              && !empty(self::$entity_to_load[$ctrlId])) {
-                $existing_value = self::$entity_to_load[$ctrlId];
-          } else if(array_key_exists('default', $attributes[$matches[1]])){
-                $existing_value = $attributes[$matches[1]]['default'];
-          }
-          if($existing_value){
-            // For select controls, specify which option is selected from the existing value
-            if (substr($oc, 0, 7)=='<select') {
-              $oc = str_replace('value="'.$existing_value.'"',
-                  'value="'.$existing_value.'" '.$indicia_templates['select_item_selected'], $oc);
-            } else {
-              $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
-            }
-            $error = self::check_errors(array_pop(explode('::', $ctrlId)));
-            if ($error) {              
-              $oc = str_replace("class='", "class='ui-state-error ", $oc);
-              $oc .= $error;
-            }
-          }
-          $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$matches[1]]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
-        }
-        if ($rowIdx < count($taxalist)/$options['columns']) {
-          $rows[$rowIdx]=$row;
-        } else {
-          $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
-        }
-        $rowIdx++;
-      }      
-      $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
-      $grid .= '</tbody></table>';
-
-      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
-      // selecting the species from this list. Add the required controls for this.
-      if (isset($options['lookupListId'])) {
-        // Javascript to add further rows to the grid
-        self::add_resource('addrowtogrid');
-        self::$javascript .= "var addRowFn = addRowToGrid('$url', {'auth_token' : '".
-            $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'});
-        jQuery('#addRowButton').click(addRowFn);\r\n";
-
-        // Drop an autocomplete box against the parent termlist
-        $grid .= '<label for="addSpeciesBox">'.lang::get('enter additional species').':</label>';
-        $grid .= data_entry_helper::autocomplete('addSpeciesBox',
-            'taxa_taxon_list', 'taxon', 'id', $options['readAuth'] +
-            array('taxon_list_id' => $options['lookupListId']));
-        $grid .= "<button type='button' id='addRowButton'>".lang::get('add row')."</button>";
-      }
-      if ($options['checkboxCol']=='true') { // need to tag if checkboxes active so can delete entry if needed
-        $grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
-      }
-      return $grid;
-    } else {
-      return $taxalist['error'];
+  }
+  
+  /**
+   * When the species checklist grid has a lookup list associated with it, this is a 
+   * secondary checklist which you can pick species from to add to the grid. As this happens,
+   * a hidden table is used to store a clonable row which provides the template for new rows
+   * to be added to the grid. 
+   */
+  private static function get_species_checklist_clonable_row($options, $occAttrControls) {
+    global $indicia_templates;
+    $r = "<table style='display: none'><tbody><tr id='".$options['id']."-scClonableRow'>";
+    $r .= $indicia_templates['taxon_label_cell'];
+    if ($options['checkboxCol']=='true') {
+      $r .= "<td class='scPresenceCell'><input type='checkbox' name='' value='' /></td>";
     }
-
+    foreach ($occAttrControls as $oc) {
+      $r .= "<td class='scOccAttrCell'>$oc</td>";
+    }
+    $r .= "</tr></tbody></table>";
+    return $r;
   }
 
  /**
@@ -3386,7 +3462,7 @@ if (errors.length>0) {
       $record_status = $arr['occurrence:record_status'];
     }
     // Species checklist entries take the following format
-    // sc:<taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
