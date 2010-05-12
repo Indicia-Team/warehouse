@@ -1156,6 +1156,10 @@ class data_entry_helper extends helper_config {
           'height'=>470,
           'presetLayers'=>$presetLayers
       ), $options);
+      // When using tilecache layers, the open layers defaults cannot be used. The caller must take control of openlayers settings
+      if (isset($options['tilecacheLayers'])) {
+        $options['useOlDefaults'] = false;
+      }
 
       //width and height may be numeric, which is interpreted as pixels, or a css string, e.g. '50%'
       //width in % is causing problems with panning in Firefox currently. 13/3/2010.
