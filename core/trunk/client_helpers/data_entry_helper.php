@@ -59,7 +59,7 @@ $indicia_templates = array(
   'listbox_item_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
-  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" value="{value}"{class}{checked} {disabled}/>{caption}</span>{sep}',
+  'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span>{sep}',
   'map_panel' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
     "/* ]]> */</script>",
@@ -3181,9 +3181,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $url = parent::$base_url."index.php/services/data";
     // Execute a request to the service
     $response = self::get_population_data($options);
-    $items = "";    
-    if (!array_key_exists('error', $response)){
+    $items = "";
+    if (!array_key_exists('error', $response)) {
+      $idx = 0;
       foreach ($response as $item) {
+        $idx++;
         if (array_key_exists($options['captionField'], $item) && array_key_exists($options['valueField'], $item)) {
           $item = array_merge(
             $options, 
@@ -3194,7 +3196,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
               'type' => $type,
               'caption' => $item[$options['captionField']],
               'value' => $item[$options['valueField']],
-              'class' => $itemClass
+              'class' => $itemClass,
+              'itemId' => $options['fieldname'].':'.$idx
             )
           );
           $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
@@ -3203,7 +3206,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
     $options['items']=$items;
-    return self::apply_template($options['template'], $options);
+    // We don't want to output for="" in the top label, as it is not directly associated to a button
+    $lblTemplate = $indicia_templates['label'];
+    $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate); 
+    $r = self::apply_template($options['template'], $options);
+    // reset the old template
+    $indicia_templates['label'] = $lblTemplate;
+    return $r;
   }
 
  /**
