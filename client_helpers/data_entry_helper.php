@@ -1213,9 +1213,6 @@ class data_entry_helper extends helper_config {
       if ($olOptions) {
         $json .= ','.json_encode($olOptions);
       }
-      if (array_key_exists('projection', $options)) {
-        self::$onload_javascript .= '$.fn.indiciaMapPanel.openLayersDefaults.projection = new OpenLayers.Projection("EPSG:'.$options['projection'].'");'."\n";
-      }
       self::$onload_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
 
       return self::apply_template('map_panel', $options);
