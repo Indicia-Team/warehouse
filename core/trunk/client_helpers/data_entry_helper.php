@@ -1194,6 +1194,14 @@ class data_entry_helper extends helper_config {
           }
         }
       }
+      
+      if (isset($options['projection'])) {
+        if (isset($olOptions)) {
+          $olOptions = array_merge(array('projection' => $options['projection']), $olOptions);
+        } else {
+          $olOptions = array('projection' => $options['projection']);
+        }
+      }
 
       // This resource has a dependency on the googlemaps resource so has to be added afterwards.
       self::add_resource('indiciaMapPanel');
