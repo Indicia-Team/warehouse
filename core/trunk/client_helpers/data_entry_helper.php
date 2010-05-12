@@ -60,6 +60,7 @@ $indicia_templates = array(
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span>{sep}',
+  'check_or_radio_group_container' => '<div {class} >{group}</div>',
   'map_panel' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
     "/* ]]> */</script>",
@@ -3165,6 +3166,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'sep' => '',
         'template' => 'check_or_radio_group',
         'itemTemplate' => 'check_or_radio_group_item',
+        'containerTemplate' => 'check_or_radio_group_container',
         'class' => 'control-box'
       ),
       $options
@@ -3210,6 +3212,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $r = self::apply_template($options['template'], $options);
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
+    if (array_key_exists('containerClass', $options)) {
+      $r = self::apply_template($options['containerTemplate'],
+            array(
+              'group' => $r,
+              'class' => $options['containerClass']
+            ));
+    }
     return $r;
   }
 
@@ -4346,6 +4355,9 @@ $('.ui-state-default').live('mouseout', function() {
             $attrOptions = $attrOptions + array('blankText' => '');
           }
           $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
+          if(array_key_exists('containerClass', $options)){
+            $attrOptions['containerClass'] = $options['containerClass'];
+          }
           $dataSvcParams = array('termlist_id' => $item['termlist_id'], 'view' => 'detail');
           if (array_key_exists('language', $options)) {
             $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);

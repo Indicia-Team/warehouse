@@ -473,7 +473,8 @@ jQuery('#".$id."').click(function(){
     $defAttrOptions = array('extraParams'=>$readAuth,
     				'lookUpListCtrl' => 'radio_group',
     				'validation' => array('required'),
-    				'language' => iform_lang_iso_639_2($args['language']));
+    				'language' => iform_lang_iso_639_2($args['language']),
+    				'containerClass' => 'group-control-box');
 
     global $indicia_templates;
 	$indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
@@ -496,13 +497,15 @@ jQuery('#".$id."').click(function(){
 <div id="cc-1" class="poll-section">
   <div id="cc-1-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title">
   	<span id="cc-1-title-details">'.lang::get('LANG_Collection_Details').'</span>
-  	<span id="cc-1-protocol-details"></span>
     <div class="right">
       <div>
         <span id="cc-1-reinit-button" class="ui-state-default ui-corner-all reinit-button poll-button-1">'.lang::get('LANG_Reinitialise').'</span>
         <span id="cc-1-mod-button" class="ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
       </div>
     </div>
+  </div>
+  <div id="cc-1-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+    <span id="cc-1-protocol-details"></span>
   </div>
   <div id="cc-1-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">
    <form id="cc-1-collection-details" action="'.iform_ajaxproxy_url($node, 'loc-sample').'" method="POST">
@@ -526,12 +529,8 @@ jQuery('#".$id."').click(function(){
     <input type="hidden" id="location:id"      name="location:id" value="" disabled="disabled" />
     <input type="hidden" id="sample:id"        name="sample:id" value="" disabled="disabled" />
     </form>
-  </div>
-  <div id="cc-1-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-1-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate').'</div><br />
-  </div>
-  
-</div>
+    <div id="cc-1-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate').'</div><br />
+  </div>  
 <div style="display:none" />
     <form id="cc-1-delete-collection" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
        <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
@@ -542,22 +541,25 @@ jQuery('#".$id."').click(function(){
        <input type="hidden" name="sample:deleted" value="t" />
     </form>
 </div>
+  <div id="cc-1-main-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
 ';
- 	
+
     data_entry_helper::$javascript .= "
 var sessionCounter = 0;
 
 $.fn.foldPanel = function(){
-	this.find('.poll-section-body').addClass('poll-hide');
-	this.find('.poll-section-footer').addClass('poll-hide');
-	this.find('.reinit-button').show();
-	this.find('.mod-button').show();
+	this.children('.poll-section-body').addClass('poll-hide');
+	this.children('.poll-section-footer').addClass('poll-hide');
+	this.children('.poll-section-title').find('.reinit-button').show();
+	this.children('.poll-section-title').find('.mod-button').show();
+	this.children('.photoReelContainer').addClass('ui-corner-all').removeClass('ui-corner-top')
 };
 
 $.fn.unFoldPanel = function(){
-	this.find('.poll-section-body').removeClass('poll-hide');
-	this.find('.poll-section-footer').removeClass('poll-hide');
-	this.find('.mod-button').hide();
+	this.children('.poll-section-body').removeClass('poll-hide');
+	this.children('.poll-section-footer').removeClass('poll-hide');
+	this.children('.poll-section-title').find('.mod-button').hide();
+	this.children('.photoReelContainer').addClass('ui-corner-top').removeClass('ui-corner-all')
 	window.scroll(0,0); // force the window to display the top.
 	// any reinit button is left in place
 };
@@ -642,13 +644,11 @@ showStationPanel = true;
 // The validate functionality for each panel is sufficiently different that we can't generalise a function
 // this is the one called when we don't want the panel following to be opened automatically.
 validateCollectionPanel = function(){
-	var myPanel = jQuery('#cc-1');
-	if(myPanel.filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
-	if(myPanel.find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
-	if(!myPanel.find('form > input').valid()){ return false; }
+	if(jQuery('#cc-1-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
+	if(!jQuery('#cc-1-body').find('form > input').valid()){ return false; }
 	// no need to check protocol - if we are this far, we've already filled it in.
   	showStationPanel = false;
-	myPanel.find('form').submit();
+	jQuery('#cc-1-collection-details').submit();
 	return true;
   };
 
@@ -801,22 +801,19 @@ $('#cc-1-reinit-button').click(function() {
     
     $r .= '
 <div id="cc-2" class="poll-section">
-  <div id="cc-2-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title"><span>'.lang::get('LANG_Flower_Station').'</span>
+  <div id="cc-2-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title"><span>'.lang::get('LANG_Flower_Station').'</span>
     <div class="right">
       <span id="cc-2-mod-button" class="ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
     </div>
   </div>
-  <div id="cc-2-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">
+  <div id="cc-2-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active poll-section-body">
     <div id="cc-2-flower" >
-      <div id="cc-2-flower-picture">
-		<form id="cc-2-flower-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
+	  <form id="cc-2-flower-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     		<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
-     		<input type="submit" value="'.lang::get('LANG_Upload_Flower').'"/>
     		<input name="upload_file" type="file" class="required" />
-		</form>
- 	    <div id="cc-2-flower-image" class="poll-image">
- 	    </div>
- 	  </div>
+     		<input type="submit" value="'.lang::get('LANG_Upload_Flower').'" class="btn-submit" />
+      </form>
+ 	  <div id="cc-2-flower-image" class="poll-image"></div>
  	  <div id="cc-2-flower-identify" class="poll-dummy-form">
         '.iform_pollenators::help_button($use_help, "flower-help-button", $args['help_function'], $args['help_flower_arg']).'
  	    <p><strong>'.lang::get('LANG_Identify_Flower').'</strong></p>
@@ -830,9 +827,9 @@ $('#cc-1-reinit-button').click(function() {
       <div id="cc-2-environment-picture">
 		<form id="cc-2-environment-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     		<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
-    		<input type="submit" value="'.lang::get('LANG_Upload_Environment').'"/>
     		<input name="upload_file" type="file" class="required" />
-		</form>
+    		<input type="submit" value="'.lang::get('LANG_Upload_Environment').'" class="btn-submit" />
+    	</form>
  	    <div id="cc-2-environment-image" class="poll-image">
  	    </div>
  	  </div>
@@ -899,13 +896,13 @@ $('#cc-1-reinit-button').click(function() {
     <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
-    '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language'])))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language'])))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']))).'  	 	
+    '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box'))
+ 	.data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box'))
+ 	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box')).'  	 	
    </form>
   </div>
   <div id="cc-2-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-2-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div><br />
+    <div id="cc-2-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div><br />
   </div>
 </div>';
 
@@ -1166,14 +1163,14 @@ $('#cc-2-valid-button').click(function() {
  	// Sessions.
     $r .= '
 <div id="cc-3" class="poll-section">
-  <div id="cc-3-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title"><span>'.lang::get('LANG_Sessions_Title').'</span>
+  <div id="cc-3-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title"><span>'.lang::get('LANG_Sessions_Title').'</span>
     <div id="cc-3-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
   </div>
-  <div id="cc-3-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">
+  <div id="cc-3-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active poll-section-body">
   </div>
   <div id="cc-3-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-3-valid-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
-	<div id="cc-3-add-button" class="right ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div><br />
+	<div id="cc-3-add-button" class="ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div><br />
+    <div id="cc-3-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
   </div>
 </div>
 <div style="display:none" />
@@ -1187,7 +1184,7 @@ $('#cc-2-valid-button').click(function() {
     </form>
 </div>';
 
- 	$defAttrOptions = array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'validation' => array('required'), 'language' => iform_lang_iso_639_2($args['language'])); 	
+ 	$defAttrOptions = array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'validation' => array('required'), 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box'); 	
     data_entry_helper::$javascript .= "
 $('#cc-3-delete-session').ajaxForm({ 
         dataType:  'json', 
@@ -1242,18 +1239,20 @@ addSession = function(){
 	// dynamically build the contents of the session block.
 	var newSession = jQuery('<div id=\"cc-3-session-'+sessionCounter+'\" class=\"poll-session\"/>')
 		.appendTo('#cc-3-body');
-	var newTitle = jQuery('<div class=\"ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-session-title\">".lang::get('LANG_Session')." '+sessionCounter+'</div>')
+	var newTitle = jQuery('<div class=\"poll-session-title\">".lang::get('LANG_Session')." '+sessionCounter+'</div>')
 		.appendTo(newSession);
 	var newModButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1\">".lang::get('LANG_Modify')."</div><br />')
 		.appendTo(newTitle).hide();
+	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div><br />')
+		.appendTo(newTitle);	
 	newModButton.click(function() {
 		if(!validateAndSubmitOpenSessions()) return false;
 		var session=$(this).parents('.poll-session');;
 		session.show();
 		session.children().show();
-		session.children(':first').children().hide(); // this is the mod button itself
+		session.children(':first').children(':first').hide(); // this is the mod button itself
     });
-    var formContainer = jQuery('<div class=\"ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active\" />').appendTo(newSession);
+    var formContainer = jQuery('<div />').appendTo(newSession);
     var newForm = jQuery('<form action=\"".iform_ajaxproxy_url($node, 'sample')."\" method=\"POST\" class=\"poll-session-form\" />').appendTo(formContainer);
 	jQuery('<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />').appendTo(newForm);
 	jQuery('<input type=\"hidden\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />').appendTo(newForm);
@@ -1286,9 +1285,6 @@ addSession = function(){
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defAttrOptions)."').appendTo(newForm);
-	var newFooter = jQuery('<div id=\"cc-3-session-footer-'+sessionCounter+'\" class=\"ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom poll-session-footer\" />').appendTo(newSession);
-	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div><br />')
-		.appendTo(newFooter);	
 	newDeleteButton.click(function() {
 		var container = $(this).parent().parent();
 		jQuery('#cc-3-delete-session').find('[name=sample\\:id]').val(container.find('[name=sample\\:id]').val());
@@ -1379,7 +1375,7 @@ jQuery('.mod-button').click(function() {
 	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel() || !validateInsectPanel())
 		return;
 	jQuery('#cc-5').hidePanel();
-	jQuery(this).parents('.poll-section').unFoldPanel();
+	jQuery(this).parents('.poll-section-title').parent().unFoldPanel(); //slightly complicated because cc-1 contains the rest.
 });
 
 ";
@@ -1398,19 +1394,19 @@ jQuery('.mod-button').click(function() {
 	);
  	$r .= '
 <div id="cc-4" class="poll-section">
-  <div id="cc-4-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title">'.lang::get('LANG_Photos').'
+  <div id="cc-4-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title">'.lang::get('LANG_Photos').'
     <div id="cc-4-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
   </div>
-  <div id="cc-4-photo-reel" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active photoReelContainer" >
+  <div id="cc-4-photo-reel" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active photoReelContainer" >
   </div>
   <div id="cc-4-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">  
     <div id="cc-4-insect">
       <div id="cc-4-insect-picture">
 		<form id="cc-4-insect-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     		<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
-    		<input type="submit" value="'.lang::get('LANG_Upload_Insect').'"/>
     		<input name="upload_file" type="file" class="required" /><br />
-		</form>
+    		<input type="submit" value="'.lang::get('LANG_Upload_Insect').'" class="btn-submit" />
+    	</form>
  	    <div id="cc-4-insect-image" class="poll-image">
  	    </div>
  	  </div>
@@ -1451,7 +1447,7 @@ jQuery('.mod-button').click(function() {
     <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Delete_Insect').'</span><br />
   </div>
   <div id="cc-4-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-4-valid-photo-button" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div><br />
+    <div id="cc-4-valid-photo-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div><br />
   </div>
 </div>
 <div style="display:none" />
@@ -1730,16 +1726,14 @@ $('#cc-4-valid-photo-button').click(function(){
 	var numInsects = jQuery('#cc-4-photo-reel').find('.thumb').length - 1; // ignore blank
 	var numUnidentified = jQuery('#cc-4-photo-reel').find('.thumb-text').length;
 	if(jQuery('#id-flower-later').attr('checked') != '' || numInsects==0 || (numUnidentified/numInsects > (1-(".$args['percent_insects']."/100.0)))){
-		jQuery('#cc-5-body').removeClass('ui-corner-top').addClass('ui-corner-all');
 		jQuery('#cc-5-good').hide();
 		jQuery('#cc-5-bad').show();
-		jQuery('#cc-5-footer').hide();
+		jQuery('#cc-5-complete-collection').hide();
 		jQuery('#cc-5-trailer').hide();
     } else {
-		jQuery('#cc-5-body').removeClass('ui-corner-all').addClass('ui-corner-top');
     	jQuery('#cc-5-good').show();
 		jQuery('#cc-5-bad').hide();
-		jQuery('#cc-5-footer').show();
+		jQuery('#cc-5-complete-collection').show();
 		jQuery('#cc-5-trailer').show();
 	}
 });
@@ -1747,7 +1741,7 @@ $('#cc-4-valid-photo-button').click(function(){
     
  	$r .= '
 <div id="cc-5" class="poll-section">
-  <div id="cc-5-body" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-body"> 
+  <div id="cc-5-body" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-body"> 
    <p id="cc-5-good">'.lang::get('LANG_Can_Complete_Msg').'</p> 
    <p id="cc-5-bad">'.lang::get('LANG_Cant_Complete_Msg').'</p> 
    <div style="display:none" />
@@ -1760,9 +1754,7 @@ $('#cc-4-valid-photo-button').click(function(){
        <input type="hidden" id="smpAttr:'.$args['complete_attr_id'].'" name="smpAttr:'.$args['complete_attr_id'].'" value="1" />
     </form>
    </div>
-  </div>
-  <div id="cc-5-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-5-complete-collection" class="right ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Complete_Collection').'</div><br />
+   <div id="cc-5-complete-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Complete_Collection').'</div><br />
   </div>
   <div id="cc-5-trailer" class="poll-section-trailer">
     <p>'.lang::get('LANG_Trailer_Head').'</p>
@@ -1822,8 +1814,9 @@ $('#cc-5-complete-collection').click(function(){
   <div id="cc-6-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <a id="cc-6-consult-collection" href="" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Consult_Collection').'</a>
     <a href="'.url('node/'.$node->nid).'" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Create_New_Collection').'</a>
-    </div>
-</div>';
+  </div>
+</div>
+</div></div>';
  
 data_entry_helper::$javascript .= "
  			
@@ -1909,7 +1902,7 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
        		if(data[i].completed == '0'){
        		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection='+data[i].id);
        			// load up collection details: existing ID, location name and protocol
-       			jQuery('#cc-1,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
+       			jQuery('#cc-1-collection-details,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
        			// main sample date is only set when collection is completed, so leave default.
        			loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data[i].id, 'smpAttr');
   				$.getJSON(\"".$svcUrl."/data/location/\" + data[i].location_id +
