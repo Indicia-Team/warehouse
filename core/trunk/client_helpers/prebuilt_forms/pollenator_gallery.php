@@ -360,7 +360,8 @@ class iform_pollenator_gallery {
     $options['layers'] = array('polygonLayer');
     
 	$options2['divId'] = "map2";
-
+    $options2['layers'] = array('locationLayer');
+	
  	$r .= '
 <div id="filter" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
@@ -468,13 +469,19 @@ class iform_pollenator_gallery {
 	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	  <div id="flower-image">
       </div>
-      <div id="map2_container">'.data_entry_helper::map_panel($options2, $olOptions).'
-      </div>
 	  <div id="collection-description">
-	  Date<br />Nom de la fleur : []<br />flower type<br />habitat<br />TBD location description<br />by : user [view his collections link]<br />
-      <div id="search-collections-button" class="right ui-state-default ui-corner-all search-collections-button">'.lang::get('LANG_register').'</div>
+	    <p id="collection-date"></p>
+	    <p id="collection-name"></p>
+	    <p id="collection-flower-name"></p>
+	    <p>'.$occurrence_attributes[$args['flower_type_attr_id']]['caption'].': <span id="collection-flower-type"></span></p>
+	    <p>'.$location_attributes[$args['habitat_attr_id']]['caption'].': <span id="collection-habitat"></span></p>
+	    <span>TBD Locality description via SPIPOLLVers Shape File</span><br />
+	    <p id="collection-user-name"></p>
+	  <div id="search-collections-button" class="right ui-state-default ui-corner-all search-collections-button">'.lang::get('LANG_register').'</div>
 	  </div>
 	  <div id="environment-image">
+      </div>
+      <div id="map2_container">'.data_entry_helper::map_panel($options2, $olOptions).'
       </div>
     </div>
 	<div id="collection-insects" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
@@ -551,7 +558,7 @@ class iform_pollenator_gallery {
 	  	<span>'.lang::get('LANG_Additional_Info_Title').'</span>
       </div>
 	</div>
-	<div id="fo-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+	<div id="fo-insect-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
 		<label for="sample_date">'.lang::get('LANG_Date').'</label>
 		<input type="text" id="sample_date" readonly="readonly">
 		<label for="sample_start_time">'.lang::get('LANG_Time').'</label>
@@ -566,6 +573,10 @@ class iform_pollenator_gallery {
 		<input type="text" id="sample_wind" readonly="readonly"><br />
 		<label for="sample_shade">'.$sample_attributes[$args['shade_attr_id']]['caption'].'</label>
 		<input type="text" id="sample_wind" readonly="readonly"><br />
+	</div>
+	<div id="fo-flower-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+	    <p>'.$occurrence_attributes[$args['flower_type_attr_id']]['caption'].': <span id="focus-flower-type"></span></p>
+	    <p>'.$location_attributes[$args['habitat_attr_id']]['caption'].': <span id="focus-habitat"></span></p>
 	</div>
 	<div id="fo-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	    <div id="fo-new-comment-button" class="right ui-state-default ui-corner-all new-comment-button">'.lang::get('LANG_New_Comment').'</div>
@@ -667,29 +678,96 @@ jQuery('#flower-image').click(function(){
 });
 
 loadCollection = function(id){
+    locationLayer.destroyFeatures();
     jQuery('#focus-occurrence,#filter-spec,#filter-footer,#results-insects-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
 	jQuery('#focus-collection').removeClass('filter-hide');
 	jQuery('#map2').width(jQuery('#map2_container').width());
 	jQuery('#flower-image').attr('occID', 'none');
+	jQuery('#collection-insects,#collection-date,#collection-name,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
+	// this has a fixed target so can be done asynchronously.
 	$.getJSON(\"".$svcUrl."/data/occurrence\" +
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&sample_id=\"+id+\"&callback=?\", function(flowerData) {
    		if (flowerData.length>0) {
 			loadImage('occurrence_image', 'occurrence_id', flowerData[0].id, '#flower-image');
 			jQuery('#flower-image').attr('occID', flowerData[0].id);
+			$.getJSON(\"".$svcUrl."/data/determination\" + 
+					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
+					\"&occurrence_id=\" + flowerData[0].id + \"&deleted=f&callback=?\", function(detData) {
+   				if (detData.length>0) {
+					var i = detData.length-1;
+					var string = '';
+					if(detData[i].taxon != '' && detData[i].taxon != null){
+						string = string + detData[i].taxon + ', ';
+					}
+					if(detData[i].taxon_text_description != '' && detData[i].taxon_text_description != null){
+						string = string + detData[i].taxon_text_description + ', ';
+					}
+					if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+						string = string + detData[i].taxon_extra_info;
+					}
+					jQuery('<span>".lang::get('LANG_Flower_Name').": '+string+'</span>').appendTo('#collection-flower-name');
+				}});
+			$.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
+   					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   					\"&occurrence_id=\" + flowerData[0].id + \"&callback=?\", function(attrdata) {
+				if (attrdata.length>0) {
+					for(i=0; i< attrdata.length; i++){
+						if (attrdata[i].id){
+							switch(parseInt(attrdata[i].occurrence_attribute_id)){
+								case ".$args['flower_type_attr_id'].":
+									jQuery('<span>'+attrdata[i].value+'</span>').appendTo('#collection-flower-type');
+									break;
+  			}}}}});
+				
 		}
 	});
+	$.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
+   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"&sample_id=\" + id + \"&callback=?\", function(attrdata) {
+		if (attrdata.length>0) {
+			for(i=0; i< attrdata.length; i++){
+				if (attrdata[i].id){
+					switch(parseInt(attrdata[i].sample_attribute_id)){
+						case ".$args['username_attr_id'].":
+							jQuery('<span>".lang::get('LANG_Comment_By')."'+attrdata[i].value+'</span>').appendTo('#collection-user-name');
+							break;
+  	}}}}});
+  	
+	// this has a fixed target so can be done asynchronously.
 	$.getJSON(\"".$svcUrl."/data/sample/\" +id+
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&callback=?\", function(collectionData) {
    		if (collectionData.length>0) {
-   			$.getJSON(\"".$svcUrl."/data/location/\" +collectionData[0].location_id +
+			if(collectionData[0].date_start == collectionData[0].date_end){
+	  			jQuery('<span>'+collectionData[0].date_start.substring(0,10)+'</span>').appendTo('#collection-date');
+    		} else {
+	  			jQuery('<span>'+collectionData[0].date_start+' - '+collectionData[0].date_end+'</span>').appendTo('#collection-date');
+    		}
+	  		jQuery('<span>'+collectionData[0].location_name+'</span>').appendTo('#collection-name');
+   		    $.getJSON(\"".$svcUrl."/data/location/\" +collectionData[0].location_id +
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 					\"&callback=?\", function(locationData) {
    				if (locationData.length>0) {
 					loadImage('location_image', 'location_id', locationData[0].id, '#environment-image');
+					var parser = new OpenLayers.Format.WKT();
+					var feature = parser.read(locationData[0].centroid_geom);
+					locationLayer.addFeatures([feature]);
+					var bounds=locationLayer.getDataExtent();
+			        locationLayer.map.setCenter(bounds.getCenterLonLat(), 13);
 				}
 			});
+			$.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
+   					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   					\"&location_id=\" + collectionData[0].location_id + \"&callback=?\", function(attrdata) {
+				if (attrdata.length>0) {
+					for(i=0; i< attrdata.length; i++){
+						if (attrdata[i].id){
+							switch(parseInt(attrdata[i].location_attribute_id)){
+								case ".$args['habitat_attr_id'].":
+									jQuery('<span>'+attrdata[i].value+' / </span>').appendTo('#collection-habitat');
+									break;
+  			}}}}});
 		}
 	});
 	$.getJSON(\"".$svcUrl."/data/sample\" + 
@@ -702,34 +780,42 @@ loadCollection = function(id){
 					if (insectData.length>0) {
 						for (var j=0;j<insectData.length;j++){
 							var insect=jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').appendTo('#collection-insects');
+							var tag = jQuery('<p />').addClass('insect-ok').appendTo(insect);
+							var image = jQuery('<div />').appendTo(insect);
+							loadImage('occurrence_image', 'occurrence_id', insectData[j].id, image);
+							// have to do this synchronously due to multiple targets.
+							jQuery.ajax({ 
+						    	type: 'GET', 
+						    	url: \"".$svcUrl."/data/determination\" + 
+					    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
+					    			\"&occurrence_id=\" + insectData[j].id + \"&deleted=f&callback=?\", 
+						    	dataType: 'json', 
+						    	success: function(detData) {
+   									if (detData.length>0) {
+										var i = detData.length-1;
+										var string = '';
+										if(detData[i].taxon != '' && detData[i].taxon != null){
+											string = string + detData[i].taxon + ', ';
+										}
+										if(detData[i].taxon_text_description != '' && detData[i].taxon_text_description != null){
+											string = string + detData[i].taxon_text_description + ', ';
+										}
+										if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+											string = string + detData[i].taxon_extra_info;
+										}
+										jQuery('<div><p>".lang::get('LANG_Last_ID').":<br /><strong>'+string+'</strong></p></div>').appendTo(insect);
+									} else {
+						    			// no determination records, so no attempt made at identification. Put up a question mark.
+						    			// TDB more sophisticated - if flagged as dubious or > 5 possibilities
+										tag.removeClass('insect-ok').addClass('insect-unknown');
+							  		}}, 
+						    	data: {}, 
+						    	async: false 
+							});  					
 							var displayButton = jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div><br />')
 								.appendTo(insect).attr('value',insectData[j].id);
 							displayButton.click(function(){
 								loadInsect(jQuery(this).attr('value'));
-							});
-							var image = jQuery('<div />').appendTo(insect);
-							var determination = jQuery('<div />').appendTo(insect);
-							var comment = jQuery('<div />').appendTo(insect);
-							loadImage('occurrence_image', 'occurrence_id', insectData[j].id, image);
-							// TODO last determination
-							$.getJSON(\"".$svcUrl."/data/determination\" +
-   									\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   									\"&occurrence_id=\" + insectData[j].id + \"&callback=?\", function(detData) {
-   								if (detData.length>0) {
-									var i = detData.length-1;
-									var string = '';
-									if(detData[i].taxon != '' && detData[i].taxon != null){
-										string = string + detData[i].taxon + ', ';
-									}
-									if(detData[i].taxon_text_description != '' && detData[i].taxon_text_description != null){
-										string = string + detData[i].taxon_text_description + ', ';
-									}
-									if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
-										string = string + detData[i].taxon_extra_info;
-									}
-									jQuery('<p>".lang::get('LANG_Last_ID').":<br /><strong>'+string+'</strong></p>').appendTo(determination);
-									// TODO dubious flag
-								}
 							});
 						}
 					}
@@ -839,6 +925,8 @@ polygonLayer.events.register('featuresadded', {}, function(a1){
 	if(inseeLayer != null)
 		inseeLayer.destroyFeatures();
 });          
+locationLayer = new OpenLayers.Layer.Vector('Location Layer',
+	{displayInLayerSwitcher: false});
 
 jQuery('#search-insee-button').click(function(){
 	if(inseeLayer != null)
@@ -1233,7 +1321,37 @@ loadSampleAttributes = function(keyValue){
 		}
 	});
 }
-
+loadOccurrenceAttributes = function(keyValue){
+	jQuery('#focus-flower-type').empty();
+	$.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
+			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"&occurrence_id=\" + keyValue + \"&callback=?\", function(attrdata) {
+		if (attrdata.length>0) {
+			for(i=0; i< attrdata.length; i++){
+				if (attrdata[i].id){
+					switch(parseInt(attrdata[i].occurrence_attribute_id)){
+						case ".$args['flower_type_attr_id'].":
+							jQuery('<span>'+attrdata[i].value+'</span>').appendTo('#focus-flower-type');
+							break;
+  	}}}}});
+}
+loadLocationAttributes = function(keyValue){
+	jQuery('#focus-habitat').empty();
+	habitat_string = '';
+	$.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
+			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"&location_id=\" + keyValue + \"&callback=?\", function(attrdata) {
+		if (attrdata.length>0) {
+			for(i=0; i< attrdata.length; i++){
+				if (attrdata[i].id){
+					switch(parseInt(attrdata[i].location_attribute_id)){
+						case ".$args['flower_type_attr_id'].":
+							habitat_string = (habitat_string == '' ? attrdata[i] : (habitat_string + ' | ' + attrdata[i]));
+							break;
+			}}}
+			jQuery('<span>'+habitat_string+'</span>').appendTo('#focus-habitat');
+  }});
+}
 imageRatio = 3/4;
 
 loadImage = function(imageTable, key, keyValue, target){
@@ -1317,7 +1435,7 @@ loadComments = function(keyValue, block){
 	});
 };
 
-loadAddnInfo = function(keyValue){
+loadInsectAddnInfo = function(keyValue){
 	// TODO convert buttons into thumbnails
 	previous_insect = '';
 	next_insect = '';
@@ -1369,10 +1487,27 @@ loadAddnInfo = function(keyValue){
    		}
    	});
 }
+loadFlowerAddnInfo = function(keyValue){
+	// fetch occurrence details first to get the collection id.
+	loadOccurrenceAttributes(keyValue);
+	$.getJSON(\"".$svcUrl."/data/occurrence/\" + keyValue +
+   			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"&callback=?\", function(occData) {
+   		if (occData.length > 0) {
+			$.getJSON(\"".$svcUrl."/data/sample/\" + occData[0].sample_id +
+   					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   					\"&callback=?\", function(collection) {
+   				if (collection.length > 0) {
+					loadLocationAttributes(collection.location_id);
+  				}
+   		   	});
+   		}
+   	});
+}
 
 loadInsect = function(insectID){
-    jQuery('#focus-collection,#filter-spec,#filter-footer,#results-insects-header,#results-collections-header,#results-insects-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
-	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-addn-info').removeClass('filter-hide');
+    jQuery('#focus-collection,#filter-spec,#filter-footer,#results-insects-header,#results-collections-header,#results-insects-header,#results-insects-results,#results-collections-results,#fo-flower-addn-info').addClass('filter-hide');
+	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-insect-addn-info').removeClass('filter-hide');
 	jQuery('[name=determination\\:occurrence_id]').val(insectID);
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(insectID);
 	jQuery('#fo-new-comment,#fo-new-id').removeClass('ui-accordion-content-active');
@@ -1382,24 +1517,25 @@ loadInsect = function(insectID){
 	jQuery('#fo-new-comment-button').".((user_access('IFrom n'.$node->nid.' insect expert') || user_access('IFrom n'.$node->nid.' create insect comment')) ? "show()" : "hide()").";
 	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image');
 	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id');
-	loadAddnInfo(insectID);
+	loadInsectAddnInfo(insectID);
 	loadComments(insectID, '#fo-comment-list');
 	jQuery('#fo-prev-button,#fo-next-button').show();
 }
 loadFlower = function(flowerID){
 	jQuery('#fo-prev-button,#fo-next-button').hide();
-	jQuery('#focus-collection,#filter-spec,#filter-footer,#results-insects-header,#results-collections-header,#results-insects-header,#results-insects-results,#results-collections-results,#fo-addn-info-header,#fo-addn-info').addClass('filter-hide');
-	jQuery('#focus-occurrence').removeClass('filter-hide');
+	jQuery('#focus-collection,#filter-spec,#filter-footer,#results-insects-header,#results-collections-header,#results-insects-header,#results-insects-results,#results-collections-results,#fo-insect-addn-info').addClass('filter-hide');
+	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-flower-addn-info').removeClass('filter-hide');
 	jQuery('#fo-new-comment,#fo-new-id').removeClass('ui-accordion-content-active');
 	jQuery('[name=determination\\:occurrence_id]').val(flowerID);
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(flowerID);
-	jQuery('#fo-new-insect-id-button').hide();
 	jQuery('#fo-new-flower-id-button').show();
+	jQuery('#fo-new-insect-id-button').hide();
 	// TODO dubious identification processing.
 	jQuery('#fo-doubt-button').".((user_access('IFrom n'.$node->nid.' flower expert') || user_access('IFrom n'.$node->nid.' flag dubious flower')) ? "show()" : "hide()").";
 	jQuery('#fo-new-comment-button').".((user_access('IFrom n'.$node->nid.' flower expert') || user_access('IFrom n'.$node->nid.' create flower comment')) ? "show()" : "hide()").";
 	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image');
 	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id');
+	loadFlowerAddnInfo(flowerID);
 	loadComments(flowerID, '#fo-comment-list');
 }
 
