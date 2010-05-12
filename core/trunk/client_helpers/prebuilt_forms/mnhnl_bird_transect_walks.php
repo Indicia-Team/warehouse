@@ -574,9 +574,8 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
                 , 'initial_lat'=>$args['map_centroid_lat']
                 , 'initial_long'=>$args['map_centroid_long']
                 , 'initial_zoom'=>(int) $args['map_zoom']
-                , 'projection'=>$args['map_projection']
                 , 'scroll_wheel_zoom' => false
-                ));
+                ), array('projection'=>$args['map_projection']));
 
       // Add locations to the map on the locations layer.
       // Zoom in to area which contains the users locations.
@@ -961,9 +960,8 @@ jQuery(\"input[name='".$escaped_terr_id."']\").change(setAtlasStatus);\n";
                 , 'initial_lat'=>$args['map_centroid_lat']
                 , 'initial_long'=>$args['map_centroid_long']
                 , 'initial_zoom'=>(int) $args['map_zoom']
-                , 'projection'=>$args['map_projection']
                 , 'scroll_wheel_zoom' => false
-                ));
+                ), array('projection'=>$args['map_projection']));
     // for timing reasons, all the following has to be done after the map is loaded.
     // 1) feature selector for occurrence list must have the map present to attach the control
     // 2) location placer must have the location layer populated and the map present in
