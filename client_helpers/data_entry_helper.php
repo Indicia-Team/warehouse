@@ -167,7 +167,7 @@ jQuery('#{parentControlId}').change();\n",
   'taxon_label_cell' => "\n<td class='scTaxonCell ui-state-default'>{content}</td>",
   'helpText' => "\n<p class=\"helpText\">{helpText}</p>",
   'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
-  'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.  
+  'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'file_box_initial_file_info' => '', // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'file_box_uploaded_image' => ''     // the JQuery plugin default will apply, this is just a placeholder for template overrides.
 );
@@ -177,27 +177,27 @@ jQuery('#{parentControlId}').change();\n",
  * <p>Static helper class that provides automatic HTML and JavaScript generation for Indicia online
  * recording website data entry controls.</p>
  * <p>Examples include auto-complete text boxes that are populated
- * by Indicia species lists, maps for spatial reference selection and date pickers. All controls in this 
+ * by Indicia species lists, maps for spatial reference selection and date pickers. All controls in this
  * class support the following entries in their $options array parameter:</p>
  * <ul>
  * <li><b>label</b><br/>
  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
  * <li><b>helpText</b><br/>
- * Optional. Defines help text to be displayed alongside the control. The position of the text is defined by 
+ * Optional. Defines help text to be displayed alongside the control. The position of the text is defined by
  * data_entry_helper::$helpTextPos, which can be set to before or after (default). The template is defined by
- * global $indicia_templates['helpText'] and can be replaced on an instance by instance basis by specifying an 
+ * global $indicia_templates['helpText'] and can be replaced on an instance by instance basis by specifying an
  * option 'helpTextTemplate' for the control.
  * <li><b>helpTextTemplate</b></li>
- * If helpText is supplied but you need to change the template for this control only, set this to refer to the name of an 
+ * If helpText is supplied but you need to change the template for this control only, set this to refer to the name of an
  * alternate template you have added to the $indicia_templates array. The template should contain a {helpText} replacement
  * string.</li>
  * <li><b>prefixTemplate</b></li>
- * If you need to change the prefix for this control only, set this to refer to the name of an alternate template you 
- * have added to the global $indicia_templates array. To change the prefix for all controls, you can update the value of 
+ * If you need to change the prefix for this control only, set this to refer to the name of an alternate template you
+ * have added to the global $indicia_templates array. To change the prefix for all controls, you can update the value of
  * $indicia_templates['prefix'] before building the form.</li>
  * <li><b>suffixTemplate</b></li>
- * If you need to change the suffix for this control only, set this to refer to the name of an alternate template you 
- * have added to the global $indicia_templates array. To change the suffix for all controls, you can update the value of 
+ * If you need to change the suffix for this control only, set this to refer to the name of an alternate template you
+ * have added to the global $indicia_templates array. To change the suffix for all controls, you can update the value of
  * $indicia_templates['suffix'] before building the form.</li>
  * </ul>
  *
@@ -220,7 +220,7 @@ class data_entry_helper extends helper_config {
    * messages on the next line so this is the default behaviour.
    */
   public static $validation_mode=array('message', 'colour');
-  
+
   /**
    * @var string Helptext positioning. Determines where the information is displayed when helpText is defined for a control.
    * Options are before, after.
@@ -262,41 +262,41 @@ class data_entry_helper extends helper_config {
    * @var array List of all error messages returned from an attempt to save.
    */
   public static $validation_errors=null;
-  
+
   /**
    * @var integer Length of time in seconds after which cached Warehouse responses will start to expire.
    */
   public static $cache_timeout=3600;
-  
+
   /**
-   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is 
-   * cached but older than the cache timeout, the cached data will be refreshed. This introduces a random element to 
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
+   * cached but older than the cache timeout, the cached data will be refreshed. This introduces a random element to
    * cache refreshes so that no single form load event is responsible for refreshing all cached content.
    */
   public static $cache_chance_refresh_file=5;
-  
+
   /**
    * @var integer On average, every 1 in $cache_chance_purge times the Warehouse is called for data, all files
-   * older than 5 times the cache_timeout will be purged, apart from the most recent $cache_allowed_file_count files. 
+   * older than 5 times the cache_timeout will be purged, apart from the most recent $cache_allowed_file_count files.
    */
   public static $cache_chance_purge=100;
-  
+
   /**
    * @var integer Number of recent files allowed in the cache which the cache will not bother clearing during a deletion operation.
-   * They will be refreshed occasionally when requested anyway. 
+   * They will be refreshed occasionally when requested anyway.
    */
   public static $cache_allowed_file_count=50;
-  
+
   /**
    * @var integer On average, every 1 in $interim_image_chance_purge times the Warehouse is called for data, all interim images
    * older than $interim_image_expiry seconds will be deleted. These are images that should have uploaded to the warehouse but the form was not
-   * finally submitted. 
+   * finally submitted.
    */
   public static $interim_image_chance_purge=100;
-  
+
   /**
-   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is 
-   */ 
+   * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
+   */
   public static $interim_image_expiry=14400;
 
   /**
@@ -332,19 +332,19 @@ class data_entry_helper extends helper_config {
     'sample:entered_sref'=>array('required'),
     'occurrence:taxa_taxon_list_id'=>array('required')
   );
-  
+
   /**
-   * Array of html attributes. When replacing items in a template, these get automatically wrapped. E.g. 
-   * a template replacement for the class will be converted to class="value". The key is the parameter name, 
-   * and the value is the html attribute it will be wrapped into. 
+   * Array of html attributes. When replacing items in a template, these get automatically wrapped. E.g.
+   * a template replacement for the class will be converted to class="value". The key is the parameter name,
+   * and the value is the html attribute it will be wrapped into.
    */
   private static $html_attributes = array(
     'class' => 'class',
     'outerClass' => 'class'
   );
-  
+
   /**
-   * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the 
+   * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the
    * list, allowing our CSS to override other stuff.
    */
   private static $default_styles = false;
@@ -386,7 +386,7 @@ class data_entry_helper extends helper_config {
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
   * <li><b>template</b><br/>
-  * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li> 
+  * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -408,7 +408,7 @@ class data_entry_helper extends helper_config {
       'escaped_input_id' => str_replace(':', '\\\\:', $options['inputId']),
       'escaped_id' => str_replace(':', '\\\\:', $options['id']),
       'defaultCaption' => self::check_default_value($options['inputId'],
-          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : '') 
+          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : '')
     ), $options);
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
@@ -558,10 +558,10 @@ class data_entry_helper extends helper_config {
 /**
   * <p>Outputs a file upload control suitable for linking images to records. The control allows selection
   * of multiple files, and depending on the browser functionality it gives progress feedback.</p>
-  * <p>The control uses Google Gears, Flash, Silverlight, Browserplus or HTML5 to enhance the functionality 
+  * <p>The control uses Google Gears, Flash, Silverlight, Browserplus or HTML5 to enhance the functionality
   * where available. The output of the control can be configured by changing the content of the templates called
-  * file_box, file_box_initial_file_info, file_box_uploaded_image and button.</p> 
-  * 
+  * file_box, file_box_initial_file_info, file_box_uploaded_image and button.</p>
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>table</b><br/>
   * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
@@ -613,26 +613,26 @@ class data_entry_helper extends helper_config {
   * Use this to override the message displayed when the file is larger than the size limit allowed on the Warehouse.
   * </li>
   * <li><b>msgTooManyFiles</b><br/>
-  * Use this to override the message displayed when attempting to upload more files than the maxFileCount allows. Use a 
+  * Use this to override the message displayed when attempting to upload more files than the maxFileCount allows. Use a
   * replacement string [0] to specify the maxFileCount value.
   * </li>
   * <li><b>uploadScript</b><br/>
-  * Specify the script used to handle image uploads on the server (relative to the client_helpers folder). You should not 
+  * Specify the script used to handle image uploads on the server (relative to the client_helpers folder). You should not
   * normally need to change this. Defaults to upload.php.
   * </li>
   * <li><b>runtimes</b><br/>
-  * Array of runtimes that the file upload component will use in order of priority. Defaults to 
+  * Array of runtimes that the file upload component will use in order of priority. Defaults to
   * array('gears','silverlight','browserplus','html5','flash','html4'). You should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.</li>
   * </li>
   * <li><b>swfAndXapFolder</b><br/>
-  * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not 
+  * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not
   * normally need to change this.</li>
   * </li>
   * </ul>
-  * 
+  *
   * @todo max file count
   * @todo select file button pointer overriden by the flash shim
   * @todo flickr
@@ -668,11 +668,11 @@ class data_entry_helper extends helper_config {
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
       'jsPath' => self::$js_path
     );
-    if ($indicia_templates['file_box']!='') 
+    if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
-    if ($indicia_templates['file_box_initial_file_info']!='') 
+    if ($indicia_templates['file_box_initial_file_info']!='')
       $defaults['file_box_initial_file_infoTemplate'] = $indicia_templates['file_box_initial_file_info'];
-    if ($indicia_templates['file_box_uploaded_image']!='') 
+    if ($indicia_templates['file_box_uploaded_image']!='')
       $defaults['file_box_uploaded_imageTemplate'] = $indicia_templates['file_box_uploaded_image'];
     $options = array_merge($defaults, $options);
     self::add_resource('plupload');
@@ -688,7 +688,7 @@ class data_entry_helper extends helper_config {
       if (is_array($value)) {
         $value = "{ " . implode(" : true, ",$value) . " : true }";
       }
-      else 
+      else
         // not an array, so wrap as string
         $value = "'$value'";
       self::$onload_javascript .= "\n  $option : $value";
@@ -755,7 +755,7 @@ class data_entry_helper extends helper_config {
   }
 
  /**
-  * Helper function to support image upload by inserting a file path upload control. Note that when using this control, 
+  * Helper function to support image upload by inserting a file path upload control. Note that when using this control,
   * it is essential that the form's HTML enctype attribute is set to enctype="multipart/form-data" so that the image file
   * is included in the form data.
   *
@@ -780,7 +780,7 @@ class data_entry_helper extends helper_config {
     ), $options);
     $r = self::apply_template('image_upload', $options);
     if ($alreadyUploadedFile) {
-      // The control is being reloaded after a validation failure. So we can display a thumbnail of the 
+      // The control is being reloaded after a validation failure. So we can display a thumbnail of the
       // already uploaded file, so the user knows not to re-upload.
       $interimImageFolder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
       $r .= '<img width="100" src="$interimImageFolder$alreadyUploadedFile"/>'."\n";
@@ -1119,13 +1119,10 @@ class data_entry_helper extends helper_config {
   * <li><b>msgGeorefNothingFound</b><br/>
   * </li>
   * <li><b>maxZoom</b><br/>
-  * Limit the maximum zoom used when clicking on the map to set a point spatial reference. Use this to prevent over zooming on 
+  * Limit the maximum zoom used when clicking on the map to set a point spatial reference. Use this to prevent over zooming on
   * background maps.</li>
-  * <li><b>projection</b><br/>
-  * EPSG code of the required projection. Defaults to 900913. Note that if this is changed, most of the preset layers will not work as they
-  * do not support reprojection. Ensure that all base layers available support the projection you define.
-  * </li>
-  * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or 
+  * </ul>
+  * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
   */
   public static function map_panel($options, $olOptions=null) {
@@ -1192,14 +1189,6 @@ class data_entry_helper extends helper_config {
               self::add_resource('virtualearth');
               break;
           }
-        }
-      }
-      
-      if (isset($options['projection'])) {
-        if (isset($olOptions)) {
-          $olOptions = array_merge(array('projection' => $options['projection']), $olOptions);
-        } else {
-          $olOptions = array('projection' => $options['projection']);
         }
       }
 
@@ -1342,15 +1331,15 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
     return self::check_or_radio_group($options, 'radio');
   }
-  
+
   /**
-  * <p>Outputs a grid that loads the content of a report or Indicia table.</p> 
+  * <p>Outputs a grid that loads the content of a report or Indicia table.</p>
   * <p>The grid supports a simple pagination footer as well as column title sorting through PHP. If
-  * used as a PHP grid, note that the current web page will reload when you page or sort the grid, with the 
+  * used as a PHP grid, note that the current web page will reload when you page or sort the grid, with the
   * same $_GET parameters but no $_POST information. If you need 2 grids on one page, then you must define a different
   * id in the options for each grid.</p>
   * <p>The grid operation will be handled by AJAX calls when possible to avoid reloading the web page.</p>
-  * 
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>id</b><br/>
   * Optional unique identifier for the grid. This is required if there is more than one grid on a single
@@ -1364,7 +1353,7 @@ class data_entry_helper extends helper_config {
   * <li><b>itemsPerPage</b><br/>
   * Number of rows to display per page. Defaults to 20.</li>
   * <li><b>columns</b><br/>
-  * Specify a list of the columns you want to output if you need more control over the columns, for example to 
+  * Specify a list of the columns you want to output if you need more control over the columns, for example to
   * specify the order, change the caption or build a column with a configurable data display using a template.
   * Pass an array to this option, with each array entry containing an associative array that specifies the
   * information about the column represented by the position within the array. The associative array for the column can contain
@@ -1378,7 +1367,7 @@ class data_entry_helper extends helper_config {
   * array(
   *   array('fieldname' => 'survey', 'caption' => 'Survey Title'),
   *   array('caption' => 'action', 'template' => '<a href="www.mysite.com\survey\{id}\edit">Edit</a>'
-  * )   
+  * )
   * </li>
   * <li><b>IncludeAllColumns</b>
   * Defaults to true. If true, then any columns in the report, view or table which are not in the columns
@@ -1390,7 +1379,7 @@ class data_entry_helper extends helper_config {
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
   * @todo For report mode, provide an AJAX/PHP button that can load the report from parameters
-  * in a form on the page. 
+  * in a form on the page.
   */
   public static function report_grid($options) {
     // Generate a unique number for this grid, in case there are 2 on a page.
@@ -1413,28 +1402,28 @@ class data_entry_helper extends helper_config {
     $extra = '&limit='.($options['itemsPerPage']+1);
     $pageKey = 'page' . ($useIdInUrls ? $options['id'] : '');
     // Get the $_GET variable name for the page, orderby and sortdir.
-    if (isset($_GET[$pageKey]) && $_GET[$pageKey]>0) 
+    if (isset($_GET[$pageKey]) && $_GET[$pageKey]>0)
       $page = $_GET[$pageKey];
     else
       $page = 0;
     if ($page)
       $extra .= '&offset='.($page * $options['itemsPerPage']);
     $orderbyKey = 'orderby' . ($useIdInUrls ? $options['id'] : '');
-    if (isset($_GET[$orderbyKey])) 
+    if (isset($_GET[$orderbyKey]))
       $orderby = $_GET[$orderbyKey];
     else
       $orderby = null;
     if ($orderby)
       $extra .= "&orderby=$orderby";
     $sortdirKey = 'sortdir' . ($useIdInUrls ? $options['id'] : '');
-    if (isset($_GET[$sortdirKey])) 
+    if (isset($_GET[$sortdirKey]))
       $sortdir = $_GET[$sortdirKey];
     else
       $sortdir = 'ASC';
     if ($sortdir && $orderby)
       $extra .= "&sortdir=$sortdir";
     $data = self::get_report_data($options, $extra);
-    
+
     // Add any columns that don't have a column definition to the end of the columns list, by first
     // building an array of the column names of the columns we did specify, then adding any missing fields
     // from the results to the end of the options['columns'] array.
@@ -1448,7 +1437,7 @@ class data_entry_helper extends helper_config {
           $options['columns'][]=array('fieldname'=>$resultField);
       }
     }
-    
+
     // Build a basic URL path back to this page, but with the page, sortdir and orderby removed
     $pageUrl = 'http'.((empty($_SERVER['HTTPS']) && $_SERVER['SERVER_PORT']!=443) ? '' : 's').'://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'].'?';
     // include any $_GET parameters to reload the same page, except the page & sort parameters which will be added to each link
@@ -1456,7 +1445,7 @@ class data_entry_helper extends helper_config {
       if ($key != $pageKey && $key != $orderbyKey && $key != $sortdirKey)
         $pageUrl .= "$key=$value&";
     }
-    
+
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\"><thead class=\"ui-widget-header\"><tr>\n";
     // build a URL with just the sort order bit missing, so it can be added for each table heading link
@@ -1481,7 +1470,7 @@ class data_entry_helper extends helper_config {
           $orderStyle = '';
           $fieldId = '';
         }
-        
+
         $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
       }
     }
@@ -1535,22 +1524,22 @@ class data_entry_helper extends helper_config {
   nonce: '".$options['readAuth']['nonce']."',
   url: '".parent::$base_url."',
   altRowClass: '".$options['altRowClass']."'";
-    if (isset($orderby)) 
+    if (isset($orderby))
       self::$javascript .= ",
   orderby: '".$orderby."'";
-    if (isset($sortdir)) 
+    if (isset($sortdir))
       self::$javascript .= ",
   sortdir: '".$sortdir."'";
-    if (isset($options['columns'])) 
+    if (isset($options['columns']))
       self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
 });\n";
     return $r;
   }
-  
+
   /**
   * <p>Outputs a div that contains a chart.</p>
   * <p>The chart is rendered by the jqplot plugin.</p>
-  * <p>The chart loads its data from a report, table or view indicated by the dataSource parameter, and the 
+  * <p>The chart loads its data from a report, table or view indicated by the dataSource parameter, and the
   * method of loading is indicated by xValues, xLabels and yValues. Each of these can be an array to define
   * a multi-series chart. The largest array from these 4 options defines the total series count. If an option
   * is not an array, or the array is smaller than the total series count, then the last option is used to fill
@@ -1558,14 +1547,14 @@ class data_entry_helper extends helper_config {
   * 'dataSource' => array('report_1', 'report_2'),<br/>
   * 'yValues' => 'count',<br/>
   * 'xLabels' => 'month'<br/>
-  * then you get a chart of count by month, with 2 series' loaded separately from report 1 and report 2. Alternatively 
+  * then you get a chart of count by month, with 2 series' loaded separately from report 1 and report 2. Alternatively
   * you can use a single report, with 2 different columns for count to define the 2 series:<br/>
   * 'dataSource' => 'combined_report',<br/>
   * 'yValues' => array('count_1','count_2'),<br/>
   * 'xLabels' => 'month'<br/>
-  * The latter is obviuosly slightly more efficient as only a single report is run. Pie charts will always revert to a 
+  * The latter is obviuosly slightly more efficient as only a single report is run. Pie charts will always revert to a
   * single series.</p>
-  * 
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>mode</b><br/>
   * Pass report to retrieve the underlying chart data from a report, or direct for an Indicia table or view. Default is report.</li>
@@ -1588,7 +1577,7 @@ class data_entry_helper extends helper_config {
   * @link http://www.jqplot.com/docs/files/plugins/jqplot-barRenderer-js.html
   * @link http://www.jqplot.com/docs/files/plugins/jqplot-lineRenderer-js.html
   * @link http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html
-  * </li>  
+  * </li>
   * <li><b>legendOptions</b><br/>
   * Associative array of options to pass to the jqplot legend. For more information see links below.
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
@@ -1613,7 +1602,7 @@ class data_entry_helper extends helper_config {
   * rather than showing arbitrary categories. Can be an array for multi-series charts.</li>
   * <li><b>xLabels</b><br/>
   * When the x-axis shows arbitrary category names (e.g. a bar chart), then this indicates the report or view/table
-  * field(s) which contains the labels. Also used for pie chart segment names. Can be an array for multi-series 
+  * field(s) which contains the labels. Also used for pie chart segment names. Can be an array for multi-series
   * charts.</li>
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
@@ -1632,7 +1621,7 @@ class data_entry_helper extends helper_config {
       'seriesOptions' => array(),
       'axesOptions' => array()
     ), $options);
-    // @todo Check they have supplied a valid set of data & label field names 
+    // @todo Check they have supplied a valid set of data & label field names
     self::add_resource('jqplot');
     $opts = array();
     switch ($options['chartType']) {
@@ -1649,7 +1638,7 @@ class data_entry_helper extends helper_config {
     if (isset($options['xLabels'])) {
       self::add_resource('jqplot_category_axis_renderer');
     }
-    $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}"; 
+    $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}";
     $opts[] = 'legend:'.json_encode($options['legendOptions']);
     $opts[] = 'series:'.json_encode($options['seriesOptions']);
     // make yValues, xValues, xLabels and dataSources into arrays of the same length so we can treat single and multi-series the same
@@ -1659,13 +1648,13 @@ class data_entry_helper extends helper_config {
     if (isset($options['xLabels'])) $xLabels = is_array($options['xLabels']) ? $options['xLabels'] : array($options['xLabels']);
     // What is this biggest array? This is our series count.
     $seriesCount = max(
-        count($yValues), 
-        count($dataSources), 
-        (isset($xValues) ? count($xValues) : 0), 
+        count($yValues),
+        count($dataSources),
+        (isset($xValues) ? count($xValues) : 0),
         (isset($xLabels) ? count($xLabels) : 0)
     );
     // any array that is too short must be padded out with the last entry
-    if (count($yValues)<$seriesCount) $yValues = array_pad($yValues, $seriesCount, $yValues[count($yValues)-1]); 
+    if (count($yValues)<$seriesCount) $yValues = array_pad($yValues, $seriesCount, $yValues[count($yValues)-1]);
     if (count($dataSources)<$seriesCount) $dataSources = array_pad($dataSources, $seriesCount, $dataSources[count($dataSources)-1]);
     if (isset($xValues) && count($xValues)<$seriesCount) $xValues = array_pad($xValues, $seriesCount, $xValues[count($xValues)-1]);
     if (isset($xLabels) && count($xLabels)<$seriesCount) $xLabels = array_pad($xLabels, $seriesCount, $xLabels[count($xLabels)-1]);
@@ -1714,7 +1703,7 @@ class data_entry_helper extends helper_config {
     // Finally, dump out the Javascript with our constructed parameters
     self::$javascript .= "$.jqplot('".$options['id']."',  [".implode(',', $seriesData)."], \n{".implode(",\n", $opts)."});\n";
     $r = '<div class="'.$options['class'].'" style="width:'.$options['width'].'; ">';
-    if (isset($options['title'])) 
+    if (isset($options['title']))
       $r .= '<div class="'.$options['headerClass'].'">'.$options['title'].'</div>';
     $r .= '<div id="'.$options['id'].'" style="height:'.$options['height'].';width:'.$options['width'].'; "></div>'."\n";
     $r .= "</div>\n";
@@ -1855,7 +1844,7 @@ class data_entry_helper extends helper_config {
   * @return string HTML to insert into the page for the spatial reference systems selection control.
   */
   public static function sref_system_select($options) {
-    global $indicia_templates;    
+    global $indicia_templates;
     $options = array_merge(array(
         'fieldname'=>'sample:entered_sref_system',
         'systems'=>array('OSGB'=>lang::get('british national grid'), '4326'=>lang::get('lat long 4326')),
@@ -1913,7 +1902,7 @@ class data_entry_helper extends helper_config {
     ), $options);
     $options = self::check_options($options);
     if ($options['splitLatLong']) {
-      // Outputting separate lat and long fields, so we need a few more options 
+      // Outputting separate lat and long fields, so we need a few more options
       $options = array_merge(array(
         'labelLat' => lang::get('Latitude'),
         'labelLong' => lang::get('Longitude'),
@@ -1982,7 +1971,7 @@ class data_entry_helper extends helper_config {
   * for each cell containing an attribute input control. Valid replacements are {label} and {content}.
   * Default is attribute_cell.</li>
   * <li><b>PHPtaxonLabel</b></li>
-  * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each 
+  * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each
   * taxon's label. Otherwise the template should be plain HTML. Defaults to false.
   * </ul>
   */
@@ -1991,15 +1980,15 @@ class data_entry_helper extends helper_config {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     $options = self::get_species_checklist_options($options);
-    
+
     self::add_resource('json');
     self::add_resource('autocomplete');
     $occAttrControls = array();
     $occAttrs = array();
-    
+
     $taxaThatExist = array();
     $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
-    
+
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist))
     {
@@ -2034,7 +2023,7 @@ class data_entry_helper extends helper_config {
         $grid .= '</tr></thead>';
       }
       $rows = array();
-      $rowIdx = 0;      
+      $rowIdx = 0;
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
         // Get the cell content from the taxon_label template
@@ -2096,7 +2085,7 @@ class data_entry_helper extends helper_config {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }
             $error = self::check_errors(array_pop(explode('::', $ctrlId)));
-            if ($error) {              
+            if ($error) {
               $oc = str_replace("class='", "class='ui-state-error ", $oc);
               $oc .= $error;
             }
@@ -2109,7 +2098,7 @@ class data_entry_helper extends helper_config {
           $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
         }
         $rowIdx++;
-      }      
+      }
       $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
       $grid .= '</tbody></table>';
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
@@ -2131,7 +2120,7 @@ class data_entry_helper extends helper_config {
     }
 
   }
-  
+
   /**
    * Private method to build the list of taxa to add to a species checklist grid.
    * @param array $options Options array for the control
@@ -2144,7 +2133,7 @@ class data_entry_helper extends helper_config {
     $taxalist = self::get_population_data($options);
     // build a list of the ids we have got from the default list.
     $taxaLoaded = array();
-    foreach ($taxalist as $taxon) 
+    foreach ($taxalist as $taxon)
       $taxaLoaded[] = $taxon['id'];
     // If there are any extra taxa to add to the list, get their details
     if(self::$entity_to_load) {
@@ -2153,7 +2142,7 @@ class data_entry_helper extends helper_config {
       foreach(self::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
         // Is this taxon attribute data?
-        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='{ttlId}') { 
+        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='{ttlId}') {
           // track that this taxon row has existing data to load
           if (!in_array($parts[1], $taxaThatExist)) $taxaThatExist[] = $parts[1];
           // If not already loaded
@@ -2168,10 +2157,10 @@ class data_entry_helper extends helper_config {
     }
   	return $taxalist;
   }
-  
+
   /**
    * Internal method to prepare the options array for a species_checklist control.
-   * 
+   *
    * @param array $options Options array passed to the control
    * @return array Options array prepared with defaults and other values required by the control.
    */
@@ -2203,7 +2192,7 @@ class data_entry_helper extends helper_config {
     $options['table']='taxa_taxon_list';
   	return $options;
   }
-  
+
   /**
    * Internal function to prepare the list of occurrence attribute columns for a species_checklist control.
    */
@@ -2215,7 +2204,7 @@ class data_entry_helper extends helper_config {
       foreach ($options['occAttrs'] as $occAttr)
       {
         // test that this occurrence attribute is linked to the survey
-        if (!array_key_exists($occAttr, $attributes)) 
+        if (!array_key_exists($occAttr, $attributes))
           throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
         $a = self::get_population_data(array(
             'table'=>'occurrence_attribute',
@@ -2259,12 +2248,12 @@ class data_entry_helper extends helper_config {
       }
     }
   }
-  
+
   /**
-   * When the species checklist grid has a lookup list associated with it, this is a 
+   * When the species checklist grid has a lookup list associated with it, this is a
    * secondary checklist which you can pick species from to add to the grid. As this happens,
    * a hidden table is used to store a clonable row which provides the template for new rows
-   * to be added to the grid. 
+   * to be added to the grid.
    */
   private static function get_species_checklist_clonable_row($options, $occAttrControls) {
     global $indicia_templates;
@@ -2310,7 +2299,7 @@ class data_entry_helper extends helper_config {
     ), $options);
     return self::apply_template('textarea', $options);
   }
-  
+
  /**
   * Helper function to output an HTML text input. This includes re-loading of existing values
   * and displaying of validation error messages.
@@ -2778,7 +2767,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options[$name]=' '.$attr.'="'.$options[$name].'"';
       }
     }
-    
+
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
     $replaceValues=array();
@@ -2788,7 +2777,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         array_push($replaceValues, $options[$option]);
       }
     }
-    // If options contain a help text, output it at the end if that is the preferred position    
+    // If options contain a help text, output it at the end if that is the preferred position
     $r = self::get_help_text($options, 'before');
     //Add prefix
     $r .= self::apply_static_template('prefix', $options);
@@ -2820,19 +2809,19 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
     //Add suffix
     $r .= self::apply_static_template('suffix', $options);
-    
-    // If options contain a help text, output it at the end if that is the preferred position    
+
+    // If options contain a help text, output it at the end if that is the preferred position
     $r .= self::get_help_text($options, 'after');
 
     return $r;
   }
-  
+
   /**
-   * Returns templated help text for a control, but only if the position matches the $helpTextPos value, and 
+   * Returns templated help text for a control, but only if the position matches the $helpTextPos value, and
    * the $options array contains a helpText entry.
    * @param array $options Control's options array
    * @param string $pos Either before or after. Defines the position that is being requested.
-   * @return string Templated help text, or nothinbg. 
+   * @return string Templated help text, or nothinbg.
    */
   private static function get_help_text($options, $pos) {
     if (array_key_exists('helpText', $options) && self::$helpTextPos == $pos) {
@@ -2869,14 +2858,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
   /**
-   * Applies a output template to an array. This is used to build the output for each item in a list, 
+   * Applies a output template to an array. This is used to build the output for each item in a list,
    * such as a species checklist grid or a radio group.
    *
    * @access private
    * @param array $item Array holding the item attributes.
    * @param string $template Name of the template to use, or actual template text if
    * $useTemplateAsIs is set to true.
-   * @param boolean $useTemplateAsIs If true then the template parameter contains the actual 
+   * @param boolean $useTemplateAsIs If true then the template parameter contains the actual
    * template text, otherwise it is the name of a template in the $indicia_templates array. Default false.
    * @return string HTML for the item label
    */
@@ -2897,9 +2886,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
     if (!$useTemplateAsIs) $template = $indicia_templates[$template];
-    return str_replace($replaceTags, $replaceValues, $template);    
+    return str_replace($replaceTags, $replaceValues, $template);
   }
- 
+
   /**
    * Private function to fetch a validated timeout value from passed in options array
    * @param array $options Options array with the following possibilities:<ul>
@@ -2954,8 +2943,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _getCachedResponse($file, $timeout, $options)
   {
-    // Note the random element, we only timeout a cached file sometimes. 
-    if ($timeout && $file && is_file($file) && 
+    // Note the random element, we only timeout a cached file sometimes.
+    if ($timeout && $file && is_file($file) &&
         (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout))
     ) {
       $response = array();
@@ -3009,7 +2998,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   public static function get_population_data($options) {
     $url = parent::$base_url."index.php/services/data";
-    $request = "$url/".$options['table']."?mode=json";	
+    $request = "$url/".$options['table']."?mode=json";
 
     if (array_key_exists('extraParams', $options)) {
       $cacheOpts = $options['extraParams'];
@@ -3042,7 +3031,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     self::_purgeImages();
     return $r;
   }
-  
+
   /**
    * Internal function to ensure old cache files are purged periodically.
    */
@@ -3050,7 +3039,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
     self::_purgeFiles(self::$cache_chance_purge, $cacheFolder, self::$cache_timeout * 5, self::$cache_allowed_file_count);
   }
-  
+
   /**
    * Internal function to ensure old image files are purged periodically.
    */
@@ -3058,7 +3047,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
     self::_purgeFiles(1, $interimImageFolder, self::$interim_image_expiry);
   }
-  
+
   private static function _purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
     // don't do this every time.
     if (rand(1, $chanceOfPurge)==1) {
@@ -3087,12 +3076,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
   }
-  
+
   private static function _DateCmp($a, $b)
   {
-    if ($a[1]<$b[1]) 
+    if ($a[1]<$b[1])
       $r = -1;
-    else if ($a[1]>$b[1]) 
+    else if ($a[1]>$b[1])
       $r = 1;
     else $r=0;
     return $r;
@@ -3183,7 +3172,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // We want to apply validation to the inner items, not the outer control
     if (array_key_exists('validation', $options)) {
       $itemClass = self::build_validation_class($options);
-      unset($options['validation']);      
+      unset($options['validation']);
     } else {
       $itemClass='';
     }
@@ -3197,8 +3186,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $idx++;
         if (array_key_exists($options['captionField'], $item) && array_key_exists($options['valueField'], $item)) {
           $item = array_merge(
-            $options, 
-            $item, 
+            $options,
+            $item,
             array(
               'disabled' => isset($options['disabled']) ?  $options['disabled'] : '',
               'checked' => ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '',
@@ -3210,14 +3199,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             )
           );
           $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
-          
+
         }
       }
     }
     $options['items']=$items;
     // We don't want to output for="" in the top label, as it is not directly associated to a button
     $lblTemplate = $indicia_templates['label'];
-    $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate); 
+    $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate);
     $r = self::apply_template($options['template'], $options);
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
@@ -3385,13 +3374,13 @@ if (errors.length>0) {
         self::$onload_javascript;
     return $indicia_templates['loading_block_end'];
   }
-  
+
   /**
-   * Converts the validation rules in an options array into a string that can be used as the control class, 
+   * Converts the validation rules in an options array into a string that can be used as the control class,
    * to trigger the jQuery validation plugin.
-   * @param $options. For validation to be applied should contain a validation entry, containing a single 
-   * validation string or an array of strings. 
-   * @return string The validation rules formatted as a class. 
+   * @param $options. For validation to be applied should contain a validation entry, containing a single
+   * validation string or an array of strings.
+   * @return string The validation rules formatted as a class.
    */
   private static function build_validation_class($options) {
     global $custom_terms;
@@ -3411,7 +3400,7 @@ if (errors.length>0) {
   }
 
   /**
-   * Either takes the passed in submission, or creates it from the post data if this is null, and forwards 
+   * Either takes the passed in submission, or creates it from the post data if this is null, and forwards
    * it to the data services for saving as a member of the entity identified.
    */
   public static function forward_post_to($entity, $submission = null) {
@@ -3427,7 +3416,7 @@ if (errors.length>0) {
       if (array_key_exists('nonce', $_POST))
         $postargs .= '&nonce='.$_POST['nonce'];
       // if there are images, we will send them after the main post, so we need to persist the write nonce
-      if (count($images)>0) 
+      if (count($images)>0)
         $postargs .= '&persist_auth=true';
       $response = self::http_post($request, $postargs);
       // The response should be in JSON if it worked
@@ -3449,7 +3438,7 @@ if (errors.length>0) {
       return $output;
     }
     else
-      return array('error' => 'Pre-validation failed', 'errors' => self::$validation_errors); 
+      return array('error' => 'Pre-validation failed', 'errors' => self::$validation_errors);
   }
 
   /**
@@ -3853,16 +3842,16 @@ $onload_javascript
   public static function get_read_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */
     $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);	
+    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
     $nonce = $response['output'];
     return array(
         'auth_token' => sha1("$nonce:$password"),
         'nonce' => $nonce
     );
   }
-  
+
 /**
-  * Retrieves read and write nonce tokens from the warehouse. 
+  * Retrieves read and write nonce tokens from the warehouse.
   * @param string $website_id Indicia ID for the website.
   * @param string $password Indicia password for the website.
   * @return Returns an array containing:
@@ -4005,7 +3994,7 @@ $('.ui-state-default').live('mouseout', function() {
    * @todo Document the list of resources. See the _RESOURCES method.
    */
   public static function add_resource($resource)
-  { 
+  {
     global $indicia_resources;
     if (!isset($indicia_resources)) $indicia_resources = array();
     // If this is an available resource and we have not already included it, then add it to the list
@@ -4190,14 +4179,14 @@ $('.ui-state-default').live('mouseout', function() {
   public static function http_post($url, $postargs, $output_errors=true) {
     $session = curl_init();
     // Set the POST options.
-    curl_setopt ($session, CURLOPT_URL, $url);    
+    curl_setopt ($session, CURLOPT_URL, $url);
     if ($postargs!==null) {
       curl_setopt ($session, CURLOPT_POST, true);
       curl_setopt ($session, CURLOPT_POSTFIELDS, $postargs);
     }
     curl_setopt($session, CURLOPT_HEADER, true);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    // Do the POST and then close the session	
+    // Do the POST and then close the session
     $response = curl_exec($session);
     // Check for an error, or check if the http response was not OK. Note that the cUrl emulator only returns connection: close.
     if (curl_errno($session) || (strpos($response, 'HTTP/1.1 200 OK')===false && strpos($response, 'Connection: close')===false)) {
@@ -4214,7 +4203,7 @@ $('.ui-state-default').live('mouseout', function() {
           'result'=>false,
           'output'=> curl_errno($session) ? curl_error($session) : $response,
           'errno'=>curl_errno($session));
-    } else {	  
+    } else {
       $arr_response = explode("\r\n\r\n",$response);
       // last part of response is the actual data
       $return = array('result'=>true,'output'=>array_pop($arr_response));
@@ -4382,16 +4371,16 @@ $('.ui-state-default').live('mouseout', function() {
 
     return str_replace("\n", "", $output);
   }
-  
+
   /**
    * Takes a file that has been uploaded to the client website upload folder, and moves it to the warehouse upload folder using the
    * data services.
-   * 
-   * @param string $path Path to the file to upload, relative to the interim image path folder (normally the 
+   *
+   * @param string $path Path to the file to upload, relative to the interim image path folder (normally the
    * client_helpers/upload folder.
    * @param boolean $persist_auth Allows the write nonce to be preserved after sending the file, useful when several files
    * are being uploaded.
-   * @return string Error message, or true if successful. 
+   * @return string Error message, or true if successful.
    */
   private static function send_file_to_warehouse($path, $persist_auth=false) {
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
@@ -4400,11 +4389,11 @@ $('.ui-state-default').live('mouseout', function() {
     // This is used by the file box control which renames uploaded files using a guid system, so disable renaming on the server.
     $postargs = array('name_is_guid' => 'true');
     // attach authentication details
-    if (array_key_exists('auth_token', $_POST)) 
+    if (array_key_exists('auth_token', $_POST))
       $postargs['auth_token'] = $_POST['auth_token'];
-    if (array_key_exists('nonce', $_POST)) 
+    if (array_key_exists('nonce', $_POST))
       $postargs['nonce'] = $_POST['nonce'];
-    if ($persist_auth) 
+    if ($persist_auth)
       $postargs['persist_auth'] = 'true';
     $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));
     $response = data_entry_helper::http_post($serviceUrl, $file_to_upload + $postargs);
@@ -4416,15 +4405,15 @@ $('.ui-state-default').live('mouseout', function() {
         // return the most detailed bit of error information
         if (isset($output['errors']['media_upload']))
           $r = $output['errors']['media_upload'];
-        else 
-          $r = $output['error']; 
+        else
+          $r = $output['error'];
       }
     }
     //remove local copy
     unlink(realpath($uploadpath.$path));
     return $r;
   }
-  
+
   /**
    * Calculates the relative path to the client_helpers folder from wherever the current PHP script is.
    */
@@ -4446,10 +4435,10 @@ $('.ui-state-default').live('mouseout', function() {
     }
     return $path;
   }
-  
+
   /**
    * Retrieves an array of just the image data from a $_POST or set of control values.
-   * 
+   *
    * @param arraay $values
    * @param string $modelName The singular name of the image table, e.g. location_image or occurrence_image etc. If
    * null, then any image model will be used.
@@ -4469,7 +4458,7 @@ $('.ui-state-default').live('mouseout', function() {
           // Found an image path. Anything after path is the unique id. We include the colon in this.
           $uniqueId = substr($key, $pathPos + 5);
         else {
-          // look for a :path field with no suffix (i.e. a single image upload field after a validation failure, 
+          // look for a :path field with no suffix (i.e. a single image upload field after a validation failure,
           // when it stores the path in a hidden field so it is not lost).
           if (substr($key, -5)==':path') {
             $uniqueId = '';
@@ -4480,7 +4469,7 @@ $('.ui-state-default').live('mouseout', function() {
           $prefix = substr($key, 0, $pathPos);
           $r[] = array(
             // Id is set only when saving over an existing record.
-            'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ? 
+            'id' => array_key_exists($prefix.':id'.$uniqueId, $values) ?
                 $values[$prefix.':id'.$uniqueId] : '',
             'path' => $value,
             'caption' => isset($values[$prefix.':caption'.$uniqueId]) ? utf8_encode($values[$prefix.':caption'.$uniqueId]) : ''
@@ -4488,7 +4477,7 @@ $('.ui-state-default').live('mouseout', function() {
         }
       }
     }
-    
+
     // Now look for image file inputs, called something like occurrence:image[:n]
     if ($simpleFileInputs) {
       foreach($_FILES as $key => $file) {
@@ -4502,7 +4491,7 @@ $('.ui-state-default').live('mouseout', function() {
             // even if file uploads Ok to interim location, the Warehouse may still block it.
             if (self::$validation_errors==null) self::$validation_errors = array();
             self::$validation_errors[$key] = lang::get('file too big for warehouse');
-          } 
+          }
           elseif ($file['error']=='0') {
             // no file upload error
             $fname = isset($file['tmp_name']) ? $file['tmp_name'] : '';
@@ -4524,7 +4513,7 @@ $('.ui-state-default').live('mouseout', function() {
                 // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
                 $_FILES[$key]['name'] = $destination;
                 $pathField = str_replace(':image','_image:path', $key);
-                $_POST[$pathField] = $destination;                
+                $_POST[$pathField] = $destination;
               }
             } else {
               // Not moving the file, as it should already be moved.
@@ -4542,10 +4531,10 @@ $('.ui-state-default').live('mouseout', function() {
     }
     return $r;
   }
-  
+
 /**
    * Validation rule to test if an uploaded file is allowed by file size.
-   * File sizes are obtained from the helper_config maxUploadSize, and defined as: 
+   * File sizes are obtained from the helper_config maxUploadSize, and defined as:
    * SB, where S is the size (1, 15, 300, etc) and
    * B is the byte modifier: (B)ytes, (K)ilobytes, (M)egabytes, (G)igabytes.
    * Eg: to limit the size to 1MB or less, you would use "1M".
@@ -4558,21 +4547,21 @@ $('.ui-state-default').live('mouseout', function() {
   {
     if ((int) $file['error'] !== UPLOAD_ERR_OK)
       return TRUE;
-    
+
     if (isset(parent::$maxUploadSize))
       $size = parent::$maxUploadSize;
-    else 
+    else
       $size = '1M'; // default
 
     if ( ! preg_match('/[0-9]++[BKMG]/', $size))
       return FALSE;
-      
+
     $size = self::convert_to_bytes($size);
-    
+
     // Test that the file is under or equal to the max size
     return ($file['size'] <= $size);
   }
-  
+
   /**
    * Utility method to convert a memory size string (e.g. 1K, 1M) into the number of bytes.
    *
@@ -4588,9 +4577,9 @@ $('.ui-state-default').live('mouseout', function() {
       case 'K': $size = intval($size) * pow(1024, 1); break;
       default:  $size = intval($size);                break;
     }
-    return $size; 
+    return $size;
   }
-  
+
 /**
    * Private method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
    * @param array $options Options array for the control. Can contain a datasource (report or table/view name),
