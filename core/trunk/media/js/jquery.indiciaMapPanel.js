@@ -386,10 +386,8 @@
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
     var opts = $.extend({}, $.fn.indiciaMapPanel.defaults, options);
-    if (typeof olOptions == "undefined") {
-      // Don't merge the default OpenLayers options, as if you supply any settings for this you
-      // will need to be responsible for the whole lot.
-      olOptions = $.fn.indiciaMapPanel.openLayersDefaults;
+    if (opts.useOlDefaults) {
+      olOptions = $.extend({}, $.fn.indiciaMapPanel.openLayersDefaults, olOptions);
     }
     
     olOptions.projection = new OpenLayers.Projection("EPSG:"+olOptions.projection);
@@ -596,7 +594,10 @@ $.fn.indiciaMapPanel.defaults = {
 	// Additional options for OpenLayers.Feature.Vector.style on the search layer.
     fillColorSearch: '#ee0000',
     fillOpacitySearch: 0,
-    strokeColorSearch: '#ee0000'
+    strokeColorSearch: '#ee0000',
+    
+    // Are we using the OpenLayers defaults, or are they all provided?
+    useOlDefaults: true
 
 };
 
