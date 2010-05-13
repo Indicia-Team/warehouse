@@ -73,24 +73,29 @@ class Report_Controller extends Data_Service_Base_Controller {
   */
   public function requestReport()
   {
-    $this->entity = 'record';
-    $this->handle_request();
-    $mode = $this->get_output_mode();
-    switch($mode) {
-      case 'csv' :
-        $extension='csv';
-        break;
-      case 'xml' :
-        $extension='xml';
-        break;
-      default : $extension='txt';
+    try {
+      $this->entity = 'record';
+      $this->handle_request();
+      $mode = $this->get_output_mode();
+      switch($mode) {
+        case 'csv' :
+          $extension='csv';
+          break;
+        case 'xml' :
+          $extension='xml';
+          break;
+        default : $extension='txt';
+      }
+      header('Content-Disposition: attachment; filename="download.'.$extension.'"');
+      if ($mode=='csv') {
+        // prepend a byte order marker, so Excel recognises the CSV file as UTF8
+        echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
+      }
+      $this->send_response();
     }
-    header('Content-Disposition: attachment; filename="download.'.$extension.'"');
-    if ($mode=='csv') {
-      // prepend a byte order marker, so Excel recognises the CSV file as UTF8
-      echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
+    catch (ServiceError $e) {
+      $this->handle_error($e);
     }
-    $this->send_response();
   }
 
   /**
