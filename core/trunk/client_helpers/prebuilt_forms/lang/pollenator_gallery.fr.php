@@ -67,5 +67,10 @@ $custom_terms = array(
 	,'validation_required' => "S'il vous plaît entrer une valeur"
 	,'Yes' => 'Oui'
 	,'No' => 'Non'
+	,'LANG_Unknown' => '?'
+	,'LANG_Dubious' => '!'
+	,'LANG_Doubt_Expressed' => "Quelqu'un a exprimé des doutes sur cette identification"
+	,'LANG_Doubt_Comment' => "J'ai exprimé des doutes sur cette détermination ..."
+	
 	
 );
