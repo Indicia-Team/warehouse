@@ -98,6 +98,23 @@ class iform_pollenator_gallery {
           'group'=>'Search'
       ),
       array(
+          'name'=>'collectionsPerPage',
+          'caption'=>'Collections per page of search results',
+          'description'=>'Number of Collections per page of search results.',
+          'type'=>'int',
+          'default'=>5,
+          'group'=>'Search'
+      ),
+      array(
+          'name'=>'max_features',
+          'caption'=>'Max number of items returned',
+          'description'=>'Maximum number of features returned by the WFS search.',
+          'type'=>'int',
+          'default'=>1000,
+          'group'=>'Search'
+      ),
+      
+      array(
           'name'=>'INSEE_url',
           'caption'=>'URL for INSEE Search WFS service',
           'description'=>'The URL used for the WFS feature lookup when search for INSEE numbers.',
@@ -490,9 +507,24 @@ class iform_pollenator_gallery {
     </div>
 	<div id="collection-insects" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
     </div>
-	<div id="collection-comments" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
-	TBD Collection Comments
-    </div>
+	<div id="fc-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
+	    <div id="fc-new-comment-button" class="ui-state-default ui-corner-all new-comment-button">'.lang::get('LANG_New_Comment').'</div>
+		<span>'.lang::get('LANG_Comments_Title').'</span>
+	</div>
+	<div id="fc-new-comment" class="ui-accordion-content ui-helper-reset ui-widget-content">
+		<form id="fc-new-comment-form" action="'.iform_ajaxproxy_url($node, 'smp-comment').'" method="POST">
+		    <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
+    		<input type="hidden" name="sample_comment:sample_id" value="" />
+    		<label for="sample_comment:person_name">'.lang::get('LANG_Username').':</label>
+		    <input type="text" name="sample_comment:person_name" value="'.$username.'" readonly="readonly" />  
+    		<label for="sample_comment:email_address">'.lang::get('LANG_Email').':</label>
+		    <input type="text" name="sample_comment:email_address" value="'.$email.'" readonly="readonly" />
+		    '.data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment'), 'fieldname'=>'sample_comment:comment', 'class'=>'required', 'suffixTemplate'=>'nosuffix')).'
+    		<input type="submit" id="fc_comment_submit_button" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Submit_Comment').'" />
+    	</form>
+	</div>
+	<div id="fc-comment-list" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+	</div>
 </div>
 <div id="focus-occurrence" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="fo-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
@@ -697,7 +729,9 @@ jQuery('#fo-doubt-button').click(function(){
 });
 
 loadCollection = function(id){
+    jQuery('[name=sample_comment\\:sample_id]').val(id);
     locationLayer.destroyFeatures();
+	jQuery('#fc-new-comment-button').".(user_access('IFrom n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
     jQuery('#focus-occurrence,#filter-spec,#filter-footer,#results-insects-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
 	jQuery('#focus-collection').removeClass('filter-hide');
 	jQuery('#map2').width(jQuery('#map2_container').width());
@@ -844,7 +878,8 @@ loadCollection = function(id){
 				});
 			}
   		}
-	});	
+	});
+	loadComments(id, '#fc-comment-list', 'sample_comment', 'sample_id', 'sample-comment-block', 'sample-comment-body');
 };
 
 addCollection = function(attributes){
@@ -919,7 +954,7 @@ addCollection = function(attributes){
 						    	// TDB more sophisticated - if flagged as dubious or > 5 possibilities
 								jQuery('<span>".lang::get('LANG_Unknown')."</span>').addClass('thumb-text').appendTo(container);
 							  } else {
-							  	if(detdata[detData.length-1].dubious == 'Y'){
+							  	if(detData[detData.length-1].dubious == 'Y'){
 									jQuery('<span>".lang::get('LANG_Dubious')."</span>').addClass('thumb-text').appendTo(container);
 							  	}
   							  }}, 
@@ -930,6 +965,24 @@ addCollection = function(attributes){
 				}});
 		}});
 };
+
+
+setCollectionPage = function(pageNum){
+	jQuery('#results-collections-results').empty();
+	for (var i = (pageNum-1)*".$args['collectionsPerPage']."; i < collectionResults.features.length && i < pageNum*".$args['collectionsPerPage']."; i++){
+		addCollection(collectionResults.features[i].attributes);
+	}
+	var numPages = Math.ceil(collectionResults.features.length/".$args['collectionsPerPage'].");
+	if(numPages == 1)
+		return;
+	var pageCtrl = jQuery('<div>').addClass('page-control').appendTo('#results-collections-results');
+	for (var j = (pageNum < 6  ? 1 : pageNum - 5); j <= numPages && j <= (pageNum + 5); j++){
+		if( j != pageNum)
+			jQuery('<a>'+j+'</a>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+		else
+			jQuery('<span>'+j+'</span>').appendTo(pageCtrl);
+  }
+}
 
 // searchLayer in map is used for georeferencing.
 // map editLayer is switched off.
@@ -1079,7 +1132,7 @@ jQuery('#search-collections-button').click(function(){
     	value: '*{|".$args['complete_attr_id']."|,1}*'
   	}));
   	filters.push(new OpenLayers.Filter.Comparison({
-  		type: OpenLayers.Filter.Comparison.EQUALS,
+  		type: OpenLayers.Filter.Comparison.EQUAL_TO,
     	property: 'survey_id',
     	value: '".$args['survey_id']."'
   	}));
@@ -1240,14 +1293,17 @@ jQuery('#search-collections-button').click(function(){
               geometryName:'geom',
               featureNS: '".$args['search_ns']."',
               srsName: 'EPSG:900913',
-              version: '1.1.0',                  
+              version: '1.1.0',   
+              maxFeatures: ".$args['max_features'].",               
       		  propertyNames: ['collection_id','date_start','date_end','geom','location_name','location_image_path','flower_image_path','flower_id','flower_taxon','collection_attributes','location_attributes','flower_attributes']
   			})
 	});
 	searchLayer.events.register('featuresadded', {}, function(a1){
-		for (var i = 0; i < a1.features.length; i++){
-			addCollection(a1.features[i].attributes);
+		collectionResults = a1;
+		if(collectionResults.features.length >= ".$args['max_features']."){
+			alert(\"".lang::get('LANG_Max_Features_Reached')."\");
 		}
+		setCollectionPage(1);
 	});
 	
 	jQuery('#map')[0].map.addLayer(searchLayer);
@@ -1257,7 +1313,7 @@ jQuery('#search-collections-button').click(function(){
 		  	  })});
 });
 
-  
+collectionResults = null;  
 previous_insect = '';
 next_insect = '';
 collection = '';
@@ -1267,7 +1323,7 @@ jQuery('form#fo-doubt-form').ajaxForm({
 	success:   function(data){
 		if(data.error == undefined){
 			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), '#fo-id-history', '#fo-current-id');
-			jQuery('[name=occurrence_comment\\:comment]').val('".lang::get('LANG_Doubt_Comment')."');
+			jQuery('[name=occurrence_comment\\:comment]').val(\"".lang::get('LANG_Doubt_Comment')."\");
 			jQuery('#fo-new-comment-button').click();
 		} else {
 			alert(data.error);
@@ -1319,7 +1375,23 @@ jQuery('#fo-new-comment-form').ajaxForm({
 		if(data.error == undefined){
 			jQuery('[name=occurrence_comment\\:comment]').val('');
 			jQuery('#fo-new-comment').removeClass('ui-accordion-content-active');
-			loadComments(jQuery('[name=occurrence_comment\\:occurrence_id]').val(), '#fo-comment-list');
+			loadComments(jQuery('[name=occurrence_comment\\:occurrence_id]').val(), '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
+  		} else {
+			alert(data.error);
+		}
+	} 
+});
+jQuery('#fc-new-comment-form').ajaxForm({ 
+	dataType:  'json', 
+	beforeSubmit:   function(data, obj, options){
+		if (!jQuery('form#fc-new-comment-form').valid()) { return false; }
+		return true;
+	},
+	success:   function(data){
+		if(data.error == undefined){
+			jQuery('[name=sample_comment\\:comment]').val('');
+			jQuery('#fc-new-comment').removeClass('ui-accordion-content-active');
+			loadComments(jQuery('[name=sample_comment\\:sample_id]').val(), '#fc-comment-list', 'sample_comment', 'sample_id', 'sample-comment-block', 'sample-comment-body');
   		} else {
 			alert(data.error);
 		}
@@ -1458,18 +1530,18 @@ loadDeterminations = function(keyValue, historyID, currentID){
 		}
 	});
 };
-loadComments = function(keyValue, block){
+loadComments = function(keyValue, block, table, key, blockClass, bodyClass){
 	jQuery(block).empty();
-	$.getJSON(\"".$svcUrl."/data/occurrence_comment\" +
+	$.getJSON(\"".$svcUrl."/data/\" + table +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&occurrence_id=\" + keyValue + \"&callback=?\", function(commentData) {
+   			\"&\" + key + \"=\" + keyValue + \"&callback=?\", function(commentData) {
    		if (commentData.length>0) {
    			for(i=commentData.length - 1; i >= 0; i--){
-	   			var newCommentDetails = jQuery('<div class=\"insect-comment-details\"/>')
+	   			var newCommentDetails = jQuery('<div class=\"'+blockClass+'\"/>')
 					.appendTo(block);
 				jQuery('<span>".lang::get('LANG_Comment_By')."' + commentData[i].person_name + ' ' + commentData[i].updated_on + '</span>')
 					.appendTo(newCommentDetails);
-	   			var newComment = jQuery('<div class=\"insect-comment-body\"/>')
+	   			var newComment = jQuery('<div class=\"'+bodyClass+'\"/>')
 					.appendTo(block);
 				jQuery('<p>' + commentData[i].comment + '</p>')
 					.appendTo(newComment);
@@ -1564,7 +1636,7 @@ loadInsect = function(insectID){
 	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image');
 	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id');
 	loadInsectAddnInfo(insectID);
-	loadComments(insectID, '#fo-comment-list');
+	loadComments(insectID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
 	jQuery('#fo-prev-button,#fo-next-button').show();
 }
 loadFlower = function(flowerID){
@@ -1576,17 +1648,19 @@ loadFlower = function(flowerID){
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(flowerID);
 	jQuery('#fo-new-flower-id-button').show();
 	jQuery('#fo-new-insect-id-button').hide();
-
 	jQuery('#fo-doubt-button').".((user_access('IFrom n'.$node->nid.' flower expert') || user_access('IFrom n'.$node->nid.' flag dubious flower')) ? "show()" : "hide()").";
 	jQuery('#fo-new-comment-button').".((user_access('IFrom n'.$node->nid.' flower expert') || user_access('IFrom n'.$node->nid.' create flower comment')) ? "show()" : "hide()").";
 	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image');
 	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id');
 	loadFlowerAddnInfo(flowerID);
-	loadComments(flowerID, '#fo-comment-list');
+	loadComments(flowerID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
 }
 
 jQuery('#fo-new-comment-button').click(function(){ 
 	jQuery('#fo-new-comment').toggleClass('ui-accordion-content-active');
+});
+jQuery('#fc-new-comment-button').click(function(){ 
+	jQuery('#fc-new-comment').toggleClass('ui-accordion-content-active');
 });
 jQuery('#fo-new-insect-id-button').click(function(){ 
 	jQuery('#fo-new-insect-id').toggleClass('ui-accordion-content-active');

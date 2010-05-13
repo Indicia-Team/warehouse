@@ -73,5 +73,6 @@ $custom_terms = array(
 	,'LANG_Dubious' => '!'
 	,'LANG_Doubt_Expressed' => 'Someone has expressed doubt about this identification.'
 	,'LANG_Doubt_Comment' => 'I have expressed doubt about this determination because...'
+	,'LANG_Max_Features_Reached' => 'The number of results returned has exceeded the maximum number allowed. The list will be abridged.'
 	
 );
