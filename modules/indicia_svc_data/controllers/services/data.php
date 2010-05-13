@@ -64,6 +64,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'determination',
       'person',
       'sample',
+      'sample_comment',
       'survey',
       'user'
   );
@@ -290,6 +291,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function occurrence_comment()
   {
     $this->handle_call('occurrence_comment');
+  }
+
+  /**
+  * Provides the /services/data/occurrence_comments service.
+  */
+  public function sample_comment()
+  {
+    $this->handle_call('sample_comment');
   }
 
   /**
