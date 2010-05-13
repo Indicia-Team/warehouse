@@ -53,7 +53,8 @@ class Determination_Model extends ORM
       'taxa_taxon_list_id',
       'taxon_text_description',
       'taxon_extra_info',
-      'deleted'
+      'deleted',
+      'dubious'
     );
     
     return parent::validate($array, $save);

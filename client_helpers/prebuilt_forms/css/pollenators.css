@@ -76,7 +76,7 @@ div#cc-1-summary {
   padding-right: 10px;
 }
 
-#cc-2-environment-picture,.poll-map-container,#cc-4-insect-picture {
+.poll-map-container {
 	float: left;
 	padding-right: 20px;
 	padding-bottom: 10px;

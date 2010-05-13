@@ -3213,11 +3213,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
     if (array_key_exists('containerClass', $options)) {
-      $r = self::apply_template($options['containerTemplate'],
-            array(
+      $containerOpts = array(
               'group' => $r,
               'class' => $options['containerClass']
-            ));
+            );
+      if(array_key_exists('suffixTemplate', $options)) {
+      	$containerOpts['suffixTemplate'] = $options['suffixTemplate'];
+      }
+      $r = self::apply_template($options['containerTemplate'], $containerOpts);
     }
     return $r;
   }

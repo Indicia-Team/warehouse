@@ -69,5 +69,9 @@ $custom_terms = array(
 	,'LANG_Created_Between' => 'Created Between'
 	,'LANG_And' => 'and'
 	,'validation_required' => "Please provide a value"
+	,'LANG_Unknown' => '?'
+	,'LANG_Dubious' => '!'
+	,'LANG_Doubt_Expressed' => 'Someone has expressed doubt about this identification.'
+	,'LANG_Doubt_Comment' => 'I have expressed doubt about this determination because...'
 	
 );

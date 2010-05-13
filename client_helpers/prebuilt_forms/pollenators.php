@@ -474,11 +474,12 @@ jQuery('#".$id."').click(function(){
     				'lookUpListCtrl' => 'radio_group',
     				'validation' => array('required'),
     				'language' => iform_lang_iso_639_2($args['language']),
-    				'containerClass' => 'group-control-box');
+    				'containerClass' => 'group-control-box',
+    				'suffixTemplate'=>'nosuffix');
 
     global $indicia_templates;
 	$indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
-        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /><br />' .
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" />' .
         '<label for="{idLong}">{labelLong}:</label>'.
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" />';
     
@@ -516,10 +517,9 @@ jQuery('#".$id."').click(function(){
     <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
     '.iform_pollenators::help_button($use_help, "collection-help-button", $args['help_function'], $args['help_collection_arg']).'
     <label for="location:name">'.lang::get('LANG_Collection_Name_Label').'</label>
- 	<input type="text" id="location:name"      name="location:name" value="" class="required"/><br />
+ 	<input type="text" id="location:name"      name="location:name" value="" class="required"/>
     <input type="hidden" id="sample:location_name" name="sample:location_name" value=""/>
- 	'.data_entry_helper::outputAttribute($sample_attributes[$args['protocol_attr_id']],
- 			$defAttrOptions + array('sep' => '<br/>'))
+ 	'.data_entry_helper::outputAttribute($sample_attributes[$args['protocol_attr_id']], $defAttrOptions)
  	.'    <input type="hidden"                       name="sample:date" value="2010-01-01"/>
     <input type="hidden" id="smpAttr:'.$args['complete_attr_id'].'" name="smpAttr:'.$args['complete_attr_id'].'" value="0" />
     <input type="hidden" id="smpAttr:'.$args['uid_attr_id'].'" name="smpAttr:'.$args['uid_attr_id'].'" value="'.$uid.'" />
@@ -529,7 +529,7 @@ jQuery('#".$id."').click(function(){
     <input type="hidden" id="location:id"      name="location:id" value="" disabled="disabled" />
     <input type="hidden" id="sample:id"        name="sample:id" value="" disabled="disabled" />
     </form>
-    <div id="cc-1-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate').'</div><br />
+    <div id="cc-1-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate').'</div>
   </div>  
 <div style="display:none" />
     <form id="cc-1-delete-collection" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
@@ -786,6 +786,7 @@ $('#cc-1-reinit-button').click(function() {
     $options['proxy'] = '';
     // Switch to degrees, minutes, seconds for lat long.
     $options['latLongFormat'] = 'DMS';
+    $options['suffixTemplate'] = 'nosuffix';
     $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'orderby' => 'taxon');
     $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
@@ -796,7 +797,8 @@ $('#cc-1-reinit-button').click(function() {
 	        'columns'=>2,
 			'validation'=>array('required'),
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$extraParams
+    	    'extraParams'=>$extraParams,
+    		'suffixTemplate'=>'nosuffix'
 	);
     
     $r .= '
@@ -817,22 +819,19 @@ $('#cc-1-reinit-button').click(function() {
  	  <div id="cc-2-flower-identify" class="poll-dummy-form">
         '.iform_pollenators::help_button($use_help, "flower-help-button", $args['help_function'], $args['help_flower_arg']).'
  	    <p><strong>'.lang::get('LANG_Identify_Flower').'</strong></p>
-        <label for="id-flower-later" class="follow-on">'.lang::get('LANG_ID_Flower_Later').' </label><input type="checkbox" id="id-flower-later" name="id-flower-later" /><br/> 
+        <label for="id-flower-later" class="follow-on">'.lang::get('LANG_ID_Flower_Later').' </label><input type="checkbox" id="id-flower-later" name="id-flower-later" /> 
 		'.iform_pollenators::ID_tool_button($use_ID_tool, "flower-id-button", $args['ID_tool_function'], $args['ID_tool_flower_arg'], lang::get('LANG_Flower_ID_Key_label'), lang::get('LANG_Launch_ID_Key')).'
  	    '.data_entry_helper::select($species_ctrl_args).'
  	  </div>
  	</div>
     <div class="poll-break"></div>
  	<div id="cc-2-environment">
-      <div id="cc-2-environment-picture">
-		<form id="cc-2-environment-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
+	  <form id="cc-2-environment-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     		<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
     		<input name="upload_file" type="file" class="required" />
     		<input type="submit" value="'.lang::get('LANG_Upload_Environment').'" class="btn-submit" />
-    	</form>
- 	    <div id="cc-2-environment-image" class="poll-image">
- 	    </div>
- 	  </div>
+      </form>
+ 	  <div id="cc-2-environment-image" class="poll-image"></div>
  	  <div>'.lang::get('LANG_Environment_Notes').'</div>
  	</div>
     <div class="poll-break"></div>
@@ -850,14 +849,15 @@ $('#cc-1-reinit-button').click(function() {
       		'label' => lang::get('LANG_Georef_Label'),
       		'georefPreferredArea' => $args['georefPreferredArea'],
       		'georefCountry' => $args['georefCountry'],
-      		'georefLang' => $args['language']
+      		'georefLang' => $args['language'],
+    		'suffixTemplate'=>'nosuffix'
     		)).'
-    	<span>'.lang::get('LANG_Georef_Notes').'</span>
+    	<span >'.lang::get('LANG_Georef_Notes').'</span>
  	    <label for="place:INSEE">'.lang::get('LANG_Or').'</label>
  		<input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
 	 		onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
             onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
-    	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default indicia-button" value="Search" /><br />
+    	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default indicia-button" value="Search" />
         '.data_entry_helper::sref_textbox(array(
 		        'srefField'=>'place:entered_sref',
         		'systemfield'=>'place:entered_sref_system',
@@ -869,7 +869,8 @@ $('#cc-1-reinit-button').click(function() {
         		'labelLong' => lang::get('Longitude'),
     			'fieldnameLong' => 'place:long',
     			'idLat'=>'imp-sref-lat',
-        		'idLong'=>'imp-sref-long')).'
+        		'idLong'=>'imp-sref-long',
+    			'suffixTemplate'=>'nosuffix')).'
  	  </div></div>
       <div id="cc-2-loc-description"></div>
     </div>
@@ -896,13 +897,13 @@ $('#cc-1-reinit-button').click(function() {
     <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
     <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
-    '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box'))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box'))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box')).'  	 	
+    '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix'))
+ 	.data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix'))
+ 	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix')).'  	 	
    </form>
   </div>
   <div id="cc-2-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-2-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div><br />
+    <div id="cc-2-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div>
   </div>
 </div>';
 
@@ -1169,7 +1170,7 @@ $('#cc-2-valid-button').click(function() {
   <div id="cc-3-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active poll-section-body">
   </div>
   <div id="cc-3-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-	<div id="cc-3-add-button" class="ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div><br />
+	<div id="cc-3-add-button" class="ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div>
     <div id="cc-3-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
   </div>
 </div>
@@ -1184,7 +1185,6 @@ $('#cc-2-valid-button').click(function() {
     </form>
 </div>';
 
- 	$defAttrOptions = array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'validation' => array('required'), 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box'); 	
     data_entry_helper::$javascript .= "
 $('#cc-3-delete-session').ajaxForm({ 
         dataType:  'json', 
@@ -1241,9 +1241,9 @@ addSession = function(){
 		.appendTo('#cc-3-body');
 	var newTitle = jQuery('<div class=\"poll-session-title\">".lang::get('LANG_Session')." '+sessionCounter+'</div>')
 		.appendTo(newSession);
-	var newModButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1\">".lang::get('LANG_Modify')."</div><br />')
+	var newModButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1\">".lang::get('LANG_Modify')."</div>')
 		.appendTo(newTitle).hide();
-	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div><br />')
+	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div>')
 		.appendTo(newTitle);	
 	newModButton.click(function() {
 		if(!validateAndSubmitOpenSessions()) return false;
@@ -1271,7 +1271,8 @@ addSession = function(){
 	var dateAttr = '".str_replace("\n", "", data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'),
     						'id' => '<id>',
 							'fieldname' => 'sample:date',
-    						'class' => 'vague-date-picker required')))."';
+    						'class' => 'vague-date-picker required',
+    						'suffixTemplate'=>'nosuffix')))."';
 	var dateID = 'cc-3-session-date-'+sessionCounter;
 	jQuery(dateAttr.replace(/<id>/g, dateID)).appendTo(newForm);
     jQuery('#'+dateID).datepicker({
@@ -1390,7 +1391,8 @@ jQuery('.mod-button').click(function() {
 	        'columns'=>2,
 			'validation'=>array('required'),
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$extraParams
+    	    'extraParams'=>$extraParams,
+			'suffixTemplate'=>'nosuffix'
 	);
  	$r .= '
 <div id="cc-4" class="poll-section">
@@ -1401,19 +1403,16 @@ jQuery('.mod-button').click(function() {
   </div>
   <div id="cc-4-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">  
     <div id="cc-4-insect">
-      <div id="cc-4-insect-picture">
-		<form id="cc-4-insect-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
+	  <form id="cc-4-insect-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     		<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
-    		<input name="upload_file" type="file" class="required" /><br />
+    		<input name="upload_file" type="file" class="required" />
     		<input type="submit" value="'.lang::get('LANG_Upload_Insect').'" class="btn-submit" />
-    	</form>
- 	    <div id="cc-4-insect-image" class="poll-image">
- 	    </div>
- 	  </div>
+      </form>
+ 	  <div id="cc-4-insect-image" class="poll-image"></div>
  	  <div id="cc-4-insect-identify" class="poll-dummy-form">
  	    '.iform_pollenators::help_button($use_help, "insect-help-button", $args['help_function'], $args['help_insect_arg']).'
         <p><strong>'.lang::get('LANG_Identify_Insect').'</strong></p>
-        <label for="id-insect-later" class="follow-on">'.lang::get('LANG_ID_Insect_Later').' </label><input type="checkbox" id="id-insect-later" name="id-insect-later" /><br/> 
+        <label for="id-insect-later" class="follow-on">'.lang::get('LANG_ID_Insect_Later').' </label><input type="checkbox" id="id-insect-later" name="id-insect-later" /> 
         '.iform_pollenators::ID_tool_button($use_ID_tool, "insect-id-button", $args['ID_tool_function'], $args['ID_tool_insect_arg'],lang::get('LANG_Insect_ID_Key_label'),lang::get('LANG_Launch_ID_Key')).'
         '.data_entry_helper::select($species_ctrl_args).'
       </div>
@@ -1432,11 +1431,12 @@ jQuery('.mod-button').click(function() {
 	    <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
 	    <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
 	    <label for="occurrence:sample_id">'.lang::get('LANG_Session').'</label>
-	    <select id="occurrence:sample_id" name="occurrence:sample_id" value="" class="required" /></select><br />
+	    <select id="occurrence:sample_id" name="occurrence:sample_id" value="" class="required" /></select>
 	    '
  	.data_entry_helper::textarea(array(
 	        'label'=>lang::get('LANG_Comment'),
-    	    'fieldname'=>'occurrence:comment'
+    	    'fieldname'=>'occurrence:comment',
+ 			'suffixTemplate'=>'nosuffix'
 	    ))
 	.data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],
  			$defAttrOptions)
@@ -1444,10 +1444,10 @@ jQuery('.mod-button').click(function() {
  			$defAttrOptions).'
     </form>
     <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Insect').'</span>
-    <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Delete_Insect').'</span><br />
+    <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Delete_Insect').'</span>
   </div>
   <div id="cc-4-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-4-valid-photo-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div><br />
+    <div id="cc-4-valid-photo-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div>
   </div>
 </div>
 <div style="display:none" />
@@ -1754,7 +1754,7 @@ $('#cc-4-valid-photo-button').click(function(){
        <input type="hidden" id="smpAttr:'.$args['complete_attr_id'].'" name="smpAttr:'.$args['complete_attr_id'].'" value="1" />
     </form>
    </div>
-   <div id="cc-5-complete-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Complete_Collection').'</div><br />
+   <div id="cc-5-complete-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Complete_Collection').'</div>
   </div>
   <div id="cc-5-trailer" class="poll-section-trailer">
     <p>'.lang::get('LANG_Trailer_Head').'</p>
@@ -2061,6 +2061,7 @@ jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1
 
 	global $indicia_templates;
 	$r .= $indicia_templates['loading_block_end'];
+
     return $r;
   }
 
