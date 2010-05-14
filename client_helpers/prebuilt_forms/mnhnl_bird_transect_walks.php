@@ -45,7 +45,6 @@ class iform_mnhnl_bird_transect_walks {
    * 		Alter location to WFS layer.
    * 	Location Allocation
    * 		Zoom map into location on request.
-   * 		Tidy up list - goes beyond pane boundary
    *  Indicia Core
    *  	improve outputAttributes to handle restrict to survey correctly.
    *
