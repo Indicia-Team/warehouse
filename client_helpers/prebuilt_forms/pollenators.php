@@ -545,6 +545,7 @@ jQuery('#".$id."').click(function(){
 ';
 
     data_entry_helper::$javascript .= "
+$.validator.messages.required = \"".lang::get('validation_required')."\";
 var sessionCounter = 0;
 
 $.fn.foldPanel = function(){
@@ -708,7 +709,7 @@ $('#cc-1-collection-details').ajaxForm({
 			          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			          \"&location_id=\"+data.outer_id+\"&parent_id=NULL&callback=?\", function(data) {
 					if (data.length>0) {
-			       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection='+data[0].id);
+			       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[0].id);
 			        	    jQuery('#cc-1-collection-details > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
 			        	    jQuery('#cc-2-floral-station > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
 			        	    // In this case we use loadAttributes to set the names of the attributes to include the attribute_value id.
@@ -832,8 +833,33 @@ $('#cc-1-reinit-button').click(function() {
     		<input type="submit" value="'.lang::get('LANG_Upload_Environment').'" class="btn-submit" />
       </form>
  	  <div id="cc-2-environment-image" class="poll-image"></div>
- 	  <div>'.lang::get('LANG_Environment_Notes').'</div>
  	</div>
+ 	<form id="cc-2-floral-station" action="'.iform_ajaxproxy_url($node, 'loc-smp-occ').'" method="POST">
+      <input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
+      <input type="hidden" id="location:id" name="location:id" value="" />
+      <input type="hidden" id="location:name" name="location:name" value=""/>
+      <input type="hidden" name="location:centroid_sref" />
+      <input type="hidden" name="location:centroid_geom" />
+      <input type="hidden" name="location:centroid_sref_system" value="4326" />
+      <input type="hidden" id="location_image:path" name="location_image:path" value="" />
+      <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
+      <input type="hidden" id="sample:id" name="sample:id" value=""/>
+      <input type="hidden" name="sample:date" value="2010-01-01"/>
+      <input type="hidden" name="determination:taxa_taxon_list_id" value=""/>  
+      <input type="hidden" name="determination:cms_ref" value="'.$uid.'" />
+      <input type="hidden" name="determination:email_address" value="'.$email.'" />
+      <input type="hidden" name="determination:person_name" value="'.$username.'" />  
+      <input type="hidden" name="occurrence:use_determination" value="Y"/>    
+      <input type="hidden" name="occurrence:record_status" value="C" />
+      <input type="hidden" id="location_image:id" name="location_image:id" value="" disabled="disabled" />
+      <input type="hidden" id="occurrence:id" name="occurrence:id" value="" disabled="disabled" />
+      <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
+      <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
+      <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
+      '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix'))
+ 	  .data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix')) 	 	
+      .data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix')).'
+    </form>
     <div class="poll-break"></div>
     <div>
       '.iform_pollenators::help_button($use_help, "location-help-button", $args['help_function'], $args['help_location_arg']).'
@@ -874,33 +900,6 @@ $('#cc-1-reinit-button').click(function() {
  	  </div></div>
       <div id="cc-2-loc-description"></div>
     </div>
-    <div class="poll-break"></div>
-    <form id="cc-2-floral-station" action="'.iform_ajaxproxy_url($node, 'loc-smp-occ').'" method="POST">
-    <input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
-    <input type="hidden" id="location:id" name="location:id" value="" />
-    <input type="hidden" id="location:name" name="location:name" value=""/>
-    <input type="hidden" name="location:centroid_sref" />
-    <input type="hidden" name="location:centroid_geom" />
-    <input type="hidden" name="location:centroid_sref_system" value="4326" />
-    <input type="hidden" id="location_image:path" name="location_image:path" value="" />
-    <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
-    <input type="hidden" id="sample:id" name="sample:id" value=""/>
-    <input type="hidden" name="sample:date" value="2010-01-01"/>
-    <input type="hidden" name="determination:taxa_taxon_list_id" value=""/>  
-    <input type="hidden" name="determination:cms_ref" value="'.$uid.'" />
-    <input type="hidden" name="determination:email_address" value="'.$email.'" />
-    <input type="hidden" name="determination:person_name" value="'.$username.'" />  
-    <input type="hidden" name="occurrence:use_determination" value="Y"/>    
-    <input type="hidden" name="occurrence:record_status" value="C" />
-    <input type="hidden" id="location_image:id" name="location_image:id" value="" disabled="disabled" />
-    <input type="hidden" id="occurrence:id" name="occurrence:id" value="" disabled="disabled" />
-    <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
-    <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
-    <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
-    '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix'))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix'))
- 	.data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix')).'  	 	
-   </form>
   </div>
   <div id="cc-2-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
     <div id="cc-2-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div>
@@ -970,7 +969,12 @@ jQuery('#search-insee-button').click(function(){
     		div.map.zoomToExtent(bounds);
     	}
     });
-	jQuery('#map')[0].map.addLayer(inseeLayer);
+	inseeLayer.events.register('loadend', {}, function(){
+		if(inseeLayer.features.length == 0){
+			alert(\"".lang::get('LANG_NO_INSEE')."\");
+		}
+    });
+    jQuery('#map')[0].map.addLayer(inseeLayer);
 	strategy.load({filter: new OpenLayers.Filter.Logical({
 			      type: OpenLayers.Filter.Logical.OR,
 			      filters: filters
@@ -1900,7 +1904,7 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 		var i;
        	for ( i=0;i<data.length;i++) {
        		if(data[i].completed == '0'){
-       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection='+data[i].id);
+       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[i].id);
        			// load up collection details: existing ID, location name and protocol
        			jQuery('#cc-1-collection-details,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
        			// main sample date is only set when collection is completed, so leave default.

@@ -27,26 +27,47 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_Collection_Name_Label' => 'Nommer votre collection'
+	'LANG_Invocation_Error' => "Avertissement: GET valide les paramètres dans l'URL"
+	,'LANG_Insufficient_Privileges' => "Vous n'avez pas de privilèges suffisants pour accéder à cette page."
 	
-	,'LANG_Invocation_Error' => 'Warning : invalid GET parameters in URL'
-	
-	,'LANG_Collection' => 'le collection'
-	,'LANG_Previous' => 'précédent'
+	,'LANG_Collection' => 'Retour à la Collection'
+	,'LANG_Previous' => 'Précédent'
 	,'LANG_Next' => 'Suivant'
 	,'LANG_Add_Preferred_Insect' => 'enregistrer dans mes insectes préférés'
+	,'LANG_Validate' => 'Valider'
 	
-	,'LANG_Indentification_Title' => 'IDENTIFICATION'
+	,'LANG_Indentification_Title' => 'Identification'
 	,'LANG_Doubt' => "émettre un doubt sur l'identification"
-	,'LANG_New_ID' => 'proposer une nouvelle identification'
+	,'LANG_New_ID' => 'Proposer une nouvelle identification'
 	,'LANG_Launch_ID_Key' => "Lancer la clé d'identification"
 	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la Liste"
 	,'LANG_Identify_Insect' => 'Indiquer le nom de cet insecte:'
 	,'LANG_Flower_Species' => "Nom de la Fleur"
+	,'LANG_Flower_Name' => "Nom de la Fleur"
 	,'LANG_Insect_Species' => "Nom de l'insecte"
-	,'LANG_History_Title' => 'Ancienne identification [champ "commentaire" Indicia]'
+	,'LANG_Insect_Name' => "Nom de l'insecte"
+	,'LANG_History_Title' => 'Ancienne identification'
+	,'LANG_Last_ID' => 'Dernières identification'
+	,'LANG_Display' => 'Afficher'
+	,'LANG_No_Determinations' => 'Aucun identifications enregistrées.'
+	,'LANG_No_Comments' => 'Aucun commentaire enregistré.'
 	
-	,'LANG_Additional_Info_Title' => 'INFORMATIONS COMPLÉMENTAIRES'
+	,'LANG_Main_Title' => 'Filtres'
+	,'LANG_Name_Filter_Title' => 'Nom'
+	,'LANG_Name' => "Collection créateur Nom d'utilisateur"
+	,'LANG_Date_Filter_Title' => 'Date'
+	,'LANG_Flower_Filter_Title' => 'Fleur'
+	,'LANG_Insect_Filter_Title' => 'Insecte'
+	,'LANG_Location_Filter_Title' => 'Localisation'
+	,'LANG_Georef_Label' => 'Nom de lieu'
+	,'LANG_INSEE' => 'INSEE No.'
+	,'LANG_NO_INSEE' => "Il n'ya pas de zone avec ce numéro INSEE (neuf ou ancien)."
+	,'LANG_Search_Insects' => 'Rechercher des Insectes'
+	,'LANG_Search_Collections' => 'Recherche de collections'
+	,'LANG_Insects_Search_Results' => 'Insectes'
+	,'LANG_Collections_Search_Results' => 'Collections'
+		
+	,'LANG_Additional_Info_Title' => 'Informations Complémentaires'
 	,'LANG_Date' => 'Date'
 	,'LANG_Time' => 'Heure'
 	,'LANG_To' => ' a '
@@ -56,21 +77,26 @@ $custom_terms = array(
 	,'In Shade' => "Fleur à l’ombre"
 	
 	,'LANG_Comments_Title' => 'COMMENTAIRES DES INTERNAUTES'
-	,'LANG_New_Comment' => 'ajouter un commentaire'
+	,'LANG_New_Comment' => 'Ajouter un commentaire'
 	,'LANG_Username' => 'Pseudo'
 	,'LANG_Email' => 'EMAIL'
 	,'LANG_Comment' => 'Commentaire'
-	,'LANG_Submit_Comment' => 'ajouter'
+	,'LANG_Submit_Comment' => 'Ajouter'
 	,'LANG_Comment_By' => "par : "
-	,'LANG_Reset_Filter' => 'réinitialiser'
+	,'LANG_Reset_Filter' => 'Réinitialiser'
 	
-	,'validation_required' => "S'il vous plaît entrer une valeur"
+	,'validation_required' => "Ce champ est obligatoire"
 	,'Yes' => 'Oui'
 	,'No' => 'Non'
 	,'LANG_Unknown' => '?'
 	,'LANG_Dubious' => '!'
+	,'LANG_Confirm_Express_Doubt' => 'Etes-vous sûr de vouloir exprimer des doutes au sujet de cette identification en cours?'
 	,'LANG_Doubt_Expressed' => "Quelqu'un a exprimé des doutes sur cette identification"
 	,'LANG_Doubt_Comment' => "J'ai exprimé des doutes sur cette détermination ..."
 	,'LANG_Max_Features_Reached' => "Le nombre de résultats retournés a dépassé le nombre maximal autorisé. La liste sera abrégée."
+	,'LANG_General' => 'Général'
+	,'LANG_Created_Between' => 'Créé entre'
+	,'LANG_And' => 'et'
+	,'LANG_OR' => 'ou'
 	
 );
