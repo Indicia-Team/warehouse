@@ -334,15 +334,19 @@
               }
 
               ol.append($("<li>").append(
-                $("<a href='#'>" + placename + "</a>").click((
-                  function(ref){
-                    return function() { 
-                      _displayLocation(div, ref, corner1, corner2);
-                    };
-                  }
-                )(ref))
+                $("<a href='#'>" + placename + "</a>")
+                  .click(function(e) {e.preventDefault();})
+                  .click((
+                    // use closures to persist the values of ref, corner1, corner 2 
+                    function(ref, corner1, corner2){
+                      return function() { 
+                        _displayLocation(div, ref, corner1, corner2);
+                      };
+                    }
+                  )(ref, corner1, corner2))
               ));
             });
+    
             ol.appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
             $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).show("fast");
           } else {
@@ -362,12 +366,12 @@
       // 4326 is the projection for points obtained from GeoPlanet.
       var epsg4326=new OpenLayers.Projection("EPSG:4326");
       refxy = ref.split(', ');
-      dataref = new OpenLayers.LonLat(refxy[1],refxy[0]).transform(epsg4326, div.map.projection);
-      corner1xy = ref.split(', ');
-      datac1 = new OpenLayers.LonLat(corner1xy[1],corner1xy[0]).transform(epsg4326, div.map.projection);
-      corner2xy = ref.split(', ');
-      datac2 = new OpenLayers.LonLat(corner2xy[1],corner2xy[0]).transform(epsg4326, div.map.projection);
-      _showWktFeature(div, dataref.wkt, div.map.searchLayer, [datac1.wkt, datac2.wkt]);
+      dataref = new OpenLayers.Geometry.Point(refxy[1],refxy[0]).transform(epsg4326, div.map.projection).toString();
+      corner1xy = corner1.split(', ');
+      datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg4326, div.map.projection).toString();
+      corner2xy = corner2.split(', ');
+      datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg4326, div.map.projection).toString();
+      _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
     }
 
     /**
