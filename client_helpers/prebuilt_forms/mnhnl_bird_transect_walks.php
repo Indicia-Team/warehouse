@@ -895,8 +895,9 @@ $('#controls').bind('tabsshow', function(event, ui) {
           'valueField'=>'id',
           'columns'=>2,
           'extraParams'=>$extraParams,
-        'suffixTemplate'=>'requiredsuffix',
-      'disabled'=>$disabledText
+          'suffixTemplate'=>'requiredsuffix',
+          'disabled'=>$disabledText,
+          'defaultCaption' => data_entry_helper::$entity_to_load['occurrence:taxon']
       );
       $r .= data_entry_helper::autocomplete($species_ctrl_args);
       $r .= data_entry_helper::outputAttribute($attributes[$args['occurrence_confidence_id']], array_merge($languageFilteredAttrOptions, array('noBlankText'=>'')));
