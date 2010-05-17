@@ -118,7 +118,7 @@ div#cc-1-summary {
   border: black thin solid;
 }
 
-.loading {  background: transparent url(../../../../../../../misc/throbber.gif) no-repeat 0px -18px;}
+.loading {  background: transparent url(/misc/throbber.gif) no-repeat 0px -18px;}
 
 .thumb-image {
    width: 100%;

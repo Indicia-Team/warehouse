@@ -28,11 +28,11 @@ global $custom_terms;
  */
 $custom_terms = array(
 	'LANG_Insufficient_Privileges' => "Vous n'avez pas de privilèges suffisants pour accéder à la page 'Créer d'un Collection'"
-	,'LANG_Collection_Name_Label' => 'Nommer votre collection'
-	,'Protocol' => 'Choisir un protocole'
+	,'LANG_Collection_Name_Label' => 'Nommer votre collection '
+	,'Protocol' => 'Choisir un protocole '
 	,'LANG_Modify' => 'MODIFIER'
 	,'LANG_Reinitialise' => 'INITIALISER'
-	,'LANG_Collection_Details' => 'Détails de la collection'
+	,'LANG_Collection_Details' => 'Nouvelle collection'
 	,'LANG_Protocol_Title_Label' => 'protocole'
 	,'LANG_Validate' => 'VALIDER'
 	,'LANG_Unable_To_Reinit' => 'Impossible de réinitialiser parce que les valeurs existantes ne passent pas la validation'
@@ -47,12 +47,12 @@ $custom_terms = array(
 	,'LANG_Launch_ID_Key' => "Lancer la clé d'identification"
 	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la Liste"
 	,'LANG_Upload_Environment' => "Charger l'image de son environnement"
-	,'LANG_Environment_Notes' => "Cett image doit rendre compte de l'environnement botanique de la fleur (typiquement un champ de 2 mètre de large)" 
 	,'LANG_Georef_Label' => 'Nom'
 	,'LANG_Georef_Notes' => '(Ce peut être un village ou ville, région, département ou code postal.)'
 	,'LANG_Location_Notes' => 'Localiser la fleur : placer votre repère sur la carte ou utilise les champs ci-dessous :'
 	,'LANG_Or' => 'ou :'
 	,'LANG_INSEE' => 'INSEE No.'
+	,'LANG_NO_INSEE' => "Il n'ya pas de zone avec ce numéro INSEE (neuf ou ancien)."
 	,'LANG_Lat' => 'Lat./Long.'
 	,'Flower Type' => "Il s'agit d'une fleur"
 	,'Habitat' => "Il s'agit d'un habitat"
@@ -73,6 +73,7 @@ $custom_terms = array(
 	,'Temperature Bands' => 'Température'
 	,'Wind' => 'Vent'
 	,'In Shade' => "Fleur à l’ombre"
+	,'Nearest Hive' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche"
 	
 	,'LANG_Photos' => "VOS PHOTOS D'INSECTE"
 	,'LANG_Photo_Blurb' => 'Télécharger ou modifier vos observations.'
@@ -99,7 +100,7 @@ $custom_terms = array(
 	,'LANG_Trailer_Point_3' => "vous pouvez modifier l'identification des insectes dans «Mes collections»"
 	,'LANG_Trailer_Point_4' => "vous pourrez créer une nouvelle collection"
 	
-	,'validation_required' => "S'il vous plaît entrer une valeur"
+	,'validation_required' => "Ce champ est obligatoire"
 	,'Yes' => 'Oui'
 	,'No' => 'Non'
 	,'LANG_Help_Button' => '?'

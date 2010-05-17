@@ -27,30 +27,46 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_Collection_Name_Label' => 'Name your collection'
+	'LANG_Invocation_Error' => 'Warning : invalid GET parameters in URL'
+	,'LANG_Insufficient_Privileges' => 'You do not have sufficient privileges to access this form.'
 	
-	,'LANG_Invocation_Error' => 'Warning : invalid GET parameters in URL'
-	
-	,'LANG_Collection' => 'Collection'
+	,'LANG_Collection' => 'Return to Collection'
 	,'LANG_Previous' => 'Previous'
 	,'LANG_Next' => 'Next'
 	,'LANG_Add_Preferred_Insect' => 'Add to My Preferred Insects'
+	,'LANG_Validate' => 'Save'
 	
-	,'LANG_Indentification_Title' => 'IDENTIFICATION'
+	,'LANG_Indentification_Title' => 'Identification'
 	,'LANG_Doubt' => "Express doubt about this identification"
 	,'LANG_New_ID' => 'Propose a new identification'
 	,'LANG_Launch_ID_Key' => "Launch the identification tool"
 	,'LANG_Choose_Taxon' => "Choose a taxon from the list"
 	,'LANG_Identify_Insect' => 'Identify this insect:'
 	,'LANG_Flower_Species' => "Flower name"
+	,'LANG_Flower_Name' => "Flower name"
 	,'LANG_Insect_Species' => "Insect name"
-	,'LANG_History_Title' => 'Old identifications'
-
+	,'LANG_Insect_Name' => "Insect name"
+	,'LANG_History_Title' => 'Prior identifications'
+	,'LANG_Last_ID' => 'Latest Identification'
+	,'LANG_Display' => 'Show'
+	,'LANG_No_Determinations' => 'No identifications recorded.'
+	,'LANG_No_Comments' => 'No comments recorded.'
+	
 	,'LANG_Main_Title' => 'Filters'
 	,'LANG_Name_Filter_Title' => 'Name'
 	,'LANG_Name' => 'Collection creator Username'
 	,'LANG_Date_Filter_Title' => 'Date'
-	
+	,'LANG_Flower_Filter_Title' => 'Flower'
+	,'LANG_Insect_Filter_Title' => 'Insect'
+	,'LANG_Location_Filter_Title' => 'Location'
+	,'LANG_Georef_Label' => 'Location'
+	,'LANG_INSEE' => 'INSEE No.'
+	,'LANG_NO_INSEE' => 'There is no area with this INSEE number (new or old).'
+	,'LANG_Search_Insects' => 'Search for Insects'
+	,'LANG_Search_Collections' => 'Search for Collections'
+	,'LANG_Insects_Search_Results' => 'Insects'
+	,'LANG_Collections_Search_Results' => 'Collections'
+		
 	,'LANG_Additional_Info_Title' => 'ADDITIONAL INFORMATION'
 	,'LANG_Date' => 'Date'
 	,'LANG_Time' => 'Time'
@@ -68,9 +84,11 @@ $custom_terms = array(
 	,'LANG_General' => 'General'
 	,'LANG_Created_Between' => 'Created Between'
 	,'LANG_And' => 'and'
+	,'LANG_OR' => 'or'
 	,'validation_required' => "Please provide a value"
 	,'LANG_Unknown' => '?'
 	,'LANG_Dubious' => '!'
+	,'LANG_Confirm_Express_Doubt' => 'Are you sure you wish to express doubt about this current identification?'
 	,'LANG_Doubt_Expressed' => 'Someone has expressed doubt about this identification.'
 	,'LANG_Doubt_Comment' => 'I have expressed doubt about this determination because...'
 	,'LANG_Max_Features_Reached' => 'The number of results returned has exceeded the maximum number allowed. The list will be abridged.'
