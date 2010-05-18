@@ -45,6 +45,7 @@ $custom_terms = array(
 	,'LANG_Flower_Species' => "Vous connaissez le taxon correspondant à cette fleur"
 	,'LANG_Flower_ID_Key_label' => "Vous ne connaissez pas le nom de cette fleur"
 	,'LANG_Launch_ID_Key' => "Lancer la clé d'identification"
+	,'LANG_Cancel_ID' => "Abandonner l'outil d'identification"
 	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la Liste"
 	,'LANG_Upload_Environment' => "Charger l'image de son environnement"
 	,'LANG_Georef_Label' => 'Nom'

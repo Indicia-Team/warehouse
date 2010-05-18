@@ -123,6 +123,38 @@ class iform_pollenator_gallery {
       ),
       
       array(
+          'name'=>'ID_tool_flower_url',
+          'caption'=>'Flower ID Tool URL',
+          'description'=>'The URL to call which triggers the Flower Identification Tool functionality.',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'ID_tool_flower_poll_dir',
+          'caption'=>'Flower ID Tool Module poll directory',
+          'description'=>'The directory which to poll for the results of the Flower ID Tool',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'ID_tool_insect_url',
+          'caption'=>'Insect ID Tool URL',
+          'description'=>'The URL to call which triggers the Insect Identification Tool functionality.',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
+          'name'=>'ID_tool_insect_poll_dir',
+          'caption'=>'Insect ID Tool Module poll directory',
+          'description'=>'The directory which to poll for the results of the Insect ID Tool',
+          'type'=>'string',
+          'group'=>'ID Tool',
+      	  'required'=>false
+      ),
+      array(
           'name'=>'INSEE_url',
           'caption'=>'URL for INSEE Search WFS service',
           'description'=>'The URL used for the WFS feature lookup when search for INSEE numbers.',
@@ -350,10 +382,11 @@ class iform_pollenator_gallery {
        ,'extraParams'=>$readAuth
        ,'survey_id'=>$args['survey_id']
     ));
+    $language = iform_lang_iso_639_2($args['language']);
     $defAttrOptions = array('extraParams'=>$readAuth,
     				'lookUpListCtrl' => 'checkbox_group',
     				'sep' => ' &nbsp; ',
-    				'language' => iform_lang_iso_639_2($args['language']),
+    				'language' => $language,
     				'suffixTemplate'=>'nosuffix');
     
 	// note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
@@ -401,7 +434,8 @@ class iform_pollenator_gallery {
     
 	$options2['divId'] = "map2";
     $options2['layers'] = array('locationLayer');
-	
+
+    // TBD Breadcrumb
  	$r .= '
 <div id="filter" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
@@ -504,7 +538,7 @@ class iform_pollenator_gallery {
 <div id="focus-collection" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="collection-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	  <div id="collection-title">
-	  	<span>TBD Breadcrumb</span>
+	  	<span> </span>
       </div>
 	</div>
 	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
@@ -553,7 +587,7 @@ class iform_pollenator_gallery {
 	      <span id="fo-next-button" class="ui-state-default ui-corner-all next-button">'.lang::get('LANG_Next').'</span>
 	  </div>
 	  <div id="fo-breadcrumb">
-	  	<span>TBD Breadcrumb</span>
+	  	<span> </span>
       </div>
 	</div>
 	<div id="fo-warning"></div>
@@ -585,13 +619,13 @@ class iform_pollenator_gallery {
 		<input type="hidden" name="determination:cms_ref" value="'.$uid.'" />  
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />
-        <p>TBD '.lang::get('LANG_Launch_ID_Key').'</p>
-        '.data_entry_helper::select($focus_insect_ctrl_args).'
+		'.($args['ID_tool_insect_url'] != '' && $args['ID_tool_insect_poll_dir'] ?  '<label for="insect-id-button">'.lang::get('LANG_Insect_ID_Key_label').' :</label><a id="insect-id-button" class="ui-state-default ui-corner-all poll-id-button" href="'.$args['ID_tool_insect_url'].'" target="_blank">'.lang::get('LANG_Launch_ID_Key').'</a>' : '')
+        .data_entry_helper::select($focus_insect_ctrl_args).'
         <input type="submit" id="id_submit_button" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Validate').'" />
       </form>
 	</div>';
     }
-    if(user_access('IForm n'.$node->nid.' insect expert')){
+    if(user_access('IForm n'.$node->nid.' flower expert')){
     	$r .= '
     <div id="fo-new-flower-id" class="ui-accordion-content ui-helper-reset ui-widget-content">
 	  <form id="fo-new-flower-id-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
@@ -600,8 +634,8 @@ class iform_pollenator_gallery {
 		<input type="hidden" name="determination:cms_ref" value="'.$uid.'" />  
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />
-        <p>TBD '.lang::get('LANG_Launch_ID_Key').'</p>
-        '.data_entry_helper::select($focus_flower_ctrl_args).'
+		'.($args['ID_tool_flower_url'] != '' && $args['ID_tool_flower_poll_dir'] ?  '<label for="flower-id-button">'.lang::get('LANG_Flower_ID_Key_label').' :</label><a id="flower-id-button" class="ui-state-default ui-corner-all poll-id-button" href="'.$args['ID_tool_flower_url'].'" target="_blank">'.lang::get('LANG_Launch_ID_Key').'</a>' : '')
+        .data_entry_helper::select($focus_flower_ctrl_args).'
         <input type="submit" id="id_submit_button" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Validate').'" />
       </form>
 	</div>';
@@ -783,7 +817,7 @@ loadCollection = function(id){
 				}});
 			$.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
    					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   					\"&occurrence_id=\" + flowerData[0].id + \"&callback=?\", function(attrdata) {
+   					\"&occurrence_id=\" + flowerData[0].id + \"&iso=".$language."&callback=?\", function(attrdata) {
 				if (attrdata.length>0) {
 					for(i=0; i< attrdata.length; i++){
 						if (attrdata[i].id){
@@ -840,7 +874,7 @@ loadCollection = function(id){
 			});
 			$.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
    					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   					\"&location_id=\" + collectionData[0].location_id + \"&callback=?\", function(attrdata) {
+   					\"&location_id=\" + collectionData[0].location_id + \"&iso=".$language."&callback=?\", function(attrdata) {
 				if (attrdata.length>0) {
 					for(i=0; i< attrdata.length; i++){
 						if (attrdata[i].id){
@@ -1518,7 +1552,7 @@ loadSampleAttributes = function(keyValue){
    			\"&sample_id=\" + keyValue + \"&callback=?\", function(attrdata) {
 		if (attrdata.length>0) {
 			for(i=0; i< attrdata.length; i++){
-				if (attrdata[i].id){
+				if (attrdata[i].id && (attrdata[i].iso == '' || attrdata[i].iso == '".$language."')){
 					switch(parseInt(attrdata[i].sample_attribute_id)){
 						case ".$args['start_time_attr_id'].":
 							jQuery('#sample_start_time').val(attrdata[i].value);
@@ -1548,7 +1582,7 @@ loadOccurrenceAttributes = function(keyValue){
 	jQuery('#focus-flower-type').empty();
 	$.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&occurrence_id=\" + keyValue + \"&callback=?\", function(attrdata) {
+   			\"&occurrence_id=\" + keyValue + \"&iso=".$language."&callback=?\", function(attrdata) {
 		if (attrdata.length>0) {
 			for(i=0; i< attrdata.length; i++){
 				if (attrdata[i].id){
@@ -1563,12 +1597,12 @@ loadLocationAttributes = function(keyValue){
 	habitat_string = '';
 	$.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&location_id=\" + keyValue + \"&callback=?\", function(attrdata) {
+   			\"&location_id=\" + keyValue + \"&iso=".$language."&callback=?\", function(attrdata) {
 		if (attrdata.length>0) {
 			for(i=0; i< attrdata.length; i++){
 				if (attrdata[i].id){
 					switch(parseInt(attrdata[i].location_attribute_id)){
-						case ".$args['flower_type_attr_id'].":
+						case ".$args['habitat_attr_id'].":
 							habitat_string = (habitat_string == '' ? attrdata[i] : (habitat_string + ' | ' + attrdata[i]));
 							break;
 			}}}
@@ -1792,19 +1826,20 @@ jQuery('#fo-next-button').click(function(){
   ";
     
     data_entry_helper::$onload_javascript .= "
-function addDrawnGeomToSelection (geometry) {
-    // Create the polygon as drawn
-    var feature = new OpenLayers.Feature.Vector(geometry, {});
-    polygonLayer.addFeatures([feature]);
-};
-polygonControl = new OpenLayers.Control.DrawFeature(polygonLayer, OpenLayers.Handler.Polygon, {drawFeature: addDrawnGeomToSelection});
-polygonLayer.map.addControl(this.polygonControl);
-polygonControl.activate();
-polygonLayer.map.searchLayer.events.register('featuresadded', {}, function(a1){
-	if(inseeLayer != null)
-		inseeLayer.destroyFeatures();
-	polygonLayer.destroyFeatures();
-});          
+	function addDrawnGeomToSelection (geometry) {
+    	// Create the polygon as drawn
+    	var feature = new OpenLayers.Feature.Vector(geometry, {});
+    	polygonLayer.addFeatures([feature]);
+	};
+    
+	polygonControl = new OpenLayers.Control.DrawFeature(polygonLayer, OpenLayers.Handler.Polygon, {drawFeature: addDrawnGeomToSelection});
+	polygonLayer.map.addControl(this.polygonControl);
+	polygonControl.activate();
+	polygonLayer.map.searchLayer.events.register('featuresadded', {}, function(a1){
+		if(inseeLayer != null)
+			inseeLayer.destroyFeatures();
+		polygonLayer.destroyFeatures();
+	});          
 ";
 
     switch($mode){

@@ -46,6 +46,7 @@ $custom_terms = array(
 	,'LANG_Choose_Taxon' => "Choose a Taxon from the list"
 	,'LANG_Flower_ID_Key_label' => "You don't know the name of this flower"
 	,'LANG_Launch_ID_Key' => "Launch the identification tool"
+	,'LANG_Cancel_ID' => "Abort the identification tool"
 	,'LANG_Upload_Environment' => 'Upload a picture of the Environment'
 	,'LANG_Location_Notes' => 'Flower Location : click on the map or use the fields below:'
 	,'LANG_Georef_Label' => 'Location'
