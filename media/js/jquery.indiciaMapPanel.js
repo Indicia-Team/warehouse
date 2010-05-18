@@ -53,11 +53,13 @@
     function _showWktFeature(div, wkt, layer, invisible) {
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
-      if ( opts.searchLayer && layer == div.map.searchLayer) feature.style = new style(true);
+      if ( opts.searchLayer && layer == div.map.searchLayer) {
+        feature.style = new style(true);
+      }
       layer.destroyFeatures();
       var features = [feature];
 
-      if(invisible != null){
+      if(invisible !== null){
         //there are invisible features that define the map extent
         $.each(invisible, function(i,corner){
           feature = parser.read(corner);
@@ -69,14 +71,14 @@
       layer.addFeatures(features);
       var bounds=layer.getDataExtent();
 
-      if(invisible == null) {
+      if(invisible === null) {
         // extend the boundary to include a buffer, so the map does not zoom too tight.
         var dy = (bounds.top-bounds.bottom) * div.settings.maxZoomBuffer;
         var dx = (bounds.right-bounds.left) * div.settings.maxZoomBuffer;
-    	  bounds.top = bounds.top + dy;
-    	  bounds.bottom = bounds.bottom - dy;
-    	  bounds.right = bounds.right + dx;
-    	  bounds.left = bounds.left - dx;
+          bounds.top = bounds.top + dy;
+          bounds.bottom = bounds.bottom - dy;
+          bounds.right = bounds.right + dx;
+          bounds.left = bounds.left - dx;
       }
 
       if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
@@ -151,7 +153,7 @@
           if (div.settings.clickedSrefPrecisionMax!=='') {
             precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
           }
-          var sref, outputSystem = _getSystem();
+          var sref, wkt, outputSystem = _getSystem();
           if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
             // no transform required
             if (div.map.getUnits()=='m') {
@@ -163,7 +165,7 @@
             if (outputSystem != '900913') {
               lonlat.transform(div.map.projection, div.indiciaProjection);
             }
-            var wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+            wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
             _setClickPoint({
              'sref' : sref,
              'wkt' : wkt
@@ -173,7 +175,7 @@
               // Indicia expects the WKT in 900913 (it's internal format)
               lonlat.transform(div.map.projection, div.indiciaProjection);
             }
-            var wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+            wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
             $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
                     "?wkt=" + wkt +
                     "&system=" + outputSystem +
@@ -193,7 +195,7 @@
       div.map.addControl(click);
       click.activate();
       if (div.settings.editLayer) {
-    	  div.map.editLayer.clickControl = click;
+        div.map.editLayer.clickControl = click;
       }
       
       // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
@@ -365,12 +367,12 @@
     { 
       // 4326 is the projection for points obtained from GeoPlanet.
       var epsg4326=new OpenLayers.Projection("EPSG:4326");
-      refxy = ref.split(', ');
-      dataref = new OpenLayers.Geometry.Point(refxy[1],refxy[0]).transform(epsg4326, div.map.projection).toString();
-      corner1xy = corner1.split(', ');
-      datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg4326, div.map.projection).toString();
-      corner2xy = corner2.split(', ');
-      datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg4326, div.map.projection).toString();
+      var refxy = ref.split(', ');
+      var dataref = new OpenLayers.Geometry.Point(refxy[1],refxy[0]).transform(epsg4326, div.map.projection).toString();
+      var corner1xy = corner1.split(', ');
+      var datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg4326, div.map.projection).toString();
+      var corner2xy = corner2.split(', ');
+      var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg4326, div.map.projection).toString();
       _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
     }
 
@@ -408,8 +410,8 @@
       // Sizes the div
       $(this).css('height', this.settings.height);
       if(this.settings.width != 'auto') {
-    	  $(this).css('width', this.settings.width)
-      };
+        $(this).css('width', this.settings.width);
+      }
 
       // If we're using a proxy
       if (this.settings.proxy)
@@ -433,8 +435,9 @@
         div.map.addLayer(tcLayer);
       });
       // OpenLayers does not automatically set up a layer switcher for tile cache layers
-      if (this.settings.tilecacheLayers.length>1)
+      if (this.settings.tilecacheLayers.length>1) {
         div.map.addControl(new OpenLayers.Control.LayerSwitcher());
+      }
 
       // Iterate over the preset layers, adding them to the map
       $.each(this.settings.presetLayers, function(i, item)
@@ -464,14 +467,14 @@
       });
 
       div.map.addLayers(this.settings.layers);
-	  
-	  // This hack fixes an IE8  bug where it won't display Google layers when switching using the Layer Switcher.
-	  div.map.events.register('changebaselayer', null, function(e) {
-	    // trigger layer redraw by changing the map size
-	    div.style.height = (parseInt(div.style.height)-1) + 'px';
-		// keep a local reference to the map div, so we can access it from the timeout
-		tmp=div;
-		// after half a second, reset the map size
+
+      // This hack fixes an IE8  bug where it won't display Google layers when switching using the Layer Switcher.
+      div.map.events.register('changebaselayer', null, function(e) {
+        // trigger layer redraw by changing the map size
+        div.style.height = (parseInt(div.style.height)-1) + 'px';
+        // keep a local reference to the map div, so we can access it from the timeout
+        tmp=div;
+        // after half a second, reset the map size
         setTimeout("tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px'", 500);
       }); 
 
@@ -504,7 +507,7 @@
           div.map.searchLayer = searchLayer;
           div.map.addLayer(div.map.searchLayer);
       } else {
-    	  div.map.searchLayer = div.map.editLayer;
+        div.map.searchLayer = div.map.editLayer;
       }
       // Add any map controls
       $.each(this.settings.controls, function(i, item) {
