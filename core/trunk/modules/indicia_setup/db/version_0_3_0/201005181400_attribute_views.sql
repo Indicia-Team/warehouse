@@ -122,13 +122,13 @@ CREATE OR REPLACE VIEW list_location_attribute_values AS
             WHEN 'D'::bpchar THEN lav.date_start_value::character varying::text
             WHEN 'V'::bpchar THEN (lav.date_start_value::character varying::text || ' - '::text) || lav.date_end_value::character varying::text
             ELSE NULL::text
-        END AS raw_value, la.termlist_id, l.iso, lw.website_id
+        END AS raw_value, la.termlist_id, lg.iso, lw.website_id
    FROM locations l
    JOIN locations_websites lw ON lw.location_id = l.id AND lw.deleted = false
    JOIN location_attribute_values lav ON lav.location_id = l.id AND lav.deleted = false
    JOIN location_attributes la ON la.id = lav.location_attribute_id AND la.deleted = false   
    LEFT JOIN (termlists_terms tt
    JOIN terms t ON t.id = tt.term_id
-   JOIN languages l ON l.id = t.language_id) ON tt.meaning_id = lav.int_value AND la.data_type = 'L'::bpchar
+   JOIN languages lg ON lg.id = t.language_id) ON tt.meaning_id = lav.int_value AND la.data_type = 'L'::bpchar
   WHERE l.deleted = false
   ORDER BY la.id;
