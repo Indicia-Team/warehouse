@@ -163,7 +163,7 @@ jQuery('#{parentControlId}').change();\n",
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
         '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />',
   'attribute_cell' => "\n<td class='scOccAttrCell ui-widget-content'>{content}</td>",
-  'taxon_label_cell' => "\n<td class='scTaxonCell ui-state-default'>{content}</td>",
+  'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\"{colspan}>{content}</td>",
   'helpText' => "\n<p class=\"helpText\">{helpText}</p>",
   'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
   'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.
@@ -2279,19 +2279,7 @@ class data_entry_helper extends helper_config {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls);
       }
       $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'" id="'.$options['id'].'">';
-      if ($options['header']) {
-        $grid .= "<thead class=\"ui-widget-header\"><tr>";
-        for ($i=0; $i<$options['columns']; $i++) {
-          $grid .= "<th>".lang::get('species_checklist.species')."</th>";
-          if ($options['checkboxCol']=='true') {
-            $grid .= "<th>".lang::get('species_checklist.present')."</th>";
-          }
-          foreach ($occAttrs as $a) {
-            $grid .= "<th>$a</th>";
-          }
-        }
-        $grid .= '</tr></thead>';
-      }
+      $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
       $rowIdx = 0;
       foreach ($taxalist as $taxon) {
@@ -2301,7 +2289,10 @@ class data_entry_helper extends helper_config {
         // If the taxon label template is PHP, evaluate it.
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
         // Now create the table cell to contain this.
-        $row = str_replace('{content}', $firstCell, $indicia_templates['taxon_label_cell']);
+        $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
+        $row = str_replace('{content}', $firstCell, 
+            str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell'])
+        );
         // go through list in entity to load and find first entry for this taxon, then extract the
         // record ID if if exists.
         $attributesForThisRow = $attributes;
@@ -2391,6 +2382,30 @@ class data_entry_helper extends helper_config {
 
   }
 
+  /**
+   * Retrieve the grid header row for the species checklist grid control.
+   * @param array $options Control options array.
+   * @param array $occAttrs Array of custom attributes included in the grid.
+   * @return string Html for the <thead> element.
+   */
+  private static function get_species_checklist_header($options, $occAttrs) {
+    $r = '';
+    if ($options['header']) {
+      $r .= "<thead class=\"ui-widget-header\"><tr>";
+      for ($i=0; $i<$options['columns']; $i++) {
+        $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
+        $r .= "<th$colspan>".lang::get('species_checklist.species')."</th>";
+        if ($options['checkboxCol']=='true') {
+          $r .= "<th>".lang::get('species_checklist.present')."</th>";
+        }
+        foreach ($occAttrs as $a) {
+          $r .= "<th>$a</th>";
+        }
+      }
+      $r .= '</tr></thead>';
+      return $r;
+    }
+  }
   /**
    * Private method to build the list of taxa to add to a species checklist grid.
    * @param array $options Options array for the control
@@ -2528,12 +2543,14 @@ class data_entry_helper extends helper_config {
   private static function get_species_checklist_clonable_row($options, $occAttrControls) {
     global $indicia_templates;
     $r = "<table style='display: none'><tbody><tr id='".$options['id']."-scClonableRow'>";
-    $r .= $indicia_templates['taxon_label_cell'];
+    $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
+    $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
     if ($options['checkboxCol']=='true') {
-      $r .= "<td class='scPresenceCell'><input type='checkbox' name='' value='' /></td>";
+      
+      $r .= "<td class=\"scPresenceCell\"><input type='checkbox' name='' value='' /></td>";
     }
     foreach ($occAttrControls as $oc) {
-      $r .= "<td class='scOccAttrCell'>$oc</td>";
+      $r .= str_replace('{content}', $oc, $indicia_templates['attribute_cell']);
     }
     $r .= "</tr></tbody></table>";
     return $r;
@@ -3148,7 +3165,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (!is_array($value)) {
         array_push($replaceTags, '{'.$param.'}');
         // allow sep to have <br/>
-        $value = $option == 'sep' ? $value : htmlSpecialChars($value);
+        $value = $param == 'sep' ? $value : htmlSpecialChars($value);
         // HTML attributes get automatically wrapped
         if (in_array($param, self::$html_attributes) && !empty($value))
           $value = " $param=\"$value\"";
