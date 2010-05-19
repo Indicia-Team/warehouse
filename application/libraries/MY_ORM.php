@@ -152,7 +152,6 @@ class ORM extends ORM_Core {
       }
     }
     $this->set_metadata();
-    kohana::log('debug', $array->as_array());
     if (parent::validate($array, $save)) {
       return TRUE;
     }
@@ -358,12 +357,13 @@ class ORM extends ORM_Core {
         $this->submission['fields'],
         $this->table_columns
     );
-    Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
-    Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
-    // If we're editing an existing record.
+    // If we're editing an existing record, merge with the existing data.
     if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
       $this->find($vArray['id']);
+      $vArray = array_merge($this->as_array(), $vArray);
     }
+    Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
+    Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
     try {
       if (array_key_exists('deleted', $vArray) && $vArray['deleted']=='t') {
         // For a record deletion, we don't want to validate and save anything. Just mark delete it.
