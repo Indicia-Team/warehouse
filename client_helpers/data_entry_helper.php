@@ -3772,6 +3772,7 @@ if (errors.length>0) {
     } else {
       throw new Exception('Cannot find website id in POST array!');
     }
+    // determiner and record status can be defined globally for the whole list.
     if (array_key_exists('occurrence:determiner_id', $arr)){
       $determiner_id = $arr['occurrence:determiner_id'];
     }
@@ -3783,7 +3784,7 @@ if (errors.length>0) {
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
-      if (strpos($key, 'sc') !== false){
+      if (substr($key, 0, 3)=='sc:'){
         // Don't explode the last element for occurrence attributes
         $a = explode(':', $key, 4);
         $records[$a[1]][$a[3]] = $value;
@@ -3794,7 +3795,7 @@ if (errors.length>0) {
       }
     }
     foreach ($records as $id => $record){
-      if ((array_key_exists('present', $record) && $record['present']) ||
+      if ((array_key_exists('present', $record)) ||
           (array_key_exists('id', $record)) ||
           ($include_if_any_data && implode('',$record)!='')) {
       if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
