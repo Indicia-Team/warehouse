@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Services
+ * @package  Services
  * @subpackage Data
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
 /**
  * Base controller class for data & reporting services.
  *
- * @package	Services
+ * @package  Services
  * @subpackage Data
  */
 class Data_Service_Base_Controller extends Service_Base_Controller {
@@ -81,7 +81,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         }
       }
     } else {
-    	$auth = new Auth();
+      $auth = new Auth();
       $authentic = ($auth->logged_in() || $auth->auto_login());
       $this->in_warehouse = $authentic;
     }
@@ -119,13 +119,15 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected function handle_request()
   {
     // Authenticate for a 'read' parameter
+    kohana::log('debug', 'Requesting data from Warehouse');
     $this->authenticate('read');
     $records=$this->read_records();
     $mode = $this->get_output_mode();
+    $responseStruct = $this->get_response_structure($records);
     switch ($mode)
     {
       case 'json':
-        $a =  json_encode($records);
+        $a =  json_encode($responseStruct);
         $this->content_type = 'Content-Type: application/json';
         if (array_key_exists('callback', $_GET))
         {
@@ -145,7 +147,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         {
           $xsl = '';
         }
-        $this->response = $this->xml_encode($records, $xsl, TRUE);
+        $this->response = $this->xml_encode($responseStruct, $xsl, TRUE);
         $this->content_type = 'Content-Type: text/xml';
         break;
       case 'csv':
@@ -164,6 +166,31 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         }
     }
   }
+  
+  /** 
+   * By default, a service request returns the records only. This can be controlled by the GET parameters
+   * wantRecords (default 1), wantColumns (default 0) and wantParameters (default 0). If there is only one of these 
+   * set to true, then the requested structure is returned alone. Otherwise the structure returned is 
+   * 'records' => $records, 'columns' => $this->view_columns.
+   * Note that if the report parameters are incomplete, then the response will always be just the 
+   * parameter request. 
+   */
+  protected function get_response_structure($records) {
+    // Do we need to request parameters?
+    if (isset($records['parameterRequest'])) {
+      return $records;
+    } else {
+      $wantRecords = !isset($_GET['wantRecords']) || $_GET['wantRecords']='0';
+      $wantColumns = isset($_GET['wantColumns']) && $_GET['wantColumns']='1';
+      if ($wantRecords && $wantColumns)
+        return array('records'=>$records, 'columns'=>$this->view_columns);
+      elseif ($wantColumns)
+        return $this->view_columns;
+      else
+        return $records;
+    }
+  }
+  
 
   /**
    * Set the content type and then issue the response.
@@ -185,42 +212,42 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   {
     // Get the column titles in the first row
     if(!is_array($array) || count($array) == 0)
-    	return '';
-	$headers = array_keys($array[0]);
+      return '';
+    $headers = array_keys($array[0]);
     if(isset($this->view_columns)){
-    	$newheaders = array();
-    	foreach ($headers as $header) {
-    		if(isset($this->view_columns[$header])){
-    			if(isset($this->view_columns[$header]['display'])){
-    				$newheader = $this->view_columns[$header]['display'];
-    			} else {
-    				$newheader = $header;
-    			}
-    			if(!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] == "true"){
-    				$newheaders[] = $newheader;
-    			}
-    		} else {
-    			$newheaders[] = $header;
-    		}
-	    }
-	    $headers = $newheaders;
+      $newheaders = array();
+      foreach ($headers as $header) {
+        if(isset($this->view_columns[$header])){
+          if(isset($this->view_columns[$header]['display'])){
+            $newheader = $this->view_columns[$header]['display'];
+          } else {
+            $newheader = $header;
+          }
+          if(!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] == "true"){
+            $newheaders[] = $newheader;
+          }
+        } else {
+          $newheaders[] = $header;
+        }
+      }
+      $headers = $newheaders;
     }
     $result = $this->get_csv($headers);
     foreach ($array as $row) {
-    	if(isset($this->view_columns)){
-    		$newrow = array();
-    		foreach ($row as $key => $value) {
-    			if(isset($this->view_columns[$key])){
-	   				if(!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] == "true"){
-    					$newrow[] = $value;
-    				}
-    			} else {
-    				$newrow[] = $value;
-    			}
-	    	}
-	    	$row = $newrow;
-    	}
-    	$result .= $this->get_csv(array_values($row));
+      if(isset($this->view_columns)){
+        $newrow = array();
+        foreach ($row as $key => $value) {
+          if(isset($this->view_columns[$key])){
+             if(!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] == "true"){
+              $newrow[] = $value;
+            }
+          } else {
+            $newrow[] = $value;
+          }
+        }
+        $row = $newrow;
+      }
+      $result .= $this->get_csv(array_values($row));
     }
     return $result;
   }

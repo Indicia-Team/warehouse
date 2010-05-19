@@ -115,8 +115,13 @@ class Report_Controller extends Data_Service_Base_Controller {
     	$params = $_GET;
     }
     $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
-    $this->view_columns = $data['content']['columns'];
-    return $data['content']['data'];
+    if (isset($data['content']['columns']))
+      $this->view_columns = $data['content']['columns'];
+    if (isset($data['content']['data']))
+      return $data['content']['data'];
+    else 
+      // A parameter request, since the report is being called without sufficient info
+      return $data['content'];
   }
 
   /**
