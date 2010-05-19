@@ -28,29 +28,25 @@ if ($_POST){
   echo $auth['write'];
   $readAuth = $auth['read'];
 ?>
-<input type='hidden' id='website_id' name='website_id' value='<?php echo $config['website_id']; ?>' />
-<input type='hidden' id='survey_id' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
-<input type='hidden' id='record_status' name='occurrence:record_status' value='C' />
-<?php echo data_entry_helper::date_picker(array(
+<input type='hidden' name='website_id' value='<?php echo $config['website_id']; ?>' />
+<input type='hidden' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
+<input type='hidden' name='occurrence:record_status' value='C' />
+<?php 
+echo data_entry_helper::date_picker(array(
     'label'=>'Date',
     'fieldname'=>'sample:date'
 ));
-//echo data_entry_helper::map();
+echo data_entry_helper::sref_and_system(array(
+  'label' => 'Grid Ref',
+  'fieldname' => 'sample:entered_sref'
+));
 ?>
 <div class="smaller">
 <?php 
-echo data_entry_helper::autocomplete(array(
-    'label'=>'Species',
-    'fieldname'=>'occurrence:taxa_taxon_list_id',
-    'table'=>'taxa_taxon_list',
-    'captionField'=>'taxon',
-    'valueField'=>'id',
-    'extraParams'=>$readAuth + array('taxon_list_id' => $config['species_checklist_taxon_list'])
-));
 echo data_entry_helper::species_checklist(array(
     'listId'=>$config['species_checklist_taxon_list'],
     'lookupListId'=>3,
-    'occAttrs'=>$config['species_checklist_occ_attributes'],
+    //'occAttrs'=>$config['species_checklist_occ_attributes'],
     'extraParams'=>$readAuth,
 	  'survey_id'=>$config['survey_id']
 ));

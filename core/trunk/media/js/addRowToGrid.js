@@ -3,21 +3,32 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     // on picking a result in the autocomplete, ensure we have a spare row
-    var label = labelTemplate
-        .replace(/\{taxon\}/g, data.taxon)
-        .replace(/\{common\}/g, data.common)
-        .replace(/\{authority\}/g, data.authority);
+    var label = labelTemplate;
+    // replace each field in the label template
+    $.each(data, function(field, value) {
+      regex = new RegExp('\\{' + field + '\\}', 'g');
+      label = label.replace(regex, value==null ? '' : value);
+    });
     // clear the event handler
     $(event.target).unbind('result', handleSelectedTaxon);
-    var parent=event.target.parentNode;
-    $(parent).html(label);
+    var taxonCell=event.target.parentNode;
+    $(taxonCell).attr('colspan',1);
+    var row=taxonCell.parentNode;
+    $(taxonCell).before('<td class="ui-state-default remove-row">X</td>');
+    $(taxonCell).html(label);
+    // Replace the tags in the row template with the taxa_taxon_list_ID
+    row.innerHTML = row.innerHTML.replace(/\{ttlId\}/g, data.id);
     // auto-check the row
-    var checkbox=$(parent.parentNode).find('.scPresenceCell input');
+    var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');
     // and rename the controls so they post into the right species record
     checkbox.attr('name', 'sc:' + data.id + '::present');
-    // Replace the tags in the row template with the taxa_taxon_list_ID
-    parent.parentNode.innerHTML = parent.parentNode.innerHTML.replace(/\{ttlId\}/g, data.id);
+    $(row).find('.remove-row').click(function(e) {
+        e.preventDefault();
+        // @todo unbind all event handlers
+        row = $(e.target.parentNode);
+        row.remove();
+      });
     // Finally, a blank row is added for the next record
     makeSpareRow(); 
   };
@@ -41,7 +52,8 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
         mode : 'json',
         qfield : 'taxon',
         auth_token: readAuth.auth_token,
-        nonce: readAuth.nonce
+        nonce: readAuth.nonce,
+        taxon_list_id: lookupListId
       },
       parse: function(data) {
         var results = [];

@@ -305,3 +305,8 @@ li.ui-state-error {
 tr.odd {
   background-color: #eeeeee;
 }
+
+.remove-row {
+  cursor: pointer;
+  width: 8px;
+}
