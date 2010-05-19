@@ -83,7 +83,7 @@ if ($parent_id != null && array_key_exists('parent_website_id', $values) && $val
   if ($this->auth->logged_in('CoreAdmin') || (!$website_id && $id !== null)) {
     // Core admin can select Warehouse as owner. Other users can only have this option in the list if the
     // list is already assigned to the warehouse in which case the list is read only.
-    echo "<option>&lt;Warehouse&gt;</option>";
+    echo '<option value="">&lt;Warehouse&gt;</option>';
   } 
   foreach ($other_data['websites'] as $website) {
     echo '  <option value="'.$website->id.'" ';
