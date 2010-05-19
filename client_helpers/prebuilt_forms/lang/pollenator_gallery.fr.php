@@ -53,8 +53,8 @@ $custom_terms = array(
 	,'LANG_No_Comments' => 'Aucun commentaire enregistré.'
 	
 	,'LANG_Filter_Title' => 'Filtres'
-	,'LANG_Name_Filter_Title' => 'Nom'
-	,'LANG_Name' => "Collection créateur Nom d'utilisateur"
+	,'LANG_Name_Filter_Title' => 'Pseudo'
+	,'LANG_Name' => "Pseudo"
 	,'LANG_Date_Filter_Title' => 'Date'
 	,'LANG_Flower_Filter_Title' => 'Fleur'
 	,'LANG_Insect_Filter_Title' => 'Insecte'

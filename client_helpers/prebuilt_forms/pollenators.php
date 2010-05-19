@@ -394,7 +394,7 @@ jQuery('#".$id."').click(function(){
 	".$func."(".$arg.");
 });
 ";
-  	return '<div id="'.$id.'" class="right ui-state-default ui-corner-all poll-help-button">'.lang::get('LANG_Help_Button').'</div>';
+  	return '<div id="'.$id.'" class="right ui-state-default ui-corner-all help-button">'.lang::get('LANG_Help_Button').'</div>';
   }
 
 /**
@@ -498,8 +498,8 @@ jQuery('#".$id."').click(function(){
   	<span id="cc-1-title-details">'.lang::get('LANG_Collection_Details').'</span>
     <div class="right">
       <div>
-        <span id="cc-1-reinit-button" class="ui-state-default ui-corner-all reinit-button poll-button-1">'.lang::get('LANG_Reinitialise').'</span>
-        <span id="cc-1-mod-button" class="ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
+        <span id="cc-1-reinit-button" class="ui-state-default ui-corner-all reinit-button">'.lang::get('LANG_Reinitialise').'</span>
+        <span id="cc-1-mod-button" class="ui-state-default ui-corner-all mod-button">'.lang::get('LANG_Modify').'</span>
       </div>
     </div>
   </div>
@@ -527,7 +527,7 @@ jQuery('#".$id."').click(function(){
     <input type="hidden" id="location:id"      name="location:id" value="" disabled="disabled" />
     <input type="hidden" id="sample:id"        name="sample:id" value="" disabled="disabled" />
     </form>
-    <div id="cc-1-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate').'</div>
+    <div id="cc-1-valid-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate').'</div>
   </div>  
 <div style="display:none" />
     <form id="cc-1-delete-collection" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
@@ -630,7 +630,7 @@ checkProtocolStatus = function(){
   	var checkedProtocol = jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter('[checked]').parent();
     if(jQuery('[name=location\\:name]').val() != '' && checkedProtocol.length > 0) {
         jQuery('#cc-1-title-details').empty().text(jQuery('#cc-1-collection-details input[name=location\\:name]:first').val());
-        jQuery('#cc-1-protocol-details').empty().show().text(\"".lang::get('LANG_Protocol_Title_Label')." : \" + checkedProtocol.find('label')[0].innerHTML.split('(')[0]);
+        jQuery('#cc-1-protocol-details').empty().show().text(\"".lang::get('LANG_Protocol_Title_Label')." : \" + checkedProtocol.find('label')[0].innerHTML;
     } else {
         jQuery('#cc-1-title-details').empty().text(\"".lang::get('LANG_Collection_Details')."\");
         // TODO autogenerate a name
@@ -804,7 +804,7 @@ $('#cc-1-reinit-button').click(function() {
 <div id="cc-2" class="poll-section">
   <div id="cc-2-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title"><span>'.lang::get('LANG_Flower_Station').'</span>
     <div class="right">
-      <span id="cc-2-mod-button" class="ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</span>
+      <span id="cc-2-mod-button" class="ui-state-default ui-corner-all mod-button">'.lang::get('LANG_Modify').'</span>
     </div>
   </div>
   <div id="cc-2-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active poll-section-body">
@@ -884,7 +884,7 @@ $('#cc-1-reinit-button').click(function() {
  		<input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
 	 		onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
             onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
-    	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default indicia-button" value="Search" />
+    	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default search-button" value="Search" />
         '.data_entry_helper::sref_textbox(array(
 		        'srefField'=>'place:entered_sref',
         		'systemfield'=>'place:entered_sref_system',
@@ -903,7 +903,7 @@ $('#cc-1-reinit-button').click(function() {
     </div>
   </div>
   <div id="cc-2-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-2-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Flower').'</div>
+    <div id="cc-2-valid-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Flower').'</div>
   </div>
 </div>';
 
@@ -918,7 +918,7 @@ var IDcounter = 0;
 
 flowerPoller = function(){
 	flowerTimer1 = setTimeout('flowerPoller();', ".$args['ID_tool_poll_interval'].");
-	$.get('".$args['ID_tool_flower_poll_dir'].session_id()."_'+IDcounter.toString(), function(data){
+	$.get('".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_flower_poll_dir']).session_id()."_'+IDcounter.toString(), function(data){
       var da = data.split('\\n');
       // first count number of returned items.
       // if > 1 put all into taxon_description.
@@ -933,16 +933,11 @@ flowerPoller = function(){
 	  	jQuery('#cc-2-flower-identify > select[name=flower\\:taxon_text_description]').val('');
 	  } else if(count == 1){
 	  	jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val('');
-	  	jQuery('#cc-2-flower-identify > select[name=flower\\:taxon_text_description]').val(da[1]);
-	  	var startPos = items[0].indexOf('<');
-	  	var endPos = items[0].lastIndexOf('>');
-	  	if(startPos >= 1 && endPos >=0 && startPos < endPos){
-	  		var taxon = items[0].substring(startPos + 1, endPos);
-	  		var x = jQuery('option').filter('[text='+taxon+']');
-	  		if(x.length > 0){
-		  		jQuery('#cc-2-flower-identify > select[name=flower\\:taxon_text_description]').val(items[0].substring(0,startPos - 1));
-	  			jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val(x[0].val());
-  			}
+	  	jQuery('#cc-2-flower-identify > select[name=flower\\:taxon_text_description]').val(items[0]);
+  		var x = jQuery('#cc-2-flower-identify').find('option').filter('[text='+items[0]+']');
+	  	if(x.length > 0){
+			jQuery('#cc-2-flower-identify > select[name=flower\\:taxon_text_description]').val('');
+	  		jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val(x[0].value);
   		}
 	  } else {
 	  	jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val('');
@@ -1002,7 +997,7 @@ jQuery('#search-insee-button').click(function(){
           strategies: [strategy],
           displayInLayerSwitcher: false,
 	      protocol: new OpenLayers.Protocol.WFS({
-              url:  '".$args['INSEE_url']."',
+              url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['INSEE_url'])."',
               featurePrefix: '".$args['INSEE_prefix']."',
               featureType: '".$args['INSEE_type']."',
               geometryName:'the_geom',
@@ -1230,13 +1225,13 @@ $('#cc-2-valid-button').click(function() {
     $r .= '
 <div id="cc-3" class="poll-section">
   <div id="cc-3-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title"><span>'.lang::get('LANG_Sessions_Title').'</span>
-    <div id="cc-3-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
+    <div id="cc-3-mod-button" class="right ui-state-default ui-corner-all mod-button">'.lang::get('LANG_Modify').'</div>
   </div>
   <div id="cc-3-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active poll-section-body">
   </div>
   <div id="cc-3-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-	<div id="cc-3-add-button" class="ui-state-default ui-corner-all poll-button-1 add-button">'.lang::get('LANG_Add_Session').'</div>
-    <div id="cc-3-valid-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Session').'</div>
+	<div id="cc-3-add-button" class="ui-state-default ui-corner-all add-button">'.lang::get('LANG_Add_Session').'</div>
+    <div id="cc-3-valid-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Session').'</div>
   </div>
 </div>
 <div style="display:none" />
@@ -1306,9 +1301,9 @@ addSession = function(){
 		.appendTo('#cc-3-body');
 	var newTitle = jQuery('<div class=\"poll-session-title\">".lang::get('LANG_Session')." '+sessionCounter+'</div>')
 		.appendTo(newSession);
-	var newModButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1\">".lang::get('LANG_Modify')."</div>')
+	var newModButton = jQuery('<div class=\"right ui-state-default ui-corner-all mod-button\">".lang::get('LANG_Modify')."</div>')
 		.appendTo(newTitle).hide();
-	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all poll-button-1 delete-button\">".lang::get('LANG_Delete_Session')."</div>')
+	var newDeleteButton = jQuery('<div class=\"right ui-state-default ui-corner-all delete-button\">".lang::get('LANG_Delete_Session')."</div>')
 		.appendTo(newTitle);	
 	newModButton.click(function() {
 		if(!validateAndSubmitOpenSessions()) return false;
@@ -1326,7 +1321,7 @@ addSession = function(){
 	jQuery('<input type=\"hidden\" name=\"sample:id\" value=\"\" disabled=\"disabled\" />').appendTo(newForm);\n";
     if($use_help){
         data_entry_helper::$javascript .= "
-	var helpDiv = jQuery('<div class=\"right ui-state-default ui-corner-all poll-help-button\">".lang::get('LANG_Help_Button')."</div>');
+	var helpDiv = jQuery('<div class=\"right ui-state-default ui-corner-all help-button\">".lang::get('LANG_Help_Button')."</div>');
 	helpDiv.click(function(){
 		".$args['help_function']."(".$args['help_session_arg'].");
 	});
@@ -1462,7 +1457,7 @@ jQuery('.mod-button').click(function() {
  	$r .= '
 <div id="cc-4" class="poll-section">
   <div id="cc-4-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title">'.lang::get('LANG_Photos').'
-    <div id="cc-4-mod-button" class="right ui-state-default ui-corner-all mod-button poll-button-1">'.lang::get('LANG_Modify').'</div>
+    <div id="cc-4-mod-button" class="right ui-state-default ui-corner-all mod-button">'.lang::get('LANG_Modify').'</div>
   </div>
   <div id="cc-4-photo-reel" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active photoReelContainer" >
   </div>
@@ -1511,11 +1506,11 @@ jQuery('.mod-button').click(function() {
  	.data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],
  			$defAttrOptions).'
     </form>
-    <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Insect').'</span>
-    <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Delete_Insect').'</span>
+    <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Insect').'</span>
+    <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all delete-button">'.lang::get('LANG_Delete_Insect').'</span>
   </div>
   <div id="cc-4-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <div id="cc-4-valid-photo-button" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Validate_Photos').'</div>
+    <div id="cc-4-valid-photo-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Photos').'</div>
   </div>
 </div>
 <div style="display:none" />
@@ -1536,8 +1531,8 @@ var insectTimer2;
 
 insectPoller = function(){
 	insectTimer1 = setTimeout('insectPoller();', ".$args['ID_tool_poll_interval'].");
-	$.get('".$args['ID_tool_insect_poll_dir'].session_id()."_'+IDcounter.toString(), function(data){
-      var da = data.split('\\n');
+	$.get('".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_insect_poll_dir']).session_id()."_'+IDcounter.toString(), function(data){
+	var da = data.split('\\n');
       // first count number of returned items.
       // if > 1 put all into taxon_description.
       // if = 1 rip out the description, remove the formatting, scan the flower select for it, and set the value. Set the taxon description.
@@ -1551,16 +1546,11 @@ insectPoller = function(){
 	  	jQuery('#cc-4-flower-identify > select[name=insect\\:taxon_text_description]').val('');
 	  } else if(count == 1){
 	  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val('');
-	  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxon_text_description]').val(da[1]);
-	  	var startPos = items[0].indexOf('<');
-	  	var endPos = items[0].lastIndexOf('>');
-	  	if(startPos >= 1 && endPos >=0 && startPos < endPos){
-	  		var taxon = items[0].substring(startPos + 1, endPos);
-	  		var x = jQuery('option').filter('[text='+taxon+']');
-	  		if(x.length > 0){
-		  		jQuery('#cc-4-insect-identify > select[name=insect\\:taxon_text_description]').val(items[0].substring(0,startPos - 1));
-	  			jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val(x[0].val());
-  			}
+	  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxon_text_description]').val(items[0]);
+	  	var x = jQuery('#cc-4-insect-identify').find('option').filter('[text='+items[0]+']');
+	  	if(x.length > 0){
+		  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxon_text_description]').val('');
+	  		jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val(x[0].value);
   		}
 	  } else {
 	  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val('');
@@ -1884,7 +1874,7 @@ $('#cc-4-valid-photo-button').click(function(){
        <input type="hidden" id="smpAttr:'.$args['complete_attr_id'].'" name="smpAttr:'.$args['complete_attr_id'].'" value="1" />
     </form>
    </div>
-   <div id="cc-5-complete-collection" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Complete_Collection').'</div>
+   <div id="cc-5-complete-collection" class="ui-state-default ui-corner-all complete-button">'.lang::get('LANG_Complete_Collection').'</div>
   </div>
   <div id="cc-5-trailer" class="poll-section-trailer">
     <p>'.lang::get('LANG_Trailer_Head').'</p>
@@ -1942,8 +1932,8 @@ $('#cc-5-complete-collection').click(function(){
    <p>'.lang::get('LANG_Final_2').'</p> 
    </div>
   <div id="cc-6-footer" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active poll-section-footer">
-    <a id="cc-6-consult-collection" href="" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Consult_Collection').'</a>
-    <a href="'.url('node/'.$node->nid).'" class="ui-state-default ui-corner-all poll-button-1">'.lang::get('LANG_Create_New_Collection').'</a>
+    <a id="cc-6-consult-collection" href="" class="ui-state-default ui-corner-all link-button">'.lang::get('LANG_Consult_Collection').'</a>
+    <a href="'.url('node/'.$node->nid).'" class="ui-state-default ui-corner-all link-button">'.lang::get('LANG_Create_New_Collection').'</a>
   </div>
 </div>
 </div></div>';
@@ -2171,8 +2161,8 @@ jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1
           strategies: [strategy],
           displayInLayerSwitcher: false,
 	      protocol: new OpenLayers.Protocol.WFS({
-              url:  '".$args['INSEE_url']."',
-              featurePrefix: '".$args['INSEE_prefix']."',
+              url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['INSEE_url'])."',
+	          featurePrefix: '".$args['INSEE_prefix']."',
               featureType: '".$args['INSEE_type']."',
               geometryName:'the_geom',
               featureNS: '".$args['INSEE_ns']."',

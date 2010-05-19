@@ -20,10 +20,6 @@
   border:black thin solid;
 }
 
-.collection-details{
-  display: inline-block;
-}
-
 #map2_container {
   display: inline-block;
 	width: 47%;
@@ -95,6 +91,19 @@
     padding:0px;
     width: 17px;
     height: 17px;
+}
+.reset-button {
+	float: right;
+}
+.fold-button {
+	float: right;
+    padding:0px;
+    width: 13px;
+    height: 13px;
+    background: url(/misc/arrow-desc.png) !important ;
+}
+.fold-button-folded {
+    background: url(/misc/arrow-asc.png) !important ;
 }
 .insect-unknown {
     margin-top:0px;
