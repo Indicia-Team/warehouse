@@ -53,10 +53,8 @@ $indicia_templates = array(
   'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
   'select_item' => '<option value="{value}" {selected} >{caption}</option>',
   'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
-  'select_item_selected' => 'selected="selected"',
   'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{options}</select>',
   'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
-  'listbox_item_selected' => 'selected="selected"',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
   'check_or_radio_group_item' => '<span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span>{sep}',
@@ -341,7 +339,8 @@ class data_entry_helper extends helper_config {
    */
   private static $html_attributes = array(
     'class' => 'class',
-    'outerClass' => 'class'
+    'outerClass' => 'class',
+    'selected' => 'selected'
   );
 
   /**
@@ -888,15 +887,19 @@ class data_entry_helper extends helper_config {
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
+  * Table name to get data from for the select options if the select is being populated by a service call.</li>
   * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
+  * Field to draw values to show in the control from if the select is being populated by a service call.</li>
   * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
+  * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
   * to the value of captionField.</li>
   * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
+  * should at least contain the read authorisation array if the select is being populated by a service call.</li>
+  * <li><b>lookupValues</b><br/>
+  * If the select is to be populated with a fixed list of values, rather than via a service call, then the
+  * values can be passed into this parameter as an associated array of key=>caption.
+  * </li>
   * <li><b>size</b><br/>
   * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
   * <li><b>multiselect</b><br/>
@@ -938,8 +941,7 @@ class data_entry_helper extends helper_config {
     $options = array_merge(
       array(
         'template' => 'listbox',
-        'itemTemplate' => 'listbox_item',
-        'selectedItemTemplate' => 'listbox_item_selected'
+        'itemTemplate' => 'listbox_item'
       ),
       $options
     );
@@ -1168,7 +1170,7 @@ class data_entry_helper extends helper_config {
 
       if (array_key_exists('readAuth', $options)) {
         // Convert the readAuth into a query string so it can pass straight to the JS class.
-        $options['readAuth']=self::array_to_query_string($options['readAuth']);
+        $options['readAuth']='&'.self::array_to_query_string($options['readAuth']);
         str_replace('&', '&amp;', $options['readAuth']);
       }
 
@@ -1360,14 +1362,21 @@ class data_entry_helper extends helper_config {
   * information about the column represented by the position within the array. The associative array for the column can contain
   * the following keys:
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
-  *  - caption: caption of the column, which defaults to the fieldname if not specified
+  *  - display: caption of the column, which defaults to the fieldname if not specified
+  *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
+  *      values for caption, url and javascript.
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
+  *  - visible: true or false, defaults to true
   *  of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
-  *  Note that template columns are note sortable by clicking grid headers.
+  *  Note that template columns cannot be sorted by clicking grid headers.
   * An example array for the columns option is:
   * array(
-  *   array('fieldname' => 'survey', 'caption' => 'Survey Title'),
-  *   array('caption' => 'action', 'template' => '<a href="www.mysite.com\survey\{id}\edit">Edit</a>'
+  *   array('fieldname' => 'survey', 'display' => 'Survey Title'),
+  *   array('display' => 'action', 'template' => '<a href="www.mysite.com\survey\{id}\edit">Edit</a>'),
+  *   array('display' => 'Actions', 'actions' => array(
+  *     array('caption' => 'edit')
+  *   ))
+  *   
   * )
   * </li>
   * <li><b>IncludeAllColumns</b>
@@ -1375,6 +1384,16 @@ class data_entry_helper extends helper_config {
   * option array are automatically added to the grid after any columns specified in the columns option array.
   * Therefore the default state for a report_grid control is to include all the report, view or table columns
   * in their default state, since the columns array will be empty.</li>
+  * <li><b>autoParamsForm</b>
+  * Defaults to true. If true, then if a report requires parameters, a parameters input form will be auto-generated
+  * at the top of the grid. If set to false, then it is possible to manually build a parameters entry HTML form if you
+  * follow the following guidelines. First, you need to specify the id option for the report grid, so that your
+  * grid has a reproducable id. Next, the form you want associated with the grid must itself have the same id, but with 
+  * the addition of params on the end. E.g. if the call to report_grid specifies the option 'id' to be 'my-grid' then 
+  * the parameters form must be called 'my-grid-params'. Finally the input controls which define each parameter must have 
+  * the name 'param-id-' followed by the actual parameter name, replacing id with the grid id. So, in our example, 
+  * a parameter called survey will need an input or select control with the name attribute set to 'param-my-grid-survey'.
+  * The submit button for the form should have the method set to "get" and should post back to the same page.</li>
   * </ul>
   * @todo Action column or other configurable links in grid
   * @todo Allow additional params to filter by table column or report parameters
@@ -1383,138 +1402,125 @@ class data_entry_helper extends helper_config {
   * in a form on the page.
   */
   public static function report_grid($options) {
-    // Generate a unique number for this grid, in case there are 2 on a page.
-    $uniqueId = rand(0,10000);
-    // If the caller has specified a grid ID, then we can allow multiple grids on a page with their own pagination
-    $useIdInUrls = isset($options['id']);
-    $options = array_merge(array(
-      'mode' => 'report',
-      'id' => 'grid-'.$uniqueId,
-      'itemsPerPage' => 20,
-      'class' => 'ui-widget ui-widget-content',
-      'thClass' => 'header',
-      'altRowClass' => 'odd',
-      'columns' => array(),
-      'includeAllColumns' => true
-    ), $options);
+    self::add_resource('fancybox');
+    self::$javascript .= 'jQuery("a.fancybox").fancybox();';
+    $options = self::get_report_grid_options($options);
     // Output a div to keep the grid and pager together
     $r = '<div id="'.$options['id'].'">';
-    // Build the part of the data request URL that will specify the sort order and pagination
-    $extra = '&limit='.($options['itemsPerPage']+1);
-    $pageKey = 'page' . ($useIdInUrls ? $options['id'] : '');
-    // Get the $_GET variable name for the page, orderby and sortdir.
-    if (isset($_GET[$pageKey]) && $_GET[$pageKey]>0)
-      $page = $_GET[$pageKey];
-    else
-      $page = 0;
-    if ($page)
-      $extra .= '&offset='.($page * $options['itemsPerPage']);
-    $orderbyKey = 'orderby' . ($useIdInUrls ? $options['id'] : '');
-    if (isset($_GET[$orderbyKey]))
-      $orderby = $_GET[$orderbyKey];
-    else
-      $orderby = null;
-    if ($orderby)
-      $extra .= "&orderby=$orderby";
-    $sortdirKey = 'sortdir' . ($useIdInUrls ? $options['id'] : '');
-    if (isset($_GET[$sortdirKey]))
-      $sortdir = $_GET[$sortdirKey];
-    else
-      $sortdir = 'ASC';
-    if ($sortdir && $orderby)
-      $extra .= "&sortdir=$sortdir";
-    $data = self::get_report_data($options, $extra);
-
-    // Add any columns that don't have a column definition to the end of the columns list, by first
-    // building an array of the column names of the columns we did specify, then adding any missing fields
-    // from the results to the end of the options['columns'] array.
-    if ($options['includeAllColumns']) {
-      $specifiedCols = array();
-      foreach ($options['columns'] as $col) {
-        if (isset($col['fieldname'])) $specifiedCols[] = $col['fieldname'];
-      }
-      foreach ($data[0] as $resultField => $value) {
-        if (!in_array($resultField, $specifiedCols))
-          $options['columns'][]=array('fieldname'=>$resultField);
+    // Work out the names and current values of the params we expect in the report request URL for sort and pagination
+    $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
+    $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
+    // set the limit to one higher than we need, so the extra row can trigger the pagination next link
+    $extraParams = '&limit='.($options['itemsPerPage']+1).'&wantColumns=1&wantParameters=1';
+    $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
+     
+    // Add in the sort parameters
+    foreach ($sortAndPageUrlParams as $param => $content) {
+      if ($content['value']!=null) {
+        if ($param != 'page') 
+          $extraParams .= '&' . $param .'='. $content['value'];
       }
     }
 
-    // Build a basic URL path back to this page, but with the page, sortdir and orderby removed
-    $pageUrl = 'http'.((empty($_SERVER['HTTPS']) && $_SERVER['SERVER_PORT']!=443) ? '' : 's').'://'.$_SERVER['HTTP_HOST'].$_SERVER['PHP_SELF'].'?';
-    // include any $_GET parameters to reload the same page, except the page & sort parameters which will be added to each link
-    foreach ($_GET as $key => $value) {
-      if ($key != $pageKey && $key != $orderbyKey && $key != $sortdirKey)
-        $pageUrl .= "$key=$value&";
+    $response = self::get_report_data($options, $extraParams);
+    if (isset($response['error'])) return $response['error'];
+
+    if (isset($response['parameterRequest'])) {
+      $currentParamValues = self::get_report_grid_url_params($options);
+      $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+      // if we have a complete set of parameters in the URL, we can re-run the report to get the data
+      if (count($currentParamValues)==count($response['parameterRequest'])) {
+        $response = self::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues));
+        if (isset($response['error'])) return $response['error'];
+        $records = $response['records'];
+      }
+    } else {
+      $records = $response['records'];
     }
+    
+    self::report_grid_get_columns($response, $options);
+    $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
 
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\"><thead class=\"ui-widget-header\"><tr>\n";
     // build a URL with just the sort order bit missing, so it can be added for each table heading link
-    $sortUrl = $pageUrl . ($page ? "$pageKey=$page&" : '');
-    if (count($data)>0) {
-      foreach ($options['columns'] as $field) {
-        if (isset($field['visible']) && $field['visible']===false)
-          continue; // skip this column as marked invisible
-        // allow the caption to be overriden in the column specification
-        $caption = isset($field['caption']) ? $field['caption'] : $field['fieldname'];
-        if (isset($field['fieldname'])) {
-          $sortLink = "$sortUrl$orderbyKey=$field";
-          // reverse sort order if already sorted by this field in ascending dir99
-          if ($orderby==$field && $sortdir!='DESC')
-            $sortLink = "$sortLink&$sortdirKey=DESC";
+    $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ? 
+        $sortAndPageUrlParams['page']['name'].'='.$sortAndPageUrlParams['page']['value'].'&' :
+        ''
+    );
+    $sortdirval = $sortAndPageUrlParams['sortdir']['value'] ? strtolower($sortAndPageUrlParams['sortdir']['value']) : 'asc';
+    foreach ($options['columns'] as $field) {
+      if (isset($field['visible']) && $field['visible']=='false')
+        continue; // skip this column as marked invisible
+      // allow the display caption to be overriden in the column specification
+      $caption = empty($field['display']) ? $field['fieldname'] : $field['display'];
+      if (isset($field['fieldname'])) {
+        if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
+        $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
+        // reverse sort order if already sorted by this field in ascending dir
+        if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
+          $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
+        if (!isset($field['img']) || $field['img']!='true')
           $caption = "<a href=\"$sortLink\" title=\"Sort by $caption\">$caption</a>";
-          // set a style for the sort order
-          $orderStyle = ($orderby==$field) ? ' '.strtolower($sortdir) : '';
-		  $orderStyle .= ' sortable';
-          $fieldId = ' id="' . $options['id'] . '-th-' . $field['fieldname'] . '"';
-        } else {
-          $orderStyle = '';
-          $fieldId = '';
-        }
-
-        $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
+        // set a style for the sort order
+        $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
+        $orderStyle .= ' sortable';
+        $fieldId = ' id="' . $options['id'] . '-th-' . $field['orderby'] . '"';
+      } else {
+        $orderStyle = '';
+        $fieldId = '';
       }
+
+      $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
     }
     $r .= "</tr></thead><tbody>\n";
     $rowClass = '';
     $outputCount = 0;
-    foreach ($data as $row) {
-      // Don't output the additional row we requested just to check if the next page link is required.
-      if ($outputCount>=$options['itemsPerPage'])
-        break;
-      $r .= "<tr $rowClass>";
-      foreach ($options['columns'] as $field) {
-        if (isset($field['visible']) && $field['visible']===false)
-          continue; // skip this column as marked invisible
-        if (isset($field['template']))
-          $value = self::mergeParamsIntoTemplate($row, $field['template'], true);
-        else
-          $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
-        $r .= "<td>$value</td>\n";
+    $imagePath = data_entry_helper::$base_url.(isset(data_entry_helper::$indicia_upload_path) ? data_entry_helper::$indicia_upload_path : 'upload').'/';
+    if (count($records)>0) {
+      foreach ($records as $row) {
+        // Don't output the additional row we requested just to check if the next page link is required.
+        if ($outputCount>=$options['itemsPerPage'])
+          break;
+        $r .= "<tr $rowClass>";
+        foreach ($options['columns'] as $field) {
+          if (isset($field['visible']) && $field['visible']=='false')
+            continue; // skip this column as marked invisible
+          if (isset($field['actions']))
+            $value = self::get_report_grid_actions($field['actions'],$row);
+          elseif (isset($field['template']))
+            $value = self::mergeParamsIntoTemplate($row, $field['template'], true);
+          else
+            $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
+          if (isset($field['img']) && $field['img']=='true' && !empty($value))
+            $value = "<a href=\"$imagePath$value\" class=\"fancybox\"><img src=\"$imagePath"."thumb-$value\" /></a>";
+          $r .= "<td>$value</td>\n";
+        }
+        $r .= '</tr>';
+        $rowClass = empty($rowClass) ? ' class="'.$options['altRowClass'].'"' : '';
+        $outputCount++;
       }
-      $r .= '</tr>';
-      $rowClass = empty($rowClass) ? ' class="'.$options['altRowClass'].'"' : '';
-      $outputCount++;
     }
     $r .= "</tbody></table>\n";
     // Output pagination links
-    $pagLinkUrl = $pageUrl.($orderby ? "$orderbyKey=$orderby&" : '');
-    $pagLinkUrl .= $sortdir ? "$sortdirKey=$sortdir&" : '';
+    $pagLinkUrl = $pageUrl . ($sortAndPageUrlParams['orderby']['value'] ? $sortAndPageUrlParams['orderby']['name'].'='.$sortAndPageUrlParams['orderby']['value'].'&' : '');
+    $pagLinkUrl .= $sortAndPageUrlParams['sortdir']['value'] ? $sortAndPageUrlParams['sortdir']['name'].'='.$sortAndPageUrlParams['sortdir']['value'].'&' : '';
     $r .= "<div class=\"pager\">\n";
     // If not on first page, we can go back.
-    if ($page>0) {
-      $prev = max(0, $page-1);
-      $r .= "<a class=\"prev\" href=\"$pagLinkUrl$pageKey=$prev\">&#171 previous</a> \n";
+    if ($sortAndPageUrlParams['page']['value']>0) {
+      $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
+      $r .= "<a class=\"prev\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">&#171 previous</a> \n";
     }
     // pagination separator if both links are present
-    if ($page>0 && count($data)>$options['itemsPerPage'])
+    if ($sortAndPageUrlParams['page']['value']>0 && count($records)>$options['itemsPerPage'])
       $r .= ' &#166; ';
     // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
-    if (count($data)>$options['itemsPerPage']) {
-      $next = $page + 1;
-      $r .= "<a class=\"next\" href=\"$pagLinkUrl$pageKey=$next\">next &#187</a> \n";
+    if (count($records)>$options['itemsPerPage']) {
+      $next = $sortAndPageUrlParams['page']['value'] + 1;
+      $r .= "<a class=\"next\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">next &#187</a> \n";
     }
     $r .= "</div></div>\n";
+    
     // Now AJAXify the grid
     self::add_resource('reportgrid');
     self::$javascript .= "$('#".$options['id']."').reportgrid({
@@ -1524,6 +1530,7 @@ class data_entry_helper extends helper_config {
   auth_token: '".$options['readAuth']['auth_token']."',
   nonce: '".$options['readAuth']['nonce']."',
   url: '".parent::$base_url."',
+  imagePath: '".$imagePath."',
   altRowClass: '".$options['altRowClass']."'";
     if (isset($orderby))
       self::$javascript .= ",
@@ -1535,6 +1542,265 @@ class data_entry_helper extends helper_config {
       self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
 });\n";
     return $r;
+  }
+  
+  /**
+   * Works out the orderby, sortdir and page URL param names for this report grid, and also gets their
+   * current values.
+   * @param $options Control options array
+   * @return array Contains the orderby, sortdir and page params, as an assoc array. Each array value
+   * is an array containing name & value. 
+   */
+  private function get_report_grid_sort_page_url_params($options) {
+    $orderbyKey = 'orderby' . (isset($options['id']) ? '-'.$options['id'] : '');
+    $sortdirKey = 'sortdir' . (isset($options['id']) ? '-'.$options['id'] : '');
+    $pageKey = 'page' . (isset($options['id']) ? '-'.$options['id'] : '');
+    return array(
+      'orderby' => array(
+        'name' => $orderbyKey,
+        'value' => isset($_GET[$orderbyKey]) ? $_GET[$orderbyKey] : null
+      ),
+      'sortdir' => array(
+        'name' => $sortdirKey,
+        'value' => isset($_GET[$sortdirKey]) ? $_GET[$sortdirKey] : null
+      ),
+      'page' => array(
+        'name' => $pageKey,
+        'value' => isset($_GET[$pageKey]) ? $_GET[$pageKey] : null
+      )
+    );
+  }
+    
+  
+  /** 
+   * Build a url suitable for inclusion in the links for the report grid column headings or pagination
+   * bar. This effectively re-builds the current page's URL, but drops the query string parameters that 
+   * indicate the sort order and page number.
+   * @param array $sortAndPageParams List of the sorting and pagination parameters which should be excluded.
+   * @return unknown_type
+   */
+  private function report_grid_get_reload_url($sortAndPageUrlParams) {
+    // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the 
+    // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
+    // using Apache mod_alias but we don't want to know about that)
+    $reloadUrl = self::get_reload_link_parts();
+    // Build a basic URL path back to this page, but with the page, sortdir and orderby removed
+    $pageUrl = $reloadUrl['path'].'?';
+    // find the names of the params we must not include
+    $excludedParams = array();
+    foreach($sortAndPageUrlParams as $param) {
+      $excludedParams[] = $param['name'];
+    }
+    foreach ($reloadUrl['params'] as $key => $value) {
+      if (!in_array($key, $excludedParams)) 
+        $pageUrl .= "$key=$value&";
+    }
+    return $pageUrl;
+  }
+  
+  /**
+   * Private function that builds a parameters form according to a parameterRequest recieved
+   * when calling a report. If the autoParamsForm is false then an empty string is returned.
+   * @param $response
+   * @return string HTML for the form.
+   */
+  private function get_report_grid_parameters_form($response, $options, $params) {
+    if ($options['autoParamsForm']) {
+      // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the 
+      // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
+      // using Apache mod_alias but we don't want to know about that)
+      $reloadUrl = self::get_reload_link_parts();
+      $r = '<form action="'.$reloadUrl['path'].'" method="get" id="'.$options['id'].'-params">'."\n";
+      // Output any other get parameters from our URL as hidden fields
+      foreach ($reloadUrl['params'] as $key => $value) {
+        // ignore any parameters that are going to be in the grid parameters form
+        if (substr($key,0,6)!='param-')
+          $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
+      }
+      foreach($response['parameterRequest'] as $key=>$info) {
+        $ctrlOptions = array(
+          'label' => $info['display'],
+          'helpText' => $info['description'],
+          'fieldname' => 'param-' . (isset($options['id']) ? $options['id'] : '')."-$key"
+        );
+        // If this parameter is in the URL, put it in the control
+        if (isset($params[$key])) {
+          $ctrlOptions['default'] = $params[$key];
+        }
+        if ($info['datatype']=='lookup' && isset($info['population_call'])) {
+          // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
+          $popOpts = explode(':', $info['population_call']);
+          // @todo Support report calls to populate the lookup
+          $ctrlOptions = array_merge($ctrlOptions, array(
+            'table'=>$popOpts[1],
+            'valueField'=>$popOpts[2],
+            'captionField'=>$popOpts[3],
+            'blankText'=>'<'.lang::get('please select').'>',
+            'extraParams'=>$options['readAuth']
+          ));
+          $r .= data_entry_helper::select($ctrlOptions);
+        } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
+          // Convert the lookup values into an associative array
+          $lookups = explode(',', $info['lookup_values']);
+          $lookupsAssoc = array();
+          foreach($lookups as $lookup) {
+            $lookup = explode(':', $lookup);
+            $lookupsAssoc[$lookup[0]] = $lookup[1];
+          } 
+          
+          $ctrlOptions = array_merge($ctrlOptions, array(
+            'blankText'=>'<'.lang::get('please select').'>',
+            'lookupValues' => $lookupsAssoc
+          ));
+          $r .= data_entry_helper::select($ctrlOptions);
+        } else {
+          $r .= data_entry_helper::text_input($ctrlOptions);
+        }
+      }
+      $r .= '<input type="submit" value="'.lang::get('Run Report').'"/>'."\n";
+      $r .= "</form>\n";
+      return $r;
+    } else {
+      return $r;
+    }
+  }
+  
+  /**
+   * Add any columns that don't have a column definition to the end of the columns list, by first
+   * building an array of the column names of the columns we did specify, then adding any missing fields
+   * from the results to the end of the options['columns'] array.
+   * @param $response
+   * @param $options
+   * @return unknown_type
+   */
+  private function report_grid_get_columns($response, &$options) {
+    if ($options['includeAllColumns'] && isset($response['columns'])) {
+      $specifiedCols = array();
+      $actionCols = array();
+      $idx=0;
+      foreach ($options['columns'] as $col) {
+        if (isset($col['fieldname'])) $specifiedCols[] = $col['fieldname'];
+        // action columns need to be removed and added to the end
+        if (isset($col['actions'])) {
+          // remove the action col from its current location, store it so we can add it to the end
+          unset($options['columns'][$idx]);
+          $actionCols[] = $col;
+        }
+        $idx++;
+      }
+      foreach ($response['columns'] as $resultField => $value) {
+        if (!in_array($resultField, $specifiedCols)) {
+          $options['columns'][] = array_merge(
+            $value,
+            array('fieldname'=>$resultField)
+          );
+        }
+      }
+      // add the actions columns back in at the end
+      $options['columns'] = array_merge($options['columns'], $actionCols);
+    }
+  }
+  
+  private function get_report_grid_actions($actions, $row) {
+    $links = array();
+    // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
+    // the url is being rewritten.
+    $currentUrl = self::get_reload_link_parts();
+    $row['currentUrl'] = $currentUrl['path'];
+    foreach ($actions as $action) { 
+      if (isset($action['url'])) {
+        $action['url'].= (strpos($action['url'], '?')===false) ? '?' : '&';
+        // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
+        $urlParams = array_merge($currentUrl['params'], isset($action['urlParams']) ? $action['urlParams'] : null);
+        $href=' href="'.self::mergeParamsIntoTemplate($row, $action['url'].self::array_to_query_string($urlParams), true).'"';
+      } else {
+        $href='';
+      }
+      if (isset($action['javascript'])) {
+        $onclick=' onclick="'.self::mergeParamsIntoTemplate($row,$action['javascript'],true).'"';
+      } else {
+        $onclick = '';
+      }
+      $links[] = "<a class=\"indicia-button action-button ui-state-default ui-corner-all\"$href$onclick>".$action['caption'].'</a>';
+    }
+    return implode('<br/>', $links);
+  }
+  
+  /**
+   * Utility method that returns the parts required to build a link back to the current page.  
+   * @return array Associative array containing path and params (itself a key/value paired associative array).
+   */
+  public function get_reload_link_parts() {
+    $split = strpos($_SERVER['REQUEST_URI'], '?');
+    $gets = $split!==false ? explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) : array();
+    $getsAssoc = array();
+    foreach ($gets as $get) {
+      list($key, $value) = explode('=', $get);
+      $getsAssoc[$key] = $value;
+    }
+    return array(
+      'path'=>$_SERVER['REDIRECT_URL'],
+      'params' => $getsAssoc
+    );
+  }
+  
+  private function get_report_grid_options($options) {
+    // Generate a unique number for this grid, in case there are 2 on a page.
+    $uniqueId = rand(0,10000);
+    $options = array_merge(array(
+      'mode' => 'report',
+      'id' => 'grid-'.$uniqueId,
+      'itemsPerPage' => 20,
+      'class' => 'ui-widget ui-widget-content',
+      'thClass' => 'header',
+      'altRowClass' => 'odd',
+      'columns' => array(),
+      'includeAllColumns' => true,
+      'autoParamsForm' => true,
+      'extraParams' => array()
+    ), $options);
+    return $options;
+  }
+  
+  
+  /**
+   * Returns the query string describing additional sort query params for a 
+   * data request to populate the report grid.
+   */
+  private function get_report_grid_data_request_sort_params($options, $paramKeyNames) {
+    $r = '';
+    if (isset($_GET[$paramKeyNames['orderby']]))
+      $orderby = $_GET[$paramKeyNames['orderby']];
+    else
+      $orderby = null;
+    if ($orderby)
+      $r .= "&orderby=$orderby";
+    if (isset($_GET[$paramKeyNames['sortdir']]))
+      $sortdir = $_GET[$paramKeyNames['sortdir']];
+    else
+      $sortdir = 'ASC';
+    if ($sortdir && $orderby)
+      $r .= "&sortdir=$sortdir";
+    return $r;
+  }
+  
+  /**
+   * Returns the parameters for the report grid data services call which are embedded in the query string.
+   * @param $options
+   * @return Array Associative array of parameters.
+   */
+  private function get_report_grid_url_params($options) {
+    // Are there any parameters embedded in the URL?
+    $paramKey = 'param-' . (isset($options['id']) ? $options['id'] : '').'-';
+    $params = array();
+    foreach ($_GET as $key=>$value) {
+      if (substr($key, 0, strlen($paramKey))==$paramKey) {
+        // We have found a parameter, so put it in the request to the report service
+        $param = substr($key, strlen($paramKey));
+        $params[$param]=$value;
+      }
+    }
+    return $params;
   }
 
   /**
@@ -1727,15 +1993,19 @@ class data_entry_helper extends helper_config {
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>  *
   * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
+  * Table name to get data from for the select options if the select is being populated by a service call.</li>
   * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
+  * Field to draw values to show in the control from if the select is being populated by a service call.</li>
   * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
+  * Field to draw values to return from the control from if the select is being populated by a service call. Defaults
   * to the value of captionField.</li>
   * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
+  * should at least contain the read authorisation array if the select is being populated by a service call.</li>
+  * <li><b>lookupValues</b><br/>
+  * If the select is to be populated with a fixed list of values, rather than via a service call, then the
+  * values can be passed into this parameter as an associated array of key=>caption.
+  * </li>
   * <li><b>parentControlId</b><br/>
   * Optional. Specifies a parent control for linked lists. If specified then this control is not
   * populated until the parent control's value is set. The parent control's value is used to
@@ -1772,8 +2042,7 @@ class data_entry_helper extends helper_config {
     $options = array_merge(
       array(
         'template' => 'select',
-        'itemTemplate' => 'select_item',
-        'selectedItemTemplate' => 'select_item_selected'
+        'itemTemplate' => 'select_item'
       ),
       $options
     );
@@ -1854,7 +2123,7 @@ class data_entry_helper extends helper_config {
     $options = self::check_options($options);
     $opts = "";
     foreach ($options['systems'] as $system=>$caption){
-      $selected = ($options['default'] == $system ? $indicia_templates['select_item_selected'] : '');
+      $selected = ($options['default'] == $system ? 'selected' : '');
       $opts .= str_replace(
           array('{value}', '{caption}', '{selected}'),
           array($system, $caption, $selected),
@@ -2870,19 +3139,19 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * template text, otherwise it is the name of a template in the $indicia_templates array. Default false.
    * @return string HTML for the item label
    */
-  private static function mergeParamsIntoTemplate($item, $template, $useTemplateAsIs=false) {
+  private static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false) {
     global $indicia_templates;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
     $replaceValues=array();
-    foreach (array_keys($item) as $option) {
-      if (!is_array($item[$option])) {
-        array_push($replaceTags, '{'.$option.'}');
+    foreach ($params as $param=>$value) {
+      if (!is_array($value)) {
+        array_push($replaceTags, '{'.$param.'}');
         // allow sep to have <br/>
-        $value = $option == 'sep' ? $item[$option] : htmlSpecialChars($item[$option]);
+        $value = $option == 'sep' ? $value : htmlSpecialChars($value);
         // HTML attributes get automatically wrapped
-        if (in_array($option, self::$html_attributes))
-          $value = " $option=\"$value\"";
+        if (in_array($param, self::$html_attributes) && !empty($value))
+          $value = " $param=\"$value\"";
         array_push($replaceValues, $value);
       }
     }
@@ -3003,7 +3272,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
     if (array_key_exists('extraParams', $options)) {
       $cacheOpts = $options['extraParams'];
-      $request .= self::array_to_query_string($options['extraParams']);
+      $request .= '&'.self::array_to_query_string($options['extraParams']);
     } else
       $cacheOpts = array();
 
@@ -3105,32 +3374,43 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       // no options for now
       $options['items'] = '';
       self::init_linked_lists($options);
-    } else {
-      $response = self::get_population_data($options);
-      if (!array_key_exists('error', $response)) {
-        $opts = "";
-        if (array_key_exists('blankText', $options)) {
-          $opts .= str_replace(
-              array('{value}', '{caption}', '{selected}'),
-              array('', $options['blankText']),
-              $indicia_templates[$options['itemTemplate']]
-          );
-        }
-        foreach ($response as $item){
-          if (array_key_exists($options['captionField'], $item) &&
-              array_key_exists($options['valueField'], $item))
-          {
-            $item['selected'] = ($options['default'] == $item[$options['valueField']]) ? $indicia_templates[$options['selectedItemTemplate']] : '';
-            $item['value'] = $item[$options['valueField']];
-            $item['caption'] = $item[$options['captionField']];
-            $opts .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
+    } else {  
+      if (isset($options['lookupValues'])) {
+        // lookup values are provided 
+        $lookupValues = $options['lookupValues'];
+      } else {
+        // lookup values need to be obtained from the database
+        $response = self::get_population_data($options);
+        $lookupValues = array();
+        if (!array_key_exists('error', $response)) {
+          foreach ($response as $item) {
+            if (array_key_exists($options['captionField'], $item) &&
+                array_key_exists($options['valueField'], $item)) {
+              $lookupValues[$item[$options['valueField']]] = $item[$options['captionField']];
+            }
           }
         }
-        $options['items'] = $opts;
-    } else
-        echo $response['error'];
+      }
+      $opts = "";
+      if (array_key_exists('blankText', $options)) {
+        $opts .= str_replace(
+            array('{value}', '{caption}', '{selected}'),
+            array('', htmlentities($options['blankText'])),
+            $indicia_templates[$options['itemTemplate']]
+        );
+      }
+      foreach ($lookupValues as $key => $value){
+        $item['selected'] = ($options['default'] == $key) ? 'selected' : '';
+        $item['value'] = $key;
+        $item['caption'] = $value;
+        $opts .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
+      }
+      $options['items'] = $opts;
     }
-    return self::apply_template($options['template'], $options);
+    if (isset($response['error']))
+      return $response['error'];
+    else
+      return self::apply_template($options['template'], $options);
   }
 
  /**
@@ -3147,7 +3427,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $url = parent::$base_url."index.php/services/data";
     $request = "$url/".$options['table']."?mode=json";
     if (array_key_exists('extraParams', $options)) {
-      $request .= self::array_to_query_string($options['extraParams']);
+      $request .= '&'.self::array_to_query_string($options['extraParams']);
     }
     self::$javascript .= str_replace(
         array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}'),
@@ -3888,17 +4168,19 @@ $onload_javascript
   }
 
   /**
-   * Takes an associative array and converts it to a list of params for a query string.
+   * Takes an associative array and converts it to a list of params for a query string. This is like
+   * http_build_query but it does not url encode the content.
    */
   private static function array_to_query_string($array) {
-    $r = '';
-    if(is_array($array))
+    $params = array();
+    if(is_array($array)) {
       arsort($array);
-    foreach ($array as $a => $b)
-    {
-      $r .= "&$a=$b";
+      foreach ($array as $a => $b)
+      {
+        $params[] = "$a=$b";
+      }
     }
-    return $r;
+    return implode('&', $params);
   }
 
   /**
