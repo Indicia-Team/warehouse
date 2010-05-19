@@ -474,7 +474,7 @@ jQuery('#".$id."').click(function(){
     				'language' => iform_lang_iso_639_2($args['language']),
     				'containerClass' => 'group-control-box',
     				'suffixTemplate'=>'nosuffix');
-
+	$language = iform_lang_iso_639_2($args['language']);
     global $indicia_templates;
 	$indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
         '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" />' .
@@ -1965,7 +1965,7 @@ loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, 
 		if (attrdata.length>0) {
 			var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();
 			for (var i=0;i<attrdata.length;i++){
-				if (attrdata[i].id){
+				if (attrdata[i].id && (attrdata[i].iso == null || attrdata[i].iso == '' || attrdata[i].iso == '".$language."')){
 					var checkboxes = jQuery('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'\\[\\]],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]', form).filter(':checkbox');
 					var radiobuttons = jQuery('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]', form).filter(':radio');
 					if(radiobuttons.length > 0){

@@ -42,7 +42,7 @@ if ($id) : ?>
 <?php endif; ?>
 <li>
 <label for="file">Upload file:</label>
-<input type="file" name="image_upload" accept="png|jpg|gif" />
+<input type="file" name="image_upload" accept="png|jpg|gif|jpeg" />
 <?php echo html::error_message($model->getError('location_image:path')); ?>
 </li>
 <li>

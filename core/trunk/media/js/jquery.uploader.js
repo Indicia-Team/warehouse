@@ -64,7 +64,7 @@
         flash_swf_url : this.settings.swfAndXapFolder + 'plupload.flash.swf',
         silverlight_xap_url : this.settings.swfAndXapFolder + 'plupload.silverlight.xap',
         filters : [
-          {title : "Image files", extensions : "jpg,gif,png"}
+          {title : "Image files", extensions : "jpg,gif,png,jpeg"}
         ],
         // limit the max file size to the Indicia limit, unless it is first resized.
         max_file_size : resize ? '10mb' : plupload.formatSize(this.settings.maxUploadSize)
