@@ -104,7 +104,7 @@ class iform_verification_1 {
     if ($_POST) {
       // dump out any errors that occurred on verification
       if (data_entry_helper::$validation_errors) {
-        $r .= '<div class="page-notice ui-state-highlight"><p>'.
+        $r .= '<div class="page-notice ui-state-highlight ui-corner-all"><p>'.
             implode('</p></p>', array_values(data_entry_helper::$validation_errors)).
             '</p></div>';
       } else if (isset($_POST['occurrence:record_status']) && isset($response['success']) && $args['emails_enabled']) {
@@ -134,7 +134,7 @@ class iform_verification_1 {
 </form>
 ';
           } else {
-            $r .= '<div class="page-notice ui-state-highlight">The record has been '.$action.'. The recorder did not leave an email address so cannot be notified.</div>';
+            $r .= '<div class="page-notice ui-state-highlight ui-corner-all">The record has been '.$action.'. The recorder did not leave an email address so cannot be notified.</div>';
           }
         }
       }

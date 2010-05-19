@@ -1611,6 +1611,7 @@ class data_entry_helper extends helper_config {
       // using Apache mod_alias but we don't want to know about that)
       $reloadUrl = self::get_reload_link_parts();
       $r = '<form action="'.$reloadUrl['path'].'" method="get" id="'.$options['id'].'-params">'."\n";
+      $r .= '<fieldset><legend>'.lang::get('Report Parameters').'</legend>';
       // Output any other get parameters from our URL as hidden fields
       foreach ($reloadUrl['params'] as $key => $value) {
         // ignore any parameters that are going to be in the grid parameters form
@@ -1658,7 +1659,7 @@ class data_entry_helper extends helper_config {
         }
       }
       $r .= '<input type="submit" value="'.lang::get('Run Report').'"/>'."\n";
-      $r .= "</form>\n";
+      $r .= "</fieldset></form>\n";
       return $r;
     } else {
       return $r;
