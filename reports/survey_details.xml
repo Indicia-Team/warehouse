@@ -2,11 +2,11 @@
 
 <report title="Survey Details" description="Details of all occurrences associated with a survey">
       <params>
-    		<param name='survey' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
-        		query='SELECT id, title as caption FROM surveys'/>
-            <param name="vagueDate" display="Vague Date Processing" description="Select whether or not to process vague date fields."
+    		<param name='survey' display='Survey' description='Select the survey to return data for' datatype='lookup'
+        		query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'/>
+            <param name="vagueDate" display="Vague Date Processing" description="Select whether or not to process vague date fields"
             	datatype='lookup' lookup_values='true:Enable processing,false:Disable processing' />
-            <param name="download" display="Download" description="Carry out as a download... Downloaded records are set to read only."
+            <param name="download" display="Download" description="Carry out as a download... Downloaded records are set to read only"
             	datatype='lookup' lookup_values='OFF:No,INITIAL:Trial - for data checking,FINAL:Final' />
       </params>
       <vagueDate enableProcessing='#vagueDate#' /> // in this case value picked up from parameter, though can be set explicitly as well.
