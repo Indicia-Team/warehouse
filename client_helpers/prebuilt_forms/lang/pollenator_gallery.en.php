@@ -52,7 +52,7 @@ $custom_terms = array(
 	,'LANG_No_Determinations' => 'No identifications recorded.'
 	,'LANG_No_Comments' => 'No comments recorded.'
 	
-	,'LANG_Main_Title' => 'Filters'
+	,'LANG_Filter_Title' => 'Filters'
 	,'LANG_Name_Filter_Title' => 'Name'
 	,'LANG_Name' => 'Collection creator Username'
 	,'LANG_Date_Filter_Title' => 'Date'

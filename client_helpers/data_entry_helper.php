@@ -44,7 +44,7 @@ $indicia_templates = array(
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
   'error_class' => 'inline-error',
-  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif" {title}/>'."\n".
+  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
@@ -455,7 +455,7 @@ class data_entry_helper extends helper_config {
     $default = self::check_default_value($options['fieldname'],
         array_key_exists('default', $options) ? $options['default'] : null);
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
-    $options['checked'] = $default=='on' ? ' checked="checked"' : '';
+    $options['checked'] = ($default=='on' || $default == 1 || $default == '1') ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
   }
@@ -3073,7 +3073,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // Add a label only if specified in the options array. Link the label to the inputId if available,
     // otherwise the fieldname (as the fieldname control could be a hidden control).
     if (array_key_exists('label', $options)) {
-      $r .= str_replace(
+    	$r .= str_replace(
           array('{label}', '{id}', '{labelClass}'),
           array(
               $options['label'],
@@ -4583,11 +4583,20 @@ $('.ui-state-default').live('mouseout', function() {
     return $retVal;
   }
 
-  private static function boolean_attribute($options) {
+  private static function boolean_attribute($ctrl, $options) {
     global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options = array_merge(
+      array(
+        'sep' => '',
+        'containerTemplate' => 'check_or_radio_group_container',
+        'class' => 'control-box'
+      ),
+      $options
+    );
+    unset($options['validation']);
     $default = self::check_default_value($options['fieldname'],
         array_key_exists('default', $options) ? $options['default'] : '', '0');
+    $options['default'] = $default;
     $options = array_merge(array('sep' => ''), $options);
     if ($options['class']=='') {
       // default class is control-box
@@ -4599,13 +4608,29 @@ $('.ui-state-default').live('mouseout', function() {
     foreach ($buttonList as $caption => $value) {
           $checked = ($default == $value) ? ' checked="checked" ' : '';
           $items .= str_replace(
-              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}'),
-              array('radio', $options['fieldname'], $value, $checked, $caption, $options['sep'], $disabled),
+              array('{type}', '{fieldname}', '{value}', '{checked}', '{caption}', '{sep}', '{disabled}', '{itemId}', '{class}'),
+              array($ctrl, $options['fieldname'], $value, $checked, $caption, $options['sep'], $disabled, $options['fieldname'].':'.$value, ''),
               $indicia_templates['check_or_radio_group_item']
           );
     }
     $options['items']=$items;
-    return self::apply_template('check_or_radio_group', $options);
+    $lblTemplate = $indicia_templates['label'];
+    $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate);
+    $r = self::apply_template('check_or_radio_group', $options);
+    // reset the old template
+    $indicia_templates['label'] = $lblTemplate;
+    if (array_key_exists('containerClass', $options)) {
+      $containerOpts = array(
+              'group' => $r,
+              'class' => $options['containerClass']
+            );
+      if(array_key_exists('suffixTemplate', $options)) {
+      	$containerOpts['suffixTemplate'] = $options['suffixTemplate'];
+      }
+      $r = self::apply_template($options['containerTemplate'], $containerOpts);
+    }
+    return $r;
+    
   }
 
   /**
@@ -4642,9 +4667,19 @@ $('.ui-state-default').live('mouseout', function() {
             break;
         case 'Boolean':
         case 'B':
-          // can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
+          // Can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
           // in the optional attribute record.
-            $output = self::boolean_attribute($attrOptions);
+          // If using this to generate a filter, need also to use checkboxes.
+            $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
+            if(array_key_exists('containerClass', $options)){
+              $attrOptions['containerClass'] = $options['containerClass'];
+            }
+            if(array_key_exists('booleanCtrl', $options)){
+              $ctrl = $options['booleanCtrl']; // can be radio, checkbox
+            } else {
+              $ctrl = 'radio';
+            }
+            $output = self::boolean_attribute($ctrl, $attrOptions);
             break;
         case 'D': // Date
         case 'Specific Date': // Date

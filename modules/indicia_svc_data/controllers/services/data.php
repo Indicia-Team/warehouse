@@ -400,7 +400,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $ups = Kohana::config('indicia.maxUploadSize');
       $_FILES = Validation::factory($_FILES)->add_rules(
         'media_upload', 'upload::valid', 'upload::required',
-        'upload::type[png,gif,jpg]', "upload::size[$ups]"
+        'upload::type[png,gif,jpg,jpeg]', "upload::size[$ups]"
       );
       if ($_FILES->validate())
       {

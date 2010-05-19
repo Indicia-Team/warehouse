@@ -62,12 +62,14 @@ $custom_terms = array(
 	,'LANG_Must_Provide_Pictures' => "Les images doivent être téléchargées pour la fleur et de l'environnement"
 	,'LANG_Must_Provide_Location' => 'Un emplacement doit être choisi'
 	
-	,'LANG_Date' => 'Date'
 	,'LANG_Sessions_Title' => 'VOS SESSIONS'
 	,'LANG_Session' => 'Session'
+	,'LANG_Date' => 'Date'
 	,'LANG_Validate_Session' => 'VALIDER LA SESSION'
 	,'LANG_Add_Session' => 'AJOUTER UNE SESSION'
 	,'LANG_Delete_Session' => 'supprimer'
+	,'LANG_Cant_Delete_Session' => "La session ne peut pas être supprimé car il ya encore des insectes qui y sont associés."
+	,'LANG_Confirm_Session_Delete' => 'Etes-vous sûr de vouloir supprimer cette session?'
 	,'Start Time' => 'Heure de début'
 	,'End Time' => 'Heure de fin'
 	,'Sky' => 'Ciel'
@@ -112,5 +114,6 @@ $custom_terms = array(
 	,'LANG_Create_New_Collection' => 'Créer la nouvelle collection'
 	
 	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
+	,'loading' => 'Chargement'
 	
 );
