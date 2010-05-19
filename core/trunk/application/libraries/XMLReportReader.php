@@ -74,7 +74,8 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('datatype'),
                     $reader->getAttribute('description'),
                     $reader->getAttribute('query'),
-                    $reader->getAttribute('lookup_values'));
+                    $reader->getAttribute('lookup_values'),
+                    $reader->getAttribute('population_call'));
                 break;
               case 'column':
                 $this->mergeColumn(
@@ -83,23 +84,25 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('style'),
                     $reader->getAttribute('class'),
                     $reader->getAttribute('visible'),
+                    $reader->getAttribute('img'),
+                    $reader->getAttribute('orderby'),
                     false
                 );
                 break;
               case 'table':
                 $this->automagic = true;
-              	$this->setTable(
-              	    $reader->getAttribute('tablename'),
-              	    $reader->getAttribute('where'));
-              	break;
+                $this->setTable(
+                    $reader->getAttribute('tablename'),
+                    $reader->getAttribute('where'));
+                break;
               case 'subTable':
-              	$this->setSubTable(
-              	    $reader->getAttribute('tablename'),
-              	    $reader->getAttribute('parentKey'),
-              	    $reader->getAttribute('tableKey'),
-              	    $reader->getAttribute('join'),
-              	    $reader->getAttribute('where'));
-              	break;
+                $this->setSubTable(
+                    $reader->getAttribute('tablename'),
+                    $reader->getAttribute('parentKey'),
+                    $reader->getAttribute('tableKey'),
+                    $reader->getAttribute('join'),
+                    $reader->getAttribute('where'));
+                break;
               case 'tabColumn':
                	$this->mergeTabColumn(
               	    $reader->getAttribute('name'),
@@ -380,7 +383,7 @@ class XMLReportReader_Core implements ReportReader
     return $query;
   }
 
-  private function mergeParam($name, $display = '', $type = '', $description = '', $query='', $lookup_values='')
+  private function mergeParam($name, $display = '', $type = '', $description = '', $query='', $lookup_values='', $population_call='')
   {
     if (array_key_exists($name, $this->params))
     {
@@ -389,21 +392,31 @@ class XMLReportReader_Core implements ReportReader
       if ($description != '') $this->params[$name]['description'] = $description;
       if ($query != '') $this->params[$name]['query'] = $query;
       if ($lookup_values != '') $this->params[$name]['lookup_values'] = $lookup_values;
+      if ($population_call != '') $this->params[$name]['population_call'] = $population_call;
     }
     else
     {
-      $this->params[$name] = array('datatype'=>$type, 'display'=>$display, 'description'=>$description, 'query' => $query, 'lookup_values' => $lookup_values);
+      $this->params[$name] = array(
+        'datatype'=>$type, 
+        'display'=>$display, 
+        'description'=>$description, 
+        'query' => $query, 
+        'lookup_values' => $lookup_values,
+        'population_call' => $population_call
+      );
     }
   }
 
-  private function mergeColumn($name, $display = '', $style = '', $class='', $visible='', $autodef=true)
+  private function mergeColumn($name, $display = '', $style = '', $class='', $visible='', $img='', $orderby='', $autodef=true)
   {
     if (array_key_exists($name, $this->columns))
     {
       if ($display != '') $this->columns[$name]['display'] = $display;
       if ($style != '') $this->columns[$name]['style'] = $style;
       if ($class != '') $this->columns[$name]['class'] = $class;
-      if ($visible != 'false' || $this->columns[$name]['visible'] != 'false') $this->columns[$name]['visible'] = 'true';
+      if ($visible == 'false' || $this->columns[$name]['visible'] == 'false') $this->columns[$name]['visible'] = 'false';
+      if ($img == 'true' || $this->columns[$name]['img'] == 'true') $this->columns[$name]['img'] = 'true';
+      if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
       if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
     }
     else
@@ -413,6 +426,8 @@ class XMLReportReader_Core implements ReportReader
           'style' => $style,
           'class' => $class,
           'visible' => $visible == '' ? 'true' : $visible,
+          'img' => $img == '' ? 'false' : $img,
+          'orderby' => $orderby,
           'autodef' => $autodef);
     }
   }

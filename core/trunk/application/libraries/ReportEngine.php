@@ -629,9 +629,9 @@ class ReportEngine {
       }
     }
     if ($this->limit) 
-      $query .= ' limit '.$this->limit;
+      $query .= ' LIMIT '.$this->limit;
     if ($this->offset) 
-      $query .= ' offset '.$this->offset;
+      $query .= ' OFFSET '.$this->offset;
     $this->query = $query;
   }
 
