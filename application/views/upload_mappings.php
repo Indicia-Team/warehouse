@@ -21,6 +21,11 @@
  * @link 	http://code.google.com/p/indicia/
  */
 $filename = urlencode(basename($_SESSION['uploaded_csv']));
+$extraParams = '';
+// Are there any extra parameters that need to be sent along with the chunked upload?
+foreach ($this->input->post() as $a => $b) {
+  $extraParams .= "&$a=$b";
+}
 ?>
 <script type='text/javascript'>
 $(document).ready(function(){
@@ -50,7 +55,7 @@ $(document).ready(function(){
   */
   uploadChunk = function() {
     var limit=10;
-    jQuery.getJSON("<?php echo url::site() . $controllerpath; ?>/upload?offset="+total+"&limit="+limit+"&uploaded_csv=<?php echo $filename; ?>",
+    jQuery.getJSON("<?php echo url::site() . $controllerpath; ?>/upload?offset="+total+"&limit="+limit+"&uploaded_csv=<?php echo $filename.$extraParams; ?>",
       function(response) {
         total = total + response.uploaded;
         jQuery('#progress-text').html(total + ' records uploaded.');
@@ -90,7 +95,7 @@ foreach ($columns as $col):
 <br/>
 <div id="progress" class="ui-widget ui-widget-content ui-corner-all" style="display: none; ">
 <div id="progress-bar" style="width: 400"></div>
-<div id="progress-text">Preparding to upload.</div>
+<div id="progress-text">Preparing to upload.</div>
 </div>
 <?php
 // We stick these at the bottom so that all the other things will be parsed first

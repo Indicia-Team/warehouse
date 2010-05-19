@@ -200,6 +200,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->auto_render=false;
     $mappingFile = str_replace('.csv','-map.txt',$_GET['uploaded_csv']);
     $mappingHandle = fopen(DOCROOT . "upload/$mappingFile", "w");
+	fwrite($mappingHandle, json_encode($_POST));
     fclose($mappingHandle);
     echo "OK";
   }
@@ -228,7 +229,6 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       // skip rows to allow for the offset
       while ($count<$offset && fgetcsv($handle, 1000, ",") !== FALSE) {
         $count++;
-        kohana::log('info', 'skipping');
       }
       $count=0;
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
@@ -236,6 +236,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $count++;
         $index = 0;
         $saveArray = $this->getDefaults();
+        // Note, the mappings will always be in the same order as the columns of the CSV file
         foreach ($mappings as $col=>$attr) {
           if (isset($data[$index])) {
             if ($attr!='<please select>') {
@@ -248,14 +249,21 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
           }
           $index++;
         }
+        // Any $_GET data that contains field data should also go in the save array. For example, we may want to specify
+        // the taxon list id for all imported taxon records. Valid data should always be keyed table:field. 
+        foreach($_GET as $key=>$value) {
+          if (strpos($key, ':')!==false) $saveArray[$key] = $value;
+        }
         // Save the record
         $this->model->clear();
         $this->model->set_submission_data($saveArray, true);
         if (($id = $this->model->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
-          $data[] = implode('<br/>', $this->model->getAllErrors());
+          $errors = implode('<br/>', $this->model->getAllErrors());
+          $data[] = $errors;
           $data[] = $count + $offset + 1; // 1 for header
           fputcsv($errorHandle, $data);
+          kohana::log('debug', 'Failed to import CSV row: '.$errors);
         }
       }
       // Get percentage progress
@@ -266,7 +274,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         // An AJAX upload request will just receive the number of records uploaded and progress
         $this->auto_render=false;
         echo "{uploaded:$count,progress:$progress}";
-        kohana::log('info', "{uploaded:$count,progress:$progress}");
+        kohana::log('debug', "{uploaded:$count,progress:$progress}");
       } else {
         // Normal page access, so need to display the errors page or success.
         $this->display_upload_result($count + $offset + 1);

@@ -1,6 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
 <title>Indicia external site species checklist test page</title>
 <link rel="stylesheet" href="demo.css" type="text/css" media="screen">
 <link rel="stylesheet" href="../../../media/css/default_site.css" type="text/css" media="screen">
@@ -45,8 +47,8 @@ echo data_entry_helper::sref_and_system(array(
 <?php 
 echo data_entry_helper::species_checklist(array(
     'listId'=>$config['species_checklist_taxon_list'],
-    'lookupListId'=>3,
-    //'occAttrs'=>$config['species_checklist_occ_attributes'],
+    'lookupListId'=>$config['species_checklist_alt_list'],
+    'occAttrs'=>$config['species_checklist_occ_attributes'],
     'extraParams'=>$readAuth,
 	  'survey_id'=>$config['survey_id']
 ));
