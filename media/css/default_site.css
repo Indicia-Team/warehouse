@@ -172,6 +172,10 @@ input, select, textarea {
   cursor: pointer;
 }
 
+.action-button {
+  margin-bottom: 4px;
+}
+
 .indicia-button span {
   float: left;
   vertical-align: middle;
