@@ -303,29 +303,29 @@ class ORM extends ORM_Core {
     $return = $this->createParentRecords() && $return;
     // No point doing any more if the parent records did not post
     if ($return) {
-    	$this->preSubmit();
-    	$this->removeUnwantedFields();
-	    $return = $this->validateAndSubmit();
-	    $return = $this->checkRequiredAttributes() ? $return : null;
-	    if ($this->id) {
-	      // Make sure we got a record to save against before attempting to post children
-	      $return = $this->createChildRecords() ? $return : null;
-	      $return = $this->createJoinRecords() ? $return : null;
-	      $return = $this->createAttributes() ? $return : null;
-	    }
-	    // Call postSubmit
-	    if ($return) {
-	      $ps = $this->postSubmit();
-	        if ($ps == null) {
-	          $return = null;
-	        }
-	    }
-	    if (kohana::config('config.log_threshold')=='4') {
-	    	kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
-	    	if (!$return) kohana::log('debug', kohana::debug($this->getAllErrors()));
-	    }
+      $this->preSubmit();
+      $this->removeUnwantedFields();
+      $return = $this->validateAndSubmit();
+      $return = $this->checkRequiredAttributes() ? $return : null;
+      if ($this->id) {
+        // Make sure we got a record to save against before attempting to post children
+        $return = $this->createChildRecords() ? $return : null;
+        $return = $this->createJoinRecords() ? $return : null;
+        $return = $this->createAttributes() ? $return : null;
+      }
+      // Call postSubmit
+      if ($return) {
+        $ps = $this->postSubmit();
+          if ($ps == null) {
+            $return = null;
+          }
+      }
+      if (kohana::config('config.log_threshold')=='4') {
+        kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
+        if (!$return) kohana::log('debug', kohana::debug($this->getAllErrors()));
+      }
     }
-	  return $return;
+    return $return;
   }
 
   /**
@@ -414,7 +414,7 @@ class ORM extends ORM_Core {
           $fkRecords = $m->like(array(
               $b['fkSearchField'] => $b['fkSearchValue']))
               ->find_all();
-          if (count($fkRecords)!=1) {
+          if (count($fkRecords)<1) {
             $this->errors[$a] = 'Could not find a '.ucwords($b['fkTable']).' by looking for "'.$b['fkSearchValue'].
                 '" in the '.ucwords($b['fkSearchField']).' field.';
             $r=false;

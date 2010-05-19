@@ -88,7 +88,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   */
   protected function postSubmit()
   {
-  	$result = true;
+    $result = true;
     if ($this->submission['fields']['preferred']['value']=='t' && array_key_exists('metaFields', $this->submission)) {      
       if (array_key_exists('commonNames', $this->submission['metaFields'])) {
         $arrCommonNames=$this->parseRelatedNames(
@@ -154,13 +154,16 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         // If language not found, use english as the default. Future versions may wish this to be
         // user definable.
         $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
-        $syn = $_POST;
+        // copy the original post array to pick up the common things, like the common name
+        foreach($this->submission['fields'] as $field=>$content)
+          $syn[$field]=$content['value'];
+        // Now update the record with specifics for this synonym
         $syn['taxon:id'] = null;
         $syn['taxon:taxon'] = $taxon;
         $syn['taxon:authority'] = $auth;
         $syn['taxon:language_id'] = $lang_id;
         $syn['taxa_taxon_list:id'] = '';
-        $syn['taxa_taxon_list:preferred'] = 'f';        
+        $syn['taxa_taxon_list:preferred'] = 'f'; 
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
         $syn['taxon:taxon_group_id'] = $this->taxon->taxon_group_id;
         // Prevent a recursion by not posting synonyms with a synonym
