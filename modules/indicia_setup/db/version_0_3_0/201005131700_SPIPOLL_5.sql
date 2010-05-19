@@ -24,7 +24,7 @@ CREATE TABLE sample_comments
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE sample_comments OWNER TO indicia_user;
+
 COMMENT ON TABLE sample_comments IS 'List of comments regarding the sample posted by users viewing the sample subsequent to initial data entry.';
 COMMENT ON COLUMN sample_comments.created_by_id IS 'Foreign key to the users table (creator), if user was logged in when comment created.';
 COMMENT ON COLUMN sample_comments.created_on IS 'Date and time this comment was created.';
