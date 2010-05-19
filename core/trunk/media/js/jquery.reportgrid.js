@@ -23,6 +23,9 @@
  * loaded HTML grid (loaded using PHP on page load), and provides AJAX pagination and sorting without
  * page refreshes. It does not do the initial grid load operation.
  */
+var report_grid_page = 0;
+var report_grid_orderby = '';
+var report_grid_sortdir = '';
 
 (function($) {
   $.fn.reportgrid = function(options) {
@@ -37,7 +40,7 @@
      * Function to make a service call to load the grid data.
      */
     load = function(div) {
-      var serviceCall;
+      var serviceCall, paramName;
       if (div.settings.mode=='report') {
         serviceCall = 'report/requestReport?report='+div.settings.dataSource+'.xml&reportSource=local&';
       } else if (div.settings.mode=='direct') {
@@ -49,6 +52,13 @@
           '&auth_token=' + div.settings.auth_token +
           '&offset=' + div.settings.offset +
           '&callback=?';
+      // Extract any parameters from the attached form
+      $('form#'+div.id+'-params input, form#'+div.id+'-params select').each(function(idx, input) {
+        if (input.type!=='submit') {
+          paramName = $(input).attr('name').replace('param-'+div.id+'-', '');
+          request += '&' + paramName + '=' + $(input).attr('value');
+        }
+      });
       if (div.settings.orderby !== null) {
         request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
       }
@@ -56,6 +66,9 @@
       if (div.settings.itemsPerPage !== null) {
         request += '&limit=' + (div.settings.itemsPerPage+1);
       }
+      report_grid_page = Math.floor(div.settings.offset / div.settings.itemsPerPage);
+      report_grid_orderby = div.settings.orderby;
+      report_grid_sortdir = div.settings.sortdir;
       $.getJSON(request,
           null,
           function(response) {
@@ -63,25 +76,35 @@
             // clear current grid rows
             tbody.children().remove();
             var row, rows = eval(response), rowclass='', count=0, hasMore=false, value;
-            $.each(rows, function(row, i) {
+            $.each(rows, function(rowidx, row) {
               count++;
               // We asked for one too many rows. If we got it, then we can add a next page button
               if (div.settings.itemsPerPage !== null && count>div.settings.itemsPerPage) {
                 hasMore = true;
               } else {
                 rowOutput = '<tr' + rowclass + '>';
-                $.each(div.settings.columns, function(col) {
-                  // either template the output, or just use the content according to the fieldname
-                  if (typeof div.settings.columns[col].template !== "undefined") {
-                    value = mergeParamsIntoTemplate(rows[row], div.settings.columns[col].template);
-                  } else {
-                    value = rows[row][div.settings.columns[col].fieldname];
+                $.each(div.settings.columns, function(idx, col) {
+                  if (col.visible!='false') {
+                    // either template the output, or just use the content according to the fieldname
+                    if (typeof col.template !== "undefined") {
+                      value = mergeParamsIntoTemplate(row, col.template);
+                    } else if (typeof col.actions !== "undefined") {
+                      value = getActions(row, col.actions);
+                    } else {
+                      value = row[col.fieldname];
+                    }
+                    // clear null value cells
+                    value = (value===null) ? '' : value;
+                    if (col.img == 'true') {
+                      value = '<a href="'+div.settings.imagePath+value+'" class="fancybox"><img src="'+div.settings.imagePath+'thumb-'+value+'" /></a>';
+                    }
+                    rowOutput += '<td>' + value + '</td>';
                   }
-                  rowOutput += '<td>' + value + '</td>';
                 });
                 // Build the data cells in order
                 rowOutput += '</tr>';
                 tbody.append(rowOutput);
+                tbody.find('a.fancybox').fancybox();
                 rowclass = (rowclass=='' ? ' class="'+div.settings.altRowClass + '"' : '');
               }
             });
@@ -110,6 +133,22 @@
       );
     };
     
+    getActions = function(row, actions) {
+      var result = '', onclick;
+      $.each(actions, function(idx, action) {
+        if (typeof action.javascript != "undefined") {
+          onclick=' onclick="' + mergeParamsIntoTemplate(row, action.javascript) + '"';
+        } else {
+          onclick = '';
+        }
+        if (result !== '') {
+          result += '<br/>';
+        }
+        result += '<a class="indicia-button action-button ui-state-default ui-corner-all"'+onclick+'>'+action.caption+'</a>';
+      });
+      return result;
+    }
+    
     mergeParamsIntoTemplate = function(params, template) {
       var regex;
       $.each(params, function(param) {
@@ -132,9 +171,9 @@
         div.loading = true;
         // this.textContent = display label for column
         var colName = this.textContent;
-        $.each(div.settings.columns, function(col) {
-          if (div.settings.columns[col].caption==colName) {
-            colName=div.settings.columns[col].fieldname;
+        $.each(div.settings.columns, function(idx, col) {
+          if (col.display==colName) {
+            colName=col.orderby || col.fieldname;
           }
         });
         if (div.settings.orderby==colName && div.settings.sortdir=='ASC') {
@@ -187,5 +226,6 @@ $.fn.reportgrid.defaults = {
   sortdir : 'ASC',
   itemsPerPage : null,
   offset : 0,
-  altRowClass : 'odd'
+  altRowClass : 'odd',
+  imagePath : ''
 };
