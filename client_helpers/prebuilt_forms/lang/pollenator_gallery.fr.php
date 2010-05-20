@@ -59,11 +59,11 @@ $custom_terms = array(
 	,'LANG_Flower_Filter_Title' => 'Fleur'
 	,'LANG_Insect_Filter_Title' => 'Insecte'
 	,'LANG_Location_Filter_Title' => 'Localisation'
-	,'LANG_Georef_Label' => 'Nom de lieu'
-	,'LANG_INSEE' => 'INSEE No.'
+	,'LANG_Georef_Label' => 'Localisation'
+	,'LANG_INSEE' => 'No INSEE.'
 	,'LANG_NO_INSEE' => "Il n'ya pas de zone avec ce numéro INSEE (neuf ou ancien)."
 	,'LANG_Search_Insects' => 'Rechercher des Insectes'
-	,'LANG_Search_Collections' => 'Recherche de collections'
+	,'LANG_Search_Collections' => 'Rechercher des collections'
 	,'LANG_Insects_Search_Results' => 'Insectes'
 	,'LANG_Collections_Search_Results' => 'Collections'
 		
@@ -97,6 +97,6 @@ $custom_terms = array(
 	,'LANG_General' => 'Général'
 	,'LANG_Created_Between' => 'Créé entre'
 	,'LANG_And' => 'et'
-	,'LANG_OR' => 'ou'
+	,'LANG_Or' => 'ou'
 	
 );
