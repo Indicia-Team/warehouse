@@ -543,12 +543,7 @@ class iform_pollenator_gallery {
     </div>
 </div>
 <div id="focus-collection" class="ui-accordion ui-widget ui-helper-reset">
-	<div id="collection-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
-	  <div id="collection-title">
-	  	<span> </span>
-      </div>
-	</div>
-	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-top">
+	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
 	  <div id="flower-image">
       </div>
 	  <div id="collection-description">
@@ -559,13 +554,14 @@ class iform_pollenator_gallery {
 	    <p>'.$location_attributes[$args['habitat_attr_id']]['caption'].': <span id="collection-habitat"></span></p>
 	    <p id="collection-locality"></p>
 	    <p id="collection-user-name"></p>
+	    <div id="show-flower-button" class="ui-state-default ui-corner-all display-button">'.lang::get('LANG_Display').'</div>
 	  </div>
 	  <div id="environment-image">
       </div>
       <div id="map2_container">'.data_entry_helper::map_panel($options2, $olOptions).'
       </div>
     </div>
-	<div id="collection-insects" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
+	<div id="collection-insects">
     </div>
 	<div id="fc-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	    <div id="fc-new-comment-button" class="ui-state-default ui-corner-all new-comment-button">'.lang::get('LANG_New_Comment').'</div>
@@ -588,30 +584,19 @@ class iform_pollenator_gallery {
 </div>
 <div id="focus-occurrence" class="ui-accordion ui-widget ui-helper-reset">
 	<h1 id="fo-taxon"></h1>
-	<div id="fo-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
+	<div id="fo-header" class="ui-accordion-content ui-helper-reset ui-state-active ui-corner-top">
 	  <div id="fo-header-buttons">
  	      <span id="fo-collection-button" class="ui-state-default ui-corner-all collection-button">'.lang::get('LANG_Collection').'</span>
 	      <span id="fo-prev-button" class="ui-state-default ui-corner-all previous-button">'.lang::get('LANG_Previous').'</span>
 	      <span id="fo-next-button" class="ui-state-default ui-corner-all next-button">'.lang::get('LANG_Next').'</span>
 	  </div>
-	  <div id="fo-breadcrumb">
-	  	<span> </span>
-      </div>
 	</div>
-	<div id="fo-warning" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active"></div>
-	<div id="fo-picture" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+	<div id="fo-picture" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+	  <div id="fo-warning"></div>
 	  <div id="fo-image">
       </div>
     </div>
-	<div id="fo-identification" class="ui-accordion-header ui-helper-reset ui-state-active">';
-    if(user_access('IForm n'.$node->nid.' insect expert')){
-    	$r .= '<div id="fo-new-insect-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>';
-    }  
-    if(user_access('IForm n'.$node->nid.' flower expert')){
-    	$r .= '<div id="fo-new-flower-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>';
-    }
-    $r .= ' 
-	  <div id="fo-doubt-button" class="ui-state-default ui-corner-all doubt-button">'.lang::get('LANG_Doubt').'</div>
+	<div id="fo-identification" class="ui-accordion-header ui-helper-reset ui-corner-top ui-state-active">
 	  <div id="fo-id-title">
 	  	<span>'.lang::get('LANG_Indentification_Title').'</span>
       </div>
@@ -651,14 +636,20 @@ class iform_pollenator_gallery {
 	</div>';
     }
     $r .= '
-	<div id="fo-id-history" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
-	</div>
-	<div id="fo-addn-info-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
-	  <div id="fo-addn-info-title">
-	  	<span>'.lang::get('LANG_Additional_Info_Title').'</span>
-      </div>
-	</div>
-	<div id="fo-insect-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all ui-accordion-content-active">
+	<div id="fo-id-history" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active"></div>
+	<div id="fo-id-buttons" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">';
+    if(user_access('IForm n'.$node->nid.' insect expert')){
+    	$r .= '<div id="fo-new-insect-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>';
+    }  
+    if(user_access('IForm n'.$node->nid.' flower expert')){
+    	$r .= '<div id="fo-new-flower-id-button" class="ui-state-default ui-corner-all new-id-button">'.lang::get('LANG_New_ID').'</div>';
+    }
+    $r .= ' 
+	  <div id="fo-doubt-button" class="ui-state-default ui-corner-all doubt-button">'.lang::get('LANG_Doubt').'</div>
+    </div>
+	
+	<div id="fo-insect-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
+	    <span class="addn-info-title">'.lang::get('LANG_Additional_Info_Title').'</span>
 	    <p>'.lang::get('LANG_Date').': <span id="fo-insect-date"></span></p>
 	    <p>'.lang::get('LANG_Time').': <span id="fo-insect-start-time"></span> '.lang::get('LANG_To').' <span id="fo-insect-end-time"></span></p>
 	    <p>'.$sample_attributes[$args['sky_state_attr_id']]['caption'].': <span id="fo-insect-date"></span></p>
@@ -666,15 +657,15 @@ class iform_pollenator_gallery {
 	    <p>'.$sample_attributes[$args['wind_attr_id']]['caption'].': <span id="fo-insect-wind"></span></p>
 	    <p>'.$sample_attributes[$args['shade_attr_id']]['caption'].': <span id="fo-insect-sahed"></span></p>
 	</div>
-	<div id="fo-flower-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all ui-accordion-content-active">
+	<div id="fo-flower-addn-info" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
 	    <p>'.$occurrence_attributes[$args['flower_type_attr_id']]['caption'].': <span id="focus-flower-type"></span></p>
 	    <p>'.$location_attributes[$args['habitat_attr_id']]['caption'].': <span id="focus-habitat"></span></p>
 	</div>
-	<div id="fo-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
+	<div id="fo-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	    <div id="fo-new-comment-button" class="ui-state-default ui-corner-all new-comment-button">'.lang::get('LANG_New_Comment').'</div>
 		<span>'.lang::get('LANG_Comments_Title').'</span>
 	</div>
-	<div id="fo-new-comment" class="ui-accordion-content ui-helper-reset ui-corner-all ui-widget-content">
+	<div id="fo-new-comment" class="ui-accordion-content ui-helper-reset ui-widget-content">
 		<form id="fo-new-comment-form" action="'.iform_ajaxproxy_url($node, 'occ-comment').'" method="POST">
 		    <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden" name="occurrence_comment:occurrence_id" value="" />
@@ -686,7 +677,7 @@ class iform_pollenator_gallery {
     		<input type="submit" id="comment_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Comment').'" />
     	</form>
 	</div>
-	<div id="fo-comment-list" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all ui-accordion-content-active">
+	<div id="fo-comment-list" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom ui-accordion-content-active">
 	</div>
 	<div style="display:none" />
       <form id="fo-doubt-form" action="'.iform_ajaxproxy_url($node, 'determination').'" method="POST">
@@ -700,6 +691,8 @@ class iform_pollenator_gallery {
 ';
 
     data_entry_helper::$javascript .= "
+jQuery('#imp-georef-search-btn').removeClass('indicia-button').addClass('search-button');
+    
 $.validator.messages.required = \"".lang::get('validation_required')."\";
 jQuery('#start_date').datepicker({
   dateFormat : 'yy-mm-dd',
@@ -778,6 +771,11 @@ jQuery('#fold-location-button').click(function(){
 });
 
 jQuery('#flower-image').click(function(){
+	if(jQuery('#flower-image').attr('occID') != 'none'){
+		loadFlower(jQuery('#flower-image').attr('occID'));
+	}
+});
+jQuery('#show-flower-button').click(function(){
 	if(jQuery('#flower-image').attr('occID') != 'none'){
 		loadFlower(jQuery('#flower-image').attr('occID'));
 	}
@@ -1810,7 +1808,7 @@ loadFlowerAddnInfo = function(keyValue){
 }
 
 loadInsect = function(insectID){
-    jQuery('#focus-collection,#filter-spec,#filter-footer,#results-insects-header,#results-collections-header,#results-insects-header,#results-insects-results,#results-collections-results,#fo-flower-addn-info').addClass('filter-hide');
+    jQuery('#focus-collection,#filter,#fo-flower-addn-info').addClass('filter-hide');
     jQuery('#filter-header').removeClass('ui-state-active').addClass('ui-state-default').removeClass('ui-corner-top').addClass('ui-corner-all');
     jQuery('#focus-occurrence,#fo-addn-info-header,#fo-insect-addn-info').removeClass('filter-hide');
 	jQuery('[name=determination\\:occurrence_id]').val(insectID);
@@ -1827,7 +1825,7 @@ loadInsect = function(insectID){
 }
 loadFlower = function(flowerID){
 	jQuery('#fo-prev-button,#fo-next-button').hide();
-	jQuery('#focus-collection,#filter-spec,#filter-footer,#results-insects-header,#results-collections-header,#results-insects-header,#results-insects-results,#results-collections-results,#fo-insect-addn-info').addClass('filter-hide');
+	jQuery('#focus-collection,#filter,#fo-insect-addn-info').addClass('filter-hide');
     jQuery('#filter-header').removeClass('ui-state-active').addClass('ui-state-default').removeClass('ui-corner-top').addClass('ui-corner-all');
 	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-flower-addn-info').removeClass('filter-hide');
 	jQuery('#fo-new-comment,#fo-new-id').removeClass('ui-accordion-content-active');
