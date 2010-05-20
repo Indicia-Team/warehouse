@@ -104,7 +104,7 @@
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
       this.uploader.bind('FilesAdded', function(up, files) {
         // Find any files over the upload limit
-        existingCount = $('#filelist')[0].childElementCount;
+        existingCount = $('#filelist')[0].children.length;
         extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
         if (extras.length!==0) {
           alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
