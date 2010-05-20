@@ -404,7 +404,7 @@ class iform_pollenator_gallery {
         	'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'],'orderby' => 'taxon'),
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id']),
 			'suffixTemplate'=>'nosuffix'
 	);
 	$focus_flower_ctrl_args = $flower_ctrl_args;
@@ -417,7 +417,7 @@ class iform_pollenator_gallery {
         	'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'],'orderby' => 'taxon'),
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id']),
 			'suffixTemplate'=>'nosuffix'
 	);
 	$focus_insect_ctrl_args = $insect_ctrl_args;
@@ -584,7 +584,7 @@ class iform_pollenator_gallery {
 </div>
 <div id="focus-occurrence" class="ui-accordion ui-widget ui-helper-reset">
 	<h1 id="fo-taxon"></h1>
-	<div id="fo-header" class="ui-accordion-content ui-helper-reset ui-state-active ui-corner-top">
+	<div id="fo-header" class="ui-accordion-content ui-helper-reset ui-state-active ui-corner-top ui-accordion-content-active">
 	  <div id="fo-header-buttons">
  	      <span id="fo-collection-button" class="ui-state-default ui-corner-all collection-button">'.lang::get('LANG_Collection').'</span>
 	      <span id="fo-prev-button" class="ui-state-default ui-corner-all previous-button">'.lang::get('LANG_Previous').'</span>
@@ -1800,7 +1800,7 @@ loadFlowerAddnInfo = function(keyValue){
    					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    					\"&callback=?\", function(collection) {
    				if (collection.length > 0) {
-					loadLocationAttributes(collection.location_id);
+					loadLocationAttributes(collection[0].location_id);
   				}
    		   	});
    		}

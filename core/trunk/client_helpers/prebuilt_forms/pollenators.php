@@ -787,7 +787,7 @@ $('#cc-1-reinit-button').click(function() {
     // Switch to degrees, minutes, seconds for lat long.
     $options['latLongFormat'] = 'DMS';
     $options['suffixTemplate'] = 'nosuffix';
-    $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'orderby' => 'taxon');
+    $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id']);
     $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
         	'fieldname'=>'flower:taxa_taxon_list_id',
@@ -823,7 +823,7 @@ $('#cc-1-reinit-button').click(function() {
 		'.($args['ID_tool_flower_url'] != '' && $args['ID_tool_flower_poll_dir'] ?  '<label for="flower-id-button">'.lang::get('LANG_Flower_ID_Key_label').' :</label><span id="flower-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>' : '')
 		.'<span id="flower-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
     	'.data_entry_helper::select($species_ctrl_args).'
-		<input type="text" name="flower:taxon_text_description" readonly="readonly">
+		<textarea name="flower:taxon_text_description" class="taxon-desc" rows="5" readonly="readonly"></textarea>
       </div>
  	</div>
     <div class="poll-break"></div>
@@ -915,17 +915,16 @@ showSessionsPanel = true;
 
 var flowerTimer1;
 var flowerTimer2;
-var IDcounter = 0;
+var flowerSess = '';
 
 flowerPoller = function(){
 	flowerTimer1 = setTimeout('flowerPoller();', ".$args['ID_tool_poll_interval'].");
-	$.get('".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_flower_poll_dir']).session_id()."_'+IDcounter.toString(), function(data){
+	$.get('".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_flower_poll_dir'])."'+flowerSess, function(data){
       var da = data.split('\\n');
       // first count number of returned items.
       // if > 1 put all into taxon_description.
       // if = 1 rip out the description, remove the formatting, scan the flower select for it, and set the value. Set the taxon description.
-	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '');
-	  da[1] = da[1].replace(/</g, '\\\\<').replace(/>/g, '\\\\>');
+	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '').replace(/\\\\/g, '');
 	  var items = da[1].split(':');
 	  var count = items.length;
 	  if(items[count-1] == '') count--;
@@ -937,9 +936,9 @@ flowerPoller = function(){
 	  	jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val('');
 	  	jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val(items[0]);
   		jQuery('#cc-2-flower-identify').find('option').each(function(i,obj){
-  			if($jQuery(obj).text() == items[0]){
+  			if(jQuery(obj).text() == items[0]){
 				jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val('');
-	  			jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val(x[0].value);
+	  			jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val(jQuery(obj).val());
   			}
   		});
 	  } else {
@@ -953,16 +952,21 @@ flowerReset = function(){
 	clearTimeout(flowerTimer1);
 	clearTimeout(flowerTimer2);
 	jQuery('#flower-id-cancel').hide();
+	jQuery('#flower-id-button').show();
+	flowerSess='';
 };
 
 jQuery('#flower-id-button').click(function(){
-	IDcounter++;
+	var d = new Date;
+	var s = d.getTime();
+	flowerSess = '".session_id()."_'+s.toString()
 	clearTimeout(flowerTimer1);
 	clearTimeout(flowerTimer2);
-	window.open('".$args['ID_tool_flower_url'].session_id()."_'+IDcounter.toString(),'','') 
+	window.open('".$args['ID_tool_flower_url']."'+flowerSess,'','');
 	flowerTimer1 = setTimeout('flowerPoller();', ".$args['ID_tool_poll_interval'].");
 	flowerTimer2 = setTimeout('flowerReset();', ".$args['ID_tool_poll_timeout'].");
 	jQuery('#flower-id-cancel').show();
+	jQuery('#flower-id-button').hide();
 });
 jQuery('#flower-id-cancel').click(function(){
 	flowerReset();
@@ -1444,7 +1448,7 @@ jQuery('.mod-button').click(function() {
 
 ";
 
-    $extraParams = $readAuth + array('taxon_list_id' => $args['insect_list_id'], 'orderby' => 'taxon');
+    $extraParams = $readAuth + array('taxon_list_id' => $args['insect_list_id']);
 	$species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Insect_Species'),
         	'fieldname'=>'insect:taxa_taxon_list_id',
@@ -1479,7 +1483,7 @@ jQuery('.mod-button').click(function() {
 		'.($args['ID_tool_insect_url'] != '' && $args['ID_tool_insect_poll_dir'] ?  '<label for="insect-id-button">'.lang::get('LANG_Insect_ID_Key_label').' :</label><span id="insect-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>' : '')
 		.'<span id="insect-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>'
  		.data_entry_helper::select($species_ctrl_args).'
-		<input type="text" name="insect:taxon_text_description" readonly="readonly">
+		<textarea name="insect:taxon_text_description" class="taxon-desc" rows="5" readonly="readonly"></textarea>
       </div>
     </div>
     <div class="poll-break"></div> 
@@ -1529,31 +1533,32 @@ jQuery('.mod-button').click(function() {
     data_entry_helper::$javascript .= "
 loadInsectPanel = null;
 
+
+
+
+
 var insectTimer1;
 var insectTimer2;
+var insectSess = '';
 
 insectPoller = function(){
 	insectTimer1 = setTimeout('insectPoller();', ".$args['ID_tool_poll_interval'].");
-	$.get('".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_insect_poll_dir']).session_id()."_'+IDcounter.toString(), function(data){
-	var da = data.split('\\n');
-      // first count number of returned items.
-      // if > 1 put all into taxon_description.
-      // if = 1 rip out the description, remove the formatting, scan the flower select for it, and set the value. Set the taxon description.
-	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '');
-      var items = da[1].split(':');
+	$.get('".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_insect_poll_dir'])."'+insectSess, function(data){
+      var da = data.split('\\n');
+	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '').replace(/\\\\/g, '');
+	  var items = da[1].split(':');
 	  var count = items.length;
 	  if(items[count-1] == '') count--;
 	  if(count <= 0){
-	  	// no valid stuff so blank it all out.
 	  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val('');
-	  	jQuery('#cc-4-flower-identify > [name=insect\\:taxon_text_description]').val('');
+	  	jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val('');
 	  } else if(count == 1){
 	  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val('');
-	  	jQuery('#cc-4-insect-identify > select[name=insect\\:taxon_text_description]').val(items[0]);
+	  	jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val(items[0]);
   		jQuery('#cc-4-insect-identify').find('option').each(function(i,obj){
-  			if($jQuery(obj).text() == items[0]){
-				jQuery('#cc-4-insect-identify > [name=flower\\:taxon_text_description]').val('');
-	  			jQuery('#cc-4-insect-identify > select[name=flower\\:taxa_taxon_list_id]').val(x[0].value);
+  			if(jQuery(obj).text() == items[0]){
+				jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val('');
+	  			jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val(jQuery(obj).val());
   			}
   		});
 	  } else {
@@ -1567,23 +1572,27 @@ insectReset = function(){
 	clearTimeout(insectTimer1);
 	clearTimeout(insectTimer2);
 	jQuery('#insect-id-cancel').hide();
+	jQuery('#insect-id-button').show();
+	insectSess='';
 };
 
 jQuery('#insect-id-button').click(function(){
-	IDcounter++;
+	var d = new Date;
+	var s = d.getTime();
+	insectSess = '".session_id()."_'+s.toString()
 	clearTimeout(insectTimer1);
 	clearTimeout(insectTimer2);
-	window.open('".$args['ID_tool_insect_url'].session_id()."_'+IDcounter.toString(),'','') 
+	window.open('".$args['ID_tool_insect_url']."'+insectSess,'',''); 
 	insectTimer1 = setTimeout('insectPoller();', ".$args['ID_tool_poll_interval'].");
 	insectTimer2 = setTimeout('insectReset();', ".$args['ID_tool_poll_timeout'].");
 	jQuery('#insect-id-cancel').show();
+	jQuery('#insect-id-button').hide();
 });
 jQuery('#insect-id-cancel').click(function(){
 	insectReset();
 });
 jQuery('#insect-id-cancel').hide();
 
-    
 // Insect upload picture form.
 $('#cc-4-insect-upload').ajaxForm({ 
         dataType:  'json', 
