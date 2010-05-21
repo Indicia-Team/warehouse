@@ -12,7 +12,7 @@
   error_reporting(E_ERROR);
 
   // HTTP headers for no cache etc
-  header('Content-type: text/plain; charset=UTF-8');
+  header('Content-type: text/html;');
   header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
   header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
   header("Cache-Control: no-store, no-cache, must-revalidate");
@@ -90,7 +90,7 @@
         return;
       }
     } else {
-      echo '{"jsonrpc" : "2.0", "error" : {"code": 103, "message": "Failed to move uploaded file."}, "id" : "id"}';
+      echo '{"jsonrpc" : "2.0", "error" : {"code": 103, "message": "Failed to move uploaded file. '.$_FILES['file']['tmp_name'].'"}, "id" : "id"}';
       return;
     }
   } else {

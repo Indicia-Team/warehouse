@@ -51,7 +51,9 @@ echo data_entry_helper::file_box(array(
     'resizeHeight' => 768,
     'table' => 'occurrence_image'
 ));
-echo data_entry_helper::map();
+echo data_entry_helper::sref_and_system(array(
+    'label'=>'Grid ref'
+));
 echo data_entry_helper::select(array(
     'label'=>'Survey',
     'fieldname'=>'sample:survey_id',
