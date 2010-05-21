@@ -57,32 +57,39 @@
 			uploader.bind("Init", function(up) {
 				var forms, inputContainer, input, mimes = [], i, y,
 					filters = up.settings.filters, ext, type, IE = /MSIE/.test(navigator.userAgent),
-					url = "javascript", bgcolor, container = document.body;
+					url = "javascript", bgcolor, container = document.body, node;
 
 				if (uploader.settings.container) {
 					container = document.getElementById(uploader.settings.container);
 					container.style.position = 'relative';
 				}
 
-				// If no form set, create or use existing form
-				if (!up.settings.form) {
-					forms = document.getElementsByTagName('form');
-
-					if (!forms.length) {
-						form = document.createElement('form');
-						form.setAttribute('action', up.settings.url);
-						form.setAttribute('target', '_self');
-						document.body.appendChild(form);
-					} else {
-						form = forms[0];
+				// Find existing form
+				form = (typeof up.settings.form == 'string') ? document.getElementById(up.settings.form) : up.settings.form;
+				if (!form) {
+					node = document.getElementById(uploader.settings.browse_button);
+					for (; node; node = node.parentNode) {
+						if (node.nodeName == 'FORM') {
+							form = node;
+						}
 					}
-
-					form.setAttribute("id", form.id || up.id);
-					form.setAttribute('method', 'post');
-					form.setAttribute('enctype', 'multipart/form-data');
-				} else {
-					form = (typeof up.settings.form == 'string') ? document.getElementById(up.settings.form) : up.settings.form;
 				}
+
+				// If no form set, create a new one
+				if (!form) {
+					// Create a form and set it as inline so it doesn't mess up any layout
+					form = document.createElement("form");
+					form.style.display = 'inline';
+
+					// Wrap browse button in empty form
+					node = document.getElementById(uploader.settings.container);
+					node.parentNode.insertBefore(form, node);
+					form.appendChild(node);
+				}
+
+				// Force the form into post and multipart
+				form.setAttribute('method', 'post');
+				form.setAttribute('enctype', 'multipart/form-data');
 
 				// Append mutlipart parameters
 				plupload.each(up.settings.multipart_params, function(value, name) {
@@ -146,11 +153,11 @@
 
 						// Reset action and target
 						if (form.tmpAction) {
-							form.action = form.tmpAction;
+							form.setAttribute("action", form.tmpAction);
 						}
 
 						if (form.tmpTarget) {
-							form.target = form.tmpTarget;
+							form.setAttribute("target", form.tmpTarget);
 						}
 					}
 				});
@@ -260,7 +267,7 @@
 
 				plupload.extend(document.getElementById(uploader.id + '_iframe_container').style, {
 					top : browsePos.y + 'px',
-					left : browsePos.x + 'px',
+					left : (browsePos.x+document.body.offsetLeft) + 'px',
 					width : browseSize.w + 'px',
 					height : browseSize.h + 'px'
 				});
@@ -280,15 +287,15 @@
 				}
 
 				// Set input element name attribute which allows it to be submitted
-				file.input.setAttribute('name', 'file');
+				file.input.setAttribute('name', up.settings.file_data_name);
 
 				// Store action
-				form.tmpAction = form.action;
-				form.action = plupload.buildUrl(up.settings.url, {name : file.target_name || file.name});
+				form.tmpAction = form.getAttribute("action");
+				form.setAttribute("action", plupload.buildUrl(up.settings.url, {name : file.target_name || file.name}));
 
 				// Store Target
-				form.tmpTarget = form.target;
-				form.target = iframe.name;
+				form.tmpTarget = form.getAttribute("target");
+				form.setAttribute("target", iframe.name);
 
 				// set current file
 				this.currentfile = file;
