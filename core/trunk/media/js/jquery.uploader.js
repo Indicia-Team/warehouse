@@ -58,6 +58,7 @@
           { width: this.settings.resizeWidth, height: this.settings.resizeHeight, quality: this.settings.resizeQuality } : null;
       this.uploader = new plupload.Uploader({
         runtimes : this.settings.runtimes,
+        container : this.id,
         browse_button : 'upload-select-btn-'+id,
         url : this.settings.uploadScript,
         resize : resize,

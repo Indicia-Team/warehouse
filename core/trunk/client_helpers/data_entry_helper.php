@@ -668,6 +668,7 @@ class data_entry_helper extends helper_config {
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
       'jsPath' => self::$js_path
     );
+    $options['id'] = str_replace('_', ':', $options['table']);
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
     if ($indicia_templates['file_box_initial_file_info']!='')
@@ -704,9 +705,9 @@ class data_entry_helper extends helper_config {
     self::$onload_javascript .= "\n});\n";
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
     // version.
-    return '<div class="file-box"></div><noscript>'.self::image_upload(array(
+    return '<div class="file-box" id="container-'.$options['id'].'"></div><noscript>'.self::image_upload(array(
       'label' => $options['caption'],
-      'id' => str_replace('_', ':', $options['table']),
+      'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
   }
@@ -4290,7 +4291,7 @@ $('.ui-state-default').live('mouseout', function() {
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
       'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
       'plupload' => array('deps' => array('jquery_ui','fancybox'), 'stylesheets' => array(), 'javascript' => array(
-          self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')), // last file contains a bugfix
+          self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js')),
       'jqplot' => array('deps' => array(), 'stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
       'jqplot_bar' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
       'jqplot_pie' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
