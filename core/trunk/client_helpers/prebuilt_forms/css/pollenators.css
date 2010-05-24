@@ -53,7 +53,7 @@ label {
   width: 30px;
 }
 
-.radio-error, .required-error {
+.radio-error, .required-error, .format-error {
 	color: red;
 	width: auto;
 	margin-left: 1em;
@@ -119,6 +119,7 @@ div#cc-1-summary {
 }
 
 .loading {  background: transparent url(/misc/throbber.gif) no-repeat 0px -18px;}
+.loading-button {  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px  !important ;}
 
 .thumb-image {
    width: 100%;
