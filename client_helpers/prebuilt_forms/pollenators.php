@@ -468,12 +468,15 @@ jQuery('#".$id."').click(function(){
        ,'extraParams'=>$readAuth
        ,'survey_id'=>$args['survey_id']
     ));
-    $defAttrOptions = array('extraParams'=>$readAuth,
+    $defNRAttrOptions = array('extraParams'=>$readAuth+array('orderby'=>'id'),
     				'lookUpListCtrl' => 'radio_group',
-    				'validation' => array('required'),
     				'language' => iform_lang_iso_639_2($args['language']),
     				'containerClass' => 'group-control-box',
     				'suffixTemplate'=>'nosuffix');
+    $defAttrOptions=$defNRAttrOptions;
+    $defAttrOptions ['validation'] = array('required');
+    $checkOptions = $defAttrOptions;
+    $checkOptions['lookUpListCtrl'] = 'checkbox_group';
 	$language = iform_lang_iso_639_2($args['language']);
     global $indicia_templates;
 	$indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
@@ -617,6 +620,17 @@ $.fn.resetPanel = function(){
 	this.find('.poll-dummy-form > select').val('');
   };
 
+alertIndiciaError = function(data){
+	var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
+	if(data.error){	errorString = errorString + ' : ' + data.error;	}
+	if(data.errors){
+		for (var i in data.errors){
+			errorString = errorString + ' : ' + data.errors[i];
+		}				
+	}
+	alert(errorString);
+};
+			
 checkProtocolStatus = function(){
 	if (jQuery('#cc-3-body').children().length === 1) {
 	    jQuery('#cc-3').find('.delete-button').hide();
@@ -652,9 +666,13 @@ validateCollectionPanel = function(){
 	return true;
   };
 
+clearErrors = function(formSel) {
+	jQuery(formSel).find('.required-error,.radio-error,.format-error').remove();
+}
+
 validateRadio = function(name, formSel){
     var controls = jQuery(formSel).find('[name='+name+'],[name^='+name+'\\:]');
-	controls.parent().parent().find('p').remove(); // remove existing errors
+//	controls.parent().parent().find('p').remove(); // remove existing errors
     if(controls.filter('[checked]').length < 1) {
         var label = $('<p/>')
 				.attr({'for': name})
@@ -668,7 +686,7 @@ validateRadio = function(name, formSel){
 
 validateRequiredField = function(name, formSel){
     var control = jQuery(formSel).find('[name='+name+']');
-	control.parent().find('.required-error').remove(); // remove existing errors
+//	control.parent().find('.required-error').remove(); // remove existing errors
     if(control.val() == '') {
         var label = $('<p/>')
 				.attr({'for': name})
@@ -680,12 +698,28 @@ validateRequiredField = function(name, formSel){
     return true;
 }
 
-$('#cc-1-collection-details').ajaxForm({ 
-        // dataType identifies the expected content type of the server response 
+$('#cc-1').ajaxError(function(event, request, settings){
+   alert(\"".lang::get('ajax_error')."\");
+ });
+ 
+validateTime = function(name, formSel){
+    var control = jQuery(formSel).find('[name='+name+'],[name^='+name+'\\:]');
+    if(control.val().match(/^(2[0-3]|[0,1][0-9]):[0-5][0-9]$/) == null) {
+        var label = $('<p/>')
+				.attr({'for': name})
+				.addClass('format-error')
+				.html('".lang::get('validation_date')."');
+		label.insertBefore(control);
+		return false;
+    }
+    return true;
+}
+
+$('#cc-1-collection-details').ajaxForm({
+		async: false,
         dataType:  'json', 
-        // success identifies the function to invoke when the server response 
-        // has been received 
         beforeSubmit:   function(data, obj, options){
+        	clearErrors('form#cc-1-collection-details');
         	var valid = true;
         	if (!jQuery('form#cc-1-collection-details > input').valid()) { valid = false; }
         	if (!validateRadio('smpAttr\\:".$args['protocol_attr_id']."', 'form#cc-1-collection-details')) { valid = false; }
@@ -697,6 +731,7 @@ $('#cc-1-collection-details').ajaxForm({
   			if(data[1].value=='') data[1].value=defaultSref;
   			if(data[2].value=='') data[2].value=defaultGeom;
   			jQuery('#cc-2-floral-station > input[name=location\\:name]').val(data[5].value);
+  			jQuery('#cc-1-valid-button').addClass('loading-button');
         	return true;
   		},
         success:   function(data){
@@ -719,44 +754,44 @@ $('#cc-1-collection-details').ajaxForm({
         		$('#cc-1').foldPanel();
     			if(showStationPanel){ $('#cc-2').showPanel(); }
 		    	showStationPanel = true;
-        	}  else {
-				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
-				if(data.error){
-					errorString = errorString + ' : ' + data.error;
-				}
-				if(data.errors){
-					for (var i in data.errors)
-					{
-						errorString = errorString + ' : ' + data.errors[i];
-					}				
-				}
-				alert(errorString);
-			}
-        } 
+        	}  else 
+				alertIndiciaError(data);
+        },
+        complete: function (){
+  			jQuery('.loading-button').removeClass('loading-button');
+  		}
 });
 
 $('#cc-1-delete-collection').ajaxForm({ 
-        dataType:  'json', 
+		async: false,
+		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
   			// Warning this assumes that the data is fixed position:
        		data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
        		data[3].value = jQuery('#cc-1-collection-details input[name=sample\\:date]').val();
        		data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
         	if(data[2].value == '') return false;
+  			jQuery('#cc-1-reinit-button').addClass('loading-button');
         	return true;
   		},
         success:   function(data){
-			jQuery('#cc-3-body').empty();
-        	jQuery('.poll-section').resetPanel();
-			sessionCounter = 0;
-			addSession();
-			checkProtocolStatus();
-			jQuery('.poll-section').hidePanel();
-			jQuery('.poll-image').empty();
-			jQuery('#cc-1').showPanel();
-			jQuery('.reinit-button').hide();
-			jQuery('#map')[0].map.editLayer.destroyFeatures();
-  		} 
+        	if(data.success == true){
+        		jQuery('#cc-3-body').empty();
+	        	jQuery('.poll-section').resetPanel();
+				sessionCounter = 0;
+				addSession();
+				checkProtocolStatus();
+				jQuery('.poll-section').hidePanel();
+				jQuery('.poll-image').empty();
+				jQuery('#cc-1').showPanel();
+				jQuery('.reinit-button').hide();
+				jQuery('#map')[0].map.editLayer.destroyFeatures();
+        	}  else 
+				alertIndiciaError(data);
+  		},
+        complete: function (){
+  			jQuery('.loading-button').removeClass('loading-button');
+  		}
 });
 
 $('#cc-1-valid-button').click(function() {
@@ -795,7 +830,6 @@ $('#cc-1-reinit-button').click(function() {
     	    'captionField'=>'taxon',
         	'valueField'=>'id',
 	        'columns'=>2,
-			'validation'=>array('required'),
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
     	    'extraParams'=>$extraParams,
     		'suffixTemplate'=>'nosuffix'
@@ -858,9 +892,9 @@ $('#cc-1-reinit-button').click(function() {
       <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
-      '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix'))
- 	  .data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'radio_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix')) 	 	
-      .data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], array('extraParams'=>$readAuth, 'lookUpListCtrl' => 'checkbox_group', 'sep' => ' &nbsp; ', 'language' => iform_lang_iso_639_2($args['language']), 'containerClass' => 'group-control-box', 'suffixTemplate'=>'nosuffix')).'
+      '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defNRAttrOptions)
+ 	  .data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], $defNRAttrOptions) 	 	
+      .data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], $checkOptions).'
     </form>
     <div class="poll-break"></div>
     <div>
@@ -937,8 +971,8 @@ flowerPoller = function(){
 	  	jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val(items[0]);
   		jQuery('#cc-2-flower-identify').find('option').each(function(i,obj){
   			if(jQuery(obj).text() == items[0]){
-				jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val('');
 	  			jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val(jQuery(obj).val());
+  				jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val('');
   			}
   		});
 	  } else {
@@ -972,6 +1006,9 @@ jQuery('#flower-id-cancel').click(function(){
 	flowerReset();
 });
 jQuery('#flower-id-cancel').hide();
+jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').change(function(){
+  	jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val('');
+});
 
 jQuery('#search-insee-button').click(function(){
 	if(inseeLayer != null)
@@ -1046,6 +1083,8 @@ jQuery('#search-insee-button').click(function(){
 validateStationPanel = function(){
 	var myPanel = jQuery('#cc-2');
 	var valid = true;
+	clearErrors('form#cc-2-floral-station');
+	clearErrors('#cc-2-flower-identify');
 	if(myPanel.filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
 	if(myPanel.find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
 	// If no data entered also return true: this can only be the case when pressing the modify button on the collections panel
@@ -1053,7 +1092,8 @@ validateStationPanel = function(){
 			jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val() == '' &&
 			jQuery('form#cc-2-floral-station > input[name=occurrence_image\\:path]').val() == '' &&
 			jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val() == '' &&
-    		jQuery('[name=occAttr\\:".$args['flower_type_attr_id']."],[name^=occAttr\\:".$args['flower_type_attr_id']."\\:]').filter('[checked]').length == 0 &&
+			jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val() == '' &&
+			jQuery('[name=occAttr\\:".$args['flower_type_attr_id']."],[name^=occAttr\\:".$args['flower_type_attr_id']."\\:]').filter('[checked]').length == 0 &&
     		jQuery('[name=locAttr\\:".$args['habitat_attr_id']."],[name^=locAttr\\:".$args['habitat_attr_id']."\\:]').filter('[checked]').length == 0 &&
     		jQuery('[name=locAttr\\:".$args['distance_attr_id']."],[name^=locAttr\\:".$args['distance_attr_id']."\\:]').val() == '') {
 		jQuery('#cc-2').foldPanel();
@@ -1068,9 +1108,9 @@ validateStationPanel = function(){
 		alert(\"".lang::get('LANG_Must_Provide_Location')."\");
 		valid = false;
 	}
-	if (jQuery('#id-flower-later').attr('checked') == ''){
+	if (jQuery('#id-flower-later').attr('checked') == '' && jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val() == ''){
 		if(!validateRequiredField('flower\\:taxa_taxon_list_id', '#cc-2-flower-identify')) { valid = false; }
-	}
+    }
 	if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
    	if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
    	if ( valid == false ) return valid;
@@ -1081,12 +1121,14 @@ validateStationPanel = function(){
 
 // Flower upload picture form.
 $('#cc-2-flower-upload').ajaxForm({ 
-        dataType:  'json', 
+		async: false,
+		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
          	if (!jQuery('form#cc-2-flower-upload').valid()) { return false; }
         	$('#cc-2-flower-image').empty();
         	$('#cc-2-flower-image').addClass('loading')
-        },
+		   	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val('');
+  		},
         success:   function(data){
         	if(data.success == true){
 	        	// There is only one file
@@ -1101,32 +1143,24 @@ $('#cc-2-flower-upload').ajaxForm({
 				    .css('max-width', $('#cc-2-flower-image').width()).css('max-height', $('#cc-2-flower-image').height())
 				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
-			} else {
-				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
-	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val('');
-				$('#cc-2-flower-image').removeClass('loading');
-				if(data.error){
-					errorString = errorString + ' : ' + data.error;
-				}
-				if(data.errors){
-					for (var i in data.errors)
-					{
-						errorString = errorString + ' : ' + data.errors[i];
-					}				
-				}
-				alert(errorString);
-			}
-  		} 
+			} else
+				alertIndiciaError(data);
+  		},
+  		complete: function(){
+			$('#cc-2-flower-image').removeClass('loading');
+  		}
 });
 
 // Flower upload picture form.
 $('#cc-2-environment-upload').ajaxForm({ 
-        dataType:  'json', 
+		async: false,
+		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
          	if (!jQuery('form#cc-2-environment-upload').valid()) { return false; }
         	$('#cc-2-environment-image').empty();
         	$('#cc-2-environment-image').addClass('loading')
-        },
+	       	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val('');
+  		},
         success:   function(data){
         	if(data.success == true){
 	        	// There is only one file
@@ -1141,28 +1175,21 @@ $('#cc-2-environment-upload').ajaxForm({
 				    .css('max-width', $('#cc-2-environment-image').width()).css('max-height', $('#cc-2-environment-image').height())
 				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
-			} else {
-				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
-	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val('');
-				$('#cc-2-environment-image').removeClass('loading');
-				if(data.error){
-					errorString = errorString + ' : ' + data.error;
-				}
-				if(data.errors){
-					for (var i in data.errors)
-					{
-						errorString = errorString + ' : ' + data.errors[i];
-					}				
-				}
-				alert(errorString);
-			}
-        } 
+			} else
+				alertIndiciaError(data);
+        },
+  		complete: function(){
+			$('#cc-2-environment-image').removeClass('loading');
+  		}
 });
 
 $('#cc-2-floral-station').ajaxForm({ 
-    dataType:  'json', 
+	async: false,
+	dataType:  'json', 
     beforeSubmit:   function(data, obj, options){
 		var valid = true;
+		clearErrors('form#cc-2-floral-station');
+		clearErrors('#cc-2-flower-identify');
     	if(jQuery('form#cc-2-floral-station > input[name=location_image\\:path]').val() == '' ||
 					jQuery('form#cc-2-floral-station > input[name=occurrence_image\\:path]').val() == '' ){
 			alert(\"".lang::get('LANG_Must_Provide_Pictures')."\");
@@ -1184,12 +1211,15 @@ $('#cc-2-floral-station').ajaxForm({
 		data[10].value = jQuery('#cc-2-flower-identify > select[name=flower\\:taxa_taxon_list_id]').val();
 		data[11].value = jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val();
 		if (jQuery('#id-flower-later').attr('checked') == ''){
-			if (!validateRequiredField('flower\\:taxa_taxon_list_id', '#cc-2-flower-identify')) { valid = false; }
+			if (jQuery('#cc-2-flower-identify > [name=flower\\:taxon_text_description]').val() == ''){
+				if (!validateRequiredField('flower\\:taxa_taxon_list_id', '#cc-2-flower-identify')) { valid = false; }
+			}
 		} else {
 			data.splice(10,5); // remove determination entries.
 		}
    		if ( valid == false ) return valid;
-		return true;
+  		jQuery('#cc-2-valid-button').addClass('loading-button');
+   		return true;
 	},
     success:   function(data){
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
@@ -1218,8 +1248,12 @@ $('#cc-2-floral-station').ajaxForm({
 			jQuery('#cc-2').foldPanel();
 			if(showSessionsPanel) { jQuery('#cc-3').showPanel(); }
 			showSessionsPanel = true;
-        } 
-	}
+        }  else
+			alertIndiciaError(data);
+	},
+    complete: function (){
+  		jQuery('.loading-button').removeClass('loading-button');
+  	}
 });
 
 $('#cc-2-valid-button').click(function() {
@@ -1254,7 +1288,8 @@ $('#cc-2-valid-button').click(function() {
 
     data_entry_helper::$javascript .= "
 $('#cc-3-delete-session').ajaxForm({ 
-        dataType:  'json', 
+		async: false,
+		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
   			// Warning this assumes that the data is fixed position:
        		data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
@@ -1262,7 +1297,11 @@ $('#cc-3-delete-session').ajaxForm({
         	return true;
   		},
         success:   function(data){
-  		} 
+           	if(data.success != true) alertIndiciaError(data);
+  		}
+        ,complete: function (){
+  			jQuery('.loading-button').removeClass('loading-button');
+  		}
 });
 populateSessionSelect = function(){
 	var insectSessionSelect = jQuery('form#cc-4-main-form > select[name=occurrence\\:sample_id]');
@@ -1281,17 +1320,21 @@ populateSessionSelect = function(){
 				'</option>')
 			.appendTo(insectSessionSelect);
 	});
-	if(value)
-		insectSessionSelect.val(value);
+	insectSessionSelect.find('option').each(function(i,obj){
+  		if(i == 0 || jQuery(obj).val() == value)
+			insectSessionSelect.val(insectSessionSelect.find('option').filter('first').val());
+  	});
 }
+
 
 validateAndSubmitOpenSessions = function(){
 	var valid = true;
 	// only check the visible forms as rest have already been validated successfully.
 	$('.poll-session-form:visible').each(function(i){
-	    if (!jQuery(this).children('input').valid()) {
-	    	valid = false; }
-	    if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
+		clearErrors(this);
+	    if (!jQuery(this).children('input').valid()) { valid = false; }
+   		if (!validateTime('smpAttr\\:".$args['start_time_attr_id']."', this)) { valid = false; }
+   		if (!validateTime('smpAttr\\:".$args['end_time_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['sky_state_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['temperature_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['wind_attr_id']."', this)) { valid = false; }
@@ -1359,10 +1402,12 @@ addSession = function(){
 		jQuery('#cc-3-delete-session').find('[name=sample\\:date]').val(container.find('[name=sample\\:date]').val());
 		jQuery('#cc-3-delete-session').find('[name=sample\\:location_id]').val(container.find('[name=sample\\:location_id]').val());
 		if(container.find('[name=sample\\:id]').filter('[disabled]').length == 0){
+			jQuery(this).addClass('loading-button');
 			$.getJSON(\"".$svcUrl."/data/occurrence/\" +
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 					\"&sample_id=\"+container.find('[name=sample\\:id]').val()+\"&callback=?\", function(insectData) {
 				if (insectData.length>0) {
+					jQuery('.loading-button').removeClass('loading-button');
 					alert(\"".lang::get('LANG_Cant_Delete_Session')."\");
 				} else if(confirm(\"".lang::get('LANG_Confirm_Session_Delete')."\")){
 					jQuery('#cc-3-delete-session').submit();
@@ -1375,10 +1420,12 @@ addSession = function(){
 			checkProtocolStatus();
 		}
     });
-    newForm.ajaxForm({ 
+    newForm.ajaxForm({
+   		async: false,
     	dataType:  'json',
     	beforeSubmit:   function(data, obj, options){
     		var valid = true;
+    		clearErrors(obj);
     		if (!obj.find('input').valid()) {
     			valid = false; }
     		if (!validateRadio('smpAttr\\:".$args['sky_state_attr_id']."', obj)) { valid = false; }
@@ -1386,18 +1433,22 @@ addSession = function(){
    			if (!validateRadio('smpAttr\\:".$args['wind_attr_id']."', obj)) { valid = false; }
     		data[2].value = jQuery('#cc-1-collection-details > input[name=sample\\:id]').val();
 			data[3].value = jQuery('#cc-1-collection-details > input[name=location\\:id]').val();
+			jQuery('#cc-3-valid-button').addClass('loading-button');
 			return valid;
 		},
    	    success:   function(data, status, form){
-   	    // TODO: error condition handling, eg no date.
    	    	var thisSession = form.parents('.poll-session');
     		if(data.success == 'multiple records' && data.outer_table == 'sample'){
    	    	    form.children('input[name=sample\\:id]').removeAttr('disabled').val(data.outer_id);
    	    	    loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data.outer_id, 'smpAttr');
-        	}
-			thisSession.show();
-			thisSession.children(':first').show().find('*').show();
-			thisSession.children().not(':first').hide();
+				thisSession.show();
+				thisSession.children(':first').show().find('*').show();
+				thisSession.children().not(':first').hide();
+  			} else 
+	        	alertIndiciaError(data);
+  		},
+        complete: function (){
+  			jQuery('.loading-button').removeClass('loading-button');
   		}
 	});
 	checkProtocolStatus();
@@ -1456,7 +1507,6 @@ jQuery('.mod-button').click(function() {
     	    'captionField'=>'taxon',
         	'valueField'=>'id',
 	        'columns'=>2,
-			'validation'=>array('required'),
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
     	    'extraParams'=>$extraParams,
 			'suffixTemplate'=>'nosuffix'
@@ -1531,11 +1581,6 @@ jQuery('.mod-button').click(function() {
 </div>';
 
     data_entry_helper::$javascript .= "
-loadInsectPanel = null;
-
-
-
-
 
 var insectTimer1;
 var insectTimer2;
@@ -1557,8 +1602,8 @@ insectPoller = function(){
 	  	jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val(items[0]);
   		jQuery('#cc-4-insect-identify').find('option').each(function(i,obj){
   			if(jQuery(obj).text() == items[0]){
-				jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val('');
 	  			jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').val(jQuery(obj).val());
+				jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val('');
   			}
   		});
 	  } else {
@@ -1592,15 +1637,20 @@ jQuery('#insect-id-cancel').click(function(){
 	insectReset();
 });
 jQuery('#insect-id-cancel').hide();
+jQuery('#cc-4-insect-identify > select[name=insect\\:taxa_taxon_list_id]').change(function(){
+  	jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val('');
+});
 
 // Insect upload picture form.
 $('#cc-4-insect-upload').ajaxForm({ 
-        dataType:  'json', 
+		async: false,
+		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
         	if(jQuery('#cc-4-insect-upload input[name=upload_file]').val() == '')
         		return false;
         	$('#cc-4-insect-image').empty();
-        	$('#cc-4-insect-image').addClass('loading')
+        	$('#cc-4-insect-image').addClass('loading');
+        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val('');
         },
         success:   function(data){
         	if(data.success == true){
@@ -1616,29 +1666,22 @@ $('#cc-4-insect-upload').ajaxForm({
 				    .css('max-width', $('#cc-4-insect-image').width()).css('max-height', $('#cc-4-insect-image').height())
 				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
 				jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
-			} else {
-				var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
-	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val('');
-				$('#cc-4-insect-image').removeClass('loading');
-				if(data.error){
-					errorString = errorString + ' : ' + data.error;
-				}
-				if(data.errors){
-					for (var i in data.errors)
-					{
-						errorString = errorString + ' : ' + data.errors[i];
-					}				
-				}
-				alert(errorString);
-			}
-        } 
+			}  else
+				alertIndiciaError(data);
+  		},
+  		complete: function(){
+			$('#cc-4-insect-image').removeClass('loading');
+  		}
 });
 
 $('#cc-4-main-form').ajaxForm({ 
-    dataType:  'json', 
+	async: false,
+	dataType:  'json', 
     beforeSubmit:   function(data, obj, options){
     	var valid = true;
-		if (!jQuery('form#cc-4-main-form > input').valid()) { valid = false; }
+    	clearErrors('form#cc-4-main-form');
+    	clearErrors('#cc-4-insect-identify');
+    	if (!jQuery('form#cc-4-main-form > input').valid()) { valid = false; }
 		if (!validateRequiredField('occurrence\\:sample_id', 'form#cc-4-main-form')) { valid = false; }
 		if (!validateRadio('occAttr\\:".$args['number_attr_id']."', obj)) { valid = false; }
     	if(data[1].value == '' ){
@@ -1648,36 +1691,32 @@ $('#cc-4-main-form').ajaxForm({
 		data[4].value = jQuery('select[name=insect\\:taxa_taxon_list_id]').val();
 		data[5].value = jQuery('[name=insect\\:taxon_text_description]').val();
 		if (jQuery('#id-insect-later').attr('checked') == ''){
-			if (!validateRequiredField('insect\\:taxa_taxon_list_id', '#cc-4-insect-identify')) { valid = false; }
+			if (jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val() == ''){
+				if (!validateRequiredField('insect\\:taxa_taxon_list_id', '#cc-4-insect-identify')) { valid = false; }
+			}
 		} else {
 			data.splice(4,5); // remove determination entries.
 		}
+  		jQuery('#cc-4-valid-insect-button').addClass('loading-button');
 		return valid;
 	},
     success:   function(data){
        	if(data.success == 'multiple records' && data.outer_table == 'occurrence'){
-       		// if the currently highlighted thumbnail is blank, add the new insect.
-       		var thumbnail = jQuery('[occId='+data.outer_id+']');
-       		if(thumbnail.length == 0){
-       			addToPhotoReel(data.outer_id);
-       		} else {
-       			updatePhotoReel(thumbnail, data.outer_id);
-  			}
-			if(loadInsectPanel == null){
-				clearInsect();
-			} else {
-				loadInsect(loadInsectPanel);
-			}
-			loadInsectPanel=null;
+       		updatePhotoReel(data.outer_id);
 			window.scroll(0,0);
-        }
-	}
+        } else
+			alertIndiciaError(data);
+	},
+    complete: function (){
+  		jQuery('.loading-button').removeClass('loading-button');
+  	}
 });
 
 validateInsectPanel = function(){
 	if(jQuery('#cc-4').filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
 	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
 	if(!validateInsect()){ return false; }
+	clearInsect();
   	jQuery('#cc-4').foldPanel();
 	return true;
 };
@@ -1698,6 +1737,9 @@ clearInsect = function(){
 		jQuery(this).attr('name', name[0]+':'+name[1]);
 	});
     jQuery('#cc-4-insect-image').empty();
+    populateSessionSelect();
+	jQuery('.currentPhoto').removeClass('currentPhoto');
+	jQuery('.blankPhoto').addClass('currentPhoto');
 };
 
 loadInsect = function(id){
@@ -1725,10 +1767,16 @@ loadInsect = function(id){
   		} else
   			jQuery('#id-insect-later').attr('checked', 'checked').removeAttr('disabled');
 	});	
+	jQuery('.currentPhoto').removeClass('currentPhoto');
+	jQuery('[occId='+id+']').addClass('currentPhoto');
 }
 
-updatePhotoReel = function(container, occId){
-	container.empty();
+updatePhotoReel = function(occId){
+	var container = jQuery('[occId='+occId+']');
+	if(container.length == 0)
+		container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', occId.toString()).click(function () {setInsect(occId)});
+	else
+		container.empty();
 	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
@@ -1748,29 +1796,16 @@ updatePhotoReel = function(container, occId){
 	});
 }
 
-addToPhotoReel = function(occId){
-	// last photo in list is the blank empty one. Add to just before this.
-	var container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', occId.toString()).click(function () {setInsect(this, occId)});
-	updatePhotoReel(container, occId);
-}
-
-setInsect = function(context, id){
+setInsect = function(id){
 	// first close all the other panels, ensuring any data is saved.
 	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
 		return;
 		
-	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0) {
+	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0)
 		jQuery('div#cc-4').unFoldPanel();
-		loadInsect(id);
-	} else {
-		loadInsectPanel=id;
-		if(!validateInsect()){
-			loadInsectPanel=null;
-			return;
-		} 
-	}
-	jQuery('.currentPhoto').removeClass('currentPhoto');
-	jQuery('[occId='+id+']').addClass('currentPhoto');
+	else
+		if(!validateInsect()){ return ; }
+	loadInsect(id);
 };
 
 setNoInsect = function(){
@@ -1782,9 +1817,7 @@ setNoInsect = function(){
 		jQuery('div#cc-4').unFoldPanel();
 	else
 		if(!validateInsect()){ return ; }
-	// At this point the empty panel is displayed, as it is reset after a successful validate.	
-	jQuery('.currentPhoto').removeClass('currentPhoto');
-	jQuery('.blankPhoto').addClass('currentPhoto');
+	clearInsect();
 };
 
 createPhotoReel = function(div){
@@ -1797,24 +1830,22 @@ createPhotoReel('#cc-4-photo-reel');
 // TODO separate photoreel out into own js
 
 validateInsect = function(){
-	// TODO will have to expand when use key.
-	if(jQuery('form#cc-4-main-form > input[name=occurrence\\:id]').val() == '' &&
+    clearErrors('form#cc-4-main-form');
+    clearErrors('#cc-4-insect-identify');
+    if(jQuery('form#cc-4-main-form > input[name=occurrence\\:id]').val() == '' &&
 			jQuery('form#cc-4-main-form > input[name=occurrence_image\\:path]').val() == '' &&
 			jQuery('[name=insect\\:taxa_taxon_list_id]').val() == '' &&
+			jQuery('[name=insect\\:taxon_text_description]').val() == '' &&
 			jQuery('form#cc-4-main-form > textarea[name=occurrence\\:comment]').val() == '' &&
 			jQuery('[name=occAttr\\:".$args['number_attr_id']."],[name^=occAttr\\:".$args['number_attr_id']."\\:]').filter('[checked]').length == 0){
-		if(loadInsectPanel != null){
-			loadInsect(loadInsectPanel);
-		}
-		loadInsectPanel=null;
 		return true;
 	}
 	var valid = true;
     if (!jQuery('form#cc-4-main-form > input').valid()) { return false; }
   	if (!validateRadio('occAttr\\:".$args['number_attr_id']."', 'form#cc-4-main-form')) { valid = false; }
-		if (jQuery('#id-insect-later').attr('checked') == ''){
+	if (jQuery('#id-insect-later').attr('checked') == '' && jQuery('#cc-4-insect-identify > [name=insect\\:taxon_text_description]').val() == ''){
 			if (!validateRequiredField('insect\\:taxa_taxon_list_id', '#cc-4-insect-identify')) { valid = false; }
-		}
+	}
  	if (!validateRequiredField('occurrence\\:sample_id', 'form#cc-4-main-form')) { valid = false; }
 	if(jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val() == ''){
 		alert(\"".lang::get('LANG_Must_Provide_Insect_Picture')."\");
@@ -1822,8 +1853,9 @@ validateInsect = function(){
 	}
 	if(valid == false) return false;
 	jQuery('form#cc-4-main-form').submit();
+	clearInsect();
 	return true;
-  }
+}
 
 $('#cc-4-valid-insect-button').click(validateInsect);
 
@@ -1842,14 +1874,21 @@ $('#cc-4-delete-insect-button').click(function() {
 });
 
 $('#cc-4-delete-insect').ajaxForm({ 
-        dataType:  'json', 
+		async: false,
+		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
   			// Warning this assumes that the data is fixed position:
         	if(data[2].value == '') return false;
+  			jQuery('#cc-4-delete-insect').addClass('loading-button');
         	return true;
   		},
         success:   function(data){
-  		} 
+        	if(data.success != true)
+				alertIndiciaError(data);
+  		},
+        complete: function (){
+  			jQuery('.loading-button').removeClass('loading-button');
+  		}
 });
 
 $('#cc-4-valid-photo-button').click(function(){
@@ -1902,7 +1941,8 @@ $('#cc-4-valid-photo-button').click(function(){
 
 data_entry_helper::$javascript .= "
 $('#cc-5-collection').ajaxForm({ 
-        dataType:  'json', 
+		async: false,
+		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
        		data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
        		var date_start = '';
@@ -1924,11 +1964,18 @@ $('#cc-5-collection').ajaxForm({
 	       	jQuery('[name=sample\\:date]:hidden').val(data[3].value);
   			data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
        		data[5].name = jQuery('#cc-1-collection-details input[name^=smpAttr\\:".$args['complete_attr_id']."\\:]').attr('name');
-        	return true;
+  			jQuery('#cc-5-complete-collection').addClass('loading-button');
+       		return true;
   		},
         success:   function(data){
-			$('#cc-6').showPanel();
-  		} 
+       		if(data.success == 'multiple records' && data.outer_table == 'sample'){
+				$('#cc-6').showPanel();
+  			}  else
+				alertIndiciaError(data);
+  		},
+        complete: function (){
+  			jQuery('.loading-button').removeClass('loading-button');
+  		}
 });
 $('#cc-5-complete-collection').click(function(){
 	jQuery('#cc-2,#cc-3,#cc-4,#cc-5').hidePanel();
@@ -2108,7 +2155,7 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
           									\"&sample_id=\"+sessiondata[i].id+\"&callback=?\", function(insectData) {
 		    							if (insectData.length>0) {
  											for (var j=0;j<insectData.length;j++){
-												addToPhotoReel(insectData[j].id);
+												updatePhotoReel(insectData[j].id);
 											}
 										}
 		    						});
@@ -2153,7 +2200,8 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
 	if(inseeLayer != null)
 		inseeLayer.destroy();
-		
+   	jQuery('#cc-2-loc-description').empty();
+
   	var filter = new OpenLayers.Filter.Spatial({
   			type: OpenLayers.Filter.Spatial.CONTAINS ,
     		property: 'the_geom',
@@ -2185,8 +2233,8 @@ jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1
   			})
     });
     inseeLayer.events.register('featuresadded', {}, function(a1){
-    	jQuery('#cc-2-loc-description').empty();
-    	jQuery('<span>'+a1.features[0].attributes.NOM+' ('+a1.features[0].attributes.INSEE_NEW+'), '+a1.features[0].attributes.DEPT_NOM+' ('+a1.features[0].attributes.DEPT_NUM+'), '+a1.features[0].attributes.REG_NOM+' ('+a1.features[0].attributes.REG_NUM+')</span>').appendTo('#cc-2-loc-description');
+    	if(a1.features.length > 0)
+	    	jQuery('<span>'+a1.features[0].attributes.NOM+' ('+a1.features[0].attributes.INSEE_NEW+'), '+a1.features[0].attributes.DEPT_NOM+' ('+a1.features[0].attributes.DEPT_NUM+'), '+a1.features[0].attributes.REG_NOM+' ('+a1.features[0].attributes.REG_NUM+')</span>').appendTo('#cc-2-loc-description');
     });
 	jQuery('#map')[0].map.addLayer(inseeLayer);
 	strategy.load({filter: filter});

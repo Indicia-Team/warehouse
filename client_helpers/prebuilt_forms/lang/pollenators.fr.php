@@ -76,7 +76,7 @@ $custom_terms = array(
 	,'Temperature Bands' => 'Température'
 	,'Wind' => 'Vent'
 	,'In Shade' => "Fleur à l’ombre"
-	,'Nearest Hive' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche"
+	,'Nearest Hive' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche (en mètres)"
 	
 	,'LANG_Photos' => "VOS PHOTOS D'INSECTES"
 	,'LANG_Photo_Blurb' => 'Télécharger ou modifier vos observations.'
@@ -104,6 +104,9 @@ $custom_terms = array(
 	,'LANG_Trailer_Point_4' => "vous pourrez créer une nouvelle collection"
 	
 	,'validation_required' => "Ce champ est obligatoire"
+	,'validation_date' => 'Entrez une heure valide (HH:MM)'
+	,'ajax_error' => "Une erreur s'est produite dans le transfert de données."
+	
 	,'Yes' => 'Oui'
 	,'No' => 'Non'
 	,'LANG_Help_Button' => '?'
