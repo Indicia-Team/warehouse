@@ -72,6 +72,7 @@ $custom_terms = array(
 	,'LANG_Time' => 'Time'
 	,'LANG_To' => ' to '
 	,'Temperature Bands' => 'Temperature'
+	,'LANG_User_Link' => 'View all collections for this user'
 	
 	,'LANG_Comments_Title' => 'COMMENTS'
 	,'LANG_New_Comment' => 'Add a comment'

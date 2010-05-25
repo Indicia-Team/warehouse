@@ -53,13 +53,6 @@ label {
   width: 30px;
 }
 
-.radio-error, .required-error, .format-error {
-	color: red;
-	width: auto;
-	margin-left: 1em;
-    margin-top: 0em;  
-}
-
 div#cc-1-summary {
   margin-top: 3px;
 }

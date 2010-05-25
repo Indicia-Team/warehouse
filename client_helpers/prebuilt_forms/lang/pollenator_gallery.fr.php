@@ -67,6 +67,7 @@ $custom_terms = array(
 	,'LANG_Insects_Search_Results' => 'Insectes'
 	,'LANG_Collections_Search_Results' => 'Collections'
 		
+	,'LANG_User_Link' => 'TOUTES SES COLLECTIONS DANS LES GALLERIES'
 	,'LANG_Additional_Info_Title' => 'Informations Complémentaires'
 	,'LANG_Date' => 'Date'
 	,'LANG_Time' => 'Heure'
