@@ -190,7 +190,14 @@ class iform_pollenator_gallery {
           'type'=>'int',
           'group'=>'Collection Attributes'
         ),
-      array(      
+        array(
+          'name'=>'uid_attr_id',
+          'caption'=>'User ID Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the CMS User ID.',
+          'type'=>'smpAttr',
+          'group'=>'Collection Attributes'
+        ),
+        array(      
           'name'=>'username_attr_id',
           'caption'=>'Username Attribute ID',      
           'description'=>'Indicia ID for the sample attribute that stores the user\'s username.',
@@ -554,6 +561,7 @@ class iform_pollenator_gallery {
 	    <p>'.$location_attributes[$args['habitat_attr_id']]['caption'].': <span id="collection-habitat"></span></p>
 	    <p id="collection-locality"></p>
 	    <p id="collection-user-name"></p>
+	    <a id="collection-user-link">'.lang::get('LANG_User_Link').'</a>
 	    <div id="show-flower-button" class="ui-state-default ui-corner-all display-button">'.lang::get('LANG_Display').'</div>
 	  </div>
 	  <div id="environment-image">
@@ -704,7 +712,13 @@ jQuery('#end_date').datepicker({
   constrainInput: false,
   maxDate: '0'
 });
-  
+
+scrollTo = function(selector){
+	jQuery(selector).filter(':visible').each(function(){
+		window.scroll(0, jQuery(this).offset().top);
+	});
+};
+
 jQuery('#filter-header').click(function(){
     jQuery('#filter-header').addClass('ui-state-active').removeClass('ui-state-default').addClass('ui-corner-top').removeClass('ui-corner-all');
 	jQuery('#filter-spec,#filter-footer').removeClass('filter-hide');
@@ -787,8 +801,6 @@ jQuery('#fo-doubt-button').click(function(){
 	}
 });
 
-
-
 loadCollection = function(id){
     jQuery('[name=sample_comment\\:sample_id]').val(id);
     locationLayer.destroyFeatures();
@@ -847,7 +859,10 @@ loadCollection = function(id){
 						case ".$args['username_attr_id'].":
 							jQuery('<span>".lang::get('LANG_Comment_By')."'+attrdata[i].value+'</span>').appendTo('#collection-user-name');
 							break;
-  	}}}}});
+						case ".$args['uid_attr_id'].":
+			       		    jQuery('#collection-user-link').attr('href', '".url('node/'.$node->nid)."?user_id='+attrdata[i].value);
+							break;
+    }}}}});
   	
 	// this has a fixed target so can be done asynchronously.
 	$.getJSON(\"".$svcUrl."/data/sample/\" +id+
@@ -945,6 +960,7 @@ loadCollection = function(id){
   		}
 	});
 	loadComments(id, '#fc-comment-list', 'sample_comment', 'sample_id', 'sample-comment-block', 'sample-comment-body');
+	scrollTo('#focus-collection');
 };
 test = function(a1)
 {
@@ -1070,61 +1086,143 @@ addInsect = function(attributes){
 
 
 setCollectionPage = function(pageNum){
+	var no_units = 4;
+	var no_tens = 2;
+	var no_hundreds = 1;
 	jQuery('#results-collections-results').empty();
 	var numPages = Math.ceil(searchResults.features.length/".$args['collectionsPerPage'].");
 	if(numPages > 1) {
-		var pageCtrl = jQuery('<div>').addClass('page-control').appendTo('#results-collections-results');
-		var pageCtrl2 = jQuery('<div>').addClass('page-control');
-		var first = true;
-		for (var j = (pageNum < 6  ? 1 : pageNum - 5); j <= numPages && j <= (pageNum + 5); j++){
-			if (first != true){
-				jQuery('<span>|</span>').appendTo(pageCtrl);
-				jQuery('<span>|</span>').appendTo(pageCtrl2);
+		var item;
+		var itemList = jQuery('<div class=\"item-list\"></div>').appendTo('#results-collections-results');
+		var pageCtrl = jQuery('<ul>').addClass('pager').appendTo(itemList);
+		for (var j = pageNum - no_units; j<= pageNum + no_units; j++){
+			if(j <= numPages && j >= 1){
+				if(j == pageNum)
+					jQuery('<li class=\"pager-current\">'+pageNum+'</li>').appendTo(pageCtrl);
+				else {
+					item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+					jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+				}
   			}
-  			first = false;
-			if( j != pageNum) {
-				jQuery('<a>'+j+'</a>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
-				jQuery('<a>'+j+'</a>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl2);
-  			} else {
-				jQuery('<span>'+j+'</span>').appendTo(pageCtrl);
-				jQuery('<span>'+j+'</span>').appendTo(pageCtrl2);
-  			}
-	    }
+		}
+		var start = Math.ceil(j/10)*10;
+		for (j = start; j< start + no_tens*10; j=j+10){
+			if(j <= numPages){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		start = Math.ceil(j/100)*100;
+		for (j = start; j< start + no_hundreds*100; j=j+100){
+			if(j <= numPages){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		if(pageNum != numPages){
+			item = jQuery('<li class=\"pager-next\"></li>').attr('value',pageNum+1).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+			jQuery('<a class=\"active\"></a>').appendTo(item);
+  			item = jQuery('<li class=\"pager-last\"></li>').attr('value',numPages).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+			jQuery('<a class=\"active\">'+numPages+'</a>').appendTo(item);
+  		}
+		start = Math.floor((pageNum - no_units -1)/10)*10;
+		for (j = start; j> start - no_tens*10; j=j-10){
+			if(j >= 1){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		start = Math.floor(j/100)*100;
+		for (j = start; j> start - no_hundreds*100; j=j-100){
+			if(j >= 1){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setCollectionPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		if(pageNum != 1){
+			item = jQuery('<li class=\"pager-previous\"></li>').attr('value',pageNum-1).click(function(){setCollectionPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
+			jQuery('<a class=\"active\"></a>').appendTo(item);
+  			item = jQuery('<li class=\"pager-first\"></li>').click(function(){setCollectionPage(1)}).prependTo(pageCtrl);
+			jQuery('<a class=\"active\"></a>').appendTo(item);
+  		}
+  		pageCtrl.find('li').filter(':first').addClass('first');
+  		pageCtrl.find('li').filter(':last').addClass('last');
 	}
     for (var i = (pageNum-1)*".$args['collectionsPerPage']."; i < searchResults.features.length && i < pageNum*".$args['collectionsPerPage']."; i++){
 		addCollection(searchResults.features[i].attributes,searchResults.features[i].geometry);
 	}
 	if(numPages > 1) {
-		pageCtrl2.appendTo('#results-collections-results');
+		itemList.clone(true).appendTo('#results-collections-results');
 	}
 }
 setInsectPage = function(pageNum){
 	jQuery('#results-insects-results').empty();
 	var numPages = Math.ceil(searchResults.features.length/".$args['insectsPerPage'].");
+	var no_units = 4;
+	var no_tens = 2;
+	var no_hundreds = 1;
 	if(numPages > 1) {
-		var pageCtrl = jQuery('<div>').addClass('page-control').appendTo('#results-insects-results');
-		var pageCtrl2 = jQuery('<div>').addClass('page-control');
-		var first = true;
-		for (var j = (pageNum < 6  ? 1 : pageNum - 5); j <= numPages && j <= (pageNum + 5); j++){
-			if (first != true){
-				jQuery('<span>|</span>').appendTo(pageCtrl);
-				jQuery('<span>|</span>').appendTo(pageCtrl2);
+		var item;
+		var itemList = jQuery('<div class=\"item-list\"></div>').appendTo('#results-insects-results');
+		var pageCtrl = jQuery('<ul>').addClass('pager').appendTo(itemList);
+		for (var j = pageNum - no_units; j<= pageNum + no_units; j++){
+			if(j <= numPages && j >= 1){
+				if(j == pageNum)
+					jQuery('<li class=\"pager-current\">'+pageNum+'</li>').appendTo(pageCtrl);
+				else {
+					item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+					jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+				}
   			}
-  			first = false;
-			if( j != pageNum) {
-				jQuery('<a>'+j+'</a>').attr('value',j).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
-				jQuery('<a>'+j+'</a>').attr('value',j).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl2);
-  			} else {
-				jQuery('<span>'+j+'</span>').appendTo(pageCtrl);
-				jQuery('<span>'+j+'</span>').appendTo(pageCtrl2);
-  			}
-	    }
+		}
+		var start = Math.ceil(j/10)*10;
+		for (j = start; j< start + no_tens*10; j=j+10){
+			if(j <= numPages){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		start = Math.ceil(j/100)*100;
+		for (j = start; j< start + no_hundreds*100; j=j+100){
+			if(j <= numPages){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		if(pageNum != numPages){
+			item = jQuery('<li class=\"pager-next\"></li>').attr('value',pageNum+1).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+			jQuery('<a class=\"active\"></a>').appendTo(item);
+  			item = jQuery('<li class=\"pager-last\"></li>').attr('value',numPages).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
+			jQuery('<a class=\"active\">'+numPages+'</a>').appendTo(item);
+  		}
+		start = Math.floor((pageNum - no_units -1)/10)*10;
+		for (j = start; j> start - no_tens*10; j=j-10){
+			if(j >= 1){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setInsectPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		start = Math.floor(j/100)*100;
+		for (j = start; j> start - no_hundreds*100; j=j-100){
+			if(j >= 1){
+				item = jQuery('<li class=\"pager-item\"></li>').attr('value',j).click(function(){setInsectPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
+				jQuery('<a class=\"active\">'+j+'</a>').appendTo(item);
+			}
+		}
+		if(pageNum != 1){
+			item = jQuery('<li class=\"pager-previous\"></li>').attr('value',pageNum-1).click(function(){setInsectPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
+			jQuery('<a class=\"active\"></a>').appendTo(item);
+  			item = jQuery('<li class=\"pager-first\"></li>').click(function(){setInsectPage(1)}).prependTo(pageCtrl);
+			jQuery('<a class=\"active\"></a>').appendTo(item);
+  		}
+  		pageCtrl.find('li').filter(':first').addClass('first');
+  		pageCtrl.find('li').filter(':last').addClass('last');
 	}
     for (var i = (pageNum-1)*".$args['insectsPerPage']."; i < searchResults.features.length && i < pageNum*".$args['insectsPerPage']."; i++){
 		addInsect(searchResults.features[i].attributes);
 	}
 	if(numPages > 1) {
-		pageCtrl2.appendTo('#results-insects-results');
+		itemList.clone(true).appendTo('#results-insects-results');
 	}
 }
 
@@ -1831,6 +1929,7 @@ loadInsect = function(insectID){
 	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id');
 	loadInsectAddnInfo(insectID);
 	loadComments(insectID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
+	scrollTo('#focus-occurrence');
 }
 loadFlower = function(flowerID){
 	jQuery('#fo-prev-button,#fo-next-button').hide();
@@ -1848,6 +1947,7 @@ loadFlower = function(flowerID){
 	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id');
 	loadFlowerAddnInfo(flowerID);
 	loadComments(flowerID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
+	scrollTo('#focus-occurrence');
 }
 
 jQuery('#fo-new-comment-button').click(function(){ 
