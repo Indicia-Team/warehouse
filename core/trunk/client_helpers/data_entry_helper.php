@@ -173,11 +173,11 @@ jQuery('#{parentControlId}').change();\n",
 
 
 /**
- * <p>Static helper class that provides automatic HTML and JavaScript generation for Indicia online
- * recording website data entry controls.</p>
- * <p>Examples include auto-complete text boxes that are populated
- * by Indicia species lists, maps for spatial reference selection and date pickers. All controls in this
- * class support the following entries in their $options array parameter:</p>
+ * Static helper class that provides automatic HTML and JavaScript generation for Indicia online
+ * recording website data entry controls.
+ * Examples include auto-complete text boxes that are populated by Indicia species lists, maps 
+ * for spatial reference selection and date pickers. All controls in this class support the following 
+ * entries in their $options array parameter:
  * <ul>
  * <li><b>label</b><br/>
  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
@@ -4291,7 +4291,7 @@ $('.ui-state-default').live('mouseout', function() {
       'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
       'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
       'plupload' => array('deps' => array('jquery_ui','fancybox'), 'stylesheets' => array(), 'javascript' => array(
-          self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js')),
+          self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')),
       'jqplot' => array('deps' => array(), 'stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
       'jqplot_bar' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
       'jqplot_pie' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
