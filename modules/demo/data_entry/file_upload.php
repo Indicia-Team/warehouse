@@ -49,7 +49,8 @@ echo data_entry_helper::file_box(array(
     'caption' => 'Upload your photos',
     'resizeWidth' => 1024,
     'resizeHeight' => 768,
-    'table' => 'occurrence_image'
+    'table' => 'occurrence_image',
+    'runtimes' => array('html4')
 ));
 echo data_entry_helper::sref_and_system(array(
     'label'=>'Grid ref'
