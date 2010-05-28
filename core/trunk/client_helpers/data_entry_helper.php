@@ -175,8 +175,8 @@ jQuery('#{parentControlId}').change();\n",
 /**
  * Static helper class that provides automatic HTML and JavaScript generation for Indicia online
  * recording website data entry controls.
- * Examples include auto-complete text boxes that are populated by Indicia species lists, maps 
- * for spatial reference selection and date pickers. All controls in this class support the following 
+ * Examples include auto-complete text boxes that are populated by Indicia species lists, maps
+ * for spatial reference selection and date pickers. All controls in this class support the following
  * entries in their $options array parameter:
  * <ul>
  * <li><b>label</b><br/>
@@ -1377,7 +1377,7 @@ class data_entry_helper extends helper_config {
   *   array('display' => 'Actions', 'actions' => array(
   *     array('caption' => 'edit')
   *   ))
-  *   
+  *
   * )
   * </li>
   * <li><b>IncludeAllColumns</b>
@@ -1389,10 +1389,10 @@ class data_entry_helper extends helper_config {
   * Defaults to true. If true, then if a report requires parameters, a parameters input form will be auto-generated
   * at the top of the grid. If set to false, then it is possible to manually build a parameters entry HTML form if you
   * follow the following guidelines. First, you need to specify the id option for the report grid, so that your
-  * grid has a reproducable id. Next, the form you want associated with the grid must itself have the same id, but with 
-  * the addition of params on the end. E.g. if the call to report_grid specifies the option 'id' to be 'my-grid' then 
-  * the parameters form must be called 'my-grid-params'. Finally the input controls which define each parameter must have 
-  * the name 'param-id-' followed by the actual parameter name, replacing id with the grid id. So, in our example, 
+  * grid has a reproducable id. Next, the form you want associated with the grid must itself have the same id, but with
+  * the addition of params on the end. E.g. if the call to report_grid specifies the option 'id' to be 'my-grid' then
+  * the parameters form must be called 'my-grid-params'. Finally the input controls which define each parameter must have
+  * the name 'param-id-' followed by the actual parameter name, replacing id with the grid id. So, in our example,
   * a parameter called survey will need an input or select control with the name attribute set to 'param-my-grid-survey'.
   * The submit button for the form should have the method set to "get" and should post back to the same page.</li>
   * </ul>
@@ -1414,11 +1414,11 @@ class data_entry_helper extends helper_config {
     // set the limit to one higher than we need, so the extra row can trigger the pagination next link
     $extraParams = '&limit='.($options['itemsPerPage']+1).'&wantColumns=1&wantParameters=1';
     $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
-     
+
     // Add in the sort parameters
     foreach ($sortAndPageUrlParams as $param => $content) {
       if ($content['value']!=null) {
-        if ($param != 'page') 
+        if ($param != 'page')
           $extraParams .= '&' . $param .'='. $content['value'];
       }
     }
@@ -1438,14 +1438,14 @@ class data_entry_helper extends helper_config {
     } else {
       $records = $response['records'];
     }
-    
+
     self::report_grid_get_columns($response, $options);
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
 
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\"><thead class=\"ui-widget-header\"><tr>\n";
     // build a URL with just the sort order bit missing, so it can be added for each table heading link
-    $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ? 
+    $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ?
         $sortAndPageUrlParams['page']['name'].'='.$sortAndPageUrlParams['page']['value'].'&' :
         ''
     );
@@ -1521,7 +1521,7 @@ class data_entry_helper extends helper_config {
       $r .= "<a class=\"next\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">next &#187</a> \n";
     }
     $r .= "</div></div>\n";
-    
+
     // Now AJAXify the grid
     self::add_resource('reportgrid');
     self::$javascript .= "$('#".$options['id']."').reportgrid({
@@ -1544,13 +1544,13 @@ class data_entry_helper extends helper_config {
 });\n";
     return $r;
   }
-  
+
   /**
    * Works out the orderby, sortdir and page URL param names for this report grid, and also gets their
    * current values.
    * @param $options Control options array
    * @return array Contains the orderby, sortdir and page params, as an assoc array. Each array value
-   * is an array containing name & value. 
+   * is an array containing name & value.
    */
   private function get_report_grid_sort_page_url_params($options) {
     $orderbyKey = 'orderby' . (isset($options['id']) ? '-'.$options['id'] : '');
@@ -1571,17 +1571,17 @@ class data_entry_helper extends helper_config {
       )
     );
   }
-    
-  
-  /** 
+
+
+  /**
    * Build a url suitable for inclusion in the links for the report grid column headings or pagination
-   * bar. This effectively re-builds the current page's URL, but drops the query string parameters that 
+   * bar. This effectively re-builds the current page's URL, but drops the query string parameters that
    * indicate the sort order and page number.
    * @param array $sortAndPageParams List of the sorting and pagination parameters which should be excluded.
    * @return unknown_type
    */
   private function report_grid_get_reload_url($sortAndPageUrlParams) {
-    // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the 
+    // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
     // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
     // using Apache mod_alias but we don't want to know about that)
     $reloadUrl = self::get_reload_link_parts();
@@ -1593,12 +1593,12 @@ class data_entry_helper extends helper_config {
       $excludedParams[] = $param['name'];
     }
     foreach ($reloadUrl['params'] as $key => $value) {
-      if (!in_array($key, $excludedParams)) 
+      if (!in_array($key, $excludedParams))
         $pageUrl .= "$key=$value&";
     }
     return $pageUrl;
   }
-  
+
   /**
    * Private function that builds a parameters form according to a parameterRequest recieved
    * when calling a report. If the autoParamsForm is false then an empty string is returned.
@@ -1607,7 +1607,7 @@ class data_entry_helper extends helper_config {
    */
   private function get_report_grid_parameters_form($response, $options, $params) {
     if ($options['autoParamsForm']) {
-      // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the 
+      // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
       // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
       // using Apache mod_alias but we don't want to know about that)
       $reloadUrl = self::get_reload_link_parts();
@@ -1648,8 +1648,8 @@ class data_entry_helper extends helper_config {
           foreach($lookups as $lookup) {
             $lookup = explode(':', $lookup);
             $lookupsAssoc[$lookup[0]] = $lookup[1];
-          } 
-          
+          }
+
           $ctrlOptions = array_merge($ctrlOptions, array(
             'blankText'=>'<'.lang::get('please select').'>',
             'lookupValues' => $lookupsAssoc
@@ -1666,7 +1666,7 @@ class data_entry_helper extends helper_config {
       return $r;
     }
   }
-  
+
   /**
    * Add any columns that don't have a column definition to the end of the columns list, by first
    * building an array of the column names of the columns we did specify, then adding any missing fields
@@ -1702,14 +1702,14 @@ class data_entry_helper extends helper_config {
       $options['columns'] = array_merge($options['columns'], $actionCols);
     }
   }
-  
+
   private function get_report_grid_actions($actions, $row) {
     $links = array();
     // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
     // the url is being rewritten.
     $currentUrl = self::get_reload_link_parts();
     $row['currentUrl'] = $currentUrl['path'];
-    foreach ($actions as $action) { 
+    foreach ($actions as $action) {
       if (isset($action['url'])) {
         $action['url'].= (strpos($action['url'], '?')===false) ? '?' : '&';
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
@@ -1727,9 +1727,9 @@ class data_entry_helper extends helper_config {
     }
     return implode('<br/>', $links);
   }
-  
+
   /**
-   * Utility method that returns the parts required to build a link back to the current page.  
+   * Utility method that returns the parts required to build a link back to the current page.
    * @return array Associative array containing path and params (itself a key/value paired associative array).
    */
   public function get_reload_link_parts() {
@@ -1745,7 +1745,7 @@ class data_entry_helper extends helper_config {
       'params' => $getsAssoc
     );
   }
-  
+
   private function get_report_grid_options($options) {
     // Generate a unique number for this grid, in case there are 2 on a page.
     $uniqueId = rand(0,10000);
@@ -1763,10 +1763,10 @@ class data_entry_helper extends helper_config {
     ), $options);
     return $options;
   }
-  
-  
+
+
   /**
-   * Returns the query string describing additional sort query params for a 
+   * Returns the query string describing additional sort query params for a
    * data request to populate the report grid.
    */
   private function get_report_grid_data_request_sort_params($options, $paramKeyNames) {
@@ -1785,7 +1785,7 @@ class data_entry_helper extends helper_config {
       $r .= "&sortdir=$sortdir";
     return $r;
   }
-  
+
   /**
    * Returns the parameters for the report grid data services call which are embedded in the query string.
    * @param $options
@@ -2292,7 +2292,7 @@ class data_entry_helper extends helper_config {
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
         // Now create the table cell to contain this.
         $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
-        $row = str_replace('{content}', $firstCell, 
+        $row = str_replace('{content}', $firstCell,
             str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell'])
         );
         // go through list in entity to load and find first entry for this taxon, then extract the
@@ -2548,7 +2548,7 @@ class data_entry_helper extends helper_config {
     $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
     if ($options['checkboxCol']=='true') {
-      
+
       $r .= "<td class=\"scPresenceCell\"><input type='checkbox' name='' value='' /></td>";
     }
     foreach ($occAttrControls as $oc) {
@@ -3393,9 +3393,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       // no options for now
       $options['items'] = '';
       self::init_linked_lists($options);
-    } else {  
+    } else {
       if (isset($options['lookupValues'])) {
-        // lookup values are provided 
+        // lookup values are provided
         $lookupValues = $options['lookupValues'];
       } else {
         // lookup values need to be obtained from the database
@@ -4631,7 +4631,7 @@ $('.ui-state-default').live('mouseout', function() {
       $r = self::apply_template($options['containerTemplate'], $containerOpts);
     }
     return $r;
-    
+
   }
 
   /**
@@ -4713,7 +4713,7 @@ $('.ui-state-default').live('mouseout', function() {
           $output = call_user_func(array('data_entry_helper', $ctrl), $attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
-                  'valueField'=>'meaning_id',
+                  'valueField'=>'id',
                   'extraParams' => $options['extraParams'] + $dataSvcParams));
           break;
         default:
