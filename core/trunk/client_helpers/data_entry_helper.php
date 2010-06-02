@@ -631,7 +631,16 @@ class data_entry_helper extends helper_config {
   * <li><b>swfAndXapFolder</b><br/>
   * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not
   * normally need to change this.</li>
+  * <li><b>codeGenerated</b>
+  * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you 
+  * need to delay the loading of the control until a certain event, e.g. when a radio button is checked, then this can be set 
+  * to php to return just the php and ignore the JavaScript, or js to return the JavaScript instead of inserting it into 
+  * document onload, in which case the php is ignored. this allows you to attach the JavaScript to any event you need to.
   * </li>
+  * <li><b>tabDiv</b><br/>
+  * If loading this control onto a set of tabs, specify the tab control's outer div ID here. This allows the control to 
+  * automatically generate code which only generates the uploader when the tab is shown, reducing problems in certain
+  * runtimes. This has no effect if codeGenerated is not left to the default state of all.</li>
   * </ul>
   *
   * @todo max file count
@@ -667,7 +676,8 @@ class data_entry_helper extends helper_config {
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
-      'jsPath' => self::$js_path
+      'jsPath' => self::$js_path,
+      'codeGenerated' => 'all'
     );
     $browser = self::get_browser_info();
     // Flash doesn't seem to work on IE6.
@@ -683,33 +693,52 @@ class data_entry_helper extends helper_config {
     if ($indicia_templates['file_box_uploaded_image']!='')
       $defaults['file_box_uploaded_imageTemplate'] = $indicia_templates['file_box_uploaded_image'];
     $options = array_merge($defaults, $options);
-    self::add_resource('plupload');
-    foreach($options['runtimes'] as $runtime) {
-      self::add_resource("plupload_$runtime");
-    }
-    // convert runtimes list to plupload format
-    $options['runtimes'] = implode(',', $options['runtimes']);
-    self::$onload_javascript .= "\n$('.file-box').uploader({";
-    // Just pass the options array through
-    $idx = 0;
-    foreach($options as $option=>$value) {
-      if (is_array($value)) {
-        $value = "{ " . implode(" : true, ",$value) . " : true }";
+    
+    if ($options['codeGenerated']!='php') {
+      // build the JavaScript including the required file links 
+      self::add_resource('plupload');
+      foreach($options['runtimes'] as $runtime) {
+        self::add_resource("plupload_$runtime");
       }
-      else
-        // not an array, so wrap as string
-        $value = "'$value'";
-      self::$onload_javascript .= "\n  $option : $value";
-      // comma separated, except last entry
-      if ($idx < count($options)-1) self::$onload_javascript .= ',';
-      $idx++;
+      // convert runtimes list to plupload format
+      $options['runtimes'] = implode(',', $options['runtimes']);
+      
+      $javascript = "\n$('.file-box').uploader({";
+      // Just pass the options array through
+      $idx = 0;
+      foreach($options as $option=>$value) {
+        if (is_array($value)) {
+          $value = "{ " . implode(" : true, ",$value) . " : true }";
+        }
+        else
+          // not an array, so wrap as string
+          $value = "'$value'";
+        $javascript .= "\n  $option : $value";
+        // comma separated, except last entry
+        if ($idx < count($options)-1) $javascript .= ',';
+        $idx++;
+      }
+      // add in any reloaded items, when editing or after validation failure
+      if (self::$entity_to_load) {
+        $images = self::extract_image_data(self::$entity_to_load, $options['table']);
+        $javascript .= ",\n  existingFiles : ".json_encode($images);
+      }
+      $javascript .= "\n});\n";
     }
-    // add in any reloaded items, when editing or after validation failure
-    if (self::$entity_to_load) {
-      $images = self::extract_image_data(self::$entity_to_load, $options['table']);
-      self::$onload_javascript .= ",\n  existingFiles : ".json_encode($images);
+    if ($options['codeGenerated']=='js') 
+      // we only want to return the JavaScript, so go no further.
+      return $javascript;
+    elseif ($options['codeGenerated']=='all') {
+      if (isset($options['tabDiv']) && $options['codeGenerated']=='all')
+        // The file box is displayed on a tab, so we must only generate it when the tab is displayed. 
+        self::$onload_javascript .=
+            "$('#controls').bind('tabsshow', function(event, ui) { \n".
+            "  var box = $(ui.panel).find('.file-box');\n".
+            "  if (box.length!==0 && box.children().length === 0) {\n"; 
+      self::$onload_javascript .= $javascript;
+      if (isset($options['tabDiv']) && $options['codeGenerated']=='all') 
+        self::$onload_javascript .= "}});\n";
     }
-    self::$onload_javascript .= "\n});\n";
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
     // version.
     return '<div class="file-box" id="container-'.$options['id'].'"></div><noscript>'.self::image_upload(array(
