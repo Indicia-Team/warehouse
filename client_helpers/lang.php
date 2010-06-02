@@ -35,6 +35,8 @@ class lang {
    * Static function to obtain a customised or localised term.
    *
    * @param string $key Key identifying the term to get.
+   * @param string Any other parameters are treated as replacements for tags marked {1}, {2} etc in the language string.
+   * These replacements should be already utf8 encoded.
    */
   public static function get($key) {
     global $default_terms;
@@ -52,7 +54,22 @@ class lang {
       // no translation, so use original requested key
       $output=$key;
     }
-    return utf8_encode($output);
+    $output = utf8_encode($output);
+    // Now do any replacements using any additional function arguments
+    $args = func_get_args();
+    if (count($args)>1) {
+      // get rid of the first argument, it is the language string key
+      array_shift($args);
+      // build a set of replacements
+      $argkeys = array();
+      foreach($args as $arg) {
+        $argkeys[] = '/\{'.(count($argkeys)+1).'\}/';
+      }      
+      // replace the replacements with the function argument list
+      $output = preg_replace($argkeys, $args, $output);
+      
+    }
+    return $output;
   }
 
 

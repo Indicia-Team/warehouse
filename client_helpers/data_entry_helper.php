@@ -622,7 +622,8 @@ class data_entry_helper extends helper_config {
   * </li>
   * <li><b>runtimes</b><br/>
   * Array of runtimes that the file upload component will use in order of priority. Defaults to
-  * array('gears','silverlight','browserplus','html5','flash','html4'). You should not normally need to change this.
+  * array('silverlight','flash','html5','gears','browserplus','html4'), though flash is removed for 
+  * Internet Explorer 6 and html5 is removed for Chrome. You should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.</li>
@@ -657,7 +658,7 @@ class data_entry_helper extends helper_config {
       'startUploadBtnCaption' => lang::get('Start upload'),
       'msgUploadError' => lang::get('upload error'),
       'msgFileTooBig' => lang::get('file too big for warehouse'),
-      'runtimes' => array('gears','silverlight','browserplus','html5','flash','html4'),
+      'runtimes' => array('silverlight','flash','html5','gears','browserplus','html4'),
       'autoupload' => true,
       'imagewidth' => 250,
       'uploadScript' => $relpath . 'upload.php',
@@ -668,6 +669,12 @@ class data_entry_helper extends helper_config {
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
       'jsPath' => self::$js_path
     );
+    $browser = self::get_browser_info();
+    // Flash doesn't seem to work on IE6.
+    if ($browser['name']=='msie' && $browser['version']<7)
+      $defaults['runtimes'] = array_diff($defaults['runtimes'], array('flash'));
+    if ($browser['name']=='chrome')
+      $defaults['runtimes'] = array_diff($defaults['runtimes'], array('html5'));
     $options['id'] = str_replace('_', ':', $options['table']);
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
@@ -2848,6 +2855,31 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 /********************************/
 /* End of main controls section */
 /********************************/
+  
+  /**
+   * Returns the browser name and version information
+   * @param $agent Agent string, optional. If not suplied, then the http user agent is used.
+   * @return array Browser information array. Contains name and version elements.
+   */
+  public static function get_browser_info($agent=null) {
+    $browsers = array("firefox", "msie", "opera", "chrome", "safari",
+                            "mozilla", "seamonkey",    "konqueror", "netscape",
+                            "gecko", "navigator", "mosaic", "lynx", "amaya",
+                            "omniweb", "avant", "camino", "flock", "aol");
+    if (!$agent) 
+      $agent = $_SERVER['HTTP_USER_AGENT'];
+    $agent = strtolower($agent);
+    foreach($browsers as $browser)
+    {
+        if (preg_match("#($browser)[/ ]?([0-9.]*)#", $agent, $match))
+        {
+            $r['name'] = $match[1] ;
+            $r['version'] = $match[2] ;
+            break ;
+        }
+    }
+    return $r;
+  }
 
  /**
   * Call the enable_validation method to turn on client-side validation for any controls with
