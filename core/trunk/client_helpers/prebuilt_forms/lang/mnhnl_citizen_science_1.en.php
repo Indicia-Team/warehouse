@@ -43,6 +43,7 @@ $custom_terms = array(
   'search'=>'Search',
   'search for place on map'=>'Search for place on map',
   'surname'=>'Surname',
+  'you are recording a'=>'You are entering a record of a {1}. Please use the form below to provide the details.',
   
   // Tab titles (only visible if interface tabbed
   'about you'=>'About You',
@@ -53,6 +54,7 @@ $custom_terms = array(
   'about you tab instructions'=>'<strong>About You</strong><br/>Please tell us about yourself first. This might be important so that we can contact you if the record you contribute is important to science.',
   'species tab instructions'=>'<strong>Species Selection</strong><br/>Please click on the species which you observed then click the Next Step button.',
   'place tab instructions'=>'<strong>Place Selection</strong><br/>Please either enter the spatial reference of the observation if you know it, or click on the map to specify the place as accurately as you can.',
-  'other tab instructions'=>'<strong>Other Information</strong><br/>Please tell us when you saw the plant, approximately how many you saw and any comments you have about the record.',
+  'other tab instructions'=>'<strong>Other Information</strong><br/>Please tell us when you made the observation, approximately how many you saw and any comments you have about the record. You can also '.
+      'upload any images you have of the observation.',
 
 );

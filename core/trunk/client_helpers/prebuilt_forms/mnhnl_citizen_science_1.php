@@ -111,6 +111,19 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'Misc'
         ),
         array(
+          'name'=>'record_status',
+          'caption'=>'Record Status',
+          'description'=>'The initial record status for saved records.',
+          'type'=>'select',
+          'options' => array(
+            'C' => 'Records are flagged as data entry complete.',
+            'I' => 'Records are flagged as data entry in progress.',
+            'T' => 'Records are flagged as for testing purposes.'
+          ),
+          'default' => 'C',
+          'group'=>'Misc'
+        ),
+        array(
           'name'=>'first_name_attr_id',
           'caption'=>'First Name Attribute ID',
           'description'=>'Indicia ID for the sample attribute that stores the user\'s first name.',
@@ -194,11 +207,41 @@ class iform_mnhnl_citizen_science_1 {
   public static function get_form($args) {
     global $user;
     $logged_in = $user->uid>0;
-
-    $r = "\n<form method=\"post\" id=\"entry_form\">\n";
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $readAuth = $auth['read'];
+
+    $r = "\n<form method=\"post\" id=\"entry_form\">\n";
+    
+    if (isset($_GET['taxa_taxon_list_id']) || isset($_GET['taxon_external_key'])) {
+      if (isset($_GET['taxa_taxon_list_id']))
+        $filter = array('id' => $_GET['taxa_taxon_list_id']);
+      else
+        $filter = array('external_key' => $_GET['taxon_external_key']);
+      $species = data_entry_helper::get_population_data(array(
+        'table'=>'taxa_taxon_list',
+        'extraParams' => $readAuth + $filter + array('taxon_list_id' => $args['list_id'], 'view' => 'detail')
+      ));
+      // we need only one result
+      if (count($species)==1) {
+        $r .= '<div class="ui-widget ui-widget-content ui-corner-all page-notice ui-helper-clearfix">';
+        $r .= '<div class="page-notice">'.lang::get('you are recording a', $species[0]['taxon']).'</div>';
+        $taxa_taxon_list_id=$species[0]['id'];
+        $images_path = data_entry_helper::$base_url.
+              (isset(data_entry_helper::$indicia_upload_path) ? data_entry_helper::$indicia_upload_path : 'upload/');
+        if (!empty($species[0]['image_path'])) {
+          $r .= '<a class="fancybox left" href="'.$images_path.$species[0]['image_path'].'" style="margin: 0 1em 1em;"><img width="200" src="'.$images_path.'med-'.$species[0]['image_path'].'" /></a>';
+        }
+        if (!empty($species[0]['description_in_list'])) {
+          $r .= '<p>'.$species[0]['description_in_list']."</p>";
+          
+        }
+        $r .= "</div>\n";
+      } else {
+        $r .= "<p>The species count not be identified uniquely from the URL parameters.</p>\n";
+      }
+    }
+    
 
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
@@ -210,7 +253,9 @@ class iform_mnhnl_citizen_science_1 {
       if (!$logged_in) {
         $r .= '  <li><a href="#about_you"><span>'.lang::get('about you')."</span></a></li>\n";
       }
-      $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";
+      if (!isset($taxa_taxon_list_id)) {
+        $r .= '  <li><a href="#species"><span>'.lang::get('what did you see')."</span></a></li>\n";
+      }
       $r .= '  <li><a href="#place"><span>'.lang::get('where was it')."</span></a></li>\n";
       $r .= '  <li><a href="#other"><span>'.lang::get('other information')."</span></a></li>\n";
       $r .= "</ul>\n";
@@ -220,7 +265,7 @@ class iform_mnhnl_citizen_science_1 {
       ));
     }
     if ($user->uid==0) {
-      $r .= "<div id=\"about_you\">\n";
+      $r .= "<fieldset id=\"about_you\">\n";
       $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('about you tab instructions')."</p>";
       $r .= data_entry_helper::text_input(array(
         'label'=>lang::get('first name'),
@@ -248,54 +293,60 @@ class iform_mnhnl_citizen_science_1 {
           'page'=>'first'
         ));
       }
-      $r .= "</div>\n";
+      $r .= "</fieldset>\n";
     }
-    $r .= "<div id=\"species\">\n";
-    // Output all our hidden data here
+    // the species tab is ommitted if the page is called with a tax
+    if (!isset($taxa_taxon_list_id)) {
+      $r .= "<fieldset id=\"species\">\n";
+      $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('species tab instructions')."</p>";
+      $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
+      if ($args['preferred']) {
+        $extraParams += array('preferred' => 't');
+      }
+      if ($args['restrict_species_to_users_lang']) {
+        $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
+      }
+      $species_list_args=array(
+          'label'=>lang::get('occurrence:taxa_taxon_list_id'),
+          'fieldname'=>'occurrence:taxa_taxon_list_id',
+          'table'=>'taxa_taxon_list',
+          'captionField'=>'taxon',
+          'valueField'=>'id',
+          'columns'=>2,
+          'view'=>'detail',
+          'parentField'=>'parent_id',
+          'extraParams'=>$extraParams
+      );
+      if ($args['species_ctrl']=='tree_browser') {
+        // change the node template to include images
+        global $indicia_templates;
+        $indicia_templates['tree_browser_node']='<div>'.
+            '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
+            '<span>{caption}</span>';
+      }
+      // Dynamically generate the species selection control required.
+      $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+      if ($args['interface']=='wizard') {
+        $r .= data_entry_helper::wizard_buttons(array(
+          'divId'=>'controls',
+          'page'=>($user->id==0) ? 'first' : 'middle'
+        ));
+      }
+      $r .= "</fieldset>\n";
+    }
+    $r .= "<fieldset id=\"place\">\n";
+    // Output all our hidden data here, because this tab is always present
     $r .= $auth['write'];
     if ($logged_in) {
       // If logged in, output some hidden data about the user
       $r .= iform_user_get_hidden_inputs($args);
     }
-    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"record_status\" name=\"record_status\" value=\"C\" />\n";
-    $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('species tab instructions')."</p>";
-    $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
-    if ($args['preferred']) {
-      $extraParams += array('preferred' => 't');
-    }
-    if ($args['restrict_species_to_users_lang']) {
-      $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
-    }
-    $species_list_args=array(
-        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'fieldname'=>'occurrence:taxa_taxon_list_id',
-        'table'=>'taxa_taxon_list',
-        'captionField'=>'taxon',
-        'valueField'=>'id',
-        'columns'=>2,
-        'view'=>'detail',
-        'parentField'=>'parent_id',
-        'extraParams'=>$extraParams
-    );
-    if ($args['species_ctrl']=='tree_browser') {
-      // change the node template to include images
-      global $indicia_templates;
-      $indicia_templates['tree_browser_node']='<div>'.
-          '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
-          '<span>{caption}</span>';
-    }
-    // Dynamically generate the species selection control required.
-    $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
-    if ($args['interface']=='wizard') {
-      $r .= data_entry_helper::wizard_buttons(array(
-        'divId'=>'controls',
-        'page'=>($user->id==0) ? 'first' : 'middle'
-      ));
-    }
-    $r .= "</div>\n";
-    $r .= "<div id=\"place\">\n";
+    // if the species being recorded is a fixed species defined in the URL, then output a hidden
+    if (isset($taxa_taxon_list_id))
+      $r .= "<input type=\"hidden\" name=\"occurrence:taxa_taxon_list_id'\" value=\"".$taxa_taxon_list_id."\" />\n";
+    $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
+    $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
+    $r .= "<input type=\"hidden\" name=\"record_status\" value=\"".$args['record_status']."\" />\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('place tab instructions')."</p>";
     // Build the array of spatial reference systems into a format Indicia can use.
     $systems=array();
@@ -319,11 +370,12 @@ class iform_mnhnl_citizen_science_1 {
     $r .= data_entry_helper::map_panel($options, $olOptions);
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
-        'divId'=>'controls'
+        'divId'=>'controls',
+        'page'=>($user->id==0 && isset($taxa_taxon_list_id)) ? 'first' : 'middle'
       ));
     }
-    $r .= "</div>\n";
-    $r .= "<div id=\"other\">\n";
+    $r .= "</fieldset>\n";
+    $r .= "<fieldset id=\"other\">\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('other tab instructions')."</p>";
     $r .= data_entry_helper::date_picker(array(
         'label'=>lang::get('Date'),
@@ -333,8 +385,10 @@ class iform_mnhnl_citizen_science_1 {
         'caption' => 'Upload your photos',
         'resizeWidth' => 1024,
         'resizeHeight' => 768,
-        'table' => 'occurrence_image'
+        'table' => 'occurrence_image',
+        'tabDiv' => 'controls'
     ));
+    
     // Dynamically create a control for the abundance
     $abundance_args = array(
       'label'=>lang::get('abundance'),
@@ -365,7 +419,7 @@ class iform_mnhnl_citizen_science_1 {
     } else {
       $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"Save\" />\n";
     }
-    $r .= "</div>\n";
+    $r .= "</fieldset>\n";
     $r .= "</div>\n";
     $r .= "</form>";
 

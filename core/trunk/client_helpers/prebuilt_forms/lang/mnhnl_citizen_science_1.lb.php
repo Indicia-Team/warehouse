@@ -31,18 +31,19 @@ $custom_terms = array(
   'close'=>'Zoumaachen',
   'email'=>'Email',
   'first name'=>'Virnumm',
-  'happy for contact'=>'Ech sinn averstan eventuell zu dëser Beobachtung kontaktéiert ze ginn',
+  'happy for contact'=>'Ech sinn averstan eventuell zu dï¿½ser Beobachtung kontaktï¿½iert ze ginn',
   'next step'=>'Weider',
   'occurrence:taxa_taxon_list_id'=>'Art',
   'phone number'=>'Telefonsnummer',
-  'prev step'=>'Zréck',
-  'save'=>'Späicheren',
+  'prev step'=>'Zrï¿½ck',
+  'save'=>'Spï¿½icheren',
   'sample:comment'=>'Bemierkung',
   'sample:date' => 'Datum',
   'sample:entered_sref'=>'Koordinaten',
   'search'=>'Sichen',
   'search for place on map'=>'Plaatz op der Kaart sichen',
   'surname'=>'Nonumm',
+  'you are recording a'=>'You are entering a record of a #1#. Please use the form below to provide the details.',
 
   // Tab titles (only visible if interface tabbed
   'about you'=>'Ween ech sinn',
@@ -50,10 +51,10 @@ $custom_terms = array(
   'where was it'=>'Wou et war',
   'other information'=>'Aner Informatiounen',
   // Tab instructions
-  'about you tab instructions'=>'<strong>Ween ech sinn</strong><br/>Sot eis wann ech gelift ween Dir sidd. Dëst kéint wichteg sinn, fir dass mir Iech kontaktéiere kënnen, wann Är Beobachtung besonnesch interessant ass.',
-  'species tab instructions'=>'<strong>Wat ech gesinn hunn</strong><br/>Klickt op déi Blumm, déi Dir gesinn hutt, dono op Weider.',
-  'place tab instructions'=>'<strong>Wou et war</strong><br/>Sicht op der Kaart d\'Plaatz, wou Dir déi Blumm gesinn hutt, sou genau wéi méiglech. Wann Dir d\'Koordinate kennt, kënnt Dir déi och direkt aginn.',
-  'other tab instructions'=>'<strong>Aner Informatioune</strong><br/>Sot eis wann ech gelift wéini Dir déi Blumm gesinn hutt, wéi vill et der ongeféier waren a wann néideg weider Bemierkungen.',
+  'about you tab instructions'=>'<strong>Ween ech sinn</strong><br/>Sot eis wann ech gelift ween Dir sidd. Dï¿½st kï¿½int wichteg sinn, fir dass mir Iech kontaktï¿½iere kï¿½nnen, wann ï¿½r Beobachtung besonnesch interessant ass.',
+  'species tab instructions'=>'<strong>Wat ech gesinn hunn</strong><br/>Klickt op dï¿½i Blumm, dï¿½i Dir gesinn hutt, dono op Weider.',
+  'place tab instructions'=>'<strong>Wou et war</strong><br/>Sicht op der Kaart d\'Plaatz, wou Dir dï¿½i Blumm gesinn hutt, sou genau wï¿½i mï¿½iglech. Wann Dir d\'Koordinate kennt, kï¿½nnt Dir dï¿½i och direkt aginn.',
+  'other tab instructions'=>'<strong>Aner Informatioune</strong><br/>Sot eis wann ech gelift wï¿½ini Dir dï¿½i Blumm gesinn hutt, wï¿½i vill et der ongefï¿½ier waren a wann nï¿½ideg weider Bemierkungen.',
 
 
 );
