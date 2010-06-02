@@ -3560,17 +3560,22 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (isset(self::$validated_form_id)) {
         self::$javascript .= "  if (!$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input').valid()) {\n    return; \n}";
       }
-      // If all is well, move to the next tab.
+      // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
+      // it forces it into view. This helps a lot when the tabs vary in height.
       self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
   $(a).click();
-  scroll(0,0);
+  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {  
+    document.getElementById('".$options['divId']."').scrollIntoView(true);
+  }
 });";
 
       self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
-  scroll(0,0);
+  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {  
+    document.getElementById('".$options['divId']."').scrollIntoView(true);
+  }
 });\n";
 
       // We put this javascript into $late_javascript so that it can come after the other controls.
