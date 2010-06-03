@@ -51,12 +51,18 @@ class Determination_Model extends ORM
       'person_name',
       'cms_ref',
       'taxa_taxon_list_id',
-      'taxon_text_description',
+      'comment',
       'taxon_extra_info',
       'deleted',
-      'dubious'
+      'determination_type',
+      'taxon_details',
+      'taxa_taxon_list_id_list'
     );
-    
+    if (array_key_exists('taxa_taxon_list_id_list', $array->as_array())) {
+    	if(count($array['taxa_taxon_list_id_list']) == 1 && $array['taxa_taxon_list_id_list'][0] == '')
+	        $array['taxa_taxon_list_id_list'] = array();
+    }
+
     return parent::validate($array, $save);
   }
 

@@ -4776,10 +4776,15 @@ $('.ui-state-default').live('mouseout', function() {
           } else {
             $ctrl = 'select';
           }
+          if(array_key_exists('lookUpKey', $options)){
+            $lookUpKey = $options['lookUpKey'];
+          } else {
+            $lookUpKey = 'id';
+          }
           $output = call_user_func(array('data_entry_helper', $ctrl), $attrOptions + array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
-                  'valueField'=>'id',
+                  'valueField'=>$lookUpKey,
                   'extraParams' => $options['extraParams'] + $dataSvcParams));
           break;
         default:

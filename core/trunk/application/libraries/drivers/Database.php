@@ -53,6 +53,9 @@ abstract class Database_Driver {
   {
     foreach ($values as $key => $val)
     {
+      if(is_array($val)){
+    		$val= '{'.implode(', ', $val).'}';
+      }
       $valstr[] = $this->escape_column($key).' = '.$val;
     }
     return 'UPDATE '.$this->escape_table($table).' SET '.implode(', ', $valstr).' WHERE '.implode(' ',$where);
@@ -309,8 +312,8 @@ abstract class Database_Driver {
   {
     if ( ! $this->db_config['escape'])
       return $value;
-
-    switch (gettype($value))
+      
+    switch (gettype($value)) // this is not a recomended way of testing...
     {
       case 'string':
         $value = '\''.$this->escape_str($value).'\'';
@@ -322,6 +325,14 @@ abstract class Database_Driver {
         // Convert to non-locale aware float to prevent possible commas
         $value = sprintf('%F', $value);
       break;
+      case 'array':
+      	$retVal = array();
+      	for($i=0; $i< count($value); $i++){
+      		// We are assuming that the values are integers, convert from text.
+      		$retVal[] = (int) $value[$i]; 
+      	}
+      	$value = 'ARRAY['.implode(', ',$retVal).']::integer[]';
+        break;
       default:
         $value = ($value === NULL) ? 'NULL' : $value;
       break;
