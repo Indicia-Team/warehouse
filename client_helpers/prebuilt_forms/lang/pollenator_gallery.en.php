@@ -60,6 +60,7 @@ $custom_terms = array(
 	,'LANG_Insect_Filter_Title' => 'Insect'
 	,'LANG_Location_Filter_Title' => 'Location'
 	,'LANG_Georef_Label' => 'Location'
+	,'LANG_Georef_Notes' => '(This may be a village/town/city name, region, department or 5 digit postcode.)'
 	,'LANG_INSEE' => 'INSEE No.'
 	,'LANG_NO_INSEE' => 'There is no area with this INSEE number (new or old).'
 	,'LANG_Search_Insects' => 'Search for Insects'

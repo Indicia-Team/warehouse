@@ -28,6 +28,7 @@ global $custom_terms;
  */
 $custom_terms = array(
 	'LANG_Insufficient_Privileges' => "You do not have sufficient privileges to have access to the 'Create a Collection' page"
+	,'LANG_Please_Refresh_Page' => "An error has been detected which prevents further use of this page. Please refresh this page to continue."
 	,'LANG_Collection_Name_Label' => 'Name your Collection'
 	,'LANG_Validate' => 'Save'
 	,'LANG_Modify' => 'Modify'
@@ -47,8 +48,9 @@ $custom_terms = array(
 	,'LANG_Flower_ID_Key_label' => "You don't know the name of this flower"
 	,'LANG_Launch_ID_Key' => "Launch the identification tool"
 	,'LANG_Cancel_ID' => "Abort the identification tool"
+	,'LANG_Taxa_Returned' => "Taxa returned by ID Tool:"
 	,'LANG_Upload_Environment' => 'Upload a picture of the Environment'
-	,'LANG_Location_Notes' => 'Flower Location : click on the map or use the fields below:'
+	,'LANG_Location_Notes' => '<strong>Flower Location :</strong> click on the map or use the fields below:'
 	,'LANG_Georef_Label' => 'Location'
 	,'LANG_Georef_Notes' => '(This may be a village/town/city name, region, department or 5 digit postcode.)'
 	,'LANG_Or' => 'or :'
