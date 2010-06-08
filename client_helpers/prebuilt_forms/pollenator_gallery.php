@@ -188,6 +188,13 @@ class iform_pollenator_gallery {
           'group'=>'Floral Station Attributes'
             ),
       array(
+          'name'=>'flower_type_dont_know',
+          'caption'=>'Flower Type Dont Know ID',      
+          'description'=>'Indicia ID for the term meaning_id that shows a Flower type of dont know.',
+          'type'=>'int',
+          'group'=>'Floral Station Attributes'
+            ),
+      array(
           'name'=>'habitat_attr_id',
           'caption'=>'habitat Attribute ID',      
           'description'=>'Indicia ID for the location attribute that describes the habitat.',
@@ -461,6 +468,11 @@ class iform_pollenator_gallery {
     $options['initialFeatureWkt'] = null;
     $options['proxy'] = '';
     $options['suffixTemplate'] = 'nosuffix';
+    if( lang::get('msgGeorefSelectPlace') != 'msgGeorefSelectPlace')
+    	$options['msgGeorefSelectPlace'] = lang::get('msgGeorefSelectPlace');
+    if( lang::get('msgGeorefNothingFound') != 'msgGeorefNothingFound')
+    	$options['msgGeorefNothingFound'] = lang::get('msgGeorefNothingFound');
+    
     $options2 = $options;
     $options['searchLayer'] = 'true';
     $options['editLayer'] = 'false';
@@ -471,11 +483,17 @@ class iform_pollenator_gallery {
 
     // TBD Breadcrumb
  	$r .= '
+<h1 id="poll-banner">'.lang::get('LANG_Main_Title').'</h1>
 <div id="filter" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
 	  	<div id="results-collections-title">
 	  		<span>'.lang::get('LANG_Filter_Title').'</span>
     	</div>
+	</div>
+	<div id="filter-save" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+	  <input value="'.lang::get('LANG_Enter_Filter_Name').'" type="text" id="gallery-filter-save-name" />
+	  <input value="'.lang::get('LANG_Save_Filter_Button').'" type="button" id="gallery-filter-save-button" />
+	  <select value="" id="gallery-filter-retrieve" ></select>
 	</div>
 	<div id="filter-spec" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	  <div class="ui-accordion ui-widget ui-helper-reset">
@@ -510,8 +528,11 @@ class iform_pollenator_gallery {
       		</div>
 		</div>
 		<div id="flower-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
-		  '.data_entry_helper::select($flower_ctrl_args)
-		  .data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defAttrOptions)
+		  '.data_entry_helper::select($flower_ctrl_args).'
+ 		  <input type="text" name="flower:taxon_extra_info" class="taxon-info" value="'.lang::get('LANG_More_Precise').'"
+	 		onclick="if(this.value==\''.lang::get('LANG_More_Precise').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
+            onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_More_Precise').'\'; this.style.color=\'#555\'}" />
+		  '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defAttrOptions)
     	  .data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], $defAttrOptions).'
     	</div>
 		<div id="insect-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
@@ -522,8 +543,11 @@ class iform_pollenator_gallery {
       		</div>
 		</div>
 		<div id="insect-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
-		  '.data_entry_helper::select($insect_ctrl_args)
-    	  .data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defAttrOptions)
+		  '.data_entry_helper::select($insect_ctrl_args).'
+ 		  <input type="text" name="insect:taxon_extra_info" class="taxon-info" value="'.lang::get('LANG_More_Precise').'"
+	 		onclick="if(this.value==\''.lang::get('LANG_More_Precise').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
+            onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_More_Precise').'\'; this.style.color=\'#555\'}" />
+    	  '.data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defAttrOptions)
 		  .data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defAttrOptions)
 		  .data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defAttrOptions)
 		  .data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defAttrOptions)
@@ -550,7 +574,7 @@ class iform_pollenator_gallery {
  		    <input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
 	 		  onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
               onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
-    	    <input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default search-button" value="Search" />
+    	    <input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default search-button" value="'.lang::get('search').'" />
  	      </div>'.data_entry_helper::map_panel($options, $olOptions).'
 		</div>
       </div>
@@ -580,7 +604,6 @@ class iform_pollenator_gallery {
       </div>
 	  <div id="collection-description">
 	    <p id="collection-date"></p>
-	    <p id="collection-name"></p>
 	    <p id="collection-flower-name"></p>
 	    <p>'.$occurrence_attributes[$args['flower_type_attr_id']]['caption'].': <span id="collection-flower-type"></span></p>
 	    <p>'.$location_attributes[$args['habitat_attr_id']]['caption'].': <span id="collection-habitat"></span></p>
@@ -616,7 +639,6 @@ class iform_pollenator_gallery {
 	</div>
 </div>
 <div id="focus-occurrence" class="ui-accordion ui-widget ui-helper-reset">
-	<h1 id="fo-taxon"></h1>
 	<div id="fo-header" class="ui-accordion-content ui-helper-reset ui-state-active ui-corner-top ui-accordion-content-active">
 	  <div id="fo-header-buttons">
  	      <span id="fo-collection-button" class="ui-state-default ui-corner-all collection-button">'.lang::get('LANG_Collection').'</span>
@@ -748,6 +770,9 @@ class iform_pollenator_gallery {
 jQuery('#imp-georef-search-btn').removeClass('indicia-button').addClass('search-button');
 $.validator.messages.required = \"".lang::get('validation_required')."\";
 
+// remove the (don't know) entry from flower type filter.
+jQuery('[name=occAttr\\:".$args['flower_type_attr_id']."]').filter('[value=".$args['flower_type_dont_know']."]').parent().remove();
+ 
 jQuery('#start_date').datepicker({
   dateFormat : 'yy-mm-dd',
   constrainInput: false,
@@ -765,18 +790,6 @@ myScrollTo = function(selector){
 	});
 };
 
-jQuery('#filter-header').click(function(){
-    jQuery('#filter-header').addClass('ui-state-active').removeClass('ui-state-default').addClass('ui-corner-top').removeClass('ui-corner-all');
-	jQuery('#filter-spec,#filter-footer').removeClass('filter-hide');
-    jQuery('#results-collections-header,#results-insects-header').removeClass('ui-state-active').addClass('ui-state-default');
-    jQuery('#focus-occurrence,#focus-flower,#focus-collection,#results-insects-results,#results-collections-results').addClass('filter-hide');
-});
-jQuery('#results-collections-header').click(function(){
-    jQuery('#results-collections-header').addClass('ui-state-active').removeClass('ui-state-default');
-	jQuery('#results-collections-results').removeClass('filter-hide');
-    jQuery('#filter-header').removeClass('ui-state-active').addClass('ui-state-default').removeClass('ui-corner-top').addClass('ui-corner-all');
-	jQuery('#filter-spec,#filter-footer,#focus-occurrence,#focus-flower,#focus-collection,#results-insects-results').addClass('filter-hide');
-});
 jQuery('#reset-name-button').click(function(){
 	jQuery('[name=username]').val('');
 });
@@ -797,6 +810,7 @@ jQuery('#fold-date-button').click(function(){
 
 jQuery('#reset-flower-button').click(function(){
 	jQuery('[name=flower\\:taxa_taxon_list_id]').val('');
+	jQuery('[name=flower\\:taxon_extra_info]').val(\"".lang::get('LANG_More_Precise')."\");
 	jQuery('#flower-filter-body').find(':checkbox').removeAttr('checked');
 });
 jQuery('#fold-flower-button').click(function(){
@@ -807,6 +821,7 @@ jQuery('#fold-flower-button').click(function(){
 
 jQuery('#reset-insect-button').click(function(){
 	jQuery('[name=insect\\:taxa_taxon_list_id]').val('');
+	jQuery('[name=insect\\:taxon_extra_info]').val(\"".lang::get('LANG_More_Precise')."\");
 	jQuery('#insect-filter-body').find(':checkbox').removeAttr('checked');
 });
 
@@ -851,12 +866,11 @@ loadCollection = function(id){
     jQuery('[name=sample_comment\\:sample_id]').val(id);
     locationLayer.destroyFeatures();
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
-    jQuery('#focus-occurrence,#filter-spec,#filter-footer,#results-insects-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
-    jQuery('#filter-header').removeClass('ui-state-active').addClass('ui-state-default').removeClass('ui-corner-top').addClass('ui-corner-all');
+    jQuery('#focus-occurrence,#filter').addClass('filter-hide');
     jQuery('#focus-collection').removeClass('filter-hide');
 	jQuery('#map2').width(jQuery('#map2_container').width());
 	jQuery('#flower-image').attr('occID', 'none');
-	jQuery('#collection-insects,#collection-date,#collection-name,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
+	jQuery('#collection-insects,#collection-date,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
 	// this has a fixed target so can be done asynchronously.
 	$.getJSON(\"".$svcUrl."/data/occurrence\" +
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -928,7 +942,7 @@ loadCollection = function(id){
     		} else {
 	  			jQuery('<span>'+collectionData[0].date_start+' - '+collectionData[0].date_end+'</span>').appendTo('#collection-date');
     		}
-	  		jQuery('<span>'+collectionData[0].location_name+'</span>').appendTo('#collection-name');
+	  		jQuery('#poll-banner').empty().append(collectionData[0].location_name);
    		    $.getJSON(\"".$svcUrl."/data/location/\" +collectionData[0].location_id +
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 					\"&callback=?\", function(locationData) {
@@ -1042,7 +1056,7 @@ loadCollection = function(id){
 	    async: false 
     });
 	loadComments(id, '#fc-comment-list', 'sample_comment', 'sample_id', 'sample-comment-block', 'sample-comment-body');
-	myScrollTo('#focus-collection');
+	myScrollTo('#poll-banner');
 };
 test = function(a1)
 {
@@ -1146,7 +1160,6 @@ addInsect = function(attributes, endOfRow){
    			var string = '';
 			if(detData[i].taxon != '' && detData[i].taxon != null){
 				string = detData[i].taxon;
-				jQuery('#fo-taxon').append(detData[i].taxon);
   			}
 			if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null){
 				detData[i].taxa_taxon_list_id_list;
@@ -1563,6 +1576,16 @@ jQuery('#search-insects-button').click(function(){
 	runSearch(false);
 });
 
+combineOR = function(ORgroup){
+	if(ORgroup.length > 1){
+		return new OpenLayers.Filter.Logical({
+				type: OpenLayers.Filter.Logical.OR,
+				filters: ORgroup
+			});
+	}
+	return ORgroup[0];
+};
+
 runSearch = function(forCollections){
   	var ORgroup = [];
 	
@@ -1576,200 +1599,86 @@ runSearch = function(forCollections){
 	// By default restrict selection to area displayed on map. When using the georeferencing system the map searchLayer
 	// will contain a single point zoomed in appropriately.
 	var mapBounds = jQuery('#map')[0].map.getExtent();
-	if (mapBounds != null){
-	  filters.push(new OpenLayers.Filter.Spatial({
-    	type: OpenLayers.Filter.Spatial.BBOX,
-    	property: 'geom',
-    	value: mapBounds
-  	  }));
-  	}
-  	if(inseeLayer != null){
-  		if(inseeLayer.features.length > 0){
-  			// should only be one entry in the inseeLayer
-			filters.push(new OpenLayers.Filter.Spatial({
-    			type: OpenLayers.Filter.Spatial.WITHIN,
-    			property: 'geom',
-    			value: inseeLayer.features[0].geometry
-		  	}));
-  		}
-  	}
-  	if(polygonLayer != null){
+	if (mapBounds != null)
+	  filters.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.BBOX, property: 'geom', value: mapBounds}));
+  	// should only be one entry in the inseeLayer
+	if(inseeLayer != null)
+  		if(inseeLayer.features.length > 0)
+			filters.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.WITHIN, property: 'geom',value: inseeLayer.features[0].geometry}));
+  	if(polygonLayer != null)
   		if(polygonLayer.features.length > 0){
   			ORgroup = [];
-  			for(i=0; i< polygonLayer.features.length; i++){
-				ORgroup.push(new OpenLayers.Filter.Spatial({
-    				type: OpenLayers.Filter.Spatial.WITHIN,
-	    			property: 'geom',
-    				value: polygonLayer.features[i].geometry
-		  		}));
-  			}
-		  	if(ORgroup.length > 1){
-				filters.push(new OpenLayers.Filter.Logical({
-					type: OpenLayers.Filter.Logical.OR,
-					filters: ORgroup
-				}));
-			} else {
-  				if(ORgroup.length == 1){
-			 		filters.push(ORgroup[0]);
-	 			}
-		  	} 	
+  			for(i=0; i< polygonLayer.features.length; i++)
+				ORgroup.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.WITHIN, property: 'geom', value: polygonLayer.features[i].geometry}));
+		  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   		}
-  	}
+
   	// Only deal with completed collections on our survey.
-  	filters.push(new OpenLayers.Filter.Comparison({
-  		type: OpenLayers.Filter.Comparison.LIKE,
-    	property: 'collection_attributes',
-    	value: '*{|".$args['complete_attr_id']."|,1}*'
-  	}));
-  	filters.push(new OpenLayers.Filter.Comparison({
-  		type: OpenLayers.Filter.Comparison.EQUAL_TO,
-    	property: 'survey_id',
-    	value: '".$args['survey_id']."'
-  	}));
+  	filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'collection_attributes', value: '*{|".$args['complete_attr_id']."|,1}*'}));
+  	filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'survey_id', value: '".$args['survey_id']."' }));
   	
   	var user = jQuery('input[name=username]').val();
-  	if(user != ''){
-  		filters.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE,
-    		property: 'collection_attributes',
-    		value: '*{|".$args['username_attr_id']."|,'+user+'}*'
-  		}));
-  	}
+  	if(user != '')
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'collection_attributes', value: '*{|".$args['username_attr_id']."|,'+user+'}*'}));
   	
   	var start_date = jQuery('input[name=start_date]').val();
   	var end_date = jQuery('input[name=end_date]').val();
-  	if(start_date != '".lang::get('click here')."' && start_date != ''){
-  		filters.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.GREATER_THAN  ,
-    		property: 'date_end',
-    		value: start_date
-  		}));
-  	}
-  	if(end_date != '".lang::get('click here')."' && end_date != ''){
-  		filters.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LESS_THAN  ,
-    		property: 'date_start',
-    		value: end_date
-  		}));
-  	}
+  	if(start_date != '".lang::get('click here')."' && start_date != '')
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN, property: 'date_end', value: start_date}));
+  	if(end_date != '".lang::get('click here')."' && end_date != '')
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN, property: 'date_start', value: end_date}));
   	
   	var flower = jQuery('select[name=flower\\:taxa_taxon_list_id]').val();
-  	if(flower != ''){
-  		filters.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE ,
-    		property: 'flower_taxon',
-    		value: '*|'+flower+'|*'
-  		}));
-  	}
- 
+  	if(flower != '')
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon', value: '*|'+flower+'|*'}));
+  	flower = jQuery('[name=flower\\:taxon_extra_info]').val();
+  	if(flower != '' && flower != '".lang::get('LANG_More_Precise')."')
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_extra_info', value: '*'+flower+'*' }));
+  	
   	ORgroup = [];
   	jQuery('#flower-filter-body').find('[name^=occAttr:".$args['flower_type_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE ,
-    		property: 'flower_attributes',
-    		value: '*{|".$args['flower_type_attr_id']."|,'+elem.value+'}*'
-  		}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_attributes', value: '*{|".$args['flower_type_attr_id']."|,'+elem.value+'}*'}));
   	});
-  	if(ORgroup.length > 1){
-		filters.push(new OpenLayers.Filter.Logical({
-			type: OpenLayers.Filter.Logical.OR,
-			filters: ORgroup
-		}));
-	} else {
-  		if(ORgroup.length == 1){
-	 		filters.push(ORgroup[0]);
-	 	}
-  	}
- 
+  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+  	
   	ORgroup = [];
   	jQuery('#flower-filter-body').find('[name^=locAttr:".$args['habitat_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE ,
-    		property: 'location_attributes',
-    		value: '*{|".$args['habitat_attr_id']."|,'+elem.value+'}*'
-  		}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'location_attributes', value: '*{|".$args['habitat_attr_id']."|,'+elem.value+'}*'}));
   	});
-  	if(ORgroup.length > 1){
-		filters.push(new OpenLayers.Filter.Logical({
-			type: OpenLayers.Filter.Logical.OR,
-			filters: ORgroup
-		}));
-	} else {
-  		if(ORgroup.length == 1){
-	 		filters.push(ORgroup[0]);
-	 	}
-  	}
-  	
+  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+  	  	
   	var insect = jQuery('select[name=insect\\:taxa_taxon_list_id]').val();
   	if(insect != ''){
   		use_insects = true;
-  		filters.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE ,
-    		property: forCollections ? 'insects' : 'insect_taxon',
-    		value: '*|'+insect+'|*'
-  		}));
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: forCollections ? 'insects' : 'insect_taxon', value: '*|'+insect+'|*'}));
   	}
-
+  	insect = jQuery('[name=insect\\:taxon_extra_info]').val();
+  	if(insect != '' && insect != '".lang::get('LANG_More_Precise')."'){
+  		use_insects = true;
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_extra_info', value: '*'+insect+'*'}));
+  	}
+  	
   	ORgroup = [];
   	jQuery('#insect-filter-body').find('[name^=smpAttr:".$args['sky_state_attr_id']."]').filter('[checked]').each(function(index, elem){
   		use_insects = true;
-  		ORgroup.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE ,
-    		property: 'session_attributes',
-    		value: '*{|".$args['sky_state_attr_id']."|,'+elem.value+'}*'
-  		}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'session_attributes', value: '*{|".$args['sky_state_attr_id']."|,'+elem.value+'}*'}));
   	});
-  	if(ORgroup.length > 1){
-		filters.push(new OpenLayers.Filter.Logical({
-			type: OpenLayers.Filter.Logical.OR,
-			filters: ORgroup
-		}));
-	} else {
-  		if(ORgroup.length == 1){
-	 		filters.push(ORgroup[0]);
-	 	}
-  	}
-
+  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+  	
   	ORgroup = [];
   	jQuery('#insect-filter-body').find('[name^=smpAttr:".$args['temperature_attr_id']."]').filter('[checked]').each(function(index, elem){
   		use_insects = true;
-  		ORgroup.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE ,
-    		property: 'session_attributes',
-    		value: '*{|".$args['temperature_attr_id']."|,'+elem.value+'}*'
-  		}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'session_attributes', value: '*{|".$args['temperature_attr_id']."|,'+elem.value+'}*'}));
   	});
-  	if(ORgroup.length > 1){
-		filters.push(new OpenLayers.Filter.Logical({
-			type: OpenLayers.Filter.Logical.OR,
-			filters: ORgroup
-		}));
-	} else {
-  		if(ORgroup.length == 1){
-	 		filters.push(ORgroup[0]);
-	 	}
-  	}
-
+  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+  	
   	ORgroup = [];
   	jQuery('#insect-filter-body').find('[name^=smpAttr:".$args['wind_attr_id']."]').filter('[checked]').each(function(index, elem){
   		use_insects = true;
-  		ORgroup.push(new OpenLayers.Filter.Comparison({
-  			type: OpenLayers.Filter.Comparison.LIKE ,
-    		property: 'session_attributes',
-    		value: '*{|".$args['wind_attr_id']."|,'+elem.value+'}*'
-  		}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'session_attributes', value: '*{|".$args['wind_attr_id']."|,'+elem.value+'}*'}));
   	});
-  	if(ORgroup.length > 1){
-		filters.push(new OpenLayers.Filter.Logical({
-			type: OpenLayers.Filter.Logical.OR,
-			filters: ORgroup
-		}));
-	} else {
-  		if(ORgroup.length == 1){
-	 		filters.push(ORgroup[0]);
-	 	}
-  	}
-
+  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+  	
 	// TODO need to do shade : this needs to be altered so that the attribute is a termlist
   	
 	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
@@ -1822,14 +1731,7 @@ clearErrors = function(formSel) {
 	jQuery(formSel).find('.inline-error').remove();
 	errorPos = null;
 };
-myScrollTo = function(selector){
-	jQuery(selector).filter(':visible').each(function(){
-		if(errorPos == null || jQuery(this).offset().top < errorPos){
-			errorPos = jQuery(this).offset().top;
-			window.scroll(0,errorPos);
-		}
-	});
-};
+
 myScrollToError = function(){
 	jQuery('.inline-error,.error').filter(':visible').prev().each(function(){
 		if(errorPos == null || jQuery(this).offset().top < errorPos){
@@ -2077,7 +1979,7 @@ loadImage = function(imageTable, key, keyValue, target){
 loadDeterminations = function(keyValue, historyID, currentID, lookup){
 	jQuery(historyID).empty().append('<strong>".lang::get('LANG_History_Title')."</strong>');
 	jQuery(currentID).empty();
-	jQuery('#fo-taxon').empty();
+	jQuery('#poll-banner').empty();
 	jQuery('#fo-warning').addClass('occurrence-ok').removeClass('occurrence-dubious').removeClass('occurrence-unknown');
 	$.getJSON(\"".$svcUrl."/data/determination\" +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -2089,7 +1991,6 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup){
    			var string = '';
 			if(detData[i].taxon != '' && detData[i].taxon != null){
 				string = detData[i].taxon;
-				jQuery('#fo-taxon').append(detData[i].taxon);
   			}
 			if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null){
 				detData[i].taxa_taxon_list_id_list;
@@ -2102,7 +2003,8 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup){
 			  		}
 			  	}
 			}
-  			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+			jQuery('#poll-banner').append(string);
+			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 				string = (string == '' ? '' : string + ' ') + '('+detData[i].taxon_extra_info+')';
 			}
 			if(string != '')
@@ -2265,7 +2167,6 @@ loadFlowerAddnInfo = function(keyValue){
 
 loadInsect = function(insectID){
     jQuery('#focus-collection,#filter,#fo-flower-addn-info').addClass('filter-hide');
-    jQuery('#filter-header').removeClass('ui-state-active').addClass('ui-state-default').removeClass('ui-corner-top').addClass('ui-corner-all');
     jQuery('#focus-occurrence,#fo-addn-info-header,#fo-insect-addn-info').removeClass('filter-hide');
 	jQuery('[name=determination\\:occurrence_id]').val(insectID);
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(insectID);
@@ -2278,12 +2179,11 @@ loadInsect = function(insectID){
 	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id', 'form#fo-new-insect-id-form');
 	loadInsectAddnInfo(insectID);
 	loadComments(insectID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
-	myScrollTo('#focus-occurrence');
+	myScrollTo('#poll-banner');
 }
 loadFlower = function(flowerID){
 	jQuery('#fo-prev-button,#fo-next-button').hide();
 	jQuery('#focus-collection,#filter,#fo-insect-addn-info').addClass('filter-hide');
-    jQuery('#filter-header').removeClass('ui-state-active').addClass('ui-state-default').removeClass('ui-corner-top').addClass('ui-corner-all');
 	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-flower-addn-info').removeClass('filter-hide');
 	jQuery('#fo-new-comment,#fo-new-id').removeClass('ui-accordion-content-active');
 	jQuery('[name=determination\\:occurrence_id]').val(flowerID);
@@ -2296,7 +2196,7 @@ loadFlower = function(flowerID){
 	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form');
 	loadFlowerAddnInfo(flowerID);
 	loadComments(flowerID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
-	myScrollTo('#focus-occurrence');
+	myScrollTo('#poll-banner');
 }
 
 jQuery('#fo-new-comment-button').click(function(){ 
@@ -2356,19 +2256,13 @@ MyEditingToolbar=OpenLayers.Class(
 
     switch($mode){
     	case 'INSECT':
-		    data_entry_helper::$onload_javascript .= "loadInsect(".$occID.");
-			";
+		    data_entry_helper::$onload_javascript .= "loadInsect(".$occID.");";
 		    break;
     	case 'FLOWER':
-		    data_entry_helper::$onload_javascript .= "loadFlower(".$occID.");
-			";
+		    data_entry_helper::$onload_javascript .= "loadFlower(".$occID.");";
 		    break;
 		case 'COLLECTION':
-		    data_entry_helper::$onload_javascript .= "
-    		jQuery('#focus-occurrence,#filter-spec,#filter-footer,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
-    		jQuery('#filter-header').removeClass('ui-state-active').addClass('ui-state-default').removeClass('ui-corner-top').addClass('ui-corner-all');
-    		loadCollection(".$smpID.");
-    		";
+		    data_entry_helper::$onload_javascript .= "loadCollection(".$smpID.");";
     		break;
     	default:
     		data_entry_helper::$onload_javascript .= "
@@ -2376,12 +2270,10 @@ MyEditingToolbar=OpenLayers.Class(
     		";
     		if($userID != ''){
     			$thisuser = user_load($userID);
-    			data_entry_helper::$onload_javascript .= "
-    			jQuery('[name=username]').val('".($thisuser->name)."');
-    			jQuery('#search-collections-button').click();
-    			";
+    			data_entry_helper::$onload_javascript .= "jQuery('[name=username]').val('".($thisuser->name)."');";
     		}
-       		break;
+    		data_entry_helper::$onload_javascript .= "jQuery('#search-collections-button').click();";
+    		break;
     }
     return $r;
   }

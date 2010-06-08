@@ -49,6 +49,7 @@ $custom_terms = array(
 	,'LANG_Launch_ID_Key' => "Launch the identification tool"
 	,'LANG_Cancel_ID' => "Abort the identification tool"
 	,'LANG_Taxa_Returned' => "Taxa returned by ID Tool:"
+	,'LANG_ID_Unrecognised' => 'The following were returned by the ID tool but are unrecognised: '
 	,'LANG_Upload_Environment' => 'Upload a picture of the Environment'
 	,'LANG_Location_Notes' => '<strong>Flower Location :</strong> click on the map or use the fields below:'
 	,'LANG_Georef_Label' => 'Location'

@@ -466,6 +466,7 @@ jQuery('#".$id."').click(function(){
     				'lookUpKey' => 'meaning_id',
     				'language' => iform_lang_iso_639_2($args['language']),
     				'containerClass' => 'group-control-box',
+       				'sep' => ' &nbsp; ',
     				'suffixTemplate'=>'nosuffix');
     $defAttrOptions=$defNRAttrOptions;
     $defAttrOptions ['validation'] = array('required');
@@ -478,7 +479,7 @@ jQuery('#".$id."').click(function(){
         '<label for="{idLong}">{labelLong}:</label>'.
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" />';
     
-    $r .= data_entry_helper::loading_block_start();
+	$r .= data_entry_helper::loading_block_start();
 
     // note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
 	// For security reasons we don't want to give the user the ability to generate their own nonce, so we use
@@ -852,6 +853,11 @@ $('#cc-1-reinit-button').click(function() {
     // Switch to degrees, minutes, seconds for lat long.
     $options['latLongFormat'] = 'DMS';
     $options['suffixTemplate'] = 'nosuffix';
+    if( lang::get('msgGeorefSelectPlace') != 'msgGeorefSelectPlace')
+    	$options['msgGeorefSelectPlace'] = lang::get('msgGeorefSelectPlace');
+    if( lang::get('msgGeorefNothingFound') != 'msgGeorefNothingFound')
+    	$options['msgGeorefNothingFound'] = lang::get('msgGeorefNothingFound');
+    
     $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order');
     $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
@@ -960,7 +966,7 @@ $('#cc-1-reinit-button').click(function() {
  		<input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
 	 		onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
             onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
-    	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default search-button" value="Search" />
+    	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default search-button" value="'.lang::get('search').'" />
         '.data_entry_helper::sref_textbox(array(
 		        'srefField'=>'place:entered_sref',
         		'systemfield'=>'place:entered_sref_system',
