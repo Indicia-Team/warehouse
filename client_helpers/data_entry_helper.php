@@ -766,6 +766,11 @@ class data_entry_helper extends helper_config {
   * Optional. Hint provided to the locality search service as to which country to look for the place name in. Defaults to United Kingdom.</li>
   * <li><b>georefLang</b><br/>
   * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
+  * <li><b>driver</b><br/>
+  * Optional. Driver to use for the georeferencing operation. Supported options are:
+  *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.
+  *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a 
+  *       georefPreferredArea and georefCountry to work correctly.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the georeference lookup control.
@@ -774,20 +779,26 @@ class data_entry_helper extends helper_config {
     $options = self::check_options($options);
     $options = array_merge(array(
       'id' => 'imp-georef-search',
-      'georefPreferredArea' => 'gb',
-      'georefCountry' => 'United Kingdom',
-      'georefLang' => 'en-EN',
+      'driver' => 'geoplanet',
       // Internationalise the labels here, because if we do this directly in the template setup code it is too early for any custom
       // language files to be loaded.
       'search' => lang::get('search'),
       'close' => lang::get('close'),
     ), $options);
-
+    self::add_resource('georeference_'.$options['driver']);
     self::$javascript .= "indicia_url='".self::$base_url."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea='".$options['georefPreferredArea']."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry='".$options['georefCountry']."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.georefLang='".$options['georefLang']."';\n";
-    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey='".parent::$geoplanet_api_key."';\n";
+    foreach ($options as $key=>$value) {
+      // if any of the options are for the georeferencer driver, then we must set them in the JavaScript. 
+      if (substr($key, 0, 6)=='georef') {
+        self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
+      }
+    }
+    foreach (get_class_vars(helper_config) as $key=>$value) {
+      // if any of the config settings are for the georeferencer driver, then we must set them in the JavaScript.
+      if (substr($key, 0, strlen($options['driver']))==$options['driver']) {
+        self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
+      }
+    }
     return self::apply_template('georeference_lookup', $options);
   }
 
@@ -4336,6 +4347,12 @@ $('.ui-state-default').live('mouseout', function() {
       'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
       'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
       'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
+      'georeference_geoplanet' => array('deps' =>array('indiciaMapPanel'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."drivers/georeference/geoplanet.js")),
+      'georeference_google_search_api' => array('deps' =>array('indiciaMapPanel'), 'stylesheets' => array(), 'javascript' => array(
+          self::$js_path."drivers/georeference/google_search_api.js",
+          "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
+      )),    
+      'georeference_geoportal_lu' => array('deps' =>array('indiciaMapPanel'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."drivers/georeference/geoportal_lu.js")),    
       'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
       'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
       'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),

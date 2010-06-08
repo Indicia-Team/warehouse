@@ -359,6 +359,7 @@ class iform_mnhnl_citizen_science_1 {
       'systems' => $systems
     ));
     $r .= data_entry_helper::georeference_lookup(array(
+      'driver'=>'geoportal_lu',
       'label' => lang::get('search for place on map'),
       'georefPreferredArea' => $args['georefPreferredArea'],
       'georefCountry' => $args['georefCountry'],
