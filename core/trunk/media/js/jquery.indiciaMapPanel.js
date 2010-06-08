@@ -1,5 +1,4 @@
-/**
- * Indicia, the OPAL Online Recording Toolkit.
+/* Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -221,20 +220,19 @@
       });
 
       // If a place search (georeference) control exists, bind it to the map.
-      $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchId).keypress(function(e) {
+      $('#'+div.georefOpts.georefSearchId).keypress(function(e) {
         if (e.which==13) {
           _georeference(div);
           return false;
         }
       });
 
-      $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchBtnId).click(function() {
+      $('#'+div.georefOpts.georefSearchBtnId).click(function() {
         _georeference(div);
       });
 
-      $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCloseBtnId).click(function()
-      {
-        $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).hide('fast');
+      $('#'+div.georefOpts.georefCloseBtnId).click(function() {
+        $('#'+div.georefOpts.georefDivId).hide('fast');
       });
 
       $('#imp-location').change(function()
@@ -286,76 +284,69 @@
     }
 
     function _georeference(div) {
-      if ($.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey.length===0) {
-        alert('Incorrect configuration - Geoplanet API Key not specified.');
-        throw('Incorrect configuration - Geoplanet API Key not specified.');
-      }
-      $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).hide();
-      $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId).empty();
-      var ref;
-      var corner1;
-      var corner2;
-      var searchtext = $('#' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefSearchId).val();
+      $('#' + div.georefOpts.georefDivId).hide();
+      $('#' + div.georefOpts.georefOutputDivId).empty();
+      var searchtext = $('#' + div.georefOpts.georefSearchId).val();
       if (searchtext != '') {
-        var request = 'http://where.yahooapis.com/v1/places.q("' +
-        searchtext + ' ' + $.fn.indiciaMapPanel.georeferenceLookupSettings.georefPreferredArea + '", "' +
-            $.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry + '");count=10';
-        $.getJSON(request + "?format=json&lang="+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefLang+
-            "&appid="+$.fn.indiciaMapPanel.georeferenceLookupSettings.geoPlanetApiKey+"&callback=?", function(data){
-          // an array to store the responses in the required country, because GeoPlanet will not limit to a country
-          var found = { places: [], count: 0 };
-          jQuery.each(data.places.place, function(i,place) {
-            // Ingore places outside the chosen country, plus ignore places that were hit because they
-            // are similar to the country name we are searching in.
-            if (place.country.toUpperCase()==$.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase() &&
-                (place.name.toUpperCase().indexOf($.fn.indiciaMapPanel.georeferenceLookupSettings.georefCountry.toUpperCase())==-1 ||
-                place.name.toUpperCase().indexOf(searchtext.toUpperCase())!=-1)) {
-              found.places.push(place);
-              found.count++;
-            }
-          });
-          if (found.count==1 && found.places[0].name.toLowerCase()==searchtext.toLowerCase()) {
-            ref=found.places[0].centroid.latitude + ', ' + found.places[0].centroid.longitude;
-            corner1=found.places[0].boundingBox.northEast.latitude + ', ' + found.places[0].boundingBox.northEast.longitude;
-            corner2=found.places[0].boundingBox.southWest.latitude + ', ' + found.places[0].boundingBox.southWest.longitude;
-            _displayLocation(div, ref, corner1, corner2);
-          } else if (found.count!==0) {
-            $('<p>'+opts.msgGeorefSelectPlace+'</p>')
-                    .appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
-            var ol=$('<ol>'), placename;
-            $.each(found.places, function(i,place){
-              ref= place.centroid.latitude + ', ' + place.centroid.longitude;
-              corner1=place.boundingBox.northEast.latitude + ', ' + place.boundingBox.northEast.longitude;
-              corner2=place.boundingBox.southWest.latitude + ', ' + place.boundingBox.southWest.longitude;
-              placename = place.name+' (' + place.placeTypeName + ')';
-              if (place.admin1!='') {
-                placename = placename + ', '+place.admin1;
-              }
-              if (place.admin2!='') { 
-                placename = placename + '\\' + place.admin2;
-              }
-
-              ol.append($("<li>").append(
-                $("<a href='#'>" + placename + "</a>")
-                  .click(function(e) {e.preventDefault();})
-                  .click((
-                    // use closures to persist the values of ref, corner1, corner 2 
-                    function(ref, corner1, corner2){
-                      return function() { 
-                        _displayLocation(div, ref, corner1, corner2);
-                      };
-                    }
-                  )(ref, corner1, corner2))
-              ));
-            });
+        // delegate the service lookup task to the georeferencer driver that is loaded.
+        div.georeferencer.georeference(searchtext);
+      }
+    }
     
-            ol.appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
-            $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).show("fast");
-          } else {
-            $('<p>'+opts.msgGeorefNothingFound+'</p>').appendTo('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefOutputDivId);
-            $('#'+$.fn.indiciaMapPanel.georeferenceLookupSettings.georefDivId).show("fast");
-          }
-        });
+    /**
+     * Callback function, called by the georeferencer driver when it has found the results of a place
+     * search.
+     */
+    function _displayGeorefOutput(div, places) {
+      if (places.length>0) {
+        var ref;
+        var corner1;
+        var corner2;
+        var epsg = (places[0].epsg == undefined ? 4326 : places[0].epsg);
+        if (places.length==1 && places[0].name.toLowerCase()==$('#' + div.georefOpts.georefSearchId).val()) {
+          ref=places[0].centroid.y + ', ' + places[0].centroid.x;
+          corner1=places[0].boundingBox.northEast.y + ', ' + places[0].boundingBox.northEast.x;
+          corner2=places[0].boundingBox.southWest.y + ', ' + places[0].boundingBox.southWest.x;
+          _displayLocation(div, ref, corner1, corner2, epsg);
+        } else if (places.length!==0) {
+          $('<p>'+opts.msgGeorefSelectPlace+'</p>')
+                  .appendTo('#'+div.georefOpts.georefOutputDivId);
+          var ol=$('<ol>'), placename;
+          $.each(places, function(i,place){
+            ref= place.centroid.y + ', ' + place.centroid.x;
+            corner1=place.boundingBox.northEast.y + ', ' + place.boundingBox.northEast.x;
+            corner2=place.boundingBox.southWest.y + ', ' + place.boundingBox.southWest.x;
+            placename= (place.display==undefined ? place.name : place.display);
+            if (place.placeTypeName!==undefined) {
+              placename = placename+' (' + place.placeTypeName + ')';
+            }
+            if (place.admin1!==undefined && place.admin1!='') {
+              placename = placename + ', '+place.admin1;
+            }
+            if (place.admin2!==undefined && place.admin2!='') { 
+              placename = placename + '\\' + place.admin2;
+            }
+  
+            ol.append($("<li>").append(
+              $("<a href='#'>" + placename + "</a>")
+                .click(function(e) {e.preventDefault();})
+                .click((
+                  // use closures to persist the values of ref, corner1, corner 2 
+                  function(ref, corner1, corner2, epsg){
+                    return function() { 
+                      _displayLocation(div, ref, corner1, corner2, epsg);
+                    };
+                  }
+                )(ref, corner1, corner2, epsg))
+            ));
+          });
+  
+          ol.appendTo('#'+div.georefOpts.georefOutputDivId);
+          $('#'+div.georefOpts.georefDivId).show("fast");
+        }
+      } else {
+        $('<p>'+opts.msgGeorefNothingFound+'</p>').appendTo('#'+div.georefOpts.georefOutputDivId);
+        $('#'+div.georefOpts.georefDivId).show("fast");
       }
     }
 
@@ -363,16 +354,15 @@
     * After georeferencing a place, display a point on the map representing that place.
     * @access private
     */
-    function _displayLocation(div, ref, corner1, corner2)
+    function _displayLocation(div, ref, corner1, corner2, epsgCode)
     { 
-      // 4326 is the projection for points obtained from GeoPlanet.
-      var epsg4326=new OpenLayers.Projection("EPSG:4326");
+      var epsg=new OpenLayers.Projection("EPSG:"+epsgCode);
       var refxy = ref.split(', ');
-      var dataref = new OpenLayers.Geometry.Point(refxy[1],refxy[0]).transform(epsg4326, div.map.projection).toString();
+      var dataref = new OpenLayers.Geometry.Point(refxy[1],refxy[0]).transform(epsg, div.map.projection).toString();
       var corner1xy = corner1.split(', ');
-      var datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg4326, div.map.projection).toString();
+      var datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg, div.map.projection).toString();
       var corner2xy = corner2.split(', ');
-      var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg4326, div.map.projection).toString();
+      var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
       _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
     }
 
@@ -425,8 +415,12 @@
       // Create a projection to represent data in the Indicia db
       div.indiciaProjection = new OpenLayers.Projection('EPSG:900913');
 
-      // Constructs the map
+      // Constructs the map      
       div.map = new OpenLayers.Map($(this)[0], olOptions);
+      
+      // and prepare a georeferencer
+      div.georefOpts = $.extend({}, $.fn.indiciaMapPanel.georeferenceDriverSettings, $.fn.indiciaMapPanel.georeferenceLookupSettings);
+      div.georeferencer = new Georeferencer(div, _displayGeorefOutput);
       
       // Add any tile cache layers
       var tcLayer;
@@ -616,11 +610,7 @@ $.fn.indiciaMapPanel.georeferenceLookupSettings = {
   georefSearchBtnId: 'imp-georef-search-btn',
   georefCloseBtnId: 'imp-georef-close-btn',
   georefOutputDivId: 'imp-georef-output-div',
-  georefDivId: 'imp-georef-div',
-  georefPreferredArea : 'gb',
-  georefCountry : 'United Kingdom',
-  georefLang : 'en-EN',
-  geoPlanetApiKey: ''
+  georefDivId: 'imp-georef-div'
 };
 
 /**

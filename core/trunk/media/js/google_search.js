@@ -50,7 +50,7 @@ function decodePostcode(addressField) {
 
 // Private method
 function usePointFromPostcode(postcode, callbackFunction) {
-  var localSearch = new google.search.LocalSearch();
+  var localSearch = new google.search.LocalSearch();  
   localSearch.setSearchCompleteCallback(null,
     function() {
       if (localSearch.results[0])
