@@ -3336,6 +3336,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     ) {
       $response = array();
       $handle = fopen($file, 'rb');
+      if(!$handle) return false;
       $tags = fgets($handle);
       $response['output'] = fread($handle, filesize($file));
       fclose($handle);
@@ -3367,11 +3368,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _cacheResponse($file, $response, $options)
   {
+  	// need to create the file as a binary event - so create a temp file and move across.
     if ($file && !is_file($file)) {
-      $handle = fopen($file, 'wb');
+      $handle = fopen($file.getmypid(), 'wb');
       fputs($handle, self::array_to_query_string($options)."\n");
       fwrite($handle, $response['output']);
       fclose($handle);
+      rename($file.getmypid(),$file);
     }
   }
 
