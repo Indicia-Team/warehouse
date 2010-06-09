@@ -231,8 +231,9 @@
         _georeference(div);
       });
 
-      $('#'+div.georefOpts.georefCloseBtnId).click(function() {
+      $('#'+div.georefOpts.georefCloseBtnId).click(function(e) {
         $('#'+div.georefOpts.georefDivId).hide('fast');
+        e.preventDefault();
       });
 
       $('#imp-location').change(function()
