@@ -41,7 +41,7 @@ $custom_terms = array(
   'sample:date' => 'Datum',
   'sample:entered_sref'=>'Koordinaten',
   'search'=>'Suchen',
-  'search for place on map'=>'Standort auf der Karte suchen',
+  'LANG_Georef_Label'=>'Standort auf der Karte suchen',
   'surname'=>'Nachname',
   'you are recording a'=>'You are entering a record of a #1#. Please use the form below to provide the details.',
   

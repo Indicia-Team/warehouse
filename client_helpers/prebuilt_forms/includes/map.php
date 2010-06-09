@@ -133,6 +133,45 @@ function iform_map_get_map_parameters() {
 }
 
 /**
+ * Return a list of parameter definitions for a form that includes definition of a georeference_lookup control.
+ * @return array List of parameter definitions.
+ */
+function iform_map_get_georef_parameters() {
+  return array(
+    array(
+      'name'=>'georefPreferredArea',
+      'caption'=>'Preferred area for georeferencing.',
+      'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
+      'type'=>'string',
+      'default'=>'gb',
+      'group'=>'Georeferencing'
+    ),
+    array(
+      'name'=>'georefCountry',
+      'caption'=>'Preferred country for georeferencing.',
+      'description'=>'Preferred country to look within when trying to resolve a place name.',
+      'type'=>'string',
+      'default'=>'United Kingdom',
+      'group'=>'Georeferencing'
+    ),
+    array(
+      'name'=>'georefDriver',
+      'caption'=>'Web service used for georeferencing',
+      'description'=>'Choose the web service used for resolving place names to points on the map. Each web-service has a '.
+           'different set of characteristics. If you are unsure which to use, the Yahoo! GeoPlanet service is a good starting point.',
+      'type'=>'select',
+      'default'=>'geoplanet',
+      'options' => array(
+        'geoplanet' => 'Yahoo! GeoPlanet (all round place search)',
+        'google_search_api' => 'Google AJAX Search API (works well with postcodes or for places near the preferred area)',
+        'geoportal_lu' => 'ACT Geoportal Luxembourg (for places in Luxumbourg)'
+      ),
+      'group'=>'Georeferencing'
+    )
+  );
+}
+
+/**
  * Return a list of options to pass to the data_entry_helper::map_panel method, built from the prebuilt
  * form arguments.
  * @param $args
@@ -186,4 +225,21 @@ function iform_map_get_ol_options($args) {
   } else {
     return null;
   }
+}
+
+/**
+ * Return a list of options to pass to the data_entry_helper::georeference_lookup method, built from the prebuilt
+ * form arguments.
+ * @param $args
+ * @param $readAuth
+ * @return array Options array for the map.
+ */
+function iform_map_get_georef_options($args) {
+  return array(
+    'driver'=>$args['georefDriver'],
+    'label' => lang::get('LANG_Georef_Label'),
+    'georefPreferredArea' => $args['georefPreferredArea'],
+    'georefCountry' => $args['georefCountry'],
+    'georefLang' => $args['language']
+  );
 }

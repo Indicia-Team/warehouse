@@ -51,7 +51,8 @@ class iform_mnhnl_collaborators_1 {
    */
   public static function get_parameters() {    
     $retVal = array_merge(
-     iform_map_get_map_parameters(), 
+     iform_map_get_map_parameters(),
+     iform_map_get_georef_parameters(),
      array(
         array(
           'name'=>'spatial_systems',
@@ -419,12 +420,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     
     $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
     
-    $r .= data_entry_helper::georeference_lookup(array(
-      'label' => lang::get('LANG_Georef_Label'),
-      'georefPreferredArea' => $args['georefPreferredArea'],
-      'georefCountry' => $args['georefCountry'],
-      'georefLang' => $args['language']
-    ));
+    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
     $options = iform_map_get_map_options($args, $readAuth);
     $options['layers'][] = 'locationLayer';
     $olOptions = iform_map_get_ol_options($args);
