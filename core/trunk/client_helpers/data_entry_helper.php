@@ -253,6 +253,19 @@ class data_entry_helper extends helper_config {
   public static $css_path = null;
 
   /**
+   * @var Array List of all available resources known. Each resource is named, and contains a sub array of 
+   * deps (dependencies), stylesheets and javascripts.
+   */
+  private static $resource_list=null;
+  
+  /**
+   * @var Array List of resources that have been identified as required by the controls used. This defines the 
+   * JavaScript and stylesheets that must be added to the page. Each entry is an array containing stylesheets and javascript
+   * sub-arrays. This has public access so the Drupal module can perform Drupal specific resource output.
+   */
+  public static $required_resources=array();
+  
+  /**
    * @var array List of resources that have already been dumped out, so we don't duplicate them.
    */
   private static $dumped_resources=array();
@@ -772,7 +785,8 @@ class data_entry_helper extends helper_config {
   *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a 
   *       georefPreferredArea and georefCountry to work correctly.</li>
   * </ul>
-  *
+  * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
+  * @link http://code.google.com/p/indicia/wiki/GeoreferenceLookupDrivers Documentation for the driver architecture.
   * @return string HTML to insert into the page for the georeference lookup control.
   */
   public static function georeference_lookup($options) {
@@ -785,6 +799,14 @@ class data_entry_helper extends helper_config {
       'search' => lang::get('search'),
       'close' => lang::get('close'),
     ), $options);
+    // dynamically build a resource to link us to the driver js file, and ensure the map is included.
+    self::add_resource('indiciaMapPanel');
+    self::$required_resources[] = 'georeference_default_'.$options['driver'];
+    self::$resource_list['georeference_default_'.$options['driver']] = array(
+      'javascript' => array(self::$js_path.'drivers/georeference/'.$options['driver'].'.js')
+    );
+    // We need to see if there is a resource in the resource list for any special files required by this driver. This 
+    // will do nothing if the resource is absent.
     self::add_resource('georeference_'.$options['driver']);
     self::$javascript .= "indicia_url='".self::$base_url."';\n";
     foreach ($options as $key=>$value) {
@@ -799,6 +821,10 @@ class data_entry_helper extends helper_config {
         self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
       }
     }
+    // If the lookup service driver uses cross domain JavaScript, this setting provides
+    // a path to a simple PHP proxy script on the server.
+    self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
+        dirname($_SERVER['PHP_SELF']) . '/' . self::relative_client_helper_path() . "proxy.php';\n\n";
     return self::apply_template('georeference_lookup', $options);
   }
 
@@ -4033,7 +4059,6 @@ if (errors.length>0) {
    * @return string Text to place in the head section of the html file.
    */
   public static function dump_header($resources=null) {
-    global $indicia_resources;
     if (!$resources) {
       $resources = array('jquery_ui',  'defaultStylesheet');
     }
@@ -4041,7 +4066,7 @@ if (errors.length>0) {
       self::add_resource($resource);
     }
     // place a css class on the body if JavaScript enabled. And output the resources
-    return self::internal_dump_javascript('$("body").addClass("js");', '', '', $indicia_resources);
+    return self::internal_dump_javascript('$("body").addClass("js");', '', '', self::$required_resources);
   }
 
   /**
@@ -4053,7 +4078,7 @@ if (errors.length>0) {
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
-    global $indicia_resources, $indicia_templates;
+    global $indicia_templates;
     // Add the default stylesheet to the end of the list, so it has highest CSS priority
     if (self::$default_styles) self::add_resource('defaultStylesheet');
     // If required, setup jQuery validation. We can't prep this JavaScript earlier since we would
@@ -4070,7 +4095,7 @@ if (errors.length>0) {
         messages: ".json_encode(self::$validation_messages)."
       });\n";
     }
-    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, $indicia_resources);
+    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, self::$required_resources);
     // ensure scripted JS does not output again if recalled.
     self::$javascript = "";
     self::$late_javascript = "";
@@ -4087,21 +4112,23 @@ if (errors.length>0) {
     $libraries = '';
     $stylesheets = '';
     if (isset($resources)) {
-      $resourceList = self::_RESOURCES();
+      $resourceList = self::get_resources();
       foreach ($resources as $resource)
       {
         if (!in_array($resource, self::$dumped_resources)) {
-          foreach ($resourceList[$resource]['stylesheets'] as $s)
-          {
-            $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
+          if (isset($resourceList[$resource]['stylesheets'])) {
+            foreach ($resourceList[$resource]['stylesheets'] as $s) {
+              $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
+            }
           }
-          foreach ($resourceList[$resource]['javascript'] as $j)
-          {
-            // look out for a condition that this script is IE only.
-            if (substr($j, 0, 4)=='[IE]')
-              $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
-            else
-              $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
+          if (isset($resourceList[$resource]['javascript'])) {
+            foreach ($resourceList[$resource]['javascript'] as $j) {
+              // look out for a condition that this script is IE only.
+              if (substr($j, 0, 4)=='[IE]')
+                $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
+              else
+                $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
+            }
           }
           // Record the resource as being dumped, so we don't do it again.
           array_push(self::$dumped_resources, $resource);
@@ -4314,73 +4341,71 @@ $('.ui-state-default').live('mouseout', function() {
   /**
    * List of external resources including stylesheets and js files used by the data entry helper class.
    */
-  public static function _RESOURCES()
+  public static function get_resources()
   {
-    $base = parent::$base_url;
-    if (!self::$js_path) {
-      self::$js_path =$base.'media/js/';
-    } else if (substr(self::$js_path,-1)!="/") {
-      // ensure a trailing slash
-      self::$js_path .= "/";
+    if (self::$resource_list===null) {
+      $base = parent::$base_url;
+      if (!self::$js_path) {
+        self::$js_path =$base.'media/js/';
+      } else if (substr(self::$js_path,-1)!="/") {
+        // ensure a trailing slash
+        self::$js_path .= "/";
+      }
+      if (!self::$css_path) {
+        self::$css_path =$base.'media/css/';
+      } else if (substr(self::$css_path,-1)!="/") {
+        // ensure a trailing slash
+        self::$css_path .= "/";
+      }
+      global $indicia_theme;
+      global $indicia_theme_path;
+      if (!isset($indicia_theme)) {
+        // Use default theme if page does not specify it's own.
+        $indicia_theme="default";
+      }
+      if (!isset($indicia_theme_path)) {
+        // Use default theme path if page does not specify it's own.
+        $indicia_theme_path="$base/media/themes";
+      }
+  
+      self::$resource_list = array (
+        'jquery' => array('javascript' => array(self::$js_path."jquery.js")),
+        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js", self::$js_path."Proj4defs.js")),
+        'addrowtogrid' => array('javascript' => array(self::$js_path."addRowToGrid.js")),
+        'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
+        'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
+        'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
+        'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),    
+        'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
+        'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
+        'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
+        'json' => array('javascript' => array(self::$js_path."json2.js")),
+        'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
+        self::$js_path."jquery.treeview.edit.js")),
+        'googlemaps' => array('javascript' => array("http://maps.google.com/maps?file=api&v=2&key=".parent::$google_api_key)),
+        'multimap' => array('javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
+        'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
+        'google_search' => array('stylesheets' => array(),
+            'javascript' => array(
+              "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
+              self::$js_path."google_search.js"
+            )
+        ),
+        'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
+        'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
+        'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
+        'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
+        'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.validate.js')),
+        'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
+            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')),
+        'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
+        'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
+        'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
+        'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
+        'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js')),
+      );
     }
-    if (!self::$css_path) {
-      self::$css_path =$base.'media/css/';
-    } else if (substr(self::$css_path,-1)!="/") {
-      // ensure a trailing slash
-      self::$css_path .= "/";
-    }
-    global $indicia_theme;
-    global $indicia_theme_path;
-    if (!isset($indicia_theme)) {
-      // Use default theme if page does not specify it's own.
-      $indicia_theme="default";
-    }
-    if (!isset($indicia_theme_path)) {
-      // Use default theme path if page does not specify it's own.
-      $indicia_theme_path="$base/media/themes";
-    }
-
-    return array (
-      'jquery' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.js")),
-      'openlayers' => array('deps' =>array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js", self::$js_path."Proj4defs.js")),
-      'addrowtogrid' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."addRowToGrid.js")),
-      'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
-      'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
-      'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
-      'georeference_geoplanet' => array('deps' =>array('indiciaMapPanel'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."drivers/georeference/geoplanet.js")),
-      'georeference_google_search_api' => array('deps' =>array('indiciaMapPanel'), 'stylesheets' => array(), 'javascript' => array(
-          self::$js_path."drivers/georeference/google_search_api.js",
-          "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
-      )),    
-      'georeference_geoportal_lu' => array('deps' =>array('indiciaMapPanel'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."drivers/georeference/geoportal_lu.js")),    
-      'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
-      'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
-      'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
-      'json' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path."json2.js")),
-      'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
-      self::$js_path."jquery.treeview.edit.js")),
-      'googlemaps' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://maps.google.com/maps?file=api&v=2&key=".parent::$google_api_key)),
-      'multimap' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
-      'virtualearth' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
-      'google_search' => array('deps' => array(), 'stylesheets' => array(),
-          'javascript' => array(
-            "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
-            self::$js_path."google_search.js"
-          )
-      ),
-      'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
-      'flickr' => array('deps' => array('fancybox'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.flickr.js")),
-      'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
-      'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
-      'validation' => array('deps' => array('jquery'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.validate.js')),
-      'plupload' => array('deps' => array('jquery_ui','fancybox'), 'stylesheets' => array(), 'javascript' => array(
-          self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')),
-      'jqplot' => array('deps' => array(), 'stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
-      'jqplot_bar' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
-      'jqplot_pie' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
-      'jqplot_category_axis_renderer' => array('deps' => array(), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
-      'reportgrid' => array('deps' => array('jquery_ui'), 'stylesheets' => array(), 'javascript' => array(self::$js_path.'jquery.reportgrid.js')),
-    );
+    return self::$resource_list;
   }
 
   /**
@@ -4388,20 +4413,19 @@ $('.ui-state-default').live('mouseout', function() {
    * Ensures each file is only linked once.
    *
    * @param string $resource Name of resource to link.
-   * @todo Document the list of resources. See the _RESOURCES method.
+   * @todo Document the list of resources. See the get_resources method.
    */
   public static function add_resource($resource)
   {
-    global $indicia_resources;
-    if (!isset($indicia_resources)) $indicia_resources = array();
     // If this is an available resource and we have not already included it, then add it to the list
-    if (array_key_exists($resource, self::_RESOURCES()) && !in_array($resource, $indicia_resources)) {
-      $RESOURCES = self::_RESOURCES();
-      foreach ($RESOURCES[$resource]['deps'] as $dep)
-      {
-        self::add_resource($dep);
+    if (array_key_exists($resource, self::get_resources()) && !in_array($resource, self::$required_resources)) {
+      $resourceList = self::get_resources();
+      if (isset($resourceList[$resource]['deps'])) {
+        foreach ($resourceList[$resource]['deps'] as $dep) {
+          self::add_resource($dep);
+        }
       }
-      $indicia_resources[] = $resource;
+      self::$required_resources[] = $resource;
     }
   }
 

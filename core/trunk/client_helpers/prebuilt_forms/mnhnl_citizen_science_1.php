@@ -40,6 +40,7 @@ class iform_mnhnl_citizen_science_1 {
   public static function get_parameters() {
     return array_merge(
       iform_map_get_map_parameters(),
+      iform_map_get_georef_parameters(),
       iform_user_get_user_parameters(),
       array(
         array(
@@ -170,23 +171,7 @@ class iform_mnhnl_citizen_science_1 {
           'caption'=>'Allowed Spatial Ref Systems',
           'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
           'type'=>'string',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'georefPreferredArea',
-          'caption'=>'Preferred area for georeferencing.',
-          'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
-          'type'=>'string',
-          'default'=>'gb',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'georefCountry',
-          'caption'=>'Preferred country for georeferencing.',
-          'description'=>'Preferred country to look within when trying to resolve a place name.',
-          'type'=>'string',
-          'default'=>'United Kingdom',
-          'group'=>'Map'
+          'group'=>'Misc'
         )
       )
     );
@@ -358,13 +343,7 @@ class iform_mnhnl_citizen_science_1 {
       'label' => lang::get('sample:entered_sref'),
       'systems' => $systems
     ));
-    $r .= data_entry_helper::georeference_lookup(array(
-      'driver'=>'geoportal_lu',
-      'label' => lang::get('search for place on map'),
-      'georefPreferredArea' => $args['georefPreferredArea'],
-      'georefCountry' => $args['georefCountry'],
-      'georefLang' => $args['language']
-    ));
+    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
     // retrieve options for the IndiciaMapPanel, and optionally options for OpenLayers.
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
