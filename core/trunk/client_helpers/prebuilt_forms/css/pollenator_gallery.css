@@ -55,11 +55,6 @@
 	vertical-align: top;
 }
 
-.filter-hide {
-	position: absolute !important ;
-	left: -10000px !important ;
-}
-
 .thumb {
   vertical-align: top;
   height: 50px;
@@ -128,5 +123,15 @@
 .display-button {
 	text-align: center;
 }
-#flower-image {
+.thumb, .collection-image, .collection-insect, .filter-insect {
+  *display: inline;
+}
+#map2_container, #flower-image, #environment-image, #collection-description {
+  *display: inline;
+}
+.filter-collection div {
+	*zoom: 1;
+}
+#results-insects-results div {
+	*zoom: 1;
 }

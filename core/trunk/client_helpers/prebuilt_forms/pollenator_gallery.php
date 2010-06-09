@@ -50,24 +50,9 @@ class iform_pollenator_gallery {
    */
   public static function get_parameters() {
     $retVal = array_merge(
-     iform_map_get_map_parameters(), 
+     iform_map_get_map_parameters(),
+     iform_map_get_georef_parameters(),
      array(
-        array(
-          'name'=>'georefPreferredArea',
-          'caption'=>'Preferred area for georeferencing.',
-          'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
-          'type'=>'string',
-          'default'=>'fr',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'georefCountry',
-          'caption'=>'Preferred country for georeferencing.',
-          'description'=>'Preferred country to look within when trying to resolve a place name.',
-          'type'=>'string',
-          'default'=>'France',
-          'group'=>'Map'
-        ),
      
       array(
       	'name'=>'survey_id',
@@ -306,6 +291,30 @@ class iform_pollenator_gallery {
           'type'=>'int',
           'group'=>'ID Tool',
           'default'=>1800000,
+      ),
+      array(
+          'name'=>'Flower_Image_Ratio',
+          'caption'=>'Flower image aspect ratio.',
+          'description'=>'Expected Ratio of width to height for flower images - 4/3 is horizontal, 3/4 is vertical.',
+          'type'=>'string',
+          'group'=>'Images',
+          'default'=>'4/3'
+      ),
+      array(
+          'name'=>'Environment_Image_Ratio',
+          'caption'=>'Environment image aspect ratio.',
+          'description'=>'Expected Ratio of width to height for environment images - 4/3 is horizontal, 3/4 is vertical.',
+          'type'=>'string',
+          'group'=>'Images',
+          'default'=>'4/3'
+      ),
+      array(
+          'name'=>'Insect_Image_Ratio',
+          'caption'=>'Insect image aspect ratio.',
+          'description'=>'Expected Ratio of width to height for insect images - 4/3 is horizontal, 3/4 is vertical.',
+          'type'=>'string',
+          'group'=>'Images',
+          'default'=>'1/1'
       )
     ));
     return $retVal;
@@ -328,8 +337,9 @@ class iform_pollenator_gallery {
     			'IForm n'.$nid.' insect expert',
     			'IForm n'.$nid.' flag dubious insect',
     			'IForm n'.$nid.' create insect comment',
-    			'IForm n'.$nid.' create collection comment'
-    );
+    			'IForm n'.$nid.' create collection comment',
+    			'IForm n'.$nid.' save filter'
+    			);
   }
   
 /**
@@ -482,20 +492,22 @@ class iform_pollenator_gallery {
     $options2['layers'] = array('locationLayer');
 
     // TBD Breadcrumb
- 	$r .= '
-<h1 id="poll-banner">'.lang::get('LANG_Main_Title').'</h1>
+ 	$r .= '<h1 id="poll-banner">'.lang::get('LANG_Main_Title').'</h1>
 <div id="filter" class="ui-accordion ui-widget ui-helper-reset">
 	<div id="filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-accordion-content-active ui-corner-top">
 	  	<div id="results-collections-title">
 	  		<span>'.lang::get('LANG_Filter_Title').'</span>
     	</div>
-	</div>
-	<div id="filter-save" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
-	  <input value="'.lang::get('LANG_Enter_Filter_Name').'" type="text" id="gallery-filter-save-name" />
-	  <input value="'.lang::get('LANG_Save_Filter_Button').'" type="button" id="gallery-filter-save-button" />
-	  <select value="" id="gallery-filter-retrieve" ></select>
-	</div>
-	<div id="filter-spec" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+	</div>';
+ 	if(user_access('IForm n'.$node->nid.' save filter')){
+    	$r .= '<div id="filter-save" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active"><div id="gallery-filter-retrieve-wrapper">
+<div id="gallery-filter-retrieve-image"><img
+src="/sites/spipoll.citejoly.com/themes/spipoll/css/gallery_filter.png" 
+alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"></div>
+</div>
+   <input value="'.lang::get('LANG_Enter_Filter_Name').'" type="text" id="gallery-filter-save-name" /><input value="'.lang::get('LANG_Save_Filter_Button').'" type="button" id="gallery-filter-save-button" /></div>';
+    }
+ 	$r .= '<div id="filter-spec" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	  <div class="ui-accordion ui-widget ui-helper-reset">
 		<div id="name-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
 	  		<div id="fold-name-button" class="ui-state-default ui-corner-all fold-button">&nbsp;</div>
@@ -562,20 +574,21 @@ class iform_pollenator_gallery {
 		</div>
 		<div id="location-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
 		  <div id="location-entry">
-            '.data_entry_helper::georeference_lookup(array(
-      		  'label' => lang::get('LANG_Georef_Label'),
-      		  'georefPreferredArea' => $args['georefPreferredArea'],
-      		  'georefCountry' => $args['georefCountry'],
-      		  'georefLang' => $args['language'],
-    	      'suffixTemplate' => 'nosuffix'
-    		)).'
+		    '.data_entry_helper::georeference_lookup(iform_map_get_georef_options($args)).'
     		<span >'.lang::get('LANG_Georef_Notes').'</span>
     		<label for="place:INSEE">'.lang::get('LANG_Or').'</label>
  		    <input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
 	 		  onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
               onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
     	    <input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default search-button" value="'.lang::get('search').'" />
- 	      </div>'.data_entry_helper::map_panel($options, $olOptions).'
+ 	      </div>';
+    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
+    $tempScript = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = '';
+    $r .= data_entry_helper::map_panel($options, $olOptions);
+    $map1JS = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = $tempScript;
+    $r .= '
 		</div>
       </div>
     </div>
@@ -614,8 +627,14 @@ class iform_pollenator_gallery {
 	  </div>
 	  <div id="environment-image" class="environment-image">
       </div>
-      <div id="map2_container">'.data_entry_helper::map_panel($options2, $olOptions).'
-      </div>
+      <div id="map2_container">';
+    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
+    $tempScript = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = '';
+    $r .= data_entry_helper::map_panel($options2, $olOptions);
+    $map2JS = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = $tempScript;
+    $r .= '</div>
     </div>
 	<div id="collection-insects">
     </div>
@@ -796,7 +815,7 @@ jQuery('#reset-name-button').click(function(){
 jQuery('#fold-name-button').click(function(){
 	jQuery('#name-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-name-button').toggleClass('fold-button-folded');
-	jQuery('#name-filter-body').toggleClass('filter-hide');
+	jQuery('#name-filter-body').toggleClass('ui-accordion-content-active');
 });
 jQuery('#reset-date-button').click(function(){
 	jQuery('[name=start_date]').val('".lang::get('click here')."');
@@ -805,7 +824,7 @@ jQuery('#reset-date-button').click(function(){
 jQuery('#fold-date-button').click(function(){
 	jQuery('#date-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-date-button').toggleClass('fold-button-folded');
-	jQuery('#date-filter-body').toggleClass('filter-hide');
+	jQuery('#date-filter-body').toggleClass('ui-accordion-content-active');
 });
 
 jQuery('#reset-flower-button').click(function(){
@@ -816,7 +835,7 @@ jQuery('#reset-flower-button').click(function(){
 jQuery('#fold-flower-button').click(function(){
 	jQuery('#flower-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-flower-button').toggleClass('fold-button-folded');
-	jQuery('#flower-filter-body').toggleClass('filter-hide');
+	jQuery('#flower-filter-body').toggleClass('ui-accordion-content-active');
 });
 
 jQuery('#reset-insect-button').click(function(){
@@ -828,7 +847,7 @@ jQuery('#reset-insect-button').click(function(){
 jQuery('#fold-insect-button').click(function(){
 	jQuery('#insect-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-insect-button').toggleClass('fold-button-folded');
-	jQuery('#insect-filter-body').toggleClass('filter-hide');
+	jQuery('#insect-filter-body').toggleClass('ui-accordion-content-active');
 });
 
 jQuery('#reset-location-button').click(function(){
@@ -842,7 +861,7 @@ jQuery('#reset-location-button').click(function(){
 jQuery('#fold-location-button').click(function(){
 	jQuery('#location-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-location-button').toggleClass('fold-button-folded');
-	jQuery('#location-filter-body').toggleClass('filter-hide');
+	jQuery('#location-filter-body').toggleClass('ui-accordion-content-active');
 });
 
 jQuery('#flower-image').click(function(){
@@ -866,9 +885,10 @@ loadCollection = function(id){
     jQuery('[name=sample_comment\\:sample_id]').val(id);
     locationLayer.destroyFeatures();
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
-    jQuery('#focus-occurrence,#filter').addClass('filter-hide');
-    jQuery('#focus-collection').removeClass('filter-hide');
-	jQuery('#map2').width(jQuery('#map2_container').width());
+    jQuery('#focus-occurrence,#filter').hide();
+    jQuery('#focus-collection').show();
+    if(jQuery('#map2').children().length == 0) {".$map2JS."};
+	jQuery('#map2').width('auto');
 	jQuery('#flower-image').attr('occID', 'none');
 	jQuery('#collection-insects,#collection-date,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
 	// this has a fixed target so can be done asynchronously.
@@ -876,7 +896,7 @@ loadCollection = function(id){
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&sample_id=\"+id+\"&callback=?\", function(flowerData) {
    		if (flowerData.length>0) {
-			loadImage('occurrence_image', 'occurrence_id', flowerData[0].id, '#flower-image');
+			loadImage('occurrence_image', 'occurrence_id', flowerData[0].id, '#flower-image', ".$args['Flower_Image_Ratio'].");
 			jQuery('#flower-image').attr('occID', flowerData[0].id);
 			$.getJSON(\"".$svcUrl."/data/determination\" + 
 					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
@@ -947,7 +967,7 @@ loadCollection = function(id){
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 					\"&callback=?\", function(locationData) {
    				if (locationData.length>0) {
-					loadImage('location_image', 'location_id', locationData[0].id, '#environment-image');
+					loadImage('location_image', 'location_id', locationData[0].id, '#environment-image', ".$args['Environment_Image_Ratio'].");
 					var parser = new OpenLayers.Format.WKT();
 					var feature = parser.read(locationData[0].centroid_geom);
 					locationLayer.addFeatures([feature]);
@@ -1010,7 +1030,7 @@ loadCollection = function(id){
 								.appendTo(insect).attr('value',insectData[j].id).click(function(){
 								loadInsect(jQuery(this).attr('value'));
 							});
-							loadImage('occurrence_image', 'occurrence_id', insectData[j].id, image);
+							loadImage('occurrence_image', 'occurrence_id', insectData[j].id, image, ".$args['Insect_Image_Ratio'].");
 							// have to do this synchronously due to multiple targets
 							$.getJSON(\"".$svcUrl."/data/determination\" + 
 					    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
@@ -1077,17 +1097,9 @@ addCollection = function(attributes, geom){
     		value: geom
   	});
 	flower.appendTo(collection);
-	var img = new Image();
-	$(img).load(function () {flower.append(this);})
-	    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+attributes.flower_image_path)
-	    .css('max-width', flower.width()).css('max-height', flower.height())
-	    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+	insertImage('med-'+attributes.flower_image_path, flower, ".$args['Flower_Image_Ratio'].");
 	var location = jQuery('<div class=\"collection-image collection-environment\" />').appendTo(collection);
-	img = new Image();
-	$(img).load(function () {location.append(this)})
-	    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+attributes.location_image_path)
-	    .css('max-width', location.width()).css('max-height', location.height())
-	    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+	insertImage('med-'+attributes.location_image_path, location, ".$args['Environment_Image_Ratio'].");
 	var photoReel = jQuery('<div class=\"collection-photoreel\"></div>').appendTo(collection);
 	var displayButtonContainer = jQuery('<div class=\"collection-buttons\"></div>').appendTo(collection);
 	var displayButton = jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>').click(function(){
@@ -1119,6 +1131,7 @@ addCollection = function(attributes, geom){
 							  if (imageData.length>0) {
 						      	var container = jQuery('.thumb').filter('[occId='+imageData[0].occurrence_id.toString()+']');
 							    var img = new Image();
+							    // thumbs are fixed in size, and small - dont worry about ratios
 								jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    					.attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
 							  }}); 
@@ -1146,11 +1159,7 @@ addInsect = function(attributes, endOfRow){
 		loadInsect(jQuery(this).attr('occID'));
 	});
 	insect.appendTo(container);
-	var img = new Image();
-	$(img).load(function () {insect.append(this);})
-	    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+attributes.insect_image_path)
-		.css('max-width', insect.width()).css('max-height', insect.width()*imageRatio)
-	    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+	insertImage('med-'+attributes.insect_image_path, insect, ".$args['Insect_Image_Ratio'].");
 	var determination = jQuery('<div />').appendTo(container);
 	$.getJSON(\"".$svcUrl."/data/determination\" +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -1334,7 +1343,7 @@ setInsectPage = function(pageNum){
 }
 
 // searchLayer in map is used for georeferencing.
-// map editLayer is switched off.
+// map editLayer is switched off. TODO: need to switch off click control
 searchLayer = null;
 inseeLayer = null;
 polygonLayer = new OpenLayers.Layer.Vector('Polygon Layer', {
@@ -1564,14 +1573,14 @@ jQuery('#search-insee-button').click(function(){
 });
 
 jQuery('#search-collections-button').click(function(){
-	jQuery('#results-insects-header,#results-insects-results').addClass('filter-hide');
-	jQuery('#results-collections-header,#results-collections-results').removeClass('filter-hide');
+	jQuery('#results-insects-header,#results-insects-results').hide();
+	jQuery('#results-collections-header,#results-collections-results').show();
 	jQuery('#results-collections-header').addClass('ui-state-active').removeClass('ui-state-default');
 	runSearch(true);
 });
 jQuery('#search-insects-button').click(function(){
-	jQuery('#results-collections-header,#results-collections-results').addClass('filter-hide');
-	jQuery('#results-insects-header,#results-insects-results').removeClass('filter-hide');
+	jQuery('#results-collections-header,#results-collections-results').hide();
+	jQuery('#results-insects-header,#results-insects-results').show();
 	jQuery('#results-insects-header').addClass('ui-state-active').removeClass('ui-state-default');
 	runSearch(false);
 });
@@ -1594,7 +1603,7 @@ runSearch = function(forCollections){
 		
 	var use_insects = false;
     jQuery('#results-collections-results,#results-insects-results').empty();
-	jQuery('#focus-occurrence,#focus-collection').addClass('filter-hide');
+	jQuery('#focus-occurrence,#focus-collection').hide();
 	var filters = [];
 	// By default restrict selection to area displayed on map. When using the georeferencing system the map searchLayer
 	// will contain a single point zoomed in appropriately.
@@ -1956,22 +1965,26 @@ loadLocationAttributes = function(keyValue){
 			jQuery('<span>'+habitat_string+'</span>').appendTo('#focus-habitat');
   }});
 }
-imageRatio = 3/4;
 
-loadImage = function(imageTable, key, keyValue, target){
+insertImage = function(path, target, ratio){
+	var img = new Image();
+	jQuery(img).load(function () {
+        target.append(this);
+        if(this.width/this.height > ratio){
+	    	jQuery(this).css('width', '100%').css('height', 'auto').css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+  		} else {
+	        jQuery(this).css('width', (100*this.width/(this.height*ratio))+'%').css('height', 'auto').css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+  		}
+	}).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."'+path);
+}
+
+loadImage = function(imageTable, key, keyValue, target, imageRatio){
 	jQuery(target).empty();
 	$.getJSON(\"".$svcUrl."/data/\" + imageTable +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", function(imageData) {
 		if (imageData.length>0) {
-			var img = new Image();
-			jQuery(img)
-        		.load(function () {
-        			jQuery(target).empty().append(this);
-			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."'+imageData[0].path)
-				.css('max-width', $(target).width()).css('max-height', $(target).width()*imageRatio)
-				.css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+			insertImage(imageData[0].path, jQuery(target), imageRatio);
 		}
 	});
 }
@@ -2166,8 +2179,8 @@ loadFlowerAddnInfo = function(keyValue){
 }
 
 loadInsect = function(insectID){
-    jQuery('#focus-collection,#filter,#fo-flower-addn-info').addClass('filter-hide');
-    jQuery('#focus-occurrence,#fo-addn-info-header,#fo-insect-addn-info').removeClass('filter-hide');
+    jQuery('#focus-collection,#filter,#fo-flower-addn-info').hide();
+    jQuery('#focus-occurrence,#fo-addn-info-header,#fo-insect-addn-info').show();
 	jQuery('[name=determination\\:occurrence_id]').val(insectID);
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(insectID);
 	jQuery('#fo-new-comment,#fo-new-id').removeClass('ui-accordion-content-active');
@@ -2175,7 +2188,7 @@ loadInsect = function(insectID){
 	jQuery('#fo-new-flower-id-button').hide();
 	jQuery('#fo-doubt-button').".((user_access('IForm n'.$node->nid.' insect expert') || user_access('IForm n'.$node->nid.' flag dubious insect')) ? "show()" : "hide()").";
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' insect expert') || user_access('IForm n'.$node->nid.' create insect comment')) ? "show()" : "hide()").";
-	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image');
+	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image', ".$args['Insect_Image_Ratio'].");
 	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id', 'form#fo-new-insect-id-form');
 	loadInsectAddnInfo(insectID);
 	loadComments(insectID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
@@ -2183,8 +2196,8 @@ loadInsect = function(insectID){
 }
 loadFlower = function(flowerID){
 	jQuery('#fo-prev-button,#fo-next-button').hide();
-	jQuery('#focus-collection,#filter,#fo-insect-addn-info').addClass('filter-hide');
-	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-flower-addn-info').removeClass('filter-hide');
+	jQuery('#focus-collection,#filter,#fo-insect-addn-info').hide();
+	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-flower-addn-info').show();
 	jQuery('#fo-new-comment,#fo-new-id').removeClass('ui-accordion-content-active');
 	jQuery('[name=determination\\:occurrence_id]').val(flowerID);
 	jQuery('[name=occurrence_comment\\:occurrence_id]').val(flowerID);
@@ -2192,13 +2205,47 @@ loadFlower = function(flowerID){
 	jQuery('#fo-new-insect-id-button').hide();
 	jQuery('#fo-doubt-button').".((user_access('IForm n'.$node->nid.' flower expert') || user_access('IForm n'.$node->nid.' flag dubious flower')) ? "show()" : "hide()").";
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' flower expert') || user_access('IForm n'.$node->nid.' create flower comment')) ? "show()" : "hide()").";
-	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image');
+	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image', ".$args['Flower_Image_Ratio'].");
 	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form');
 	loadFlowerAddnInfo(flowerID);
 	loadComments(flowerID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body');
 	myScrollTo('#poll-banner');
 }
 
+addDrawnGeomToSelection = function(geometry) {
+   	// Create the polygon as drawn
+   	var feature = new OpenLayers.Feature.Vector(geometry, {});
+   	polygonLayer.addFeatures([feature]);
+};
+
+MyEditingToolbar=OpenLayers.Class(
+		OpenLayers.Control.Panel,{
+			initialize:function(layer,options){
+				OpenLayers.Control.Panel.prototype.initialize.apply(this,[options]);
+				this.addControls([new OpenLayers.Control.Navigation()]);
+				var controls=[new OpenLayers.Control.DrawFeature(layer,OpenLayers.Handler.Polygon,{'displayClass':'olControlDrawFeaturePolygon', drawFeature: addDrawnGeomToSelection})];
+				this.addControls(controls);
+			},
+			draw:function(){
+				var div=OpenLayers.Control.Panel.prototype.draw.apply(this,arguments);
+				this.activateControl(this.controls[0]);
+				return div;
+			},
+	CLASS_NAME:\"MyEditingToolbar\"});
+
+loadFilter = function(){
+    if(jQuery('#map').children().length == 0) {
+    	".$map1JS."
+    	editControl = new MyEditingToolbar(polygonLayer, {'displayClass':'olControlEditingToolbar'});
+		polygonLayer.map.addControl(this.editControl);
+		editControl.activate();
+		polygonLayer.map.searchLayer.events.register('featuresadded', {}, function(a1){
+			if(inseeLayer != null)
+				inseeLayer.destroyFeatures();
+			polygonLayer.destroyFeatures();
+		});
+	}
+}
 jQuery('#fo-new-comment-button').click(function(){ 
 	jQuery('#fo-new-comment').toggleClass('ui-accordion-content-active');
 });
@@ -2221,38 +2268,6 @@ jQuery('#fo-next-button').click(function(){
 	loadInsect(jQuery(this).attr('occID'));
 });
   ";
-    
-    data_entry_helper::$onload_javascript .= "
-	function addDrawnGeomToSelection (geometry) {
-    	// Create the polygon as drawn
-    	var feature = new OpenLayers.Feature.Vector(geometry, {});
-    	polygonLayer.addFeatures([feature]);
-	};
-	
-MyEditingToolbar=OpenLayers.Class(
-		OpenLayers.Control.Panel,{
-			initialize:function(layer,options){
-				OpenLayers.Control.Panel.prototype.initialize.apply(this,[options]);
-				this.addControls([new OpenLayers.Control.Navigation()]);
-				var controls=[new OpenLayers.Control.DrawFeature(layer,OpenLayers.Handler.Polygon,{'displayClass':'olControlDrawFeaturePolygon', drawFeature: addDrawnGeomToSelection})];
-				this.addControls(controls);
-			},
-			draw:function(){
-				var div=OpenLayers.Control.Panel.prototype.draw.apply(this,arguments);
-				this.activateControl(this.controls[0]);
-				return div;
-			},
-	CLASS_NAME:\"MyEditingToolbar\"});
-	
-	editControl = new MyEditingToolbar(polygonLayer, {'displayClass':'olControlEditingToolbar'});
-	polygonLayer.map.addControl(this.editControl);
-	editControl.activate();
-	polygonLayer.map.searchLayer.events.register('featuresadded', {}, function(a1){
-		if(inseeLayer != null)
-			inseeLayer.destroyFeatures();
-		polygonLayer.destroyFeatures();
-	});          
-";
 
     switch($mode){
     	case 'INSECT':
@@ -2266,8 +2281,8 @@ MyEditingToolbar=OpenLayers.Class(
     		break;
     	default:
     		data_entry_helper::$onload_javascript .= "
-    		jQuery('#focus-occurrence,#focus-collection,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').addClass('filter-hide');
-    		";
+    		jQuery('#focus-occurrence,#focus-collection,#results-insects-header,#results-collections-header,#results-insects-results,#results-collections-results').hide();
+    		loadFilter();";
     		if($userID != ''){
     			$thisuser = user_load($userID);
     			data_entry_helper::$onload_javascript .= "jQuery('[name=username]').val('".($thisuser->name)."');";
@@ -2277,8 +2292,8 @@ MyEditingToolbar=OpenLayers.Class(
     }
     return $r;
   }
-
-    /**
+  
+  /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values.
    * @param array $args iform parameters.

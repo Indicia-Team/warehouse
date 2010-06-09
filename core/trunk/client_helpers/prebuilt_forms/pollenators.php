@@ -52,7 +52,8 @@ class iform_pollenators {
    */
   public static function get_parameters() {
     $retVal = array_merge(
-     iform_map_get_map_parameters(), 
+     iform_map_get_map_parameters(),
+     iform_map_get_georef_parameters(),
      array(
 //        array(
 //          'name'=>'spatial_systems',
@@ -61,23 +62,6 @@ class iform_pollenators {
 //          'type'=>'string',
 //          'group'=>'Map'
 //        ),
-        array(
-          'name'=>'georefPreferredArea',
-          'caption'=>'Preferred area for georeferencing.',
-          'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
-          'type'=>'string',
-          'default'=>'fr',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'georefCountry',
-          'caption'=>'Preferred country for georeferencing.',
-          'description'=>'Preferred country to look within when trying to resolve a place name.',
-          'type'=>'string',
-          'default'=>'France',
-          'group'=>'Map'
-        ),
-     
       array(
       	'name'=>'survey_id',
         'caption'=>'Survey ID',
@@ -366,6 +350,30 @@ class iform_pollenators {
           'description'=>'The Name space used for the WFS feature lookup when search for INSEE numbers.',
           'type'=>'string',
           'group'=>'INSEE Search'
+      ),
+      array(
+          'name'=>'Flower_Image_Ratio',
+          'caption'=>'Flower image aspect ratio.',
+          'description'=>'Expected Ratio of width to height for flower images - 4/3 is horizontal, 3/4 is vertical.',
+          'type'=>'string',
+          'group'=>'Images',
+          'default'=>'4/3'
+      ),
+      array(
+          'name'=>'Environment_Image_Ratio',
+          'caption'=>'Environment image aspect ratio.',
+          'description'=>'Expected Ratio of width to height for environment images - 4/3 is horizontal, 3/4 is vertical.',
+          'type'=>'string',
+          'group'=>'Images',
+          'default'=>'4/3'
+      ),
+      array(
+          'name'=>'Insect_Image_Ratio',
+          'caption'=>'Insect image aspect ratio.',
+          'description'=>'Expected Ratio of width to height for insect images - 4/3 is horizontal, 3/4 is vertical.',
+          'type'=>'string',
+          'group'=>'Images',
+          'default'=>'1/1'
       )
 
       
@@ -545,33 +553,35 @@ jQuery('#".$id."').click(function(){
 $.validator.messages.required = \"".lang::get('validation_required')."\";
 var sessionCounter = 0;
 jQuery('#imp-georef-search-btn').removeClass('indicia-button').addClass('search-button');
+jQuery('.loading-hide').hide().addClass('my-loading-hide').removeClass('loading-hide');
+// can't use shuffle to side as dynamic generated code does like it in IE7
 
 $.fn.foldPanel = function(){
-	this.children('.poll-section-body').addClass('poll-hide');
-	this.children('.poll-section-footer').addClass('poll-hide');
+	this.children('.poll-section-body').hide();
+	this.children('.poll-section-footer').hide();
 	this.children('.poll-section-title').find('.reinit-button').show();
 	this.children('.poll-section-title').find('.mod-button').show();
 	this.children('.photoReelContainer').addClass('ui-corner-all').removeClass('ui-corner-top')
 };
 
 $.fn.unFoldPanel = function(){
-	this.children('.poll-section-body').removeClass('poll-hide');
-	this.children('.poll-section-footer').removeClass('poll-hide');
+	this.children('.poll-section-body').show();
+	this.children('.poll-section-footer').show();
 	this.children('.poll-section-title').find('.mod-button').hide();
 	this.children('.photoReelContainer').addClass('ui-corner-top').removeClass('ui-corner-all')
 	window.scroll(0,0); // force the window to display the top.
+	buildMap();
+	checkSessionButtons();
 	// any reinit button is left in place
 };
 
-// because the map has to be generated in a properly sized div, we can't use the normal hide/show functions.
-// just move the panels off to the side.
 $.fn.showPanel = function(){
-	this.removeClass('poll-hide');
+	this.show();
 	this.unFoldPanel();
 };
 
 $.fn.hidePanel = function(){
-	this.addClass('poll-hide'); 
+	this.hide(); 
 };
 
 inseeLayer = null;
@@ -588,8 +598,8 @@ $.getJSON('".$svcUrl."' + '/spatial/sref_to_wkt'+
         	});
 
 $.fn.resetPanel = function(){
-	this.find('.poll-section-body').removeClass('poll-hide');
-	this.find('.poll-section-footer').removeClass('poll-hide');
+	this.find('.poll-section-body').show();
+	this.find('.poll-section-footer').show();
 	this.find('.reinit-button').show();
 	this.find('.mod-button').show();
 	this.find('.poll-image').empty();
@@ -634,16 +644,6 @@ alertIndiciaError = function(data){
 };
 			
 checkProtocolStatus = function(){
-	if (jQuery('#cc-3-body').children().length === 1) {
-	    jQuery('#cc-3').find('.delete-button').hide();
-  	} else {
-		jQuery('#cc-3').find('.delete-button').show();
-	}
-	if(jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter(':first').filter('[checked]').length >0){
-	    jQuery('#cc-3').find('.add-button').hide();
-	} else {
-	    jQuery('#cc-3').find('.add-button').show();
-  	}
   	var checkedProtocol = jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter('[checked]').parent();
     if(jQuery('[name=location\\:name]').val() != '' && checkedProtocol.length > 0) {
         jQuery('#cc-1-title-details').empty().text(jQuery('#cc-1-collection-details input[name=location\\:name]:first').val());
@@ -654,6 +654,18 @@ checkProtocolStatus = function(){
         jQuery('#cc-1-protocol-details').empty().hide();
     }
 };
+checkSessionButtons = function(){
+	if (jQuery('#cc-3-body').children().length === 1) {
+	    jQuery('#cc-3').find('.delete-button').hide();
+  	} else {
+		jQuery('#cc-3').find('.delete-button').show();
+	}
+	if(jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter(':first').filter('[checked]').length >0){
+	    jQuery('#cc-3').find('.add-button').hide();
+	} else {
+	    jQuery('#cc-3').find('.add-button').show();
+  	}
+};
 
 showStationPanel = true;
 
@@ -661,7 +673,7 @@ showStationPanel = true;
 // this is the one called when we don't want the panel following to be opened automatically.
 validateCollectionPanel = function(){
 	clearErrors('form#cc-1-collection-details');
-	if(jQuery('#cc-1-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
+	if(jQuery('#cc-1-body:visible').length == 0) return true; // body hidden so data already been validated successfully.
 	if(!jQuery('#cc-1-body').find('form > input').valid()){
 		myScrollToError();
 		return false;
@@ -720,6 +732,18 @@ validateRequiredField = function(name, formSel){
     return true;
 }
 
+insertImage = function(path, target, ratio){
+	var img = new Image();
+	jQuery(img).load(function () {
+        target.removeClass('loading').append(this);
+        if(this.width/this.height > ratio){
+	    	jQuery(this).css('width', '100%').css('height', 'auto').css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+  		} else {
+	        jQuery(this).css('width', (100*this.width/(this.height*ratio))+'%').css('height', 'auto').css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+  		}
+	}).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."'+path);
+}
+				    
 $('#cc-1').ajaxError(function(event, request, settings){
 	var insectURL = '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_insect_poll_dir'])."'+insectSess;
 	var flowerURL = '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_flower_poll_dir'])."'+flowerSess;
@@ -954,13 +978,7 @@ $('#cc-1-reinit-button').click(function() {
       '.iform_pollenators::help_button($use_help, "location-help-button", $args['help_function'], $args['help_location_arg']).'
       <div id="cc-2-location-notes" >'.lang::get('LANG_Location_Notes').'</div>
       <div id="cc-2-location-entry">
-        '.data_entry_helper::georeference_lookup(array(
-      		'label' => lang::get('LANG_Georef_Label'),
-      		'georefPreferredArea' => $args['georefPreferredArea'],
-      		'georefCountry' => $args['georefCountry'],
-      		'georefLang' => $args['language'],
-    		'suffixTemplate'=>'nosuffix'
-    		)).'
+        '.data_entry_helper::georeference_lookup(iform_map_get_georef_options($args)).'
     	<span >'.lang::get('LANG_Georef_Notes').'</span>
  	    <label for="place:INSEE">'.lang::get('LANG_Or').'</label>
  		<input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
@@ -981,7 +999,13 @@ $('#cc-1-reinit-button').click(function() {
         		'idLong'=>'imp-sref-long',
     			'suffixTemplate'=>'nosuffix')).'
  	  </div>
- 	  <div class="poll-map-container">'.data_entry_helper::map_panel($options, $olOptions).'</div>
+ 	  <div class="poll-map-container">';
+    $tempScript = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = '';
+    $r .= data_entry_helper::map_panel($options, $olOptions);
+    $map1JS = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = $tempScript;
+ 	$r .= '</div>
  	  <div id="cc-2-loc-description"></div>
     </div>
   </div>
@@ -994,6 +1018,44 @@ $('#cc-1-reinit-button').click(function() {
  	data_entry_helper::$javascript .= "
 
 showSessionsPanel = true;
+
+buildMap = function (){
+	if(jQuery('.poll-map-container:visible').length == 0) return; 
+	if(jQuery('#map').children().length == 0) {
+		".$map1JS."
+  		jQuery('#map')[0].map.searchLayer.events.register('featuresadded', {}, function(a1){
+			if(inseeLayer != null) inseeLayer.destroyFeatures();
+		});
+		jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
+			if(inseeLayer != null) inseeLayer.destroy();
+			jQuery('#cc-2-loc-description').empty();
+		  	var filter = new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.CONTAINS, property: 'the_geom', value: jQuery('#map')[0].map.editLayer.features[0].geometry});
+			var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
+			var styleMap = new OpenLayers.StyleMap({\"default\": new OpenLayers.Style({fillColor: \"Red\", strokeColor: \"Red\", fillOpacity: 0, strokeWidth: 1})});
+			inseeLayer = new OpenLayers.Layer.Vector('INSEE Layer', {
+				styleMap: styleMap,
+				strategies: [strategy],
+				displayInLayerSwitcher: false,
+				protocol: new OpenLayers.Protocol.WFS({
+					url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['INSEE_url'])."',
+					featurePrefix: '".$args['INSEE_prefix']."',
+					featureType: '".$args['INSEE_type']."',
+					geometryName:'the_geom',
+					featureNS: '".$args['INSEE_ns']."',
+					srsName: 'EPSG:900913',
+					version: '1.1.0'                  
+					,propertyNames: ['the_geom', 'NOM', 'INSEE_NEW', 'DEPT_NUM', 'DEPT_NOM', 'REG_NUM', 'REG_NOM']
+				})
+			});
+		    inseeLayer.events.register('featuresadded', {}, function(a1){
+    			if(a1.features.length > 0)
+			    	jQuery('<span>'+a1.features[0].attributes.NOM+' ('+a1.features[0].attributes.INSEE_NEW+'), '+a1.features[0].attributes.DEPT_NOM+' ('+a1.features[0].attributes.DEPT_NUM+'), '+a1.features[0].attributes.REG_NOM+' ('+a1.features[0].attributes.REG_NUM+')</span>').appendTo('#cc-2-loc-description');
+		    });
+			jQuery('#map')[0].map.addLayer(inseeLayer);
+			strategy.load({filter: filter});
+		});
+	}
+}
 
 flowerIDstruc = {
 	type: 'flower',
@@ -1192,8 +1254,8 @@ validateStationPanel = function(){
 	var valid = true;
 	clearErrors('form#cc-2-floral-station');
 	clearErrors('#cc-2-flower-identify');
-	if(myPanel.filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
-	if(myPanel.find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
+	if(myPanel.filter(':visible').length == 0) return true; // panel is not visible so no data to fail validation.
+	if(myPanel.find('.poll-section-body:visible').length == 0) return true; // body hidden so data already been validated successfully.
 	// If no data entered also return true: this can only be the case when pressing the modify button on the collections panel
 	if(jQuery('form#cc-2-floral-station > input[name=location_image\\:path]').val() == '' &&
 			jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val() == '' &&
@@ -1252,15 +1314,7 @@ $('#cc-2-flower-upload').ajaxForm({
         	if(data.success == true){
 	        	// There is only one file
 	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.files[0]);
-	        	var img = new Image();
-	        	$(img).load(function () {
-        				$(this).hide();
-        				$('#cc-2-flower-image').removeClass('loading').append(this);
-        				$(this).fadeIn();
-			    	})
-				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-				    .css('max-width', $('#cc-2-flower-image').width()).css('max-height', $('#cc-2-flower-image').height())
-				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+	        	insertImage('med-'+data.files[0], jQuery('#cc-2-flower-image'), ".$args['Flower_Image_Ratio'].")
 				jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
 			} else
 				alertIndiciaError(data);
@@ -1286,15 +1340,7 @@ $('#cc-2-environment-upload').ajaxForm({
         	if(data.success == true){
 	        	// There is only one file
 	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.files[0]);
-	        	var img = new Image();
-	        	$(img).load(function () {
-        				$(this).hide();
-        				$('#cc-2-environment-image').removeClass('loading').append(this);
-        				$(this).fadeIn();
-			    	})
-				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-				    .css('max-width', $('#cc-2-environment-image').width()).css('max-height', $('#cc-2-environment-image').height())
-				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+	        	insertImage('med-'+data.files[0], jQuery('#cc-2-environment-image'), ".$args['Environment_Image_Ratio'].")
 				jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
 			} else
 				alertIndiciaError(data);
@@ -1556,12 +1602,12 @@ addSession = function(){
 				} else if(confirm(\"".lang::get('LANG_Confirm_Session_Delete')."\")){
 					jQuery('#cc-3-delete-session').submit();
 					container.remove();
-					checkProtocolStatus();
+					checkSessionButtons();
 				}
 			});
 		} else if(confirm(\"".lang::get('LANG_Confirm_Session_Delete')."\")){
 			container.remove();
-			checkProtocolStatus();
+			checkSessionButtons();
 		}
     });
     newForm.ajaxForm({
@@ -1596,13 +1642,12 @@ addSession = function(){
   			jQuery('.loading-button').removeClass('loading-button');
   		}
 	});
-	checkProtocolStatus();
     return(newSession);
 };
 
 validateSessionsPanel = function(){
-	if(jQuery('#cc-3').filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
-	if(jQuery('#cc-3').find('.poll-section-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
+	if(jQuery('#cc-3:visible').length == 0) return true; // panel is not visible so no data to fail validation.
+	if(jQuery('#cc-3').find('.poll-section-body:visible').length == 0) return true; // body hidden so data already been validated successfully.
 	var openSession = jQuery('.poll-session-form:visible');
 	if(openSession.length > 0){
 		if(jQuery('input[name=sample\\:id]', openSession).val() == '' &&
@@ -1632,6 +1677,7 @@ jQuery('#cc-3-valid-button').click(function(){
 jQuery('#cc-3-add-button').click(function(){
 	if(!validateAndSubmitOpenSessions()) return;
 	addSession();
+	checkSessionButtons();
 });
 
 jQuery('.mod-button').click(function() {
@@ -1662,6 +1708,7 @@ jQuery('.mod-button').click(function() {
     <div id="cc-4-mod-button" class="right ui-state-default ui-corner-all mod-button">'.lang::get('LANG_Modify').'</div>
   </div>
   <div id="cc-4-photo-reel" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active photoReelContainer" >
+	<div class="blankPhoto thumb currentPhoto"></div>
   </div>
   <div id="cc-4-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">  
     <div id="cc-4-insect">
@@ -1787,15 +1834,7 @@ $('#cc-4-insect-upload').ajaxForm({
         	if(data.success == true){
 	        	// There is only one file
 	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val(data.files[0]);
-	        	var img = new Image();
-	        	$(img).load(function () {
-        				$(this).hide();
-        				$('#cc-4-insect-image').removeClass('loading').append(this);
-        				$(this).fadeIn();
-			    	})
-				    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+data.files[0])
-				    .css('max-width', $('#cc-4-insect-image').width()).css('max-height', $('#cc-4-insect-image').height())
-				    .css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
+	        	insertImage('med-'+data.files[0], jQuery('#cc-2-insect-image'), ".$args['Insect_Image_Ratio'].")
 				jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
 			}  else
 				alertIndiciaError(data);
@@ -1861,8 +1900,8 @@ $('#cc-4-main-form').ajaxForm({
 });
 
 validateInsectPanel = function(){
-	if(jQuery('#cc-4').filter('.poll-hide').length > 0) return true; // panel is not visible so no data to fail validation.
-	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0) return true; // body hidden so data already been validated successfully.
+	if(jQuery('#cc-4:visible').length == 0) return true; // panel is not visible so no data to fail validation.
+	if(jQuery('#cc-4-body:visible').length == 0) return true; // body hidden so data already been validated successfully.
 	if(!validateInsect()){ return false; }
 	clearInsect();
   	jQuery('#cc-4').foldPanel();
@@ -1901,7 +1940,7 @@ loadInsect = function(id){
 	        jQuery('form#cc-4-main-form > [name=occurrence\\:sample_id]').val(data[0].sample_id);
 			jQuery('form#cc-4-main-form > textarea[name=occurrence\\:comment]').val(data[0].comment);
 			loadAttributes('occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', 'occurrence\\:id', data[0].id, 'occAttr');
-    		loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', data[0].id, '#cc-4-insect-image');
+    		loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', data[0].id, '#cc-4-insect-image', ".$args['Insect_Image_Ratio'].");
   		}
 	});
 	$.getJSON(\"".$svcUrl."/data/determination?occurrence_id=\" + id +
@@ -1951,7 +1990,7 @@ setInsect = function(id){
 	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
 		return;
 		
-	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0)
+	if(jQuery('#cc-4-body:visible').length == 0)
 		jQuery('div#cc-4').unFoldPanel();
 	else
 		if(!validateInsect()){ return ; }
@@ -1963,19 +2002,14 @@ setNoInsect = function(){
 	if(!validateCollectionPanel() || !validateStationPanel() || !validateSessionsPanel())
 		return;
 		
-	if(jQuery('#cc-4-body').filter('.poll-hide').length > 0)
+	if(jQuery('#cc-4-body:visible').length == 0)
 		jQuery('div#cc-4').unFoldPanel();
 	else
 		if(!validateInsect()){ return ; }
 	clearInsect();
 };
 
-createPhotoReel = function(div){
-	jQuery(div).empty();
-	jQuery('<div/>').addClass('blankPhoto thumb currentPhoto').appendTo(div).click(setNoInsect);
-}
-
-createPhotoReel('#cc-4-photo-reel');
+jQuery('.blankPhoto').click(setNoInsect);
 
 // TODO separate photoreel out into own js
 validateInsect = function(){
@@ -2195,7 +2229,7 @@ loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, 
 	});
 }
 
-loadImage = function(imageTable, key, keyName, keyValue, target){
+loadImage = function(imageTable, key, keyName, keyValue, target, ratio){
 					// location_image, location_id, location:id, 1, #cc-4-insect-image
 	$.getJSON(\"".$svcUrl."/data/\" + imageTable +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -2204,13 +2238,7 @@ loadImage = function(imageTable, key, keyName, keyValue, target){
 			var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();
 			jQuery('[name='+imageTable+'\\:id]', form).val(imageData[0].id).removeAttr('disabled');
 			jQuery('[name='+imageTable+'\\:path]', form).val(imageData[0].path);
-			var img = new Image();
-			$(img).load(function () {
-        			$(target).empty().append(this);
-			    })
-			    .attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."med-'+imageData[0].path)
-				.css('max-width', $(target).width()).css('max-height', $(target).height()).css('display', 'block')
-				.css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto');
+	        insertImage('med-'+imageData[0].path, jQuery(target), ratio)
 		}
 	});
 }
@@ -2271,11 +2299,14 @@ jQuery('#insect-id-button').data('toolRetValues',[]);
 jQuery('#flower_taxa_list').empty();
 jQuery('#insect_taxa_list').empty();
 	
-
-jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collections.xml&reportSource=local&mode=json\" +
+jQuery.ajax({ 
+    type: 'GET', 
+    url: \"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collections.xml&reportSource=local&mode=json\" +
 			\"&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."\" + 
-			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", function(data) {
-	if (data.length>0) {
+			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", 
+    dataType: 'json', 
+    success: function(data) {
+	  if (data.length>0) {
 		var i;
        	for ( i=0;i<data.length;i++) {
        		if(data[i].completed == '0'){
@@ -2284,10 +2315,14 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
        			jQuery('#cc-1-collection-details,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
        			// main sample date is only set when collection is completed, so leave default.
        			loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data[i].id, 'smpAttr');
-  				$.getJSON(\"".$svcUrl."/data/location/\" + data[i].location_id +
+  				jQuery.ajax({ 
+					type: 'GET', 
+					url: \"".$svcUrl."/data/location/\" + data[i].location_id +
           					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-          					\"&callback=?\", function(locationdata) {
-		    		if (locationdata.length>0) {
+          					\"&callback=?\", 
+					dataType: 'json', 
+					success: function(locationdata) {
+		    		  if (locationdata.length>0) {
 		    			jQuery('input[name=location\\:id]').val(locationdata[0].id).removeAttr('disabled');
 	    				jQuery('input[name=location\\:name]').val(locationdata[0].name);
        					jQuery('input[name=sample\\:location_name]').val(locationdata[0].name); // make sure the 2 coincide
@@ -2297,34 +2332,51 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
 	    				jQuery('input[name=location\\:centroid_geom]').val(locationdata[0].centroid_geom);
 	    				jQuery('input[name=locations_website\\:website_id]').attr('disabled', 'disabled');
 	    				loadAttributes('location_attribute_value', 'location_attribute_id', 'location_id', 'location\\:id', locationdata[0].id, 'locAttr');
-    	   				loadImage('location_image', 'location_id', 'location\\:id', locationdata[0].id, '#cc-2-environment-image');
+    	   				loadImage('location_image', 'location_id', 'location\\:id', locationdata[0].id, '#cc-2-environment-image', ".$args['Environment_Image_Ratio'].");
 						jQuery('#imp-sref').change();
 				        var parts=locationdata[0].centroid_sref.split(' ');
  						jQuery('input[name=place\\:lat]').val(parts[0]);
 						jQuery('input[name=place\\:long]').val(parts[1]);
-  					}
-  				});
-  				$.getJSON(\"".$svcUrl."/data/occurrence/\" +
+  					  }
+  					}, 
+					data: {}, 
+					async: false 
+				});
+  				jQuery.ajax({ 
+					type: 'GET', 
+					url: \"".$svcUrl."/data/occurrence/\" +
           					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-          					\"&sample_id=\"+data[i].id+\"&callback=?\", function(flowerData) {
-          			// there will only be an occurrence if the floral station panel has previously been displayed & validated. 
-		    		if (flowerData.length>0) {
+          					\"&sample_id=\"+data[i].id+\"&callback=?\", 
+					dataType: 'json', 
+					success: function(flowerData) {
+          			  // there will only be an occurrence if the floral station panel has previously been displayed & validated. 
+		    		  if (flowerData.length>0) {
   						$('#cc-1').foldPanel();
   						$('#cc-2').showPanel();
 		    			jQuery('form#cc-2-floral-station > input[name=occurrence\\:sample_id]').val(data[i].id);
 		    			jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val(flowerData[0].id).removeAttr('disabled');
 		    			loadAttributes('occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', 'occurrence\\:id', flowerData[0].id, 'occAttr');
-    	   				loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', flowerData[0].id, '#cc-2-flower-image');
+    	   				loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', flowerData[0].id, '#cc-2-flower-image', ".$args['Flower_Image_Ratio'].");
 
-    	   				$.getJSON(\"".$svcUrl."/data/determination\" + 
-    	      						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&occurrence_id=\"+flowerData[0].id+\"&deleted=f&callback=?\",
-    	      					function(detData) {
-    	      				loadDetermination(detData, flowerIDstruc);
-  						});
-
-    	   				$.getJSON(\"".$svcUrl."/data/sample\" + 
-    	      					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[i].id+\"&callback=?\", function(sessiondata) {
-	    			  		if (sessiondata.length>0) {
+    	   				jQuery.ajax({ 
+							type: 'GET', 
+							url: \"".$svcUrl."/data/determination\" + 
+    	      						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&occurrence_id=\"+flowerData[0].id+\"&deleted=f&callback=?\", 
+							dataType: 'json', 
+							success: function(detData) {
+    	      				  loadDetermination(detData, flowerIDstruc);
+  							}, 
+							data: {}, 
+							async: false 
+						});
+    	      				  
+    	   				jQuery.ajax({ 
+							type: 'GET', 
+							url: \"".$svcUrl."/data/sample\" + 
+    	      					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[i].id+\"&callback=?\", 
+							dataType: 'json', 
+							success: function(sessiondata) {
+	    			  		  if (sessiondata.length>0) {
 								jQuery('#cc-2').foldPanel();
 								sessionCounter = 0;
 								jQuery('#cc-3-body').empty();
@@ -2351,87 +2403,32 @@ jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collecti
  								$('#cc-3').foldPanel();
  								$('#cc-4').showPanel();
 								populateSessionSelect();
- 					  		}
- 					  		$('.loading-panel').remove();
-							$('.loading-hide').removeClass('loading-hide');
+ 					  		  }
+ 					  		}, 
+							data: {}, 
+							async: false 
 						});
-    	   			} else {
-    	   				$('.loading-panel').remove();
-						$('.loading-hide').removeClass('loading-hide');
-    	   			}
-  				});
-				// only use the first one which is not complete..
+    	   			  }
+  					}, 
+					data: {}, 
+					async: false 
+				});
+  				// only use the first one which is not complete..
 				break;
 			}
 		}
-		if (i >= data.length) {
-			$('.loading-panel').remove();
-			$('.loading-hide').removeClass('loading-hide');
-  		}
-	} else {
-		$('.loading-panel').remove();
-		$('.loading-hide').removeClass('loading-hide');
-	}
+	  }}, 
+    data: {}, 
+    async: false 
 });
-  
   ";
 // because of the use of getJson to retrieve the data - which is asynchronous, the use of the normal loading_block_end
 // is not practical - it will do its stuff before the data is loaded, defeating the purpose. Also it uses hide (display:none)
 // which is a no-no in relation to the map. This means we have to dispense with the slow fade in.
 // it is also complicated by the attibutes and images being loaded asynchronously - and non-linearly.
 // Do the best we can! 
-
-    data_entry_helper::$onload_javascript .= "jQuery('#map')[0].map.searchLayer.events.register('featuresadded', {}, function(a1){
-	if(inseeLayer != null)
-		inseeLayer.destroyFeatures();
-});
-jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
-	if(inseeLayer != null)
-		inseeLayer.destroy();
-   	jQuery('#cc-2-loc-description').empty();
-
-  	var filter = new OpenLayers.Filter.Spatial({
-  			type: OpenLayers.Filter.Spatial.CONTAINS ,
-    		property: 'the_geom',
-    		value: jQuery('#map')[0].map.editLayer.features[0].geometry
-  		});
-
-	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
-	var styleMap = new OpenLayers.StyleMap({
-                \"default\": new OpenLayers.Style({
-                    fillColor: \"Red\",
-                    strokeColor: \"Red\",
-                    fillOpacity: 0,
-                    strokeWidth: 1
-                  })
-	});
-	inseeLayer = new OpenLayers.Layer.Vector('INSEE Layer', {
-		  styleMap: styleMap,
-          strategies: [strategy],
-          displayInLayerSwitcher: false,
-	      protocol: new OpenLayers.Protocol.WFS({
-              url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['INSEE_url'])."',
-	          featurePrefix: '".$args['INSEE_prefix']."',
-              featureType: '".$args['INSEE_type']."',
-              geometryName:'the_geom',
-              featureNS: '".$args['INSEE_ns']."',
-              srsName: 'EPSG:900913',
-              version: '1.1.0'                  
-      		  ,propertyNames: ['the_geom', 'NOM', 'INSEE_NEW', 'DEPT_NUM', 'DEPT_NOM', 'REG_NUM', 'REG_NOM']
-  			})
-    });
-    inseeLayer.events.register('featuresadded', {}, function(a1){
-    	if(a1.features.length > 0)
-	    	jQuery('<span>'+a1.features[0].attributes.NOM+' ('+a1.features[0].attributes.INSEE_NEW+'), '+a1.features[0].attributes.DEPT_NOM+' ('+a1.features[0].attributes.DEPT_NUM+'), '+a1.features[0].attributes.REG_NOM+' ('+a1.features[0].attributes.REG_NUM+')</span>').appendTo('#cc-2-loc-description');
-    });
-	jQuery('#map')[0].map.addLayer(inseeLayer);
-	strategy.load({filter: filter});
-});
-\n";
-
-	global $indicia_templates;
-	$r .= $indicia_templates['loading_block_end'];
-
+	data_entry_helper::loading_block_end();
+    data_entry_helper::$onload_javascript = "jQuery('.my-loading-hide').addClass('loading-hide').removeClass('my-loading-hide');\n".data_entry_helper::$onload_javascript."\nbuildMap();";
     return $r;
   }
 
