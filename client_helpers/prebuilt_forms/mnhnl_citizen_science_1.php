@@ -190,6 +190,7 @@ class iform_mnhnl_citizen_science_1 {
    * @return Form HTML.
    */
   public static function get_form($args) {
+    
     global $user;
     $logged_in = $user->uid>0;
     // Get authorisation tokens to update and read from the Warehouse.
@@ -197,7 +198,6 @@ class iform_mnhnl_citizen_science_1 {
     $readAuth = $auth['read'];
 
     $r = "\n<form method=\"post\" id=\"entry_form\">\n";
-    
     if (isset($_GET['taxa_taxon_list_id']) || isset($_GET['taxon_external_key'])) {
       if (isset($_GET['taxa_taxon_list_id']))
         $filter = array('id' => $_GET['taxa_taxon_list_id']);
@@ -416,4 +416,21 @@ class iform_mnhnl_citizen_science_1 {
     return data_entry_helper::build_sample_occurrence_submission($values);
   }
 
+  /** 
+   * Hook the indicia_define_remembered_fields method to specify the personal details page as
+   * remembered between sessions.
+   * @param $args
+   * @return unknown_type
+   */
+  function indicia_define_remembered_fields($args) {
+    data_entry_helper::set_remembered_fields(array(
+      'smpAttr:'.$args['first_name_attr_id'],
+      'smpAttr:'.$args['surname_attr_id'],
+      'smpAttr:'.$args['email_attr_id'],
+      'smpAttr:'.$args['phone_attr_id'],
+    ));
+  }
+
 }
+
+

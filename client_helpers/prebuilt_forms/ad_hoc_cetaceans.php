@@ -355,6 +355,13 @@ class iform_ad_hoc_cetaceans {
         'class' => 'control-width-6',
         'helpText' => lang::get('Instructions for any other info')
     ));
+    $r .= data_entry_helper::file_box(array(
+        'caption' => 'Upload your photos',
+        'resizeWidth' => 1024,
+        'resizeHeight' => 768,
+        'table' => 'occurrence_image',
+        'tabDiv' => 'controls'
+    ));
     $r .= '<div class="footer">'.data_entry_helper::checkbox(array(
         'label'=>lang::get('happy for contact'),
         'labelClass'=>'auto',
@@ -384,7 +391,22 @@ class iform_ad_hoc_cetaceans {
   public static function get_submission($values, $args) {
     // pass true to the submission build, as it will include rows with any data (as the checkbox is hidden).
     return data_entry_helper::build_sample_occurrences_list_submission($values, true);
-  } 
+  }
+
+  /** 
+   * Hook the indicia_define_remembered_fields method to specify the personal details page as
+   * remembered between sessions.
+   * @param $args
+   * @return unknown_type
+   */
+  function indicia_define_remembered_fields($args) {
+    data_entry_helper::set_remembered_fields(array(
+      'smpAttr:'.$args['first_name_attr_id'],
+      'smpAttr:'.$args['surname_attr_id'],
+      'smpAttr:'.$args['email_attr_id'],
+      'smpAttr:'.$args['phone_attr_id'],
+    ));
+  }
   
   
 }
