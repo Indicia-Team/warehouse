@@ -4505,7 +4505,7 @@ $('.ui-state-default').live('mouseout', function() {
     $remembered_fields = self::get_remembered_fields();
     if (self::$entity_to_load!=null && array_key_exists($id, self::$entity_to_load)) {
       return self::$entity_to_load[$id];
-    } else if (in_array($id, $remembered_fields)) {
+    } else if ($remembered_fields !== null && in_array($id, $remembered_fields)) {
       $arr = unserialize($_COOKIE['indicia_remembered']);
       if (isset($arr[$id]))
         return $arr[$id];
