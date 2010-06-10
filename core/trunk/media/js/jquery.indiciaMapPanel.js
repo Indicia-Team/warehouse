@@ -421,7 +421,9 @@
       
       // and prepare a georeferencer
       div.georefOpts = $.extend({}, $.fn.indiciaMapPanel.georeferenceDriverSettings, $.fn.indiciaMapPanel.georeferenceLookupSettings);
-      div.georeferencer = new Georeferencer(div, _displayGeorefOutput);
+      if (typeof Georeferencer !== "undefined") {
+        div.georeferencer = new Georeferencer(div, _displayGeorefOutput);
+      }
       
       // Add any tile cache layers
       var tcLayer;
