@@ -361,6 +361,12 @@ class data_entry_helper extends helper_config {
    * list, allowing our CSS to override other stuff.
    */
   private static $default_styles = false;
+  
+  /**
+   * @var Array List of fields that are to be stored in a cookie and reloaded the next time a form is accessed. These
+   * are populated by implementing a hook function called indicia_define_remembered_fields which calls set_remembered_fields.
+   */
+  private static $remembered_fields=null;
 
 /**********************************/
 /* Start of main controls section */
@@ -465,9 +471,7 @@ class data_entry_helper extends helper_config {
   * @return string HTML to insert into the page for the checkbox control.
   */
   public static function checkbox($options) {
-    $default = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : null);
-    if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
+    $options = self::check_options($options);
     $options['checked'] = ($default=='on' || $default == 1 || $default == '1') ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
@@ -1352,8 +1356,6 @@ class data_entry_helper extends helper_config {
         'linkedAddressBoxId'=>''
         ), $options);
     self::add_resource('google_search');
-    $options['default'] = self::check_default_value($options['fieldname'],
-        array_key_exists('default', $options) ? $options['default'] : '');
     $r = self::apply_template('postcode_textbox', $options);
     if ($options['hiddenFields']) {
       $defaultSref=self::check_default_value($options['srefField']);
@@ -3074,7 +3076,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
   /**
    * Checks that an Id is supplied, if not, uses the fieldname as the id. Also checks if a
-   * captionField is supplied, and if not uses a valueField if available.
+   * captionField is supplied, and if not uses a valueField if available. Finally, gets the control's
+   * default value.
+   * If the control is set to be remembered, then adds it to the list of remembered fields.
    */
   private static function check_options($options) {
     // force some defaults to be present in the options
@@ -3086,7 +3090,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (!array_key_exists('id', $options) && array_key_exists('fieldname', $options)) {
       $options['id']=$options['fieldname'];
     }
-    // If captionField is supplied but not captionField, use the captionField as the valueField
+    // If captionField is supplied but not valueField, use the captionField as the valueField
     if (!array_key_exists('valueField', $options) && array_key_exists('captionField', $options)) {
       $options['valueField']=$options['captionField'];
     }
@@ -3822,8 +3826,19 @@ if (errors.length>0) {
    */
   public static function forward_post_to($entity, $submission = null) {
     if (self::$validation_errors==null) {
+      $remembered_fields = self::get_remembered_fields();
+      
       if ($submission == null)
         $submission = submission_builder::wrap($_POST, $entity);
+      // if there are any fields to remember, put them in a cookie with a 30 day expiry
+      $arr=array();
+      foreach ($remembered_fields as $field) {
+        $arr[$field]=$_POST[$field];
+      }
+      setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
+      // cookies are only set when the page is loaded. So if we are reloading the same form after submission, 
+      // we need to fudge the cookie
+      $_COOKIE['indicia_remembered'] = serialize($arr);
       $images = self::extract_image_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
@@ -4487,10 +4502,16 @@ $('.ui-state-default').live('mouseout', function() {
    * not empty is used.
    */
   public static function check_default_value($id) {
-    $return = null;
+    $remembered_fields = self::get_remembered_fields();
     if (self::$entity_to_load!=null && array_key_exists($id, self::$entity_to_load)) {
-      $return = self::$entity_to_load[$id];
+      return self::$entity_to_load[$id];
+    } else if (in_array($id, $remembered_fields)) {
+      $arr = unserialize($_COOKIE['indicia_remembered']);
+      if (isset($arr[$id]))
+        return $arr[$id];
     }
+    
+    $return = null;
     if (is_null($return) || $return == '') { // need to be careful about valid zero values!
       // iterate the variable arguments and use the first one with a real value
       for ($i=1; $i<func_num_args(); $i++) {
@@ -5073,6 +5094,34 @@ $('.ui-state-default').live('mouseout', function() {
     }
     $response = self::http_post($request, null);
     return json_decode($response['output'], true);
+  }
+  
+  /**
+   * Accessor for the $remembered_fields variable. This is a list of the fields on the form 
+   * which are to be remembered the next time the form is loaded, e.g. for values that do not change 
+   * much from record to record. This creates the list on demand, by calling a hook indicia_define_remembered_fields
+   * if it exists. indicia_define_remembered_fields should call data_entry_helper::set_remembered_fields to give it
+   * an array of field names.
+   * Note that this hook architecture is required to allow the list of remembered fields to be made available 
+   * before the form is constructed, since it is used by the code which saves a submitted form to store the 
+   * remembered field values in a cookie. 
+   * @return Array List of the fields to remember.
+   */
+  public static function get_remembered_fields() {
+    if (self::$remembered_fields == null && function_exists('indicia_define_remembered_fields')) {
+      indicia_define_remembered_fields();
+    }
+    return self::$remembered_fields;
+  }
+  
+  /**
+   * Accessor to set the list of remembered fields. Should only be called by the hook method
+   * indicia_define_remembered_fields. 
+   * @see get_rememebered_fields
+   * @param $arr Array of field names
+   */
+  public static function set_remembered_fields($arr) {
+    self::$remembered_fields = $arr;
   }
 
 }
