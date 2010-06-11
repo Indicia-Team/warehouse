@@ -75,7 +75,7 @@ class iform_mnhnl_collaborators_1 {
           'group' => 'User Interface'
         ),
         array(
-        	'name'=>'location_ctrl',
+          'name'=>'location_ctrl',
           'caption'=>'Location Control Type',
           'description'=>'The type of control that will be available to select a location.',
           'type'=>'select',
@@ -86,16 +86,25 @@ class iform_mnhnl_collaborators_1 {
           'group'=>'User Interface'
         ),
       array(
-      	'name'=>'survey_id',
+        'name'=>'survey_id',
         'caption'=>'Survey ID',
         'description'=>'The Indicia ID of the survey that data will be posted into.',
         'type'=>'int'
       ),
       array(
-      	'name'=>'list_id',
-        'caption'=>'Species List ID',
-        'description'=>'The Indicia ID for the species list that species can be selected from.',
+        'name'=>'list_id',
+        'caption'=>'Initial Species List ID',
+        'description'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
+            'into the grid.',
         'type'=>'int'
+      ),
+      array(
+        'name'=>'extra_list_id',
+        'caption'=>'Extra Species List ID',
+        'description'=>'The Indicia ID for the species list that species can be selected from. This list is available for additional '.
+            'taxa being added to the grid.',
+        'type'=>'int',
+        'required'=>false
       ),
       array(
           'name'=>'uid_attr_id',
@@ -147,34 +156,11 @@ class iform_mnhnl_collaborators_1 {
           'group'=>'Sample Attributes'
         ),
         array(
-          'name'=>'voucher_attr_id',
-          'caption'=>'Voucher Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores whether a voucher specimen was taken.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
           'name'=>'checklist_attributes',
           'caption'=>'Species Checklist Grid Contents',      
           'description'=>'List of Indicia IDs for occurrence attributes included in the species checklist grid, comma separated.',
           'type'=>'string',
           'group'=>'Species Checklist Attributes'
-        ),
-        array(
-          'name'=>'georefPreferredArea',
-          'caption'=>'Preferred area for georeferencing.',      
-          'description'=>'Preferred area to look within when trying to resolve a place name. For example set this to the region name you are recording within.',
-          'type'=>'string',
-          'default'=>'gb',
-          'group'=>'Map'
-        ),
-        array(
-          'name'=>'georefCountry',
-          'caption'=>'Preferred country for georeferencing.',      
-          'description'=>'Preferred country to look within when trying to resolve a place name.',
-          'type'=>'string',
-          'default'=>'United Kingdom',
-          'group'=>'Map'
         )
       ) 
     );
@@ -194,14 +180,13 @@ class iform_mnhnl_collaborators_1 {
    * @return Form HTML.
    */
   public static function get_form($args, $node) {
-  	global $user;
+    global $user;
     $logged_in = $user->uid>0;
-  	$r = '';
-   	
+    $r = '';
+
     // Get authorisation tokens to update and read from the Warehouse.
-    $writeAuth = data_entry_helper::get_auth($args['website_id'], $args['password']);
-    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-	$svcUrl = data_entry_helper::$base_url.'/index.php/services';
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
     $mode = 0; // default mode : display survey selector
     			// mode 1: display new sample
@@ -226,31 +211,27 @@ class iform_mnhnl_collaborators_1 {
     ///////////////////////////////////////////////////////////////////
     // default mode 0 : display survey selector
     ///////////////////////////////////////////////////////////////////
-    if($mode == 0){	
-		// Create the Sample list datagrid for this user.
-		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
-		drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
-		drupal_add_js("jQuery(document).ready(function(){
-  $('div#smp_grid').indiciaDataGrid('rpt:mnhnl_collab_list_samples', {
-    indiciaSvc: '".$svcUrl."',
-    dataColumns: ['location_name', 'entered_sref', 'date', 'num_occurrences', 'completed'],
-    reportColumnTitles: {location_name : '".lang::get('LANG_Location')."', entered_sref : '".lang::get('LANG_Spatial_ref')."', date : '".lang::get('LANG_Date')."', num_occurrences : '".lang::get('LANG_Num_Occurrences')."', completed : '".lang::get('LANG_Completed')."'},
-    actionColumns: {".lang::get('LANG_Edit')." : \"".url('node/'.($node->nid), array('query' => 'sample_id=�id�'))."\"},
-    auth : { nonce : '".$readAuth['nonce']."', auth_token : '".$readAuth['auth_token']."'},
-    parameters : {
-    			survey_id : '".$args['survey_id']."',
-    			userID_attr_id : '".$args['uid_attr_id']."',
-    			userID : '".$user->uid."'
-    				},
-    itemsPerPage : 12 
-  });
-});
-
-", 'inline');
-		$r .= '<div id="sampleList" class="mnhnl-btw-datapanel"><div id="smp_grid"></div>';
-		$r .= '<form><input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'"></form></div>';
-        $r .= "</div>\n";
-		return $r;
+    if($mode == 0){
+      $r .= data_entry_helper::report_grid(array(
+        'id' => 'samples-grid',
+        'dataSource' => 'mnhnl_collab_list_samples',
+        'mode' => 'report',
+        'readAuth' => $auth['read'],
+        'columns' => array(
+          array('display' => 'Actions', 'actions' => array(
+            array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{id}')),
+          ))
+        ),
+        'itemsPerPage' =>10,
+        'autoParamsForm' => true,
+        'extraParams' => array(
+          'survey_id'=>$args['survey_id'], 
+          'userID_attr_id'=>$args['uid_attr_id'],
+          'userID'=>$user->uid
+        )
+      ));	
+      $r .= '<form><input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'"></form>';
+      return $r;
     }
     ///////////////////////////////////////////////////////////////////
     
@@ -273,7 +254,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     	// Can't cache these as data may have just changed
     	data_entry_helper::$entity_to_load['occurrence:record_status']='I';
 	    $url = $svcUrl.'/data/sample/'.$loadID;
-	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
+	    $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
 	    $session = curl_init($url);
 	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 	    $entity = json_decode(curl_exec($session), true);
@@ -283,7 +264,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 	    	data_entry_helper::$entity_to_load['sample:'.$key] = $value;
 	    }
 	    $url = $svcUrl.'/data/occurrence';
-	    $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&sample_id=".$loadID."&deleted=FALSE";
+	    $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&sample_id=".$loadID."&deleted=FALSE";
 	    $session = curl_init($url);
 	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
 	    $entities = json_decode(curl_exec($session), true);
@@ -294,14 +275,14 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 	    data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
 		data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
     }
-    $defAttrOptions = array('extraParams'=>$readAuth);
+    $defAttrOptions = array('extraParams'=>$auth['read']);
         
 //    $r .= "<h1>MODE = ".$mode."</h1>";
 //    $r .= "<h2>readOnly = ".$readOnly."</h2>";
     
-    $r = "<form method=\"post\" id=\"entry_form\">\n";        
-    // Get authorisation tokens to update and read from the Warehouse.
-    $r .= $writeAuth;
+    $r = "<form method=\"post\" id=\"entry_form\">\n";
+    // Insert authorisation tokens to update the Warehouse.
+    $r .= $auth['write'];
     $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
@@ -315,7 +296,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
        ,'attrtable'=>'sample_attribute'
        ,'key'=>'sample_id'
        ,'fieldprefix'=>'smpAttr'
-       ,'extraParams'=>$readAuth
+       ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
     ));
     if ($logged_in) {
@@ -352,7 +333,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     if (!$logged_in) {
       $r .= "<div id=\"about_you\">\n";
       $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('LANG_About_You_Tab_Instructions')."</p>";
-	  $defAttrOptions['class'] = 'control-width-4';
+      $defAttrOptions['class'] = 'control-width-4';
       $r .= data_entry_helper::outputAttribute($attributes[$args['first_name_attr_id']], $defAttrOptions);
       $r .= data_entry_helper::outputAttribute($attributes[$args['surname_attr_id']], $defAttrOptions);
       $r .= data_entry_helper::outputAttribute($attributes[$args['email_attr_id']], $defAttrOptions);
@@ -370,23 +351,19 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     global $indicia_templates;
-	$indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
+    $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
     $r .= "<div id=\"species\">\n";
     $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('LANG_Species_Tab_Instructions')."</p>";
-    $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
     $species_list_args=array(
+        'listId'=>$args['list_id'],
         'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'fieldname'=>'occurrence:taxa_taxon_list_id',
-        'table'=>'taxa_taxon_list',
-        'captionField'=>'taxon',
-        'valueField'=>'id',
         'columns'=>1,
         'view'=>'detail',
-        'parentField'=>'parent_id',
         'occAttrs'=> explode(',', $args['checklist_attributes']),
-        'extraParams'=>$extraParams,
+        'extraParams'=>$auth['read'],
         'survey_id'=>$args['survey_id']
     );
+    if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
     $r .= data_entry_helper::species_checklist($species_list_args);
     $r .= "<label for=\"sample:comment\">".lang::get('LANG_Sample_Comment_Label')."</label><input type=\"text\" id=\"sample:comment\" name=\"sample:comment\" value=\"".data_entry_helper::$entity_to_load['sample:comment']."\" />\n";
     
@@ -415,13 +392,13 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     $location_list_args=array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
-        'extraParams'=>array_merge(array('view'=>'detail', 'orderby'=>'name'), $extraParams)
+        'extraParams'=>array_merge(array('view'=>'detail', 'orderby'=>'name'), $auth['read'])
     );
     
     $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
     
     $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
-    $options = iform_map_get_map_options($args, $readAuth);
+    $options = iform_map_get_map_options($args, $auth['read']);
     $options['layers'][] = 'locationLayer';
     $olOptions = iform_map_get_ol_options($args);
     $r .= data_entry_helper::map_panel($options, $olOptions);
@@ -482,7 +459,7 @@ locationChange = function(obj){
 	locationLayer.destroyFeatures();
 	if(obj.value != ''){
 		jQuery.getJSON(\"".$svcUrl."\" + \"/data/location/\"+obj.value +
-			\"?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."\" +
+			\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
 			\"&callback=?\", function(data) {
             if (data.length>0) {
             	var parser = new OpenLayers.Format.WKT();
