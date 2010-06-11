@@ -600,9 +600,11 @@ class Data_Controller extends Data_Service_Base_Controller {
               Kohana::log('debug', 'Trying to fetch attributes for non sample/occurrence/location table. Ignoring.');
           }
           break;
+        case 'query':
+          $this->apply_query_def_to_db($value);
+          break;
       default:
-        if (array_key_exists(strtolower($param), $this->view_columns))
-        {
+        if (array_key_exists(strtolower($param), $this->view_columns)) {
           // A parameter has been supplied which specifies the field name of a filter field
           if ($value == 'NULL')
             $value = NULL;
@@ -639,6 +641,52 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if (count($where))
       $this->db->where($where);
+  }
+  
+  /**
+   * Takes the value of a query parameter passed to the data service, and processes it to apply the filter conditions 
+   * defined in the JSON to $this->db, ready for when the service query is run.
+   * @param string $value The value of the parameter called query, which should contain a JSON object.
+   * @link http://code.google.com/p/indicia/wiki/DataServices#Using_the_query_parameter
+   */
+  protected function apply_query_def_to_db($value) {
+    $query = json_decode($value);
+    foreach ($query as $cmd=>$params) {
+      switch(strtolower($cmd)) {
+        case 'in':
+          if (count($params)<>2 || !is_array($params[1]))
+            kohana::log('error','Queries using IN must provide 2 parameters, the field name and an array of values');
+          else
+            $this->db->in($params[0],$params[1]);
+          break;
+        case 'notin':
+          if (count($params)<>2 || !is_array($params[1]))
+            kohana::log('error','Queries using NOTIN must provide 2 parameters, the field name and an array of values');
+          else
+            $this->db->notin($params[0],$params[1]);
+          break;
+        case 'where':
+          if (count($params)==2 && !is_array($params[0] && !is_array($params[1])))
+            $this->db->where($params[0],$params[1]);
+          elseif (count($params)==1 && is_array($params[1]))
+            $this->db->where($params[0]);
+          else
+            kohana::log('error','Queries using WHERE must provide 2 parameters, the field name and value, or an '.
+                'associative array of WHERE conditions.');
+          break;
+        case 'orwhere':
+          if (count($params)==2 && !is_array($params[0] && !is_array($params[1])))
+            $this->db->orwhere($params[0],$params[1]);
+          elseif (count($params)==1 && is_array($params[1]))
+            $this->db->orwhere($params[0]);
+          else
+            kohana::log('error','Queries using ORWHERE must provide 2 parameters, the field name and value, or an '.
+                'associative array of WHERE conditions.');
+          break;
+        default:
+          kohana::log('error',"Unsupported query command $cmd");
+      }
+    }
   }
 
   /**
