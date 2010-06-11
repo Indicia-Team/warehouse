@@ -1440,9 +1440,11 @@ class data_entry_helper extends helper_config {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, url and javascript.
-  *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
+  *      values for caption, url, urlParams and javascript. The javascript, url and urlParams values can all use the 
+  *      field names from the report in braces as substitutions, for example {id} is replaced by the value of the field
+  *      called id in the respective row. In addition, the url can use {currentUrl} to represent the current page's URL.
   *  - visible: true or false, defaults to true
+  *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *  of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
   *  Note that template columns cannot be sorted by clicking grid headers.
   * An example array for the columns option is:
@@ -1450,7 +1452,7 @@ class data_entry_helper extends helper_config {
   *   array('fieldname' => 'survey', 'display' => 'Survey Title'),
   *   array('display' => 'action', 'template' => '<a href="www.mysite.com\survey\{id}\edit">Edit</a>'),
   *   array('display' => 'Actions', 'actions' => array(
-  *     array('caption' => 'edit')
+  *     array('caption' => 'edit', 'url'=>'{currentUrl}', 'urlParams'=>array('survey_id'=>'{id}'))
   *   ))
   *
   * )
@@ -1500,7 +1502,6 @@ class data_entry_helper extends helper_config {
 
     $response = self::get_report_data($options, $extraParams);
     if (isset($response['error'])) return $response['error'];
-
     if (isset($response['parameterRequest'])) {
       $currentParamValues = self::get_report_grid_url_params($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
@@ -3830,15 +3831,17 @@ if (errors.length>0) {
       
       if ($submission == null)
         $submission = submission_builder::wrap($_POST, $entity);
-      // if there are any fields to remember, put them in a cookie with a 30 day expiry
-      $arr=array();
-      foreach ($remembered_fields as $field) {
-        $arr[$field]=$_POST[$field];
+      if ($remembered_fields !== null) { 
+        // if there are any fields to remember, put them in a cookie with a 30 day expiry
+        $arr=array();
+        foreach ($remembered_fields as $field) {
+          $arr[$field]=$_POST[$field];
+        }
+        setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
+        // cookies are only set when the page is loaded. So if we are reloading the same form after submission, 
+        // we need to fudge the cookie
+        $_COOKIE['indicia_remembered'] = serialize($arr);
       }
-      setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
-      // cookies are only set when the page is loaded. So if we are reloading the same form after submission, 
-      // we need to fudge the cookie
-      $_COOKIE['indicia_remembered'] = serialize($arr);
       $images = self::extract_image_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
@@ -4861,7 +4864,10 @@ $('.ui-state-default').live('mouseout', function() {
                   'extraParams' => $options['extraParams'] + $dataSvcParams));
           break;
         default:
-            $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
+            if ($item) 
+              $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
+            else
+              $output = '<strong>Requested attribute is not available</strong><br />';
             break;
     }
 

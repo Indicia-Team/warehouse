@@ -218,13 +218,8 @@ class iform_ad_hoc_cetaceans {
         $r .= '<legend>'.lang::get('what did you see').'</legend>';
     $species_list_args=array(
         'label'=>lang::get('Species'),
-        'fieldname'=>'occurrence:taxa_taxon_list_id',
-        'table'=>'taxa_taxon_list',
-        'captionField'=>'taxon',
-        'valueField'=>'id',
         'listId'=>$args['species_list_id'],
         'columns'=>1,
-        'parentField'=>'parent_id',
         'checkboxCol'=>false,
         'occAttrs'=> array($args['abundance_attr_id']),
         'extraParams'=>$readAuth + array('view'=>'detail','orderby'=>'taxonomic_sort_order'),
