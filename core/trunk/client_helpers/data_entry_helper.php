@@ -4666,10 +4666,18 @@ $('.ui-state-default').live('mouseout', function() {
   public static function getAttributes($options) {
     $retVal = array();
     self::add_resource('json');
-
+    $surveys = array(NULL);
+    if (isset($options['survey_id']))
+      $surveys[] = $options['survey_id'];
+    
     $attrOptions = array(
-          'table'=>$options['attrtable']
-           ,'extraParams'=> $options['extraParams']+ array('deleted' => 'f', 'website_deleted' => 'f', 'restrict_to_survey_id' => 'NULL'));
+          'table'=>$options['attrtable'],
+           'extraParams'=> $options['extraParams']+ array(
+             'deleted' => 'f', 
+             'website_deleted' => 'f',
+             'query'=>urlencode(json_encode(array('in'=>array('restrict_to_survey_id', $surveys))))
+           )
+    );
     $response = self::get_population_data($attrOptions);
     if (array_key_exists('error', $response))
         return $response;
