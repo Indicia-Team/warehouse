@@ -29,8 +29,8 @@ global $custom_terms;
 $custom_terms = array(
 	'LANG_Invocation_Error' => 'Warning : invalid GET parameters in URL'
 	,'LANG_Insufficient_Privileges' => 'You do not have sufficient privileges to access this form.'
-	
-	,'LANG_Main_Title' => 'Collections'
+	,'LANG_Please_Refresh_Page' => 'An error has occurred. Please refresh the page.'
+	,'LANG_Main_Title' => 'The Collections'
 	,'LANG_Enter_Filter_Name' => 'Enter a name for this filter'
 	,'LANG_Save_Filter_Button' => 'Save'
 	,'LANG_Collection' => 'Return to Collection'
@@ -38,16 +38,21 @@ $custom_terms = array(
 	,'LANG_Next' => 'Next'
 	,'LANG_Add_Preferred_Insect' => 'Add to My Preferred Insects'
 	,'LANG_Validate' => 'Save'
+	,'LANG_Add_Preferred_Collection'  => 'Add to My Preferred Collections'
+	,'LANG_List' => 'Return to Filter'
 	
 	,'LANG_Indentification_Title' => 'Identification'
 	,'LANG_Doubt' => "Express doubt about this identification"
 	,'LANG_New_ID' => 'Propose a new identification'
 	,'LANG_Launch_ID_Key' => "Launch the identification tool"
+	,'LANG_Cancel_ID' => "Abort the identification tool"
 	,'LANG_Taxa_Returned' => "Taxa returned by ID Tool:"
 	,'LANG_ID_Unrecognised' => 'The following were returned by the ID tool but are unrecognised: '
+	,'LANG_Taxa_Unknown_In_Tool' => 'Taxa not known in ID tool'
 	,'LANG_Choose_Taxon' => "Choose a taxon from the list"
 	,'LANG_Identify_Insect' => 'Identify this insect:'
 	,'LANG_More_Precise' => 'More precise identification'
+	,'LANG_ID_Comment' => 'Identification comments'
 	,'LANG_Flower_Species' => "Flower name"
 	,'LANG_Flower_Name' => "Flower name"
 	,'LANG_Insect_Species' => "Insect name"
@@ -99,6 +104,10 @@ $custom_terms = array(
 	,'LANG_Confirm_Express_Doubt' => 'Are you sure you wish to express doubt about this current identification?'
 	,'LANG_Doubt_Expressed' => 'Someone has expressed doubt about this identification.'
 	,'LANG_Doubt_Comment' => 'I have expressed doubt about this determination because...'
+	,'LANG_Determination_Incorrect' => 'This identification has been flagged as incorrect.'
+	,'LANG_Determination_Unconfirmed' => 'This identification has been flagged as unconfirmed.'
+	,'LANG_Determination_Unknown' => 'The taxon was not known in the identification tool.'
 	,'LANG_Max_Features_Reached' => 'The number of results returned has exceeded the maximum number allowed. The list will be abridged.'
+	,'LANG_Indicia_Warehouse_Error' => 'Error returned from Indicia Warehouse'
 	
 );
