@@ -120,6 +120,7 @@ $custom_terms = array(
 	,'Yes' => 'Oui'
 	,'No' => 'Non'
 	,'LANG_Help_Button' => '?'
+  	,'click here'=>'Cliquez ici'
 	
 	,'LANG_Final_1' => 'Cette collection a été enregistrée et ajoutée à votre galerie'
 	,'LANG_Final_2' => "Cette collection peut être consultée dans la rubrique «Mes collections», où vous pouvez modifier l'identification de vos insectes"

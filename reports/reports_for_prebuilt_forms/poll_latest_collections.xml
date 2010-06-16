@@ -8,7 +8,7 @@
   	ARRAY(select ii.path
   		FROM samples sessions
   		INNER JOIN occurrences i ON i.sample_id = sessions.id AND i.deleted = FALSE
-  		INNER JOIN occurrence_images ii ON fi.occurrence_id = i.id and ii.deleted = FALSE
+  		INNER JOIN occurrence_images ii ON ii.occurrence_id = i.id and ii.deleted = FALSE
   		WHERE sessions.parent_id = s.id and sessions.deleted = FALSE)::text[] as insect_image_paths
   FROM samples s
   INNER JOIN occurrences f ON f.sample_id = s.id AND f.deleted = FALSE
