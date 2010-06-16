@@ -69,6 +69,7 @@ $custom_terms = array(
 	,'LANG_Date_Filter_Title' => 'Date'
 	,'LANG_Flower_Filter_Title' => 'Flower'
 	,'LANG_Insect_Filter_Title' => 'Insect'
+	,'LANG_Conditions_Filter_Title' => "Observation Conditions"
 	,'LANG_Location_Filter_Title' => 'Location'
 	,'LANG_Georef_Label' => 'Location'
 	,'LANG_Georef_Notes' => '(This may be a village/town/city name, region, department or 5 digit postcode.)'

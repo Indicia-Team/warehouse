@@ -434,6 +434,8 @@ jQuery('#".$id."').click(function(){
 	drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
 	data_entry_helper::link_default_stylesheet();
 	data_entry_helper::add_resource('jquery_ui');
+	if($args['language'] != 'en')
+		data_entry_helper::add_resource('jquery_ui_'.$args['language']);
 	data_entry_helper::enable_validation('cc-1-collection-details'); // don't care about ID itself, just want resources
 
 	if($args['help_module'] != '' && $args['help_inclusion_function'] != '' && module_exists($args['help_module']) && function_exists($args['help_inclusion_function'])) {
@@ -524,7 +526,7 @@ jQuery('#".$id."').click(function(){
     <label for="location:name">'.lang::get('LANG_Collection_Name_Label').'</label>
  	<input type="text" id="location:name"      name="location:name" value="" class="required"/>
     <input type="hidden" id="sample:location_name" name="sample:location_name" value=""/>
- 	'.data_entry_helper::outputAttribute($sample_attributes[$args['protocol_attr_id']], $defAttrOptions)
+ 	'.data_entry_helper::outputAttribute($sample_attributes[$args['protocol_attr_id']], $defNRAttrOptions)
  	.'    <input type="hidden"                       name="sample:date" value="2010-01-01"/>
     <input type="hidden" id="smpAttr:'.$args['complete_attr_id'].'" name="smpAttr:'.$args['complete_attr_id'].'" value="0" />
     <input type="hidden" id="smpAttr:'.$args['uid_attr_id'].'" name="smpAttr:'.$args['uid_attr_id'].'" value="'.$uid.'" />
@@ -971,7 +973,7 @@ $('#cc-1-reinit-button').click(function() {
       <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
-      '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defAttrOptions)
+      '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defNRAttrOptions)
  	  .data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], $defNRAttrOptions) 	 	
       .data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], $checkOptions).'
     </form>
@@ -1508,7 +1510,7 @@ populateSessionSelect = function(){
 		jQuery('<option value=\"'+
 				jQuery(this).children('input[name=sample\\:id]').val()+
 				'\">'+
-				jQuery(this).children('input[name=sample\\:date]').val()+
+				jQuery(this).children('input[name=dummy_date]').val()+
 				' : '+
 				jQuery(this).children('[name=smpAttr\\:".$args['start_time_attr_id']."],[name^=smpAttr\\:".$args['start_time_attr_id']."\\:]').val()+
 				' > '+
@@ -1576,24 +1578,23 @@ addSession = function(){
 	helpDiv.appendTo(newForm);";
     }
     data_entry_helper::$javascript .= "
-	var dateAttr = '".str_replace("\n", "", data_entry_helper::date_picker(array('label' => lang::get('LANG_Date'),
-    						'id' => '<id>',
-							'fieldname' => 'sample:date',
-    						'class' => 'vague-date-picker required',
-    						'suffixTemplate'=>'nosuffix')))."';
 	var dateID = 'cc-3-session-date-'+sessionCounter;
-	jQuery(dateAttr.replace(/<id>/g, dateID)).appendTo(newForm);
-    jQuery('#'+dateID).datepicker({
-		dateFormat : 'yy-mm-dd',
+	var dateAttr = '<label for=\"'+dateID+'\">".lang::get('LANG_Date')."</label><input type=\"text\" size=\"10\" class=\"vague-date-picker required\" id=\"'+dateID+'\" name=\"dummy_date\" value=\"".lang::get('click here')."\" /> ';
+	dateAttr = dateAttr + '<input type=\"hidden\" id=\"real-'+dateID+'\" name=\"sample:date\" value=\"\" class=\"required\"/> ';
+    jQuery(dateAttr).appendTo(newForm);
+	jQuery('#'+dateID).datepicker({
+		dateFormat : 'dd/mm/yy',
 		constrainInput: false,
-		maxDate: '0'
+		maxDate: '0',
+		altField : '#real-'+dateID,
+		altFormat : 'yy-mm-dd'
 	});
     jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['start_time_attr_id']], $defAttrOptions)."').appendTo(newForm);
 	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['end_time_attr_id']], $defAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defAttrOptions)."').appendTo(newForm);
+	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
+	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
+	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
+	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
 	newDeleteButton.click(function() {
 		var container = $(this).parent().parent();
 		jQuery('#cc-3-delete-session').find('[name=sample\\:id]').val(container.find('[name=sample\\:id]').val());
@@ -1631,7 +1632,8 @@ addSession = function(){
     		if (!validateRadio('smpAttr\\:".$args['sky_state_attr_id']."', obj)) { valid = false; }
    			if (!validateRadio('smpAttr\\:".$args['temperature_attr_id']."', obj)) { valid = false; }
    			if (!validateRadio('smpAttr\\:".$args['wind_attr_id']."', obj)) { valid = false; }
-    		data[2].value = jQuery('#cc-1-collection-details > input[name=sample\\:id]').val();
+   			// shade is a boolean, and will always have one set, default no
+   			data[2].value = jQuery('#cc-1-collection-details > input[name=sample\\:id]').val();
 			data[3].value = jQuery('#cc-1-collection-details > input[name=location\\:id]').val();
 			jQuery('#cc-3-valid-button').addClass('loading-button');
 			if(!valid) myScrollToError();
@@ -1661,7 +1663,7 @@ validateSessionsPanel = function(){
 	var openSession = jQuery('.poll-session-form:visible');
 	if(openSession.length > 0){
 		if(jQuery('input[name=sample\\:id]', openSession).val() == '' &&
-				jQuery('input[name=sample\\:date]', openSession).val() == '".lang::get('click here')."' &&
+				jQuery('input[name=sample\\:date]', openSession).val() == '' &&
 				jQuery('[name=smpAttr\\:".$args['start_time_attr_id']."],[name^=smpAttr\\:".$args['start_time_attr_id']."\\:]', openSession).val() == '' &&
 				jQuery('[name=smpAttr\\:".$args['end_time_attr_id']."],[name^=smpAttr\\:".$args['end_time_attr_id']."\\:]', openSession).val() == '' &&
 				jQuery('[name=smpAttr\\:".$args['sky_state_attr_id']."],[name^=smpAttr\\:".$args['sky_state_attr_id']."\\:]', openSession).filter('[checked]').length == 0 &&
@@ -1778,9 +1780,9 @@ jQuery('.mod-button').click(function() {
  			'suffixTemplate'=>'nosuffix'
 	    ))
 	.data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],
- 			$defAttrOptions)
+ 			$defNRAttrOptions)
  	.data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],
- 			$defAttrOptions).'
+ 			$defNRAttrOptions).'
     </form>
     <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Insect').'</span>
     <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all delete-button">'.lang::get('LANG_Delete_Insect').'</span>
@@ -2169,7 +2171,7 @@ $('#cc-5-collection').ajaxForm({
 	       	} else {
 	       		data[3].value = date_start+' to '+date_end;
   			}
-	       	jQuery('[name=sample\\:date]:hidden').val(data[3].value);
+	       	jQuery('#cc-1-collection-details,#cc-2').find('[name=sample\\:date]:hidden').val(data[3].value);
   			data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
        		data[5].name = jQuery('#cc-1-collection-details input[name^=smpAttr\\:".$args['complete_attr_id']."\\:]').attr('name');
   			jQuery('#cc-5-complete-collection').addClass('loading-button');
@@ -2418,7 +2420,8 @@ jQuery.ajax({
 									var thisSession = addSession();
 									jQuery('input[name=sample\\:id]', thisSession).val(sessiondata[i].id).removeAttr('disabled');
 									jQuery('input[name=sample\\:date]', thisSession).val(sessiondata[i].date_start);
-       								loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', sessiondata[i].id, 'smpAttr');
+									jQuery('input[name=dummy_date]', thisSession).datepicker('disable').datepicker('setDate', new Date(sessiondata[i].date_start)).datepicker('enable');
+									loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', sessiondata[i].id, 'smpAttr');
   									// fold this session.
   									thisSession.show();
 									thisSession.children(':first').show().children().show();
