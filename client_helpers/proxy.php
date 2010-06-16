@@ -65,6 +65,8 @@ if (count($httpHeader)>0) {
 
 curl_setopt($session, CURLOPT_HEADER, true);
 curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($session, CURLOPT_REFERER, $_SERVER['HTTP_HOST']);
+
 
 // Do the POST and then close the session
 $response = curl_exec($session);
@@ -96,7 +98,7 @@ if (curl_errno($session) || strpos($response, 'HTTP/1.1 200 OK')===false) {
     $headers['content_type'] .= '; '.$headers['charset'];
   }
   header('Content-type: '.$headers['content_type']);
-   
+
   // last part of response is the actual data
   $arr = explode("\r\n\r\n", $response);
   echo array_pop($arr);
