@@ -190,7 +190,7 @@ class iform_mnhnl_citizen_science_1 {
    * @return Form HTML.
    */
   public static function get_form($args) {
-    
+
     global $user;
     $logged_in = $user->uid>0;
     // Get authorisation tokens to update and read from the Warehouse.
@@ -219,14 +219,14 @@ class iform_mnhnl_citizen_science_1 {
         }
         if (!empty($species[0]['description_in_list'])) {
           $r .= '<p>'.$species[0]['description_in_list']."</p>";
-          
+
         }
         $r .= "</div>\n";
       } else {
         $r .= "<p>The species count not be identified uniquely from the URL parameters.</p>\n";
       }
     }
-    
+
 
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
@@ -281,7 +281,9 @@ class iform_mnhnl_citizen_science_1 {
       $r .= "</fieldset>\n";
     }
     // the species tab is ommitted if the page is called with a tax
-    if (!isset($taxa_taxon_list_id)) {
+    if (isset($taxa_taxon_list_id)) {
+      $r .= "<input type=\"hidden\" name=\"occurrence:taxa_taxon_list_id\" value=\"$taxa_taxon_list_id\"/>\n";
+    } else {
       $r .= "<fieldset id=\"species\">\n";
       $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('species tab instructions')."</p>";
       $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
@@ -368,7 +370,7 @@ class iform_mnhnl_citizen_science_1 {
         'table' => 'occurrence_image',
         'tabDiv' => 'controls'
     ));
-    
+
     // Dynamically create a control for the abundance
     $abundance_args = array(
       'label'=>lang::get('abundance'),
@@ -416,7 +418,7 @@ class iform_mnhnl_citizen_science_1 {
     return data_entry_helper::build_sample_occurrence_submission($values);
   }
 
-  /** 
+  /**
    * Hook the indicia_define_remembered_fields method to specify the personal details page as
    * remembered between sessions.
    * @param $args
