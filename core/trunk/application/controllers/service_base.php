@@ -83,7 +83,12 @@ class Service_Base_Controller extends Controller {
         $response['line']=$e->getLine();
         $response['trace']=array();        
       }
-      echo json_encode($response);
+      $a = json_encode($response);
+      if (array_key_exists('callback', $_GET))
+      {
+        $a = $_GET['callback']."(".$a.")";
+      }
+      echo $a;
     }
   }
 

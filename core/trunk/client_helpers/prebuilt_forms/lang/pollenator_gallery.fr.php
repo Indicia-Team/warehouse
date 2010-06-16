@@ -29,25 +29,31 @@ global $custom_terms;
 $custom_terms = array(
 	'LANG_Invocation_Error' => "Avertissement: GET valide les paramètres dans l'URL"
 	,'LANG_Insufficient_Privileges' => "Vous n'avez pas de privilèges suffisants pour accéder à cette page."
+	,'LANG_Please_Refresh_Page' => "Une erreur s'est produite. S'il vous plaît, actualise la page."
 	
-	,'LANG_Main_Title' => 'Collections'
-	,'LANG_Enter_Filter_Name' => 'entrer un nom pour ce filtre'
+	,'LANG_Main_Title' => 'Les Collections'
+	,'LANG_Enter_Filter_Name' => 'Entrer un nom pour ce filtre'
 	,'LANG_Save_Filter_Button' => 'Enregistrer'
 	,'LANG_Collection' => 'Retour à la Collection'
 	,'LANG_Previous' => 'Précédent'
 	,'LANG_Next' => 'Suivant'
-	,'LANG_Add_Preferred_Insect' => 'enregistrer dans mes insectes préférés'
+	,'LANG_Add_Preferred_Insect' => 'enregistrer dans mes insectes preferés'
 	,'LANG_Validate' => 'Valider'
+	,'LANG_Add_Preferred_Collection'  => 'Enregistrer dans mes collection preferés'
+	,'LANG_List' => 'Retour à la Liste'
 	
 	,'LANG_Indentification_Title' => 'Identification'
 	,'LANG_Doubt' => "émettre un doubt sur l'identification"
 	,'LANG_New_ID' => 'Proposer une nouvelle identification'
 	,'LANG_Launch_ID_Key' => "Lancer la clé d'identification"
+	,'LANG_Cancel_ID' => "Abandonner la clé d'identification"
 	,'LANG_Taxa_Returned' => "Taxons retourné par la clé d'identification:"
 	,'LANG_ID_Unrecognised' => 'Les suivants ne sont pas reconnus: '
+	,'LANG_Taxa_Unknown_In_Tool' => 'Taxon inconnu de la clé'
 	,'LANG_Choose_Taxon' => "Choisissez un taxon dans la Liste"
 	,'LANG_Identify_Insect' => 'Indiquer le nom de cet insecte:'
 	,'LANG_More_Precise' => 'Dénomination précise'
+	,'LANG_ID_Comment' => 'Commentez éventuellement votre identification :'
 	,'LANG_Flower_Species' => "Nom de la Fleur"
 	,'LANG_Flower_Name' => "Nom de la Fleur"
 	,'LANG_Insect_Species' => "Nom de l'insecte"
@@ -105,10 +111,14 @@ $custom_terms = array(
 	,'LANG_Confirm_Express_Doubt' => 'Etes-vous sûr de vouloir exprimer des doutes au sujet de cette identification en cours?'
 	,'LANG_Doubt_Expressed' => "Quelqu'un a exprimé des doutes sur cette identification"
 	,'LANG_Doubt_Comment' => "J'ai exprimé des doutes sur cette détermination ..."
+	,'LANG_Determination_Incorrect' => 'Cette identification a été signalée comme incorrecte.'
+	,'LANG_Determination_Unconfirmed' => 'Cette identification a été marquée comme non confirmées.'
+	,'LANG_Determination_Unknown' => "Le taxon n'est pas connue par la clé d'identification."
 	,'LANG_Max_Features_Reached' => "Le nombre de résultats retournés a dépassé le nombre maximal autorisé. La liste sera abrégée."
 	,'LANG_General' => 'Général'
 	,'LANG_Created_Between' => 'Créé entre'
 	,'LANG_And' => 'et'
 	,'LANG_Or' => 'ou'
+	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
 	
 );

@@ -795,7 +795,9 @@ $('#cc-1-collection-details').ajaxForm({
         	    $.getJSON(\"".$svcUrl."\" + \"/data/sample\" +
 			          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			          \"&location_id=\"+data.outer_id+\"&parent_id=NULL&callback=?\", function(data) {
-					if (data.length>0) {
+					if(!(data instanceof Array)){
+   						alertIndiciaError(data);
+   					} else if (data.length>0) {
 			       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[0].id);
 			        	    jQuery('#cc-1-collection-details > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
 			        	    jQuery('#cc-2-floral-station > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
@@ -1415,13 +1417,17 @@ $('#cc-2-floral-station').ajaxForm({
        	    $.getJSON(\"".$svcUrl."\" + \"/data/occurrence\" +
 		          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 		          \"&sample_id=\"+data.outer_id+\"&callback=?\", function(occdata) {
-				if (occdata.length>0) {
+				if(!(occdata instanceof Array)){
+   					alertIndiciaError(occdata);
+   				} else if (occdata.length>0) {
 		        	jQuery('#cc-2-floral-station > input[name=occurrence\\:id]').removeAttr('disabled').val(occdata[0].id);
        				loadAttributes('occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', 'occurrence\\:id', occdata[0].id, 'occAttr');
 					$.getJSON(\"".$svcUrl."/data/occurrence_image/\" +
        						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
        						\"&occurrence_id=\"+occdata[0].id+\"&callback=?\", function(imgdata) {
-					    if (imgdata.length>0) {
+					    if(!(imgdata instanceof Array)){
+   							alertIndiciaError(imgdata);
+   						} else if (imgdata.length>0) {
 		        			jQuery('#cc-2-floral-station > input[name=occurrence_image\\:id]').removeAttr('disabled').val(imgdata[0].id);
 		        		}});
 		        }});
@@ -1430,7 +1436,9 @@ $('#cc-2-floral-station').ajaxForm({
 			$.getJSON(\"".$svcUrl."/data/location_image/\" +
        				\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
        				\"&location_id=\"+location_id+\"&callback=?\", function(data) {
-				if (data.length>0) {
+				if(!(data instanceof Array)){
+   					alertIndiciaError(data);
+   				} else if (data.length>0) {
 		        	jQuery('#cc-2-floral-station > input[name=location_image\\:id]').removeAttr('disabled').val(data[0].id);
 		        }});
 			jQuery('#cc-2').foldPanel();
@@ -1596,7 +1604,9 @@ addSession = function(){
 			$.getJSON(\"".$svcUrl."/data/occurrence/\" +
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 					\"&sample_id=\"+container.find('[name=sample\\:id]').val()+\"&callback=?\", function(insectData) {
-				if (insectData.length>0) {
+				if(!(insectData instanceof Array)){
+   					alertIndiciaError(insectData);
+   				} else if (insectData.length>0) {
 					jQuery('.loading-button').removeClass('loading-button');
 					alert(\"".lang::get('LANG_Cant_Delete_Session')."\");
 				} else if(confirm(\"".lang::get('LANG_Confirm_Session_Delete')."\")){
@@ -1935,7 +1945,9 @@ loadInsect = function(id){
 	clearInsect();
 	$.getJSON(\"".$svcUrl."/data/occurrence/\" + id +
           \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?\", function(data) {
-	    if (data.length>0) {
+	    if(!(data instanceof Array)){
+   			alertIndiciaError(data);
+   		} else if (data.length>0) {
 	        jQuery('form#cc-4-main-form > input[name=occurrence\\:id]').removeAttr('disabled').val(data[0].id);
 	        jQuery('form#cc-4-main-form > [name=occurrence\\:sample_id]').val(data[0].sample_id);
 			jQuery('form#cc-4-main-form > textarea[name=occurrence\\:comment]').val(data[0].comment);
@@ -1945,7 +1957,9 @@ loadInsect = function(id){
 	});
 	$.getJSON(\"".$svcUrl."/data/determination?occurrence_id=\" + id +
           \"&mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?\", function(data) {
-        loadDetermination(data, insectIDstruc);
+        if(!(data instanceof Array)){
+   			alertIndiciaError(data);
+   		} else loadDetermination(data, insectIDstruc);
 	});	
 	jQuery('.currentPhoto').removeClass('currentPhoto');
 	jQuery('[occId='+id+']').addClass('currentPhoto');
@@ -1961,14 +1975,17 @@ updatePhotoReel = function(occId){
 	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
-		if (imageData.length>0) {
+		if(!(imageData instanceof Array)){
+   			alertIndiciaError(imageData);
+   		} else if (imageData.length>0) {
 			var img = new Image();
 			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
 		}
 	});
 	// the picture can be async but the determination can't : we use the presence of the text to determine whether the 
-	// insect has been identified or not.	
+	// insect has been identified or not. NB an insect tagged as unidentified (type = 'X') has actually been through the ID
+	// process, so is not unidentified!!!
 	jQuery.ajax({ 
         type: \"GET\", 
         url: \"".$svcUrl."/data/determination\" + 
@@ -1976,7 +1993,9 @@ updatePhotoReel = function(occId){
     		\"&occurrence_id=\" + occId + \"&deleted=f&callback=?\", 
         data: {}, 
         success: function(detData) {
-	    	if (detData.length>0 && detData[0].determination_type != 'X') {
+	    	if(!(detData instanceof Array)){
+   				alertIndiciaError(detData);
+   			} else if (detData.length>0) {
 	    		container.find('.thumb-text').remove();
 	    	}
   		}, 
@@ -2201,7 +2220,9 @@ loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, 
 	$.getJSON(\"".$svcUrl."/data/\" + attributeTable +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", function(attrdata) {
-		if (attrdata.length>0) {
+		if(!(attrdata instanceof Array)){
+   			alertIndiciaError(attrdata);
+   		} else if (attrdata.length>0) {
 			var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();
 			for (var i=0;i<attrdata.length;i++){
 				if (attrdata[i].id && (attrdata[i].iso == null || attrdata[i].iso == '' || attrdata[i].iso == '".$language."')){
@@ -2234,7 +2255,9 @@ loadImage = function(imageTable, key, keyName, keyValue, target, ratio){
 	$.getJSON(\"".$svcUrl."/data/\" + imageTable +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", function(imageData) {
-		if (imageData.length>0) {
+		if(!(imageData instanceof Array)){
+   			alertIndiciaError(imageData);
+   		} else if (imageData.length>0) {
 			var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();
 			jQuery('[name='+imageTable+'\\:id]', form).val(imageData[0].id).removeAttr('disabled');
 			jQuery('[name='+imageTable+'\\:path]', form).val(imageData[0].path);
@@ -2306,7 +2329,9 @@ jQuery.ajax({
 			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", 
     dataType: 'json', 
     success: function(data) {
-	  if (data.length>0) {
+	  if(!(data instanceof Array)){
+   		alertIndiciaError(data);
+   	  } else if (data.length>0) {
 		var i;
        	for ( i=0;i<data.length;i++) {
        		if(data[i].completed == '0'){
@@ -2322,7 +2347,9 @@ jQuery.ajax({
           					\"&callback=?\", 
 					dataType: 'json', 
 					success: function(locationdata) {
-		    		  if (locationdata.length>0) {
+		    		  if(!(locationdata instanceof Array)){
+   						alertIndiciaError(locationdata);
+   					  } else if (locationdata.length>0) {
 		    			jQuery('input[name=location\\:id]').val(locationdata[0].id).removeAttr('disabled');
 	    				jQuery('input[name=location\\:name]').val(locationdata[0].name);
        					jQuery('input[name=sample\\:location_name]').val(locationdata[0].name); // make sure the 2 coincide
@@ -2350,7 +2377,9 @@ jQuery.ajax({
 					dataType: 'json', 
 					success: function(flowerData) {
           			  // there will only be an occurrence if the floral station panel has previously been displayed & validated. 
-		    		  if (flowerData.length>0) {
+		    		  if(!(flowerData instanceof Array)){
+   						alertIndiciaError(flowerData);
+   					  } else if (flowerData.length>0) {
   						$('#cc-1').foldPanel();
   						$('#cc-2').showPanel();
 		    			jQuery('form#cc-2-floral-station > input[name=occurrence\\:sample_id]').val(data[i].id);
@@ -2364,7 +2393,9 @@ jQuery.ajax({
     	      						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&occurrence_id=\"+flowerData[0].id+\"&deleted=f&callback=?\", 
 							dataType: 'json', 
 							success: function(detData) {
-    	      				  loadDetermination(detData, flowerIDstruc);
+							  if(!(detData instanceof Array)){
+   								alertIndiciaError(detData);
+   					  		  } else loadDetermination(detData, flowerIDstruc);
   							}, 
 							data: {}, 
 							async: false 
@@ -2376,7 +2407,9 @@ jQuery.ajax({
     	      					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[i].id+\"&callback=?\", 
 							dataType: 'json', 
 							success: function(sessiondata) {
-	    			  		  if (sessiondata.length>0) {
+	    			  		  if(!(sessiondata instanceof Array)){
+   								alertIndiciaError(sessiondata);
+   					  		  } else if (sessiondata.length>0) {
 								jQuery('#cc-2').foldPanel();
 								sessionCounter = 0;
 								jQuery('#cc-3-body').empty();
@@ -2393,7 +2426,9 @@ jQuery.ajax({
 									$.getJSON(\"".$svcUrl."/data/occurrence/\" +
           									\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&orderby=id\" +
           									\"&sample_id=\"+sessiondata[i].id+\"&callback=?\", function(insectData) {
-		    							if (insectData.length>0) {
+		    							if(!(insectData instanceof Array)){
+   											alertIndiciaError(insectData);
+   					  		  			} else if (insectData.length>0) {
  											for (var j=0;j<insectData.length;j++){
 												updatePhotoReel(insectData[j].id);
 											}
