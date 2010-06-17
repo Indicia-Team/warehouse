@@ -76,6 +76,11 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
               Kohana::log('info', "Authentication successful.");
               $authentic=TRUE;
               $this->website_id = $website_id;
+              // reset the nonce if requested. Doing it here will mean only gets reset if not already timed out.
+              if(array_key_exists('reset_timeout', $array) && $array['reset_timeout']=='true') {
+              	Kohana::log('info', "Nonce timeout reset.");
+              	$this->cache->set($nonce, $website_id, $mode);
+              } 
             }
           }
         }

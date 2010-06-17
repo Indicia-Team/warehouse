@@ -795,7 +795,7 @@ $('#cc-1-collection-details').ajaxForm({
         	    jQuery('#cc-1-collection-details > input[name=locations_website\\:website_id]').attr('disabled', 'disabled');
         	    jQuery('#cc-2-floral-station > input[name=location\\:id]').removeAttr('disabled').val(data.outer_id);
         	    $.getJSON(\"".$svcUrl."\" + \"/data/sample\" +
-			          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+			          \"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			          \"&location_id=\"+data.outer_id+\"&parent_id=NULL&callback=?\", function(data) {
 					if(!(data instanceof Array)){
    						alertIndiciaError(data);
@@ -1417,7 +1417,7 @@ $('#cc-2-floral-station').ajaxForm({
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
        		// the sample and location ids are already fixed, so just need to populate the occurrence and image IDs, and rename the location and occurrence attribute.
        	    $.getJSON(\"".$svcUrl."\" + \"/data/occurrence\" +
-		          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+		          \"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 		          \"&sample_id=\"+data.outer_id+\"&callback=?\", function(occdata) {
 				if(!(occdata instanceof Array)){
    					alertIndiciaError(occdata);
@@ -1603,7 +1603,7 @@ addSession = function(){
 		if(container.find('[name=sample\\:id]').filter('[disabled]').length == 0){
 			jQuery(this).addClass('loading-button');
 			$.getJSON(\"".$svcUrl."/data/occurrence/\" +
-					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+					\"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 					\"&sample_id=\"+container.find('[name=sample\\:id]').val()+\"&callback=?\", function(insectData) {
 				if(!(insectData instanceof Array)){
    					alertIndiciaError(insectData);
@@ -1946,7 +1946,7 @@ clearInsect = function(){
 loadInsect = function(id){
 	clearInsect();
 	$.getJSON(\"".$svcUrl."/data/occurrence/\" + id +
-          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?\", function(data) {
+          \"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?\", function(data) {
 	    if(!(data instanceof Array)){
    			alertIndiciaError(data);
    		} else if (data.length>0) {
@@ -1975,7 +1975,7 @@ updatePhotoReel = function(occId){
 		container.empty();
 	jQuery('<span>?</span>').addClass('thumb-text').appendTo(container);
 	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
 		if(!(imageData instanceof Array)){
    			alertIndiciaError(imageData);
@@ -2220,7 +2220,7 @@ loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, 
 	});
 	
 	$.getJSON(\"".$svcUrl."/data/\" + attributeTable +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
@@ -2255,7 +2255,7 @@ loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, 
 loadImage = function(imageTable, key, keyName, keyValue, target, ratio){
 					// location_image, location_id, location:id, 1, #cc-4-insect-image
 	$.getJSON(\"".$svcUrl."/data/\" + imageTable +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", function(imageData) {
 		if(!(imageData instanceof Array)){
    			alertIndiciaError(imageData);
@@ -2327,7 +2327,7 @@ jQuery('#insect_taxa_list').empty();
 jQuery.ajax({ 
     type: 'GET', 
     url: \"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collections.xml&reportSource=local&mode=json\" +
-			\"&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."\" + 
+			\"&auth_token=".$readAuth['auth_token']."&reset_timeout=true&nonce=".$readAuth["nonce"]."\" + 
 			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", 
     dataType: 'json', 
     success: function(data) {
