@@ -91,9 +91,9 @@ $custom_terms = array(
 	,'Sky' => 'Ciel'
 	,'Temperature Bands' => 'Température'
 	,'Wind' => 'Vent'
-	,'In Shade' => "Fleur à l’ombre"
-	,'Flower Type' => "Il s’agit d’une fleur"
-	,'Habitat' => "Il s’agit d’une habitat"
+	,'In Shade' => "Fleur à l'ombre"
+	,'Flower Type' => "Il s'agit d'une fleur"
+	,'Habitat' => "Il s'agit d'une habitat"
 	
 	,'LANG_Comments_Title' => 'COMMENTAIRES DES INTERNAUTES'
 	,'LANG_New_Comment' => 'Ajouter un commentaire'

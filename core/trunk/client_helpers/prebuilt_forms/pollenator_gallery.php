@@ -462,7 +462,7 @@ class iform_pollenator_gallery {
 	// note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
 	// For security reasons we don't want to give the user the ability to generate their own nonce, so we use
 	// the fact that the user is logged in to drupal as the main authentication/authorisation/identification
-	// process for the user. The proxy packages the post into the correct format	
+	// process for the user. The proxy also packages the post into the correct format	
 
 	$flower_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
@@ -979,6 +979,18 @@ jQuery('#fc-filter-button,#fo-filter-button').click(function(){
 	}
 });
 
+htmlspecialchars = function(value){
+	return value.replace(/[(<>\"'&]/g, function(m){return replacechar(m)})
+};
+
+replacechar = function(match){
+	if (match==\"<\") return \"&lt;\"
+	else if (match==\">\") return \"&gt;\"
+	else if (match=='\"') return \"&quot;\"
+	else if (match==\"'\") return \"&#039;\"
+	else if (match==\"&\") return \"&amp;\"
+};
+
 loadCollection = function(id, index){
     jQuery('[name=sample_comment\\:sample_id]').val(id);
 	jQuery('#fc-add-preferred').attr('smpID', id);
@@ -1001,8 +1013,9 @@ loadCollection = function(id, index){
 	jQuery('#flower-image').data('occID', 'none').data('collectionIndex', index);
 	jQuery('#collection-insects,#collection-date,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
 	// this has a fixed target so can be done asynchronously.
+	// only need to reset the timeout on the first fetch as rest follow on quickly.
 	$.getJSON(\"".$svcUrl."/data/occurrence\" +
-			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+			\"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&sample_id=\"+id+\"&callback=?\", function(flowerData) {
    		if(!(flowerData instanceof Array)){
    			alertIndiciaError(flowerData);
@@ -1256,7 +1269,7 @@ addCollection = function(index, attributes, geom){
 	var scope = {target: locality};
 	inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope, async: false});
     $.getJSON(\"".$svcUrl."/data/sample\" + 
-    		\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+attributes.collection_id+\"&callback=?\", function(sessiondata) {
+    		\"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+attributes.collection_id+\"&callback=?\", function(sessiondata) {
 		if(!(sessiondata instanceof Array)){
    			alertIndiciaError(sessiondata);
    		} else for (var i=0;i<sessiondata.length;i++){
@@ -1313,7 +1326,7 @@ addInsect = function(index, attributes, endOfRow){
 	insertImage('med-'+attributes.insect_image_path, insect, ".$args['Insect_Image_Ratio'].");
 	var determination = jQuery('<div />').appendTo(container);
 	$.getJSON(\"".$svcUrl."/data/determination\" +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&occurrence_id=\" + attributes.insect_id + \"&callback=?\", function(detData) {
    		if(!(detData instanceof Array)){
    			alertIndiciaError(detData);
@@ -2119,7 +2132,7 @@ jQuery('#fc-new-comment-form').ajaxForm({
 loadSampleAttributes = function(keyValue){
 	jQuery('#fo-insect-start-time,#fo-insect-end-time,#fo-insect-sky,#fo-insect-temp,#fo-insect-wind,#fo-insect-shade').empty();
 	$.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&sample_id=\" + keyValue + \"&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
@@ -2158,7 +2171,7 @@ loadSampleAttributes = function(keyValue){
 loadOccurrenceAttributes = function(keyValue){
 	jQuery('#focus-flower-type').empty();
 	$.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
-			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&occurrence_id=\" + keyValue + \"&iso=".$language."&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
@@ -2175,7 +2188,7 @@ loadLocationAttributes = function(keyValue){
 	jQuery('#focus-habitat').empty();
 	habitat_string = '';
 	$.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
-			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&location_id=\" + keyValue + \"&iso=".$language."&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
@@ -2209,7 +2222,7 @@ loadImage = function(imageTable, key, keyValue, target, imageRatio, callback){
     jQuery.ajax({ 
         type: \"GET\", 
         url: \"".$svcUrl."/data/\" + imageTable +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
         data: {}, 
         success: function(imageData) {
@@ -2232,7 +2245,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback){
 	jQuery('#poll-banner').empty();
 	jQuery('#fo-warning').addClass('occurrence-ok').removeClass('occurrence-dubious').removeClass('occurrence-unknown');
 	$.getJSON(\"".$svcUrl."/data/determination\" +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&occurrence_id=\" + keyValue + \"&callback=?\", function(detData) {
    		var callbackArgs = [];
    		if(!(detData instanceof Array)){
@@ -2345,7 +2358,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback){
 loadComments = function(keyValue, block, table, key, blockClass, bodyClass){
 	jQuery(block).empty();
 	$.getJSON(\"".$svcUrl."/data/\" + table +
-   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=list&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", function(commentData) {
    		if(!(commentData instanceof Array)){
    			alertIndiciaError(commentData);
@@ -2375,7 +2388,7 @@ loadInsectAddnInfo = function(keyValue, collectionIndex){
 	// get all the samples (sessions) with the same parent_id;
 	// fetch all the occurrences of the sessions.
 	$.getJSON(\"".$svcUrl."/data/occurrence/\" + keyValue +
-   			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&callback=?\", function(occData) {
    		if(!(occData instanceof Array)){
    			alertIndiciaError(occData);
@@ -2399,7 +2412,7 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
 	// fetch occurrence details first to get the collection id.
 	loadOccurrenceAttributes(keyValue);
 	$.getJSON(\"".$svcUrl."/data/occurrence/\" + keyValue +
-   			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"?mode=json&view=detail&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&callback=?\", function(occData) {
    		if(!(occData instanceof Array)){
    			alertIndiciaError(occData);
