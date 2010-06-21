@@ -196,7 +196,8 @@ class iform_mnhnl_citizen_science_1 {
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $readAuth = $auth['read'];
-
+    // enable image viewing with FancyBox
+    data_entry_helper::$javascript .= 'jQuery("a.fancybox").fancybox();';
     $r = "\n<form method=\"post\" id=\"entry_form\">\n";
     if (isset($_GET['taxa_taxon_list_id']) || isset($_GET['taxon_external_key'])) {
       if (isset($_GET['taxa_taxon_list_id']))
@@ -210,20 +211,23 @@ class iform_mnhnl_citizen_science_1 {
       // we need only one result
       if (count($species)==1) {
         $r .= '<div class="ui-widget ui-widget-content ui-corner-all page-notice ui-helper-clearfix">';
-        $r .= '<div class="page-notice">'.lang::get('you are recording a', $species[0]['taxon']).'</div>';
+        if (!empty($species[0]['description_in_list'])) {
+          $r .= '<div class="page-notice">'.lang::get('you are recording a', $species[0]['taxon']).'</div>';
+        }
         $taxa_taxon_list_id=$species[0]['id'];
         $images_path = data_entry_helper::$base_url.
               (isset(data_entry_helper::$indicia_upload_path) ? data_entry_helper::$indicia_upload_path : 'upload/');
         if (!empty($species[0]['image_path'])) {
-          $r .= '<a class="fancybox left" href="'.$images_path.$species[0]['image_path'].'" style="margin: 0 1em 1em;"><img width="200" src="'.$images_path.'med-'.$species[0]['image_path'].'" /></a>';
+          $r .= '<a class="fancybox left" href="'.$images_path.$species[0]['image_path'].'" style="margin: 0 1em 1em;"><img width="100" src="'.$images_path.'thumb-'.$species[0]['image_path'].'" /></a>';
         }
         if (!empty($species[0]['description_in_list'])) {
           $r .= '<p>'.$species[0]['description_in_list']."</p>";
-
+        } else {
+          $r .= '<p>'.lang::get('you are recording a', $species[0]['taxon']).'</p>';
         }
         $r .= "</div>\n";
       } else {
-        $r .= "<p>The species count not be identified uniquely from the URL parameters.</p>\n";
+        $r .= "<p>The species not be identified uniquely from the URL parameters.</p>\n";
       }
     }
 
