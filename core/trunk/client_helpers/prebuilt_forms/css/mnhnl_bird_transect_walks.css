@@ -22,10 +22,11 @@ textarea {
   width: 240px;
 }
 
-#smp_grid {
-  font-size: 90%;
+#smp_grid, #occ_grid {
+  font-size: 11px;
 }
 
 #occurrence label {
   width: 95px;
 }
+
