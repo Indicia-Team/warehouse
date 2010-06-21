@@ -353,6 +353,7 @@ class iform_mnhnl_citizen_science_1 {
     // retrieve options for the IndiciaMapPanel, and optionally options for OpenLayers.
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
+    $options['scroll_wheel_zoom']=false;
     $r .= data_entry_helper::map_panel($options, $olOptions);
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
