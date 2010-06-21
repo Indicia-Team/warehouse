@@ -35,7 +35,7 @@ $custom_terms = array(
   'next step'=>'Weiter',
   'occurrence:taxa_taxon_list_id'=>'Art',
   'phone number'=>'Telefonnummer',
-  'prev step'=>'Zurï¿½ck',
+  'prev step'=>'Zurück',
   'save'=>'Speichern',
   'sample:comment'=>'Bemerkung',
   'sample:date' => 'Datum',
@@ -43,7 +43,6 @@ $custom_terms = array(
   'search'=>'Suchen',
   'LANG_Georef_Label'=>'Standort auf der Karte suchen',
   'surname'=>'Nachname',
-  'you are recording a'=>'You are entering a record of a #1#. Please use the form below to provide the details.',
   
   // Tab titles (only visible if interface tabbed
   'about you'=>'Wer ich bin',
@@ -51,9 +50,9 @@ $custom_terms = array(
   'where was it'=>'Wo es war',
   'other information'=>'Andere Informationen',
   // Tab instructions
-  'about you tab instructions'=>'<strong>Wer ich bin</strong><br/>Sagen Sie uns bitte wer Sie sind. Dies kï¿½nnte wichtig sein, damit wir Sie kontaktieren kï¿½nnen, falls ihre Beobachtung besonders interessant ist.',
+  'about you tab instructions'=>'<strong>Wer ich bin</strong><br/>Sagen Sie uns bitte wer Sie sind. Dies könnte wichtig sein, damit wir Sie kontaktieren können, falls ihre Beobachtung besonders interessant ist.',
   'species tab instructions'=>'<strong>Was ich gesehen habe</strong><br/>Klicken Sie auf die Blume, die Sie gesehen haben, danach auf Weiter.',
-  'place tab instructions'=>'<strong>Wo es war</strong><br/>Suchen Sie auf der Karte den Ort, wo Sie die Blume gesehen haben so genau wie mï¿½glich. Wenn Sie die Koordinaten kennen, kï¿½nnen Sie diese auch direkt eingeben.',
-  'other tab instructions'=>'<strong>Aner Informationen</strong><br/>Sagen Sie uns bitte wann Sie die Blume gesehen haben, wie viele es ungefï¿½hr waren und wenn nï¿½tig weitere Bemerkungen.',
+  'place tab instructions'=>'<strong>Wo es war</strong><br/>Suchen Sie auf der Karte den Ort, wo Sie die Blume gesehen haben so genau wie möglich. Wenn Sie die Koordinaten kennen, können Sie diese auch direkt eingeben.',
+  'other tab instructions'=>'<strong>Aner Informationen</strong><br/>Sagen Sie uns bitte wann Sie die Blume gesehen haben, wie viele es ungefähr waren und wenn nötig weitere Bemerkungen.',
 
 );
