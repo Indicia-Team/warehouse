@@ -37,14 +37,22 @@ class iform_my_dot_map {
    * @todo: Implement this method
    */
   public static function get_parameters() {
+    $filters = array(
+      // Developer note - these fields should be in the report used for the grid.
+      'none' => 'No Filter',
+      'taxon_meaning_id' => 'Species',
+      'external_key' => 'Species using External Key',
+      'survey_id' => 'Survey',
+      'sample_id' => 'Submitted data'
+    );
     return array_merge(
       iform_map_get_map_parameters(),
-      array(      
+      array(
         // Distribution layer 1
         array(
           'name' => 'wms_dist_1_title',
           'caption' => 'Layer Caption',
-          'description' => 'Caption to display for the optional WMS full species distribution map layer',
+          'description' => 'Caption to display for the optional WMS full species distribution map layer. Can contain replacement strings {species} or {survey}.',
           'type' => 'textfield',
           'group'=>'Distribution Layer 1' ,
           'required'=>false
@@ -81,14 +89,7 @@ class iform_my_dot_map {
           'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
             'on the selected value.',
           'type' => 'select',
-          'options' => array(
-            // Developer note - these fields should be in the occurrence detail view.
-            'none' => 'No Filter',
-            'taxa_taxon_list_id' => 'Species',
-            'external_key' => 'Species using External Key',
-            'survey_id' => 'Survey',
-            'sample_id' => 'Submitted data'
-          ),
+          'options' => $filters,
           'group'=>'Distribution Layer 1',
           'required'=>false
         ),
@@ -122,7 +123,7 @@ class iform_my_dot_map {
         array(
           'name' => 'wms_dist_2_title',
           'caption' => 'Layer Caption',
-          'description' => 'Caption to display for the optional WMS full species distribution map layer',
+          'description' => 'Caption to display for the optional WMS full species distribution map layer. Can contain replacement strings {species} or {survey}.',
           'type' => 'textfield',
           'group'=>'Distribution Layer 2' ,
           'required'=>false
@@ -159,14 +160,7 @@ class iform_my_dot_map {
           'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
             'on the selected value.',
           'type' => 'select',
-          'options' => array(
-            // Developer note - these fields should be in the occurrence detail view.
-            'none' => 'No Filter',
-            'taxa_taxon_list_id' => 'Species',
-            'external_key' => 'Species using External Key',
-            'survey_id' => 'Survey',
-            'sample_id' => 'Submitted data'
-          ),
+          'options' => $filters,
           'group'=>'Distribution Layer 2',
           'required'=>false
         ),
@@ -200,7 +194,7 @@ class iform_my_dot_map {
         array(
           'name' => 'wms_dist_3_title',
           'caption' => 'Layer Caption',
-          'description' => 'Caption to display for the optional WMS full species distribution map layer',
+          'description' => 'Caption to display for the optional WMS full species distribution map layer. Can contain replacement strings {species} or {survey}.',
           'type' => 'textfield',
           'group'=>'Distribution Layer 3' ,
           'required'=>false
@@ -237,14 +231,7 @@ class iform_my_dot_map {
           'description' => 'Select what to match this layer against. The layer shown will be those points which match the previously saved record '.
             'on the selected value.',
           'type' => 'select',
-          'options' => array(
-            // Developer note - these fields should be in the occurrence detail view.
-            'none' => 'No Filter',
-            'taxa_taxon_list_id' => 'Species',
-            'external_key' => 'Species using External Key',
-            'survey_id' => 'Survey',
-            'sample_id' => 'Submitted data'
-          ),
+          'options' => $filters,
           'group'=>'Distribution Layer 3',
           'required'=>false
         ),
@@ -300,30 +287,64 @@ class iform_my_dot_map {
       // Use a cUrl request to get the data from Indicia which contains the value we need to filter against
       // Read the record that was just posted.
       $fetchOpts = array(
-        'table'=>'occurrence',
-        'extraParams' => $readAuth + array('sample_id'=>$_GET['id'], 'view' => 'detail')
+        'dataSource'=>'reports_for_prebuilt_forms/my_dot_map/occurrences_list',
+        'mode'=>'report',
+        'readAuth' => $readAuth,
+        'extraParams' => array('sample_id' => $_GET['id'], 'language'=>'ltz')
       );
       // @todo Error handling on the response
-      $occurrence = data_entry_helper::get_population_data($fetchOpts);      
-    }
-    // Add the 3 distribution layers if present. Reverse the order so 1st layer is topmost
-    $layerName = self::build_distribution_layer(3, $args, $occurrence);
-    if ($layerName) $options['layers'][] = $layerName;
-    $layerName = self::build_distribution_layer(2, $args, $occurrence);
-    if ($layerName) $options['layers'][] = $layerName;
-    $layerName = self::build_distribution_layer(1, $args, $occurrence);
-    if ($layerName) $options['layers'][] = $layerName;
-    // Now output a grid of the occurrences that were just saved.
-    if (isset($occurrence)) {
-      $r .= "<table class=\"submission\"><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
-      $r .= "<tbody>\n";      
-      foreach ($occurrence as $record) {
-        $r .= "<tr><td>".$record['taxon']."</td><td>".$record['date_start']."</td><td>".$record['entered_sref']."</td></tr>\n";
+      $occurrence = data_entry_helper::get_report_data($fetchOpts);
+      $legend = '';
+      // Add the 3 distribution layers if present. Reverse the order so 1st layer is topmost
+      $layerName = self::build_distribution_layer(3, $args, $occurrence);
+      self::prepare_layer_titles($args, $occurrence);
+      if ($layerName) {
+	          $options['layers'][] = $layerName;
+	          $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/jpeg'.
+	              '&STYLE='.$args["wms_dist_3_style"].'" alt=""/>'.$args["wms_dist_3_title"].'</div>'.$legend;
       }
+      $layerName = self::build_distribution_layer(2, $args, $occurrence);
+      if ($layerName) {
+        $options['layers'][] = $layerName;
+        $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/jpeg'.
+            '&STYLE='.$args["wms_dist_2_style"].'" alt=""/>'.$args["wms_dist_2_title"].'</div>'.$legend;
+      }
+      $layerName = self::build_distribution_layer(1, $args, $occurrence);
+      if ($layerName) {
+	          $options['layers'][] = $layerName;
+	          $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/png'.
+	              '&STYLE='.$args["wms_dist_1_style"].'" alt=""/>'.$args["wms_dist_1_title"].'</div>'.$legend;
+      }
+      if ($layerName) $options['layers'][] = $layerName;
+      // Now output a grid of the occurrences that were just saved.
+      $r .= "<table class=\"submission\"><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
+      $r .= "<tbody>\n";
+      foreach ($occurrence as $record) {
+        $r .= "<tr><td>".$record['lt4_taxon']."</td><td>".$record['lt0_date_start']."</td><td>".$record['lt0_entered_sref']."</td></tr>\n";
+      }
+
       $r .= "</tbody></table>\n";
+      $r .= '<div id="legend" class="ui-widget ui-widget-content ui-corner-all">'.$legend.'</div>';
     }
     $r .= data_entry_helper::map_panel($options, $olOptions);
     return $r;
+  }
+
+  /**
+   * Perform replacements on the legend titles. Replaces {species} with the species name and
+   * {survey} with the survey name,
+   * @access private
+   */
+  private static function prepare_layer_titles(&$args, $occurrence) {
+    $species = array();
+    foreach ($occurrence as $record) {
+      $species[] = $record['lt4_taxon'];
+      $survey = $record['lt8_title'];
+    }
+    $species = implode(',',$species);
+    for ($i = 1; $i<=3; $i++) {
+      $args['wms_dist_'.$i.'_title'] = str_replace(array('{species}','{survey}'), array($species, $survey), $args['wms_dist_'.$i.'_title']);
+    }
   }
 
   /**
@@ -335,6 +356,13 @@ class iform_my_dot_map {
    * @return string Name of the layer object built in JavaScript.
    */
   private static function build_distribution_layer($layerId, $args, $occurrence) {
+    // create a mapping from the field names that we can filter to the fields in the occurrence list report
+    $filterMappings = array(
+      'taxon_meaning_id' => 'lt2_taxon_meaning_id',
+   	  'external_key' => 'lt4_external_key',
+   	  'survey_id' => 'lt8_id',
+      'sample_id' => 'lt0_id'
+    );
     if ($args["wms_dist_$layerId"."_title"]) {
       // if we have a filter specified, then set it up. Note we can only do this if the sample id is passed in at the moment.
       // @todo support passing an occurrence ID.
@@ -345,7 +373,7 @@ class iform_my_dot_map {
         // Use an array of handled values so we only build each distinct filter once
         $handled = array();
         foreach($occurrence as $record) {
-          $filterValue = $record[$args["wms_dist_$layerId"."_filter_against"]];
+          $filterValue = $record[$filterMappings[$args["wms_dist_$layerId"."_filter_against"]]];
           if (!in_array($filterValue, $handled)) {
             data_entry_helper::$onload_javascript .= "filters.push(new OpenLayers.Filter.Comparison({
                 type: OpenLayers.Filter.Comparison.EQUAL_TO,
@@ -378,7 +406,7 @@ var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);\n";
       $opacity = $args["wms_dist_$layerId"."_opacity"] ? $args["wms_dist_$layerId"."_opacity"] : 0.5;
 
       data_entry_helper::$onload_javascript .= "var distLayer$layerId = new OpenLayers.Layer.WMS(
-        '".$args["wms_dist_$layerId"."_title"]."',
+        '".str_replace("'", "\'", $args["wms_dist_$layerId"."_title"])."',
         '$url',
         {layers: '".$args["wms_dist_$layerId"."_layer"]."', transparent: true, filter: filter $style},
         {isBaseLayer: false, opacity: $opacity, sphericalMercator: true, singleTile: true}
