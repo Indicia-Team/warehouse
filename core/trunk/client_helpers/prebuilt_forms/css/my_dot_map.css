@@ -5,3 +5,15 @@ table.submission {
 table.submission td, table.submission th {
   padding: 0 0.5em;
 }
+
+#legend {
+  float: right; 
+  width: 300px; 
+  border: dotted 1px;
+  line-height: 20px;
+}
+
+#legend img {
+  margin: 0px;
+  border: none;
+}

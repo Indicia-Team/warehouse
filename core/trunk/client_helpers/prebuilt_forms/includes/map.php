@@ -181,11 +181,14 @@ function iform_map_get_georef_parameters() {
 function iform_map_get_map_options($args, $readAuth) {
   // read out the activated preset layers
   $presetLayers = array();
-  foreach($args['preset_layers'] as $layer => $active) {
-    if ($active!==0) {
-      $presetLayers[] = $layer;
+  if (!empty($args['preset_layers'])) {
+    foreach($args['preset_layers'] as $layer => $active) {
+      if ($active!==0) {
+        $presetLayers[] = $layer;
+      }
     }
   }
+
   $options = array(
     'readAuth' => $readAuth,
     'presetLayers' => $presetLayers,
