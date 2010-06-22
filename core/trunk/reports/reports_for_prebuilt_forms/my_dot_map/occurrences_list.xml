@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Dot Map Sample Report" description="Details all occurrences associated with a top level sample. Normally invoked from Occurrence List tab on the form.">
+  <params>
+    <param name='sample_id' display='Sample: ' description='ID of sample to return data for' datatype='int' />
+    <param name='language' display='Language: ' description='ISO code of language for common names' datatype='int' />
+  </params>
+  <vagueDate enableProcessing='true' />
+  <table tablename="samples" where="#this#.id = #sample_id#">   
+    <tabColumn name='id' visible='false'/>
+    <tabColumn name='date_start' visible='false'/>
+    <tabColumn name='date_end' visible='false'/>
+    <tabColumn name='date_type' visible='false'/>
+    <tabColumn name='date' func="''"/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report    
+    <tabColumn name='entered_sref' display='Spatial Reference'/>
+    <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" >
+      <subTable tablename='taxa_taxon_lists' where="#this#.deleted = FALSE" >
+        <tabColumn name='taxon_meaning_id' display='Meaning'/>        
+        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.deleted = FALSE" >          
+          <subTable tablename='taxa' where="#this#.deleted = FALSE">            
+            <tabColumn name='taxon' display='Common Name'/>
+            <subTable tablename='languages' where="#this#.deleted = FALSE AND #this#.iso='#language#'" ></subTable>
+          </subTable>
+        </subTable>
+        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.deleted = FALSE AND #this#.preferred='t'" >
+	  <subTable tablename='taxa' where="#this#.deleted = FALSE">
+	    <tabColumn name='taxon' display='Latin Name'/>
+	    <tabColumn name='external_key' display='External Key'/>
+	  </subTable>
+        </subTable>
+      </subTable>      
+    </subTable>
+    <subTable tablename='surveys' where="#this#.deleted = FALSE">
+      <tabColumn name='id' display='Survey ID'/>	    
+      <tabColumn name='title' display='Survey Name'/>	    
+    </subTable>
+  </table>
+</report>
