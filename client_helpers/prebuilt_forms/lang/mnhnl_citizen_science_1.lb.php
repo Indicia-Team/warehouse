@@ -43,7 +43,7 @@ $custom_terms = array(
   'search'=>'Sichen',
   'LANG_Georef_Label'=>'Plaatz op der Kaart sichen',
   'surname'=>'Nonumm',
-  'you are recording a'=>'Dir git elo eng Donnée an vun {1}. W.e.g. geraucht dëse Formulaire fir Détailer anzegin.',
+  'you are recording a'=>'Dir git elo eng Donnée an vun {1}. W.e.g. gebraucht dëse Formulaire fir Détailer anzegin.',
 
   // Tab titles (only visible if interface tabbed
   'about you'=>'Ween ech sinn',
@@ -53,8 +53,8 @@ $custom_terms = array(
   // Tab instructions
   'about you tab instructions'=>'<strong>Ween ech sinn</strong><br/>Sot eis wann ech gelift ween Dir sidd. Dëst kéint wichteg sinn, fir dass mir Iech kontaktéiere kënnen, wann är Beobachtung besonnesch interessant ass.',
   'species tab instructions'=>'<strong>Wat ech gesinn hunn</strong><br/>Klickt op déi Blumm, déi Dir gesinn hutt, dono op Weider.',
-  'place tab instructions'=>'<strong>Wou et war</strong><br/>Sicht op der Kaart d\'Plaatz, wou Dir déi Blumm gesinn hutt, sou genau wéi méiglech. Wann Dir d\'Koordinate kennt, kënnt Dir déi och direkt aginn.',
-  'other tab instructions'=>'<strong>Aner Informatioune</strong><br/>Sot eis wann ech gelift wéini Dir déi Blumm gesinn hutt, wéi vill et der ongeféier waren a wann néideg weider Bemierkungen.',
+  'place tab instructions'=>'<strong>Wou et war</strong><br/>Sicht op der Kaart d\'Plaatz, wou Dir déi Blumm oder d\'Déier gesinn hutt, sou genau wéi méiglech. Wann Dir d\'Koordinate kennt, kënnt Dir déi och direkt aginn.',
+  'other tab instructions'=>'<strong>Aner Informatioune</strong><br/>Sot eis wann ech gelift wéini Dir déi Blumm oder d\'Déier gesinn hutt, wéi vill et der ongeféier waren a wann néideg weider Bemierkungen.',
 
 
 );

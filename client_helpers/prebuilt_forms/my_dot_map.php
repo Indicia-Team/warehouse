@@ -21,6 +21,7 @@
  */
 
 require_once('includes/map.php');
+require_once('includes/language_utils.php');
 /**
  *
  *
@@ -279,6 +280,7 @@ class iform_my_dot_map {
    * @todo: Implement this method
    */
   public static function get_form($args) {
+    global $user;
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
@@ -290,7 +292,7 @@ class iform_my_dot_map {
         'dataSource'=>'reports_for_prebuilt_forms/my_dot_map/occurrences_list',
         'mode'=>'report',
         'readAuth' => $readAuth,
-        'extraParams' => array('sample_id' => $_GET['id'], 'language'=>'ltz')
+        'extraParams' => array('sample_id' => $_GET['id'], 'language'=>iform_lang_iso_639_2($user->lang))
       );
       // @todo Error handling on the response
       $occurrence = data_entry_helper::get_report_data($fetchOpts);
@@ -317,10 +319,10 @@ class iform_my_dot_map {
       }
       if ($layerName) $options['layers'][] = $layerName;
       // Now output a grid of the occurrences that were just saved.
-      $r .= "<table class=\"submission\"><thead><tr><th>Species</th><th>Date</th><th>Spatial Reference</th></tr></thead>\n";
+      $r .= "<table class=\"submission\"><thead><tr><th>".lang::get('Species')."</th><th>".lang::get('Latin Name')."</th><th>".lang::get('Date')."</th><th>".lang::get('Spatial Ref')."</th></tr></thead>\n";
       $r .= "<tbody>\n";
       foreach ($occurrence as $record) {
-        $r .= "<tr><td>".$record['lt4_taxon']."</td><td>".$record['lt0_date_start']."</td><td>".$record['lt0_entered_sref']."</td></tr>\n";
+        $r .= '<tr class="biota"><td>'.$record['lt4_taxon'].'</td><td class="binomial"><em>'.$record['lt7_taxon'].'</em></td><td>'.$record['lt0_date_start'].'</td><td>'.$record['lt0_entered_sref']."</td></tr>\n";
       }
 
       $r .= "</tbody></table>\n";
