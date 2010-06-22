@@ -170,6 +170,10 @@ class ReportEngine {
 
     // Merge the new parameters in
     $this->providedParams = array_merge($this->providedParams, $params);
+    $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : null;
+	$this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
+	$this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : null;
+    $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : null;
 
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
@@ -628,9 +632,9 @@ class ReportEngine {
         $query .= " ORDER BY $order_by";
       }
     }
-    if ($this->limit) 
+    if ($this->limit)
       $query .= ' LIMIT '.$this->limit;
-    if ($this->offset) 
+    if ($this->offset)
       $query .= ' OFFSET '.$this->offset;
     $this->query = $query;
   }
