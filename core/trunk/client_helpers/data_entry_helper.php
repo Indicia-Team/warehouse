@@ -253,18 +253,18 @@ class data_entry_helper extends helper_config {
   public static $css_path = null;
 
   /**
-   * @var Array List of all available resources known. Each resource is named, and contains a sub array of 
+   * @var Array List of all available resources known. Each resource is named, and contains a sub array of
    * deps (dependencies), stylesheets and javascripts.
    */
   private static $resource_list=null;
-  
+
   /**
-   * @var Array List of resources that have been identified as required by the controls used. This defines the 
+   * @var Array List of resources that have been identified as required by the controls used. This defines the
    * JavaScript and stylesheets that must be added to the page. Each entry is an array containing stylesheets and javascript
    * sub-arrays. This has public access so the Drupal module can perform Drupal specific resource output.
    */
   public static $required_resources=array();
-  
+
   /**
    * @var array List of resources that have already been dumped out, so we don't duplicate them.
    */
@@ -361,7 +361,7 @@ class data_entry_helper extends helper_config {
    * list, allowing our CSS to override other stuff.
    */
   private static $default_styles = false;
-  
+
   /**
    * @var Array List of fields that are to be stored in a cookie and reloaded the next time a form is accessed. These
    * are populated by implementing a hook function called indicia_define_remembered_fields which calls set_remembered_fields.
@@ -639,7 +639,7 @@ class data_entry_helper extends helper_config {
   * </li>
   * <li><b>runtimes</b><br/>
   * Array of runtimes that the file upload component will use in order of priority. Defaults to
-  * array('silverlight','flash','html5','gears','browserplus','html4'), though flash is removed for 
+  * array('silverlight','flash','html5','gears','browserplus','html4'), though flash is removed for
   * Internet Explorer 6 and html5 is removed for Chrome. You should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
@@ -649,13 +649,13 @@ class data_entry_helper extends helper_config {
   * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not
   * normally need to change this.</li>
   * <li><b>codeGenerated</b>
-  * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you 
-  * need to delay the loading of the control until a certain event, e.g. when a radio button is checked, then this can be set 
-  * to php to return just the php and ignore the JavaScript, or js to return the JavaScript instead of inserting it into 
+  * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you
+  * need to delay the loading of the control until a certain event, e.g. when a radio button is checked, then this can be set
+  * to php to return just the php and ignore the JavaScript, or js to return the JavaScript instead of inserting it into
   * document onload, in which case the php is ignored. this allows you to attach the JavaScript to any event you need to.
   * </li>
   * <li><b>tabDiv</b><br/>
-  * If loading this control onto a set of tabs, specify the tab control's outer div ID here. This allows the control to 
+  * If loading this control onto a set of tabs, specify the tab control's outer div ID here. This allows the control to
   * automatically generate code which only generates the uploader when the tab is shown, reducing problems in certain
   * runtimes. This has no effect if codeGenerated is not left to the default state of all.</li>
   * </ul>
@@ -710,16 +710,16 @@ class data_entry_helper extends helper_config {
     if ($indicia_templates['file_box_uploaded_image']!='')
       $defaults['file_box_uploaded_imageTemplate'] = $indicia_templates['file_box_uploaded_image'];
     $options = array_merge($defaults, $options);
-    
+
     if ($options['codeGenerated']!='php') {
-      // build the JavaScript including the required file links 
+      // build the JavaScript including the required file links
       self::add_resource('plupload');
       foreach($options['runtimes'] as $runtime) {
         self::add_resource("plupload_$runtime");
       }
       // convert runtimes list to plupload format
       $options['runtimes'] = implode(',', $options['runtimes']);
-      
+
       $javascript = "\n$('.file-box').uploader({";
       // Just pass the options array through
       $idx = 0;
@@ -742,18 +742,18 @@ class data_entry_helper extends helper_config {
       }
       $javascript .= "\n});\n";
     }
-    if ($options['codeGenerated']=='js') 
+    if ($options['codeGenerated']=='js')
       // we only want to return the JavaScript, so go no further.
       return $javascript;
     elseif ($options['codeGenerated']=='all') {
       if (isset($options['tabDiv']) && $options['codeGenerated']=='all')
-        // The file box is displayed on a tab, so we must only generate it when the tab is displayed. 
+        // The file box is displayed on a tab, so we must only generate it when the tab is displayed.
         self::$onload_javascript .=
             "$('#controls').bind('tabsshow', function(event, ui) { \n".
             "  var box = $(ui.panel).find('.file-box');\n".
-            "  if (box.length!==0 && box.children().length === 0) {\n"; 
+            "  if (box.length!==0 && box.children().length === 0) {\n";
       self::$onload_javascript .= $javascript;
-      if (isset($options['tabDiv']) && $options['codeGenerated']=='all') 
+      if (isset($options['tabDiv']) && $options['codeGenerated']=='all')
         self::$onload_javascript .= "}});\n";
     }
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
@@ -786,7 +786,7 @@ class data_entry_helper extends helper_config {
   * <li><b>driver</b><br/>
   * Optional. Driver to use for the georeferencing operation. Supported options are:
   *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.
-  *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a 
+  *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a
   *       georefPreferredArea and georefCountry to work correctly.</li>
   * </ul>
   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
@@ -809,12 +809,12 @@ class data_entry_helper extends helper_config {
     self::$resource_list['georeference_default_'.$options['driver']] = array(
       'javascript' => array(self::$js_path.'drivers/georeference/'.$options['driver'].'.js')
     );
-    // We need to see if there is a resource in the resource list for any special files required by this driver. This 
+    // We need to see if there is a resource in the resource list for any special files required by this driver. This
     // will do nothing if the resource is absent.
     self::add_resource('georeference_'.$options['driver']);
     self::$javascript .= "indicia_url='".self::$base_url."';\n";
     foreach ($options as $key=>$value) {
-      // if any of the options are for the georeferencer driver, then we must set them in the JavaScript. 
+      // if any of the options are for the georeferencer driver, then we must set them in the JavaScript.
       if (substr($key, 0, 6)=='georef') {
         self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
       }
@@ -1440,7 +1440,7 @@ class data_entry_helper extends helper_config {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, url, urlParams and javascript. The javascript, url and urlParams values can all use the 
+  *      values for caption, url, urlParams and javascript. The javascript, url and urlParams values can all use the
   *      field names from the report in braces as substitutions, for example {id} is replaced by the value of the field
   *      called id in the respective row. In addition, the url can use {currentUrl} to represent the current page's URL.
   *  - visible: true or false, defaults to true
@@ -2924,7 +2924,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 /********************************/
 /* End of main controls section */
 /********************************/
-  
+
   /**
    * Returns the browser name and version information
    * @param $agent Agent string, optional. If not suplied, then the http user agent is used.
@@ -2935,7 +2935,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
                             "mozilla", "seamonkey",    "konqueror", "netscape",
                             "gecko", "navigator", "mosaic", "lynx", "amaya",
                             "omniweb", "avant", "camino", "flock", "aol");
-    if (!$agent) 
+    if (!$agent)
       $agent = $_SERVER['HTTP_USER_AGENT'];
     $agent = strtolower($agent);
     foreach($browsers as $browser)
@@ -3670,7 +3670,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       // it forces it into view. This helps a lot when the tabs vary in height.
       self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
   $(a).click();
-  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {  
+  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {
     document.getElementById('".$options['divId']."').scrollIntoView(true);
   }
 });";
@@ -3679,7 +3679,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
-  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {  
+  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {
     document.getElementById('".$options['divId']."').scrollIntoView(true);
   }
 });\n";
@@ -3828,17 +3828,17 @@ if (errors.length>0) {
   public static function forward_post_to($entity, $submission = null) {
     if (self::$validation_errors==null) {
       $remembered_fields = self::get_remembered_fields();
-      
+
       if ($submission == null)
         $submission = submission_builder::wrap($_POST, $entity);
-      if ($remembered_fields !== null) { 
+      if ($remembered_fields !== null) {
         // if there are any fields to remember, put them in a cookie with a 30 day expiry
         $arr=array();
         foreach ($remembered_fields as $field) {
           $arr[$field]=$_POST[$field];
         }
         setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
-        // cookies are only set when the page is loaded. So if we are reloading the same form after submission, 
+        // cookies are only set when the page is loaded. So if we are reloading the same form after submission,
         // we need to fudge the cookie
         $_COOKIE['indicia_remembered'] = serialize($arr);
       }
@@ -4388,7 +4388,7 @@ $('.ui-state-default').live('mouseout', function() {
         // Use default theme path if page does not specify it's own.
         $indicia_theme_path="$base/media/themes";
       }
-  
+
       self::$resource_list = array (
         'jquery' => array('javascript' => array(self::$js_path."jquery.js")),
         'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js", self::$js_path."Proj4defs.js")),
@@ -4396,7 +4396,7 @@ $('.ui-state-default').live('mouseout', function() {
         'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
         'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
-        'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),    
+        'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
         'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
@@ -4514,7 +4514,7 @@ $('.ui-state-default').live('mouseout', function() {
       if (isset($arr[$id]))
         return $arr[$id];
     }
-    
+
     $return = null;
     if (is_null($return) || $return == '') { // need to be careful about valid zero values!
       // iterate the variable arguments and use the first one with a real value
@@ -4673,11 +4673,11 @@ $('.ui-state-default').live('mouseout', function() {
     $surveys = array(NULL);
     if (isset($options['survey_id']))
       $surveys[] = $options['survey_id'];
-    
+
     $attrOptions = array(
           'table'=>$options['attrtable'],
            'extraParams'=> $options['extraParams']+ array(
-             'deleted' => 'f', 
+             'deleted' => 'f',
              'website_deleted' => 'f',
              'query'=>urlencode(json_encode(array('in'=>array('restrict_to_survey_id', $surveys))))
            )
@@ -4865,7 +4865,7 @@ $('.ui-state-default').live('mouseout', function() {
                   'extraParams' => $options['extraParams'] + $dataSvcParams));
           break;
         default:
-            if ($item) 
+            if ($item)
               $output = '<strong>UNKNOWN DATA TYPE "'.$item['data_type'].'" FOR ID:'.$item['id'].' CAPTION:'.$item['caption'].'</strong><br />';
             else
               $output = '<strong>Requested attribute is not available</strong><br />';
@@ -5084,12 +5084,12 @@ $('.ui-state-default').live('mouseout', function() {
   }
 
 /**
-   * Private method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
-   * @param array $options Options array for the control. Can contain a datasource (report or table/view name),
+   * Method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
+   * @param array $options Options array for the control. Can contain a dataSource (report or table/view name),
    * mode (direct or report) and readAuth entries.
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
    */
-  private static function get_report_data($options, $extra='') {
+  public static function get_report_data($options, $extra='') {
     if ($options['mode']=='report') {
       $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
     } elseif ($options['mode']=='direct') {
@@ -5110,16 +5110,16 @@ $('.ui-state-default').live('mouseout', function() {
     $response = self::http_post($request, null);
     return json_decode($response['output'], true);
   }
-  
+
   /**
-   * Accessor for the $remembered_fields variable. This is a list of the fields on the form 
-   * which are to be remembered the next time the form is loaded, e.g. for values that do not change 
+   * Accessor for the $remembered_fields variable. This is a list of the fields on the form
+   * which are to be remembered the next time the form is loaded, e.g. for values that do not change
    * much from record to record. This creates the list on demand, by calling a hook indicia_define_remembered_fields
    * if it exists. indicia_define_remembered_fields should call data_entry_helper::set_remembered_fields to give it
    * an array of field names.
-   * Note that this hook architecture is required to allow the list of remembered fields to be made available 
-   * before the form is constructed, since it is used by the code which saves a submitted form to store the 
-   * remembered field values in a cookie. 
+   * Note that this hook architecture is required to allow the list of remembered fields to be made available
+   * before the form is constructed, since it is used by the code which saves a submitted form to store the
+   * remembered field values in a cookie.
    * @return Array List of the fields to remember.
    */
   public static function get_remembered_fields() {
@@ -5128,10 +5128,10 @@ $('.ui-state-default').live('mouseout', function() {
     }
     return self::$remembered_fields;
   }
-  
+
   /**
    * Accessor to set the list of remembered fields. Should only be called by the hook method
-   * indicia_define_remembered_fields. 
+   * indicia_define_remembered_fields.
    * @see get_rememebered_fields
    * @param $arr Array of field names
    */
