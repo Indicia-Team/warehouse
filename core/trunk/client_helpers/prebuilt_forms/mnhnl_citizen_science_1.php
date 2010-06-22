@@ -210,9 +210,19 @@ class iform_mnhnl_citizen_science_1 {
       ));
       // we need only one result
       if (count($species)==1) {
+        // now we have the meaning_id, we need to fetch the actual species in the chosen common name
+        $speciesCommon = data_entry_helper::get_population_data(array(
+		        'table'=>'taxa_taxon_list',
+		        'extraParams' => $readAuth + array('taxon_meaning_id' => $species[0]['taxon_meaning_id'],
+		            'language_iso' => iform_lang_iso_639_2($user->lang), 'view' => 'detail')
+        ));
         $r .= '<div class="ui-widget ui-widget-content ui-corner-all page-notice ui-helper-clearfix">';
+        $nameString = ($species[0]['language_iso']=='lat' ? '<em>' : '') . $species[0]['taxon'] . ($species[0]['language_iso']=='lat' ? '</em>' : '');
+        if (count($speciesCommon)==1)
+          // use a common name if we have one
+          $nameString = $speciesCommon[0]['taxon'] . ' (' . $nameString . ')';
         if (!empty($species[0]['description_in_list'])) {
-          $r .= '<div class="page-notice">'.lang::get('you are recording a', $species[0]['taxon']).'</div>';
+          $r .= '<div class="page-notice">'.lang::get('you are recording a', $nameString).'</div>';
         }
         $taxa_taxon_list_id=$species[0]['id'];
         $images_path = data_entry_helper::$base_url.
@@ -223,7 +233,7 @@ class iform_mnhnl_citizen_science_1 {
         if (!empty($species[0]['description_in_list'])) {
           $r .= '<p>'.$species[0]['description_in_list']."</p>";
         } else {
-          $r .= '<p>'.lang::get('you are recording a', $species[0]['taxon']).'</p>';
+          $r .= '<p>'.lang::get('you are recording a', $nameString).'</p>';
         }
         $r .= "</div>\n";
       } else {
