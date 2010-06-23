@@ -297,9 +297,9 @@ class iform_my_dot_map {
       // @todo Error handling on the response
       $occurrence = data_entry_helper::get_report_data($fetchOpts);
       $legend = '';
+      self::prepare_layer_titles($args, $occurrence);
       // Add the 3 distribution layers if present. Reverse the order so 1st layer is topmost
       $layerName = self::build_distribution_layer(3, $args, $occurrence);
-      self::prepare_layer_titles($args, $occurrence);
       if ($layerName) {
 	          $options['layers'][] = $layerName;
 	          $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/jpeg'.
