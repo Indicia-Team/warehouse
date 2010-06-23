@@ -105,6 +105,7 @@ $custom_terms = array(
 	,'LANG_Confirm_Express_Doubt' => 'Are you sure you wish to express doubt about this current identification?'
 	,'LANG_Doubt_Expressed' => 'Someone has expressed doubt about this identification.'
 	,'LANG_Doubt_Comment' => 'I have expressed doubt about this determination because...'
+	,'LANG_Determination_Valid' => 'This identification was created by an expert, and is deemed valid'
 	,'LANG_Determination_Incorrect' => 'This identification has been flagged as incorrect.'
 	,'LANG_Determination_Unconfirmed' => 'This identification has been flagged as unconfirmed.'
 	,'LANG_Determination_Unknown' => 'The taxon was not known in the identification tool.'

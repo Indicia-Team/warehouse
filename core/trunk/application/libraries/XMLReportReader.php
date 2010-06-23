@@ -287,7 +287,7 @@ class XMLReportReader_Core implements ReportReader
           'title' => $this->getTitle(),
           'description' => $this->getDescription(),
           'row_class' => $this->getRowClass(),
-          'columnns' => $this->columns,
+          'columns' => $this->columns,
           'parameters' => $this->params,
           'query' => $this->query,
           'order_by' => $this->order_by
@@ -302,7 +302,7 @@ class XMLReportReader_Core implements ReportReader
           'title' => $this->getTitle(),
           'description' => $this->getDescription(),
           'row_class' => $this->getRowClass(),
-          'columnns' => $this->columns,
+          'columns' => $this->columns,
           'parameters' => $this->params
         );
     }
@@ -557,6 +557,7 @@ class XMLReportReader_Core implements ReportReader
     // Find the columns we're searching for - nested between a SELECT and a FROM.
     // To ensure we can detect the word FROM and SELECT, use a regex to wrap spaces around them, then can
     // do a regular string search
+    // This can't handle complex valid queries where there is a nested select
     $this->query=preg_replace("/\b(select)\b/i", ' select ', $this->query);
     $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
     $i0 = strpos($this->query, ' select ') + 7;

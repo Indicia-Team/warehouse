@@ -170,10 +170,10 @@ class ReportEngine {
 
     // Merge the new parameters in
     $this->providedParams = array_merge($this->providedParams, $params);
-    $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : null;
-	$this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
-	$this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : null;
-    $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : null;
+    $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : $this->limit;
+	$this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : $this->offset;
+	$this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : $this->orderby;
+    $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : $this->sortdir;
 
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
@@ -582,7 +582,12 @@ class ReportEngine {
     (
     'reportReader' => $this->reportReader,
     'providedParams' => $this->providedParams,
-    'expectedParams' => $this->expectedParams
+    'expectedParams' => $this->expectedParams,
+    'specialParams' =>
+        Array('limit' => $this->limit,
+              'offset' => $this->offset,
+              'orderby' => $this->orderby,
+              'sortdir' => $this->sortdir)
     );
 
     // Set the object in the cache
@@ -600,6 +605,11 @@ class ReportEngine {
       $this->reportReader = $a['reportReader'];
       $this->providedParams = $a['providedParams'];
       $this->expectedParams = $a['expectedParams'];
+      $this->limit = $a['specialParams']['limit'];
+      $this->offset = $a['specialParams']['offset'];
+      $this->orderby = $a['specialParams']['orderby'];
+      $this->sortdir = $a['specialParams']['sortdir'];
+      
       return true;
     }
     else
