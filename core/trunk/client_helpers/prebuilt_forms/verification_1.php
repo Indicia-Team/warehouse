@@ -196,12 +196,12 @@ function indicia_verify(taxon, id, valid, cmsUser){
     var submitTo = "";
     // access globals created by the report grid to get the current state of pagination and sort as a result of AJAX calls
     url.params["page-verification-grid"] = report_grid_page;
-    if (report_grid_orderby!="") {
+    if (report_grid_orderby!=null) {
       url.params["orderby-verification-grid"] = report_grid_orderby;
     } else {
       delete url.params["orderby-verification-grid"];
     }
-    if (report_grid_sortdir!="") {
+    if (report_grid_sortdir!=null) {
       url.params["sortdir-verification-grid"] = report_grid_sortdir;
     } else {
       delete url.params["sortdir-verification-grid"]
