@@ -1493,13 +1493,15 @@ class data_entry_helper extends helper_config {
     $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
 
     // Add in the sort parameters
+
     foreach ($sortAndPageUrlParams as $param => $content) {
+
+//PROBLEM HERE AS 'null' IS RETURNED
       if ($content['value']!=null) {
         if ($param != 'page')
           $extraParams .= '&' . $param .'='. $content['value'];
       }
     }
-
     $response = self::get_report_data($options, $extraParams);
     if (isset($response['error'])) return $response['error'];
     if (isset($response['parameterRequest'])) {
@@ -1628,7 +1630,7 @@ class data_entry_helper extends helper_config {
    * @return array Contains the orderby, sortdir and page params, as an assoc array. Each array value
    * is an array containing name & value.
    */
-  private function get_report_grid_sort_page_url_params($options) {
+  private static function get_report_grid_sort_page_url_params($options) {
     $orderbyKey = 'orderby' . (isset($options['id']) ? '-'.$options['id'] : '');
     $sortdirKey = 'sortdir' . (isset($options['id']) ? '-'.$options['id'] : '');
     $pageKey = 'page' . (isset($options['id']) ? '-'.$options['id'] : '');
@@ -1656,7 +1658,7 @@ class data_entry_helper extends helper_config {
    * @param array $sortAndPageParams List of the sorting and pagination parameters which should be excluded.
    * @return unknown_type
    */
-  private function report_grid_get_reload_url($sortAndPageUrlParams) {
+  private static function report_grid_get_reload_url($sortAndPageUrlParams) {
     // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
     // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
     // using Apache mod_alias but we don't want to know about that)
@@ -1751,7 +1753,7 @@ class data_entry_helper extends helper_config {
    * @param $options
    * @return unknown_type
    */
-  private function report_grid_get_columns($response, &$options) {
+  private static function report_grid_get_columns($response, &$options) {
     if ($options['includeAllColumns'] && isset($response['columns'])) {
       $specifiedCols = array();
       $actionCols = array();
@@ -1808,7 +1810,7 @@ class data_entry_helper extends helper_config {
    * Utility method that returns the parts required to build a link back to the current page.
    * @return array Associative array containing path and params (itself a key/value paired associative array).
    */
-  public function get_reload_link_parts() {
+  public static function get_reload_link_parts() {
     $split = strpos($_SERVER['REQUEST_URI'], '?');
     $gets = $split!==false ? explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) : array();
     $getsAssoc = array();
@@ -1816,13 +1818,15 @@ class data_entry_helper extends helper_config {
       list($key, $value) = explode('=', $get);
       $getsAssoc[$key] = $value;
     }
+    $path = $split!==false ? substr($_SERVER['REQUEST_URI'], 0, $split) : $_SERVER['REQUEST_URI'];
     return array(
-      'path'=>$_SERVER['REDIRECT_URL'],
+//      'path'=>$_SERVER['REDIRECT_URL'],
+      'path'=>$path,
       'params' => $getsAssoc
     );
   }
 
-  private function get_report_grid_options($options) {
+  private static function get_report_grid_options($options) {
     // Generate a unique number for this grid, in case there are 2 on a page.
     $uniqueId = rand(0,10000);
     $options = array_merge(array(
