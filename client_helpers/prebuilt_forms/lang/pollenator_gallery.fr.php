@@ -83,7 +83,7 @@ $custom_terms = array(
 	,'LANG_Insects_Search_Results' => 'Insectes'
 	,'LANG_Collections_Search_Results' => 'Collections'
 		
-	,'LANG_User_Link' => 'TOUTES SES COLLECTIONS DANS LES GALLERIES'
+	,'LANG_User_Link' => 'TOUTES SES COLLECTIONS DANS LES GALERIES'
 	,'LANG_Additional_Info_Title' => 'Informations Complémentaires'
 	,'LANG_Date' => 'Date'
 	,'LANG_Time' => 'Heure'
@@ -115,6 +115,7 @@ $custom_terms = array(
 	,'LANG_Confirm_Express_Doubt' => 'Etes-vous sûr de vouloir exprimer des doutes au sujet de cette identification en cours?'
 	,'LANG_Doubt_Expressed' => "Quelqu'un a exprimé des doutes sur cette identification"
 	,'LANG_Doubt_Comment' => "J'ai exprimé des doutes sur cette détermination ..."
+	,'LANG_Determination_Valid' => 'Cette identification a été créé par un expert, et est considérée comme valable'
 	,'LANG_Determination_Incorrect' => 'Cette identification a été signalée comme incorrecte.'
 	,'LANG_Determination_Unconfirmed' => 'Cette identification a été marquée comme non confirmées.'
 	,'LANG_Determination_Unknown' => "Le taxon n'est pas connue par la clé d'identification."
