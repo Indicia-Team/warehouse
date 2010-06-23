@@ -1495,8 +1495,6 @@ class data_entry_helper extends helper_config {
     // Add in the sort parameters
 
     foreach ($sortAndPageUrlParams as $param => $content) {
-
-//PROBLEM HERE AS 'null' IS RETURNED
       if ($content['value']!=null) {
         if ($param != 'page')
           $extraParams .= '&' . $param .'='. $content['value'];
