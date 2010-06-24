@@ -4790,6 +4790,7 @@ $('.ui-state-default').live('mouseout', function() {
   *    validation
   *    noBlankText
   *    extraParams
+  *    booleanCtrl - radio or checkbox for boolean attribute output, default is radio
   *    language - iso 639:3 code for the language to output for terms in a termlist. If not set no language filter is used.
   * @return string HTML to insert into the page for the control.
   */
@@ -4820,12 +4821,12 @@ $('.ui-state-default').live('mouseout', function() {
             if(array_key_exists('containerClass', $options)){
               $attrOptions['containerClass'] = $options['containerClass'];
             }
-            if(array_key_exists('booleanCtrl', $options)){
-              $ctrl = $options['booleanCtrl']; // can be radio, checkbox
+            if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox'){
+              $output = self::checkbox($attrOptions);
             } else {
-              $ctrl = 'radio';
+              $output = self::boolean_attribute('radio', $attrOptions);
             }
-            $output = self::boolean_attribute($ctrl, $attrOptions);
+
             break;
         case 'D': // Date
         case 'Specific Date': // Date
