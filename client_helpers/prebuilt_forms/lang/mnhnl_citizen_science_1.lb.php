@@ -42,10 +42,10 @@ $custom_terms = array(
   'sample:entered_sref'=>'Koordinaten',
   'search'=>'Sichen',
   'LANG_Georef_Label'=>'Plaatz op der Kaart sichen',
-  'LANG_Georef_SelectPlace' => 'Select place in Luxembourgish',
-  'LANG_Georef_NothingFound' => 'place not found in Luxembourgish',
+  'LANG_Georef_SelectPlace' => 'Wielt ënnert den Uertschaften, déi ärer Sich entspriechen, déi richteg aus. (Klickt an d\'Lëscht fir d\'Plaz op der Kaart ze gesinn.)',
+  'LANG_Georef_NothingFound' => 'Et gouf keng Plaz mat dem Numm fonnt. Probéiert mat dem Numm vun enger Nopesch-Uertschaft.',
   'surname'=>'Nonumm',
-  'you are recording a'=>'Dir git elo eng Donnée an vun {1}. W.e.g. gebraucht dëse Formulaire fir Détailer anzegin.',
+  'you are recording a'=>'Dir sidd am Gaang eng Beobachtung an ze gi vun: {1}. Gebraucht wann ech gelift de Formulaire ënnendrënner fir d\'Detailer an ze ginn.',
 
   // Tab titles (only visible if interface tabbed
   'about you'=>'Ween ech sinn',
@@ -57,8 +57,8 @@ $custom_terms = array(
   'species tab instructions'=>'<strong>Wat ech gesinn hunn</strong><br/>Klickt op déi Blumm, déi Dir gesinn hutt, dono op Weider.',
   'place tab instructions'=>'<strong>Wou et war</strong><br/>Sicht op der Kaart d\'Plaatz, wou Dir déi Blumm oder d\'Déier gesinn hutt, sou genau wéi méiglech. Wann Dir d\'Koordinate kennt, kënnt Dir déi och direkt aginn.',
   'other tab instructions'=>'<strong>Aner Informatioune</strong><br/>Sot eis wann ech gelift wéini Dir déi Blumm oder d\'Déier gesinn hutt, wéi vill et der ongeféier waren a wann néideg weider Bemierkungen.',
-  'validation_required' => 'Required field',
 
+  'validation_required' => 'Gitt wann ech gelift e Wäert an fir: %s',
   'Males present' => 'Males present'
 
 );

@@ -42,9 +42,11 @@ $custom_terms = array(
   'sample:entered_sref'=>'Spatial Reference',
   'search'=>'Search',
   'LANG_Georef_Label'=>'Search for place on map',
+  'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
+  'LANG_Georef_NothingFound' => 'No place found with that name. Try a nearby town name.',
   'surname'=>'Surname',
-  'you are recording a'=>'You are entering a record of a {1}. Please use the form below to provide the details.',
-  
+  'you are recording a'=>'You are entering a record of: {1}. Please use the form below to provide the details.',
+
   // Tab titles (only visible if interface tabbed
   'about you'=>'About You',
   'what did you see'=>'What did you see?',
@@ -56,5 +58,7 @@ $custom_terms = array(
   'place tab instructions'=>'<strong>Place Selection</strong><br/>Please either enter the spatial reference of the observation if you know it, or click on the map to specify the place as accurately as you can.',
   'other tab instructions'=>'<strong>Other Information</strong><br/>Please tell us when you made the observation, approximately how many you saw and any comments you have about the record. You can also '.
       'upload any images you have of the observation.',
+
+  'validation_required' => 'Please enter the a value for: %s',
 
 );
