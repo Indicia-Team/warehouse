@@ -132,7 +132,8 @@
 
         trigger: function(e)
         {
-          var lonlat = div.map.getLonLatFromViewPortPx(e.xy);          
+          var lonlat = div.map.getLonLatFromViewPortPx(new
+            OpenLayers.Pixel(e.xy.x , e.xy.y));          
           // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
           var precision, metres = div.map.getScale()/200;
           // now round to find appropriate square size
@@ -232,7 +233,7 @@
       });
 
       $('#'+div.georefOpts.georefCloseBtnId).click(function(e) {
-        $('#'+div.georefOpts.georefDivId).hide('fast');
+        $('#'+div.georefOpts.georefDivId).hide('fast', function() {div.map.updateSize();});        
         e.preventDefault();
       });
 
@@ -285,12 +286,16 @@
     }
 
     function _georeference(div) {
-      $('#' + div.georefOpts.georefDivId).hide();
-      $('#' + div.georefOpts.georefOutputDivId).empty();
-      var searchtext = $('#' + div.georefOpts.georefSearchId).val();
-      if (searchtext != '') {
-        // delegate the service lookup task to the georeferencer driver that is loaded.
-        div.georeferencer.georeference(searchtext);
+      if (!div.georefInProgress) {
+        div.georefInProgress = true;
+        $('#' + div.georefOpts.georefDivId).hide();
+        div.map.updateSize();
+        $('#' + div.georefOpts.georefOutputDivId).empty();
+        var searchtext = $('#' + div.georefOpts.georefSearchId).val();
+        if (searchtext != '') {
+          // delegate the service lookup task to the georeferencer driver that is loaded.
+          div.georeferencer.georeference(searchtext);
+        }
       }
     }
     
@@ -303,7 +308,7 @@
         var ref;
         var corner1;
         var corner2;
-        var epsg = (places[0].epsg == undefined ? 4326 : places[0].epsg);
+        var epsg = (places[0].epsg === undefined ? 4326 : places[0].epsg);
         if (places.length==1 && places[0].name.toLowerCase()==$('#' + div.georefOpts.georefSearchId).val()) {
           ref=places[0].centroid.y + ', ' + places[0].centroid.x;
           corner1=places[0].boundingBox.northEast.y + ', ' + places[0].boundingBox.northEast.x;
@@ -317,7 +322,7 @@
             ref= place.centroid.y + ', ' + place.centroid.x;
             corner1=place.boundingBox.northEast.y + ', ' + place.boundingBox.northEast.x;
             corner2=place.boundingBox.southWest.y + ', ' + place.boundingBox.southWest.x;
-            placename= (place.display==undefined ? place.name : place.display);
+            placename= (place.display===undefined ? place.name : place.display);
             if (place.placeTypeName!==undefined) {
               placename = placename+' (' + place.placeTypeName + ')';
             }
@@ -343,12 +348,13 @@
           });
   
           ol.appendTo('#'+div.georefOpts.georefOutputDivId);
-          $('#'+div.georefOpts.georefDivId).show("fast");
+          $('#'+div.georefOpts.georefDivId).show("fast", function() {div.map.updateSize();});
         }
       } else {
         $('<p>'+opts.msgGeorefNothingFound+'</p>').appendTo('#'+div.georefOpts.georefOutputDivId);
-        $('#'+div.georefOpts.georefDivId).show("fast");
+        $('#'+div.georefOpts.georefDivId).show("fast", function() {div.map.updateSize();});
       }
+      div.georefInProgress = false;
     }
 
     /**
