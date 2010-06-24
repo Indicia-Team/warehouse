@@ -557,12 +557,33 @@ class XMLReportReader_Core implements ReportReader
     // Find the columns we're searching for - nested between a SELECT and a FROM.
     // To ensure we can detect the words FROM, SELECT and AS, use a regex to wrap
     // spaces around them, then can do a regular string search
-    // This can't handle complex valid queries where there is a nested select
+    // This can handle queries where there is a nested select provided it has a
+    // matching from and does not contain commas.
     $this->query=preg_replace("/\b(select)\b/i", ' select ', $this->query);
     $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
     $this->query=preg_replace("/\b(as)\b/i", ' as ', $this->query);
     $i0 = strpos($this->query, ' select ') + 7;
-    $i1 = strpos($this->query, ' from ') - $i0;
+
+    $nesting = 1;
+    $offset = $i0;
+    do {
+      $nextSelect = strpos($this->query, ' select ', $offset);
+      $nextFrom = strpos($this->query, ' from ', $offset);
+      if ($nextSelect !== false && $nextSelect < $nextFrom) {
+        //found start of sub-query
+        $nesting++;
+        $offset = $nextSelect + 7;
+      } else {
+        $nesting--;
+        if ($nesting != 0) {
+          //found end of sub-query
+          $offset = $nextFrom + 5;
+        }
+      }
+    }
+    while ($nesting > 0);
+
+    $i1 = $nextFrom - $i0;
     $cols = explode(',', substr($this->query, $i0, $i1));
     // We have cols, which may either be of the form 'x' or of the form 'x as y'
     foreach ($cols as $col)
