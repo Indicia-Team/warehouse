@@ -42,7 +42,10 @@ $custom_terms = array(
   'sample:entered_sref'=>'Coordonnées',
   'search'=>'Chercher',
   'LANG_Georef_Label'=>'Chercher la position sur la carte',
+  'LANG_Georef_SelectPlace' => 'Choisissez la bonne parmi les localités suivantes qui correspondent à votre recherche. (Cliquez dans la liste pour voir l\'endroit sur la carte.)',
+  'LANG_Georef_NothingFound' => 'Aucun endroit n\'a été trouvé avec ce nom. Essayez avec le nom d\'une localité voisine.',
   'surname'=>'Nom',
+  'you are recording a'=>'Vous allez enregistrer une observation de: {1}. Veuillez utiliser le formulaire ci-dessous pour indiquer les détails.',
 
   // Tab titles (only visible if interface tabbed)
   'about you'=>'Qui êtes vous?',
@@ -55,6 +58,6 @@ $custom_terms = array(
   'place tab instructions'=>'<strong>Où était-ce?</strong><br/>Cherchez sur la carte aussi précisément que possible l\'endroit où vous avez vu la fleur. Si vous connaissez les coordonnées, vous pouvez aussi les entrer directement.',
   'other tab instructions'=>'<strong>Autres Informations</strong><br/>Indiquez s\'il vous plaît quand vous avez vu cette fleur, combien il y en avait à peu près et si nécessaire d\'autres commentaires.',
 
-
+  'validation_required' => 'Veuillez saisir une valeur pour: %s',
 
 );

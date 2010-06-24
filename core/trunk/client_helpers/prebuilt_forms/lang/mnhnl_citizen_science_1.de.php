@@ -42,8 +42,11 @@ $custom_terms = array(
   'sample:entered_sref'=>'Koordinaten',
   'search'=>'Suchen',
   'LANG_Georef_Label'=>'Standort auf der Karte suchen',
+  'LANG_Georef_SelectPlace' => 'Wählen Sie zwischen den Ortschaften die Ihrer Suche entsprechen die Richtige aus. (Klicken Sie in die Liste um die Ortschaft auf der Karte zu sehen.)',
+  'LANG_Georef_NothingFound' => 'Es wurde kein Ort mit diesem Namen gefunden. Versuchen Sie es mit dem Namen einer benachbarten Ortschaft.',
   'surname'=>'Nachname',
-  
+  'you are recording a'=>'Sie sind dabei eine Beobachtung einzugeben von: {1}. Bitte benutzen Sie das unten stehende Formular um die Details einzugeben.',
+
   // Tab titles (only visible if interface tabbed
   'about you'=>'Wer ich bin',
   'what did you see'=>'Was ich gesehen habe',
@@ -55,4 +58,5 @@ $custom_terms = array(
   'place tab instructions'=>'<strong>Wo es war</strong><br/>Suchen Sie auf der Karte den Ort, wo Sie die Blume gesehen haben so genau wie möglich. Wenn Sie die Koordinaten kennen, können Sie diese auch direkt eingeben.',
   'other tab instructions'=>'<strong>Aner Informationen</strong><br/>Sagen Sie uns bitte wann Sie die Blume gesehen haben, wie viele es ungefähr waren und wenn nötig weitere Bemerkungen.',
 
+  'validation_required' => 'Bitte geben sie einen Wert ein für: %s',
 );
