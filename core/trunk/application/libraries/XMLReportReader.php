@@ -555,11 +555,12 @@ class XMLReportReader_Core implements ReportReader
   private function inferFromQuery()
   {
     // Find the columns we're searching for - nested between a SELECT and a FROM.
-    // To ensure we can detect the word FROM and SELECT, use a regex to wrap spaces around them, then can
-    // do a regular string search
+    // To ensure we can detect the words FROM, SELECT and AS, use a regex to wrap
+    // spaces around them, then can do a regular string search
     // This can't handle complex valid queries where there is a nested select
     $this->query=preg_replace("/\b(select)\b/i", ' select ', $this->query);
     $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
+    $this->query=preg_replace("/\b(as)\b/i", ' as ', $this->query);
     $i0 = strpos($this->query, ' select ') + 7;
     $i1 = strpos($this->query, ' from ') - $i0;
     $cols = explode(',', substr($this->query, $i0, $i1));
