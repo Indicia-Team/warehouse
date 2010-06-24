@@ -4790,7 +4790,8 @@ $('.ui-state-default').live('mouseout', function() {
   *    validation
   *    noBlankText
   *    extraParams
-  *    booleanCtrl - radio or checkbox for boolean attribute output, default is radio
+  *    booleanCtrl - radio or checkbox for boolean attribute output, default is radio. Can also be a checkbox_group, used to
+  *    allow selection of both yes and no, e.g. on a filter form.
   *    language - iso 639:3 code for the language to output for terms in a termlist. If not set no language filter is used.
   * @return string HTML to insert into the page for the control.
   */
@@ -4821,8 +4822,10 @@ $('.ui-state-default').live('mouseout', function() {
             if(array_key_exists('containerClass', $options)){
               $attrOptions['containerClass'] = $options['containerClass'];
             }
-            if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox'){
+            if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox') {
               $output = self::checkbox($attrOptions);
+            } elseif(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox_group') {
+              $output = self::boolean_attribute('checkbox', $attrOptions);
             } else {
               $output = self::boolean_attribute('radio', $attrOptions);
             }
