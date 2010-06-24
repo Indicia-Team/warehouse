@@ -91,6 +91,14 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'User Interface'
         ),
         array(
+		  'name'=>'abundance_overrides',
+		  'caption'=>'Abundance Overrides by Species',
+		  'description'=>'If a species should not use the default abundance attribute, list each species preferred name on a separate line, followed '.
+		      'by a colon then the attribute IDs, comma separated. This only works when loading the form with a preset species in the URL.',
+		  'type'=>'textarea',
+		  'group'=>'User Interface'
+        ),
+        array(
           'name'=>'list_id',
           'caption'=>'Species List ID',
           'description'=>'The Indicia ID for the species list that species can be selected from.',
@@ -197,7 +205,7 @@ class iform_mnhnl_citizen_science_1 {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $readAuth = $auth['read'];
     // enable image viewing with FancyBox
-    data_entry_helper::$javascript .= 'jQuery("a.fancybox").fancybox();';
+    data_entry_helper::$javascript .= "jQuery(\"a.fancybox\").fancybox();\n";
     $r = "\n<form method=\"post\" id=\"entry_form\">\n";
     if (isset($_GET['taxa_taxon_list_id']) || isset($_GET['taxon_external_key'])) {
       if (isset($_GET['taxa_taxon_list_id']))
@@ -386,18 +394,48 @@ class iform_mnhnl_citizen_science_1 {
         'tabDiv' => 'controls'
     ));
 
-    // Dynamically create a control for the abundance
-    $abundance_args = array(
-      'label'=>lang::get('abundance'),
-      'fieldname'=>'occAttr:' + $args['abundance_attr_id'],
-      'table'=>'termlists_term',
-      'captionField'=>'term',
-      'valueField'=>'id',
-      'extraParams'=>$readAuth + array('termlist_id' => $args['abundance_termlist_id']),
-      'size'=>6, // for listboxes
-      'sep'=>'<br/>'
-    );
-    $r .= call_user_func(array('data_entry_helper', $args['abundance_ctrl']), $abundance_args);
+    // Dynamically create a control for the abundance, unless overridden for this species
+    if (isset($species) && count($species)>0 && trim($args['abundance_overrides'])!=='') {
+      $overrides = explode("\n", $args['abundance_overrides']);
+      foreach ($overrides as $override) {
+        $tokens = explode(':',$override);
+        if ($tokens[0]==$species[0]['taxon']) {
+          // remove the default abundance attribute behaviour
+          $args['abundance_attr_id']='';
+          if (trim($tokens[1])!=='') {
+            $attrIds = explode(',',$tokens[1]);
+            $attributes = data_entry_helper::getAttributes(array(
+			  'id' => null,
+			  'valuetable'=>'occurrence_attribute_value',
+			  'attrtable'=>'occurrence_attribute',
+			  'key'=>'occurrence_id',
+			  'fieldprefix'=>"occAttr",
+			  'extraParams'=>$readAuth + array('query' => urlencode(json_encode(array(
+                  'in'=>array('id', $attrIds)
+              )))),
+			  'survey_id'=>$args['survey_id']
+            ));
+            foreach ($attributes as $attribute) {
+              $r .= data_entry_helper::outputAttribute($attribute, array('language' => iform_lang_iso_639_2($user->lang), 'booleanCtrl' => 'checkbox'));
+            }
+
+          }
+        }
+      }
+    }
+    if (!empty($args['abundance_attr_id'])) {
+      $abundance_args = array(
+        'label'=>lang::get('abundance'),
+        'fieldname'=>'occAttr:' + $args['abundance_attr_id'],
+        'table'=>'termlists_term',
+        'captionField'=>'term',
+        'valueField'=>'id',
+        'extraParams'=>$readAuth + array('termlist_id' => $args['abundance_termlist_id']),
+        'size'=>6, // for listboxes
+        'sep'=>'<br/>'
+      );
+      $r .= call_user_func(array('data_entry_helper', $args['abundance_ctrl']), $abundance_args);
+    }
     $r .= data_entry_helper::textarea(array(
         'label'=>lang::get('sample:comment'),
         'fieldname'=>'sample:comment',

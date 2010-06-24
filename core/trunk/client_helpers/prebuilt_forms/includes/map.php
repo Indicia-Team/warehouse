@@ -213,6 +213,11 @@ function iform_map_get_map_options($args, $readAuth) {
   if ($args['tile_cache_layers']) {
     $options['tilecacheLayers'] = json_decode($args['tile_cache_layers'], true);
   }
+  // And pass through any translation strings, only if they exist
+  $msgGeorefSelectPlace = lang::get('LANG_Georef_SelectPlace');
+  if ($msgGeorefSelectPlace!='LANG_Georef_SelectPlace') $options['msgGeorefSelectPlace'] = $msgGeorefSelectPlace;
+  $msgGeorefNothingFound = lang::get('LANG_Georef_NothingFound');
+  if ($msgGeorefNothingFound!='LANG_Georef_NothingFound') $options['msgGeorefNothingFound'] = $msgGeorefNothingFound;
   return $options;
 }
 
