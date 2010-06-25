@@ -216,12 +216,23 @@ class iform_mnhnl_citizen_science_1 {
         'table'=>'taxa_taxon_list',
         'extraParams' => $readAuth + $filter + array('taxon_list_id' => $args['list_id'], 'view' => 'detail')
       ));
-      // we need only one result
+      // we need only one result, but there could be more than one picture, therefore multiple rows
+      $uniqueMeaning=false;
       if (count($species)==1) {
+        $uniqueMeaning=$species[0]['taxon_meaning_id'];
+      }
+      if (count($species)>1) {
+        $uniqueMeaning=$species[0]['taxon_meaning_id'];
+        foreach($species as $item) {
+          if ($item['taxon_meaning_id']!=$uniqueMeaning)
+            $uniqueMeaning = false;
+        }
+      }
+      if ($uniqueMeaning) {
         // now we have the meaning_id, we need to fetch the actual species in the chosen common name
         $speciesCommon = data_entry_helper::get_population_data(array(
 		        'table'=>'taxa_taxon_list',
-		        'extraParams' => $readAuth + array('taxon_meaning_id' => $species[0]['taxon_meaning_id'],
+		        'extraParams' => $readAuth + array('taxon_meaning_id' => $uniqueMeaning,
 		            'language_iso' => iform_lang_iso_639_2($user->lang), 'view' => 'detail')
         ));
         $r .= '<div class="ui-widget ui-widget-content ui-corner-all page-notice ui-helper-clearfix">';
@@ -235,8 +246,12 @@ class iform_mnhnl_citizen_science_1 {
         $taxa_taxon_list_id=$species[0]['id'];
         $images_path = data_entry_helper::$base_url.
               (isset(data_entry_helper::$indicia_upload_path) ? data_entry_helper::$indicia_upload_path : 'upload/');
-        if (!empty($species[0]['image_path'])) {
-          $r .= '<a class="fancybox left" href="'.$images_path.$species[0]['image_path'].'" style="margin: 0 1em 1em;"><img width="100" src="'.$images_path.'thumb-'.$species[0]['image_path'].'" /></a>';
+        foreach($species as $item) {
+          if (!empty($item['image_path'])) {
+            $r .= '<a class="fancybox left" href="'.$images_path.$item['image_path'].'" style="margin: 0 1em 1em;">';
+            $r .= '<img width="100" src="'.$images_path.'thumb-'.$item['image_path'].'" />';
+            $r .= '</a>';
+          }
         }
         if (!empty($species[0]['description_in_list'])) {
           $r .= '<p>'.$species[0]['description_in_list']."</p>";
@@ -302,7 +317,7 @@ class iform_mnhnl_citizen_science_1 {
       }
       $r .= "</fieldset>\n";
     }
-    // the species tab is ommitted if the page is called with a tax
+    // the species tab is ommitted if the page is called with a taxon in the querystring parameters
     if (isset($taxa_taxon_list_id)) {
       $r .= "<input type=\"hidden\" name=\"occurrence:taxa_taxon_list_id\" value=\"$taxa_taxon_list_id\"/>\n";
     } else {
@@ -363,11 +378,11 @@ class iform_mnhnl_citizen_science_1 {
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
     }
-    $r .= data_entry_helper::sref_and_system(array(
-      'label' => lang::get('sample:entered_sref'),
-      'systems' => $systems
-    ));
     $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
+    $r .= data_entry_helper::sref_and_system(array(
+	      'label' => lang::get('sample:entered_sref'),
+	      'systems' => $systems
+    ));
     // retrieve options for the IndiciaMapPanel, and optionally options for OpenLayers.
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
