@@ -671,13 +671,17 @@ checkProtocolStatus = function(){
 checkSessionButtons = function(){
 	if (jQuery('#cc-3-body').children().length === 1) {
 	    jQuery('#cc-3').find('.delete-button').hide();
+	    jQuery('#cc-3-valid-button').empty().text(\"".lang::get('LANG_Validate_Session')."\")
   	} else {
 		jQuery('#cc-3').find('.delete-button').show();
-	}
+	    jQuery('#cc-3-valid-button').empty().text(\"".lang::get('LANG_Validate_Session_Plural')."\")
+  	}
 	if(jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter(':first').filter('[checked]').length >0){
-	    jQuery('#cc-3').find('.add-button').hide();
+	    jQuery('#cc-3-title-title').empty().text(\"".lang::get('LANG_Sessions_Title')."\");
+		jQuery('#cc-3').find('.add-button').hide();
 	} else {
-	    jQuery('#cc-3').find('.add-button').show();
+	    jQuery('#cc-3-title-title').empty().text(\"".lang::get('LANG_Sessions_Title_Plural')."\");
+		jQuery('#cc-3').find('.add-button').show();
   	}
 };
 
@@ -1486,7 +1490,7 @@ $('#cc-2-valid-button').click(function() {
  	// Sessions.
     $r .= '
 <div id="cc-3" class="poll-section">
-  <div id="cc-3-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title"><span>'.lang::get('LANG_Sessions_Title').'</span>
+  <div id="cc-3-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title"><span id="cc-3-title-title" >'.lang::get('LANG_Sessions_Title').'</span>
     <div id="cc-3-mod-button" class="right ui-state-default ui-corner-all mod-button">'.lang::get('LANG_Modify').'</div>
   </div>
   <div id="cc-3-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active poll-section-body">
@@ -1905,12 +1909,12 @@ $('#cc-4-main-form').ajaxForm({
 				if (!validateRequiredField('insect\\:taxa_taxon_list_id', '#cc-4-insect-identify')) {
 					valid = false;
   				} else {
-					data.push({name: 'determination\\:taxa_taxon_list_id_list[]', value: ''});
+					data.push({name: 'determination:taxa_taxon_list_id_list[]', value: ''});
   				}
 			} else {
 				var toolValues = jQuery('#insect-id-button').data('toolRetValues');
 				for(var i = 0; i<toolValues.length; i++){
-					data.push({name: 'determination\\:taxa_taxon_list_id_list[]', value: toolValues[i]});
+					data.push({name: 'determination:taxa_taxon_list_id_list[]', value: toolValues[i]});
 				}			
 			}
 		} else {

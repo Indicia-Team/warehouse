@@ -89,9 +89,9 @@ $custom_terms = array(
 	,'LANG_Time' => 'Heure'
 	,'LANG_To' => ' a '
 	,'Sky' => 'Ciel'
-	,'Temperature Bands' => 'Température'
+	,'Temperature' => 'Température'
 	,'Wind' => 'Vent'
-	,'In Shade' => "Fleur à l'ombre"
+	,'Fleur a l ombre' => "Fleur à l'ombre"
 	,'Flower Type' => "Il s'agit d'une fleur"
 	,'Habitat' => "Il s'agit d'une habitat"
 	
