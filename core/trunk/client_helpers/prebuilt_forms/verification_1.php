@@ -47,6 +47,14 @@ class iform_verification_1 {
         'type'=>'boolean',
         'default'=>true
       ), array(
+        'name'=>'fixed_params',
+        'caption'=>'Fixed Parameters',
+        'description'=>'Provide a comma separated list '.
+            'of <parameter_name>=<parameter_value> pairs to define fixed values for parameters that the report requires. '.
+            'E.g. "survey=12,taxon=53"',
+        'type'=>'textarea',
+        'required'=>false
+      ), array(
         'name'=>'verifiers_mapping',
         'caption'=>'Verifiers Mapping',
         'description'=>'Provide either the ID of a single Indicia user to act as the verifier, or provide a comma separated list '.
@@ -139,7 +147,17 @@ class iform_verification_1 {
         }
       }
     }
+
     global $user;
+    //extract fixed parameters for report grid.
+    $params = explode( ",", $args['fixed_params']);
+    foreach ($params as $param){
+      $keyvals = explode("=", $param);
+      $key = trim($keyvals[0]);
+      $val = trim($keyvals[1]);
+      $extraParams[$key] = $val;
+    }
+    
     $r .= data_entry_helper::report_grid(array(
       'id' => 'verification-grid',
       'dataSource' => $args['report_name'],
@@ -153,7 +171,7 @@ class iform_verification_1 {
       ),
       'itemsPerPage' =>10,
       'autoParamsForm' => $args['auto_params_form'],
-      'extraParams' => array()
+      'extraParams' => $extraParams
     ));
     $r .= '
 <form id="verify" method="post" action="">
