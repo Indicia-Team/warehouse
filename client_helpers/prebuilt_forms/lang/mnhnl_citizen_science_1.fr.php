@@ -55,9 +55,11 @@ $custom_terms = array(
   // Tab instructions
   'about you tab instructions'=>'<strong>Qui êtes vous?</strong><br/>Dites nous s\'il vous plaît qui vous êtes. Cela pourrait être important pour que nous puissions vous contacter au cas où votre observation serait particulièrement intéressante.',
   'species tab instructions'=>'<strong>Qu\'avez-vous vu?</strong><br/>Cliquez sur la fleur que vous avez vue, ensuite sur Suivant.',
-  'place tab instructions'=>'<strong>Où était-ce?</strong><br/>Cherchez sur la carte aussi précisément que possible l\'endroit où vous avez vu la fleur. Si vous connaissez les coordonnées, vous pouvez aussi les entrer directement.',
+  'place tab instructions'=>'<strong>Où était-ce?</strong><br/>1. Veuillez rechercher l\'endroit précis de votre observation sur la carte. Vous pouvez utiliser pour ceci la recherche des localités.'.
+      '<br/>2. Cliquez sur l\'endroit précis de votre observation sur la carte pour enregistrer les coordonnées.',
   'other tab instructions'=>'<strong>Autres Informations</strong><br/>Indiquez s\'il vous plaît quand vous avez vu cette fleur, combien il y en avait à peu près et si nécessaire d\'autres commentaires.',
 
   'validation_required' => 'Veuillez saisir une valeur pour: %s',
+  'validation_dateISO' => 'Veuillez indiquer une date valide au format aaaa-mm-jj.',
 
 );

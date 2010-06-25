@@ -55,7 +55,8 @@ $custom_terms = array(
   // Tab instructions
   'about you tab instructions'=>'<strong>About You</strong><br/>Please tell us about yourself first. This might be important so that we can contact you if the record you contribute is important to science.',
   'species tab instructions'=>'<strong>Species Selection</strong><br/>Please click on the species which you observed then click the Next Step button.',
-  'place tab instructions'=>'<strong>Place Selection</strong><br/>Please either enter the spatial reference of the observation if you know it, or click on the map to specify the place as accurately as you can.',
+  'place tab instructions'=>'<strong>Place Selection</strong><br/>1. Please search for the location of your observation on the map. You can use the location finder for this.</li>'.
+      '<br/>2. Click on the exact location on the map to record the spatial reference/coordinates.',
   'other tab instructions'=>'<strong>Other Information</strong><br/>Please tell us when you made the observation, approximately how many you saw and any comments you have about the record. You can also '.
       'upload any images you have of the observation.',
 
