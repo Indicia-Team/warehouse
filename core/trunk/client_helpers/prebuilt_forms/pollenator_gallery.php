@@ -453,7 +453,7 @@ class iform_pollenator_gallery {
     $defAttrOptions = array('extraParams'=>$readAuth + array('orderby' => 'id'),
     				'lookUpListCtrl' => 'checkbox_group',
     				'lookUpKey' => 'meaning_id',
-    				'booleanCtrl' => 'checkbox',
+    				'booleanCtrl' => 'checkbox_group',
        				'sep' => ' &nbsp; ',
     				'language' => $language,
     				'suffixTemplate'=>'nosuffix',
