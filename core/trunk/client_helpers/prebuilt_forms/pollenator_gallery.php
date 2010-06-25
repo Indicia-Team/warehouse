@@ -2001,8 +2001,8 @@ jQuery('form#fo-express-doubt-form').ajaxForm({
 		".$args['alert_js_function']."({alert_type: 'D', type: 'I', insect: JSON.stringify(insect_alert_object)});";
 	}
 	data_entry_helper::$javascript .= "
-			}, insect_alert_object.insect_id == null ? ".user_access('IForm n'.$node->nid.' flower expert')." : ".user_access('IForm n'.$node->nid.' insect expert').",
-			insect_alert_object.insect_id == null ? ".user_access('IForm n'.$node->nid.' flag dubious flower')." : ".user_access('IForm n'.$node->nid.' flag dubious insect')." );
+			}, insect_alert_object.insect_id == null ? ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0')." : ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').",
+			insect_alert_object.insect_id == null ? ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0')." : ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0')." );
 		} else {
 			alert(data.error);
 		}
@@ -2054,7 +2054,7 @@ jQuery('form#fo-new-insect-id-form').ajaxForm({
 		".$args['alert_js_function']."({alert_type: 'R', type: 'I', insect: JSON.stringify(insect_alert_object)});";
 	}
 	data_entry_helper::$javascript .= "
-			  			}, ".user_access('IForm n'.$node->nid.' insect expert').", ".user_access('IForm n'.$node->nid.' flag dubious insect').");
+			  			}, ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').");
 		} else {
 			alert(data.error);
 		}
@@ -2096,7 +2096,7 @@ jQuery('form#fo-new-flower-id-form').ajaxForm({
 			jQuery(flowerIDstruc.mainForm+' [name=determination\\:taxa_taxon_list_id],[name=determination\\:comment],[name=determination\\:taxon_details],[name=determination\\:taxon_extra_info]').val('');
 			jQuery('#flower_taxa_list').empty();
 			jQuery('#fo-new-flower-id').removeClass('ui-accordion-content-active');
-			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form', null, ".user_access('IForm n'.$node->nid.' flower expert').", ".user_access('IForm n'.$node->nid.' flag dubious flower').");
+			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form', null, ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0').");
 		} else {
 			alert(data.error);
 		}
@@ -2527,7 +2527,7 @@ loadInsect = function(insectID, collectionIndex, insectIndex, type){
 	jQuery('#fo-new-insect-id-button').show();
 	jQuery('#fo-new-flower-id-button').hide();
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' insect expert') || user_access('IForm n'.$node->nid.' create insect comment')) ? "show()" : "hide()").";
-	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id', 'form#fo-new-insect-id-form', null, ".user_access('IForm n'.$node->nid.' insect expert').", ".user_access('IForm n'.$node->nid.' flag dubious insect').");
+	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id', 'form#fo-new-insect-id-form', null, ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').");
 	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image', ".$args['Insect_Image_Ratio'].", function(imageRecord){insect_alert_object.insect_image_path = imageRecord.path});
 	loadInsectAddnInfo(insectID, collectionIndex);
 	loadComments(insectID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body', false);
@@ -2544,7 +2544,7 @@ loadFlower = function(flowerID, collectionIndex){
 	jQuery('#fo-new-flower-id-button').show();
 	jQuery('#fo-new-insect-id-button').hide();
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' flower expert') || user_access('IForm n'.$node->nid.' create flower comment')) ? "show()" : "hide()").";
-	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form', null, ".user_access('IForm n'.$node->nid.' flower expert').", ".user_access('IForm n'.$node->nid.' flag dubious flower').");
+	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form', null, ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0').");
 	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image', ".$args['Flower_Image_Ratio'].", null);
 	loadFlowerAddnInfo(flowerID, collectionIndex);
 	loadComments(flowerID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body', false);
