@@ -52,6 +52,10 @@ var report_grid_sortdir = '';
           '&auth_token=' + div.settings.auth_token +
           '&offset=' + div.settings.offset +
           '&callback=?';
+      // Extract any parameters from extraParams
+      for (paramName in div.settings.extraParams){
+          request += '&' + paramName + '=' + div.settings.extraParams[paramName];
+      }
       // Extract any parameters from the attached form
       $('form#'+div.id+'-params input, form#'+div.id+'-params select').each(function(idx, input) {
         if (input.type!=='submit') {

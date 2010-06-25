@@ -1471,7 +1471,9 @@ class data_entry_helper extends helper_config {
   * the parameters form must be called 'my-grid-params'. Finally the input controls which define each parameter must have
   * the name 'param-id-' followed by the actual parameter name, replacing id with the grid id. So, in our example,
   * a parameter called survey will need an input or select control with the name attribute set to 'param-my-grid-survey'.
-  * The submit button for the form should have the method set to "get" and should post back to the same page.</li>
+  * The submit button for the form should have the method set to "get" and should post back to the same page.
+  * As a final alternative, if parameters are required by the report but some can be hard coded then
+  * those may be added to the extraParams array.</li>
   * </ul>
   * @todo Action column or other configurable links in grid
   * @todo Allow additional params to filter by table column or report parameters
@@ -1606,6 +1608,7 @@ class data_entry_helper extends helper_config {
   itemsPerPage: ".$options['itemsPerPage'].",
   auth_token: '".$options['readAuth']['auth_token']."',
   nonce: '".$options['readAuth']['nonce']."',
+  extraParams: ".json_encode($options['extraParams']).",
   url: '".parent::$base_url."',
   imagePath: '".$imagePath."',
   altRowClass: '".$options['altRowClass']."'";
