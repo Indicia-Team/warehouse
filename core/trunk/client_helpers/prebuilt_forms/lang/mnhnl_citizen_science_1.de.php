@@ -55,8 +55,10 @@ $custom_terms = array(
   // Tab instructions
   'about you tab instructions'=>'<strong>Wer ich bin</strong><br/>Sagen Sie uns bitte wer Sie sind. Dies könnte wichtig sein, damit wir Sie kontaktieren können, falls ihre Beobachtung besonders interessant ist.',
   'species tab instructions'=>'<strong>Was ich gesehen habe</strong><br/>Klicken Sie auf die Blume, die Sie gesehen haben, danach auf Weiter.',
-  'place tab instructions'=>'<strong>Wo es war</strong><br/>Suchen Sie auf der Karte den Ort, wo Sie die Blume gesehen haben so genau wie möglich. Wenn Sie die Koordinaten kennen, können Sie diese auch direkt eingeben.',
+  'place tab instructions'=>'<strong>Wo es war</strong><br/>1. Suchen Sie Bitte auf der Karte den genauen Ort Ihrer Beobachtung. Sie können dazu die Ortschaften Suche benutzen.'.
+      '<br/>2. Klicken Sie auf den genauen Standort der Beobachtung um die Koordinaten zu übernehmen.',
   'other tab instructions'=>'<strong>Aner Informationen</strong><br/>Sagen Sie uns bitte wann Sie die Blume gesehen haben, wie viele es ungefähr waren und wenn nötig weitere Bemerkungen.',
 
   'validation_required' => 'Bitte geben sie einen Wert ein für: %s',
+  'validation_dateISO' => 'Bitte geben Sie ein gültiges Datum im Format JJJJ-MM-TT an.',
 );
