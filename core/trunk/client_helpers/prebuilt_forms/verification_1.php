@@ -70,22 +70,37 @@ class iform_verification_1 {
         'default'=>true,
         'group' => 'Notification emails'
       ), array(
-        'name'=>'email_subject',
-        'caption'=>'Notification Email Subject',
-        'description'=>'Default subject for the notification email. Replacements allowed include %action% (verified or rejected), '.
+        'name'=>'email_subject_verified',
+        'caption'=>'Acceptance Email Subject',
+        'description'=>'Default subject for the acceptance email. Replacements allowed include %action% (verified or rejected), '.
             '%verifier% (username of verifier), %taxon%, %date_start%, %entered_sref%.',
         'type'=>'string',
         'default' => 'Record of %taxon% %action%',
         'group' => 'Notification emails'
-      ),
-      array(
-        'name'=>'email_body',
-        'caption'=>'Notification Email Body',
-        'description'=>'Default body for the notification email. Replacements allowed include %action% (verified or rejected), '.
+      ), array(
+        'name'=>'email_body_verified',
+        'caption'=>'Acceptance Email Body',
+        'description'=>'Default body for the acceptance email. Replacements allowed include %action% (verified or rejected), '.
             '%verifier% (username of verifier), %taxon%, %date_start%, %entered_sref%.',
         'type'=>'textarea',
         'default' => "Your record of %taxon%, recorded on %date_start% at grid reference %entered_sref% has been checked by ".
           "an expert and %action%.\nMany thanks for the contribution.\n\n%verifier%",
+        'group' => 'Notification emails'
+      ), array(
+        'name'=>'email_subject_rejected',
+        'caption'=>'Rejection Email Subject',
+        'description'=>'Default subject for the rejection email. Replacements as for acceptance.',
+        'type'=>'string',
+        'default' => 'Record of %taxon% not verified',
+        'group' => 'Notification emails'
+      ), array(
+        'name'=>'email_body_rejected',
+        'caption'=>'Rejection Email Body',
+        'description'=>'Default body for the rejection email. Replacements as for acceptance.',
+        'type'=>'textarea',
+        'default' => "Your record of %taxon%, recorded on %date_start% at grid reference %entered_sref% has been checked by ".
+          "an expert but unfortunately it could not be verified because there was a problem with your photo.\n".
+          "Nonetheless we are grateful for your contribution and hope you will be able to send us further records.\n\n%verifier%",
         'group' => 'Notification emails'
       ),
     );
@@ -107,6 +122,7 @@ class iform_verification_1 {
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    global $user;
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $r = '';
     if ($_POST) {
@@ -115,6 +131,13 @@ class iform_verification_1 {
         $r .= '<div class="page-notice ui-state-highlight ui-corner-all"><p>'.
             implode('</p></p>', array_values(data_entry_helper::$validation_errors)).
             '</p></div>';
+      } else if (isset($_POST['email'])) {
+        // Send email. Depends upon settings in php.ini being correct
+        $success = mail($_POST['email_to'],
+             $_POST['email_subject'],
+             wordwrap($_POST['email_body'], 70),
+             'From: '. $user->mail . PHP_EOL .
+             'Return-Path: '. $user->mail);
       } else if (isset($_POST['occurrence:record_status']) && isset($response['success']) && $args['emails_enabled']) {
         // Provide a send email form to allow the user to send a verification email
         if ($_POST['occurrence:record_status']=='V') $action = 'verified';
@@ -134,10 +157,17 @@ class iform_verification_1 {
           
           if (!empty($email_attr[0]['value'])) {
             $r .= '
-<form id="email-form" action="mailto:'.$email_attr[0]['value'].'?subject='.$subject.'&body='.$body.'" method="post" enctype="text/plain">
+<form id="email" action="" method="post">
 <fieldset>
 <legend>Send a notification email to the recorder.</legend>
-<input type="submit" value="Send Email">
+<label>To: <input type="text" name="email_to" size="80" value="'. $email_attr[0]['value'] .'"></label><br />
+<label>Subject: <input type="text" name="email_subject" size="80" value="'. $subject .'"></label><br />
+<label>Body: <textarea name="email_body" rows="5" cols="80">'. $body .'</textarea></label><br />
+<input type="hidden" name="email" value="1">
+<input type="button" value="Send Email" onclick="
+    $(\'form#email\').attr(\'action\', submit_to());
+    $(\'form#email\').submit();
+">
 </fieldset>
 </form>
 ';
@@ -148,7 +178,6 @@ class iform_verification_1 {
       }
     }
 
-    global $user;
     //extract fixed parameters for report grid.
     $params = explode( ",", $args['fixed_params']);
     foreach ($params as $param){
@@ -157,7 +186,7 @@ class iform_verification_1 {
       $val = trim($keyvals[1]);
       $extraParams[$key] = $val;
     }
-    
+
     $r .= data_entry_helper::report_grid(array(
       'id' => 'verification-grid',
       'dataSource' => $args['report_name'],
@@ -186,6 +215,30 @@ class iform_verification_1 {
     drupal_add_js('
 var verifiers_mapping = "'.$args['verifiers_mapping'].'";
 var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';
+
+function submit_to(){
+  // We need to dynamically build the submitTo so we get the correct sort order
+  var submitTo = "";
+  // access globals created by the report grid to get the current state of pagination and sort as a result of AJAX calls
+  url.params["page-verification-grid"] = report_grid_page;
+  if (report_grid_orderby!=null && report_grid_orderby!="") {
+    url.params["orderby-verification-grid"] = report_grid_orderby;
+  } else {
+    delete url.params["orderby-verification-grid"];
+  }
+  if (report_grid_sortdir!=null && report_grid_sortdir!="") {
+    url.params["sortdir-verification-grid"] = report_grid_sortdir;
+  } else {
+    delete url.params["sortdir-verification-grid"]
+  }
+  $.each(url.params, function(field, value) {
+    submitTo += (submitTo ==="" ? "?" : "&");
+    submitTo += field + "=" + value;
+  });
+  submitTo = url.path + submitTo;
+  return submitTo;
+}
+
 function indicia_verify(taxon, id, valid, cmsUser){
   var action;
   if (valid) {
@@ -210,26 +263,7 @@ function indicia_verify(taxon, id, valid, cmsUser){
       });
     }
     $("#occurrence\\\\:verified_by_id").attr(\'value\', verifier);
-    // We need to dynamically build the submitTo so we get the correct sort order
-    var submitTo = "";
-    // access globals created by the report grid to get the current state of pagination and sort as a result of AJAX calls
-    url.params["page-verification-grid"] = report_grid_page;
-    if (report_grid_orderby!=null) {
-      url.params["orderby-verification-grid"] = report_grid_orderby;
-    } else {
-      delete url.params["orderby-verification-grid"];
-    }
-    if (report_grid_sortdir!=null) {
-      url.params["sortdir-verification-grid"] = report_grid_sortdir;
-    } else {
-      delete url.params["sortdir-verification-grid"]
-    }
-    $.each(url.params, function(field, value) {
-      submitTo += (submitTo ==="" ? "?" : "&");
-      submitTo += field + "=" + value;
-    });
-    submitTo = url.path + submitTo;
-    $("form#verify").attr("action", submitTo);
+    $("form#verify").attr("action", submit_to());
     $("form#verify").submit();
   }
 }
@@ -249,13 +283,13 @@ function indicia_verify(taxon, id, valid, cmsUser){
    * @return Encoded string
    */
   private static function get_email_component($part, $action, $occ, $args) {
-    $r = str_replace('%action%', $action, $args["email_$part"]);
+    $r = str_replace('%action%', $action, $args['email_'.$part.'_'.$action]);
     foreach($occ as $attr=>$value) {
       $r = str_replace('%'.$attr.'%', $value, $r);
     }
     global $user;
     $r = str_replace('%verifier%', $user->name, $r);
-    return rawurlencode($r);
+    return $r;
   }
   
   /**
