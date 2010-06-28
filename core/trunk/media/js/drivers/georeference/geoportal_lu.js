@@ -34,7 +34,7 @@ function Georeferencer(mapdiv, callback) {
               epsg: 2169,
               centroid: {
                 x: (place.bbox[0] + place.bbox[2])/2,
-                y: (place.bbox[1] + place.bbox[3])/2,
+                y: (place.bbox[1] + place.bbox[3])/2
               },
               boundingBox: {
                 southWest: {
@@ -46,13 +46,13 @@ function Georeferencer(mapdiv, callback) {
                   y: place.bbox[3]
                 }
               }
-            }
+            };
             places.push(converted);
           });
           callback(mapdiv, places);
         });
-  }
-};
+  };
+}
 
 /**
  * Default settings for this driver
