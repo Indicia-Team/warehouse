@@ -1521,7 +1521,7 @@ class data_entry_helper extends helper_config {
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
 
     $thClass = $options['thClass'];
-    $r .= "\n<table class=\"".$options['class']."\"><thead class=\"ui-widget-header\"><tr>\n";
+    $r .= "\n<table class=\"".$options['class']."\"><thead class=\"$thClass\"><tr>\n";
     // build a URL with just the sort order bit missing, so it can be added for each table heading link
     $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ?
         $sortAndPageUrlParams['page']['name'].'='.$sortAndPageUrlParams['page']['value'].'&' :
@@ -1835,7 +1835,7 @@ class data_entry_helper extends helper_config {
       'id' => 'grid-'.$uniqueId,
       'itemsPerPage' => 20,
       'class' => 'ui-widget ui-widget-content',
-      'thClass' => 'header',
+      'thClass' => 'ui-widget-header',
       'altRowClass' => 'odd',
       'columns' => array(),
       'includeAllColumns' => true,
@@ -5095,10 +5095,13 @@ $('.ui-state-default').live('mouseout', function() {
 /**
    * Method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
    * @param array $options Options array for the control. Can contain a dataSource (report or table/view name),
-   * mode (direct or report) and readAuth entries.
+   * mode (direct or report) and readAuth entries. Pass linkOnly=true to return just a link to the report data
+   * rather than the data.
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
+   * @param boolean $linkOnly Set this to true to return a URL link for the report only, rather than actually accessing the
+   * report and returning the data.
    */
-  public static function get_report_data($options, $extra='') {
+  public static function get_report_data($options, $extra='', $linkOnly = false) {
     if ($options['mode']=='report') {
       $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
     } elseif ($options['mode']=='direct') {
@@ -5116,8 +5119,12 @@ $('.ui-state-default').live('mouseout', function() {
     	foreach ($options['extraParams'] as $key=>$value)
     	  $request .= "&$key=".urlencode($value);
     }
-    $response = self::http_post($request, null);
-    return json_decode($response['output'], true);
+    if (isset($options['linkOnly']) && $options['linkOnly'])
+      return $request;
+    else {
+      $response = self::http_post($request, null);
+      return json_decode($response['output'], true);
+    }
   }
 
   /**
