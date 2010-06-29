@@ -1345,7 +1345,7 @@ $('#cc-2-flower-upload').ajaxForm({
         	if(data.success == true){
 	        	// There is only one file
 	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.files[0]);
-	        	insertImage('med-'+data.files[0], jQuery('#cc-2-flower-image'), ".$args['Flower_Image_Ratio'].")
+	        	insertImage('med-'+data.files[0], jQuery('#cc-2-flower-image'), ".$args['Flower_Image_Ratio'].");
 				jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
 			} else
 				alertIndiciaError(data);
@@ -1371,7 +1371,7 @@ $('#cc-2-environment-upload').ajaxForm({
         	if(data.success == true){
 	        	// There is only one file
 	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.files[0]);
-	        	insertImage('med-'+data.files[0], jQuery('#cc-2-environment-image'), ".$args['Environment_Image_Ratio'].")
+	        	insertImage('med-'+data.files[0], jQuery('#cc-2-environment-image'), ".$args['Environment_Image_Ratio'].");
 				jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
 			} else
 				alertIndiciaError(data);
@@ -1874,7 +1874,7 @@ $('#cc-4-insect-upload').ajaxForm({
         	if(data.success == true){
 	        	// There is only one file
 	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val(data.files[0]);
-	        	insertImage('med-'+data.files[0], jQuery('#cc-2-insect-image'), ".$args['Insect_Image_Ratio'].")
+	        	insertImage('med-'+data.files[0], jQuery('#cc-4-insect-image'), ".$args['Insect_Image_Ratio'].");
 				jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
 			}  else
 				alertIndiciaError(data);
@@ -2299,7 +2299,7 @@ loadImage = function(imageTable, key, keyName, keyValue, target, ratio){
 			var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();
 			jQuery('[name='+imageTable+'\\:id]', form).val(imageData[0].id).removeAttr('disabled');
 			jQuery('[name='+imageTable+'\\:path]', form).val(imageData[0].path);
-	        insertImage('med-'+imageData[0].path, jQuery(target), ratio)
+	        insertImage('med-'+imageData[0].path, jQuery(target), ratio);
 		}
 	});
 }
