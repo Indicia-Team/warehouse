@@ -725,9 +725,17 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     	<input type="hidden" name="determination:occurrence_id" value="" />
 		<input type="hidden" name="determination:cms_ref" value="'.$uid.'" />  
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
-		<input type="hidden" name="determination:email_address" value="'.$email.'" />
-    	<input type="hidden" name="determination:determination_type" value="A" />
-    	<div class="id-tool-group">
+		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
+	if(user_access('IForm n'.$node->nid.' insect expert')){
+		$r .= '		<select name="determination:determination_type" />
+			<option value="A">'.lang::get('LANG_Det_Type_A').'</option>
+			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
+			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
+		</select>';
+	} else {
+		$r .= '		<input type="hidden" name="determination:determination_type" value="A" />';
+	}
+		$r .= '		<div class="id-tool-group">
           <input type="hidden" name="determination:taxon_details" />
           <span id="insect-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
 		  <span id="insect-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
@@ -751,9 +759,17 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     	<input type="hidden" name="determination:occurrence_id" value="" />
 		<input type="hidden" name="determination:cms_ref" value="'.$uid.'" />  
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
-		<input type="hidden" name="determination:email_address" value="'.$email.'" />
-    	<input type="hidden" name="determination:determination_type" value="A" />
-    	<div class="id-tool-group">
+		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
+	if(user_access('IForm n'.$node->nid.' flower expert')){
+		$r .= '		<select name="determination:determination_type" />
+			<option value="A">'.lang::get('LANG_Det_Type_A').'</option>
+			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
+			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
+		</select>';
+	} else {
+		$r .= '		<input type="hidden" name="determination:determination_type" value="A" />';
+	}
+		$r .= '		<div class="id-tool-group">
           <input type="hidden" name="determination:taxon_details" />
           <span id="flower-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
 		  <span id="flower-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
@@ -1991,14 +2007,15 @@ jQuery('form#fo-express-doubt-form').ajaxForm({
 		if(data.error == undefined){
 			jQuery('#fo-express-doubt').removeClass('ui-accordion-content-active');
 			loadDeterminations(jQuery('[name=determination\\:occurrence_id]').val(), '#fo-id-history', '#fo-current-id', insect_alert_object.insect_id == null ? 'form#fo-new-flower-id-form' : 'form#fo-new-insect-id-form', function(args){
-				if(insect_alert_object.insect_id == null) return;
 				insect_alert_object.details = [];
+				if(insect_alert_object.insect_id == null) return;
 				for(i=0; i< args.length && i < 5; i++) insect_alert_object.details.push({insect_taxa: args[i].taxa, date: args[i].date, user_id: args[i].user_id});
 				insect_alert_object.date = insect_alert_object.details[0].date;
 			";
 	if($args['alert_js_function'] != '') {
 		data_entry_helper::$javascript .= "
-		".$args['alert_js_function']."({alert_type: 'D', type: 'I', insect: JSON.stringify(insect_alert_object)});";
+		insect_alert_object.details = JSON.stringify(insect_alert_object.details);
+		".$args['alert_js_function']."({alert_type: 'D', type: 'I', insect: insect_alert_object});";
 	}
 	data_entry_helper::$javascript .= "
 			}, insect_alert_object.insect_id == null ? ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0')." : ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').",
@@ -2051,7 +2068,8 @@ jQuery('form#fo-new-insect-id-form').ajaxForm({
 			";
 	if($args['alert_js_function'] != '') {
 		data_entry_helper::$javascript .= "
-		".$args['alert_js_function']."({alert_type: 'R', type: 'I', insect: JSON.stringify(insect_alert_object)});";
+		insect_alert_object.details = JSON.stringify(insect_alert_object.details);
+		".$args['alert_js_function']."({alert_type: 'R', type: 'I', insect: insect_alert_object});";
 	}
 	data_entry_helper::$javascript .= "
 			  			}, ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').");
@@ -2426,7 +2444,7 @@ setReIDButton = function(keyValue){
 				if (attrdata[i].id){
 					switch(parseInt(attrdata[i].sample_attribute_id)){
 						case ".$args['uid_attr_id'].":
-							if(parseInt(attrdata[i].value) != ".$uid.");
+							if(parseInt(attrdata[i].value) != ".$uid.")
 								jQuery('.new-id-button').hide();
 							break;
   					}
@@ -2613,10 +2631,15 @@ loadFilter = function(){
 }
 
 jQuery('#fc-add-preferred').click(function(){
-	if(collection_preferred_object.collection_id == null) return;";
+	if(collection_preferred_object.collection_id == null) return;
+	var newObj = {};
+	for (i in collection_preferred_object) {
+		newObj[i] = collection_preferred_object[i]
+	};
+	newObj.insects = JSON.stringify(newObj.insects);";
 	if($args['preferred_js_function'] != '') {
 		data_entry_helper::$javascript .= "
-		".$args['preferred_js_function']."({type: 'C', collection: JSON.stringify(collection_preferred_object)});";
+		".$args['preferred_js_function']."({type: 'C', collection: newObj});";
 	}
 	data_entry_helper::$javascript .= "
 });
