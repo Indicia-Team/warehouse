@@ -237,7 +237,7 @@ class iform_mnhnl_citizen_science_1 {
         ));
         $r .= '<div class="ui-widget ui-widget-content ui-corner-all page-notice ui-helper-clearfix">';
         $nameString = ($species[0]['language_iso']=='lat' ? '<em>' : '') . $species[0]['taxon'] . ($species[0]['language_iso']=='lat' ? '</em>' : '');
-        if (count($speciesCommon)==1)
+        if (count($speciesCommon)>=1)
           // use a common name if we have one
           $nameString = $speciesCommon[0]['taxon'] . ' (' . $nameString . ')';
         if (!empty($species[0]['description_in_list'])) {

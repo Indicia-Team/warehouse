@@ -50,7 +50,8 @@ class iform_distribution_map_1 {
         array(
           'name' => 'wms_feature_type',
           'caption' => 'Feature Type',
-          'description' => 'Name of the feature type exposed in GeoServer to contain the occurrences',
+          'description' => 'Name of the feature type exposed in GeoServer to contain the occurrences. This must expose a taxon_meaning_id and a website_id attribute '.
+              'for the filtering.',
           'type' => 'textfield',
           'group' => 'Distribution Layer'
         ),
@@ -130,8 +131,16 @@ class iform_distribution_map_1 {
         )
       );
       $prefRecords = data_entry_helper::get_population_data($fetchOpts);
-      if (count($prefRecords)!=1)
-        return lang::get("The taxon identifier cannot be used to identify a unique taxon");
+      // We might have multiple records back, e.g. if there are several photos, but we should have a unique meaning id.
+      $meaningId=0;
+      foreach($prefRecords as $prefRecord) {
+        if ($meaningId!=0 && $meaningId!=$prefRecord['taxon_meaning_id'])
+          // bomb out, as we  don't know which taxon to display
+          return lang::get("The taxon identifier cannot be used to identify a unique taxon.");
+        $meaningId = $prefRecord['taxon_meaning_id'];
+      }
+      if ($meaningId==0)
+        return lang::get("The taxon identified by the taxon identifier cannot be found.");
       $meaningId = $prefRecords[0]['taxon_meaning_id'];
     } else
       // the taxon identifier is the meaning ID.
@@ -151,11 +160,21 @@ class iform_distribution_map_1 {
     // Get the style if there is one selected
       $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';
     data_entry_helper::$onload_javascript .= "
-    var filterObj = new OpenLayers.Filter.Comparison({
+    var filters = new Array();
+    filters.push(new OpenLayers.Filter.Comparison({
       type: OpenLayers.Filter.Comparison.EQUAL_TO,
       property: 'taxon_meaning_id',
       value: '$meaningId'
-	});
+	}));
+	filters.push(new OpenLayers.Filter.Comparison({
+      type: OpenLayers.Filter.Comparison.EQUAL_TO,
+      property: 'website_id',
+      value: ".$args['website_id']."
+	}));
+	filterObj = new OpenLayers.Filter.Logical({
+      type: OpenLayers.Filter.Logical.AND,
+      filters: filters
+    });
     var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);
     var distLayer = new OpenLayers.Layer.WMS(
 	        '".$args['layer_title']."',
