@@ -30,7 +30,7 @@
 
 require_once('includes/map.php');
 
-class iform_mnhnl_collaborators_1 {
+class iform_mnhnl_dynamic_1 {
 
 	/* TODO
 	 *  Photo upload: not sure how to do this as images are attached to occurrences, and occurrences
@@ -113,48 +113,6 @@ class iform_mnhnl_collaborators_1 {
           'type'=>'smpAttr',
           'group'=>'Sample Attributes'
         ),
-        array(      
-          'name'=>'username_attr_id',
-          'caption'=>'Username Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the user\'s username.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
-          'name'=>'email_attr_id',
-          'caption'=>'Email Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the user\'s email.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
-          'name'=>'first_name_attr_id',
-          'caption'=>'First Name Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the user\'s first name.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
-          'name'=>'surname_attr_id',
-          'caption'=>'Surname Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the user\'s surname.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
-          'name'=>'phone_attr_id',
-          'caption'=>'Phone Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the user\'s phone.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
-        array(
-          'name'=>'biotope_attr_id',
-          'caption'=>'Biotope Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the Biotope.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
-        ),
         array(
           'name'=>'checklist_attributes',
           'caption'=>'Species Checklist Grid Contents',      
@@ -172,7 +130,8 @@ class iform_mnhnl_collaborators_1 {
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'MNHNL Collaborators 1 - form designed for collaboration projects';  
+    return 'MNHNL Dynamic 1 - form that dynamically generates a species checklist card from the attributes '.
+        'defined for the selected survey';  
   }
   
 /**
@@ -218,6 +177,10 @@ class iform_mnhnl_collaborators_1 {
         'mode' => 'report',
         'readAuth' => $auth['read'],
         'columns' => array(
+          array('fieldname' => 'location_name', 'display' => lang::get('location_name')),
+          array('fieldname' => 'entered_sref', 'display' => lang::get('entered_sref')),
+          array('fieldname' => 'num_occurrences', 'display' => lang::get('num_occurrences')),
+          array('fieldname' => 'completed', 'display' => lang::get('completed')),
           array('display' => 'Actions', 'actions' => array(
             array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{id}')),
           ))
@@ -251,29 +214,29 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 ";
     
     if($loadID){
-    	// Can't cache these as data may have just changed
-    	data_entry_helper::$entity_to_load['occurrence:record_status']='I';
-	    $url = $svcUrl.'/data/sample/'.$loadID;
-	    $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
-	    $session = curl_init($url);
-	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-	    $entity = json_decode(curl_exec($session), true);
-	    // Attributes should be loaded by get_attributes.
-	    data_entry_helper::$entity_to_load = array();
-	    foreach($entity[0] as $key => $value){
-	    	data_entry_helper::$entity_to_load['sample:'.$key] = $value;
-	    }
-	    $url = $svcUrl.'/data/occurrence';
-	    $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&sample_id=".$loadID."&deleted=FALSE";
-	    $session = curl_init($url);
-	    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-	    $entities = json_decode(curl_exec($session), true);
-	    foreach($entities as $entity){
-    		data_entry_helper::$entity_to_load['occurrence:record_status']=$entity['record_status'];
-	    	data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
-	    }
-	    data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
-		data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
+      // Can't cache these as data may have just changed
+      data_entry_helper::$entity_to_load['occurrence:record_status']='I';
+      $url = $svcUrl.'/data/sample/'.$loadID;
+      $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
+      $session = curl_init($url);
+      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+      $entity = json_decode(curl_exec($session), true);
+      // Attributes should be loaded by get_attributes.
+      data_entry_helper::$entity_to_load = array();
+      foreach($entity[0] as $key => $value){
+        data_entry_helper::$entity_to_load['sample:'.$key] = $value;
+      }
+      $url = $svcUrl.'/data/occurrence';
+      $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&sample_id=".$loadID."&deleted=FALSE";
+      $session = curl_init($url);
+      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+      $entities = json_decode(curl_exec($session), true);
+      foreach($entities as $entity){
+        data_entry_helper::$entity_to_load['occurrence:record_status']=$entity['record_status'];
+        data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
+      }
+      data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
+      data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
     }
     $defAttrOptions = array('extraParams'=>$auth['read']);
         
@@ -281,12 +244,12 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 //    $r .= "<h2>readOnly = ".$readOnly."</h2>";
     
     $r = "<form method=\"post\" id=\"entry_form\">\n";
-    // Insert authorisation tokens to update the Warehouse.
-    $r .= $auth['write'];
-    $r .= "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
+    // Get authorisation tokens to update the Warehouse, plus any other hidden data.
+    $hiddens = $auth['write'].
+          "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
+          "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
-    	$r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
+      $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
     }
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
@@ -299,138 +262,92 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
     ));
-    if ($logged_in) {
-      // If logged in, output some hidden data about the user
-      $uid = $user->uid;
-      $email = $user->mail;
-      $username = $user->name;
-      $uid_attr_id = $args['uid_attr_id'];      
-      $email_attr_id = $args['email_attr_id'];
-      $username_attr_id = $args['username_attr_id'];
-      // This assumes that we have the following attributes : no built in error checking.
-      $r .= "<input type=\"hidden\" name=\"".$attributes[$uid_attr_id]['fieldname']."\" value=\"$uid\" />\n";
-      $r .= "<input type=\"hidden\" name=\"".$attributes[$email_attr_id]['fieldname']."\" value=\"$email\" />\n";
-      $r .= "<input type=\"hidden\" name=\"".$attributes[$username_attr_id]['fieldname']."\" value=\"$username\" />\n";    
+    // If logged in, output some hidden data about the user
+    foreach($attributes as &$attribute) {
+      if (strcasecmp($attribute['caption'], 'cms user id')==0) {
+        if ($logged_in) $attribute['value'] = $user->uid;
+        $attribute['handled']=true; // user id attribute is never displayed
+      }
+      elseif (strcasecmp($attribute['caption'], 'cms username')==0) {
+        if ($logged_in) $attribute['value'] = $user->name;
+        $attribute['handled']=true; // username attribute is never displayed
+      } elseif (strcasecmp($attribute['caption'], 'email')==0) {
+        if ($logged_in) {
+          $attribute['value'] = $user->mail;
+          $attribute['handled']=true; // email attribute is displayed unless logged in
+        }
+      } elseif ((strcasecmp($attribute['caption'], 'first name')==0 || 
+          strcasecmp($attribute['caption'], 'last name')==0 || 
+          strcasecmp($attribute['caption'], 'surname')==0) && $logged_in)
+        $attribute['handled']=true; // name attributes are displayed unless logged in
+      
+      if (isset($attribute['value'])) {
+        $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
+      }
+    }
+    $attributeHeadings = self::get_attribute_headings($attributes);
+    if (!in_array('place', $attributeHeadings)) {
+      array_splice($attributeHeadings, 0, 0, array('place'));
+    }
+    if (!in_array('species', $attributeHeadings)) {
+      array_splice($attributeHeadings, 0, 0, array('species'));
     }
     $r .= "<div id=\"controls\">\n";
-    if ($args['interface']!='one_page') {    	
+    // Output the dynamic tab headers
+    if ($args['interface']!='one_page') {
       $r .= "<ul>\n";
-      if (!$logged_in) {
-        $r .= '  <li><a href="#about_you"><span>'.lang::get('LANG_About_You_Tab')."</span></a></li>\n";      
+      foreach ($attributeHeadings as $heading) {
+        $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($heading));
+        $tabtitle = lang::get("LANG_Tab_$alias");
+        if ($tabtitle=="LANG_Tab_$alias") {
+          // if no translation provided, we'll just use the standard heading
+          $tabtitle = $heading;
+        }
+        $r .= '  <li><a href="#'.$alias.'"><span>'.$tabtitle."</span></a></li>\n";
       }
-      $r .= '  <li><a href="#species"><span>'.lang::get('LANG_Species_Tab')."</span></a></li>\n";      
-      $r .= '  <li><a href="#place"><span>'.lang::get('LANG_Place_Tab')."</span></a></li>\n";
-      $r .= '  <li><a href="#other"><span>'.lang::get('LANG_Other_Information_Tab')."</span></a></li>\n";
-      $r .= "</ul>\n";      
+      $r .= "</ul>\n";
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
           'style'=>$args['interface']
       ));
     }
-        
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    if (!$logged_in) {
-      $r .= "<div id=\"about_you\">\n";
-      $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('LANG_About_You_Tab_Instructions')."</p>";
-      $defAttrOptions['class'] = 'control-width-4';
-      $r .= data_entry_helper::outputAttribute($attributes[$args['first_name_attr_id']], $defAttrOptions);
-      $r .= data_entry_helper::outputAttribute($attributes[$args['surname_attr_id']], $defAttrOptions);
-      $r .= data_entry_helper::outputAttribute($attributes[$args['email_attr_id']], $defAttrOptions);
-      $r .= data_entry_helper::outputAttribute($attributes[$args['phone_attr_id']], $defAttrOptions);
+    // Output the dynamic tab content
+    $pageIdx = 0;
+    foreach ($attributeHeadings as $heading) {
+      // get a machine readable alias for the heading
+      $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($heading));
+      $r .= '<div id="'.$alias.'">'."\n";
+      if ($pageIdx==0)
+        // output the hidden inputs on the first tab
+        $r .= $hiddens;
+      // Check if there is a translation for the instructions for this tab. If so, put it on the tab.
+      $instruct = lang::get("LANG_Tab_Instructions_$alias");
+      if ($instruct!="LANG_Tab_Instructions_$alias") 
+        $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.$instruct."</p>";
+      else
+        $r .= "<p>Missing instructions: LANG_Tab_Instructions_$alias</p>";
+      if (method_exists('iform_mnhnl_dynamic_1', "get_fixed_controls_$alias")) {
+        // dynamically call a method to add controls to this page, if there are non dynamic ones.
+        $method = "get_fixed_controls_$alias";
+        $r .= self::$method($auth, $args);
+      }
+      $r .= self::get_attribute_html($attributes, $defAttrOptions, $heading);
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
-          'page'=>'first'
-        ));      
-      }
-      unset($defAttrOptions['class']);    
-      $r .= "</div>\n";      
+          'page'=>($pageIdx==0 ? 'first' : ($pageIdx==count($heading)-1) ? 'last' : 'middle')
+        ));
+      } elseif ($pageIdx==count($heading)-1)
+        // last part of a non wizard interface must insert a save button
+        $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
+
+      $pageIdx++;
+      $r .= "</div>\n";
     }
         
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
-    global $indicia_templates;
-    $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
-    $r .= "<div id=\"species\">\n";
-    $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('LANG_Species_Tab_Instructions')."</p>";
-    $species_list_args=array(
-        'listId'=>$args['list_id'],
-        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'columns'=>1,
-        'view'=>'detail',
-        'occAttrs'=> explode(',', $args['checklist_attributes']),
-        'extraParams'=>$auth['read'],
-        'survey_id'=>$args['survey_id']
-    );
-    if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
-    $r .= data_entry_helper::species_checklist($species_list_args);
-    $r .= "<label for=\"sample:comment\">".lang::get('LANG_Sample_Comment_Label')."</label><input type=\"text\" id=\"sample:comment\" name=\"sample:comment\" value=\"".data_entry_helper::$entity_to_load['sample:comment']."\" />\n";
-    
-    if ($args['interface']=='wizard') {
-      $r .= data_entry_helper::wizard_buttons(array(
-        'divId'=>'controls',
-        'page'=>($user->id==0) ? 'first' : 'middle'        
-      ));
-    }
-    $r .= "</div>\n";
-    
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    $r .= "<div id=\"place\">\n";
-    $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('LANG_Place_Tab_Instructions')."</p>";
-    // Build the array of spatial reference systems into a format Indicia can use.
-    $systems=array();
-    $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
-    foreach($list as $system) {
-      $systems[$system] = lang::get($system);
-    }    
-    $r .= data_entry_helper::sref_and_system(array(
-      'label' => lang::get('LANG_SRef_Label'),
-      'systems' => $systems
-    ));
-    $location_list_args=array(
-        'label'=>lang::get('LANG_Location_Label'),
-        'view'=>'detail',
-        'extraParams'=>array_merge(array('view'=>'detail', 'orderby'=>'name'), $auth['read'])
-    );
-    
-    $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
-    
-    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
-    $options = iform_map_get_map_options($args, $auth['read']);
-    $options['layers'][] = 'locationLayer';
-    $olOptions = iform_map_get_ol_options($args);
-    $r .= data_entry_helper::map_panel($options, $olOptions);
-    if ($args['interface']=='wizard') {
-      $r .= data_entry_helper::wizard_buttons(array(
-        'divId'=>'controls'
-      ));      
-    }
-    $r .= "</div>\n";   
-        
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    $r .= "<div id=\"other\">\n";
-    $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get('LANG_Other_Information_Tab_Instructions')."</p>";
-    $r .= data_entry_helper::date_picker(array(
-        'label'=>lang::get('LANG_Date'),
-        'fieldname'=>'sample:date'
-    ));
-    $r .= data_entry_helper::outputAttribute($attributes[$args['biotope_attr_id']], $defAttrOptions);
-    $values = array('I', 'C'); // not initially doing V=Verified
-    $r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label').'</label><select id="occurrence:record_status" name="occurrence:record_status">';
-	foreach($values as $value){
-		$r .= '<option value="'.$value.'"';
-		if(isset(data_entry_helper::$entity_to_load['occurrence:record_status'])){
-			if(data_entry_helper::$entity_to_load['occurrence:record_status'] == $value){
-				$r .= ' selected="selected"';
-			}
-		}
-	    $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
-	};
-    $r .= '</select>';
-//  TODO image upload - not sure how to do this as images are attached to occurrences, and occurrences
+    //  TODO image upload - not sure how to do this as images are attached to occurrences, and occurrences
 //  are embedded in the species list.
 //    $r .= "<label for='occurrence:image'>".lang::get('LANG_Image_Label')."</label>\n".
 //        data_entry_helper::image_upload('occurrence:image');
@@ -494,6 +411,129 @@ jQuery('#imp-sref').change();
 ";
 	return $r;
 
+  }
+  
+  private static function get_attribute_headings(&$attributes) {
+    $r = array();
+    foreach($attributes as &$attribute) {
+      // Assign any ungrouped attributes to a block called Other Information 
+      if (empty($attribute['outer_structure_block'])) 
+        $attribute['outer_structure_block']='Other Information';
+      if (!in_array($attribute['outer_structure_block'], $r))
+        $r[] = $attribute['outer_structure_block'];
+    }
+    return $r;
+  }
+  
+  private static function get_fixed_controls_species($auth, $args) {
+    global $indicia_templates;
+    $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
+    $r = '';
+    $species_list_args=array(
+        'listId'=>$args['list_id'],
+        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
+        'columns'=>1,
+        'view'=>'detail',
+        'occAttrs'=> explode(',', $args['checklist_attributes']),
+        'extraParams'=>$auth['read'],
+        'survey_id'=>$args['survey_id']
+    );
+    if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
+    $r .= data_entry_helper::species_checklist($species_list_args);
+    $r .= data_entry_helper::textarea(array(
+      'fieldname'=>'sample:comment',
+      'label'=>lang::get('comment')
+    ));
+    return $r; 
+  }
+  
+  private static function get_fixed_controls_place($auth, $args) {
+    // Build the array of spatial reference systems into a format Indicia can use.
+    $systems=array();
+    $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
+    foreach($list as $system) {
+      $systems[$system] = lang::get($system);
+    }    
+    $r .= data_entry_helper::sref_and_system(array(
+      'label' => lang::get('LANG_SRef_Label'),
+      'systems' => $systems
+    ));
+    $location_list_args=array(
+        'label'=>lang::get('LANG_Location_Label'),
+        'view'=>'detail',
+        'extraParams'=>array_merge(array('view'=>'detail', 'orderby'=>'name'), $auth['read'])
+    );
+    
+    $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
+    
+    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
+    $options = iform_map_get_map_options($args, $auth['read']);
+    $options['layers'][] = 'locationLayer';
+    $olOptions = iform_map_get_ol_options($args);
+    $r .= data_entry_helper::map_panel($options, $olOptions);
+    return $r;
+  }
+  
+  private static function get_fixed_controls_otherinformation($auth, $args) {
+    $r .= data_entry_helper::date_picker(array(
+        'label'=>lang::get('LANG_Date'),
+        'fieldname'=>'sample:date'
+    ));
+    
+    $values = array('I', 'C'); // not initially doing V=Verified
+    $r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
+    $r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
+    foreach($values as $value){
+      $r .= '<option value="'.$value.'"';
+      if(isset(data_entry_helper::$entity_to_load['occurrence:record_status'])){
+        if(data_entry_helper::$entity_to_load['occurrence:record_status'] == $value){
+          $r .= ' selected="selected"';
+        }
+      }
+      $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
+    }
+    $r .= "</select><br/>\n";
+  	return $r;
+  }
+  
+  private static function get_attribute_html($attributes, $defAttrOptions, $outerFilter=null) {
+  	$lastOuterBlock='';
+    $lastInnerBlock='';
+    foreach ($attributes as $attribute) {
+      // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
+      if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {
+        if (empty($outerFilter) && $lastOuterBlock!=$attribute['outer_structure_block']) {
+          if (!empty($lastInnerBlock)) {
+            $r .= '</fieldset>';
+          }
+          if (!empty($lastOuterBlock)) {
+            $r .= '</fieldset>';
+          }
+          if (!empty($attribute['outer_structure_block']))
+            $r .= '<fieldset><legend>'.$attribute['outer_structure_block'].'</legend>';
+          if (!empty($attribute['inner_structure_block']))
+            $r .= '<fieldset><legend>'.$attribute['inner_structure_block'].'</legend>';
+        }
+        elseif ($lastInnerBlock!=$attribute['inner_structure_block']) {
+          if (!empty($lastInnerBlock)) {
+            $r .= '</fieldset>';
+          }
+          if (!empty($attribute['inner_structure_block']))
+            $r .= '<fieldset><legend>'.$attribute['inner_structure_block'].'</legend>';
+        }
+        $lastInnerBlock=$attribute['inner_structure_block'];
+        $lastOuterBlock=$attribute['outer_structure_block'];
+        $r .= data_entry_helper::outputAttribute($attribute, $defAttrOptions);
+        $attribute['handled']=true;
+      }
+    }
+    if (!empty($lastInnerBlock)) {
+      $r .= '</fieldset>';
+    }
+    if (!empty($lastOuterBlock)) {
+      $r .= '</fieldset>';
+    }
+    return $r;
   }
   
     /**

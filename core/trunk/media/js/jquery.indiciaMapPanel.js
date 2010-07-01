@@ -252,15 +252,17 @@
     }
     
     function _handleEnteredSref(value, div) {
-      $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
-          "?sref=" + value +
-          "&system=" + _getSystem() +
-          "&callback=?", function(data) {
-            // store value in saved field?
-            _showWktFeature(div, data.wkt, div.map.editLayer, null);
-            $('#'+opts.geomId).val(data.wkt);
-          }
-      );
+      if (value!='') {
+        $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
+            "?sref=" + value +
+            "&system=" + _getSystem() +
+            "&callback=?", function(data) {
+              // store value in saved field?
+              _showWktFeature(div, data.wkt, div.map.editLayer, null);
+              $('#'+opts.geomId).val(data.wkt);
+            }
+        );
+      }
     }
     
     /**

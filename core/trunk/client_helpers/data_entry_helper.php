@@ -819,7 +819,7 @@ class data_entry_helper extends helper_config {
         self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
       }
     }
-    foreach (get_class_vars(helper_config) as $key=>$value) {
+    foreach (get_class_vars('helper_config') as $key=>$value) {
       // if any of the config settings are for the georeferencer driver, then we must set them in the JavaScript.
       if (substr($key, 0, strlen($options['driver']))==$options['driver']) {
         self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.$key='$value';\n";
@@ -1821,7 +1821,6 @@ class data_entry_helper extends helper_config {
     }
     $path = $split!==false ? substr($_SERVER['REQUEST_URI'], 0, $split) : $_SERVER['REQUEST_URI'];
     return array(
-//      'path'=>$_SERVER['REDIRECT_URL'],
       'path'=>$path,
       'params' => $getsAssoc
     );
@@ -4691,24 +4690,10 @@ $('.ui-state-default').live('mouseout', function() {
     if (array_key_exists('error', $response))
         return $response;
     foreach ($response as $item){
-        $retVal[$item['id']] = array(
-            'caption' => lang::get($item['caption']),
-            'fieldname' => $options['fieldprefix'].':'.$item['id'].($item['multi_value'] == 't' ? '[]' : ''),
-            'data_type' => $item['data_type'],
-            'termlist_id' => $item['termlist_id']);
-    }
-    if(isset($options['survey_id'])){
-      $attrOptions['extraParams']['restrict_to_survey_id'] = $options['survey_id'];
-      $response = self::get_population_data($attrOptions);
-      if (array_key_exists('error', $response))
-          return $response;
-      foreach ($response as $item){
-          $retVal[$item['id']] = array(
-            'caption' => lang::get($item['caption']),
-            'fieldname' => $options['fieldprefix'].':'.$item['id'].($item['multi_value'] == 't' ? '[]' : ''),
-            'data_type' => $item['data_type'],
-            'termlist_id' => $item['termlist_id']);
-      }
+        $itemId=$item['id'];
+        unset($item['id']);
+        $item['fieldname']=$options['fieldprefix'].':'.$itemId.($item['multi_value'] == 't' ? '[]' : '');
+        $retVal[$itemId] = $item;
     }
     if(!$options['id'])
       return $retVal;
@@ -4815,7 +4800,7 @@ $('.ui-state-default').live('mouseout', function() {
         case 'Integer':
         case 'I':
           $output = self::text_input($attrOptions);
-            break;
+          break;
         case 'Boolean':
         case 'B':
           // Can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
@@ -4881,7 +4866,7 @@ $('.ui-state-default').live('mouseout', function() {
             break;
     }
 
-    return str_replace("\n", "", $output);
+    return $output; // str_replace("\n", "", $output);
   }
 
   /**
