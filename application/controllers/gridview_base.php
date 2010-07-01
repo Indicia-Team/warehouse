@@ -74,6 +74,10 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $grid->auth_filter = $this->auth_filter;
     $grid->columns = array_intersect_key($this->columns, $grid->columns);
     $grid->actionColumns = $this->get_action_columns();
+    if (isset($this->fixedSort)) {
+      $grid->fixedSort=$this->fixedSort;
+      $grid->fixedSortDir=$this->fixedSortDir;
+    }
 
     // Add table to view
     $this->view->table = $grid->display(true);

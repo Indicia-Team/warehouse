@@ -57,6 +57,9 @@ $config['taxon_image/([0-9]+)'] = 'taxon_image/page/1/$1';
 // Custom Attribute
 $config['occurrence_attribute'] = 'occurrence_attribute/page/1';
 $config['sample_attribute'] = 'sample_attribute/page/1';
+$config['attribute_by_survey/([0-9]+)'] = 'attribute_by_survey/index/$1';
+$config['occurrence_attribute_by_survey/([0-9]+)'] = 'occurrence_attribute_by_survey/page/1/$1';
+$config['location_attribute_by_survey/([0-9]+)'] = 'location_attribute_by_survey/page/1/$1';
 $config['location_attribute'] = 'location_attribute/page/1';
 // Entered Data
 $config['occurrence'] = 'occurrence/page/1';

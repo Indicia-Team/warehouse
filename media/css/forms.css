@@ -22,7 +22,7 @@ form label {
   display: inline-block;
   line-height: 1.8;
   vertical-align: top;
-  width: 120px; /* Width of labels */
+  width: 150px; /* Width of labels */
 }
 form.cmxform fieldset ol {
   margin: 0;

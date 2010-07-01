@@ -54,9 +54,13 @@ class Gridview_Controller extends Controller {
     // Get all the parameters
     $filtercol = $this->input->get('columns',null);
     $filters = $this->input->get('filters',null);
-    $orderby = $this->input->get('orderby','id');
-    $direction = $this->input->get('direction','asc');
-
+    if (isset($this->fixedSort)) {
+      $orderby = $this->fixedSort;
+      $direction = $this->fixedSortDir;
+    } else {
+      $orderby = $this->input->get('orderby','id');
+      $direction = $this->input->get('direction','asc');
+    }
     $arrorder = explode(',',$orderby);
     $arrdirect = explode(',',$direction);
     if (count($arrorder)==count($arrdirect)){
@@ -65,7 +69,6 @@ class Gridview_Controller extends Controller {
       $orderclause = array('id' => 'asc');
     }
     $lists = $this->model->orderby($orderclause);
-
     // If we are logged on as a site controller, then need to restrict access to those
     // records on websites we are site controller for.
     // Core Admins get access to everything - no filter applied.
@@ -131,6 +134,7 @@ class Gridview_Controller extends Controller {
         $gridview->pagination = $pagination;
         $gridview->columns = $this->columns;
         $gridview->actionColumns = $this->actionColumns;
+        $gridview->sortable = !isset($this->fixedSort);
         return $gridview->render();
       }
     }

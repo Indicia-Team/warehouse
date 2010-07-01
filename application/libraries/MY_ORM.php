@@ -545,7 +545,7 @@ class ORM extends ORM_Core {
       $this->db->from($attr_entity.'s_websites');
       $this->db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
       $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
-      $this->db->like('validation_rules','%required%');
+      $this->db->like($attr_entity.'s.validation_rules','%required%');
       $this->db->where($attr_entity.'s.deleted', 'f');
       $this->db->where($attr_entity.'s_websites.deleted', 'f');
       if ($this->identifiers['website_id']) {
@@ -554,8 +554,6 @@ class ORM extends ORM_Core {
       $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       $result=$this->db->get();
       $got_values=array();
-      kohana::debug('debug', 'result:');
-      kohana::debug('debug', $result);
       // Attributes are stored in a metafield. Find the ones we actually have a value for
       if (array_key_exists('metaFields', $this->submission) &&
           array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
