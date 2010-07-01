@@ -27,9 +27,9 @@ echo data_entry_helper::report_grid(array(
   'mode' => 'report',
   'readAuth' => $readAuth,
   'columns' => array(
-      array('fieldname' => 'survey', 'caption' => 'Survey Title'),
-      array('fieldname' => 'count', 'caption' => 'Number of Occurrences'),
-      array('caption' => 'Custom column', 'template' => '{survey} has {count} occurrences')
+      array('fieldname' => 'survey', 'display' => 'Survey Title'),
+      array('fieldname' => 'count', 'display' => 'Number of Occurrences'),
+      array('display' => 'Custom column', 'template' => '{survey} has {count} occurrences')
   ),
   'includeAllColumns' => false,
   'itemsPerPage' => 5,
