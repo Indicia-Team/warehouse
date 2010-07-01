@@ -1,5 +1,3 @@
-DROP VIEW gv_sample_attribute_by_surveys;
-
 CREATE OR REPLACE VIEW gv_sample_attribute_by_surveys	
  AS 
  SELECT fsb2.weight as weight1, fsb.weight as weight2, saw.weight as weight3, sa.id, fsb2.name as outer_structure_block, fsb.name as inner_structure_block, saw.website_id, saw.restrict_to_survey_id AS survey_id, w.title AS website, s.title AS survey, sa.caption, 

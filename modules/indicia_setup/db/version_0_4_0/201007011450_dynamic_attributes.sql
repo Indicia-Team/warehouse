@@ -53,7 +53,7 @@ ALTER TABLE form_structure_blocks
 
 ALTER TABLE form_structure_blocks
   ADD CONSTRAINT fk_form_structure_blocks_survey FOREIGN KEY (survey_id)
-      REFERENCES survey (id) MATCH SIMPLE
+      REFERENCES surveys (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 ALTER TABLE form_structure_blocks ADD CONSTRAINT chk_form_structure_block_type CHECK (type IN ('S','O','L'));
