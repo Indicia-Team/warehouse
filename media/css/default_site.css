@@ -3,7 +3,7 @@
 }
 
 .scTaxonCell input {
-  width: 100%;
+  width: 95%;
 }
 
 .scPresenceCell {
@@ -304,6 +304,10 @@ li.ui-state-error {
 
 tr.odd {
   background-color: #eeeeee;
+}
+
+.ui-widget td {
+  padding: 0 0.3em;
 }
 
 .remove-row {

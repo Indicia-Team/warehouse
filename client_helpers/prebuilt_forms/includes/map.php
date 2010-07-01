@@ -202,10 +202,10 @@ function iform_map_get_map_options($args, $readAuth) {
   );
   // If they have defined a custom base layer, add it
   if ($args['wms_base_title'] && $args['wms_base_url'] && $args['wms_base_layer']) {
-    data_entry_helper::$javascript .= "var baseLayer = new OpenLayers.Layer.WMS(
+    data_entry_helper::$onload_javascript .= "var baseLayer = new OpenLayers.Layer.WMS(
       '".$args['wms_base_title']."',
       '".$args['wms_base_url']."',
-      {layers: '".$args['wms_base_layer']."', 'sphericalMercator': true}
+      {layers: '".$args['wms_base_layer']."', sphericalMercator: true}, {singleTile: true}
     );\n";
     $options['layers'][] = 'baseLayer';
   }
