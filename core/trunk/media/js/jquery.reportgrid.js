@@ -70,6 +70,12 @@ var report_grid_sortdir = '';
       if (div.settings.itemsPerPage !== null) {
         request += '&limit=' + (div.settings.itemsPerPage+1);
       }
+      // were any predefined parameter values supplied?
+      if (div.settings.extraParams !== undefined) {
+        $.each(div.settings.extraParams, function(name, value) {
+          request += '&' + name + '=' + value;
+        });
+      }
       report_grid_page = Math.floor(div.settings.offset / div.settings.itemsPerPage);
       report_grid_orderby = div.settings.orderby;
       report_grid_sortdir = div.settings.sortdir;
