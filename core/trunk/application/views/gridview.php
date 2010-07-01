@@ -47,9 +47,10 @@ in <select name="columns" class="filterSelect">
 <thead class="ui-widget-header">
 <tr class='headingRow'>
 <?php
+$sortClass = $sortable ? 'gvSortable' : '';
 foreach ($columns as $name => $newname) {
   if (!$newname) $newname = $name;
-  echo "<th class='gvSortable gvCol' id='$name'>".str_replace('_', ' ', ucwords($newname))."</th>";
+  echo "<th class='$sortClass gvCol' id='$name'>".str_replace('_', ' ', ucwords($newname))."</th>";
 }
 if (count($actionColumns)>0) {
   echo "<th class='gvAction'>Task</th>";

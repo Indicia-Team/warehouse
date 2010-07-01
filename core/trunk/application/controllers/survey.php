@@ -41,6 +41,17 @@ class Survey_Controller extends Gridview_Base_Controller {
     $this->model = ORM::factory('survey');
     $this->auth_filter = $this->gen_auth_filter;
   }
+  
+  /**
+   * Override the default action columns for a grid - just an edit link - to 
+   * add a link to the attributes list for othe survey.
+   */
+  protected function get_action_columns() {
+    return array(
+        'edit' => $this->controllerpath."/edit/£id£",
+        'setup attributes' => "/attribute_by_survey/£id£?type=sample"
+    );
+  }
 
   /**
    * Check access to a survey when editing. The survey's website must be in the list

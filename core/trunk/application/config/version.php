@@ -26,8 +26,8 @@ defined('SYSPATH') or die('No direct script access.');
 /**
  * @var string The application files version number.
  */
-$config['version'] = '0.3.0';
-$config['release_date']  = '2010-04-10';
-$config['repository'] = 'http://indicia.googlecode.com/svn/core/tags/version_0_3_0';
+$config['version'] = '0.4.0';
+$config['release_date']  = '2010-05-22';
+$config['repository'] = 'http://indicia.googlecode.com/svn/core/tags/version_0_4_0';
 
 ?>

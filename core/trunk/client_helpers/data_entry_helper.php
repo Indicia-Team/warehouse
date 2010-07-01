@@ -3529,7 +3529,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         );
       }
       foreach ($lookupValues as $key => $value){
-        $item['selected'] = ($options['default'] == $key) ? 'selected' : '';
+        $item['selected'] = (isset($options['default']) && $options['default'] == $key) ? 'selected' : '';
         $item['value'] = $key;
         $item['caption'] = $value;
         $opts .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);

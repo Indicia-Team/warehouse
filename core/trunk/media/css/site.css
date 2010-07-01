@@ -7,7 +7,7 @@
 body
 {
   margin: auto;
-  width: 760px;
+  width: 980px;
   font-size: 70%;
   background: #E5E0C3 url(../images/gradient.png) repeat-x top left;
   text-align: center;
@@ -29,11 +29,11 @@ p
 
 #banner
 {
-  background: #2075C5 url(../images/banner.jpg) no-repeat top left;
+  background: #000000 url(../images/banner.jpg) no-repeat top right;
   color: #FEFEFE;
   padding: 16px;
   height: 94px;
-  width: 716px;
+  width: 934px;
 }
 
 #sitetitle
@@ -261,4 +261,48 @@ fieldset.filter select {
 #progress {
   padding: 0.5em;
   margin-top: 1em;
+}
+
+ul#top-blocks, ul#top-blocks ul, ul.control-list {
+  list-style-type: none;
+}
+
+ul#top-blocks li, ul#top-blocks ul li, ul.control-list li {
+  margin: 0.2em;
+  padding: 0.2em;
+}
+
+ul#top-blocks ul {
+  margin-left: 1em;
+}
+
+.drop-active {
+  border-color: #FF0000 !important;
+}
+
+.grid-action {
+  color: #000070;
+  margin: 0 0.5em; 
+}
+
+.handle {
+  float: left;
+  margin-right: 1em;
+  background: url(../images/drag-handle.png) no-repeat 0 0;
+  width: 26px;
+  height: 24px;
+  cursor: move;
+}
+
+.draggable-control .caption {
+  float: left;
+}
+
+.draggable-control a {
+  float: right;
+}
+
+.draggable-block {
+  border: dotted 1px silver;
+  background-color: #E7E7E7;
 }

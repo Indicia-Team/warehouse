@@ -57,7 +57,7 @@ foreach ($table as $item)
     foreach ($actionColumns as $name => $action)
     {
       $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);
-      echo html::anchor($action, $name, array('class'=>'ui-state-default ui-corner-all grid-button'));
+      echo html::anchor($action, $name, array('class'=>'grid-action'));
     }
     echo "</td>";
   }
