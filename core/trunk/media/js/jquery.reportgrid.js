@@ -139,6 +139,9 @@ var report_grid_sortdir = '';
             }
             pager.append(pagerContent);
             div.loading=false;
+
+            // execute callback it there is one
+            if (div.settings.callback !== "") window[div.settings.callback]();
           }
       );
     };
@@ -219,6 +222,9 @@ var report_grid_sortdir = '';
           load(div);
         });
       }
+
+      // execute callback it there is one
+      if (div.settings.callback !== "") window[div.settings.callback]();
     });
   }
 })(jQuery);
@@ -237,5 +243,6 @@ $.fn.reportgrid.defaults = {
   itemsPerPage : null,
   offset : 0,
   altRowClass : 'odd',
-  imagePath : ''
+  imagePath : '',
+  callback : ''
 };

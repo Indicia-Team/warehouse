@@ -1609,6 +1609,7 @@ class data_entry_helper extends helper_config {
   auth_token: '".$options['readAuth']['auth_token']."',
   nonce: '".$options['readAuth']['nonce']."',
   extraParams: ".json_encode($options['extraParams']).",
+  callback: '".$options['callback']."',
   url: '".parent::$base_url."',
   imagePath: '".$imagePath."',
   altRowClass: '".$options['altRowClass']."'";
@@ -1839,7 +1840,8 @@ class data_entry_helper extends helper_config {
       'columns' => array(),
       'includeAllColumns' => true,
       'autoParamsForm' => true,
-      'extraParams' => array()
+      'extraParams' => array(),
+      'callback' => ''
     ), $options);
     return $options;
   }
