@@ -47,6 +47,15 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->pagetitle = "Species";    
     $this->model = ORM::factory('taxa_taxon_list');
   }
+  
+  /**
+   * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a taxon list
+   */
+  protected function defineEditBreadcrumbs() { 
+    $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
+	$this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$this->model->taxon_list_id.'?tab=taxa', $this->model->taxon_list->title);
+	$this->page_breadcrumbs[] = $this->model->caption();
+  }
 
   /**
   * Override the default page functionality to filter by taxon_list.

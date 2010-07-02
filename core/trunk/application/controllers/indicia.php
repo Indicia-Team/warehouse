@@ -151,8 +151,14 @@ class Indicia_Controller extends Template_Controller {
     	'values'=>$values,
       'other_data'=>$other
     )); 
-    // Setup breadcrumbs
-    $this->page_breadcrumbs[] = html::anchor($mn, $this->pagetitle);
+	$this->defineEditBreadcrumbs();
+  }
+  
+  /**
+   * Default behaviour for the edit page breadcrumbs. Can be overrridden.
+   */
+  protected function defineEditBreadcrumbs() { 
+    $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
     $this->page_breadcrumbs[] = $this->model->caption();
   }
   
