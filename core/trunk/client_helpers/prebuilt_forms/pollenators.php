@@ -491,6 +491,26 @@ jQuery('#".$id."').click(function(){
     
 	$r .= data_entry_helper::loading_block_start();
 
+    data_entry_helper::$javascript .= "var flowerTaxa = [";
+	$extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'list');
+    $species_data_def=array('table'=>'taxa_taxon_list','extraParams'=>$extraParams);
+	$taxa = data_entry_helper::get_population_data($species_data_def);
+	$first = true;
+	foreach ($taxa as $taxon) {
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
+		$first=false;
+	}
+    data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
+    $extraParams['taxon_list_id'] = $args['insect_list_id'];
+    $species_data_def['extraParams']=$extraParams;
+	$flowers = data_entry_helper::get_population_data($species_data_def);
+	$first = true;
+	foreach ($taxa as $taxon) {
+		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
+		$first=false;
+	}
+    data_entry_helper::$javascript .= "];";
+    
     // note we have to proxy the post. Every time a write transaction is carried out, the write nonce is trashed.
 	// For security reasons we don't want to give the user the ability to generate their own nonce, so we use
 	// the fact that the user is logged in to drupal as the main authentication/authorisation/identification
@@ -526,7 +546,7 @@ jQuery('#".$id."').click(function(){
     <label for="location:name">'.lang::get('LANG_Collection_Name_Label').'</label>
  	<input type="text" id="location:name"      name="location:name" value="" class="required"/>
     <input type="hidden" id="sample:location_name" name="sample:location_name" value=""/>
- 	'.data_entry_helper::outputAttribute($sample_attributes[$args['protocol_attr_id']], $defNRAttrOptions)
+ 	'.str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['protocol_attr_id']], $defNRAttrOptions))
  	.'    <input type="hidden"                       name="sample:date" value="2010-01-01"/>
     <input type="hidden" id="smpAttr:'.$args['complete_attr_id'].'" name="smpAttr:'.$args['complete_attr_id'].'" value="0" />
     <input type="hidden" id="smpAttr:'.$args['uid_attr_id'].'" name="smpAttr:'.$args['uid_attr_id'].'" value="'.$uid.'" />
@@ -910,7 +930,7 @@ $('#cc-1-reinit-button').click(function() {
     if( lang::get('msgGeorefNothingFound') != 'msgGeorefNothingFound')
     	$options['msgGeorefNothingFound'] = lang::get('msgGeorefNothingFound');
     
-    $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order');
+    $extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t');
     $species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
         	'fieldname'=>'flower:taxa_taxon_list_id',
@@ -997,9 +1017,9 @@ $('#cc-1-reinit-button').click(function() {
       <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
-      '.data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defNRAttrOptions)
- 	  .data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], $defNRAttrOptions) 	 	
-      .data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], $checkOptions).'
+      '.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defNRAttrOptions))
+ 	  .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], $defNRAttrOptions))
+      .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], $checkOptions)).'
     </form>
     <div class="poll-break"></div>
     <div id="cc-2-location-container">
@@ -1094,7 +1114,8 @@ flowerIDstruc = {
 	pollFile: '',
 	invokeURL: '".$args['ID_tool_flower_url']."',
 	pollURL: '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_flower_poll_dir'])."',
-	name: 'flowerIDstruc'
+	name: 'flowerIDstruc',
+	taxaList: flowerTaxa
 };
 
 toolPoller = function(toolStruct){
@@ -1118,16 +1139,17 @@ toolPoller = function(toolStruct){
       	var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
       	var notFound = '';
 		for(var j=0; j < count; j++){
+			itemText = items[j].replace(/</g, '&lt;').replace(/>/g, '&gt;');
 			var found = false;
-	  		jQuery(toolStruct.selector).find('option').each(function(i,obj){
-  				if(jQuery(obj).text() == items[j]){
-	  				resultsIDs.push(jQuery(obj).val());
-	  				resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + items[j].replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			for(i = 0; i< toolStruct.taxaList.length; i++){
+  				if(toolStruct.taxaList[i].taxon == itemText){
+	  				resultsIDs.push(toolStruct.taxaList[i].id);
+	  				resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + itemText;
 	  				found = true;
   				}
-  			});
+  			};
   			if(!found){
-  				notFound = (notFound == '' ? '' : notFound + ', ') + items[j];
+  				notFound = (notFound == '' ? '' : notFound + ', ') + itemText;
   			}
   		}
 		jQuery('#'+toolStruct.type+'_taxa_list').append(resultsText+ ' }');
@@ -1617,12 +1639,12 @@ addSession = function(){
 		altField : '#real-'+dateID,
 		altFormat : 'yy-mm-dd'
 	});
-    jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['start_time_attr_id']], $defAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['end_time_attr_id']], $defAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
-	jQuery('".data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defNRAttrOptions)."').appendTo(newForm);
+    jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['start_time_attr_id']], $defAttrOptions))."').appendTo(newForm);
+	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['end_time_attr_id']], $defAttrOptions))."').appendTo(newForm);
+	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
+	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
+	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
+	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
 	newDeleteButton.click(function() {
 		var container = $(this).parent().parent();
 		jQuery('#cc-3-delete-session').find('[name=sample\\:id]').val(container.find('[name=sample\\:id]').val());
@@ -1730,7 +1752,7 @@ jQuery('.mod-button').click(function() {
 
 ";
 
-    $extraParams = $readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order');
+    $extraParams = $readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t');
 	$species_ctrl_args=array(
     	    'label'=>lang::get('LANG_Insect_Species'),
         	'fieldname'=>'insect:taxa_taxon_list_id',
@@ -1807,10 +1829,10 @@ jQuery('.mod-button').click(function() {
     	    'fieldname'=>'occurrence:comment',
  			'suffixTemplate'=>'nosuffix'
 	    ))
-	.data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],
- 			$defNRAttrOptions)
- 	.data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],
- 			$defNRAttrOptions).'
+	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],
+ 			$defNRAttrOptions))
+ 	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],
+ 			$defNRAttrOptions)).'
     </form>
     <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Insect').'</span>
     <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all delete-button">'.lang::get('LANG_Delete_Insect').'</span>
@@ -1840,7 +1862,8 @@ insectIDstruc = {
 	pollFile: '',
 	invokeURL: '".$args['ID_tool_insect_url']."',
 	pollURL: '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_insect_poll_dir'])."',
-	name: 'insectIDstruc'
+	name: 'insectIDstruc',
+	taxaList: insectTaxa
 };
 
 jQuery('#insect-id-button').click(function(){
@@ -2328,10 +2351,10 @@ loadDetermination = function(detData, toolStruc){
 			if(detData[0].taxa_taxon_list_id_list != null && detData[0].taxa_taxon_list_id_list != ''){
 			  	var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
 			  	resultsIDs = detData[0].taxa_taxon_list_id_list.substring(1, detData[0].taxa_taxon_list_id_list.length - 1).split(',');
-				for(var j=0; j < resultsIDs.length; j++){
-		  			jQuery(toolStruc.selector).find('option').filter('[value='+resultsIDs[j]+']').each(function(i,obj){
-		  				resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + jQuery(obj).text().replace(/</g, '&lt;').replace(/>/g, '&gt;');
-		  			});
+			  	for(var j=0; j < resultsIDs.length; j++){
+					for(i = 0; i< toolStruc.taxaList.length; i++)
+						if(toolStruc.taxaList[i].id == resultsIDs[j])
+							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + toolStruc.taxaList[i].taxon;
 		  		}
 	  			if(resultsIDs.length>1 || resultsIDs[0] != '')
 					jQuery('#'+toolStruc.type+'_taxa_list').append(resultsText+ ' }');
