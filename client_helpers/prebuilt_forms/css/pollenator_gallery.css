@@ -84,8 +84,8 @@
     margin-left: auto ;
     margin-right: auto ;
     padding:0px;
-    width: 17px;
-    height: 17px;
+    width: 24px;
+    height: 24px;
 }
 .reset-button {
 	float: right;
@@ -106,9 +106,9 @@
     margin-left: auto ;
     margin-right: auto ;
     padding:0px;
-    width: 17px;
-    height: 17px;
-    background: url(/misc/watchdog-warning.png);
+    width: 24px;
+    height: 24px;
+    background: url(/misc/occ_unknown.png);
 }
 .insect-dubious {
     margin-top:0px;
@@ -116,9 +116,9 @@
     margin-left: auto ;
     margin-right: auto ;
     padding:0px;
-    width: 17px;
-    height: 17px;
-    background: url(/misc/watchdog-error.png);
+    width: 24px;
+    height: 24px;
+    background: url(/misc/occ_doubtful.png);
 }
 .display-button {
 	text-align: center;

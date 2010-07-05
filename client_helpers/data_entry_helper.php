@@ -4695,6 +4695,7 @@ $('.ui-state-default').live('mouseout', function() {
         $itemId=$item['id'];
         unset($item['id']);
         $item['fieldname']=$options['fieldprefix'].':'.$itemId.($item['multi_value'] == 't' ? '[]' : '');
+        $item['caption']=lang::get($item['caption']);
         $retVal[$itemId] = $item;
     }
     if(!$options['id'])

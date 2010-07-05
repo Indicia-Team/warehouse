@@ -817,7 +817,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
         <input type="hidden" name="determination:taxon_extra_info" />
         <input type="hidden" name="determination:taxa_taxon_list_id" />
  	    <div class="doubt-comment">
-          <label for="determination:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
+          <label for="determination:comment" class="follow-on">'.lang::get('LANG_Doubt_Comment').' </label>
           <textarea id="determination:comment" name="determination:comment" class="taxon-comment" rows="5" ></textarea>
         </div>
         <input type="submit" id="doubt_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Validate').'" />
@@ -990,7 +990,8 @@ jQuery('#show-flower-button').click(function(){
 });
 
 jQuery('#fo-doubt-button').click(function(){
-	jQuery('[name=determination\\:comment]').val(\"".lang::get('LANG_Doubt_Comment')."\");
+	jQuery('#fo-new-insect-id,#fo-new-flower-id').removeClass('ui-accordion-content-active');
+	jQuery('#fo-express-doubt [name=determination\\:comment]').val(\"".lang::get('LANG_Default_Doubt_Comment')."\");
 	jQuery('#fo-express-doubt').toggleClass('ui-accordion-content-active');
 });
 
@@ -1023,6 +1024,20 @@ replacechar = function(match){
 	else if (match==\"'\") return \"&#039;\"
 	else if (match==\"&\") return \"&amp;\"
 };
+
+convertDate = function(dateStr, incTime){
+	var retDate = '';
+	// assume date is in in YYYY/MM/DD[+Time] format.
+	// if language is french convert to DD/MM/YYYY[+Time] format.
+	if('".$args['language']."' == 'fr'){
+		retDate = dateStr.slice(8,10)+'-'+dateStr.slice(5,7)+'-'+dateStr.slice(0,4);
+		if(incTime) retDate = retDate+dateStr.slice(10);
+	} else if(incTime)
+		retDate = dateStr;
+	else
+		retDate = dateStr.slice(0,10);
+	return retDate;
+} 
 
 loadCollection = function(id, index){
     jQuery('[name=sample_comment\\:sample_id]').val(id);
@@ -1128,13 +1143,13 @@ loadCollection = function(id, index){
    			alertIndiciaError(collectionData);
    		} else if (collectionData.length>0) {
 			if(collectionData[0].date_start == collectionData[0].date_end){
-	  			jQuery('<span>'+collectionData[0].date_start.substring(0,10)+'</span>').appendTo('#collection-date');
-	  			collection_preferred_object.date = collectionData[0].date_start.substring(0,10);
-    		} else {
-	  			jQuery('<span>'+collectionData[0].date_start+' - '+collectionData[0].date_end+'</span>').appendTo('#collection-date');
-	  			collection_preferred_object.date = collectionData[0].date_start+' - '+collectionData[0].date_end;
-  			}
-	  		jQuery('#poll-banner').empty().append(collectionData[0].location_name);
+				collection_preferred_object.date = collectionData[0].date_start.slice(0,10);
+				jQuery('<span>'+convertDate(collectionData[0].date_start, false)+'</span>').appendTo('#collection-date');
+			} else {
+				collection_preferred_object.date = collectionData[0].date_start.slice(0,10)+' - '+collectionData[0].date_end.slice(0,10);
+				jQuery('<span>'+convertDate(collectionData[0].date_start, false)+' - '+convertDate(collectionData[0].date_end, false)+'</span>').appendTo('#collection-date');
+			}
+			jQuery('#poll-banner').empty().append(collectionData[0].location_name);
 	  		collection_preferred_object.collection_name = collectionData[0].location_name;
 	  		$.getJSON(\"".$svcUrl."/data/location/\" +collectionData[0].location_id +
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -1297,9 +1312,9 @@ addCollection = function(index, attributes, geom, first){
 		loadCollection(jQuery(this).data('value'), jQuery(this).data('index'));
 	}).appendTo(displayButtonContainer).data('value',attributes.collection_id).data('index',index);
 	if(attributes.date_start == attributes.date_end){
-	  jQuery('<p class=\"collection-date\">'+attributes.date_start.substring(0,10)+'</p>').appendTo(details);
+	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.date_start,false)+'</p>').appendTo(details);
     } else {
-	  jQuery('<p class=\"collection-date\">'+attributes.date_start+' - '+attributes.date_end+'</p>').appendTo(details);
+	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.date_start,false)+' - '+convertDate(attributes.date_end,false)+'</p>').appendTo(details);
     }
 	jQuery('<p class=\"collection-name\">'+attributes.location_name+'</p>').appendTo(details);
 	var locality = jQuery('<p  class=\"collection-locality\"></p>').appendTo(details);
@@ -1928,8 +1943,7 @@ runSearch = function(forCollections){
               featureNS: '".$args['search_ns']."',
               srsName: 'EPSG:900913',
               version: '1.1.0',   
-              maxFeatures: ".$args['max_features'].",               
-//      		  propertyNames: forCollections ? ['collection_id','date_start','date_end','geom','location_name','location_image_path','flower_image_path','flower_id','flower_taxon','collection_attributes','location_attributes','flower_attributes']
+              maxFeatures: ".$args['max_features'].",
               propertyNames: forCollections ? ['collection_id','date_start','date_end','geom','location_name','location_image_path','flower_image_path','flower_id','flower_taxon','collection_attributes','location_attributes','flower_attributes']
       		  							: ['insect_id','collection_id','geom','insect_image_path']
 		  })
@@ -2112,8 +2126,10 @@ jQuery('form#fo-new-insect-id-form').ajaxForm({
 	if($args['alert_js_function'] != '') {
 		data_entry_helper::$javascript .= "
 				insect_alert_object.details = [];
-				for(i=0; i< args.length && i < 5; i++) insect_alert_object.details.push({insect_taxa: args[i].taxa, date: args[i].date, user_id: args[i].user_id});
-				insect_alert_object.date = insect_alert_object.details[0].date;
+				for(i=0; i< args.length && i < 5; i++){
+					insect_alert_object.details.push({insect_taxa: args[i].taxa, date: args[i].date, user_id: args[i].user_id});
+					insect_alert_object.date = insect_alert_object.details[0].date;
+				}
 				insect_alert_object.details = JSON.stringify(insect_alert_object.details);
 				".$args['alert_js_function']."({alert_type: 'R', type: 'I', insect: insect_alert_object});";
 	}
@@ -2165,8 +2181,10 @@ jQuery('form#fo-new-flower-id-form').ajaxForm({
 	if($args['alert_js_function'] != '') {
 		data_entry_helper::$javascript .= "
 				flower_alert_object.details = [];
-				for(i=0; i< args.length && i < 5; i++) flower_alert_object.details.push({flower_taxa: args[i].taxa, date: args[i].date, user_id: args[i].user_id});
-				flower_alert_object.date = flower_alert_object.details[0].date;
+				for(i=0; i< args.length && i < 5; i++) {
+					flower_alert_object.details.push({flower_taxa: args[i].taxa, date: args[i].date, user_id: args[i].user_id});
+					flower_alert_object.date = flower_alert_object.details[0].date;
+				}
 				flower_alert_object.details = JSON.stringify(flower_alert_object.details);
 				".$args['alert_js_function']."({alert_type: 'R', type: 'F', flower: flower_alert_object});";
 	}
@@ -2375,9 +2393,9 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 			}
 			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info);
 			if(string != '')
-				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + detData[i].updated_on + '</p>').appendTo(currentID)
+				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(currentID)
 			else
-				jQuery('<p>".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + detData[i].updated_on + '</p>').appendTo(currentID)
+				jQuery('<p>".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(currentID)
 			if(detData[i].determination_type == 'A' && (expert || can_doubt)){
 				jQuery('#fo-doubt-button').show();
 			} else if(detData[i].determination_type == 'B'){
@@ -2422,7 +2440,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 				if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
 					string = (string == '' ? '' : string + ' ') + '('+detData[i].taxon_extra_info+')' ;
 				}
-				string = detData[i].updated_on + ' : ' + string;
+				string = convertDate(detData[i].updated_on,false) + ' : ' + string;
 				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name+'</p>').appendTo(item)
 				if(detData[i].determination_type == 'B'){
 					jQuery(\"<p>".lang::get('LANG_Doubt_Expressed')."</p>\").appendTo(item)
@@ -2469,7 +2487,7 @@ loadComments = function(keyValue, block, table, key, blockClass, bodyClass, rese
    			for(i=commentData.length - 1; i >= 0; i--){
 	   			var newCommentDetails = jQuery('<div class=\"'+blockClass+'\"/>')
 					.appendTo(block);
-				jQuery('<span>".lang::get('LANG_Comment_By')."' + commentData[i].person_name + ' ' + commentData[i].updated_on + '</span>')
+				jQuery('<span>".lang::get('LANG_Comment_By')."' + commentData[i].person_name + ' ' + convertDate(commentData[i].updated_on,false) + '</span>')
 					.appendTo(newCommentDetails);
 	   			var newComment = jQuery('<div class=\"'+bodyClass+'\"/>')
 					.appendTo(block);
@@ -2531,7 +2549,7 @@ loadInsectAddnInfo = function(keyValue, collectionIndex){
 		data_entry_helper::$javascript .= "setReIDButton(collection);";
 	}
 	data_entry_helper::$javascript .= "
-					jQuery('#fo-insect-date').empty().append(smpData[0].date_start);
+					jQuery('#fo-insect-date').empty().append(convertDate(smpData[0].date_start,false));
 					loadSampleAttributes(smpData[0].id);
 					jQuery('#fo-collection-button').data('smpID',smpData[0].parent_id).data('collectionIndex', collectionIndex).show();
   				}
@@ -2706,9 +2724,13 @@ jQuery('#fo-new-comment-button').click(function(){
 	jQuery('#fo-new-comment').toggleClass('ui-accordion-content-active');
 });
 jQuery('#fo-new-insect-id-button').click(function(){ 
+	jQuery('#fo-express-doubt').removeClass('ui-accordion-content-active');
+	jQuery('#fo-new-insect-id [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
 	jQuery('#fo-new-insect-id').toggleClass('ui-accordion-content-active');
 });
 jQuery('#fo-new-flower-id-button').click(function(){ 
+	jQuery('#fo-express-doubt').removeClass('ui-accordion-content-active');
+	jQuery('#fo-new-flower-id [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
 	jQuery('#fo-new-flower-id').toggleClass('ui-accordion-content-active');
 });
 jQuery('#fo-collection-button').click(function(){
