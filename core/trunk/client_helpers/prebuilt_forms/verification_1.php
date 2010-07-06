@@ -69,7 +69,16 @@ class iform_verification_1 {
         'type'=>'boolean',
         'default'=>true,
         'group' => 'Notification emails'
-      ), array(
+       ), array(
+        'name'=>'email_request_attribute',
+        'caption'=>'Check Email Requested',
+        'description'=>'Enter the caption of a sample attribute and the value will be checked and'.
+           'an email only sent if it is true. Leave blank if not required.',
+        'type'=>'string',
+        'default' => '',
+        'required'=>false,
+        'group' => 'Notification emails',
+       ), array(
         'name'=>'email_subject_verified',
         'caption'=>'Acceptance Email Subject',
         'description'=>'Default subject for the acceptance email. Replacements allowed include %action% (verified or rejected), '.
@@ -115,7 +124,9 @@ class iform_verification_1 {
   }
   
   /**
-   * Return the Indicia form code
+   * Return the Indicia form code.
+   * Expects there to be a sample attribute with caption 'Email' containing the email
+   * address.
    * @param array $args Input parameters.
    * @param array $node Drupal node object
    * @param array $response Response from Indicia services after posting a verification.
@@ -144,6 +155,7 @@ class iform_verification_1 {
         elseif ($_POST['occurrence:record_status']=='R') $action = 'rejected';
         else $action='';
         if ($action) {
+          //obtain information for email notification
           $occ = data_entry_helper::get_population_data(array(
             'table' => 'occurrence',
             'extraParams' => $auth['read'] + array('id' => $response['outer_id'], 'view' => 'detail')
@@ -152,10 +164,19 @@ class iform_verification_1 {
             'table' => 'sample_attribute_value',
             'extraParams' => $auth['read'] + array('caption'=>'Email', 'sample_id' => $occ[0]['sample_id'])
           ));
-          $subject = self::get_email_component('subject', $action, $occ[0], $args);
-          $body = self::get_email_component('body', $action, $occ[0], $args);
-          
-          if (!empty($email_attr[0]['value'])) {
+          if ($args['email_request_attribute'] != '') {
+            $email_request_attr = data_entry_helper::get_population_data(array(
+              'table' => 'sample_attribute_value',
+              'extraParams' => $auth['read'] + array('caption'=>urlencode($args['email_request_attribute']), 'sample_id' => $occ[0]['sample_id'])
+            ));
+          }
+
+          //only send email if address was supplied and email requested
+          if (!empty($email_attr[0]['value']) &&
+              (($args['email_request_attribute'] == '') ||
+              (!empty($email_request_attr[0]['value']) && $email_request_attr[0]['value']))) {
+            $subject = self::get_email_component('subject', $action, $occ[0], $args);
+            $body = self::get_email_component('body', $action, $occ[0], $args);
             $r .= '
 <form id="email" action="" method="post">
 <fieldset>
@@ -172,7 +193,7 @@ class iform_verification_1 {
 </form>
 ';
           } else {
-            $r .= '<div class="page-notice ui-state-highlight ui-corner-all">The record has been '.$action.'. The recorder did not leave an email address so cannot be notified.</div>';
+            $r .= '<div class="page-notice ui-state-highlight ui-corner-all">The record has been '.$action.'. The recorder did not leave an email address or did not want an email so cannot be notified.</div>';
           }
         }
       }
