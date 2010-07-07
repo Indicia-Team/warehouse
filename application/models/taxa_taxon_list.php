@@ -52,6 +52,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'taxonomic_sort_order',
       'parent_id',
       'deleted',
+      'allow_data_entry',
       'preferred',
       'description'
     );
@@ -82,6 +83,12 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     }    
   }
 
+  public function preSubmit() {
+    $this->submission['fields']['allow_data_entry'] = array('value' => (isset($this->submission['fields']['allow_data_entry']) ? 't' : 'f'));
+
+    return parent::preSubmit();
+  }
+  
   /**
   * Overrides the postSubmit function to add in synonomies and common names. This only applies
   * when adding a preferred name, not a synonym or common name.
@@ -164,6 +171,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $syn['taxon:language_id'] = $lang_id;
         $syn['taxa_taxon_list:id'] = '';
         $syn['taxa_taxon_list:preferred'] = 'f'; 
+        $syn['taxa_taxon_list:allow_data_entry'] = $this->allow_data_entry;
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
         $syn['taxon:taxon_group_id'] = $this->taxon->taxon_group_id;
         // Prevent a recursion by not posting synonyms with a synonym
