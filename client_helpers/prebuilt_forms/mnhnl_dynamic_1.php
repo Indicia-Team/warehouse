@@ -173,7 +173,7 @@ class iform_mnhnl_dynamic_1 {
     if($mode == 0){
       $r .= data_entry_helper::report_grid(array(
         'id' => 'samples-grid',
-        'dataSource' => 'mnhnl_collab_list_samples',
+        'dataSource' => 'reports_for_prebuilt_forms/simple_sample_list_1',
         'mode' => 'report',
         'readAuth' => $auth['read'],
         'columns' => array(
@@ -337,7 +337,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           'divId'=>'controls',
           'page'=>($pageIdx==0 ? 'first' : ($pageIdx==count($heading)-1) ? 'last' : 'middle')
         ));
-      } elseif ($pageIdx==count($heading)-1)
+      } elseif ($pageIdx==count($attributeHeadings)-1)
         // last part of a non wizard interface must insert a save button
         $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
 
@@ -358,8 +358,6 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         'divId'=>'controls',
         'page'=>'last'
       ));
-    } else { 
-      $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
     }
     $r .= "</div>\n";        
     $r .= "</div>\n"; 
