@@ -9,8 +9,8 @@
   		s.date_start,
   		s.date_end,
   		s.date_type,
-  		(select count(*) as num_occurrences from occurrences o where o.sample_id = s.id and o.deleted = FALSE) as num_occurrences,
-  		(select (count(*) &gt; 0) as completed from occurrences o where o.sample_id = s.id and o.deleted = FALSE and o.record_status = 'C') as completed
+  		(select count(*) from occurrences o where o.sample_id = s.id and o.deleted = FALSE) as num_occurrences,
+  		(select (count(*) &gt; 0) from occurrences o where o.sample_id = s.id and o.deleted = FALSE and o.record_status = 'C') as completed
   FROM samples s
   LEFT JOIN locations l ON l.id=s.location_id
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE
