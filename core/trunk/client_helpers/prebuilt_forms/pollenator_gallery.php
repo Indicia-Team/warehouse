@@ -522,7 +522,7 @@ class iform_pollenator_gallery {
     data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
     $extraParams['taxon_list_id'] = $args['insect_list_id'];
     $species_data_def['extraParams']=$extraParams;
-	$flowers = data_entry_helper::get_population_data($species_data_def);
+	$taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
 		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
@@ -2010,6 +2010,7 @@ var insect_alert_object = {
 	insect_image_path: null,
 	date: null,
 	user_id: null,
+	collection_user_id: null,
 	details: []
 };
 var flower_alert_object = {
@@ -2017,6 +2018,7 @@ var flower_alert_object = {
 	flower_image_path: null,
 	date: null,
 	user_id: null,
+	collection_user_id: null,
 	details: []
 };
 
@@ -2504,7 +2506,7 @@ loadComments = function(keyValue, block, table, key, blockClass, bodyClass, rese
 	});
 };
 
-setReIDButton = function(keyValue){
+collectionProcessing = function(keyValue, expert){
 	$.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&sample_id=\" + keyValue + \"&callback=?\", function(attrdata) {
@@ -2515,7 +2517,9 @@ setReIDButton = function(keyValue){
 				if (attrdata[i].id){
 					switch(parseInt(attrdata[i].sample_attribute_id)){
 						case ".$args['uid_attr_id'].":
-							if(parseInt(attrdata[i].value) != ".$uid.")
+							insect_alert_object.collection_user_id = attrdata[i].value;
+							flower_alert_object.collection_user_id = attrdata[i].value;
+							if(!expert && parseInt(attrdata[i].value) != ".$uid.")
 								jQuery('.new-id-button').hide();
 							break;
   					}
@@ -2544,11 +2548,8 @@ loadInsectAddnInfo = function(keyValue, collectionIndex){
    				if(!(smpData instanceof Array)){
    					alertIndiciaError(smpData);
    				} else if (smpData.length > 0) {
-   					collection = smpData[0].parent_id;";
-	if(!user_access('IForm n'.$node->nid.' insect expert')){
-		data_entry_helper::$javascript .= "setReIDButton(collection);";
-	}
-	data_entry_helper::$javascript .= "
+   					collection = smpData[0].parent_id;
+					collectionProcessing(collection, ".(user_access('IForm n'.$node->nid.' insect expert') ? "true" : "false").");
 					jQuery('#fo-insect-date').empty().append(convertDate(smpData[0].date_start,false));
 					loadSampleAttributes(smpData[0].id);
 					jQuery('#fo-collection-button').data('smpID',smpData[0].parent_id).data('collectionIndex', collectionIndex).show();
@@ -2566,11 +2567,8 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
    		if(!(occData instanceof Array)){
    			alertIndiciaError(occData);
    		} else if (occData.length > 0) {
-			jQuery('#fo-collection-button').data('smpID',occData[0].sample_id).data('collectionIndex',collectionIndex).show();";
-	if(!user_access('IForm n'.$node->nid.' flower expert')){
-		data_entry_helper::$javascript .= "setReIDButton(occData[0].sample_id);";
-	}
-	data_entry_helper::$javascript .= "
+			jQuery('#fo-collection-button').data('smpID',occData[0].sample_id).data('collectionIndex',collectionIndex).show();
+			collectionProcessing(occData[0].sample_id, ".(user_access('IForm n'.$node->nid.' flower expert') ? "true" : "false").");
 				$.getJSON(\"".$svcUrl."/data/sample/\" + occData[0].sample_id +
    					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    					\"&callback=?\", function(collection) {

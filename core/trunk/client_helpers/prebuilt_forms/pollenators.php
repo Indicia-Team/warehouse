@@ -503,7 +503,7 @@ jQuery('#".$id."').click(function(){
     data_entry_helper::$javascript .= "];\nvar insectTaxa = [";
     $extraParams['taxon_list_id'] = $args['insect_list_id'];
     $species_data_def['extraParams']=$extraParams;
-	$flowers = data_entry_helper::get_population_data($species_data_def);
+	$taxa = data_entry_helper::get_population_data($species_data_def);
 	$first = true;
 	foreach ($taxa as $taxon) {
 		data_entry_helper::$javascript .= ($first ? '' : ',')."{id: ".$taxon['id'].", taxon: \"".htmlSpecialChars($taxon['taxon'])."\"}\n";
