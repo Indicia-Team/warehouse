@@ -1516,8 +1516,8 @@ class data_entry_helper extends helper_config {
     } else {
       $records = $response['records'];
     }
-
     self::report_grid_get_columns($response, $options);
+	
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
 
     $thClass = $options['thClass'];
@@ -2289,8 +2289,8 @@ class data_entry_helper extends helper_config {
   * <li><b>listId</b><br/>
   * The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
   * <li><b>occAttrs</b><br/>
-  * Integer array, where each entry corresponds to the id of the desired attribute in the
-  * occurrence_attributes table.</li>
+  * Optional integer array, where each entry corresponds to the id of the desired attribute in the
+  * occurrence_attributes table. If omitted, then all the occurrence attributes for this survey are loaded.</li>
   * <li><b>occAttrClasses</b><br/>
   * String array, where each entry corresponds to the css class(es) to apply to the corresponding
   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
@@ -2412,24 +2412,31 @@ class data_entry_helper extends helper_config {
         }
         foreach ($occAttrControls as $attrId => $control) {
           $oc = str_replace('{ttlId}', $id, $control);
-          $ctrlId = "sc:$id::occAttr:$attrId";
+		  // ctrlId initially assumes not reloading an existing value, to check in the reloaded data
+		  $ctrlId = "sc:$id::occAttr:$attrId";		  
           // If there is an existing value to load for this control, we need to put the value in the control.
           $existing_value = '';
           if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
-              && !empty(self::$entity_to_load[$ctrlId])) {
-                $existing_value = self::$entity_to_load[$ctrlId];
+                && !empty(self::$entity_to_load[$ctrlId])) {
+		    // this case happens after reloading page on validation failure of a new record
+            $existing_value = self::$entity_to_load[$ctrlId];
           } else if(array_key_exists('default', $attributesForThisRow[$attrId])){
-                $existing_value = $attributesForThisRow[$attrId]['default'];
+		    // this case happens when reloading an existing record
+            $existing_value = $attributesForThisRow[$attrId]['default'];
+			// mark this as an existing value by using the fieldname supplied when loading the data. 
+			$ctrlId = $attributesForThisRow[$attrId]['fieldname'];
           }
-          if($existing_value){
+		  // inject the field name into the control HTML
+		  $oc = str_replace('{fieldname}', $ctrlId, $oc);
+          if (!empty($existing_value)) {
             // For select controls, specify which option is selected from the existing value
-            if (substr($oc, 0, 7)=='<select') {
+            if (substr($oc, 0, 7)=='<select') {			  
               $oc = str_replace('value="'.$existing_value.'"',
-                  'value="'.$existing_value.'" '.$indicia_templates['select_item_selected'], $oc);
+                  'value="'.$existing_value.'" selected="selected"', $oc);			  
             } else {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
-            }
-            $error = self::check_errors(array_pop(explode('::', $ctrlId)));
+            }			
+            $error = self::check_errors("occAttr:$attrId");
             if ($error) {
               $oc = str_replace("class='", "class='ui-state-error ", $oc);
               $oc .= $error;
@@ -2591,7 +2598,7 @@ class data_entry_helper extends helper_config {
             case 'L':
               $tlId = $b['termlist_id'];
               $occAttrControls[$occAttr] = data_entry_helper::select(array(
-                  'fieldname' => 'sc:{ttlId}::occAttr:'.$occAttr,
+                  'fieldname' => '{fieldname}',
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>'id',
@@ -2603,13 +2610,13 @@ class data_entry_helper extends helper_config {
             case 'D':
             case 'V':
               // Date-picker control
-              $occAttrControls[$occAttr] = "<input type=\"text\" class=\"date $class\" " .
-                  "id=\"sc:{ttlId}::occAttr:$occAttr\" name=\"oa:$occAttr\" " .
+              $occAttrControls[$occAttr] = '<input type="text" class="date $class" ' .
+                  'id="{fieldname}" name="{fieldname}" ' .
                   "value=\"".lang::get('click here')."\"/>";
               break;
             default:
               $occAttrControls[$occAttr] =
-                  "<input type=\"text\" id=\"oa:$occAttr\" name=\"oa:$occAttr\" class=\"$class\" value=\"\" />";
+                  "<input type=\"text\" id=\"{fieldname}\" name=\"{fieldname}\" class=\"$class\" value=\"\" />";
               break;
           }
         }

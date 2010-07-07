@@ -214,7 +214,7 @@ class iform_mnhnl_collaborators_1 {
     if($mode == 0){
       $r .= data_entry_helper::report_grid(array(
         'id' => 'samples-grid',
-        'dataSource' => 'mnhnl_collab_list_samples',
+        'dataSource' => 'reports_for_prebuilt_forms/simple_sample_list_1',
         'mode' => 'report',
         'readAuth' => $auth['read'],
         'columns' => array(
