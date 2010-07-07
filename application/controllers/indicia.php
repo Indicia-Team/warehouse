@@ -131,8 +131,8 @@ class Indicia_Controller extends Template_Controller {
       $this->access_denied();
       return;
     }
-    $this->model = ORM::Factory($this->model->object_name, $id);        
-    $values = $this->getModelValues();
+	$this->model = ORM::Factory($this->model->object_name, $id);        
+	$values = $this->getModelValues();
     $this->showEditPage($values);     
   }
   
@@ -145,13 +145,20 @@ class Indicia_Controller extends Template_Controller {
    * @access private   
    */
   protected function showEditPage($values) {    
-    $other = $this->prepareOtherViewData($values);            
-    $mn = $this->model->object_name;
-    $this->setView($mn."/".$mn."_edit", $this->model->caption(), array(
-    	'values'=>$values,
+    $other = $this->prepareOtherViewData($values);
+    $this->setView($this->editViewName(), $this->model->caption(), array(
+      'values'=>$values,
       'other_data'=>$other
     )); 
 	$this->defineEditBreadcrumbs();
+  }
+  
+  /**
+   * Returns the default name for the edit view, but can be overridden.
+   */
+  protected function editViewName() {
+    $mn = $this->model->object_name;
+    return $mn."/".$mn."_edit";
   }
   
   /**
@@ -267,7 +274,7 @@ class Indicia_Controller extends Template_Controller {
   * or an existing one.
   */
   protected function GetEditPageTitle($model, $name)
-  {
+  {  
     if ($model->id)
       return "Edit ".$model->caption();
     else
@@ -297,18 +304,23 @@ class Indicia_Controller extends Template_Controller {
   * @param string $pagetitle Page title
   */
   protected function setView( $name, $pagetitle = '', $viewArgs = array() )
-  {
-    // on error rest on the website_edit page
-    // errors are now embedded in the model
-    $view                    = new View( $name );
-    $view->metadata          = $this->GetMetadataView(  $this->model );
-    $this->template->title   = $this->GetEditPageTitle( $this->model, $pagetitle );
-    $view->model             = $this->model;
+  {  
+    try{
+      // on error rest on the website_edit page
+      // errors are now embedded in the model
+      $view                    = new View( $name );
+      $view->metadata          = $this->GetMetadataView(  $this->model );
+      $this->template->title   = $this->GetEditPageTitle( $this->model, $pagetitle );
+      $view->model             = $this->model;
 
-    foreach ($viewArgs as $arg => $val) {
-      $view->set($arg, $val);
-    }
-    $this->template->content = $view;
+      foreach ($viewArgs as $arg => $val) {
+        $view->set($arg, $val);
+      }
+      $this->template->content = $view;
+	} catch (Exception $e) {
+	  error::log_error("Problem displaying view $name", $e);
+	  throw $e;
+	}
   }
 
   /**

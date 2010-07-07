@@ -142,7 +142,7 @@ class ORM extends ORM_Core {
    * @param Validation $array Validation array object.
    * @param boolean $save Optional. True if this call also saves the data, false to just validate. Default is false.
    */
-  public function validate(Validation $array, $save = FALSE) {
+  public function validate(Validation $array, $save = FALSE) {    
     if (count($this->unvalidatedFields)>0) {
       foreach ($this->unvalidatedFields as $a)
       {

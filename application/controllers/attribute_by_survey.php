@@ -37,25 +37,28 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     if (!isset($_GET['type'])) 
       throw new Exception('Page cannot be accessed without a type parameter');
     if ($_GET['type']!='sample' && $_GET['type']!='occurrence' && $_GET['type']!='location')
-      throw new Exception('Type parameter in URL is invalid');
-    $this->survey = ORM::factory('survey', $this->uri->last_segment());
-    $this->base_filter=array('survey_id'=>$this->survey);
+      throw new Exception('Type parameter in URL is invalid'); 
+    $this->type=$_GET['type'];	  
+	$this->survey_id=$this->uri->last_segment();
+	$this->pagetitle = 'Attributes for a survey';
     $this->get_auth();
     $this->auth_filter = $this->gen_auth_filter;
-    $this->pagetitle = 'Attributes for '.$this->survey->title;
-    $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
-    $this->page_breadcrumbs[] = $this->pagetitle;
+    $this->model = ORM::factory($this->type.'_attributes_website');
   }
   
   public function index() {
+    $this->survey = ORM::factory('survey', $this->survey_id);
+    $this->pagetitle = 'Attributes for '.$this->survey->title;
+	$this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
+    $this->page_breadcrumbs[] = $this->pagetitle;
     $this->template->content=new View('Attribute_by_survey/index');
     $this->template->title=$this->pagetitle;
-    $filter = $this->base_filter;
+    $filter = array('survey_id'=>$this->survey);;
     if ($this->auth_filter) 
       $filter = array_merge($filter, $this->auth_filter);
     $top_blocks = ORM::factory('form_structure_block')->
         where('parent_id',null)->
-        where('type', strtoupper(substr($_GET['type'],0,1)))->
+        where('type', strtoupper(substr($this->type,0,1)))->
         where($filter)->
         orderby('weight', 'ASC')->find_all();
     $this->template->content->top_blocks=$top_blocks;
@@ -66,7 +69,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     unset($controlfilter['survey_id']);
     $this->template->content->controlfilter = $controlfilter;
     // provide a list of publicly available attributes so existing ones can be added
-    $attrs = ORM::factory($_GET['type'].'_attribute')->
+    $attrs = ORM::factory($this->type.'_attribute')->
         where(array('public'=>'t','deleted'=>'f'))->find_all();
     $this->template->content->existingAttrs=$attrs;
   }
@@ -75,60 +78,96 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    * Handle the layout_update action, which uses $_POST data to find a list of commands
    * for re-ordering the controls
    */
-  public function layout_update() {
+  public function layout_update() {    
     $structure = json_decode($_POST['layout_updates'],true);
-    $this->saveBlockList($structure['blocks'], null);
-    $this->saveControlList($structure['controls'], null);
+	$websiteId = ORM::Factory('survey', $this->survey_id)->website_id;
+    $this->saveBlockList($structure['blocks'], null, $websiteId);
+    $this->saveControlList($structure['controls'], null, $websiteId);
     $this->session->set_flash('flash_info', "The form layout changes have been saved.");
-    url::redirect('attribute_by_survey/'.$this->uri->last_segment().'?type='.$_GET['type']);
+    url::redirect('attribute_by_survey/'.$this->survey_id.'?type='.$this->type);
   }
   
-  private function saveBlockList($list, $blockId) {
+  private function saveBlockList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $block) {
-    	kohana::log('info', kohana::debug($block));
+	  $changed = false;
       if (substr($block['id'], 0, 10)=='new-block-') {
         $model = ORM::factory('form_structure_block');
         $model->name = $block['name'];
-        $model->survey_id=$this->uri->last_segment();
+        $model->survey_id=$this->survey_id;
         $model->weight=$weight;
         $model->type=strtoupper(substr($_GET['type'], 0, 1));
         $model->parent_id=$blockId;
-        $model->save();
+        $changed = true;
       } elseif (substr($block['id'], 0, 6)=='block-') {
         $id = str_replace('block-','',$block['id']);
         $model = ORM::factory('form_structure_block', $id);
-        if ($model->weight!=$weight || $model->parent_id!=$blockId) {
+        if ($model->weight!=$weight || $model->parent_id!=$blockId || $model->name!=$block['name']) {
           $model->parent_id=$blockId;
           $model->weight = $weight;
-          $model->save();
+		  $model->name = $block['name'];
+          $changed = true;		  
         }
+      } else {
+	    continue;
+	  }
+	  if (isset($block['deleted']) && $block['deleted']) {
+	    // deleting, so existing blocks must be removed
+	    if (substr($block['id'], 0, 6)=='block-')
+		  $model->delete();
+	    $id=null;
+	  }
+	  elseif ($changed) {	    
+        $model->save();
+		$id = $model->id;
       }
-      if (isset($block['blocks'])) $this->saveBlockList($block['blocks'], $model->id);
-      $this->saveControlList($block['controls'], $model->id);
+      if (isset($block['blocks'])) $this->saveBlockList($block['blocks'], $model->id, $websiteId);
+      $this->saveControlList($block['controls'], $id, $websiteId);
       $weight++;
     }  
   }
   
-  private function saveControlList($list, $blockId) {
+  private function saveControlList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $control) {
       $changed=false;
-      if (substr($control, 0, 8)=='control-') {
-        $control = str_replace('control-','',$control);
-        $model = ORM::factory($_GET['type'].'_attributes_website', $control);
-        if ($model->weight!=$weight) {
-          $model->weight = $weight;
-          $changed = true;
-        }
-        if ($model->form_structure_block_id!=$blockId) {
-          $model->form_structure_block_id=$blockId;
-          $changed = true;
-        }
-        $weight++;
-        if ($changed)
-          $model->save();
+      if (substr($control['id'], 0, 8)=='control-') {
+        $ctrlId = str_replace('control-','',$control['id']);
+        $model = ORM::factory($_GET['type'].'_attributes_website', $ctrlId);
+	  } elseif (substr($control['id'], 0, 10)=='attribute-') {	    
+	    $attrId = str_replace('attribute-','',$control['id']);
+		// get model for a new record
+        $model = ORM::factory($_GET['type'].'_attributes_website');
+		$attrVar = $this->type.'_attribute_id';
+		// link the model to the existing attribute we have the ID for
+		$model->$attrVar = $attrId;
+		$model->restrict_to_survey_id = $this->survey_id;
+		$model->website_id = $websiteId;	
+        $changed = true;		
+	  } else {
+	    continue;
+      }	  
+	  if ($model->weight!=$weight) {
+        $model->weight = $weight;
+        $changed = true;
       }
+      if ($model->form_structure_block_id!=$blockId) {
+        $model->form_structure_block_id=$blockId;
+        $changed = true;
+      }
+      $weight++;
+	  if (isset($control['deleted']) && $control['deleted']) {
+	    // deleting, so existing control must be removed
+	    if (substr($control['id'], 0, 8)=='control-')
+		  $model->delete();
+	    $id=null;
+	  } elseif ($changed) {
+        $model->set_metadata();
+		$model->save();
+		if (count($model->getAllErrors())!==0) {
+		  throw new Exception(kohana::debug($model->getAllErrors()));
+		}
+	  }
     }
   }
   
@@ -152,5 +191,69 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     else $this->gen_auth_filter = null;    
   }
 
+  /**
+   * Returns the name for the edit view, since all *_attribute_websites models share the same code.
+   */
+  protected function editViewName() {
+    return "attribute_by_survey/attribute_by_survey_edit";
+  }
   
+  /**
+   * Setup the values to be loaded into the edit view. For this class, we need to explode the 
+   * items out of the validation_rules field, which our base class can do.
+   */
+  protected function getModelValues() {
+    $r = parent::getModelValues();    
+    $this->model->populate_validation_rules();
+    return $r;  
+  }
+  
+  protected function prepareOtherViewData($values) {
+    $survey = ORM::Factory('survey', $values[$this->type.'_attributes_website:restrict_to_survey_id']);
+	$attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']);
+    return array(
+	  'name' => $attr->caption,
+	  'survey' => $survey->title
+	);
+  }
+  
+  public function save() {       
+    // Build the validation_rules field from the set of controls that are associated with it.
+    $rules = array();
+    foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past') as $rule) {          
+      if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {            
+        array_push($rules, $rule);
+      }
+    }
+    if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1)   $rules[] = 'length['.$_POST['valid_length_min'].','.$_POST['valid_length_max'].']';
+    if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1) $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
+    if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)		 $rules[] = 'regex['.$_POST['valid_regex_format'].']';
+    if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)		     $rules[] = 'minimum['.$_POST['valid_min_value'].']';
+    if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)		     $rules[] = 'maximum['.$_POST['valid_max_value'].']';
+
+    if (!empty($rules)) {
+      $_POST['validation_rules'] = implode("\r\n", $rules);
+    }
+    parent::save();
+	print_r($this->model->getAllErrors());
+  }
+  
+  protected function get_return_page() {
+    if (array_key_exists('survey_id', $_POST)) {
+	  return 'attribute_by_survey/'.$_POST['survey_id'].'?type='.$this->type;      
+    } else {
+	  // If $_POST data not available, then just return to the survey list. Shouldn't really happen.
+      return 'survey';
+    }    
+  }
+  
+  /**
+   * Set the edit page breadcrumbs to cope with the fact this controller handles all *_attributes_website models.
+   */
+  protected function defineEditBreadcrumbs() { 
+    $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
+	$survey = ORM::Factory('survey', $this->survey_id);
+	$this->page_breadcrumbs[] = html::anchor('/attribute_by_survey/'.$this->survey_id.'?type='.$this->type, 'Attributes for '.$survey->title);
+	$this->page_breadcrumbs[] = $this->model->caption();
+  }
 }

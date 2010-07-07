@@ -28,15 +28,17 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Sample_attributes_website_Model extends ORM
+class Sample_attributes_website_Model extends Valid_ORM
 {
+  protected $search_field='id';
 
-    protected $has_one = array(
-      'sample_attribute',
-        'website',
+  protected $has_one = array(
+    'sample_attribute',
+    'website',
   );
-    protected $belongs_to = array(
-      'created_by'=>'user',
+  
+  protected $belongs_to = array(
+    'created_by'=>'user',
   );
 
   public function validate(Validation $array, $save = FALSE) {
@@ -44,14 +46,6 @@ class Sample_attributes_website_Model extends ORM
     $array->pre_filter('trim');
     $this->unvalidatedFields = array('sample_attribute_id', 'website_id', 'restrict_to_survey_id');
     return parent::validate($array, $save);
-  }
-
-  public function set_metadata() {
-    // Set up the created and updated metadata for the record
-    if (!$this->id) {
-      $this->created_on = date("Ymd H:i:s");
-      $this->created_by_id = 1; // dummy user
-    }
   }
 
 }
