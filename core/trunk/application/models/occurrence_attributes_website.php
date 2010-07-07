@@ -28,7 +28,7 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Occurrence_attributes_website_Model extends ORM
+class Occurrence_attributes_website_Model extends Valid_ORM
 {
 
     protected $has_one = array(
@@ -45,14 +45,6 @@ class Occurrence_attributes_website_Model extends ORM
     $array->pre_filter('trim');
     $this->unvalidatedFields = array('occurrence_attribute_id', 'website_id', 'restrict_to_survey_id');
     return parent::validate($array, $save);
-  }
-
-  public function set_metadata() {
-    // Set up the created and updated metadata for the record
-    if (!$this->id) {
-      $this->created_on = date("Ymd H:i:s");
-      $this->created_by_id = 1; // dummy user
-    }
   }
 
 }

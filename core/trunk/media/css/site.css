@@ -269,7 +269,7 @@ ul#top-blocks, ul#top-blocks ul, ul.control-list {
 
 ul#top-blocks li, ul#top-blocks ul li, ul.control-list li {
   margin: 0.2em;
-  padding: 0.2em;
+  padding: 0.3em;
 }
 
 ul#top-blocks ul {
@@ -277,7 +277,7 @@ ul#top-blocks ul {
 }
 
 .drop-active {
-  border-color: #FF0000 !important;
+  background-color: #ffccaa;
 }
 
 .grid-action {
@@ -294,15 +294,51 @@ ul#top-blocks ul {
   cursor: move;
 }
 
-.draggable-control .caption {
+.draggable-control .caption, .draggable-block .caption {
   float: left;
 }
 
-.draggable-control a {
+.draggable-control a, .draggable-block a {
   float: right;
+  margin: 0 0.2em;
 }
 
 .draggable-block {
   border: dotted 1px silver;
   background-color: #E7E7E7;
+}
+
+.deleted {
+  opacity: 0.4;
+  border: dotted red 1px;
+}
+
+#layout-change-form, #actions-new-block {
+  margin: 0.5em 0;
+}
+
+.ui-droppable {
+  border: dotted #aaaaaa 1px;
+}
+
+.block-list input.caption {
+  padding: 2px;
+  border: solid #AAAAAA 1px;
+}
+
+.rename-apply {
+  padding: 2px;
+  margin-left: 2px;
+}
+
+.block-list span.caption {
+  margin: 3px 2px;
+}
+
+/* Apply line-up to inputs, selects and buttons that are displayed in a row to help them line-up together. Setting the border
+explicitly removes inconsistencies between IE and FireFox */
+.line-up {
+  padding: 2px;
+  vertical-align: middle;
+  border: solid 1px silver
 }

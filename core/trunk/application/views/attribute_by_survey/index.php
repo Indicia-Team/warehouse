@@ -23,65 +23,6 @@
 
 ?>
 <script type="text/javascript">
-$(document).ready(function() {
-  makeControlsDragDroppable();
-  makeBlocksDragDroppable();
-  // if the user clicks save for layout changes, then the structure must be posted back to the server for
-  // saving.
-  $('#layout-change-form').submit(function() {
-    var data = '{"blocks": [';
-    data += outputBlocks($('#top-blocks'));
-    data += '], "controls": [';
-    data += outputControls($('#controls'));
-    data += ']}';
-    // store the data in a hidden input, so it can be posted to the server
-    $('#layout_updates').val(data);
-  });
-
-  $('#actions-add-existing').submit(function(event) {
-    event.preventDefault();
-    var existingAttrs = {<?php 
-      // the JavaScript needs a list of attribute captions
-      $idx = 0;
-      foreach ($existingAttrs as $attr) {
-        echo '"id'.$attr->id.'":"'.$attr->caption.'"';
-        if ($idx<count($existingAttrs)-1) {
-          echo ",";
-        }
-        $idx++;
-      }
-    ?>};
-    var attrId=$('#existing-attribute')[0].value;
-    $('#controls').append('<li id="existing-attr-'+attrId+'" style="border-color: red" '+
-            'class="draggable-control ui-widget ui-widget-content ui-corner-all">' +
-            '<span class="handle">&nbsp;</span>' +
-            '<span>' + existingAttrs['id'+attrId] + ' *</span>' +
-            '<span class="ui-helper-clearfix"></span>'+
-            '</li><li class="control-drop"></li>');
-    makeControlsDragDroppable();
-  });
-
-  $('#actions-new-block').submit(function(event) {
-    event.preventDefault();
-    var block=$('#new-block')[0].value;
-    block = $.trim(block);
-    if (block==='') {
-      alert('Please provide a name for the block');
-    } else {
-      $('#top-blocks').append('<li id="new-block-'+block.replace(' ','_')+'" style="border-color: red" '+
-            'class="ui-widget ui-widget-header draggable-block">' +
-          '<span>'+block + ' *</span>' +
-          '<ul id="child-blocks-new-block-'+block.replace(' ','_')+'" class="block-list ui-widget-content"></ul>'+
-          '<ul class="ui-widget ui-widget-content ui-corner-all control-list">'+
-          '<li class="control-drop"></li></ul></li>');
-      $('#layout-change-form').show();
-      makeBlocksDragDroppable();
-      makeControlsDragDroppable();
-    }
-  });
-
-});
-
 function outputControls(list) {
   var r='';
   $(list).children().each(function(i, control) {
@@ -89,14 +30,18 @@ function outputControls(list) {
       if (r!=='') {
         r += ',';
       }
-      r += '"' + control.id + '"';
+	  r += '{';
+	  if ($(control).hasClass('deleted')) {
+	    r += '"deleted":true,';
+      }
+      r += '"id":"' + control.id + '"}';
     }
   });
   return r;
 }
 
 function outputBlocks(list) {
-  var r='';
+  var r='', caption;
   $(list).children().each(function(i, block) {
     if ($(block).hasClass('draggable-block')) {
       if (r!=='') {
@@ -104,7 +49,14 @@ function outputBlocks(list) {
       }
       r += '{';
         r += '"id":"' + block.id + '",'; 
-        r += '"name":"' + $('#' + block.id+' span').text() + '",';
+		caption = $('#' + block.id+' div > .caption').text();
+		if (caption.substr(caption.length-1, 1)=='*') {
+		  caption = $.trim(caption.substr(0, caption.length-1));
+		}
+        r += '"name":"' + caption + '",';
+		if ($(block).hasClass('deleted')) {
+		  r += '"deleted":true,';
+		}
         r += '"blocks": [\n';
           r += outputBlocks($('#' + block.id + ' > .block-list'));
         r += '],"controls": [';
@@ -116,32 +68,70 @@ function outputBlocks(list) {
   return r;
 }
 
-/*function makePlaceholderDroppable() {
-  $('.blank-drop-placeholder').droppable('destroy');
-  $('.blank-drop-placeholder').droppable({
-    drop: function(event, ui) {
-      var target = $(event.target);
-      var draggable = ui.draggable;
-      if (draggable.hasClass('draggable-control')) {
-          draggable.insertBefore(target);
-      } else if (draggable.hasClass('block')) {
-        if (target.parent().parent().parent().parent().parent().hasClass('block-list')) {
-          return;
-        }
-        target.parent().prev().append(draggable);
-      }
-      draggable.css('top',0);
-      draggable.css('border-color', 'red');
-      $('#layout-change-form').show();
-      if (draggable.text().substr(draggable.text().length-1,1)!='*') {
-        draggable.text(draggable.text() + ' *');
-      }
-    },
-    accept: '.draggable-control, .block',
-    hoverClass: 'ui-state-highlight',
-    activeClass: 'drop-active'
+function moveBlock(source, target) {
+  if (source.prev()[0]!==target[0] && source.next()[0]!==target[0]) {
+    if (source.hasClass('draggable-block')) {
+	  if (target.parent().parent().parent().parent().parent().hasClass('block-list')) {
+        return;
+	  }
+	  var controlDrop = source.prev();
+	  // move the drop target as well
+      controlDrop.insertBefore(target);
+      source.insertBefore(target);
+    }
+    source.css('top',0);
+    source.css('border-color', 'red');
+    $('#layout-change-form').show();
+    var label=$(source.find('> div > .caption'));
+    if (label.text().substr(label.text().length-1,1)!='*') {
+	  label.text(label.text() + ' *');
+    }
+  }
+}
+
+function moveControl(source, target) {
+  // Don't bother doing anything if dragging to the dragged control's drop placeholder above or below it.
+  if (source.prev()[0]!==target[0] && source.next()[0]!==target[0]) {
+	if (source.hasClass('draggable-control')) {
+	  var controlDrop = source.prev();
+	  // move the drop target as well
+	  controlDrop.insertBefore(target);
+	  source.insertBefore(target);
+	}
+	source.css('top',0);
+	source.css('border-color', 'red');
+	$('#layout-change-form').show();
+	// Second child of the li is the label, the first is the drag handle. So go for index 1
+	var label=$(source.find('.caption'));
+	if (label.text().substr(label.text().length-1,1)!='*') {
+	  label.text(label.text() + ' *');
+	}
+  }	
+}
+
+function makeBlocksDragDroppable() {
+  // do a full refresh as there could be new items
+  $('.draggable-block').draggable('destroy');
+  $('.draggable-block').droppable('destroy');
+  $('.draggable-block').draggable({
+    axis: 'y',
+    helper: 'clone',
+    opacity: 0.5,
+    revert: 'invalid',
+    handle: '> div > .handle'
   });
-}*/
+  
+  $('.block-drop').droppable({
+    drop: function(event, ui) {
+	  moveBlock(ui.draggable, $(event.target));      
+    },
+    accept: '.draggable-block',
+    hoverClass: 'ui-state-highlight',
+    activeClass: 'drop-active',
+    tolerance: 'pointer'
+  });
+}
+
 
 function makeControlsDragDroppable() {
   // do a full refresh as there could be new items
@@ -156,23 +146,8 @@ function makeControlsDragDroppable() {
   });
   
   $('.control-drop').droppable({
-    drop: function(event, ui) {
-      // visuals
-      var target = $(event.target);
-      var draggable = ui.draggable;
-      if (draggable.hasClass('draggable-control')) {
-        var controlDrop = draggable.prev();
-        // move the drop target as well
-        controlDrop.insertBefore(target);
-        draggable.insertBefore(target);
-      }
-      draggable.css('top',0);
-      draggable.css('border-color', 'red');
-      $('#layout-change-form').show();
-      var label=$(draggable.children()[0]);
-      if (label.text().substr(label.text().length-1,1)!='*') {
-        label.text(label.text() + ' *');
-      }
+    drop: function(event, ui) {      
+	  moveControl(ui.draggable, $(event.target));
     },
     accept: '.draggable-control',
     hoverClass: 'ui-state-highlight',
@@ -181,46 +156,142 @@ function makeControlsDragDroppable() {
   });
 }
 
-function makeBlocksDragDroppable() {
-  // do a full refresh as there could be new items
-  $('.draggable-block').draggable('destroy');
-  $('.draggable-block').droppable('destroy');
-  $('.draggable-block').draggable({
-    axis: 'y',
-    helper: 'clone',
-    opacity: 0.5,
-    revert: 'invalid',
-    handle: '> .handle'
+$(document).ready(function() {
+  /**
+  * if the user clicks save for layout changes, then the structure must be posted back to the server for saving.
+  */ 
+  $('#layout-change-form').submit(function() {
+    var data = '{"blocks": [';
+    data += outputBlocks($('#top-blocks'));
+    data += '], "controls": [';
+    data += outputControls($('#controls'));
+    data += ']}';
+    // store the data in a hidden input, so it can be posted to the server
+    $('#layout_updates').val(data);	
+  });  
+
+  $('#actions-add-existing').submit(function(event) {
+    event.preventDefault();
+	var attrId=$('#existing-attribute')[0].value;
+	// Does this attribute already exist?
+	if ($('li.attribute-' + attrId).length!==0) {
+	  alert('This attribute already exists for the survey.');
+	} else {
+      var existingAttrs = {<?php 
+        // the JavaScript needs a list of attribute captions
+        $idx = 0;
+        foreach ($existingAttrs as $attr) {
+          echo '"id'.$attr->id.'":"'.$attr->caption.'"';
+          if ($idx<count($existingAttrs)-1) {
+            echo ",";
+          }
+          $idx++;
+        }
+      ?>};
+    
+      $('#controls').append('<li id="attribute-'+attrId+'" style="border-color: red" '+
+            'class="attribute-'+attrId+' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">' +
+            '<span class="handle">&nbsp;</span>' +
+            '<span class="caption">' + existingAttrs['id'+attrId] + ' *</span>' +			
+            '</li><li class="control-drop"></li>');
+      makeControlsDragDroppable();
+	  $('#layout-change-form').show();	
+	}
+  });
+
+  $('#actions-new-block').submit(function(event) {
+    event.preventDefault();
+    var block=$('#new-block')[0].value;
+    block = $.trim(block);
+    if (block==='') {
+      alert('Please provide a name for the block.');
+    } else if (!block.match(/^[a-zA-Z0-9 ]+$/)) {
+	  alert('The block name should consist of letters, numbers and spaces only.');
+	} else {
+      $('#top-blocks').append('<li id="new-block-'+block.replace(/ /g,'_')+'" style="border-color: red" '+
+            'class="ui-widget draggable-block">' +
+		  '<div class="ui-helper-clearfix"' +
+	      '<span class="handle">&nbsp;</span>' +
+          '<span class="caption">'+block + ' *</span>' +
+		  '<a href="" class="block-rename">Rename</a>'+
+		  '</div>' +
+          '<ul id="child-blocks-new-block-'+block.replace(' ','_')+'" class="block-list"></ul>'+
+          '<ul class="ui-widget ui-widget-content ui-corner-all control-list">'+
+          '<li class="control-drop"></li></ul></li>');
+      $('#layout-change-form').show();
+      makeBlocksDragDroppable();
+      makeControlsDragDroppable();
+    }
   });
   
-  $('.block-drop').droppable({
-    drop: function(event, ui) {
-      // visuals
-      var target = $(event.target);
-      var draggable = ui.draggable;
-      if (draggable.hasClass('draggable-block')) {
-        if (target.parent().parent().parent().parent().parent().hasClass('block-list')) {
-          return;
-        }
-        var controlDrop = draggable.prev();
-        // move the drop target as well
-        controlDrop.insertBefore(target);
-        draggable.insertBefore(target);
-      }
-      draggable.css('top',0);
-      draggable.css('border-color', 'red');
-      $('#layout-change-form').show();
-      var label=$(draggable.children()[0]);
-      if (label.text().substr(label.text().length-1,1)!='*') {
-        label.text(label.text() + ' *');
-      }
-    },
-    accept: '.draggable-block',
-    hoverClass: 'ui-state-highlight',
-    activeClass: 'drop-active',
-    tolerance: 'pointer'
+  /**
+  * Handle click on the rename link for a block. Replaces the caption span with a temporary input control and an apply button.
+  */
+  $('.block-rename').live('click', function(event) {
+    event.preventDefault();
+	var caption=$(event.target).siblings('span.caption');
+	// Check we are not already in rename mode
+	if (caption.length>0) {
+	  // strip the * from the caption if already edited
+	  var current=caption.text().replace(/ \*$/,'');
+      // swap the span for a text input and Apply button	  
+	  caption.replaceWith('<input type="text" class="caption" value="' + current + '"/><input type="button" class="rename-apply button ui-state-default ui-corner-all ui-widget-content" value="Apply" />');
+	  var input=$(event.target).siblings('.caption');
+	  input.focus();
+	  input.select();
+	  var btn=$(event.target).siblings('.rename-apply');
+	  btn.click(function(event) {
+	    $(event.target.parentNode.parentNode).css('border-color', 'red');
+	    input.replaceWith('<span class="caption">' + input.val() + ' *</span>');
+	    btn.remove();
+        $('#layout-change-form').show();	    
+	  });
+	}
   });
-}
+  
+  $('.block-delete').click(function(event) {
+    event.preventDefault();
+	var block = $(event.target.parentNode.parentNode);
+	// finish renaming mode, if that is what we are doing
+	block.find('input.rename-apply').click();
+	// move the children out to the top level
+	$.each(block.children('.block-list').children('.draggable-block'), function(idx, block) {
+	  moveBlock($(block), $('#top-blocks').children('.block-drop:last'));
+	});
+	$.each(block.children('.control-list').children('.draggable-control'), function(idx, control) {
+	  moveControl($(control), $('#controls').children('.control-drop:last'));
+	});
+	// mark the block with a deleted class that will be handled later
+	block.addClass('deleted');
+	// restyle and remove the drag/drop capability of the deleted block
+	block.draggable('destroy');
+	block.find('.block-drop').droppable('destroy');	
+	block.find('.block-drop').removeClass('block-drop');	
+	block.find('.control-drop').droppable('destroy');	
+	block.find('.control-drop').removeClass('control-drop');	
+	block.find('a').css('display','none');
+	block.find('.handle').css('display','none');
+	block.find('.caption').css('text-decoration', 'line-through');	
+	$('#layout-change-form').show();
+  });
+  
+  $('.control-delete').click(function(event) {
+    event.preventDefault();
+	var control = $(event.target.parentNode);
+	// mark the control with a deleted class that will be handled later
+	control.addClass('deleted');
+	// restyle and remove the drag/drop capability of the deleted control
+	control.draggable('destroy');
+	control.find('.control-drop').removeClass('control-drop');
+	control.find('a').css('display','none');
+	control.find('.handle').css('display','none');
+	control.find('.caption').css('text-decoration', 'line-through');	
+	$('#layout-change-form').show();
+  });
+  
+  makeControlsDragDroppable();
+  makeBlocksDragDroppable();
+});
 
 </script>
 <form action="" method="get">
@@ -232,10 +303,11 @@ echo data_entry_helper::select(array(
   'label' => 'Display attributes for',
   'lookupValues' => array('sample'=>'Samples','occurrence'=>'Occurrences','location'=>'Locations'),
   'default' => $_GET['type'],
-  'suffixTemplate' => 'nosuffix'
+  'suffixTemplate' => 'nosuffix',
+  'class' => 'line-up'  
 ));
 ?>
-<input type="submit" class="button ui-state-default ui-widget-content ui-corner-all" id="change-type" value="Go" />
+<input type="submit" class="button ui-state-default ui-widget-content ui-corner-all line-up" id="change-type" value="Go" />
 </fieldset>
 </form>
 <ul id="top-blocks" class="block-list">
@@ -243,8 +315,12 @@ echo data_entry_helper::select(array(
 foreach($top_blocks as $block) {
   echo '<li class="block-drop"></li>';
   echo '<li id="block-'.$block->id.'" class="ui-widget draggable-block">';
+  echo "<div class=\"ui-helper-clearfix\">\n";
   echo "<span class=\"handle\">&nbsp;</span>\n";
   echo '<span class="caption">'.$block->name."</span>\n";
+  echo '<a href="" class="block-delete">Delete</a>';	
+  echo '<a href="" class="block-rename">Rename</a>';
+  echo "</div>\n";
   echo "<ul id=\"child-blocks-".$block->id."\" class=\"block-list\">\n";
   $child_blocks = ORM::factory('form_structure_block')->
         where('parent_id',$block->id)->
@@ -253,9 +329,12 @@ foreach($top_blocks as $block) {
   foreach($child_blocks as $child_block) {
     echo '<li class="block-drop"></li>';
     echo '<li id="block-'.$child_block->id.'" class="ui-widget draggable-block">';
+	echo "<div class=\"ui-helper-clearfix\">\n";
     echo "<span class=\"handle\">&nbsp;</span>\n";
-    echo '<span>'.$child_block->name."</span>\n";
-    echo '<span class="ui-helper-clearfix"></span>';
+    echo '<span class="caption">'.$child_block->name."</span>\n"; 
+    echo '<a href="" class="block-delete">Delete</a>';	
+	echo '<a href="" class="block-rename">Rename</a>';
+	echo "</div>\n";
     get_controls($child_block->id, $controlfilter);
     echo "</li>\n";
   }
@@ -278,12 +357,15 @@ function get_controls($block_id, $controlfilter) {
         orderby('weight', 'ASC')->find_all();
   foreach($child_controls as $control) {
     echo '<li class="control-drop"></li>';
+	// prepare some dynamic property names
     $attr = $_GET['type'].'_attribute';
-    echo '<li id="control-'.$control->id.'" class="draggable-control ui-widget ui-widget-content ui-corner-all">'.
+	$attrId = $attr.'_id';
+    echo '<li id="control-'.$control->id.'" class="attribute-'.$control->$attrId.' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">'.
         "<span class=\"handle\">&nbsp;</span>\n".
         '<span class="caption">'.$control->$attr->caption."</span>\n".
-        "<a href=\"\">Edit</a>\n".
-        "<div class=\"ui-helper-clearfix\"></div></li>\n";
+        '<a href="'.url::site().'attribute_by_survey/edit/'.$control->id.'?type='.$_GET['type']."\">Edit</a>\n".
+		'<a href="" class="control-delete">Delete</a>'.
+        "</li>\n";
   }
   // extra item to allow drop at end of list
   echo '<li class="control-drop"></li>';
@@ -304,20 +386,20 @@ function get_controls($block_id, $controlfilter) {
 <form id="actions-new-block">
 <fieldset>
 <label for="new-block">Block name:</label>
-<input type="text" name="new-block" id="new-block" style="width: 200px"/>
-<input type="submit" value="Create new block" id="submit-new-block" />
+<input type="text" name="new-block" id="new-block" style="width: 200px;" class="line-up" />
+<input type="submit" value="Create new block" id="submit-new-block" class="button ui-widget-content ui-corner-all ui-state-default line-up" />
 </fieldset>
 </form>
 <form id="actions-add-existing">
 <fieldset> 
 <label for="existing-attribute">Existing attribute:</label>
-<select id="existing-attribute" name="existing-attribute" style="width: 200px">
+<select id="existing-attribute" name="existing-attribute" style="width: 206px;" class="line-up">
 <?php 
 foreach ($existingAttrs as $attr) {
   echo '<option value="'.$attr->id.'">'.$attr->caption."</option>\n";
 }
 ?>
 </select>
-<input type="submit" value="Add existing attribute" id="submit-existing-attribute" />
+<input type="submit" value="Add existing attribute" id="submit-existing-attribute" class="button ui-widget-content ui-corner-all ui-state-default line-up" />
 </fieldset>
 </form>
