@@ -79,7 +79,9 @@ echo html::error_message($model->getError('deleted'));
 <?php if ($values['table'] != null) : ?>
     <li><a href="#subtaxa"><span>Child Taxa</span></a></li>
 <?php 
-endif;
+endif; ?>
+    <li><a href="<?php echo url::site()."taxon_relation/$id" ?>" title="relations"><span>Relationships</span></a></li>
+<?php 
 endif;
 ?>
   </ul>
@@ -187,6 +189,10 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
 <label for="search_code">Search Code:</label>
 <input id="search_code" name="taxon:search_code" class="narrow" value="<?php echo html::initial_value($values, 'taxon:search_code'); ?>"/>
 <?php echo html::error_message($model->getError('taxon:search_code')); ?>
+</li>
+<li>
+<label for="allow_data_entry">Allow Data Entry:</label>
+<?php echo form::checkbox(array('id' => 'allow_data_entry', 'name' => 'taxa_taxon_list:allow_data_entry'), TRUE, array_key_exists('taxa_taxon_list:allow_data_entry', $values) AND ($values['taxa_taxon_list:allow_data_entry'] == 't') ) ?>
 </li>
 </ol>
 </fieldset>

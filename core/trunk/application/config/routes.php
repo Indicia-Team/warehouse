@@ -68,6 +68,9 @@ $config['sample'] = 'sample/page/1';
 $config['sample_image/([0-9]+)'] = 'sample_image/page/1/$1';
 // Title
 $config['title'] = 'title/page/1';
+// Taxon Relation Types
+$config['taxon_relation_type'] = 'taxon_relation_type/page/1';
+$config['taxon_relation/([0-9]+)'] = 'taxon_relation/page/1/$1';
 
 // Reports
 $config['report'] = 'report_viewer';
