@@ -351,15 +351,13 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 //  are embedded in the species list.
 //    $r .= "<label for='occurrence:image'>".lang::get('LANG_Image_Label')."</label>\n".
 //        data_entry_helper::image_upload('occurrence:image');
-    $r .= '<br/><br/>';
-
+    
     if ($args['interface']=='wizard') {
       $r .= data_entry_helper::wizard_buttons(array(
         'divId'=>'controls',
         'page'=>'last'
       ));
     }
-    $r .= "</div>\n";        
     $r .= "</div>\n"; 
     if(!empty(data_entry_helper::$validation_errors)){
 		$r .= data_entry_helper::dump_remaining_errors();
@@ -432,7 +430,6 @@ jQuery('#imp-sref').change();
         'label'=>lang::get('occurrence:taxa_taxon_list_id'),
         'columns'=>1,
         'view'=>'detail',
-        'occAttrs'=> explode(',', $args['checklist_attributes']),
         'extraParams'=>$auth['read'],
         'survey_id'=>$args['survey_id']
     );
@@ -528,7 +525,7 @@ jQuery('#imp-sref').change();
     if (!empty($lastInnerBlock)) {
       $r .= '</fieldset>';
     }
-    if (!empty($lastOuterBlock)) {
+    if (!empty($lastOuterBlock) && strcasecmp($outerFilter,$lastOuterBlock)!==0) {
       $r .= '</fieldset>';
     }
     return $r;
