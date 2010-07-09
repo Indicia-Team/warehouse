@@ -2572,56 +2572,57 @@ class data_entry_helper extends helper_config {
   /**
    * Internal function to prepare the list of occurrence attribute columns for a species_checklist control.
    */
-  private static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
-    // Get the list of occurrence attributes
-    if (array_key_exists('occAttrs', $options)) {
-      $idx=0;
+  private static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {	
+    $idx=0;  
+    if (array_key_exists('occAttrs', $options))
+      $attrs = $options['occAttrs'];
+    else
+      // There is no specified list of occurrence attributes, so use them all
+      $attrs = array_keys($attributes);
+    foreach ($attrs as $occAttr) {
       $class='';
-      foreach ($options['occAttrs'] as $occAttr)
+      // test that this occurrence attribute is linked to the survey
+      if (!array_key_exists($occAttr, $attributes))
+        throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
+      $a = self::get_population_data(array(
+        'table'=>'occurrence_attribute',
+        'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
+      ));
+      if (count($a)>0 && !array_key_exists('error', $a))
       {
-        // test that this occurrence attribute is linked to the survey
-        if (!array_key_exists($occAttr, $attributes))
-          throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
-        $a = self::get_population_data(array(
-            'table'=>'occurrence_attribute',
-            'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
-        ));
-        if (count($a)>0 && !array_key_exists('error', $a))
+        $b = $a[0];
+        $occAttrs[$occAttr] = $b['caption'];
+        // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
+        $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;
+        // Build the correct control
+        switch ($b['data_type'])
         {
-          $b = $a[0];
-          $occAttrs[$occAttr] = $b['caption'];
-          // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-          $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;
-          // Build the correct control
-          switch ($b['data_type'])
-          {
-            case 'L':
-              $tlId = $b['termlist_id'];
-              $occAttrControls[$occAttr] = data_entry_helper::select(array(
-                  'fieldname' => '{fieldname}',
-                  'table'=>'termlists_term',
-                  'captionField'=>'term',
-                  'valueField'=>'id',
-                  'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
-                  'class' => $class,
-                  'blankText' => ''
-              ));
-              break;
-            case 'D':
-            case 'V':
-              // Date-picker control
-              $occAttrControls[$occAttr] = '<input type="text" class="date $class" ' .
-                  'id="{fieldname}" name="{fieldname}" ' .
-                  "value=\"".lang::get('click here')."\"/>";
-              break;
-            default:
-              $occAttrControls[$occAttr] =
-                  "<input type=\"text\" id=\"{fieldname}\" name=\"{fieldname}\" class=\"$class\" value=\"\" />";
-              break;
-          }
+        case 'L':
+          $tlId = $b['termlist_id'];
+          $occAttrControls[$occAttr] = data_entry_helper::select(array(
+            'fieldname' => '{fieldname}',
+            'table'=>'termlists_term',
+            'captionField'=>'term',
+            'valueField'=>'id',
+            'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
+            'class' => $class,
+            'blankText' => ''
+          ));
+          break;
+        case 'D':
+        case 'V':
+          // Date-picker control
+          $occAttrControls[$occAttr] = '<input type="text" class="date $class" ' .
+            'id="{fieldname}" name="{fieldname}" ' .
+            "value=\"".lang::get('click here')."\"/>";
+          break;
+        default:
+          $occAttrControls[$occAttr] =
+            "<input type=\"text\" id=\"{fieldname}\" name=\"{fieldname}\" class=\"$class\" value=\"\" />";
+          break;
         }
-        $idx++;
       }
+      $idx++;      
     }
   }
 
@@ -4692,7 +4693,8 @@ $('.ui-state-default').live('mouseout', function() {
            'extraParams'=> $options['extraParams']+ array(
              'deleted' => 'f',
              'website_deleted' => 'f',
-             'query'=>urlencode(json_encode(array('in'=>array('restrict_to_survey_id', $surveys))))
+             'query'=>urlencode(json_encode(array('in'=>array('restrict_to_survey_id', $surveys)))),
+             'orderby'=>'weight'
            )
     );
     $response = self::get_population_data($attrOptions);
