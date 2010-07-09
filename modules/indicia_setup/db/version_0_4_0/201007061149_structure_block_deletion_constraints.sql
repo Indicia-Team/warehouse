@@ -1,4 +1,4 @@
-﻿ALTER TABLE form_structure_blocks DROP CONSTRAINT fk_form_structure_blocks_parent;
+ALTER TABLE form_structure_blocks DROP CONSTRAINT fk_form_structure_blocks_parent;
 
 ALTER TABLE form_structure_blocks
   ADD CONSTRAINT fk_form_structure_blocks_parent FOREIGN KEY (parent_id)

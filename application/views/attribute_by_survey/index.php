@@ -49,7 +49,7 @@ function outputBlocks(list) {
       }
       r += '{';
         r += '"id":"' + block.id + '",'; 
-		caption = $('#' + block.id+' div > .caption').text();
+		caption = $('#' + block.id+' > div > .caption').text();
 		if (caption.substr(caption.length-1, 1)=='*') {
 		  caption = $.trim(caption.substr(0, caption.length-1));
 		}

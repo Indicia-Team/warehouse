@@ -113,8 +113,8 @@ abstract class Valid_ORM extends ORM {
   * of this class.
   */
   public function populate_validation_rules() {
-    if (empty($this->validation_rules)) return;
-
+    if (empty($this->validation_rules)) 
+      return;
     $rules_list = explode("\r\n", $this->validation_rules);
     foreach($rules_list as $rule) {
       // argument extraction is complicated by fact that for regex holds a regular expression.

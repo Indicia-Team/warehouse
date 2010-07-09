@@ -28,71 +28,28 @@
  * @subpackage Models
  * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
-class Occurrence_Attribute_Value_Model extends ORM {
+class Occurrence_Attribute_Value_Model extends Attribute_Value_ORM {
 
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence', 'occurrence_attribute');
 
   protected $search_field='text_value';
 
-  public function validate(Validation $array, $save = FALSE) {
-    // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
-    $array->pre_filter('trim');
-    $array->add_rules('occurrence_attribute_id', 'required');
-    $array->add_rules('occurrence_id', 'required');
-    $this->unvalidatedFields = array(
-      'deleted'
-    );
-    
-    // We apply the validation rules specified in the occurrence attribute
-    // table to the value given.
-    if (array_key_exists('occurrence_attribute_id', $array->as_array())) {
-      $id = $array->as_array();
-      $id = $id['occurrence_attribute_id'];
-      $oam = ORM::factory('occurrence_attribute', $id);
-      switch ($oam->data_type) {
-        case 'T':
-          $vf = 'text_value';
-          break;
-        case 'T':
-          $vf = 'text_value';
-          break;
-        case 'I':
-          $vf = 'int_value';
-          $array->add_rules('int_value', 'digit');
-          break;
-        case 'D':          
-          $array->add_rules('date_end_value', 'required');
-          $array->add_rules('date_type_value', 'required');
-          $vf = 'date_start_value';
-          break;
-        case 'V':
-          // Vague date - presumably already validated?          
-          $array->add_rules('date_end_value', 'required');
-          $array->add_rules('date_type_value', 'required');
-          $vf = 'date_start_value';
-          break;
-        case 'B':
-          // Boolean
-          // The checkbox html control actually posts the value on
-          if ($array->int_value=='on') $array->int_value=1;
-          $array->add_rules('int_value', 'minimum[0]');
-          $array->add_rules('int_value', 'maximum[1]');
-          $vf = 'int_value';
-          break;
-        default:
-          $vf = 'int_value';
-      }
-      // Require the field with the value in
-      if ($vf != null) $array->add_rules($vf, 'required');
-      // Now get the custom attributes
-      if ($oam->validation_rules != '') {
-        $rules = explode("\r\n", $oam->validation_rules);
-        kohana::log('debug', 'rules '.kohana::debug($rules));
-        foreach ($rules as $a){
-          $array->add_rules($vf, $a);
-        }
-      }
-    }
+   public function validate(Validation $array, $save = FALSE) {
+    self::attribute_validation($array, 'occurrence');    
     return parent::validate($array, $save);
+  }
+  
+  protected function get_survey_specific_rules($values) {
+    return $this->db
+            ->from('occurrence_attributes_websites as oaw')
+            ->join('samples as s', 's.survey_id', 'oaw.restrict_to_survey_id')
+            ->join('occurrences as o', 'o.sample_id', 's.id')
+            ->select('oaw.validation_rules')
+            ->where(array(
+              'o.id' => $values['occurrence_id'],
+              'oaw.occurrence_attribute_id'=>$values['occurrence_attribute_id']
+            ))
+            ->limit(1)
+            ->get();
   }
 }

@@ -208,6 +208,7 @@ class Upgrade_Model extends Model
                   throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
                 }
                 kohana::log('debug', "Upgrading file $name");
+                kohana::log('debug', $_db_file);
                 $result = $this->db->query($_db_file);
                 $last_executed_file = $name;
               }
