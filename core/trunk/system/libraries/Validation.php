@@ -247,7 +247,7 @@ class Validation_Core extends ArrayObject {
 				$name = $callback;
 			}
 
-			throw new Kohana_Exception('validation.not_callable', $name);
+			throw new Kohana_Exception('validation.not_callable '.$name, $name);
 		}
 
 		return $callback;

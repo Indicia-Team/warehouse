@@ -30,13 +30,13 @@
  */
 class Occurrence_attributes_website_Model extends Valid_ORM
 {
-
-    protected $has_one = array(
-      'occurrence_attribute',
-        'website',
+  protected $has_one = array(
+    'occurrence_attribute',
+    'website',
   );
-    protected $belongs_to = array(
-      'created_by'=>'user',
+  
+  protected $belongs_to = array(
+    'created_by'=>'user',
   );
 
   public function validate(Validation $array, $save = FALSE) {
@@ -45,6 +45,18 @@ class Occurrence_attributes_website_Model extends Valid_ORM
     $array->pre_filter('trim');
     $this->unvalidatedFields = array('occurrence_attribute_id', 'website_id', 'restrict_to_survey_id');
     return parent::validate($array, $save);
+  }
+  
+  /**
+   * Return a displayable caption for the item.   
+   */
+  public function caption()
+  {
+    if ($this->id) {
+      return ($this->occurrence_attribute != null ? $this->occurrence_attribute->caption : '');
+    } else {
+      return 'Occurrence Attribute';
+    }    
   }
 
 }

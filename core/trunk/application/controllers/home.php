@@ -33,8 +33,6 @@ class Home_Controller extends Indicia_Controller {
 
   public function index()
   {
-    //$this->check_for_upgrade();
-
     $view = new View('home');
     $this->template->title='Indicia';
     $system = new System_Model;

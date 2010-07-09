@@ -30,8 +30,6 @@
  */
 class Sample_attributes_website_Model extends Valid_ORM
 {
-  protected $search_field='id';
-
   protected $has_one = array(
     'sample_attribute',
     'website',
@@ -46,6 +44,18 @@ class Sample_attributes_website_Model extends Valid_ORM
     $array->pre_filter('trim');
     $this->unvalidatedFields = array('sample_attribute_id', 'website_id', 'restrict_to_survey_id');
     return parent::validate($array, $save);
+  }
+  
+    /**
+   * Return a displayable caption for the item.   
+   */
+  public function caption()
+  {
+    if ($this->id) {
+      return ($this->sample_attribute != null ? $this->sample_attribute->caption : '');
+    } else {
+      return 'Sample Attribute';
+    }    
   }
 
 }
