@@ -36,7 +36,9 @@ $(document).ready(function(){
 <fieldset>
 <legend>Metadata</legend>
 <input type="hidden" id="created_by_id" name="created_by_id" value="<?php echo html::specialchars($model->created_by_id); ?>" />
+<?php if (isset($model->updated_on)) : ?>
 <input type="hidden" name="updated_by_id" id="updated_by_id" value="<?php echo html::specialchars($model->updated_by_id); ?>" />
+<?php endif; ?>
 <ol>
 <li>
 Record ID is <?php if ($model->id) echo $model->id; else echo '<new record>';?>
@@ -44,9 +46,11 @@ Record ID is <?php if ($model->id) echo $model->id; else echo '<new record>';?>
 <li>
 Created on <?php echo html::specialchars($model->created_on); ?> by <?php echo (($model->created_by_id != null) ? (html::specialchars($model->created_by->person->surname)) : ''); ?>.
 </li>
+<?php if (isset($model->updated_on)) : ?>
 <li>
 Updated on <?php echo html::specialchars($model->updated_on); ?> by <?php echo (($model->updated_by_id != null) ? (html::specialchars($model->updated_by->person->surname)) : ''); ?>.
 </li>
+<?php endif; ?>
 </ol>
 </fieldset>
 </div>
