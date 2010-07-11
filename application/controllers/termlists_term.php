@@ -51,8 +51,9 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    */
   protected function defineEditBreadcrumbs() { 
     $this->page_breadcrumbs[] = html::anchor('termlist', 'Term Lists');
-	$this->page_breadcrumbs[] = html::anchor('termlist/edit/'.$this->model->termlist_id.'?tab=terms', $this->model->termlist->title);
-	$this->page_breadcrumbs[] = $this->model->caption();
+    $listTitle = ORM::Factory('termlist', $this->uri->argument(1))->title;
+  	$this->page_breadcrumbs[] = html::anchor('termlist/edit/'.$this->uri->argument(1).'?tab=terms', $listTitle);
+	  $this->page_breadcrumbs[] = $this->model->caption();
   }
 
   private function formatSynonomy(ORM_Iterator $res){
