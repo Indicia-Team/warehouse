@@ -51,9 +51,9 @@ class iform_mnhnl_dynamic_1 {
    */
   public static function get_parameters() {    
     $retVal = array_merge(
-     iform_map_get_map_parameters(),
-     iform_map_get_georef_parameters(),
-     array(
+      iform_map_get_map_parameters(),
+      iform_map_get_georef_parameters(),
+      array(
         array(
           'name'=>'spatial_systems',
           'caption'=>'Allowed Spatial Ref Systems',      
@@ -85,42 +85,28 @@ class iform_mnhnl_dynamic_1 {
           ),
           'group'=>'User Interface'
         ),
-      array(
-        'name'=>'survey_id',
-        'caption'=>'Survey ID',
-        'description'=>'The Indicia ID of the survey that data will be posted into.',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'list_id',
-        'caption'=>'Initial Species List ID',
-        'description'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
-            'into the grid.',
-        'type'=>'int'
-      ),
-      array(
-        'name'=>'extra_list_id',
-        'caption'=>'Extra Species List ID',
-        'description'=>'The Indicia ID for the species list that species can be selected from. This list is available for additional '.
-            'taxa being added to the grid.',
-        'type'=>'int',
-        'required'=>false
-      ),
-      array(
-          'name'=>'uid_attr_id',
-          'caption'=>'User ID Attribute ID',      
-          'description'=>'Indicia ID for the sample attribute that stores the CMS User ID.',
-          'type'=>'smpAttr',
-          'group'=>'Sample Attributes'
+        array(
+          'name'=>'survey_id',
+          'caption'=>'Survey ID',
+          'description'=>'The Indicia ID of the survey that data will be posted into.',
+          'type'=>'int'
         ),
         array(
-          'name'=>'checklist_attributes',
-          'caption'=>'Species Checklist Grid Contents',      
-          'description'=>'List of Indicia IDs for occurrence attributes included in the species checklist grid, comma separated.',
-          'type'=>'string',
-          'group'=>'Species Checklist Attributes'
+          'name'=>'list_id',
+          'caption'=>'Initial Species List ID',
+          'description'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
+              'into the grid.',
+          'type'=>'int'
+        ),
+        array(
+          'name'=>'extra_list_id',
+          'caption'=>'Extra Species List ID',
+          'description'=>'The Indicia ID for the species list that species can be selected from. This list is available for additional '.
+              'taxa being added to the grid.',
+          'type'=>'int',
+          'required'=>false
         )
-      ) 
+      )
     );
     return $retVal;
   }
@@ -152,25 +138,47 @@ class iform_mnhnl_dynamic_1 {
     			// mode 2: display existing sample
     $loadID = null;
     $displayThisOcc = true; // when populating from the DB rather than POST we have to be
-    						// careful with selection object, as geom in wrong format.
+    						            // careful with selection object, as geom in wrong format.
     if ($_POST) {
     	if(!is_null(data_entry_helper::$entity_to_load)){
-			$mode = 2; // errors with new sample, entity poulated with post, so display this data.
+			  $mode = 2; // errors with new sample, entity poulated with post, so display this data.
     	} // else valid save, so go back to gridview: default mode 0
     } else {
   		if (array_key_exists('sample_id', $_GET)){
 		    $mode = 2;
 		    $loadID = $_GET['sample_id'];
-		} else if (array_key_exists('newSample', $_GET)){
-			$mode = 1;
-			data_entry_helper::$entity_to_load = array();
-		} // else default to mode 0
+      } else if (array_key_exists('newSample', $_GET)){
+        $mode = 1;
+        data_entry_helper::$entity_to_load = array();
+      } // else default to mode 0
     }
+    
+    $attributes = data_entry_helper::getAttributes(array(
+    	'id' => data_entry_helper::$entity_to_load['sample:id']
+       ,'valuetable'=>'sample_attribute_value'
+       ,'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
+       ,'fieldprefix'=>'smpAttr'
+       ,'extraParams'=>$auth['read']
+       ,'survey_id'=>$args['survey_id']
+    ));
 
     ///////////////////////////////////////////////////////////////////
-    // default mode 0 : display survey selector
+    // default mode 0 : display grid of the samples to add a new one 
+    // or edit an existing one.
     ///////////////////////////////////////////////////////////////////
-    if($mode == 0){
+    if($mode == 0) {
+      // get the CMS User ID attribute so we can filter the grid to this user
+      foreach($attributes as $attrId => $attr) {
+        if (strcasecmp($attr['caption'],'CMS User ID')==0) {
+          $userIdAttr = $attrId;
+          break;
+        }
+      }
+      if (!isset($userIdAttr)) {
+        return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
+            'be tagged against the user.');
+      }
       $r .= data_entry_helper::report_grid(array(
         'id' => 'samples-grid',
         'dataSource' => 'reports_for_prebuilt_forms/simple_sample_list_1',
@@ -189,7 +197,7 @@ class iform_mnhnl_dynamic_1 {
         'autoParamsForm' => true,
         'extraParams' => array(
           'survey_id'=>$args['survey_id'], 
-          'userID_attr_id'=>$args['uid_attr_id'],
+          'userID_attr_id'=>$userIdAttr,
           'userID'=>$user->uid
         )
       ));	
