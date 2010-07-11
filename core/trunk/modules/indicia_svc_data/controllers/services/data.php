@@ -66,7 +66,9 @@ class Data_Controller extends Data_Service_Base_Controller {
       'sample',
       'sample_comment',
       'survey',
-      'user'
+      'user',
+      'taxa_taxon_list',
+      'taxon_relation'
   );
   
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -74,7 +76,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
-      'taxa_taxon_list'
+      'taxa_taxon_list',
+      'taxon_relation'
   );
 
   /**
@@ -238,6 +241,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function taxa_taxon_list()
   {
   $this->handle_call('taxa_taxon_list');
+  }
+
+  /**
+  * Provides the /services/data/taxa_relation service.
+  * Retrieves details of taxon_relations.
+  */
+  public function taxon_relation()
+  {
+  $this->handle_call('taxon_relation');
   }
 
   /**
@@ -786,14 +798,15 @@ class Data_Controller extends Data_Service_Base_Controller {
       $viewname='list_'.$table;
       $db = new Database;
       $fields=$db->list_fields($viewname);
+//      Kohana::log('info', $viewname.' : '.$this->entity.' '.$entity);
       if(empty($fields)) {
-      Kohana::log('info', $viewname.' not present - access denied');
+         Kohana::log('info', $viewname.' not present - access denied');
          throw new ServiceError('Access to entity '.$entity.' denied.');
       }
       $db->from($viewname);
       $db->where(array('id' => $id));
 
-      if(!in_array ($this->entity, $this->allow_full_access)) {
+      if(!in_array ($entity, $this->allow_full_access)) {
       		if(array_key_exists ('website_id', $fields))
             {
                 $db->in('website_id', array(null, $this->website_id));
