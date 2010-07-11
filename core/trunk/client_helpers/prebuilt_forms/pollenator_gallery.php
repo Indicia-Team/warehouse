@@ -464,6 +464,7 @@ class iform_pollenator_gallery {
 	// the fact that the user is logged in to drupal as the main authentication/authorisation/identification
 	// process for the user. The proxy also packages the post into the correct format	
 
+    // the controls for the filter include all taxa, not just the ones allowed for data entry, as does the one for checking the tool, just to be on the safe side.
 	$flower_ctrl_args=array(
     	    'label'=>lang::get('LANG_Flower_Species'),
         	'fieldname'=>'flower:taxa_taxon_list_id',
@@ -472,11 +473,12 @@ class iform_pollenator_gallery {
         	'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t'),
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order'),
 			'suffixTemplate'=>'nosuffix'
 	);
 	$focus_flower_ctrl_args = $flower_ctrl_args;
 	$focus_flower_ctrl_args['fieldname'] = 'determination:taxa_taxon_list_id';
+	$focus_flower_ctrl_args['extraParams'] = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t');
 	$insect_ctrl_args=array(
     	    'label'=>lang::get('LANG_Insect_Species'),
         	'fieldname'=>'insect:taxa_taxon_list_id',
@@ -485,11 +487,12 @@ class iform_pollenator_gallery {
         	'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
-    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t'),
+    	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order'),
 			'suffixTemplate'=>'nosuffix'
 	);
 	$focus_insect_ctrl_args = $insect_ctrl_args;
 	$focus_insect_ctrl_args['fieldname'] = 'determination:taxa_taxon_list_id';
+	$focus_insect_ctrl_args['extraParams'] = $readAuth + array('taxon_list_id' => $args['insect_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order', 'allow_data_entry'=>'t');
 	$options = iform_map_get_map_options($args, $readAuth);
 	$olOptions = iform_map_get_ol_options($args);
     // The maps internal projection will be left at its default of 900913.
