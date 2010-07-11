@@ -3350,8 +3350,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   private static function _getCachedResponse($file, $timeout, $options)
   {
     // Note the random element, we only timeout a cached file sometimes.
-    if ($timeout && $file && is_file($file) &&
-        (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout))
+    if (!isset($_GET['nocache']) && ($timeout && $file && is_file($file) &&
+        (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout)))
     ) {
       $response = array();
       $handle = fopen($file, 'rb');
@@ -3454,12 +3454,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _purgeImages() {
     $interimImageFolder = self::relative_client_helper_path() . (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
-    self::_purgeFiles(1, $interimImageFolder, self::$interim_image_expiry);
+    self::_purgeFiles(self::$cache_chance_purge, $interimImageFolder, self::$interim_image_expiry);
   }
 
   private static function _purgeFiles($chanceOfPurge, $folder, $timeout, $allowedFileCount=0) {
     // don't do this every time.
-    if (rand(1, $chanceOfPurge)==1) {
+    if (rand(1, $chanceOfPurge)===1) {
       // First, get an array of files sorted by date
       $files = array();
       $dir =  opendir($folder);
