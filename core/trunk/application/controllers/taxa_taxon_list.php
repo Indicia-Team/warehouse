@@ -53,8 +53,9 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    */
   protected function defineEditBreadcrumbs() { 
     $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
-	$this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$this->model->taxon_list_id.'?tab=taxa', $this->model->taxon_list->title);
-	$this->page_breadcrumbs[] = $this->model->caption();
+    $listTitle = ORM::Factory('taxon_list', $this->uri->argument(1))->title;
+	  $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$this->uri->argument(1).'?tab=taxa', $listTitle);
+	  $this->page_breadcrumbs[] = $this->model->caption();
   }
 
   /**
