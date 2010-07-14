@@ -2,7 +2,7 @@
 
 <report title="Occurrences by Survey" description="Lists individual surveys registered on the core module and the total number of occurrences associated with each.">
       <query>
-      SELECT su.title as survey, w.title as website, COUNT(*) as count
+      SELECT su.title as survey, w.title as website, COUNT(o.id) as count
       FROM report_websites w
       JOIN surveys su on su.website_id=w.id
       LEFT JOIN (samples s

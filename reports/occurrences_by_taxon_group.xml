@@ -2,7 +2,7 @@
 
 <report title="Occurrences by Taxon Group" description="Lists taxon groups and the number of occurrences of species within them.">
       <query>
-      SELECT tg.title as taxongroup, count(*) as count FROM occurrences o
+      SELECT tg.title as taxongroup, count(o.id) as count FROM occurrences o
       JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id
       JOIN taxa t ON ttl.taxon_id = t.id
       JOIN taxon_groups tg ON t.taxon_group_id = tg.id
