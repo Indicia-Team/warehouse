@@ -257,7 +257,8 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    */
   public function getDefaults() {
     return array(
-      'preferred'=>'t'
+      'preferred'=>'t',
+      'taxa_taxon_list:allow_data_entry' => 't'
     );  
   }
 }

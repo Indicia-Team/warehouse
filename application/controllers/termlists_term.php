@@ -51,8 +51,15 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    */
   protected function defineEditBreadcrumbs() { 
     $this->page_breadcrumbs[] = html::anchor('termlist', 'Term Lists');
-    $listTitle = ORM::Factory('termlist', $this->uri->argument(1))->title;
-  	$this->page_breadcrumbs[] = html::anchor('termlist/edit/'.$this->uri->argument(1).'?tab=terms', $listTitle);
+    if ($this->model->id) {
+      // editing an existing item, so our argument is the termlists_term_id
+      $listId = $this->model->termlist_id;
+    } else {
+      // creating a new one so our argument is the termlist id
+      $listId = $this->uri->argument(1);     
+    }
+    $listTitle = ORM::Factory('termlist', $listId)->title;
+  	$this->page_breadcrumbs[] = html::anchor('termlist/edit/'.$listId.'?tab=terms', $listTitle);
 	  $this->page_breadcrumbs[] = $this->model->caption();
   }
 
@@ -222,11 +229,15 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    * are returned to the list of terms on the sub-tab of the list.
    */
   protected function get_return_page() {
-    if (array_key_exists('termlists_term:termlist_id', $_POST)) {
+    if (array_key_exists('termlists_term:termlist_id', $_POST))
+      // after saving a record, the list id to return to is in the POST data
       return "termlist/edit/".$_POST['termlists_term:termlist_id']."?tab=terms";
-    } else {
+    elseif (array_key_exists('termlists_term:termlist_id', $_GET))
+      // after uploading records, the list id is in the URL get parameters
+      return "termlist/edit/".$_GET['termlists_term:termlist_id']."?tab=terms";
+    else
+      // last resort if we don't know the list, just show the whole lot of lists
       return $this->model->object_name;
-    }
   }
 }
 ?>

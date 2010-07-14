@@ -71,11 +71,11 @@ function outputBlocks(list) {
 function moveBlock(source, target) {
   if (source.prev()[0]!==target[0] && source.next()[0]!==target[0]) {
     if (source.hasClass('draggable-block')) {
-	  if (target.parent().parent().parent().parent().parent().hasClass('block-list')) {
+	    if (target.parent().parent().parent().parent().parent().hasClass('block-list')) {
         return;
-	  }
-	  var controlDrop = source.prev();
-	  // move the drop target as well
+	    }
+	    var controlDrop = source.prev();
+	    // move the drop target as well
       controlDrop.insertBefore(target);
       source.insertBefore(target);
     }
@@ -123,7 +123,7 @@ function makeBlocksDragDroppable() {
   
   $('.block-drop').droppable({
     drop: function(event, ui) {
-	  moveBlock(ui.draggable, $(event.target));      
+	    moveBlock(ui.draggable, $(event.target));      
     },
     accept: '.draggable-block',
     hoverClass: 'ui-state-highlight',
@@ -147,7 +147,7 @@ function makeControlsDragDroppable() {
   
   $('.control-drop').droppable({
     drop: function(event, ui) {      
-	  moveControl(ui.draggable, $(event.target));
+	    moveControl(ui.draggable, $(event.target));
     },
     accept: '.draggable-control',
     hoverClass: 'ui-state-highlight',
@@ -208,16 +208,17 @@ $(document).ready(function() {
     } else if (!block.match(/^[a-zA-Z0-9 ]+$/)) {
 	  alert('The block name should consist of letters, numbers and spaces only.');
 	} else {
-      $('#top-blocks').append('<li id="new-block-'+block.replace(/ /g,'_')+'" style="border-color: red" '+
-            'class="ui-widget draggable-block">' +
-		  '<div class="ui-helper-clearfix"' +
-	      '<span class="handle">&nbsp;</span>' +
+      $('#top-blocks').append(
+          '<li id="new-block-'+block.replace(/ /g,'_')+'" style="border-color: red" '+'class="ui-widget draggable-block">' +
+		      '<div class="ui-helper-clearfix">' +
+	        '<span class="handle">&nbsp;</span>' +
           '<span class="caption">'+block + ' *</span>' +
-		  '<a href="" class="block-rename">Rename</a>'+
-		  '</div>' +
-          '<ul id="child-blocks-new-block-'+block.replace(' ','_')+'" class="block-list"></ul>'+
+		      '<a href="" class="block-rename">Rename</a>'+
+		      '</div>' +
+          '<ul id="child-blocks-new-block-'+block.replace(' ','_')+'" class="block-list"><li class="block-drop"></li></ul>'+
           '<ul class="ui-widget ui-widget-content ui-corner-all control-list">'+
-          '<li class="control-drop"></li></ul></li>');
+          '<li class="control-drop"></li></ul></li>'+
+          "<li class=\"block-drop\"></li>\n");
       $('#layout-change-form').show();
       makeBlocksDragDroppable();
       makeControlsDragDroppable();
@@ -329,12 +330,12 @@ foreach($top_blocks as $block) {
   foreach($child_blocks as $child_block) {
     echo '<li class="block-drop"></li>';
     echo '<li id="block-'.$child_block->id.'" class="ui-widget draggable-block">';
-	echo "<div class=\"ui-helper-clearfix\">\n";
+	  echo "<div class=\"ui-helper-clearfix\">\n";
     echo "<span class=\"handle\">&nbsp;</span>\n";
     echo '<span class="caption">'.$child_block->name."</span>\n"; 
     echo '<a href="" class="block-delete">Delete</a>';	
-	echo '<a href="" class="block-rename">Rename</a>';
-	echo "</div>\n";
+	  echo '<a href="" class="block-rename">Rename</a>';
+    echo "</div>\n";
     get_controls($child_block->id, $controlfilter);
     echo "</li>\n";
   }

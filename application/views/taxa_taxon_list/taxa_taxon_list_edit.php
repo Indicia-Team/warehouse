@@ -20,7 +20,6 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
 echo html::script(array(
   'media/js/jquery.ajaxQueue.js',
   'media/js/jquery.bgiframe.min.js',
@@ -401,7 +400,7 @@ echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null
 <?php if($id != null) { ?>
 <form class="cmxform" >
   <fieldset>
-    <legend>Linking and Spliting</legend>
+    <legend>Lumping and Spliting</legend>
     <ol>
 <?php 
   if($can_split == false){

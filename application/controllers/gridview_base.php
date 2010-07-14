@@ -183,6 +183,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       $this->template->title = "Map CSV File columns to ".$this->pagetitle;
       $view = new View('upload_mappings');
       $view->columns = fgetcsv($handle, 1000, ",");
+      $view->onCompletePage = 'test.php';
       fclose($handle);
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
