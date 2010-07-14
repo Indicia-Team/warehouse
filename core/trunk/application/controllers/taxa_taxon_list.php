@@ -53,8 +53,15 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    */
   protected function defineEditBreadcrumbs() { 
     $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
-    $listTitle = ORM::Factory('taxon_list', $this->uri->argument(1))->title;
-	  $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$this->uri->argument(1).'?tab=taxa', $listTitle);
+    if ($this->model->id) {
+      // editing an existing item, so our argument is the taxa in taxon list id
+      $listId = $this->model->taxon_list_id;
+    } else {
+      // creating a new one so our argument is the taxon list id
+      $listId = $this->uri->argument(1);     
+    }
+    $listTitle = ORM::Factory('taxon_list', $listId)->title;
+	  $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$listId.'?tab=taxa', $listTitle);
 	  $this->page_breadcrumbs[] = $this->model->caption();
   }
 
@@ -217,11 +224,15 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    * are returned to the list of taxa on the sub-tab of the list.
    */
   protected function get_return_page() {
-    if (array_key_exists('taxa_taxon_list:taxon_list_id', $_POST)) {
+    if (array_key_exists('taxa_taxon_list:taxon_list_id', $_POST))
+      // after saving a record, the list id to return to is in the POST data
       return "taxon_list/edit/".$_POST['taxa_taxon_list:taxon_list_id']."?tab=taxa";
-    } else {
-      return $this->model->object_name;
-    }
+    elseif (array_key_exists('taxa_taxon_list:taxon_list_id', $_GET))
+      // after uploading records, the list id is in the URL get parameters
+      return "taxon_list/edit/".$_GET['taxa_taxon_list:taxon_list_id']."?tab=taxa";
+    else
+      // last resort if we don't know the list, just show the whole lot of lists
+      return "taxon_list";
   }
   
   /**

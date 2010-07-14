@@ -64,7 +64,7 @@ $(document).ready(function(){
           uploadChunk();
         } else {
           jQuery('#progress-text').html('Upload complete.');
-          window.location = "<?php echo url::site() . $controllerpath; ?>/display_upload_result/" + total + "?uploaded_csv=<?php echo $filename; ?>";
+          window.location = "<?php echo url::site() . $controllerpath; ?>/display_upload_result/" + total + "?uploaded_csv=<?php echo $filename.$extraParams; ?>";
         }
       }
     );  

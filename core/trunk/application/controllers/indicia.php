@@ -222,7 +222,7 @@ class Indicia_Controller extends Template_Controller {
   
   /**
    * Constructs an array of the default values required when loading a new edit form. 
-   * Each entry is of the form "model.field => value". Loads both the defaults from this 
+   * Each entry is of the form "model:field => value". Loads both the defaults from this 
    * controller's main model, and any supermodels it has.
    */
   protected function getDefaults() {    
