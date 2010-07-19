@@ -1952,6 +1952,7 @@ runSearch = function(forCollections){
 		  })
 	});
 	if(forCollections) {
+		jQuery('#results-collections-results').empty().append('<div class=\"collection-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchLayer.events.register('featuresadded', {}, function(a1){
 			searchResults = a1;
 			searchResults.type = 'C';
@@ -1960,7 +1961,13 @@ runSearch = function(forCollections){
 			}
 			setCollectionPage(1);
 		});
+		searchLayer.events.register('loadend', {}, function(){
+			if(searchLayer.features.length == 0){
+				jQuery('#results-collections-results').empty().text('".lang::get('LANG_No_Collection_Results')."');
+			}
+		});
 	} else {
+		jQuery('#results-insects-results').empty().append('<div class=\"insect-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchLayer.events.register('featuresadded', {}, function(a1){
 			searchResults = a1;
 			searchResults.type = 'I';
@@ -1968,6 +1975,11 @@ runSearch = function(forCollections){
 				alert(\"".lang::get('LANG_Max_Features_Reached')."\");
 			}
 			setInsectPage(1);
+		});
+		searchLayer.events.register('loadend', {}, function(){
+			if(searchLayer.features.length == 0){
+				jQuery('#results-insects-results').empty().text('".lang::get('LANG_No_Insect_Results')."');
+			}
 		});
 	}
 	jQuery('#map')[0].map.addLayer(searchLayer);

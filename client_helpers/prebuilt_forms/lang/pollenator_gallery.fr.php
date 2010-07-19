@@ -41,6 +41,8 @@ $custom_terms = array(
 	,'LANG_Validate' => 'Valider'
 	,'LANG_Add_Preferred_Collection'  => 'Enregistrer dans mes collection preferés'
 	,'LANG_List' => 'Retour à la Liste'
+	,'LANG_No_Collection_Results' => 'Aucune collection ne correspond à cette recherche.'
+	,'LANG_No_Insect_Results' => 'Aucun insecte ne correspond à cette recherche.'
 	
 	,'LANG_Indentification_Title' => 'Identification'
 	,'LANG_Doubt' => "émettre un doute sur l'identification"
@@ -131,5 +133,6 @@ $custom_terms = array(
 	,'LANG_And' => 'et'
 	,'LANG_Or' => 'ou'
 	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
+	,'loading' => 'Chargement'
 	
 );
