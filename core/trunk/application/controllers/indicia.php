@@ -91,7 +91,8 @@ class Indicia_Controller extends Template_Controller {
           'Websites'=>'website',
           'Languages'=>'language',
           'Titles'=>'title',
-          'Taxon Relations'=>'taxon_relation_type'
+          'Taxon Relations'=>'taxon_relation_type',
+		  'Triggers & Notifications' => 'trigger'
         ),
         'Logged in as '.$_SESSION['auth_user']->username => array
         (
