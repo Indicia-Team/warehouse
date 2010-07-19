@@ -66,8 +66,8 @@ function indicia_verify(id, valid, cmsUser){
       var keyval = new Array();
       $.each(verifierMaps, function(idx, map) {
         keyval = map.split("=");
-        if (parseInt(keyval[0].trim())==cmsUser) {
-          verifier = keyval[1].trim();
+        if (parseInt($.trim(keyval[0]))==cmsUser) {
+          verifier = $.trim(keyval[1]);
         }
       });
     }
