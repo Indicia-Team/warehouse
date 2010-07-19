@@ -71,7 +71,8 @@ $config['title'] = 'title/page/1';
 // Taxon Relation Types
 $config['taxon_relation_type'] = 'taxon_relation_type/page/1';
 $config['taxon_relation/([0-9]+)'] = 'taxon_relation/page/1/$1';
-
+// Trigger
+$config['trigger'] = 'trigger/page/1';
 // Reports
 $config['report'] = 'report_viewer';
 $config['report/local/(.+)'] = 'report_viewer/local/$1';
