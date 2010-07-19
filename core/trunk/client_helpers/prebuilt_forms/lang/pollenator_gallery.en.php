@@ -40,7 +40,9 @@ $custom_terms = array(
 	,'LANG_Validate' => 'Save'
 	,'LANG_Add_Preferred_Collection'  => 'Add to My Preferred Collections'
 	,'LANG_List' => 'Return to Filter'
-	
+	,'LANG_No_Collection_Results' => 'No Collections were returned by this search'
+	,'LANG_No_Insect_Results' => 'No Insects were returned by this search'
+
 	,'LANG_Indentification_Title' => 'Identification'
 	,'LANG_Doubt' => "Express doubt about this identification"
 	,'LANG_Doubt_Comment' => 'Reason for expression of doubt'
