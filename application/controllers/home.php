@@ -47,15 +47,17 @@ class Home_Controller extends Indicia_Controller {
   public function upgrade() 
   {
     $upgrader = new Upgrade_Model();
-    $result = $upgrader->run();
-    $view = new View('upgrade');
-    $this->template->title='Indicia Upgrade';
+    try {
+      $view = new View('upgrade');
+      $this->template->title='Indicia Upgrade';
+      $upgrader->run();      
+    } catch (Exception $e) {
+      $view->error = $e->getMessage();
+    }      
     $system = new System_Model;
     $view->db_version=$system->getVersion();
     $view->app_version=kohana::config('version.version');    
-    if (!$result===true) {
-      $view->error = $result;
-    }
+    
     $this->template->content=$view;
   }
  
