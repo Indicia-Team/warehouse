@@ -53,6 +53,14 @@ class iform_pollenator_gallery {
      iform_map_get_map_parameters(),
      iform_map_get_georef_parameters(),
      array(
+       array(
+         'name'=>'2nd_map_height',
+         'caption'=>'Second Map Height (px)',
+         'description'=>'Height in pixels of the second (focus on collection) map.',
+         'type'=>'int',
+         'group'=>'Initial Map View',
+         'default'=>300
+       ),
      
       array(
       	'name'=>'survey_id',
@@ -512,6 +520,7 @@ class iform_pollenator_gallery {
     
 	$options2['divId'] = "map2";
     $options2['layers'] = array('locationLayer');
+    $options2['height'] = $args['2nd_map_height'];
 
     data_entry_helper::$javascript .= "var flowerTaxa = [";
 	$extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'list');
@@ -627,7 +636,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<div id="location-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
 		  <div id="location-entry">
 		    '.data_entry_helper::georeference_lookup(iform_map_get_georef_options($args)).'
-    		<span >'.lang::get('LANG_Georef_Notes').'</span>
+    		<span id="location-georef-notes" >'.lang::get('LANG_Georef_Notes').'</span>
     		<label for="place:INSEE">'.lang::get('LANG_Or').'</label>
  		    <input type="text" id="place:INSEE" name="place:INSEE" value="'.lang::get('LANG_INSEE').'"
 	 		  onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
@@ -676,9 +685,11 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 	  </div>
 	</div>
 	<div id="collection-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-bottom">
-	  <div id="flower-image" class="flower-image">
+	  <div id="flower-image-container" ><div id="flower-image" class="flower-image"></div>
+        <div id="show-flower-button" class="ui-state-default ui-corner-all display-button">'.lang::get('LANG_Display').'</div>
       </div>
-	  <div id="collection-description">
+      <div id="environment-image" class="environment-image"></div>
+      <div id="collection-description">
 	    <p id="collection-date"></p>
 	    <p id="collection-flower-name"></p>
 	    <p>'.lang::get($occurrence_attributes[$args['flower_type_attr_id']]['caption']).': <span id="collection-flower-type" class=\"collection-value\"></span></p>
@@ -686,10 +697,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 	    <p id="collection-locality"></p>
 	    <p id="collection-user-name"></p>
 	    <a id="collection-user-link">'.lang::get('LANG_User_Link').'</a>
-	    <div id="show-flower-button" class="ui-state-default ui-corner-all display-button">'.lang::get('LANG_Display').'</div>
 	  </div>
-	  <div id="environment-image" class="environment-image">
-      </div>
       <div id="map2_container">';
     // this is a bit of a hack, because the apply_template method is not public in data entry helper.
     $tempScript = data_entry_helper::$onload_javascript;
@@ -2599,12 +2607,14 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
 
 loadInsect = function(insectID, collectionIndex, insectIndex, type){
 	jQuery('#fo-prev-button,#fo-next-button').hide();
+	jQuery('#fo-filter-button').show();
 	if(type == 'S'){ // called from search
 		if(insectIndex > 0)
 			jQuery('#fo-prev-button').show().data('occID', searchResults.features[insectIndex-1].attributes.insect_id).data('collectionIndex', null).data('insectIndex', insectIndex-1).data('type', 'S');
 		if(insectIndex < searchResults.features.length-1)
 			jQuery('#fo-next-button').show().data('occID', searchResults.features[insectIndex+1].attributes.insect_id).data('collectionIndex', null).data('insectIndex', insectIndex+1).data('type', 'S');
 	} else if(type == 'C'){ // called from collection
+		jQuery('#fo-filter-button').hide();
 		var myThumb = jQuery('.collection-insect').filter('[occID='+insectID+']').prev();
 		if(myThumb.length > 0)
 			jQuery('#fo-prev-button').show().data('occID', myThumb.attr('occID')).data('collectionIndex', collectionIndex).data('insectIndex', null).data('type', 'C');
@@ -2640,6 +2650,7 @@ loadFlower = function(flowerID, collectionIndex){
 	insect_alert_object.insect_id = null;
 	flower_alert_object.flower_id = flowerID;
 	flower_alert_object.user_id = \"".$uid."\";
+	jQuery('#fo-filter-button').show();
 	jQuery('#fo-prev-button,#fo-next-button').hide(); // only one flower per collection, and don't search flowers: no next or prev buttons.
 	jQuery('#focus-collection,#filter,#fo-insect-addn-info').hide();
 	jQuery('#focus-occurrence,#fo-addn-info-header,#fo-flower-addn-info').show();

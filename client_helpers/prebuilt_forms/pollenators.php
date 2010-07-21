@@ -140,7 +140,7 @@ class iform_pollenators {
       array(
           'name'=>'distance_attr_id',
           'caption'=>'Distance Attribute ID',      
-          'description'=>'Indicia ID for the location attribute that stores how far the nearest house is.',
+          'description'=>'Indicia ID for the location attribute that stores how far the nearest hive is.',
           'type'=>'int',
           'group'=>'Floral Station Attributes'
       ),
@@ -484,10 +484,10 @@ jQuery('#".$id."').click(function(){
     $checkOptions['lookUpListCtrl'] = 'checkbox_group';
 	$language = iform_lang_iso_639_2($args['language']);
     global $indicia_templates;
-	$indicia_templates['sref_textbox_latlong'] = '<label for="{idLat}">{labelLat}:</label>'.
-        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" />' .
-        '<label for="{idLong}">{labelLong}:</label>'.
-        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" />';
+	$indicia_templates['sref_textbox_latlong'] = '<div class="latLongDiv"><label for="{idLat}">{labelLat}:</label>'.
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /></div>' .
+        '<div class="latLongDiv"><label for="{idLong}">{labelLong}:</label>'.
+        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" /></div>';
     
 	$r .= data_entry_helper::loading_block_start();
 
@@ -532,7 +532,7 @@ jQuery('#".$id."').click(function(){
       </div>
     </div>
   </div>
-  <div id="cc-1-details" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
+  <div id="cc-1-details" class="ui-accordion-content ui-helper-reset ui-widget-content">
     <span id="cc-1-protocol-details"></span>
   </div>
   <div id="cc-1-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">
@@ -557,7 +557,12 @@ jQuery('#".$id."').click(function(){
     <input type="hidden" id="sample:id"        name="sample:id" value="" disabled="disabled" />
     </form>
     <div id="cc-1-valid-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate').'</div>
-  </div>  
+  </div>
+  <div id="cc-1-trailer" class="poll-section-trailer">
+    <div id="cc-1-trailer-image" ><img src="'.helper_config::$base_url.'media/images/exclamation.jpg" /></div>
+    <p>'.lang::get('LANG_Collection_Trailer_Point_1').'</p>
+    <p>'.lang::get('LANG_Collection_Trailer_Point_2').'</p>
+  </div>
 <div style="display:none" />
     <form id="cc-1-delete-collection" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
        <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
@@ -580,7 +585,7 @@ jQuery('.loading-hide').hide().addClass('my-loading-hide').removeClass('loading-
 
 $.fn.foldPanel = function(){
 	this.children('.poll-section-body').hide();
-	this.children('.poll-section-footer').hide();
+	this.children('.poll-section-footer,.poll-section-trailer').hide();
 	this.children('.poll-section-title').find('.reinit-button').show();
 	this.children('.poll-section-title').find('.mod-button').show();
 	this.children('.photoReelContainer').addClass('ui-corner-all').removeClass('ui-corner-top')
@@ -588,7 +593,7 @@ $.fn.foldPanel = function(){
 
 $.fn.unFoldPanel = function(){
 	this.children('.poll-section-body').show();
-	this.children('.poll-section-footer').show();
+	this.children('.poll-section-footer,.poll-section-trailer').show();
 	this.children('.poll-section-title').find('.mod-button').hide();
 	this.children('.photoReelContainer').addClass('ui-corner-top').removeClass('ui-corner-all')
 	window.scroll(0,0); // force the window to display the top.
@@ -621,7 +626,7 @@ $.getJSON('".$svcUrl."' + '/spatial/sref_to_wkt'+
 
 $.fn.resetPanel = function(){
 	this.find('.poll-section-body').show();
-	this.find('.poll-section-footer').show();
+	this.find('.poll-section-footer,.poll-section-trailer').show();
 	this.find('.reinit-button').show();
 	this.find('.mod-button').show();
 	this.find('.poll-image').empty();
@@ -677,16 +682,26 @@ alertIndiciaError = function(data){
 	jQuery('#refresh-message').show();
 };
 			
-checkProtocolStatus = function(){
+checkProtocolStatus = function(display){
   	var checkedProtocol = jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter('[checked]').parent();
     if(jQuery('[name=location\\:name]').val() != '' && checkedProtocol.length > 0) {
         jQuery('#cc-1-title-details').empty().text(jQuery('#cc-1-collection-details input[name=location\\:name]:first').val());
-        jQuery('#cc-1-protocol-details').empty().show().text(\"".lang::get('LANG_Protocol_Title_Label')." : \" + checkedProtocol.find('label')[0].innerHTML);
+        firstBracket = checkedProtocol.find('label')[0].innerHTML.indexOf('(');
+        secondBracket = checkedProtocol.find('label')[0].innerHTML.lastIndexOf(')');
+        jQuery('#cc-1-protocol-details').empty().show().html('<strong>".lang::get('LANG_Protocol_Title_Label')."</strong> : <span class=\"protocol-head\">' +
+                  checkedProtocol.find('label')[0].innerHTML.slice(0, firstBracket-1) +
+                  '</span><span class=\"protocol-description\"> | ' +
+                  checkedProtocol.find('label')[0].innerHTML.slice(firstBracket+1, secondBracket) + '</span>');
     } else {
         jQuery('#cc-1-title-details').empty().text(\"".lang::get('LANG_Collection_Details')."\");
         // TODO autogenerate a name
         jQuery('#cc-1-protocol-details').empty().hide();
     }
+    if(display == true){
+      jQuery('#cc-1-details').addClass('ui-accordian-content-active');
+    } else if(display == false){
+      jQuery('#cc-1-details').removeClass('ui-accordian-content-active');
+    } // anything else just leave
 };
 checkSessionButtons = function(){
 	if (jQuery('#cc-3-body').children().length === 1) {
@@ -770,6 +785,23 @@ validateRequiredField = function(name, formSel){
     return true;
 }
 
+validateOptInt = function(name, formSel){
+	var control = jQuery(formSel).find('[name='+name+'],[name^='+name+'\\:]');
+	var ctrvalue = control.val();
+	var OK = true;
+	if(ctrvalue == '') return true;
+	for (i = 0 ; i < ctrvalue.length ; i++) {
+		if ((ctrvalue.charAt(i) < '0') || (ctrvalue.charAt(i) > '9')) OK = false
+	}
+	if(OK) return OK;
+	var label = $('<p/>')
+				.attr({'for': name})
+				.addClass('inline-error')
+				.html(\"".lang::get('validation_integer')."\");
+	label.insertBefore(control);
+	return false;
+}
+
 insertImage = function(path, target, ratio){
 	var img = new Image();
 	jQuery(img).load(function () {
@@ -843,7 +875,7 @@ $('#cc-1-collection-details').ajaxForm({
    	       					loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data[0].id, 'smpAttr', true);
 						}
 				});
-			   	checkProtocolStatus();
+			   	checkProtocolStatus(true);
         		$('#cc-1').foldPanel();
     			if(showStationPanel){ $('#cc-2').showPanel(); }
 		    	showStationPanel = true;
@@ -875,7 +907,7 @@ $('#cc-1-delete-collection').ajaxForm({
 	        	jQuery('.poll-section').resetPanel();
 				sessionCounter = 0;
 				addSession();
-				checkProtocolStatus();
+				checkProtocolStatus(false);
 				jQuery('.poll-section').hidePanel();
 				jQuery('.poll-image').empty();
 				jQuery('#cc-1').showPanel();
@@ -952,10 +984,11 @@ $('#cc-1-reinit-button').click(function() {
   </div>
   <div id="cc-2-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active poll-section-body">
     <div id="cc-2-flower" >
+	  <div id="cc-2-flower-title">'.lang::get('LANG_Upload_Flower').'</div>
 	  <form id="cc-2-flower-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     		<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
     		<input name="upload_file" type="file" class="required" />
-     		<input type="submit" value="'.lang::get('LANG_Upload_Flower').'" class="btn-submit" />
+     		<input type="submit" value="'.lang::get('LANG_Upload').'" class="btn-submit" />
  	  		<div id="cc-2-flower-image" class="poll-image"></div>
       </form>
  	  <div id="cc-2-flower-identify" class="poll-dummy-form">
@@ -976,18 +1009,19 @@ $('#cc-1-reinit-button').click(function() {
           <label for="flower:taxon_extra_info" class="follow-on">'.lang::get('LANG_ID_More_Precise').' </label> 
           <input type="text" id="flower:taxon_extra_info" name="flower:taxon_extra_info" class="taxon-info" />
         </div>
- 	    <div class="id-comment">
-          <label for="flower:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
-          <textarea id="flower:comment" name="flower:comment" class="taxon-comment" rows="5" ></textarea>
-        </div>
       </div>
- 	</div>
+      <div class="id-comment">
+        <label for="flower:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
+        <textarea id="flower:comment" name="flower:comment" class="taxon-comment" rows="5" columns="80"></textarea>
+      </div>
+    </div>
     <div class="poll-break"></div>
  	<div id="cc-2-environment">
-	  <form id="cc-2-environment-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
+	  <div id="cc-2-environment-title">'.lang::get('LANG_Upload_Environment').'</div>
+ 	  <form id="cc-2-environment-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     	<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
     	<input name="upload_file" type="file" class="required" />
-    	<input type="submit" value="'.lang::get('LANG_Upload_Environment').'" class="btn-submit" />
+    	<input type="submit" value="'.lang::get('LANG_Upload').'" class="btn-submit" />
  	  	<div id="cc-2-environment-image" class="poll-image"></div>
       </form>
  	</div>
@@ -1033,7 +1067,8 @@ $('#cc-1-reinit-button').click(function() {
 	 		onclick="if(this.value==\''.lang::get('LANG_INSEE').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
             onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_INSEE').'\'; this.style.color=\'#555\'}" />
     	<input type="button" id="search-insee-button" class="ui-corner-all ui-widget-content ui-state-default search-button" value="'.lang::get('search').'" />
-        '.data_entry_helper::sref_textbox(array(
+ 	    <label >'.lang::get('LANG_Or').'</label>
+    	'.data_entry_helper::sref_textbox(array(
 		        'srefField'=>'place:entered_sref',
         		'systemfield'=>'place:entered_sref_system',
         		'id'=>'place-sref',
@@ -1316,7 +1351,7 @@ validateStationPanel = function(){
 			jQuery('#cc-2-flower-identify select[name=flower\\:taxa_taxon_list_id]').val() == '' &&
 			jQuery('[name=flower\\:taxon_details]').val() == '' &&
 			jQuery('#cc-2-flower-identify [name=flower\\:taxon_extra_info]').val() == '' &&
-			jQuery('#cc-2-flower-identify [name=flower\\:comment]').val() == '' &&
+			jQuery('[name=flower\\:comment]').val() == '' &&
 			jQuery('[name=occAttr\\:".$args['flower_type_attr_id']."],[name^=occAttr\\:".$args['flower_type_attr_id']."\\:]').filter('[checked]').length == 0 &&
     		jQuery('[name=locAttr\\:".$args['habitat_attr_id']."],[name^=locAttr\\:".$args['habitat_attr_id']."\\:]').filter('[checked]').length == 0 &&
     		jQuery('[name=locAttr\\:".$args['distance_attr_id']."],[name^=locAttr\\:".$args['distance_attr_id']."\\:]').val() == '') {
@@ -1341,7 +1376,8 @@ validateStationPanel = function(){
 		if(!validateRequiredField('flower\\:taxa_taxon_list_id', '#cc-2-flower-identify')) { valid = false; }
     }
 	if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
-   	if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
+	if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
+	if (!validateOptInt('locAttr\\:".$args['distance_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
    	if ( valid == false ) {
    		myScrollToError();
    		return valid;
@@ -1431,14 +1467,15 @@ $('#cc-2-floral-station').ajaxForm({
 			valid = false;
 		}
 		if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
-   		if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
+		if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
+		if (!validateOptInt('locAttr\\:".$args['distance_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
 		data[findID('location:centroid_sref', data)].value = jQuery('#imp-sref').val();
 		data[findID('location:centroid_geom', data)].value = jQuery('#imp-geom').val();
 		if (jQuery('#id-flower-later').attr('checked') == ''){
 			data[findID('determination:taxa_taxon_list_id', data)].value = jQuery('#cc-2-flower-identify select[name=flower\\:taxa_taxon_list_id]').val();
 			data[findID('determination:taxon_details', data)].value = jQuery('#cc-2-flower-identify [name=flower\\:taxon_details]').val();
 			data[findID('determination:taxon_extra_info', data)].value = jQuery('#cc-2-flower-identify [name=flower\\:taxon_extra_info]').val();
-			data[findID('determination:comment', data)].value = jQuery('#cc-2-flower-identify [name=flower\\:comment]').val();
+			data[findID('determination:comment', data)].value = jQuery('[name=flower\\:comment]').val();
 			data[findID('determination:determination_type', data)].value = jQuery('#cc-2-flower-identify [name=flower\\:determination_type]').val();
 			if (jQuery('#cc-2-flower-identify [name=flower\\:taxon_details]').val() == ''){
 				if (!validateRequiredField('flower\\:taxa_taxon_list_id', '#cc-2-flower-identify')) {
@@ -1770,14 +1807,16 @@ jQuery('.mod-button').click(function() {
     <div id="cc-4-mod-button" class="right ui-state-default ui-corner-all mod-button">'.lang::get('LANG_Modify').'</div>
   </div>
   <div id="cc-4-photo-reel" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-top ui-accordion-content-active photoReelContainer" >
-	<div class="blankPhoto thumb currentPhoto"></div>
+    <div class="photo-blurb">'.lang::get('LANG_Photo_Blurb').'</div>
+    <div class="blankPhoto thumb currentPhoto"></div>
   </div>
   <div id="cc-4-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active poll-section-body">  
     <div id="cc-4-insect">
-	  <form id="cc-4-insect-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
+      <div id="cc-4-insect-title">'.lang::get('LANG_Upload_Insect').'</div>
+      <form id="cc-4-insect-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     	<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
     	<input name="upload_file" type="file" class="required" />
-        <input type="submit" value="'.lang::get('LANG_Upload_Insect').'" class="btn-submit" />
+        <input type="submit" value="'.lang::get('LANG_Upload').'" class="btn-submit" />
  	    <div id="cc-4-insect-image" class="poll-image"></div>
       </form>
       <div id="cc-4-insect-identify" class="poll-dummy-form">
@@ -1798,10 +1837,10 @@ jQuery('.mod-button').click(function() {
           <label for="insect:taxon_extra_info" class="follow-on">'.lang::get('LANG_ID_More_Precise').' </label> 
     	  <input type="text" id="insect:taxon_extra_info" name="insect:taxon_extra_info" class="taxon-info" />
         </div>
- 	    <div class="id-comment">
-    	  <label for="insect:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
-    	  <textarea id="insect:comment" name="insect:comment" class="taxon-desc" rows="5" ></textarea>
-        </div>
+      </div>
+ 	  <div class="id-comment">
+        <label for="insect:comment" class="follow-on">'.lang::get('LANG_ID_Comment').' </label>
+        <textarea id="insect:comment" name="insect:comment" class="taxon-desc" rows="5" columns="80" ></textarea>
       </div>
     </div>
     <div class="poll-break"></div> 
@@ -1926,7 +1965,7 @@ $('#cc-4-main-form').ajaxForm({
 			data[findID('determination:taxa_taxon_list_id', data)].value = jQuery('#cc-4-insect-identify select[name=insect\\:taxa_taxon_list_id]').val();
 			data[findID('determination:taxon_details', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:taxon_details]').val();
 			data[findID('determination:taxon_extra_info', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:taxon_extra_info]').val();
-			data[findID('determination:comment', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:comment]').val();
+			data[findID('determination:comment', data)].value = jQuery('[name=insect\\:comment]').val();
 			data[findID('determination:determination_type', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:determination_type]').val();
 			if (jQuery('#cc-4-insect-identify [name=insect\\:taxon_details]').val() == ''){
 				if (!validateRequiredField('insect\\:taxa_taxon_list_id', '#cc-4-insect-identify')) {
@@ -2009,7 +2048,7 @@ loadInsect = function(id){
   		}
 	});
 	$.getJSON(\"".$svcUrl."/data/determination?occurrence_id=\" + id +
-          \"&mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&orderby=id&callback=?\", function(data) {
+          \"&mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&orderby=id&deleted=f&callback=?\", function(data) {
         if(!(data instanceof Array)){
    			alertIndiciaError(data);
    		} else loadDetermination(data, insectIDstruc);
@@ -2176,7 +2215,7 @@ $('#cc-4-valid-photo-button').click(function(){
     
  	$r .= '
 <div id="cc-5" class="poll-section">
-  <div id="cc-5-body" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-body"> 
+  <div id="cc-5-body" class="poll-section-body"> 
    <p id="cc-5-good">'.lang::get('LANG_Can_Complete_Msg').'</p> 
    <p id="cc-5-bad">'.lang::get('LANG_Cant_Complete_Msg').'</p> 
    <div style="display:none" />
@@ -2184,12 +2223,13 @@ $('#cc-4-valid-photo-button').click(function(){
        <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
        <input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'" />
        <input type="hidden" name="sample:id" value="" />
-       <input type="hidden" name="sample:date" value="2010-01-01"/>
+       <input type="hidden" name="sample:date_start" value="2010-01-01"/>
+       <input type="hidden" name="sample:date_end" value="2010-01-01"/>
+       <input type="hidden" name="sample:date_type" value="D"/>
        <input type="hidden" name="sample:location_id" value="" />
        <input type="hidden" id="smpAttr:'.$args['complete_attr_id'].'" name="smpAttr:'.$args['complete_attr_id'].'" value="1" />
     </form>
    </div>
-   <div id="cc-5-complete-collection" class="ui-state-default ui-corner-all complete-button">'.lang::get('LANG_Complete_Collection').'</div>
   </div>
   <div id="cc-5-trailer" class="poll-section-trailer">
     <p>'.lang::get('LANG_Trailer_Head').'</p>
@@ -2199,6 +2239,7 @@ $('#cc-4-valid-photo-button').click(function(){
       <li>'.lang::get('LANG_Trailer_Point_3').'</li>
       <li>'.lang::get('LANG_Trailer_Point_4').'</li>
     </ul>
+   <div id="cc-5-complete-collection" class="ui-state-default ui-corner-all complete-button">'.lang::get('LANG_Complete_Collection').'</div>
   </div>
 </div>';
 
@@ -2207,27 +2248,50 @@ $('#cc-5-collection').ajaxForm({
 		async: false,
 		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
-       		data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
-       		var date_start = '';
-       		var date_end = '';
-       		jQuery('.poll-session').find('[name=sample\\:date]').each(function(index, el){
-       			var value = $(this).val();
-       			if(date_start == '' || date_start > value) {
-       				date_start = value;
-       			}
-       			if(date_end == '' || date_end < value) {
-       				date_end = value;
-       			}
-  			});
-  			if(date_start == date_end){
-	       		data[3].value = date_start;
+  			jQuery('#cc-5-complete-collection').addClass('loading-button');
+        	data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
+			data[3].value = '';
+			data[4].value = '';
+			jQuery.ajax({ 
+				type: 'GET', 
+				url: \"".$svcUrl."/data/sample\" + 
+					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[2].value+\"&callback=?\", 
+				dataType: 'json', 
+				success: function(sessiondata) {
+					var date_start = '';
+					var date_end = '';
+					if(!(sessiondata instanceof Array)){
+						alertIndiciaError(sessiondata);
+					} else if (sessiondata.length>0) {
+						for (var i=0;i<sessiondata.length;i++){
+							var sessDate = new Date(sessiondata[i].date_start); // sessions are only on one date.
+							if(date_start == '' || date_start > sessDate) {
+								date_start = sessDate;
+								data[3].value = sessiondata[i].date_start;
+							}
+							if(date_end == '' || date_end < sessDate) {
+								date_end = sessDate;
+								data[4].value = sessiondata[i].date_start;
+							}
+						}
+					}
+				},
+				data: {}, 
+				async: false 
+			});
+			if(data[3].value == '') {
+				alert(\"".lang::get('LANG_Session_Error')."\");
+				jQuery('#cc-5-complete-collection').removeClass('loading-button');
+				return false;
+			}
+			if(data[3].value == data[4].value){
+	       		data[5].value = 'D';
 	       	} else {
-	       		data[3].value = date_start+' to '+date_end;
+	       		data[5].value = 'DD';
   			}
 	       	jQuery('#cc-1-collection-details,#cc-2').find('[name=sample\\:date]:hidden').val(data[3].value);
-  			data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
-       		data[5].name = jQuery('#cc-1-collection-details input[name^=smpAttr\\:".$args['complete_attr_id']."\\:]').attr('name');
-  			jQuery('#cc-5-complete-collection').addClass('loading-button');
+  			data[6].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
+       		data[7].name = jQuery('#cc-1-collection-details input[name^=smpAttr\\:".$args['complete_attr_id']."\\:]').attr('name');
        		return true;
   		},
         success:   function(data){
@@ -2241,6 +2305,7 @@ $('#cc-5-collection').ajaxForm({
   		}
 });
 $('#cc-5-complete-collection').click(function(){
+	jQuery('#cc-5-complete-collection').addClass('loading-button');
 	jQuery('#cc-2,#cc-3,#cc-4,#cc-5').hidePanel();
 	jQuery('.reinit-button').hide();
 	jQuery('.mod-button').hide();
@@ -2303,7 +2368,7 @@ loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, 
 				}
 			}
 		  }
-		  checkProtocolStatus();
+		  checkProtocolStatus('leave');
 		  populateSessionSelect();
 		},
 		dataType: 'json', 
@@ -2448,6 +2513,7 @@ jQuery.ajax({
 						jQuery('input[name=place\\:long]').val(parts[1]);
 
 						$('#cc-1').foldPanel();
+						checkProtocolStatus(true);
 						$('#cc-2').showPanel();
 						jQuery('form#cc-2-floral-station > input[name=occurrence\\:sample_id]').val(data[i].id);
 						jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val(flowerData[0].id).removeAttr('disabled');

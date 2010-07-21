@@ -38,7 +38,10 @@ $custom_terms = array(
 	,'LANG_Protocol_Title_Label' => 'Protocol'
 	,'LANG_Unable_To_Reinit' => 'Unable to reinitialise because existing values do not pass validation'
 	,'LANG_Confirm_Reinit' => 'Are you sure you want to reinitialise? All data against this collection will be deleted.'
+	,'LANG_Collection_Trailer_Point_1' => 'You can only create one collection at a time,'
+	,'LANG_Collection_Trailer_Point_2' => 'In other words, you can only create another collection when this collection has been either completed or reinitialised.'
 	
+	,'LANG_Upload' => 'Upload'
 	,'LANG_Flower_Station' => "YOUR FLORAL STATION"
 	,'LANG_Upload_Flower' => 'Upload a picture of the Flower'
 	,'LANG_ID_Flower_Later' => 'You would prefer to identify it later:'
@@ -99,6 +102,7 @@ $custom_terms = array(
 	,'validation_required' => 'Please enter a value for this field'
 	,'validation_date' => 'Please enter a valid time (HH:MM)'
 	,'ajax_error' => 'An error has occurred in the data transfer.'
+	,'validation_integer' => "Please provide a integer, leave blank if unknown."
 	
 	,'LANG_Can_Complete_Msg' => 'You have identified the Flower and a sufficient number of insects, so you may now close the collection'
 	,'LANG_Cant_Complete_Msg' => 'You have either: not identified the Flower, AND/OR not identified a sufficient number of insects. You will need to correct this before you can close the collection.'
