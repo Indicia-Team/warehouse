@@ -27,8 +27,7 @@ class Upgrade_Model extends Model
     }
 
     /**
-     * Do upgrade
-     * @return mixed true if successful else error message
+     * Do upgrade. Throws exception if upgrade fails.   
      */
     public function run()
     {
@@ -92,13 +91,13 @@ class Upgrade_Model extends Model
         
         // commit transaction
         $this->commit();
-        kohana::log('debug', "Upgrade committed");
-        return true;
+        kohana::log('debug', "Upgrade committed");        
       }
       catch(Exception $e)
       {
-        $this->log($e);
-        return $e->getMessage();
+        $this->rollback();
+        kohana::log('error', 'Updates have been rolled back');
+        throw $e;
       }      
     }   
 
@@ -118,6 +117,15 @@ class Upgrade_Model extends Model
     public function commit()
     {
         $this->db->query("COMMIT");
+    }
+    
+    /**
+     * rollback transaction
+     *
+     */
+    public function rollback()
+    {
+        $this->db->query("ROLLBACK");
     }
 
     /**
@@ -171,57 +179,55 @@ class Upgrade_Model extends Model
      */
     public function execute_sql_scripts($upgrade_folder)
     {
-        $this->begin();        
-        $file_name = array();
-        $full_upgrade_folder = $this->base_dir . "/modules/indicia_setup/db/" . $upgrade_folder;
-        
-        // get last executed sql file name
-        $orig_last_executed_file = $this->get_last_executed_sql_file_name($full_upgrade_folder);
+      $file_name = array();
+      $full_upgrade_folder = $this->base_dir . "/modules/indicia_setup/db/" . $upgrade_folder;
+      
+      // get last executed sql file name
+      $orig_last_executed_file = $this->get_last_executed_sql_file_name($full_upgrade_folder);
 
-        $orig_last_executed_file = str_replace("____", "", $orig_last_executed_file).".sql";
-        $last_executed_file=$orig_last_executed_file;
+      $orig_last_executed_file = str_replace("____", "", $orig_last_executed_file).".sql";
+      $last_executed_file=$orig_last_executed_file;
 
-        if ( (($handle = @opendir( $full_upgrade_folder ))) != FALSE )
-        {
-            while ( (( $file = readdir( $handle ) )) != false )
-            {
-                if ( !preg_match("/^20.*\.sql$/", $file) )
-                {
-                    continue;
-                }
-
-                $file_name[] = $file;
-            }
-            @closedir( $handle );
-        }
-        else
-        {
-            throw new  Exception("Cant open dir " . $full_upgrade_folder);
-        }
-
-        sort($file_name);        
-        try
-        {
-            foreach($file_name as $name) {
-              if (strcmp($name, $last_executed_file)>0 || empty($last_executed_file)) {
-                if(false === ($_db_file = file_get_contents( $full_upgrade_folder . '/' . $name ))) {
-                  throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
-                }
-                kohana::log('debug', "Upgrading file $name");
-                kohana::log('debug', $_db_file);
-                $result = $this->db->query($_db_file);
-                $last_executed_file = $name;
+      if ( (($handle = @opendir( $full_upgrade_folder ))) != FALSE )
+      {
+          while ( (( $file = readdir( $handle ) )) != false )
+          {
+              if ( !preg_match("/^20.*\.sql$/", $file) )
+              {
+                  continue;
               }
+
+              $file_name[] = $file;
+          }
+          @closedir( $handle );
+      }
+      else
+      {
+          throw new  Exception("Cant open dir " . $full_upgrade_folder);
+      }
+
+      sort($file_name);        
+      try
+      {
+        foreach($file_name as $name) {
+          if (strcmp($name, $last_executed_file)>0 || empty($last_executed_file)) {
+            if(false === ($_db_file = file_get_contents( $full_upgrade_folder . '/' . $name ))) {
+              throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
             }
+            kohana::log('debug', "Upgrading file $name");
+            kohana::log('debug', $_db_file);
+            $result = $this->db->query($_db_file);
+            $last_executed_file = $name;
+          }
         }
-        catch(Kohana_Database_Exception $e)
-        {
-            $_error = "Error in file: " . $full_upgrade_folder . '/' . $name . "\n\n" . $e->getMessage();
-            throw new Exception($_error);
-        }
-        $this->commit();
-        $this->update_last_executed_sql_file($full_upgrade_folder, $orig_last_executed_file, $last_executed_file);        
-        return true;
+      }
+      catch(Exception $e)
+      {
+        kohana::log('error', "Error in file: " . $full_upgrade_folder . '/' . $name);
+        throw $e;
+      }      
+      $this->update_last_executed_sql_file($full_upgrade_folder, $orig_last_executed_file, $last_executed_file);        
+      return true;
     }
 
   /**

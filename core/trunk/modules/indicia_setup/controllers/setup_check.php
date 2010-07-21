@@ -93,9 +93,10 @@ class Setup_Check_Controller extends Template_Controller {
         $_source_content = str_replace("*$field*", $value, $_source_content);
       }
       $base_url=kohana::config('config.site_domain');
-      if (substr($base_url, 0, 4)!='http') {
+      if (substr($base_url, 0, 4)!='http')
         $base_url = "http://$base_url";
-      }
+      if (substr($base_url, -1, 1)!='/') 
+        $base_url = $base_url.'/';
       $_source_content = str_replace("*base_url*", $base_url, $_source_content);
       file_put_contents($dest, $_source_content);
       // To get the demo working, we also need to copy over the data_entry_config.php file.
