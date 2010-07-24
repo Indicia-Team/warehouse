@@ -128,6 +128,7 @@ class User_Controller extends Gridview_Base_Controller {
         }
       }
     }
+	$this->defineEditBreadcrumbs();
   }
 
   protected function new_username($person)

@@ -69,7 +69,10 @@
 </select>
 <?php echo html::error_message($model->getError('core_role_id')); ?>
 </li>
-<?php if (isset($password_field) and $password_field != '') { echo $password_field; } ?>
+<?php if (isset($password_field) and $password_field != '') { 
+  echo $password_field; 
+  echo html::error_message($model->getError('user:password'));
+} ?>
 </ol>
 </fieldset>
 <fieldset>
