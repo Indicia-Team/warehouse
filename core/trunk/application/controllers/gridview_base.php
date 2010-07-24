@@ -51,11 +51,6 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->get_auth();
   }
 
-  protected function page_authorised()
-  {
-    return $this->auth->logged_in();
-  }
-
   /**
    * This is the main controller action method for the index page of the grid.
    */

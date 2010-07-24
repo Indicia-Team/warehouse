@@ -58,7 +58,7 @@ class Indicia_Controller extends Template_Controller {
     $this->auth = new Auth;
     $this->session = new Session;
 
-    if($this->auth->logged_in())
+    if($this->page_authorised())
     {
       $menu = array
       (
@@ -187,7 +187,7 @@ class Indicia_Controller extends Template_Controller {
    * Default behaviour is to allow access to records if logged in.   
    */   
   protected function record_authorised($id) {
-    return $this->auth->logged_in();
+    return $this->page_authorised();
   }
   
   /**
@@ -241,6 +241,15 @@ class Indicia_Controller extends Template_Controller {
     
     return $r;
   }
+
+  /**
+   * Overrideable function that checks the user has access rights to the current page. Can 
+   * be used to check for a certain role, for example.
+   */   
+  protected function page_authorised()
+  {
+    return $this->auth->logged_in();
+  }
   
   /**
   * Handler for the Save action on all controllers. Saves the post array by 
@@ -250,7 +259,11 @@ class Indicia_Controller extends Template_Controller {
   */
   public function save()
   {
-    if ($_POST['submit']=='Cancel') {
+    if (!$this->page_authorised()) {
+	  $this->session->set_flash('flash_error', "You appear to be attempting to edit a page you do not have rights to.");
+	  $this->redirectToIndex();
+	}
+	elseif ($_POST['submit']=='Cancel') {
       $this->redirectToIndex();
     } else {
       // Are we editing an existing record? If so, load it.
@@ -456,7 +469,7 @@ class Indicia_Controller extends Template_Controller {
   
   public function get_breadcrumbs()
   {
-    if ($this->auth->logged_in()) {
+    if ($this->page_authorised()) {
       $breadcrumbHtml = '';
       $breadcrumbList = array_merge(array(
         html::anchor('', 'Home')
