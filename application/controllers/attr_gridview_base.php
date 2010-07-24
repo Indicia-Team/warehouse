@@ -180,11 +180,6 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     parent::save();    
   }
 
-  protected function page_authorised()
-  {
-    return $this->auth->logged_in();
-  }
-
   public function page($page_no) {
     if ($this->page_authorised() == false) {
       $this->access_denied();
