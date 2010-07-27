@@ -135,14 +135,12 @@ class Scheduled_Tasks_Controller extends Controller {
     $swift = email::connect();
     // First, build a list of the notifications we are going to do    
     $digestTypes = array('I');
-    $date = getdate();
-    $lastdate = new DateTime($this->last_run_date);
-    $lastdate = getdate($lastdate->getTimestamp());
+    $date = getdate();    
+    $lastdate = getdate(strtotime($this->last_run_date));
     if ($date['yday']!=$lastdate['yday'] || $date['year']!=$lastdate['year'])
       $digestTypes[] = 'D';
     if ($date['yday']-$lastdate['yday']>=7 || $date['wday']<$lastdate['wday'])
-      $digestTypes[] = 'W';   
-    print_r($lastdate);  
+      $digestTypes[] = 'W';
     
     // Get a list of the notifications to send, ordered by user so we can construct each email
     $notifications = $this->db
