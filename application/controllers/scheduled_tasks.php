@@ -189,7 +189,12 @@ class Scheduled_Tasks_Controller extends Controller {
           ->join('users', 'users.person_id', 'people.id')
           ->where('users.id', $userId)
           ->limit(1)
-          ->get();      
+          ->get(); 
+      if (!isset($email_config['address'])) {
+        kohana::log('error', 'Address not provided in email configuration');
+        echo "Email not sent";
+        return;
+      }      
       foreach($userResults as $user) {
         $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
                                      'text/html');
