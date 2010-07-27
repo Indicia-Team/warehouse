@@ -2,7 +2,7 @@ CREATE TABLE trigger_actions
 (
   id serial NOT NULL,
   trigger_id integer NOT NULL,
-  "type" charracter(1) NOT NULL,
+  "type" character(1) NOT NULL,
   param1 character varying,
   param2 character varying,
   created_on timestamp without time zone NOT NULL, -- Date this record was created.
