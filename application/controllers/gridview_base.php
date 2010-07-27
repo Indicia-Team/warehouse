@@ -101,6 +101,16 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   protected function get_action_columns() {
     return array('edit' => $this->controllerpath."/edit/£id£");
   }
+  
+  /**
+   * Override to control the visibility of each action.
+   * @param Array $row Row data in an associative array.
+   * @param string $actionName Name of the action to check for visibility in this row.
+   */
+  protected function get_action_visibility($row, $actionName) {
+    return true;
+  }
+  
 
   /**
    * Method to retrieve pages for the index grid of taxa_taxon_list entries from an AJAX

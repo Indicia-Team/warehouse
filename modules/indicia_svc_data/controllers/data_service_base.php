@@ -31,9 +31,20 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
 
   /**
    * @var int Id of the website calling the service. Obtained when performing read authentication and used
-   * to filter the response.
+   * to filter the response. A value of 0 indicates the warehouse.
    */
   protected $website_id = null;
+  
+  /**
+   * @var int Id of the Warehouse user calling the service. Obtained when performing read authentication and used
+   * to filter the response. Only applies when the request originates from the warehouse.
+   */
+  protected $user_id = null;
+  
+  /**
+   * @var boolean Flag set to true when user has core admin rights. Only applies when the request originates from the warehouse.
+   */
+  protected $user_is_core_admin = false;
 
   /**
    * @var boolean Defines if the user is logged into the warehouse.
@@ -59,31 +70,48 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $this->cache = new Cache;
       // get all cache entries that match this nonce
       $paths = $this->cache->exists($nonce);
-
       foreach($paths as $path) {
-        kohana::log('debug', 'path: '.$path);
         // Find the parts of each file name, which is the cache entry ID, then the mode.
         $tokens = explode('~', basename($path));
         // check this cached nonce is for the correct read or write operation.
         if ($mode = $tokens[1]) {
-          $website_id = $this->cache->get($tokens[0]);
-          $website = ORM::factory('website', $website_id);
-          if ($website->id) {
-            $password = $website->password;
-            // calculate the auth token from the nonce and the website's password. Does it match the request's auth token?
-            if (sha1("$nonce:$password")==$array['auth_token'])
-            {
-              Kohana::log('info', "Authentication successful.");
-              $authentic=TRUE;
-              $this->website_id = $website_id;
-              // reset the nonce if requested. Doing it here will mean only gets reset if not already timed out.
-              if(array_key_exists('reset_timeout', $array) && $array['reset_timeout']=='true') {
-              	Kohana::log('info', "Nonce timeout reset.");
-              	$this->cache->set($nonce, $website_id, $mode);
-              } 
-            }
+          $id = $this->cache->get($tokens[0]);
+          if ($id>0) {
+            // normal state, the ID is positive, which means we are authenticating a remote website
+            $website = ORM::factory('website', $id);
+            if ($website->id) 
+              $password = $website->password;
+          } else
+            $password = kohana::config('indicia.private_key');
+          // calculate the auth token from the nonce and the password. Does it match the request's auth token?
+          if (isset($password) && sha1("$nonce:$password")==$array['auth_token']) {
+            Kohana::log('info', "Authentication successful.");
+            $authentic=true;            
           }
-        }
+          if ($authentic) {
+            if ($id>0) 
+              $this->website_id = $id;
+            else {
+              $this->website_id = 0; // the Warehouse
+              $this->user_id = 0 - $id; // user id was passed as a negative number to differentiate from a website id
+              // get a list of the websites this user can see
+              $user = ORM::Factory('user', $this->user_id);              
+              $this->user_is_core_admin=($user->core_role_id===1);
+              kohana::log('info', 'core admin =  '.$this->user_is_core_admin);
+              if (!$this->user_is_core_admin) {
+                $this->user_websites = array();
+                $userWebsites = ORM::Factory('users_website')->where('user_id', $this->user_id)->find_all();
+                foreach ($userWebsites as $userWebsite) 
+                  $this->user_websites[] = $userWebsite->website_id;
+              }
+            }
+            // reset the nonce if requested. Doing it here will mean only gets reset if not already timed out.
+            if(array_key_exists('reset_timeout', $array) && $array['reset_timeout']=='true') {
+              Kohana::log('info', "Nonce timeout reset.");
+              $this->cache->set($nonce, $id, $mode);
+            } 
+          }
+        }        
       }
     } else {
       $auth = new Auth();
@@ -125,8 +153,11 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   {
     // Authenticate for a 'read' parameter
     kohana::log('debug', 'Requesting data from Warehouse');
+    kohana::log('debug', print_r($_GET, true));
     $this->authenticate('read');
+    kohana::log('debug', 'read records');
     $records=$this->read_records();
+    kohana::log('debug', 'got records');
     $mode = $this->get_output_mode();
     $responseStruct = $this->get_response_structure($records);
     switch ($mode)

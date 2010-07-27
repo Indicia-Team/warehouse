@@ -9,15 +9,35 @@ form fieldset {
   display: block;
 }
 
-form.cmxform fieldset {
+form.cmxform fieldset, form.iform fieldset {
   margin-bottom: 10px;
   border: solid 1px #AAAAAA;
   -moz-border-radius: 4px; -webkit-border-radius: 4px;
+}
+form.iform fieldset {
+  padding: 0.5em;
+}
+form.iform * {
+  vertical-align: middle;
+  line-height: 1.8em;
+}
+form.iform .align-top {
+  vertical-align: top;
+  margin-top: 4px;
+}
+form.iform legend {
+  font-weight: bold;
+}
+form.iform .helpText {
+  margin-left: 154px;
+  color: #aaaaaa;
+  line-height: 1em;
 }
 form.cmxform legend {
   padding: 0 2px;
   font-weight: bold;
 }
+
 form label {
   display: inline-block;
   line-height: 1.8;

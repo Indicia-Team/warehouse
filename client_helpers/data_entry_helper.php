@@ -494,13 +494,16 @@ class data_entry_helper extends helper_config {
   * <li><b>table</b><br/>
   * Required. Table name to get data from for the select options.</li>
   * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
+  * Optional. Field to draw values to show in the control from. Required unless lookupValues is specified.</li>
   * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
+  * to the value of captionField. </li>
   * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
+  * <li><b>lookupValues</b><br/>
+  * If the group is to be populated with a fixed list of values, rather than via a service call, then the
+  * values can be passed into this parameter as an associated array of key=>caption.</li>
   * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
@@ -1382,15 +1385,18 @@ class data_entry_helper extends helper_config {
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>table</b><br/>
-  * Required. Table name to get data from for the select options.</li>
+  * Optional. Table name to get data from for the select options. Required unless lookupValues is specified.</li>
   * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
+  * Optional. Field to draw values to show in the control from. Required unless lookupValues is specified.</li>
   * <li><b>valueField</b><br/>
   * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
+  * to the value of captionField. </li>
   * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
+  * <li><b>lookupValues</b><br/>
+  * If the group is to be populated with a fixed list of values, rather than via a service call, then the
+  * values can be passed into this parameter as an associated array of key=>caption.</li>
   * <li><b>cachetimeout</b><br/>
   * Optional. Specifies the number of seconds before the data cache times out - i.e. how long
   * after a request for data to the Indicia Warehouse before a new request will refetch the data,
@@ -1475,6 +1481,18 @@ class data_entry_helper extends helper_config {
   * The submit button for the form should have the method set to "get" and should post back to the same page.
   * As a final alternative, if parameters are required by the report but some can be hard coded then
   * those may be added to the extraParams array.</li>
+  * <li><b>paramDefaults</b>
+  * Optional associative array of parameter default values.</li>
+  * <li><b>paramsOnly</b>
+  * Defaults to false. If true, then this method will only return the parameters form, not the grid content. autoParamsForm
+  * is ignored if this flag is set.</li>
+  * <li><b>ignoreParams</b>
+  * Array that can be set to a list of the report parameter names that should not be included in the parameters form. Useful
+  * when using paramsOnly=true to display a parameters entry form, but the system has default values for some of the parameters
+  * which the user does not need to be asked about.</li>
+  * <li><b>completeParamsForm</b>
+  * Defaults to true. If false, the control HTML is returned for the params form without being wrapped in a <form> and
+  * without the Run Report button.</li>
   * </ul>
   * @todo Action column or other configurable links in grid
   * @todo Allow additional params to filter by table column or report parameters
@@ -1496,7 +1514,6 @@ class data_entry_helper extends helper_config {
     $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
 
     // Add in the sort parameters
-
     foreach ($sortAndPageUrlParams as $param => $content) {
       if ($content['value']!=null) {
         if ($param != 'page')
@@ -1506,7 +1523,7 @@ class data_entry_helper extends helper_config {
     $response = self::get_report_data($options, $extraParams);
     if (isset($response['error'])) return $response['error'];
     if (isset($response['parameterRequest'])) {
-      $currentParamValues = self::get_report_grid_url_params($options);
+      $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
       // if we have a complete set of parameters in the URL, we can re-run the report to get the data
       if (count($currentParamValues)==count($response['parameterRequest'])) {
@@ -1517,10 +1534,11 @@ class data_entry_helper extends helper_config {
     } else {
       $records = $response['records'];
     }
+    // return the params form, if that is all that is being requested.
+    if ($options['paramsOnly']) return $r;
+    
     self::report_grid_get_columns($response, $options);
-	
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
-
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\"><thead class=\"$thClass\"><tr>\n";
     // build a URL with just the sort order bit missing, so it can be added for each table heading link
@@ -1686,27 +1704,32 @@ class data_entry_helper extends helper_config {
    * @param $response
    * @return string HTML for the form.
    */
-  private function get_report_grid_parameters_form($response, $options, $params) {
-    if ($options['autoParamsForm']) {
+  private static function get_report_grid_parameters_form($response, $options, $params) {
+    if ($options['autoParamsForm'] || $options['paramsOnly']) {
       // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
       // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
       // using Apache mod_alias but we don't want to know about that)
       $reloadUrl = self::get_reload_link_parts();
-      $r = '<form action="'.$reloadUrl['path'].'" method="get" id="'.$options['id'].'-params">'."\n";
-      $r .= '<fieldset><legend>'.lang::get('Report Parameters').'</legend>';
+      $r = '';
+      if ($options['completeParamsForm']==true) {
+        $r .= '<form action="'.$reloadUrl['path'].'" method="get" id="'.$options['id'].'-params">'."\n";
+        $r .= '<fieldset><legend>'.lang::get('Report Parameters').'</legend>';
+      }
       // Output any other get parameters from our URL as hidden fields
       foreach ($reloadUrl['params'] as $key => $value) {
         // ignore any parameters that are going to be in the grid parameters form
         if (substr($key,0,6)!='param-')
           $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
-      }
+      }      
       foreach($response['parameterRequest'] as $key=>$info) {
+        // Skip parameters if we have been asked to ignore them
+        if (isset($options['ignoreParams']) && in_array($key, $options['ignoreParams'])) continue;
         $ctrlOptions = array(
           'label' => $info['display'],
           'helpText' => $info['description'],
           'fieldname' => 'param-' . (isset($options['id']) ? $options['id'] : '')."-$key"
         );
-        // If this parameter is in the URL, put it in the control
+        // If this parameter is in the URL or post data, put it in the control
         if (isset($params[$key])) {
           $ctrlOptions['default'] = $params[$key];
         }
@@ -1740,8 +1763,10 @@ class data_entry_helper extends helper_config {
           $r .= data_entry_helper::text_input($ctrlOptions);
         }
       }
-      $r .= '<input type="submit" value="'.lang::get('Run Report').'"/>'."\n";
-      $r .= "</fieldset></form>\n";
+      if ($options['completeParamsForm']==true) {
+        $r .= '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'"/>'."\n";
+        $r .= "</fieldset></form>\n";
+      }
       return $r;
     } else {
       return $r;
@@ -1784,7 +1809,7 @@ class data_entry_helper extends helper_config {
     }
   }
 
-  private function get_report_grid_actions($actions, $row) {
+  private static function get_report_grid_actions($actions, $row) {
     $links = array();
     // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
     // the url is being rewritten.
@@ -1841,7 +1866,9 @@ class data_entry_helper extends helper_config {
       'columns' => array(),
       'includeAllColumns' => true,
       'autoParamsForm' => true,
+      'paramsOnly' => false,
       'extraParams' => array(),
+      'completeParamsForm' => true,
       'callback' => ''
     ), $options);
     return $options;
@@ -1852,7 +1879,7 @@ class data_entry_helper extends helper_config {
    * Returns the query string describing additional sort query params for a
    * data request to populate the report grid.
    */
-  private function get_report_grid_data_request_sort_params($options, $paramKeyNames) {
+  private static function get_report_grid_data_request_sort_params($options, $paramKeyNames) {
     $r = '';
     if (isset($_GET[$paramKeyNames['orderby']]))
       $orderby = $_GET[$paramKeyNames['orderby']];
@@ -1870,11 +1897,12 @@ class data_entry_helper extends helper_config {
   }
 
   /**
-   * Returns the parameters for the report grid data services call which are embedded in the query string.
+   * Returns the parameters for the report grid data services call which are embedded in the query string or 
+   * default param value data.
    * @param $options
    * @return Array Associative array of parameters.
    */
-  private function get_report_grid_url_params($options) {
+  private static function get_report_grid_current_param_values($options) {
     // Are there any parameters embedded in the URL?
     $paramKey = 'param-' . (isset($options['id']) ? $options['id'] : '').'-';
     $params = array();
@@ -1883,6 +1911,12 @@ class data_entry_helper extends helper_config {
         // We have found a parameter, so put it in the request to the report service
         $param = substr($key, strlen($paramKey));
         $params[$param]=$value;
+      }
+    }
+    if (isset($options['paramDefaults'])) {
+      foreach ($options['paramDefaults'] as $key=>$value) {        
+        // We have found a parameter, so put it in the request to the report service        
+        $params[$key]=$value;
       }
     }
     return $params;
@@ -3515,22 +3549,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $options['items'] = '';
       self::init_linked_lists($options);
     } else {
-      if (isset($options['lookupValues'])) {
-        // lookup values are provided
-        $lookupValues = $options['lookupValues'];
-      } else {
-        // lookup values need to be obtained from the database
-        $response = self::get_population_data($options);
-        $lookupValues = array();
-        if (!array_key_exists('error', $response)) {
-          foreach ($response as $item) {
-            if (array_key_exists($options['captionField'], $item) &&
-                array_key_exists($options['valueField'], $item)) {
-              $lookupValues[$item[$options['valueField']]] = $item[$options['captionField']];
-            }
-          }
-        }
-      }
+      $lookupValues = self::get_list_data_from_options($options);
       $opts = "";
       if (array_key_exists('blankText', $options)) {
         $opts .= str_replace(
@@ -3551,6 +3570,33 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       return $response['error'];
     else
       return self::apply_template($options['template'], $options);
+  }
+  
+  /**
+  * When populating a list control (select, listbox, checkbox or radio group), use either the 
+  * table, captionfield and valuefield to build the list of values as an array, or if lookupValues
+  * is in the options array use that instead of making a database call.
+  * @param array $options Options array for the control.
+  * @return array Associative array of the lookup values and captions.
+  */
+  private static function get_list_data_from_options($options) {
+    if (isset($options['lookupValues'])) {
+      // lookup values are provided
+      $lookupValues = $options['lookupValues'];
+    } else {
+      // lookup values need to be obtained from the database
+      $response = self::get_population_data($options);
+      $lookupValues = array();
+      if (!array_key_exists('error', $response)) {
+        foreach ($response as $item) {
+          if (array_key_exists($options['captionField'], $item) &&
+              array_key_exists($options['valueField'], $item)) {
+            $lookupValues[$item[$options['valueField']]] = $item[$options['captionField']];
+          }
+        }
+      }
+    }
+    return $lookupValues;
   }
 
  /**
@@ -3597,39 +3643,31 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       unset($options['validation']);
     } else {
       $itemClass='';
-    }
-    $url = parent::$base_url."index.php/services/data";
-    // Execute a request to the service
-    $response = self::get_population_data($options);
+    }    
+    $lookupValues = self::get_list_data_from_options($options);
     $items = "";
-    if (!array_key_exists('error', $response)) {
-      $idx = 0;
-      foreach ($response as $item) {
-        $idx++;
-        if (array_key_exists($options['captionField'], $item) && array_key_exists($options['valueField'], $item)) {
-          $item = array_merge(
-            $options,
-            $item,
-            array(
-              'disabled' => isset($options['disabled']) ?  $options['disabled'] : '',
-              'checked' => ($options['default'] == $item[$options['valueField']]) ? 'checked="checked" ' : '',
-              'type' => $type,
-              'caption' => $item[$options['captionField']],
-              'value' => $item[$options['valueField']],
-              'class' => $itemClass,
-              'itemId' => $options['fieldname'].':'.$idx
-            )
-          );
-          $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
-
-        }
-      }
-    }
+    $idx = 0;
+    foreach ($lookupValues as $value => $caption){
+      $idx++;
+      $item = array_merge(
+        $options,        
+        array(
+          'disabled' => isset($options['disabled']) ?  $options['disabled'] : '',
+          'checked' => (isset($options['default']) && $options['default'] == $value) ? 'checked="checked" ' : '',
+          'type' => $type,
+          'caption' => $caption,
+          'value' => $value,
+          'class' => $itemClass,
+          'itemId' => $options['fieldname'].':'.$idx
+        )
+      );      
+      $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);      
+    }    
     $options['items']=$items;
     // We don't want to output for="" in the top label, as it is not directly associated to a button
     $lblTemplate = $indicia_templates['label'];
-    $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate);
-    $r = self::apply_template($options['template'], $options);
+    $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate);    
+    $r = self::apply_template($options['template'], $options);    
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
     if (array_key_exists('containerClass', $options)) {

@@ -56,3 +56,25 @@ foreach($problems as $problem) {
 of wildlife records. Indicia is an Open Source project funded by the Open Air Laboratories Network (of which the NBN is a partner) and managed by the 
 Centre for Ecology and Hydrology.</p>
 <p>You can see Indicia in action on the <a href="<?php echo url::base();?>modules/demo/index.php">website demonstration pages</a>.</p>
+
+<?php 
+if ($notifications->count()!==0) : ?>
+<div class="notifications ui-widget-content ui-corner-all">
+<div class="ui-widget-header ui-corner-all">Here are your new notifications:</div>
+<?php
+  foreach($notifications as $notification) {
+    echo "<h2>Notifications from $notification->source</h2>";
+    $struct = json_decode($notification->data, true);    
+    echo "<table><thead>\n<tr><th>";
+    echo implode('</th><th>', $struct['headings']);
+    echo "</th></tr>\n</thead>\n<tbody>\n";
+    foreach ($struct['data'] as $record) {            
+      echo '<tr><td>';
+      echo implode('</td><td>', $record);
+      echo "</td><td></tr>\n";
+    }
+    echo "</tbody>\n</table>\n";
+  }
+
+endif;
+?>

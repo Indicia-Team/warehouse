@@ -20,7 +20,8 @@ class login {
   {
     $uri = new URI();
     // Skip check when accessing the data services, as it is redundant but would slow the services down.
-    if ($uri->segment(1)=='services') {
+    // Also no need to login when running the scheduled tasks.
+    if ($uri->segment(1)=='services' || $uri->segment(1)=='scheduled_tasks') {
     	return;
     }
     // check for setup request

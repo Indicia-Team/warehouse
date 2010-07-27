@@ -30,6 +30,10 @@
  * @subpackage Controllers
  */
 class Gridview_Controller extends Controller {
+  
+  /** 
+   * Factory method used for instantiation to ensure it is set up correctly.
+   */
   public static function factory($model,$page,$uri_segment){
     $gridview = new Gridview_Controller();
     $gridview->model = $model;
@@ -69,6 +73,7 @@ class Gridview_Controller extends Controller {
       $orderclause = array('id' => 'asc');
     }
     $lists = $this->model->orderby($orderclause);
+    
     // If we are logged on as a site controller, then need to restrict access to those
     // records on websites we are site controller for.
     // Core Admins get access to everything - no filter applied.

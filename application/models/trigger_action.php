@@ -28,26 +28,23 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Trigger_Model extends ORM {
-
-  protected $has_many = array('trigger_actions');
+class Trigger_Action_Model extends ORM {
 
   protected $belongs_to = array(
     'created_by'=>'user',
-    'updated_by'=>'user'
+    'updated_by'=>'user',   
+    'trigger'
   );
   
-  protected $search_field='name';
+  protected $search_field='id';
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('name', 'required', 'length[1,100]');
-    $array->add_rules('trigger_template_file', 'required');
-    $array->add_rules('params_json', 'required');
-    $values = $array->as_array();
-    $array['public'] = (isset($values['public']) && $values['public']='on') ? 't' : 'f';    
-    $this->unvalidatedFields = array('description','public');
+    $array->add_rules('trigger_id', 'required');
+    $array->add_rules('type', 'required');    
+    $values = $array->as_array();    
+    $this->unvalidatedFields = array('param1','param2');
     return parent::validate($array, $save);
   }
 }

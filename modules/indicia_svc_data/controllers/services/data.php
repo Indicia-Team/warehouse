@@ -453,7 +453,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     if(!in_array ($this->entity, $this->allow_full_access)) {
         if(array_key_exists ('website_id', $this->view_columns))
         {
-          $this->db->in('website_id', array(null, $this->website_id));
+          if ($this->website_id != 0) {
+            $this->db->in('website_id', array(null, $this->website_id));
+          }
         } else {
           Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
             throw new ServiceError('No access to '.$this->viewname.' allowed.');
@@ -498,7 +500,14 @@ class Data_Controller extends Data_Service_Base_Controller {
     if(!$this->in_warehouse && !in_array ($this->entity, $this->allow_full_access)) {
       if(array_key_exists ('website_id', $this->view_columns))
       {
-        $this->db->in('website_id', array(null, $this->website_id));
+        if ($this->website_id) {
+          $this->db->in('website_id', array(null, $this->website_id));
+        } elseif (!$this->user_is_core_admin) {
+          // User is on Warehouse, but not core admin, so do a filter to all their websites.
+          $allowedWebsiteValues = array_merge($this->user_websites);
+          $allowedWebsiteValues[] = null;
+          $this->db->in('website_id', $allowedWebsiteValues);
+        }
       } else {
         Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
         throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);

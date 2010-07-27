@@ -38,6 +38,11 @@ class Home_Controller extends Indicia_Controller {
     $system = new System_Model;
     $view->db_version=$system->getVersion();
     $view->app_version=kohana::config('version.version');
+    $view->notifications = $this->db
+        ->select('source, source_type, data')
+        ->from('notifications')
+        ->where(array('user_id'=>$_SESSION['auth_user']->id, 'acknowledged'=>'f'))
+        ->get();
     $this->template->content=$view;
   }
   
