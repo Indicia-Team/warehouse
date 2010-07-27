@@ -58,7 +58,7 @@ Centre for Ecology and Hydrology.</p>
 <p>You can see Indicia in action on the <a href="<?php echo url::base();?>modules/demo/index.php">website demonstration pages</a>.</p>
 
 <?php 
-if ($notifications->count()!==0) : ?>
+if (count($notifications)!==0) : ?>
 <div class="notifications ui-widget-content ui-corner-all">
 <div class="ui-widget-header ui-corner-all">Here are your new notifications:</div>
 <?php
