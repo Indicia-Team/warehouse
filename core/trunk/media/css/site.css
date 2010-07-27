@@ -342,3 +342,29 @@ explicitly removes inconsistencies between IE and FireFox */
   vertical-align: middle;
   border: solid 1px silver
 }
+
+/* General purpose helper to make a div display inline. */
+.check-or-radio-box {
+  display: inline-block;
+  zoom: 1;
+  *display: inline;
+  margin-bottom: 0.5em;
+}
+
+.notifications {
+  margin-top: 1em;  
+  padding: 0.2em;
+}
+
+.notifications table {
+  padding: 0em 1em;
+}
+
+.notifications  h2 {
+  padding: 1em 1em 0 1em;
+}
+
+.notifications th {
+  border-bottom: solid #555555 1px;
+  padding: 0.2em;
+}

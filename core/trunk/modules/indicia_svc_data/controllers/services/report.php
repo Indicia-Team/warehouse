@@ -93,7 +93,7 @@ class Report_Controller extends Data_Service_Base_Controller {
       }
       $this->send_response();
     }
-    catch (ServiceError $e) {
+    catch (Exception $e) {
       $this->handle_error($e);
     }
   }

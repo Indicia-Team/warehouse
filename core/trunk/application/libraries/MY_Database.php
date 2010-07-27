@@ -1,6 +1,31 @@
 <?php
 class Database extends Database_Core {
 
+  protected $in_trans = false; 
+  
+  public function __destruct() {
+    self::rollback(); 
+  } 
+  
+  public function begin() { 
+    if ( !$this->in_trans ) 
+      $this->query( 'BEGIN' );
+    $this->in_trans = true;
+  } 
+  
+  public function commit() { 
+    if ( $this->in_trans ) 
+      $this->query( 'COMMIT' ); 
+    $this->in_trans = false; 
+  } 
+  
+  public function rollback() {
+    if ( $this->in_trans ) 
+      $this->query( 'ROLLBACK' );
+    $this->in_trans = false; 
+  } 
+  
+
   /**
   * Adds an "IN" condition to the where clause
   *

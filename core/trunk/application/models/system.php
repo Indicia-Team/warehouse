@@ -53,6 +53,16 @@ class System_Model extends Model
     {
         return $this->system_data->version;
     }
+    
+    /**
+     * get indicia version
+     *
+     * @return string
+     */
+    public function getLastScheduledTaskCheck()
+    {
+        return $this->system_data->last_scheduled_task_check;
+    }
 }
 
 ?>

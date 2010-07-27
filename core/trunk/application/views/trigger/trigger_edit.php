@@ -23,7 +23,10 @@
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 ?><p>This page allows you to specify the details of a trigger, fired when an occurrence is entered which meets certain 
 conditions.</p>
-<form class="cmxform" action="<?php echo url::site().'trigger/save'; ?>" method="post">
+<form class="iform" action="<?php 
+echo url::site().'trigger/edit_params';
+if ($this->model->id) echo "/".$this->model->id;
+ ?>" method="post">
 <?php echo $metadata ?>
 <fieldset>
 <input type="hidden" name="trigger:id" value="<?php echo html::initial_value($values, 'trigger:id'); ?>" />
@@ -39,10 +42,11 @@ echo data_entry_helper::textarea(array(
   'fieldname' => 'trigger:description',
   'default' => html::initial_value($values, 'trigger:description')
 ));
-echo data_entry_helper::textarea(array(
-  'label' => 'Query',
-  'fieldname' => 'trigger:query_json',
-  'default' => html::initial_value($values, 'trigger:query_json')
+echo data_entry_helper::select(array(
+  'label' => 'Trigger template',
+  'fieldname' => 'trigger:trigger_template_file',
+  'default' => html::initial_value($values, 'trigger:trigger_template_file'),
+  'lookupValues' => $other_data['triggerFileList']
 ));
 echo data_entry_helper::checkbox(array(
   'label' => 'Public',
@@ -51,7 +55,9 @@ echo data_entry_helper::checkbox(array(
 ));
 ?>
 </fieldset>
-<?php 
-echo html::form_buttons(html::initial_value($values, 'trigger:id')!=null);
-?>
+<fieldset class="button-set">
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.next'); ?>" class="ui-corner-all ui-state-default button ui-priority-primary" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.cancel'); ?>" class="ui-corner-all ui-state-default button" />
+<input type="submit" name="submit" value="<?php echo kohana::lang('misc.delete'); ?>" onclick="if (!confirm('<?php echo kohana::lang('misc.confirm_delete'); ?>')) {return false;}" class="ui-corner-all ui-state-default button" />
+</fieldset>
 </form>

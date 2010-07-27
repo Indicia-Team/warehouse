@@ -27,17 +27,17 @@ foreach ($table as $item)
   echo '<tr class="';
   echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
   $i++;
-  $fields = array();
-  $a = $item->as_array();
+  $displayfields = array();
+  $allfields = $item->as_array();
   foreach ($columns as $col => $name)
   {
-    if (array_key_exists($col, $a))
+    if (array_key_exists($col, $allfields))
     {
-      $fields[$col] = $a[$col];
+      $displayfields[$col] = $allfields[$col];
     }
   }
   $idx=0;
-  foreach ($fields as $col => $value) {
+  foreach ($displayfields as $col => $value) {
     echo "<td>";
     if ($value!==NULL)
     {
@@ -56,8 +56,10 @@ foreach ($table as $item)
     echo "<td>";
     foreach ($actionColumns as $name => $action)
     {
-      $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);
-      echo html::anchor($action, $name, array('class'=>'grid-action'));
+      if ($this->get_action_visibility($allfields, $name)) {
+        $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);        
+        echo html::anchor($action, $name, array('class'=>'grid-action'));
+      }
     }
     echo "</td>";
   }

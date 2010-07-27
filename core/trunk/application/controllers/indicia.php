@@ -85,13 +85,8 @@ class Indicia_Controller extends Template_Controller {
           'Reports' => 'report'
         ),
         'Admin' => array
-        (
-          'Users'=>'user',
-          'Websites'=>'website',
-          'Languages'=>'language',
-          'Titles'=>'title',
-          'Taxon Relations'=>'taxon_relation_type',
-		  'Triggers & Notifications' => 'trigger'
+        (          
+		      'Triggers & Notifications' => 'trigger'
         ),
         'Logged in as '.$_SESSION['auth_user']->username => array
         (
@@ -99,8 +94,15 @@ class Indicia_Controller extends Template_Controller {
           'Logout'=>'logout'
         )
       );
-      if(!$this->auth->logged_in('CoreAdmin'))
-        unset($menu['Admin']);
+      if($this->auth->logged_in('CoreAdmin')) {
+        $menu['Admin'] = array_merge($menu['Admin'], array(
+            'Users'=>'user',
+            'Websites'=>'website',
+            'Languages'=>'language',
+            'Titles'=>'title',
+            'Taxon Relations'=>'taxon_relation_type'
+        ));
+      }
       $this->template->menu = $menu;
     } else
       $this->template->menu = array();
@@ -132,8 +134,8 @@ class Indicia_Controller extends Template_Controller {
       $this->access_denied();
       return;
     }
-	$this->model = ORM::Factory($this->model->object_name, $id);        
-	$values = $this->getModelValues();
+	  $this->model = ORM::Factory($this->model->object_name, $id);        
+	  $values = $this->getModelValues();
     $this->showEditPage($values);     
   }
   
@@ -151,7 +153,7 @@ class Indicia_Controller extends Template_Controller {
       'values'=>$values,
       'other_data'=>$other
     )); 
-	$this->defineEditBreadcrumbs();
+	  $this->defineEditBreadcrumbs();
   }
   
   /**
@@ -273,8 +275,8 @@ class Indicia_Controller extends Template_Controller {
         $this->model = ORM::factory($this->model->object_name);
       }
       
-      // Were we instructed to delete the post?
-      $deletion = $_POST['submit'] == 'Delete';    
+      // Were we instructed to delete the post?      
+      $deletion = $_POST['submit'] == kohana::lang('misc.delete') || $_POST['submit'] == kohana::lang('misc.unsubscribe');    
       $_POST['deleted'] = $deletion ? 't' : 'f';
       // Pass the post object to the model and then submit it
       $this->model->set_submission_data($_POST);       

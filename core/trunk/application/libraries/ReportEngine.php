@@ -193,7 +193,7 @@ class ReportEngine {
     {
       Kohana::log('debug', "Listing local reports in report directory ".$this->localReportDir.".");
       $reportList = Array();
-      // All we do here is return the list of tiles - don't bother interrogating the reports
+      // All we do here is return the list of titles - don't bother interrogating the reports
       $dh = opendir($this->localReportDir);
       while ($file = readdir($dh))  {
         if ($file != '..' && $file != '.' && is_file($this->localReportDir.'/'.$file))
