@@ -551,14 +551,15 @@ class XMLReportReader_Core implements ReportReader
 
  /**
   * Infers parameters such as column names and parameters from the query string.
+  * Column inference can handle queries where there is a nested select provided it has a
+  * matching from. Commas that are part of nested selects or function calls are ignored
+  * provided they are enclosed in brackets.
   */
   private function inferFromQuery()
   {
     // Find the columns we're searching for - nested between a SELECT and a FROM.
     // To ensure we can detect the words FROM, SELECT and AS, use a regex to wrap
     // spaces around them, then can do a regular string search
-    // This can handle queries where there is a nested select provided it has a
-    // matching from and does not contain commas.
     $this->query=preg_replace("/\b(select)\b/i", ' select ', $this->query);
     $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
     $this->query=preg_replace("/\b(as)\b/i", ' as ', $this->query);
@@ -584,7 +585,32 @@ class XMLReportReader_Core implements ReportReader
     while ($nesting > 0);
 
     $i1 = $nextFrom - $i0;
-    $cols = explode(',', substr($this->query, $i0, $i1));
+    $colString = substr($this->query, $i0, $i1);
+    
+    // Now divide up the list of columns, which are comma separated, but ignore
+    // commas nested in brackets
+    $colStart = 0;
+    $nextComma =  strpos($colString, ',', $colStart);
+    while ($nextComma !== false)
+    {//loop through columns
+      $nextOpen =  strpos($colString, '(', $colStart);
+      while ($nextOpen !== false && $nextComma !==false && $nextOpen < $nextComma)
+      { //skipping commas in brackets
+        $offset = $this->strposclose($colString, $nextOpen) + 1;
+        $nextComma =  strpos($colString, ',', $offset);
+        $nextOpen =  strpos($colString, '(', $offset);
+      }
+      if ($nextComma !== false) {
+        //extract column and move on to next
+        $cols[] = substr($colString, $colStart, ($nextComma - $colStart));
+        $colStart = $nextComma + 1;
+        $nextComma =  strpos($colString, ',', $colStart);
+     }
+    }
+    //extract final column
+    $cols[] = substr($colString, $colStart);
+
+    
     // We have cols, which may either be of the form 'x' or of the form 'x as y'
     foreach ($cols as $col)
     {
@@ -613,4 +639,28 @@ class XMLReportReader_Core implements ReportReader
     }
   }
 
+  /**
+   * Returns the numeric position of the closing bracket matching the opening bracket
+   * @param <string> $haystack The string to search
+   * @param <int> $open The numeric position of the opening bracket
+   * @return The numeric position of the closing bracket or false if not present
+   */
+  private function strposclose($haystack, $open) {
+    $nesting = 1;
+    $offset = $open + 1;
+    do {
+      $nextOpen =  strpos($haystack, '(', $offset);
+      $nextClose =  strpos($haystack, ')', $offset);
+      if ($nextClose === false) return false;
+      if ($nextOpen !== false and $nextOpen < $nextClose) {
+        $nesting++;
+        $offset = $nextOpen + 1;
+      } else {
+        $nesting--;
+        $offset = $nextClose + 1;
+      }
+    }
+    while ($nesting > 0);
+    return $offset -1;
+  }
 }
