@@ -1,3 +1,6 @@
+DROP VIEW detail_occurrences;
+DROP VIEW list_occurrences;
+
 CREATE OR REPLACE VIEW detail_occurrences AS 
  SELECT o.id, o.confidential, o.comment, o.taxa_taxon_list_id, o.determiner_id, t.taxon, s.entered_sref, s.entered_sref_system, s.geom, s.location_name, s.survey_id, s.date_start, s.date_end, s.date_type, s.location_id, l.name AS location, l.code AS location_code, s.recorder_names, (d.first_name::text || ' '::text) || d.surname::text AS determiner, o.website_id, o.created_by_id, c.username AS created_by, o.created_on, o.updated_by_id, u.username AS updated_by, o.updated_on, o.record_status, o.downloaded_flag, o.sample_id, o.deleted
    FROM occurrences o

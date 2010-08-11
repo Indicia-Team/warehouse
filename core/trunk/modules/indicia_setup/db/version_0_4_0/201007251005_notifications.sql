@@ -22,7 +22,6 @@ CREATE TABLE notifications
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE notifications OWNER TO indicia_user;
 COMMENT ON COLUMN notifications.source IS 'Source of the notification, for example the name of the trigger that generated it.';
 COMMENT ON COLUMN notifications.source_type IS 'Defines the type of source of this notification, as described in the source. Always T (= trigger) currently.';
 COMMENT ON COLUMN notifications.data IS 'Notifiable data. For a trigger, this contains a JSON structure defining content of the notifiable record as output by the trigger report file.';
