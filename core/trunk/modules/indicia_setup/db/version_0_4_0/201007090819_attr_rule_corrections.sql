@@ -1,7 +1,7 @@
 UPDATE sample_attributes SET validation_rules='numeric
 minimum[-20]
-maximum[45]' WHERE id=2;
+maximum[45]' WHERE caption='Temperature (Celsius)';
 
 
 
-UPDATE sample_attributes SET validation_rules='numeric' WHERE id=12;
+UPDATE sample_attributes SET validation_rules='numeric' WHERE caption='Altitude (m)'
