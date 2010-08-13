@@ -615,8 +615,7 @@ $.getJSON(\"$svcUrl\" + \"/data/location\" +
       }
     data_entry_helper::$javascript .= "
     }
-    locationLayer.addFeatures(newFeatures);
-    locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
+    locationLayer.addFeatures(newFeatures);    
     }
 });
 $('#controls').bind('tabsshow', function(event, ui) {
@@ -627,7 +626,8 @@ $('#controls').bind('tabsshow', function(event, ui) {
   $('#controls').height(y - $('#controls').position().top);
 });
 ";
-        $r .= "</div>\n";
+    data_entry_helper::$onload_javascript .= "locationLayer.map.zoomToExtent(locationLayer.getDataExtent());\n";
+    $r .= "</div>\n";
     if(count($tabs)>1){
       $r .= "</div>";
     }
