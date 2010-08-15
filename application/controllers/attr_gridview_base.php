@@ -239,4 +239,13 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     }
     return true;
   }
+  
+  /**
+   * Override to control the visibility of each action.
+   * @param Array $row Row data in an associative array.
+   * @param string $actionName Name of the action to check for visibility in this row.
+   */
+  protected function get_action_visibility($row, $actionName) {
+    return true;
+  }
 }
