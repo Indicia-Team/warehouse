@@ -165,7 +165,8 @@ echo html::error_message($model->getError('occurrence:external_key'));
 <li>
 <label for='occurrence:record_status'>Record Status:</label>
 <?php
-print form::dropdown('occurrence:record_status', array('I' => 'In Progress', 'C' => 'Completed', 'V' => 'Verified'), 
+print form::dropdown('occurrence:record_status', array('I' => 'In Progress', 'C' => 'Completed', 'S' => 'Sent for verification', 'V' => 'Verified', 
+    'R' => 'Rejected', 'T' => 'Test'), 
     html::initial_value($values, 'occurrence:record_status'));
 echo html::error_message($model->getError('occurrence:record_status'));
 ?>
