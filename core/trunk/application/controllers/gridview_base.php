@@ -173,10 +173,12 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * Controller action to build the page that allows each field in an uploaded CSV
    * file to be mapped to the appropriate model attributes.
    */
-  public function upload_mappings() {
+  public function upload_mappings() {    
+    $sizelimit = '4M';
     $_FILES = Validation::factory($_FILES)->add_rules(
-        'csv_upload', 'upload::valid', 'upload::required', 'upload::type[csv]', 'upload::size[1M]'
+        'csv_upload', 'upload::valid', 'upload::required', 'upload::type[csv]', "upload::size[$sizelimit]"
     );
+    
     if ($_FILES->validate()) {
       // move the file to the upload directory
       $csvTempFile = upload::save('csv_upload');
@@ -197,8 +199,24 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
       $this->page_breadcrumbs[] = 'Setup upload';
     } else {
+      $errors = $_FILES->errors();
+      $error = '';      
+      foreach ($errors as $key => $val) {
+        switch ($val) {
+          case 'valid': 
+            $error .= 'The uploaded file is not valid.<br/>';
+            break;
+          case 'csv': 
+            $error .= 'The uploaded file is not a csv file.<br/>';
+            break;
+          case 'size': 
+            $error .= 'The upload file is greater than the limit of '.$sizelimit.'b.<br/>';
+            break;
+          default : $error .= 'An unknown error occurred when checking the upload file.<br/>';
+        }
+      }
       // TODO: error message needs a back button.
-      $this->setError('File missing', 'Please select a CSV file to upload before clicking the Upload button.');
+      $this->setError('Upload file problem', $error);
     }
   }
   
