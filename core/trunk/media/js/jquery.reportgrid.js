@@ -182,8 +182,8 @@ var report_grid_sortdir = '';
         e.preventDefault();
         if (div.loading) {return;}
         div.loading = true;
-        // this.textContent = display label for column
-        var colName = this.textContent;
+        // $(this).text() = display label for column
+        var colName = $(this).text();
         $.each(div.settings.columns, function(idx, col) {
           if (col.display==colName) {
             colName=col.orderby || col.fieldname;
