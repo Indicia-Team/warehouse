@@ -158,9 +158,9 @@ class iform_distribution_map_1 {
 	  $fetchOpts = array(
         'table' => 'taxa_taxon_list',
         'extraParams' => $readAuth + array(
-	      'view' => 'detail',
+	        'view' => 'detail',
           'language_iso' => iform_lang_iso_639_2($user->lang),
-		  'taxon_meaning_id' => $meaningId
+		      'taxon_meaning_id' => $meaningId
         )
 	  );
       $taxonRecords = data_entry_helper::get_population_data($fetchOpts);
@@ -168,30 +168,16 @@ class iform_distribution_map_1 {
 
     $url = data_entry_helper::$geoserver_url.'wms';
     // Get the style if there is one selected
-      $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';
-    data_entry_helper::$onload_javascript .= "\nvar filters = new Array();\n";
-	if (!$args['show_all_species'])
-	  data_entry_helper::$onload_javascript .= "filters.push(new OpenLayers.Filter.Comparison({
-  type: OpenLayers.Filter.Comparison.EQUAL_TO,
-  property: 'taxon_meaning_id',
-  value: '$meaningId'
-}));\n";    
-	data_entry_helper::$onload_javascript .= "filters.push(new OpenLayers.Filter.Comparison({
-  type: OpenLayers.Filter.Comparison.EQUAL_TO,
-  property: 'website_id',
-  value: ".$args['website_id']."
-}));
-filterObj = new OpenLayers.Filter.Logical({
-  type: OpenLayers.Filter.Logical.AND,
-  filters: filters
-});
-var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);
-var distLayer = new OpenLayers.Layer.WMS(
-    '".$args['layer_title']."',
-    '$url',
-    {layers: '".$args["wms_feature_type"]."', transparent: true, filter: filter $style},
-    {isBaseLayer: false, sphericalMercator: true, singleTile: true}
-);\n";
+    $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
+	data_entry_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
+  if (!$args['show_all_species'])
+    data_entry_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
+  data_entry_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
+	        '".$args['layer_title']."',
+	        '$url',
+	        {layers: '".$args["wms_feature_type"]."', transparent: true, CQL_FILTER: filter $style},
+	        {isBaseLayer: false, sphericalMercator: true, singleTile: true}
+      );\n";
     $options['layers'][]='distLayer';
     // output a legend
 	if ($args['show_all_species'])
