@@ -311,8 +311,8 @@ class iform_my_dot_map {
         $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/jpeg'.
             '&STYLE='.$args["wms_dist_2_style"].'" alt=""/>'.$args["wms_dist_2_title"].'</div>'.$legend;
       }
-      $layerName = self::build_distribution_layer(1, $args, $occurrence);
-      if ($layerName) {
+      $layerName = self::build_distribution_layer(1, $args, $occurrence);            
+      if ($layerName) {        
 	          $options['layers'][] = $layerName;
 	          $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/png'.
 	              '&STYLE='.$args["wms_dist_1_style"].'" alt=""/>'.$args["wms_dist_1_title"].'</div>'.$legend;
@@ -365,6 +365,7 @@ class iform_my_dot_map {
    	  'survey_id' => 'lt8_id',
       'sample_id' => 'lt0_id'
     );
+    $filter = '';
     if ($args["wms_dist_$layerId"."_title"]) {
       // if we have a filter specified, then set it up. Note we can only do this if the sample id is passed in at the moment.
       // @todo support passing an occurrence ID.
@@ -373,44 +374,28 @@ class iform_my_dot_map {
         data_entry_helper::$onload_javascript .= "var filters = new Array();\n";
         $filterField = $args["wms_dist_$layerId"."_internal"] ? $args["wms_dist_$layerId"."_filter_against"] : $args["wms_dist_$layerId"."_filter_field"];
         // Use an array of handled values so we only build each distinct filter once
-        $handled = array();
+        $handled = array();        
         foreach($occurrence as $record) {
           $filterValue = $record[$filterMappings[$args["wms_dist_$layerId"."_filter_against"]]];
           if (!in_array($filterValue, $handled)) {
-            data_entry_helper::$onload_javascript .= "filters.push(new OpenLayers.Filter.Comparison({
-                type: OpenLayers.Filter.Comparison.EQUAL_TO,
-                property: '".$filterField."',
-                value: '".$filterValue."'
-                }));\n";
+            $filter .= ($filter==='' ? '' : ' AND ') . "$filterField=$filterValue";
             $handled[] = $filterValue;
           }
         }
-        // JavaScript to build the filter as XML. If many filter rows, wrap them in an OR logical filter.
-        data_entry_helper::$onload_javascript .= "
-var filterObj;
-if (filters.length==1) {
-  filterObj = filters[0];
-} else {
-  filterObj = new OpenLayers.Filter.Logical({
-    type: OpenLayers.Filter.Logical.OR,
-    filters: filters
-  });
-}
-var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);\n";
-      } else {
-        data_entry_helper::$onload_javascript .= "var filter = null;\n";
       }
+      // force a filter on the website ID.
+      $filter .= ($filter==='' ? '' : ' AND ') . "website_id=".$args['website_id'];     
       // Get the url, either the external one specified, or our internally registered GeoServer
       $url = $args["wms_dist_$layerId"."_internal"] ? data_entry_helper::$geoserver_url.'wms' : $args["wms_dist_$layerId"."_url"];
       // Get the style if there is one selected
       $style = $args["wms_dist_$layerId"."_style"] ? ", styles: '".$args["wms_dist_$layerId"."_style"]."'" : '';
       // and also the opacity
       $opacity = $args["wms_dist_$layerId"."_opacity"] ? $args["wms_dist_$layerId"."_opacity"] : 0.5;
-
+      $filter = ', CQL_FILTER: "'.$filter.'"';
       data_entry_helper::$onload_javascript .= "var distLayer$layerId = new OpenLayers.Layer.WMS(
         '".str_replace("'", "\'", $args["wms_dist_$layerId"."_title"])."',
         '$url',
-        {layers: '".$args["wms_dist_$layerId"."_layer"]."', transparent: true, filter: filter $style},
+        {layers: '".$args["wms_dist_$layerId"."_layer"]."', transparent: true $filter $style},
         {isBaseLayer: false, opacity: $opacity, sphericalMercator: true, singleTile: true}
       );\n";
       return "distLayer$layerId";
