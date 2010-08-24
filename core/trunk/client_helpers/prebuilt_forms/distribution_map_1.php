@@ -72,6 +72,14 @@ class iform_distribution_map_1 {
           'type' => 'textfield',
           'group' => 'Distribution Layer'
         ),
+		array(
+          'name' => 'show_all_species',
+		  'caption' => 'Show all species',
+		  'description' => 'Set this flag to show a map of all species occurrences rather than just one species',
+		  'type' => 'boolean',
+		  'default' => false,
+          'group' => 'Distribution Layer'
+		),
         array(
           'name' => 'taxon_list_id',
           'caption' => 'Taxon List ID',
@@ -110,18 +118,19 @@ class iform_distribution_map_1 {
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
-    if (isset($args['taxon_identifier']) && !empty($args['taxon_identifier']))
-      // This page is for a predefined species map
-      $taxonIdentifier = $args['taxon_identifier'];
-    else {
-      if (isset($_GET['taxon']))
+	if (!$args['show_all_species']) {
+      if (isset($args['taxon_identifier']) && !empty($args['taxon_identifier']))
+        // This page is for a predefined species map
+        $taxonIdentifier = $args['taxon_identifier'];
+      else {
+        if (isset($_GET['taxon']))
         $taxonIdentifier = $_GET['taxon'];
-      else
+        else
         return lang::get("The distribution map cannot be displayed without a taxon identifier");
-    }
-    if ($args['external_key']==true) {
-      // the taxon identifier is an external key, so we need to translate to a meaning ID.
-      $fetchOpts = array(
+      }
+      if ($args['external_key']==true) {
+        // the taxon identifier is an external key, so we need to translate to a meaning ID.
+        $fetchOpts = array(
         'table' => 'taxa_taxon_list',
         'extraParams' => $readAuth + array(
             'view' => 'detail',
@@ -129,62 +138,66 @@ class iform_distribution_map_1 {
             'taxon_list_id' => $args['taxon_list_id'],
             'preferred' => true
         )
-      );
-      $prefRecords = data_entry_helper::get_population_data($fetchOpts);
-      // We might have multiple records back, e.g. if there are several photos, but we should have a unique meaning id.
-      $meaningId=0;
-      foreach($prefRecords as $prefRecord) {
+        );
+        $prefRecords = data_entry_helper::get_population_data($fetchOpts);
+        // We might have multiple records back, e.g. if there are several photos, but we should have a unique meaning id.
+        $meaningId=0;
+        foreach($prefRecords as $prefRecord) {
         if ($meaningId!=0 && $meaningId!=$prefRecord['taxon_meaning_id'])
-          // bomb out, as we  don't know which taxon to display
-          return lang::get("The taxon identifier cannot be used to identify a unique taxon.");
+            // bomb out, as we  don't know which taxon to display
+            return lang::get("The taxon identifier cannot be used to identify a unique taxon.");
         $meaningId = $prefRecord['taxon_meaning_id'];
-      }
-      if ($meaningId==0)
+        }
+        if ($meaningId==0)
         return lang::get("The taxon identified by the taxon identifier cannot be found.");
-      $meaningId = $prefRecords[0]['taxon_meaning_id'];
-    } else
-      // the taxon identifier is the meaning ID.
-      $meaningId = $taxonIdentifier;
-    // We still need to fetch the species record, to get its common name
-    $fetchOpts = array(
-      'table' => 'taxa_taxon_list',
-      'extraParams' => $readAuth + array(
-	    'view' => 'detail',
-        'taxon_meaning_id' => $meaningId,
-        'language_iso' => iform_lang_iso_639_2($user->lang)
-      )
-	);
-    $taxonRecords = data_entry_helper::get_population_data($fetchOpts);
+        $meaningId = $prefRecords[0]['taxon_meaning_id'];
+      } else
+        // the taxon identifier is the meaning ID.
+        $meaningId = $taxonIdentifier;
+	  // We still need to fetch the species record, to get its common name
+	  $fetchOpts = array(
+        'table' => 'taxa_taxon_list',
+        'extraParams' => $readAuth + array(
+	      'view' => 'detail',
+          'language_iso' => iform_lang_iso_639_2($user->lang),
+		  'taxon_meaning_id' => $meaningId
+        )
+	  );
+      $taxonRecords = data_entry_helper::get_population_data($fetchOpts);
+    }
 
     $url = data_entry_helper::$geoserver_url.'wms';
     // Get the style if there is one selected
       $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';
-    data_entry_helper::$onload_javascript .= "
-    var filters = new Array();
-    filters.push(new OpenLayers.Filter.Comparison({
-      type: OpenLayers.Filter.Comparison.EQUAL_TO,
-      property: 'taxon_meaning_id',
-      value: '$meaningId'
-	}));
-	filters.push(new OpenLayers.Filter.Comparison({
-      type: OpenLayers.Filter.Comparison.EQUAL_TO,
-      property: 'website_id',
-      value: ".$args['website_id']."
-	}));
-	filterObj = new OpenLayers.Filter.Logical({
-      type: OpenLayers.Filter.Logical.AND,
-      filters: filters
-    });
-    var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);
-    var distLayer = new OpenLayers.Layer.WMS(
-	        '".$args['layer_title']."',
-	        '$url',
-	        {layers: '".$args["wms_feature_type"]."', transparent: true, filter: filter $style},
-	        {isBaseLayer: false, sphericalMercator: true, singleTile: true}
-      );\n";
-    $options['layers'] = array('distLayer');
+    data_entry_helper::$onload_javascript .= "\nvar filters = new Array();\n";
+	if (!$args['show_all_species'])
+	  data_entry_helper::$onload_javascript .= "filters.push(new OpenLayers.Filter.Comparison({
+  type: OpenLayers.Filter.Comparison.EQUAL_TO,
+  property: 'taxon_meaning_id',
+  value: '$meaningId'
+}));\n";    
+	data_entry_helper::$onload_javascript .= "filters.push(new OpenLayers.Filter.Comparison({
+  type: OpenLayers.Filter.Comparison.EQUAL_TO,
+  property: 'website_id',
+  value: ".$args['website_id']."
+}));
+filterObj = new OpenLayers.Filter.Logical({
+  type: OpenLayers.Filter.Logical.AND,
+  filters: filters
+});
+var filter = $.fn.indiciaMapPanel.convertFilterToText(filterObj);
+var distLayer = new OpenLayers.Layer.WMS(
+    '".$args['layer_title']."',
+    '$url',
+    {layers: '".$args["wms_feature_type"]."', transparent: true, filter: filter $style},
+    {isBaseLayer: false, sphericalMercator: true, singleTile: true}
+);\n";
+    $options['layers'][]='distLayer';
     // output a legend
-    $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
+	if ($args['show_all_species'])
+	  $layerTitle = lang::get('All species occurrences');
+	else
+      $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
     $r .= '<div id="legend" class="ui-widget ui-widget-content ui-corner-all">';
     $r .= '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER='.$args['wms_feature_type'].'&Format=image/jpeg'.
 	              '&STYLE='.$args["wms_style"].'" alt=""/>'.$layerTitle.'</div>';

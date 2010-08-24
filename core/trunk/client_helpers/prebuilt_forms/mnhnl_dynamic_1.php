@@ -74,12 +74,20 @@ class iform_mnhnl_dynamic_1 {
           ),
           'group' => 'User Interface'
         ),
+		array(
+          'name'=>'place_search_control',
+          'caption'=>'Place Search Control',
+          'description'=>'Should a control for searching for place names on the map be added to the form?',
+          'type'=>'boolean',
+          'group' => 'User Interface'
+        ),
         array(
           'name'=>'location_ctrl',
           'caption'=>'Location Control Type',
           'description'=>'The type of control that will be available to select a location.',
           'type'=>'select',
           'options' => array(
+		    'none' => 'None',
             'location_autocomplete' => 'Autocomplete',
             'location_select' => 'Select'
           ),
@@ -105,6 +113,18 @@ class iform_mnhnl_dynamic_1 {
               'taxa being added to the grid.',
           'type'=>'int',
           'required'=>false
+        ),
+		array(
+          'name'=>'default_record_status',
+          'caption'=>'Default Record Status',
+          'description'=>'The record status initially set for new records entered using this form.',
+          'type'=>'select',
+          'options' => array(
+		    '-' => 'User selected',
+            'I' => 'In progress',
+            'C' => 'Data Entry Completed'
+          ),
+		  'default' => 'C'
         )
       )
     );
@@ -332,8 +352,6 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       $instruct = lang::get("LANG_Tab_Instructions_$alias");
       if ($instruct!="LANG_Tab_Instructions_$alias") 
         $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.$instruct."</p>";
-      else
-        $r .= "<p>Missing instructions: LANG_Tab_Instructions_$alias</p>";
       if (method_exists('iform_mnhnl_dynamic_1', "get_fixed_controls_$alias")) {
         // dynamically call a method to add controls to this page, if there are non dynamic ones.
         $method = "get_fixed_controls_$alias";
@@ -466,10 +484,10 @@ jQuery('#imp-sref').change();
         'view'=>'detail',
         'extraParams'=>array_merge(array('view'=>'detail', 'orderby'=>'name'), $auth['read'])
     );
-    
-    $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
-    
-    $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
+    if ($args['location_ctrl']!='none')
+      $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
+    if ($args['place_search_control'])
+      $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
     $options = iform_map_get_map_options($args, $auth['read']);
     $options['layers'][] = 'locationLayer';
     $olOptions = iform_map_get_ol_options($args);
@@ -482,20 +500,23 @@ jQuery('#imp-sref').change();
         'label'=>lang::get('LANG_Date'),
         'fieldname'=>'sample:date'
     ));
-    
-    $values = array('I', 'C'); // not initially doing V=Verified
-    $r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
-    $r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
-    foreach($values as $value){
-      $r .= '<option value="'.$value.'"';
-      if(isset(data_entry_helper::$entity_to_load['occurrence:record_status'])){
-        if(data_entry_helper::$entity_to_load['occurrence:record_status'] == $value){
-          $r .= ' selected="selected"';
-        }
-      }
-      $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
-    }
-    $r .= "</select><br/>\n";
+    if ($args['default_record_status']=='-') {
+		$values = array('I', 'C'); // not initially doing V=Verified
+		$r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
+		$r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
+		foreach($values as $value){
+		  $r .= '<option value="'.$value.'"';
+		  if(isset(data_entry_helper::$entity_to_load['occurrence:record_status'])){
+			if(data_entry_helper::$entity_to_load['occurrence:record_status'] == $value){
+			  $r .= ' selected="selected"';
+			}
+		  }
+		  $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
+		}
+		$r .= "</select><br/>\n";
+	} else  {
+	  $r .= '<input type="hidden" name="occurrence:record_Status" value="'.$args['default_record_status'].'"/>';
+	}
   	return $r;
   }
   
