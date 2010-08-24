@@ -1447,7 +1447,7 @@ class data_entry_helper extends helper_config {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, url, urlParams and javascript. The javascript, url and urlParams values can all use the
+  *      values for caption, url, urlParams, class and javascript. The javascript, url and urlParams values can all use the
   *      field names from the report in braces as substitutions, for example {id} is replaced by the value of the field
   *      called id in the respective row. In addition, the url can use {currentUrl} to represent the current page's URL.
   *  - visible: true or false, defaults to true
@@ -1464,6 +1464,9 @@ class data_entry_helper extends helper_config {
   *
   * )
   * </li>
+  * <li><b>rowId</b>
+  * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the <tr> elements have their id attributes
+  * set to row + this field value, e.g. row37.</li>
   * <li><b>IncludeAllColumns</b>
   * Defaults to true. If true, then any columns in the report, view or table which are not in the columns
   * option array are automatically added to the grid after any columns specified in the columns option array.
@@ -1493,6 +1496,9 @@ class data_entry_helper extends helper_config {
   * <li><b>completeParamsForm</b>
   * Defaults to true. If false, the control HTML is returned for the params form without being wrapped in a <form> and
   * without the Run Report button.</li>
+  * <li><b>paramsFormButtonCaption</b>
+  * Caption of the button to run the report on the report parameters form. Defaults to Run Report. This caption
+  * is localised when appropriate.
   * </ul>
   * @todo Action column or other configurable links in grid
   * @todo Allow additional params to filter by table column or report parameters
@@ -1502,7 +1508,7 @@ class data_entry_helper extends helper_config {
   */
   public static function report_grid($options) {
     self::add_resource('fancybox');
-    self::$javascript .= 'jQuery("a.fancybox").fancybox();';
+    self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
     $options = self::get_report_grid_options($options);
     // Output a div to keep the grid and pager together
     $r = '<div id="'.$options['id'].'">';
@@ -1580,19 +1586,26 @@ class data_entry_helper extends helper_config {
         // Don't output the additional row we requested just to check if the next page link is required.
         if ($outputCount>=$options['itemsPerPage'])
           break;
-        $r .= "<tr $rowClass>";
+        // set a unique id for the row if we know the identifying field.
+        $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
+        $r .= "<tr $rowClass$rowId>";
         foreach ($options['columns'] as $field) {
+          $class='';
           if (isset($field['visible']) && $field['visible']=='false')
             continue; // skip this column as marked invisible
-          if (isset($field['actions']))
+          if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row);
-          elseif (isset($field['template']))
+            $class=' class="actions"';
+          } elseif (isset($field['template'])) 
             $value = self::mergeParamsIntoTemplate($row, $field['template'], true);
-          else
+          else {
             $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
+            // The verification_1 form depends on the tds in the grid having a class="data fieldname".
+            $class=' class="data '.$field['fieldname'].'"';
+          }          
           if (isset($field['img']) && $field['img']=='true' && !empty($value))
             $value = "<a href=\"$imagePath$value\" class=\"fancybox\"><img src=\"$imagePath"."thumb-$value\" /></a>";
-          $r .= "<td>$value</td>\n";
+          $r .= "<td$class>$value</td>\n";
         }
         $r .= '</tr>';
         $rowClass = empty($rowClass) ? ' class="'.$options['altRowClass'].'"' : '';
@@ -1814,12 +1827,20 @@ class data_entry_helper extends helper_config {
     // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
     // the url is being rewritten.
     $currentUrl = self::get_reload_link_parts();
-    $row['currentUrl'] = $currentUrl['path'];
+    $row['currentUrl'] = $currentUrl['path'];    
     foreach ($actions as $action) {
-      if (isset($action['url'])) {
-        $action['url'].= (strpos($action['url'], '?')===false) ? '?' : '&';
+      if (isset($action['url'])) {        
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
-        $urlParams = array_merge($currentUrl['params'], isset($action['urlParams']) ? $action['urlParams'] : null);
+        if (isset($action['urlParams'])) 
+          $urlParams = array_merge($currentUrl['params'], $action['urlParams']);
+        else if (substr($action['url'], 0, 1)=='#')
+          // if linking to an internal bookmark, no need to attach the url parameters
+          $urlParams = array();
+        else
+          $urlParams = array_merge($currentUrl['params']);
+        if (count($urlParams)>0) {
+          $action['url'].= (strpos($action['url'], '?')===false) ? '?' : '&';
+        }
         $href=' href="'.self::mergeParamsIntoTemplate($row, $action['url'].self::array_to_query_string($urlParams), true).'"';
       } else {
         $href='';
@@ -1829,7 +1850,8 @@ class data_entry_helper extends helper_config {
       } else {
         $onclick = '';
       }
-      $links[] = "<a class=\"indicia-button action-button ui-state-default ui-corner-all\"$href$onclick>".$action['caption'].'</a>';
+      $class=(isset($action['class'])) ? ' '.$action['class'] : '';
+      $links[] = "<a class=\"indicia-button action-button ui-state-default ui-corner-all$class\"$href$onclick>".$action['caption'].'</a>';
     }
     return implode('<br/>', $links);
   }
@@ -1869,7 +1891,8 @@ class data_entry_helper extends helper_config {
       'paramsOnly' => false,
       'extraParams' => array(),
       'completeParamsForm' => true,
-      'callback' => ''
+      'callback' => '',
+      'paramsFormButtonCaption' => 'Run Report'
     ), $options);
     return $options;
   }
@@ -4093,8 +4116,16 @@ if (errors.length>0) {
    * @param array $structure Describes the structure of the submission. The form should be:
    * array(
    *     'model' => 'main model name',
-   *     'submodel' => array('model' => 'child model name', fk => 'foreign key name', image_entity => 'name of image entity if present'),
-   *     'superModel' => array('parent model name' => array(fk => 'foreign key name', image_entity => 'name of image entity if present')),
+   *     'subModels' => array('child model name' =>  array(
+   *         'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
+   *         'fk' => 'foreign key name',
+   *         'image_entity' => 'name of image entity if present'
+   *     )),
+   *     'superModels' => array('child model name' =>  array(
+   *         'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
+   *         'fk' => 'foreign key name',
+   *         'image_entity' => 'name of image entity if present'
+   *     )),
    *     'metaFields' => array('fieldname1', 'fieldname2', ...)
    * )
    */
