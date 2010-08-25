@@ -402,13 +402,17 @@ class iform_mnhnl_citizen_science_1 {
         'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
     ));
+    /*
+    @todo Look into why the filebox does not work in Internet Explorer on this form
     $r .= data_entry_helper::file_box(array(
         'caption' => 'Upload your photos',
         'resizeWidth' => 1024,
         'resizeHeight' => 768,
         'table' => 'occurrence_image',
-        'tabDiv' => 'controls'
+        'tabDiv' => 'controls',
+        'runtimes' => array('html5','flash','gears','browserplus','html4')
     ));
+    */
 
     // Dynamically create a control for the abundance, unless overridden for this species
     if (isset($species) && count($species)>0 && trim($args['abundance_overrides'])!=='') {
