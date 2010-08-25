@@ -569,6 +569,12 @@ class data_entry_helper extends helper_config {
     if (!array_key_exists('default', $options) || $options['default']=='') {
       $options['default']=lang::get('click here');
     }
+	// Check for the special default value of today
+	if (isset($options['default']) ) {
+	  if ($options['default']=='today')
+	    $options['default'] = date('Y-m-d');
+	}
+
     // Enforce a class on the control called date
     if (!array_key_exists('class', $options)) {
       $options['class']='';
