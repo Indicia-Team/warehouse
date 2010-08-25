@@ -91,12 +91,13 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'User Interface'
         ),
         array(
-		  'name'=>'abundance_overrides',
-		  'caption'=>'Abundance Overrides by Species',
-		  'description'=>'If a species should not use the default abundance attribute, list each species preferred name on a separate line, followed '.
-		      'by a colon then the attribute IDs, comma separated. This only works when loading the form with a preset species in the URL.',
-		  'type'=>'textarea',
-		  'group'=>'User Interface'
+		      'name'=>'abundance_overrides',
+		      'caption'=>'Abundance Overrides by Species',
+		      'description'=>'If a species should not use the default abundance attribute, list each species preferred name on a separate line, followed '.
+		          'by a colon then the attribute IDs, comma separated. This only works when loading the form with a preset species in the URL.',
+		      'type'=>'textarea',
+		      'group'=>'User Interface',
+          'required'=>false
         ),
         array(
           'name'=>'list_id',
