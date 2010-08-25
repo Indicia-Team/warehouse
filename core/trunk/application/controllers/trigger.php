@@ -38,9 +38,11 @@ class Trigger_Controller extends Gridview_Base_Controller {
     $this->columns = array(
       'name'=>'',
       'description'=>'',
-      'created_by_name'=>'Owner');
+      'created_by_name'=>'Owner'
+    );
     $this->pagetitle = "Triggers";
     $this->model = ORM::factory('trigger');
+    $this->base_filter['private_for_user_id'] = array(null, $_SESSION['auth_user']->id);
   }
   
   /**
@@ -57,8 +59,8 @@ class Trigger_Controller extends Gridview_Base_Controller {
    * actions depending on the circumstance and row data.
    */
   protected function get_action_visibility($row, $actionName) {
-    if ($actionName == 'edit trigger') {
-      return $row['private_for_user_id'] = $_SESSION['auth_user']->id || $this->auth->logged_in('CoreAdmin');
+    if ($actionName == 'edit trigger') {      
+      return $row['private_for_user_id'] == $_SESSION['auth_user']->id || $this->auth->logged_in('CoreAdmin');
     } else {
       // @todo Performance implications of this approach
       // Because we can't write view code that returns a trigger action record based on a parameter (the user ID)
@@ -136,7 +138,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
         $params[$param] = $value;
       }
     }
-    $_POST['params_json'] = json_encode($params);
+    $_POST['params_json'] = json_encode($params);   
     parent::save();
   }
   
