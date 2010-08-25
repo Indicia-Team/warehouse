@@ -70,11 +70,11 @@ class Scheduled_Tasks_Controller extends Controller {
     {       
       $params = json_decode($trigger->params_json, true);      
       $params['date'] = $this->last_run_date;
-      $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);
+      $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);      
       
-      if (count($data['content']['data']>0)) {
-        $parsedData = $this->parseData($data);       
-        
+      if (count($data['content']['data']>0)) {        
+        $parsedData = $this->parseData($data);               
+        echo count($data['content']['data']). " records found<br/>";
         $actions = $this->db
             ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, users.default_digest_mode, people.email_address, users.core_role_id')
             ->from('trigger_actions, users')            
@@ -101,15 +101,15 @@ class Scheduled_Tasks_Controller extends Controller {
           // Insert data in notifications table, either for the user to manually acknowledge, or for a digest mail to be built.
           // First build a list of data for the user's websites
           if ($action->core_role_id==1) {
-            // core admin can see any data
-            $allowedData = array_values($parsedData['websiteRecordData']);
+            // core admin can see any data            
+            $allowedData = $parsedData['websiteRecordData'];
           } else {              
             $allowedData = array();
             foreach ($userWebsites as $allowedWebsite) {              
               if (isset($parsedData['websiteRecordData'][$allowedWebsite->website_id]))
-                $allowedData[] = $parsedData['websiteRecordData'][$allowedWebsite->website_id];
+                $allowedData[$allowedWebsite->website_id] = $parsedData['websiteRecordData'][$allowedWebsite->website_id];
             }              
-          }           
+          }
           if (count($allowedData)>0) {
             $this->db->insert('notifications', array(
               'source' => "'$trigger->name'",
@@ -163,7 +163,7 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         $currentUserId = $notification->user_id;
         $emailContent = kohana::lang('misc.notification_intro', kohana::config('email.server_name')) . '<br/><br/>';
-      }
+      }      
       $emailContent .= self::unparseData($notification->data);
     }
     if ($currentUserId!==null) {
@@ -231,6 +231,8 @@ class Scheduled_Tasks_Controller extends Controller {
    *   'headingData' => Array of column headings
    *   'websiteRecords' => HTML containing the body section of the report table
    *   'websiteRecordData' => Array of records, each containing an array of values.
+   * Website records and record data are split into an array keyed by website ID, so that it is easier to provide
+   * data back to the notified users appropriate to their website rights.
    */
   private function parseData($data) {
     // build the column headers. Get the HTML (for immediate use) as well as the array data (for storing the notifications).
@@ -251,13 +253,14 @@ class Scheduled_Tasks_Controller extends Controller {
       if (!isset($websiteRecords[$record['website_id']]))
         $websiteRecords[$record['website_id']] = '';
       $websiteRecords[$record['website_id']] .= '<tr>';
-      $websiteRecordData[$record['website_id']] = array(); 
+      $recordAsArray = array(); 
       foreach ($record as $col=>$value) {
         if ($data['content']['columns'][$col]['visible']!=='false') {
           $websiteRecords[$record['website_id']] .= "<td>$value</td>";
-          $websiteRecordData[$record['website_id']][] = $value;
+          $recordAsArray[] = $value;
         }
       }
+      $websiteRecordData[$record['website_id']][] = $recordAsArray;
       $websiteRecords[$record['website_id']] .= "</tr>";
     }
     return array(
@@ -277,10 +280,13 @@ class Scheduled_Tasks_Controller extends Controller {
     $r = "<table><thead>\n<tr><th>";
     $r .= implode('</th><th>', $struct['headings']);
     $r .= "</th></tr>\n</thead>\n<tbody>\n";
-    foreach ($struct['data'] as $record) {            
-      $r .= '<tr><td>';
-      $r .= implode('</td><td>', $record);
-      $r .= "</td></tr>\n";
+    // The sructure has an entry per allowed website for the notified user, containing a list of records.
+    foreach ($struct['data'] as $website=>$records) {
+      foreach($records as $record) {
+        $r .= '<tr><td>';
+        $r .= implode('</td><td>', $record);
+        $r .= "</td></tr>\n";
+      }
     }
     $r .= "</tbody>\n</table>\n";
     return $r;
