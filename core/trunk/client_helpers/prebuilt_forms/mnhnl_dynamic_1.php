@@ -501,22 +501,22 @@ jQuery('#imp-sref').change();
 		'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
     ));
     if (!isset($args['defaults']['occurrence:record_status'])) {
-		$values = array('I', 'C'); // not initially doing V=Verified
-		$r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
-		$r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
-		foreach($values as $value){
-		  $r .= '<option value="'.$value.'"';
-		  if(isset(data_entry_helper::$entity_to_load['occurrence:record_status'])){
-			if(data_entry_helper::$entity_to_load['occurrence:record_status'] == $value){
-			  $r .= ' selected="selected"';
-			}
-		  }
-		  $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
-		}
-		$r .= "</select><br/>\n";
-	} else  {
-	  $r .= '<input type="hidden" name="occurrence:record_Status" value="'.$args['defaults']['occurrence:record_status'].'"/>';
-	}
+      $values = array('I', 'C'); // not initially doing V=Verified
+      $r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
+      $r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
+      foreach($values as $value){
+        $r .= '<option value="'.$value.'"';
+        if(isset(data_entry_helper::$entity_to_load['occurrence:record_status'])){
+        if(data_entry_helper::$entity_to_load['occurrence:record_status'] == $value){
+          $r .= ' selected="selected"';
+        }
+        }
+        $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
+      }
+      $r .= "</select><br/>\n";
+    } else  {
+      $r .= '<input type="hidden" name="occurrence:record_status" value="'.$args['defaults']['occurrence:record_status'].'"/>';
+    }
   	return $r;
   }
   
