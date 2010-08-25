@@ -472,8 +472,8 @@ class data_entry_helper extends helper_config {
   */
   public static function checkbox($options) {
     $options = self::check_options($options);
-	$default = isset($options['default']) ? $options['default'] : '';
-    $options['checked'] = ($default=='on' || $default == 1 || $default == '1') ? ' checked="checked"' : '';
+    $default = isset($options['default']) ? $options['default'] : '';
+    $options['checked'] = ($default=='on' || $default == 1 || $default == '1' || $default=='t') ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
   }
@@ -1586,7 +1586,7 @@ class data_entry_helper extends helper_config {
     $r .= "</tr></thead><tbody>\n";
     $rowClass = '';
     $outputCount = 0;
-    $imagePath = data_entry_helper::$base_url.(isset(data_entry_helper::$indicia_upload_path) ? data_entry_helper::$indicia_upload_path : 'upload').'/';
+    $imagePath = data_entry_helper::$base_url.(isset(data_entry_helper::$indicia_upload_path) ? data_entry_helper::$indicia_upload_path : 'upload/');
     if (count($records)>0) {
       foreach ($records as $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
@@ -4672,7 +4672,7 @@ $('.ui-state-default').live('mouseout', function() {
       // Run through the expected configuration settings, checking they are present and not empty
       self::check_config('$base_url', isset(self::$base_url), empty(self::$base_url), $missing_configs, $blank_configs);
       self::check_config('$upload_path', isset(self::$upload_path), empty(self::$upload_path), $missing_configs, $blank_configs);
-	  // don't test $indicia_upload_path as it is assumed to be /upload if missing.
+	  // don't test $indicia_upload_path as it is assumed to be upload/ if missing.
       self::check_config('$geoserver_url', isset(self::$geoserver_url), empty(self::$geoserver_url), $missing_configs, $blank_configs);
       self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
       self::check_config('$google_search_api_key', isset(self::$google_search_api_key), empty(self::$google_search_api_key), $missing_configs, $blank_configs);
