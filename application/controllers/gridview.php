@@ -82,9 +82,13 @@ class Gridview_Controller extends Controller {
       $lists = $lists->in($filter['field'], $filter['values']);
     }
     // Are we doing server-side filtering?
-    if ($this->base_filter != null){
-      $filter = $this->base_filter;
-      $lists = $lists->where($filter);
+    if ($this->base_filter != null){      
+      foreach($this->base_filter as $field=>$values) {
+        if (is_array($values))
+          $lists = $lists->in($field, $values);
+        else
+          $lists = $lists->where($field,$values);
+      }
     }
     // Are we doing client-side filtering?
     if ($filtercol!=null){
