@@ -224,7 +224,7 @@ class submission_builder extends helper_config {
       $fext = array_pop($parts);
       // Generate a file id to store the image as
       $destination = time().rand(0,1000).".".$fext;
-      $uploadpath = dirname($_SERVER['SCRIPT_FILENAME']).(isset(parent::$indicia_upload_path) ? parent::$indicia_uploadPath : '/upload/');
+      $uploadpath = dirname($_SERVER['SCRIPT_FILENAME']).'/'.(isset(parent::$indicia_upload_path) ? parent::$indicia_upload_path : 'upload/');
       if (move_uploaded_file($file['tmp_name'], $uploadpath.$destination)) {
         // record the new file name, also note it in the $_POST data so it can be tracked after a validation failure
         $_FILES['image_upload']['name'] = $destination;
