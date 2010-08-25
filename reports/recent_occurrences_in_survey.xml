@@ -12,6 +12,7 @@
     WHEN 'R' THEN 'Rejected'
     WHEN 'I' THEN 'In Progress'
     WHEN 'T' THEN 'Test'
+    WHEN 'S' THEN 'Sent for verification'
     ELSE ''
   END AS record_status,
   u.username as verified_by
