@@ -205,8 +205,8 @@ class iform_mnhnl_citizen_science_1 {
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $readAuth = $auth['read'];
-    // enable image viewing with FancyBox
-    data_entry_helper::$javascript .= "jQuery(\"a.fancybox\").fancybox();\n";
+    // enable image viewing with FancyBox - only required if the file box is enabled
+    //data_entry_helper::$javascript .= "jQuery(\"a.fancybox\").fancybox();\n";
     $r = "\n<form method=\"post\" id=\"entry_form\">\n";
     if (isset($_GET['taxa_taxon_list_id']) || isset($_GET['taxon_external_key'])) {
       if (isset($_GET['taxa_taxon_list_id']))
