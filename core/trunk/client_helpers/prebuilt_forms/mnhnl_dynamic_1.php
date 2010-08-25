@@ -115,17 +115,15 @@ class iform_mnhnl_dynamic_1 {
           'required'=>false
         ),
 		array(
-          'name'=>'default_record_status',
-          'caption'=>'Default Record Status',
-          'description'=>'The record status initially set for new records entered using this form.',
-          'type'=>'select',
-          'options' => array(
-		    '-' => 'User selected',
-            'I' => 'In progress',
-            'C' => 'Data Entry Completed'
-          ),
-		  'default' => 'C'
-        )
+          'name'=>'defaults',
+          'caption'=>'Default Values',
+          'description'=>'Supply default values for each field as required. On each line, enter fieldname=value. For custom attributes, '.
+		      'the fieldname is the untranslated caption. For other fields, it is the model and fieldname, e.g. occurrence.record_status. '.
+			  'For date fields, use today to dynamically default to today\'s date. NOTE, currently only supports occurrence:record_status and '.
+			  'sample:date but will be extended in future.',
+          'type'=>'textarea',
+		  'default'=>'occurrence:record_status=C'
+        )		
       )
     );
     return $retVal;
@@ -145,6 +143,7 @@ class iform_mnhnl_dynamic_1 {
    * @return Form HTML.
    */
   public static function get_form($args, $node) {
+    self::parse_defaults($args);
     global $user;
     $logged_in = $user->uid>0;
     $r = '';
@@ -498,9 +497,10 @@ jQuery('#imp-sref').change();
   private static function get_fixed_controls_otherinformation($auth, $args) {
     $r .= data_entry_helper::date_picker(array(
         'label'=>lang::get('LANG_Date'),
-        'fieldname'=>'sample:date'
+        'fieldname'=>'sample:date',
+		'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
     ));
-    if ($args['default_record_status']=='-') {
+    if (!isset($args['defaults']['occurrence:record_status'])) {
 		$values = array('I', 'C'); // not initially doing V=Verified
 		$r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
 		$r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
@@ -515,7 +515,7 @@ jQuery('#imp-sref').change();
 		}
 		$r .= "</select><br/>\n";
 	} else  {
-	  $r .= '<input type="hidden" name="occurrence:record_Status" value="'.$args['default_record_status'].'"/>';
+	  $r .= '<input type="hidden" name="occurrence:record_Status" value="'.$args['defaults']['occurrence:record_status'].'"/>';
 	}
   	return $r;
   }
@@ -579,5 +579,20 @@ jQuery('#imp-sref').change();
    */
   public static function get_css() {
     return array('mnhnl_collaborators_1.css');
-  }  
+  }
+  
+  /**
+   * Convert the unstructured textarea of default values into a structured array.
+   */
+  private static function parse_defaults(&$args) {
+    $result=array();
+	if (isset($args['defaults'])) {
+	  $defaults = explode("\n", $args['defaults']);
+	  foreach($defaults as $default) {
+	    $tokens = explode('=', $default);
+		$result[trim($tokens[0])] = trim($tokens[1]);
+	  }	  
+	}  
+	$args['defaults']=$result;
+  }
 }
