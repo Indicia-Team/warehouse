@@ -4,7 +4,7 @@
     row_class="biota"
 >
   <query>
-  SELECT su.title, su.website_id, o.id as occurrence_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
+  SELECT o.id, su.title, su.website_id, o.id as occurrence_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
   s.entered_sref, l.name as location_name, oi.path, 
   CASE o.record_status 
     WHEN 'C' THEN 'Data Entry Complete' 
@@ -37,6 +37,7 @@
         lookup_values='C:Complete,S:Sent for verification,V:Verified' />
   </params>
   <columns>
+    <column name='id' display='ID' style="background-color: #e7e7e7;" />
     <column name='title' display='Survey' />
     <column name='website_id' visible='false' />
     <column name='occurrence_id' visible='false' />
