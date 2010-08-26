@@ -40,7 +40,7 @@ class iform_verification_1 {
         'description'=>'The name of the report file to load into the verification grid, excluding the .xml suffix. This report should have '.
             'at least the following columns: occurrence_id, taxon. If you don\'t know which report to use, try the recent_occurrences_in_survey report.',
         'type'=>'string',
-        'default'=>'reports_for_prebuilt_forms\verification_1\basic_verification_grid'
+        'default'=>'reports_for_prebuilt_forms/verification_1/basic_verification_grid'
       ), array(
         'name'=>'auto_params_form',
         'caption'=>'Automatic Parameters Form',
