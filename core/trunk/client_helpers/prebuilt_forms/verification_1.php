@@ -99,10 +99,10 @@ class iform_verification_1 {
         'name'=>'email_body_verified',
         'caption'=>'Acceptance Email Body',
         'description'=>'Default body for the acceptance email. Replacements allowed include %action% (verified or rejected), '.
-            '%verifier% (username of verifier), %taxon%, %date_start%, %entered_sref%.',
+            '%verifier% (username of verifier), %taxon%, %date_start%, %entered_sref%, %comment%.',
         'type'=>'textarea',
         'default' => "Your record of %taxon%, recorded on %date_start% at grid reference %entered_sref% has been checked by ".
-          "an expert and %action%.\nMany thanks for the contribution.\n\n%verifier%",
+          "an expert and %action%. They commented:\n%comment%\n\nMany thanks for the contribution.\n\n%verifier%",
         'group' => 'Notification emails'
       ), array(
         'name'=>'email_subject_rejected',
@@ -275,7 +275,7 @@ var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';', 'inline
           '<legend>Send a notification email to the recorder.</legend>'.
           '<label>To: <input type="text" name="email_to" size="80" value="'. $email_attr[0]['value'] .'"></label><br />'.
           '<label>Subject: <input type="text" name="email_subject" size="80" value="'. $subject .'"></label><br />'.
-          '<label>Body: <textarea name="email_body" rows="5" cols="80">'.$body.'</textarea></label><br />'.
+          '<label>Body: <textarea name="email_content" rows="5" cols="80">'.$body.'</textarea></label><br />'.
           '<input type="hidden" name="email" value="1">'.
           '<input type="button" value="Send Email" onclick="'.
           '$(\\\'form#email\\\').attr(\\\'action\\\', submit_to());'.

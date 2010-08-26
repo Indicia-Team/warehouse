@@ -1857,7 +1857,7 @@ class data_entry_helper extends helper_config {
         $onclick = '';
       }
       $class=(isset($action['class'])) ? ' '.$action['class'] : '';
-      $links[] = "<a class=\"indicia-button action-button ui-state-default ui-corner-all$class\"$href$onclick>".$action['caption'].'</a>';
+      $links[] = "<a class=\"action-button$class\"$href$onclick>".$action['caption'].'</a>';
     }
     return implode('<br/>', $links);
   }
