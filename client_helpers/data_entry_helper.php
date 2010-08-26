@@ -1642,7 +1642,7 @@ class data_entry_helper extends helper_config {
     self::add_resource('reportgrid');
     self::$javascript .= "$('#".$options['id']."').reportgrid({
   mode: '".$options['mode']."',
-  dataSource: '".$options['dataSource']."',
+  dataSource: '".str_replace('\\','\\\\',$options['dataSource'])."',
   itemsPerPage: ".$options['itemsPerPage'].",
   auth_token: '".$options['readAuth']['auth_token']."',
   nonce: '".$options['readAuth']['nonce']."',
