@@ -37,8 +37,10 @@ class iform_verification_1 {
       array(
         'name'=>'report_name',
         'caption'=>'Report Name',
-        'description'=>'The name of the report file to load into the verification grid, excluding the .xml suffix.',
-        'type'=>'string'
+        'description'=>'The name of the report file to load into the verification grid, excluding the .xml suffix. This report should have '.
+            'at least the following columns: occurrence_id, taxon. If you don\'t know which report to use, try the recent_occurrences_in_survey report.',
+        'type'=>'string',
+        'default'=>'reports_for_prebuilt_forms\verification_1\basic_verification_grid'
       ), array(
         'name'=>'auto_params_form',
         'caption'=>'Automatic Parameters Form',
@@ -51,7 +53,7 @@ class iform_verification_1 {
         'caption'=>'Fixed Parameters',
         'description'=>'Provide a comma separated list '.
             'of <parameter_name>=<parameter_value> pairs to define fixed values for parameters that the report requires. '.
-            'E.g. "survey=12,taxon=53"',
+            'E.g. "survey=12,taxon=53". Any parameteres ommitted from this list will be requested from the user when the verification page is viewed.',
         'type'=>'textarea',
         'required'=>false
       ), array(
@@ -63,6 +65,13 @@ class iform_verification_1 {
         'type'=>'textarea',
         'default'=>1
       ), array(
+        'name'=>'send_for_verification',
+        'caption'=>'Allow records to be sent for verification',
+        'description'=>'Enables a facility to email the details of a record to a verifier, who can check the record and reply so that their response can '.
+            'be entered into the grid at a later date?',
+        'type'=>'boolean',
+        'default'=>false
+       ), array(
         'name'=>'emails_enabled',
         'caption'=>'Enable Notification Emails',
         'description'=>'Are notification emails enabled to inform recorders of their records being verified or rejected?',
@@ -142,60 +151,33 @@ class iform_verification_1 {
         $r .= '<div class="page-notice ui-state-highlight ui-corner-all"><p>'.
             implode('</p></p>', array_values(data_entry_helper::$validation_errors)).
             '</p></div>';
-      } else if (isset($_POST['email'])) {
+      } else if (isset($_POST['email']) && !isset($response['error'])) {
+        // To send HTML mail, the Content-type header must be set
+        $headers  = 'MIME-Version: 1.0' . "\r\n";
+        $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+        $headers .= 'From: '. $user->mail . PHP_EOL . "\r\n";
+        $headers .= 'Return-Path: '. $user->mail . "\r\n";
+        if (isset($_POST['photoHTML']))
+          $emailBody = str_replace('[photo]', '<br/>' . $_POST['photoHTML'], $_POST['email_content']);
+        else
+          $emailBody = $_POST['email_content'];        
+        $emailBody = str_replace("\n", "<br/>", $emailBody);
         // Send email. Depends upon settings in php.ini being correct
         $success = mail($_POST['email_to'],
              $_POST['email_subject'],
-             wordwrap($_POST['email_body'], 70),
-             'From: '. $user->mail . PHP_EOL .
-             'Return-Path: '. $user->mail);
-      } else if (isset($_POST['occurrence:record_status']) && isset($response['success']) && $args['emails_enabled']) {
-        // Provide a send email form to allow the user to send a verification email
-        if ($_POST['occurrence:record_status']=='V') $action = 'verified';
-        elseif ($_POST['occurrence:record_status']=='R') $action = 'rejected';
-        else $action='';
-        if ($action) {
-          //obtain information for email notification
-          $occ = data_entry_helper::get_population_data(array(
-            'table' => 'occurrence',
-            'extraParams' => $auth['read'] + array('id' => $response['outer_id'], 'view' => 'detail')
-          ));
-          $email_attr = data_entry_helper::get_population_data(array(
-            'table' => 'sample_attribute_value',
-            'extraParams' => $auth['read'] + array('caption'=>'Email', 'sample_id' => $occ[0]['sample_id'])
-          ));
-          if ($args['email_request_attribute'] != '') {
-            $email_request_attr = data_entry_helper::get_population_data(array(
-              'table' => 'sample_attribute_value',
-              'extraParams' => $auth['read'] + array('caption'=>urlencode($args['email_request_attribute']), 'sample_id' => $occ[0]['sample_id'])
-            ));
-          }
-
-          //only send email if address was supplied and email requested
-          if (!empty($email_attr[0]['value']) &&
-              (($args['email_request_attribute'] == '') ||
-              (!empty($email_request_attr[0]['value']) && $email_request_attr[0]['value']))) {
-            $subject = self::get_email_component('subject', $action, $occ[0], $args);
-            $body = self::get_email_component('body', $action, $occ[0], $args);
-            $r .= '
-<form id="email" action="" method="post">
-<fieldset>
-<legend>Send a notification email to the recorder.</legend>
-<label>To: <input type="text" name="email_to" size="80" value="'. $email_attr[0]['value'] .'"></label><br />
-<label>Subject: <input type="text" name="email_subject" size="80" value="'. $subject .'"></label><br />
-<label>Body: <textarea name="email_body" rows="5" cols="80">'. $body .'</textarea></label><br />
-<input type="hidden" name="email" value="1">
-<input type="button" value="Send Email" onclick="
-    $(\'form#email\').attr(\'action\', submit_to());
-    $(\'form#email\').submit();
-">
-</fieldset>
-</form>
-';
-          } else {
-            $r .= '<div class="page-notice ui-state-highlight ui-corner-all">The record has been '.$action.'. The recorder did not leave an email address or did not want an email so cannot be notified.</div>';
-          }
-        }
+             wordwrap($emailBody, 70),
+             $headers);        
+        if ($success) 
+          $r .= '<div class="page-notice ui-state-highlight ui-corner-all"><p>An email was set to '.$_POST['email_to'].'.</p></div>';
+         else
+          $r.= '<div class="page-notice ui-widget-content ui-corner-all ui-state-highlight left">The webserver is not correctly configured to send emails. Please send the following email manually: <br/>'.
+              '<div id="manual-email"><span>To:</span><div>' . $_POST['email_to'] . '</div>' .
+              '<span>Subject:</span><div>' . $_POST['email_subject'] . '</div>' .
+              '<span>Content:</span><div>' . $emailBody . '</div>'.
+              '</div></div><div style="clear: both">';
+          
+      } else if (isset($_POST['occurrence:record_status']) && isset($response['success']) && $args['emails_enabled']) {        
+        $r .= self::get_notification_email_form($args, $response, $auth);
       }
     }
 
@@ -207,6 +189,18 @@ class iform_verification_1 {
       $val = trim($keyvals[1]);
       $extraParams[$key] = $val;
     }
+    $actions = array();
+    if ($args['send_for_verification']) {
+      // store authorisation details as a global in js, since some of the JavaScript needs to be able to access Indicia data
+      data_entry_helper::$javascript .= 'auth=' . json_encode($auth) . ';';
+      $actions[] = 
+        array('caption' => 'Send to verifier', 'class'=>'send_for_verification_btn',
+            'javascript'=>'indicia_send_to_verifier(\'{taxon}\', {occurrence_id}, '.$user->uid.', '.$args['website_id'].'); return false;'
+        );     
+      $r .= self::get_send_for_verification_form();  
+    }
+    $actions[] = array('caption' => 'Verify', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, true, '.$user->uid.'); return false;');
+    $actions[] = array('caption' => 'Reject', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, false, '.$user->uid.'); return false;');
 
     $r .= data_entry_helper::report_grid(array(
       'id' => 'verification-grid',
@@ -214,11 +208,9 @@ class iform_verification_1 {
       'mode' => 'report',
       'readAuth' => $auth['read'],
       'columns' => array(
-        array('display' => 'Actions', 'actions' => array(
-          array('caption' => 'Verify', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, true, '.$user->uid.'); return false;'),
-          array('caption' => 'Reject', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, false, '.$user->uid.'); return false;')
-        ))
+        array('display' => 'Actions', 'actions' => $actions)
       ),
+      'rowId' => 'occurrence_id',
       'itemsPerPage' =>10,
       'autoParamsForm' => $args['auto_params_form'],
       'extraParams' => $extraParams
@@ -228,7 +220,8 @@ class iform_verification_1 {
   '.$auth['write'].'
   <input type="hidden" id="occurrence:id" name="occurrence:id" value="" />
   <input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="" />
-  <input type="hidden" id="website7_id" name="website_id" value="'.$args['website_id'].'" />
+  <input type="hidden" id="occurrence_comment:comment" name="occurrence_comment:comment" value="" />
+  <input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
   <input type="hidden" id="occurrence:verified_by_id" name="occurrence:verified_by_id" value="" />
 </form>
 ';
@@ -238,6 +231,64 @@ var verifiers_mapping = "'.$args['verifiers_mapping'].'";
 var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';', 'inline');
     drupal_add_js('sites/all/modules/iform/client_helpers/prebuilt_forms/js/verification_1.js');
     return $r;
+  }
+  
+  private static function get_send_for_verification_form() {
+    data_entry_helper::add_resource('fancybox');
+    data_entry_helper::add_resource('validation');
+  }
+  
+  /**
+  *  Provide a send email form to allow the user to send a verification email
+  */
+  private static function get_notification_email_form($args, $response, $auth) {  
+    if ($_POST['occurrence:record_status']=='V') $action = 'verified';
+    elseif ($_POST['occurrence:record_status']=='R') $action = 'rejected';
+    else $action='';
+    if ($action) {
+      //obtain information for email notification
+      $occ = data_entry_helper::get_population_data(array(
+        'table' => 'occurrence',
+        'extraParams' => $auth['read'] + array('id' => $response['outer_id'], 'view' => 'detail')
+      ));
+      $email_attr = data_entry_helper::get_population_data(array(
+        'table' => 'sample_attribute_value',
+        'extraParams' => $auth['read'] + array('caption'=>'Email', 'sample_id' => $occ[0]['sample_id'])
+      ));
+      if ($args['email_request_attribute'] != '') {
+        $email_request_attr = data_entry_helper::get_population_data(array(
+          'table' => 'sample_attribute_value',
+          'extraParams' => $auth['read'] + array('caption'=>urlencode($args['email_request_attribute']), 'sample_id' => $occ[0]['sample_id'])
+        ));
+      }
+
+      //only send email if address was supplied and email requested
+      if (!empty($email_attr[0]['value']) &&
+          (($args['email_request_attribute'] == '') ||
+          (!empty($email_request_attr[0]['value']) && $email_request_attr[0]['value']))) {
+        $subject = self::get_email_component('subject', $action, $occ[0], $args);
+        $body = self::get_email_component('body', $action, $occ[0], $args);     
+        $body = str_replace("\r\n", '\n', $body);
+        data_entry_helper::$javascript .= 'jQuery.fancybox(\''.
+          '<form id="email" action="" method="post">'.
+          '<fieldset>'.
+          '<legend>Send a notification email to the recorder.</legend>'.
+          '<label>To: <input type="text" name="email_to" size="80" value="'. $email_attr[0]['value'] .'"></label><br />'.
+          '<label>Subject: <input type="text" name="email_subject" size="80" value="'. $subject .'"></label><br />'.
+          '<label>Body: <textarea name="email_body" rows="5" cols="80">'.$body.'</textarea></label><br />'.
+          '<input type="hidden" name="email" value="1">'.
+          '<input type="button" value="Send Email" onclick="'.
+          '$(\\\'form#email\\\').attr(\\\'action\\\', submit_to());'.
+          '$(\\\'form#email\\\').submit();'.
+          '">'.
+          '</fieldset>'.
+          "</form>');";
+      } else {
+        data_entry_helper::$javascript .= 'jQuery.fancybox(\''.
+            '<div class="page-notice ui-state-highlight ui-corner-all" id="email">The record has been '.$action.
+            '. The recorder did not leave an email address or did not want an email so cannot be notified.</div>\');';
+      }
+    }    
   }
   
   /**
@@ -268,7 +319,13 @@ var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';', 'inline
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    return data_entry_helper::build_submission($values, array('model'=>'occurrence'));
+    // Submission includes the occurrence comment only if it is populated. This occurs when entering a verification or rejection comment.
+    if (isset($_POST['occurrence_comment:comment']) && !empty($_POST['occurrence_comment:comment'])) {
+      return data_entry_helper::build_submission($values, array('model'=>'occurrence','subModels' => array('occurrence_comment' =>  array(          
+          'fk' => 'occurrence_id'
+      ))));
+    } else
+      return data_entry_helper::build_submission($values, array('model'=>'occurrence'));
   }
   
 }
