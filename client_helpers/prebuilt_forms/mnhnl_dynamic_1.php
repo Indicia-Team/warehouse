@@ -93,6 +93,13 @@ class iform_mnhnl_dynamic_1 {
           ),
           'group'=>'User Interface'
         ),
+		array(
+          'name'=>'location_name_ctrl',
+          'caption'=>'Location Name Control',
+          'description'=>'Include a text input box to allow entry of the sample location name.',
+          'type'=>'boolean',
+          'group'=>'User Interface'
+        ),
         array(
           'name'=>'survey_id',
           'caption'=>'Survey ID',
@@ -485,6 +492,12 @@ jQuery('#imp-sref').change();
     );
     if ($args['location_ctrl']!='none')
       $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
+	if ($args['location_name_ctrl'])
+      $r .= data_entry_helper::text_input(array(
+	    'label' => lang::get('sample:location_name'),
+		'fieldname' => 'sample:location_name',
+		'class' => 'control-width-5'
+	  ));
     if ($args['place_search_control'])
       $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
     $options = iform_map_get_map_options($args, $auth['read']);

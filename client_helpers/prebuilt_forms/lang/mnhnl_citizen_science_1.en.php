@@ -40,6 +40,7 @@ $custom_terms = array(
   'sample:comment'=>'Comment',
   'sample:date' => 'Date',
   'sample:entered_sref'=>'Spatial Reference',
+  'sample:location_name'=>'Site Name',
   'search'=>'Search',
   'LANG_Georef_Label'=>'Search for place on map',
   'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
