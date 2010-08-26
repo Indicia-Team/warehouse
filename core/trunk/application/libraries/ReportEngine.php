@@ -275,7 +275,6 @@ class ReportEngine {
 
   	$vagueDateProcessing = $this->getVagueDateProcessing();
   	$downloadProcessing = $this->getDownloadDetails();
-
   	if($vagueDateProcessing) {
 	  	$this->add_vague_dates($data, $columns);
   	}
@@ -310,7 +309,7 @@ class ReportEngine {
   private function add_vague_dates(&$data, &$columns) {
     $col_sets=array();
     $cols = array_keys($columns);
-    // First fine the additional plaintext columns we need to add
+    // First find the additional plaintext columns we need to add
     for ($i=0; $i<count($cols); $i++) {
       if (substr(($cols[$i]), -10)=='date_start') {
         $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
@@ -625,9 +624,14 @@ class ReportEngine {
     // Grab the query from the report reader
     $query = $this->reportReader->getQuery();
     // Replace each parameter in place
+    $paramDefs = $this->reportReader->getParams();
     foreach ($this->providedParams as $name => $value)
     {
-      $query = preg_replace("/#$name#/", $value, $query);
+      if ($value==='')
+        // empty integer params should be handled as 0 (null would be ideal, but we can't test for it in the same fashion as a number).
+        $query = preg_replace("/#$name#/", $paramDefs[$name]['emptyvalue'], $query);
+      else
+        $query = preg_replace("/#$name#/", $value, $query);
     }
     // allow the URL to provide a sort order override
     if (isset($this->orderby))

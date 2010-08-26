@@ -61,7 +61,6 @@ class XMLReportReader_Core implements ReportReader
               case 'query':
                 $reader->read();
                 $this->query = $reader->value;
-                $this->inferFromQuery();
                 break;
               case 'order_by':
                 $reader->read();
@@ -72,6 +71,7 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('name'),
                     $reader->getAttribute('display'),
                     $reader->getAttribute('datatype'),
+                    $reader->getAttribute('emptyvalue'),
                     $reader->getAttribute('description'),
                     $reader->getAttribute('query'),
                     $reader->getAttribute('lookup_values'),
@@ -147,6 +147,9 @@ class XMLReportReader_Core implements ReportReader
         }
       }
       $reader->close();
+      // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
+      if ($this->query)
+        $this->inferFromQuery();
     }
     catch (Exception $e)
     {
@@ -383,12 +386,13 @@ class XMLReportReader_Core implements ReportReader
     return $query;
   }
 
-  private function mergeParam($name, $display = '', $type = '', $description = '', $query='', $lookup_values='', $population_call='')
+  private function mergeParam($name, $display = '', $type = '', $emptyvalue='', $description = '', $query='', $lookup_values='', $population_call='')
   {
     if (array_key_exists($name, $this->params))
     {
       if ($display != '') $this->params[$name]['display'] = $display;
       if ($type != '') $this->params[$name]['datatype'] = $type;
+      if ($type != '') $this->params[$name]['emptyvalue'] = $emptyvalue;
       if ($description != '') $this->params[$name]['description'] = $description;
       if ($query != '') $this->params[$name]['query'] = $query;
       if ($lookup_values != '') $this->params[$name]['lookup_values'] = $lookup_values;
@@ -398,6 +402,7 @@ class XMLReportReader_Core implements ReportReader
     {
       $this->params[$name] = array(
         'datatype'=>$type, 
+        'emptyvalue'=>$emptyvalue,
         'display'=>$display, 
         'description'=>$description, 
         'query' => $query, 
