@@ -51,7 +51,14 @@ class iform_report_grid {
         'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
             'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6.',
         'type' => 'textarea'
-      )
+      ), array(
+	    'name' => 'refresh_timer',
+		'caption' => 'Automatic refresh seconds',
+		'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically refreshed, useful for '.
+		    'displaying live data updates at BioBlitzes.',
+	    'type' => 'int',
+		'required' => false
+      )		
     );
   }
 
@@ -101,6 +108,11 @@ class iform_report_grid {
     $r .= '<a href="'.data_entry_helper::get_report_data(array_merge($reportOptions, array('linkOnly'=>true))). '&mode=csv">Download this report</a>';
     // now the grid
     $r .= data_entry_helper::report_grid($reportOptions);
+	// Set up a page refresh for dynamic update of the report at set intervals
+	$r .= $args['refresh_timer'];
+	if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection	  
+	  data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
+	}
     return $r;
   }
 

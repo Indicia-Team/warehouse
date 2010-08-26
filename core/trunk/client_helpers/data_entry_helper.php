@@ -2358,7 +2358,8 @@ class data_entry_helper extends helper_config {
   * <li><b>occAttrClasses</b><br/>
   * String array, where each entry corresponds to the css class(es) to apply to the corresponding
   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
-  * occAttrs then all remaining controls re-use the last class.</li>
+  * occAttrs then all remaining controls re-use the last class. The classes are automatically generated
+  * when occAttrs is ommitted so the attribute columns are dynamically generated from the survey attributes.</li>
   * <li><b>extraParams</b><br/>
   * Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
@@ -2420,7 +2421,7 @@ class data_entry_helper extends helper_config {
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
-      // Get the attribute and control information required to build the custom occurrence attribute columns
+      // Get the attribute and control information required to build the custom occurrence attribute columns	  
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $grid = '';
       if (isset($options['lookupListId'])) {
@@ -2644,7 +2645,6 @@ class data_entry_helper extends helper_config {
       // There is no specified list of occurrence attributes, so use them all
       $attrs = array_keys($attributes);
     foreach ($attrs as $occAttr) {
-      $class='';
       // test that this occurrence attribute is linked to the survey
       if (!array_key_exists($occAttr, $attributes))
         throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
@@ -2654,6 +2654,7 @@ class data_entry_helper extends helper_config {
       ));
       if (count($a)>0 && !array_key_exists('error', $a))
       {
+	    $class=strtolower(str_replace(array(' '), array('_'), $a[0]['caption']));
         $b = $a[0];
         $occAttrs[$occAttr] = $b['caption'];
         // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
