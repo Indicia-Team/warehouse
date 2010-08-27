@@ -278,6 +278,7 @@ echo html::error_message($model->getError('deleted'));
 <?php 
 endif; ?>
     <li><a href="<?php echo url::site()."taxon_relation/$id" ?>" title="relations"><span>Relationships</span></a></li>
+    <li><a href="#lumpandsplit"><span>Lumping and Splitting</span></a></li>
 <?php 
 endif;
 ?>
@@ -397,14 +398,14 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
 echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null); 
 ?>
 </form>
+</div>
 <?php if($id != null) { ?>
+<div id="lumpandsplit">
 <form class="cmxform" >
-  <fieldset>
-    <legend>Lumping and Spliting</legend>
-    <ol>
+  Lumping and splitting are special cases of Relationships. They implement a means to implement changes in the taxon list over time, as individual taxa are split up into a set of taxa, or the opposite, where several taxa are lumped together into another.<br/><br/>
 <?php 
   if($can_split == false){
-    echo '<li>'.html::initial_value($values, 'taxon:taxon').' '.$splitRecord->forward_term.' ';
+    echo html::initial_value($values, 'taxon:taxon').' '.$splitRecord->forward_term.' ';
     $first = true;
     foreach($split as $target){
       $t1 = ORM::factory('taxa_taxon_list', array('preferred'=>'t', 'taxon_meaning_id'=>$target->to_taxon_meaning_id));
@@ -412,10 +413,10 @@ echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null
       echo ($first == true ? '' : ', ').$t2->taxon;
       $first = false;
     }
-    echo '.</li>';
+    echo '.<br/><br/>';
   }
   if($can_lump == false){
-    echo '<li>'.html::initial_value($values, 'taxon:taxon').' '.$lumpRecord->forward_term.' ';
+    echo html::initial_value($values, 'taxon:taxon').' '.$lumpRecord->forward_term.' ';
     $first = true;
     foreach($lumped as $target){
       $t1 = ORM::factory('taxa_taxon_list', array('preferred'=>'t', 'taxon_meaning_id'=>$target->to_taxon_meaning_id));
@@ -423,27 +424,25 @@ echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null
       echo ($first == true ? '' : ', ').$t2->taxon;
       $first = false;
     }
-    echo '.</li>';
+    echo '.<br/><br/>';
   }
   if ($can_split || $can_lump){
 ?>
-    <li><input id="LStaxon" name="LStaxon" value="" />
+    <input id="LStaxon" name="LStaxon" value="" />
     <input type="hidden" id="LStaxon_meaning_id" />
-    <input type="button" value="Add to List" onClick="addLStaxon()" class="ui-corner-all ui-state-default button" /></li>
-    <li><table id="LS_taxa_table" class="ui-widget ui-widget-content"><thead class="ui-widget-header" ><tr class="headingRow" >
+    <input type="button" value="Add to List" onClick="addLStaxon()" class="ui-corner-all ui-state-default button" /><br/>
+    <table id="LS_taxa_table" class="ui-widget ui-widget-content"><thead class="ui-widget-header" ><tr class="headingRow" >
         <th id="LS_Taxon">Taxon</th>
         <?php if($can_lump){ ?><th id="Already_Lumped">Already Lumped</th><?php } ?>
         <?php if($can_split){ ?><th id="Already_Split">Already part of a Split</th><?php } ?>
-        <th id="LS_Task">Task</th></tr></thead><tbody id="LS_Taxon_Body"></tbody></table></li>
-    <li><div id="Link_and_Split_taxa_list"></div>
-    <?php if($can_lump){ ?><li><input type="button" value="Perform Lump" onClick="performLump()" class="ui-corner-all ui-state-default button" /><br />Performing a lump will tag all the taxa in the list above as being lumped into this taxon. The flag to allow the taxa in the list to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been lumped into another taxon. Please save any other changes to this taxon before carrying out this action.</li><?php } ?>
-    <?php if($can_split){ ?><li><input type="button" value="Perform Split" onClick="performSplit()" class="ui-corner-all ui-state-default button" /><br />Performing a split will tag all the taxa in the above list as being the created by splitting this taxon. The flag to allow this taxon to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been tagged as being the result of splitting another taxon. Please save any other changes to this taxon before carrying out this action.</li><?php } ?>
+        <th id="LS_Task">Task</th></tr></thead><tbody id="LS_Taxon_Body"></tbody></table><br/>
+    <div id="Link_and_Split_taxa_list"></div><br/>
+    <?php if($can_lump){ ?><input type="button" value="Perform Lump" onClick="performLump()" class="ui-corner-all ui-state-default button" /><br />Performing a lump will tag all the taxa in the list above as being lumped into this taxon. The flag to allow the taxa in the list to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been lumped into another taxon. Please save any other changes to this taxon before carrying out this action.<br/><br/><?php } ?>
+    <?php if($can_split){ ?><input type="button" value="Perform Split" onClick="performSplit()" class="ui-corner-all ui-state-default button" /><br />Performing a split will tag all the taxa in the above list as being the created by splitting this taxon. The flag to allow this taxon to be used for data entry will be set to false. A check will be made to ensure that each of the taxa in the list have not already been tagged as being the result of splitting another taxon. Please save any other changes to this taxon before carrying out this action.<br/><?php } ?>
 <?php } ?>
-    </ol>
-  </fieldset>
 </form>
-<?php } ?>
 </div>
+<?php } ?>
 <?php if ($id != null && $values['table'] != null) : ?>
   <div id="subtaxa">
   <?php echo $values['table']; ?>
