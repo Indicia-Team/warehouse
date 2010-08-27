@@ -386,6 +386,7 @@ class iform_mnhnl_citizen_science_1 {
     ));
     // retrieve options for the IndiciaMapPanel, and optionally options for OpenLayers.
     $options = iform_map_get_map_options($args, $readAuth);
+    $options['tabDiv'] = 'place';
     $olOptions = iform_map_get_ol_options($args);
     $options['scroll_wheel_zoom']=false;
     $r .= data_entry_helper::map_panel($options, $olOptions);
@@ -402,17 +403,18 @@ class iform_mnhnl_citizen_science_1 {
         'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
     ));
-    /*
-    @todo Look into why the filebox does not work in Internet Explorer on this form
+    
+    
     $r .= data_entry_helper::file_box(array(
         'caption' => 'Upload your photos',
         'resizeWidth' => 1024,
         'resizeHeight' => 768,
         'table' => 'occurrence_image',
-        'tabDiv' => 'controls',
-        'runtimes' => array('html5','flash','gears','browserplus','html4')
+        'tabDiv' => 'other',
+        // reduce the number of runtimes, because flash and silverlight don't seem reliable on this form.
+        'runtimes' => array('html5','gears','browserplus','html4')
     ));
-    */
+    
 
     // Dynamically create a control for the abundance, unless overridden for this species
     if (isset($species) && count($species)>0 && trim($args['abundance_overrides'])!=='') {

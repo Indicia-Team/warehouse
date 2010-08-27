@@ -665,7 +665,7 @@ class data_entry_helper extends helper_config {
   * document onload, in which case the php is ignored. this allows you to attach the JavaScript to any event you need to.
   * </li>
   * <li><b>tabDiv</b><br/>
-  * If loading this control onto a set of tabs, specify the tab control's outer div ID here. This allows the control to
+  * If loading this control onto a set of tabs, specify the tab control's div ID here. This allows the control to
   * automatically generate code which only generates the uploader when the tab is shown, reducing problems in certain
   * runtimes. This has no effect if codeGenerated is not left to the default state of all.</li>
   * </ul>
@@ -756,15 +756,18 @@ class data_entry_helper extends helper_config {
       // we only want to return the JavaScript, so go no further.
       return $javascript;
     elseif ($options['codeGenerated']=='all') {
-      if (isset($options['tabDiv']) && $options['codeGenerated']=='all')
+      if (isset($options['tabDiv'])) {
         // The file box is displayed on a tab, so we must only generate it when the tab is displayed.
         self::$onload_javascript .=
-            "$('#controls').bind('tabsshow', function(event, ui) { \n".
-            "  var box = $(ui.panel).find('.file-box');\n".
-            "  if (box.length!==0 && box.children().length === 0) {\n";
+            "var tabHandler = function(event, ui) { \n";
+        self::$onload_javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ";
+      }
       self::$onload_javascript .= $javascript;
-      if (isset($options['tabDiv']) && $options['codeGenerated']=='all')
-        self::$onload_javascript .= "}});\n";
+      if (isset($options['tabDiv'])) {
+        self::$onload_javascript .= "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n";
+        self::$onload_javascript .= "  }\n};\n";
+        self::$onload_javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
+      }
     }
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
     // version.
@@ -1212,6 +1215,9 @@ class data_entry_helper extends helper_config {
   * <li><b>maxZoom</b><br/>
   * Limit the maximum zoom used when clicking on the map to set a point spatial reference. Use this to prevent over zooming on
   * background maps.</li>
+  * <li><b>tabDiv</b><br/>
+  * If loading this control onto a set of tabs, specify the tab control's div ID here. This allows the control to
+  * automatically generate code which only generates the map when the tab is shown.</li>
   * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
@@ -1301,8 +1307,18 @@ class data_entry_helper extends helper_config {
       if ($olOptions) {
         $json .= ','.json_encode($olOptions);
       }
+      if (isset($options['tabDiv'])) {
+        // The map is displayed on a tab, so we must only generate it when the tab is displayed.
+        self::$onload_javascript .=
+            "var tabHandler = function(event, ui) { \n";
+        self::$onload_javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ";
+      }
       self::$onload_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
-
+      if (isset($options['tabDiv'])) {
+        self::$onload_javascript .= "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n";
+        self::$onload_javascript .= "  }\n};\n";
+        self::$onload_javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
+      }
       return self::apply_template('map_panel', $options);
     }
   }
@@ -2358,8 +2374,7 @@ class data_entry_helper extends helper_config {
   * <li><b>occAttrClasses</b><br/>
   * String array, where each entry corresponds to the css class(es) to apply to the corresponding
   * attribute control (i.e. there is a one to one match with occAttrs). If this array is shorter than
-  * occAttrs then all remaining controls re-use the last class. The classes are automatically generated
-  * when occAttrs is ommitted so the attribute columns are dynamically generated from the survey attributes.</li>
+  * occAttrs then all remaining controls re-use the last class.</li>
   * <li><b>extraParams</b><br/>
   * Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
@@ -2421,7 +2436,7 @@ class data_entry_helper extends helper_config {
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
-      // Get the attribute and control information required to build the custom occurrence attribute columns	  
+      // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $grid = '';
       if (isset($options['lookupListId'])) {
@@ -2645,6 +2660,7 @@ class data_entry_helper extends helper_config {
       // There is no specified list of occurrence attributes, so use them all
       $attrs = array_keys($attributes);
     foreach ($attrs as $occAttr) {
+      $class='';
       // test that this occurrence attribute is linked to the survey
       if (!array_key_exists($occAttr, $attributes))
         throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
@@ -2654,7 +2670,6 @@ class data_entry_helper extends helper_config {
       ));
       if (count($a)>0 && !array_key_exists('error', $a))
       {
-	    $class=strtolower(str_replace(array(' '), array('_'), $a[0]['caption']));
         $b = $a[0];
         $occAttrs[$occAttr] = $b['caption'];
         // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
