@@ -2446,6 +2446,7 @@ class data_entry_helper extends helper_config {
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
       $rowIdx = 0;
+	  
       foreach ($taxalist as $taxon) {
         $id = $taxon['id'];
         // Get the cell content from the taxon_label template
@@ -2595,6 +2596,7 @@ class data_entry_helper extends helper_config {
     if(self::$entity_to_load) {
       $extraTaxonOptions = array_merge(array(), $options);
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
+	  unset($extraTaxonOptions['extraParams']['preferred']);
       foreach(self::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
         // Is this taxon attribute data?
@@ -2660,7 +2662,6 @@ class data_entry_helper extends helper_config {
       // There is no specified list of occurrence attributes, so use them all
       $attrs = array_keys($attributes);
     foreach ($attrs as $occAttr) {
-      $class='';
       // test that this occurrence attribute is linked to the survey
       if (!array_key_exists($occAttr, $attributes))
         throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
@@ -2673,7 +2674,9 @@ class data_entry_helper extends helper_config {
         $b = $a[0];
         $occAttrs[$occAttr] = $b['caption'];
         // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-        $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? $options['occAttrClasses'][$idx] : $class;
+        $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? 
+		    $options['occAttrClasses'][$idx] : 
+			strtolower(str_replace(' ', '_', $b['caption'])); // provide a default class based on the control caption
         // Build the correct control
         switch ($b['data_type'])
         {
@@ -2721,8 +2724,11 @@ class data_entry_helper extends helper_config {
 
       $r .= "<td class=\"scPresenceCell\"><input type='checkbox' name='' value='' /></td>";
     }
-    foreach ($occAttrControls as $oc) {
-      $r .= str_replace('{content}', $oc, $indicia_templates['attribute_cell']);
+    foreach ($occAttrControls as $attrId=>$oc) {
+      $r .= str_replace('{content}', 
+          str_replace('{fieldname}', "sc:{ttlId}::occAttr:$attrId", $oc),
+          $indicia_templates['attribute_cell']
+      );
     }
     $r .= "</tr></tbody></table>";
     return $r;

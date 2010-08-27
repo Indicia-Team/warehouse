@@ -94,7 +94,21 @@ class iform_distribution_map_1 {
 		      'box above or through the URL taxon parameter.',
 		  'type' => 'boolean',
           'group' => 'Distribution Layer'
-        )
+        ), array(
+          'name' => 'refresh_timer',
+          'caption' => 'Automatic reload seconds',
+          'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
+              'displaying live data updates at BioBlitzes. Combine this with Page to reload to define a sequence of pages that load in turn.',
+          'type' => 'int',
+          'required' => false
+        ),
+        array(
+          'name' => 'load_on_refresh',
+          'caption' => 'Page to reload',
+          'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
+          'type' => 'string',
+          'required' => false
+        )  
       )
     );
   }
@@ -190,6 +204,13 @@ class iform_distribution_map_1 {
     $r .= '</div>';
     // output a map
     $r .= data_entry_helper::map_panel($options, $olOptions);
+	// Set up a page refresh for dynamic update of the map at set intervals
+	if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
+      if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
+	    data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
+	  else
+	    data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
+	}
     return $r;
   }
 
