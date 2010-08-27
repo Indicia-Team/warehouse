@@ -264,7 +264,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       }
       data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
       data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
-    }
+    }	
     $defAttrOptions = array('extraParams'=>$auth['read']);
         
 //    $r .= "<h1>MODE = ".$mode."</h1>";
@@ -469,7 +469,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     $r .= data_entry_helper::species_checklist($species_list_args);
     $r .= data_entry_helper::textarea(array(
       'fieldname'=>'sample:comment',
-      'label'=>lang::get('comment')
+      'label'=>lang::get('Comments')
     ));
     return $r; 
   }
@@ -492,6 +492,12 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     );
     if ($args['location_ctrl']!='none')
       $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
+	if ($args['location_name_ctrl'])
+      $r .= data_entry_helper::text_input(array(
+	    'label' => lang::get('LANG_Location_Name'),
+		'fieldname' => 'sample:location_name',
+		'class' => 'control-width-5'
+	  ));
     if ($args['place_search_control'])
       $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
     $options = iform_map_get_map_options($args, $auth['read']);

@@ -53,12 +53,19 @@ class iform_report_grid {
         'type' => 'textarea'
       ), array(
 	    'name' => 'refresh_timer',
-		'caption' => 'Automatic refresh seconds',
-		'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically refreshed, useful for '.
-		    'displaying live data updates at BioBlitzes.',
+		'caption' => 'Automatic reload seconds',
+		'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
+		    'displaying live data updates at BioBlitzes. Combine this with Page to reload to define a sequence of pages that load in turn.',
 	    'type' => 'int',
 		'required' => false
-      )		
+      ),
+      array(
+	    'name' => 'load_on_refresh',
+		'caption' => 'Page to reload',
+		'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
+	    'type' => 'string',
+		'required' => false
+      )
     );
   }
 
@@ -109,9 +116,11 @@ class iform_report_grid {
     // now the grid
     $r .= data_entry_helper::report_grid($reportOptions);
 	// Set up a page refresh for dynamic update of the report at set intervals
-	$r .= $args['refresh_timer'];
-	if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection	  
-	  data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
+	if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
+      if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
+	    data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
+	  else
+	    data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
 	}
     return $r;
   }

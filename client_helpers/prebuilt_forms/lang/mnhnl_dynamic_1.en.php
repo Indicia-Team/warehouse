@@ -50,6 +50,7 @@ $custom_terms = array(
 	'LANG_Tab_Instructions_place' => '<strong>Place Selection</strong><br/>Please either enter the spatial reference of the observation if you know it, or click on the map to specify the place as accurately as you can.',
 	'LANG_SRef_Label' => 'Spatial Ref',
 	'LANG_Location_Label' => 'Location',
+	'LANG_Location_Name' => 'Site Name',
 	'LANG_Georef_Label' => 'Search for Place on Map',
 	// The search button may be changed by adding an entry for 'search'
 	
