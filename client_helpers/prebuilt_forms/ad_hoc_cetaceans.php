@@ -355,7 +355,7 @@ class iform_ad_hoc_cetaceans {
         'resizeWidth' => 1024,
         'resizeHeight' => 768,
         'table' => 'occurrence_image',
-        'tabDiv' => 'controls'
+        'tabDiv' => 'other'
     ));
     $r .= '<div class="footer">'.data_entry_helper::checkbox(array(
         'label'=>lang::get('happy for contact'),
