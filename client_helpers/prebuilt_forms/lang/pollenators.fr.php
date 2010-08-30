@@ -28,7 +28,7 @@ global $custom_terms;
  */
 $custom_terms = array(
 	'LANG_Insufficient_Privileges' => "Créez-vous un compte ou connectez-vous pour accéder à la page de création de collection"
-	,'LANG_Please_Refresh_Page' => "Une erreur a été détectée, qui empêche l'utilisation de cette page. S'il vous plaît rafraîchir cette page pour continuer."
+	,'LANG_Please_Refresh_Page' => "Une erreur s'est produite. S'il vous plaît, actualisez la page."
 	,'LANG_Collection_Name_Label' => 'Nommer votre collection '
 	,'Protocol' => 'Choisir un protocole '
 	,'LANG_Modify' => 'MODIFIER'
@@ -69,7 +69,8 @@ $custom_terms = array(
 	,'Longitude' => 'Longitude '
 	,'Flower Type' => "Cette plante est "
 	,'Habitat' => "Type d'habitat "
-	,'Nearest House' => "Distance approximative entre votre fleur et la ruche d'abeille domestique la plus proche (en mètre)"
+	,'Nearest House' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche (en mètres; par exemple '150')"
+	,'Nearest Hive' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche (en mètres; par exemple '150')"
 	,'LANG_Validate_Flower' => 'VALIDER VOTRE STATION FLORALE'
 	,'LANG_Must_Provide_Pictures' => "Les photos de la fleur et de son environnement doivent être chargées"
 	,'LANG_Must_Provide_Location' => 'Localisez votre station florale'
@@ -84,13 +85,12 @@ $custom_terms = array(
 	,'LANG_Delete_Session' => 'Supprimer la session'
 	,'LANG_Cant_Delete_Session' => "La session ne peut pas être supprimé car il ya encore des insectes qui y sont associés."
 	,'LANG_Confirm_Session_Delete' => 'Êtes-vous sûr de vouloir supprimer cette session ?'
-	,'Start Time' => 'Heure de début'
-	,'End Time' => 'Heure de fin'
+	,'Start Time' => 'Heure de début (hh:mn)'
+	,'End Time' => 'Heure de fin (hh:mn)'
 	,'Sky' => 'Ciel : couverture nuageuse '
 	,'Temperature' => 'Température '
 	,'Wind' => 'Vent '
 	,'Shade' => "Fleur à l\\'ombre "
-	,'Nearest Hive' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche (en mètres) "
 	
 	,'LANG_Photos' => "VOS PHOTOS D'INSECTES"
 	,'LANG_Photo_Blurb' => 'Télécharger ou modifier vos observations.'
@@ -121,6 +121,7 @@ $custom_terms = array(
 	,'validation_date' => 'Entrez une heure valide (HH:MM)'
 	,'ajax_error' => "Une erreur s'est produite dans le transfert de données."
 	,'validation_integer' => "Entrez un nombre entier, laissez en blanc si inconnu."
+	,'LANG_Invalid_Location' => "Le format donné pour ce Lat / Long combinaison n'est pas valide"
 	
 	,'close'=>'Fermer'	
   	,'search'=>'Chercher'

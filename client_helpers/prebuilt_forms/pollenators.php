@@ -1532,8 +1532,24 @@ $('#cc-2-floral-station').ajaxForm({
 			jQuery('#cc-2').foldPanel();
 			if(showSessionsPanel) { jQuery('#cc-3').showPanel(); }
 			showSessionsPanel = true;
-        }  else
+        }  else {
+			if(data.error){
+				var lastIndex = data.error.lastIndexOf('Validation error'); 
+    			if (lastIndex != -1 && lastIndex  == (data.error.length - 16)){ 
+					if(data.errors){
+						if(data.errors['location:centroid_sref']){
+							var label = $('<p/>')
+								.addClass('inline-error')
+								.html('".lang::get('LANG_Invalid_Location')."');
+							label.insertBefore('.latLongDiv:first');
+							myScrollToError();
+							return;
+						}
+					}
+				}
+			}
 			alertIndiciaError(data);
+		}
 	},
     complete: function (){
   		jQuery('.loading-button').removeClass('loading-button');
