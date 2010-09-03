@@ -104,6 +104,7 @@ $custom_terms = array(
 	,'ajax_error' => 'An error has occurred in the data transfer.'
 	,'validation_integer' => "Please provide a integer, leave blank if unknown."
 	,'LANG_Invalid_Location' => 'The format given for this Lat/Long combination is invalid'
+	,'LANG_Session_Error' => "An internal error has occurred. There does not seem to be a session attached to this collection."
 	
 	,'LANG_Can_Complete_Msg' => 'You have identified the Flower and a sufficient number of insects, so you may now close the collection'
 	,'LANG_Cant_Complete_Msg' => 'You have either: not identified the Flower, AND/OR not identified a sufficient number of insects. You will need to correct this before you can close the collection.'
