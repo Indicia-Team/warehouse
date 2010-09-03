@@ -1540,7 +1540,7 @@ $('#cc-2-floral-station').ajaxForm({
 						if(data.errors['location:centroid_sref']){
 							var label = $('<p/>')
 								.addClass('inline-error')
-								.html('".lang::get('LANG_Invalid_Location')."');
+								.html(\"".lang::get('LANG_Invalid_Location')."\");
 							label.insertBefore('.latLongDiv:first');
 							myScrollToError();
 							return;
@@ -2268,32 +2268,21 @@ $('#cc-5-collection').ajaxForm({
         	data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
 			data[3].value = '';
 			data[4].value = '';
-			jQuery.ajax({ 
-				type: 'GET', 
-				url: \"".$svcUrl."/data/sample\" + 
-					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[2].value+\"&callback=?\", 
-				dataType: 'json', 
-				success: function(sessiondata) {
-					var date_start = '';
-					var date_end = '';
-					if(!(sessiondata instanceof Array)){
-						alertIndiciaError(sessiondata);
-					} else if (sessiondata.length>0) {
-						for (var i=0;i<sessiondata.length;i++){
-							var sessDate = new Date(sessiondata[i].date_start); // sessions are only on one date.
-							if(date_start == '' || date_start > sessDate) {
-								date_start = sessDate;
-								data[3].value = sessiondata[i].date_start;
-							}
-							if(date_end == '' || date_end < sessDate) {
-								date_end = sessDate;
-								data[4].value = sessiondata[i].date_start;
-							}
-						}
+			date_start = '';
+			date_end = '';
+			jQuery('.poll-session-form').each(function(i){
+				if(jQuery(this).find('input[name=sample\\:id]').val() != '') {
+					var sessDate = jQuery(this).find('input[name=sample\\:date]').val();
+					var sessDateDate = new Date(sessDate); // sessions are only on one date.
+					if(date_start == '' || date_start > sessDateDate) {
+						date_start = sessDateDate;
+						data[3].value = sessDate;
 					}
-				},
-				data: {}, 
-				async: false 
+					if(date_end == '' || date_end < sessDateDate) {
+						date_end = sessDateDate;
+						data[4].value = sessDate;
+					}
+				}
 			});
 			if(data[3].value == '') {
 				alert(\"".lang::get('LANG_Session_Error')."\");

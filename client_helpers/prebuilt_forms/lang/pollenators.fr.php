@@ -122,6 +122,7 @@ $custom_terms = array(
 	,'ajax_error' => "Une erreur s'est produite dans le transfert de données."
 	,'validation_integer' => "Entrez un nombre entier, laissez en blanc si inconnu."
 	,'LANG_Invalid_Location' => "Le format donné pour ce Lat / Long combinaison n'est pas valide"
+	,'LANG_Session_Error' => "Une erreur interne s'est produite. Il ne semble pas être une session jointe à la présente collection."
 	
 	,'close'=>'Fermer'	
   	,'search'=>'Chercher'
