@@ -147,17 +147,28 @@ var report_grid_sortdir = '';
     };
     
     getActions = function(row, actions) {
-      var result = '', onclick;
+      var result='', onclick='', href='', link;
       $.each(actions, function(idx, action) {
         if (typeof action.javascript != "undefined") {
           onclick=' onclick="' + mergeParamsIntoTemplate(row, action.javascript) + '"';
-        } else {
-          onclick = '';
+        }
+        if (typeof action.url != "undefined") {
+          link = action.url.replace('{currentUrl}', window.location.href);
+          if (typeof action.urlParams != "undefined") {
+            if (link.indexOf('?')==-1) { link += '?'; }
+            else { link += '&'; }
+            $.each(action.urlParams, function(name, value) {
+              value = value.replace('{id}', row.id);
+              link += name + '=' + value;
+              link += '&';
+            });
+          }
+          href=' href="' + link + '"';
         }
         if (result !== '') {
           result += '<br/>';
         }
-        result += '<a class="indicia-button action-button ui-state-default ui-corner-all"'+onclick+'>'+action.caption+'</a>';
+        result += '<a class="indicia-button action-button ui-state-default ui-corner-all"'+onclick+href+'>'+action.caption+'</a>';
       });
       return result;
     }
