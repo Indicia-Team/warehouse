@@ -671,7 +671,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    * @link http://code.google.com/p/indicia/wiki/DataServices#Using_the_query_parameter
    */
   protected function apply_query_def_to_db($value) {
-    $query = json_decode($value);
+    $query = json_decode($value, true);
     foreach ($query as $cmd=>$params) {
       switch(strtolower($cmd)) {
         case 'in':
