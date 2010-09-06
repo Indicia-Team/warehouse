@@ -2367,7 +2367,8 @@ class data_entry_helper extends helper_config {
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>listId</b><br/>
-  * The ID of the taxon_lists record which is to be used to obtain the species or taxon list.</li>
+  * Optional. The ID of the taxon_lists record which is to be used to obtain the species or taxon list. This is 
+  * required unless lookupListId is provided.</li>
   * <li><b>occAttrs</b><br/>
   * Optional integer array, where each entry corresponds to the id of the desired attribute in the
   * occurrence_attributes table. If omitted, then all the occurrence attributes for this survey are loaded.</li>
@@ -2586,7 +2587,7 @@ class data_entry_helper extends helper_config {
    * @return array The taxon list to store in the grid.
    */
   private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
-    // Get the list of species that are always added to the grid
+    // Get the list of species that are always added to the grid    
     $taxalist = self::get_population_data($options);
     // build a list of the ids we have got from the default list.
     $taxaLoaded = array();
@@ -2623,6 +2624,9 @@ class data_entry_helper extends helper_config {
    * @return array Options array prepared with defaults and other values required by the control.
    */
   private static function get_species_checklist_options($options) {
+    // validate some options
+    if (!isset($options['listId']) && !isset($options['lookupListId'])) 
+      throw new Exception('Either the listId or lookupListId parameters must be provided for a species checklist.');
     // Apply default values
     $options = array_merge(array(
         'header'=>'true',
@@ -3493,11 +3497,28 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   public static function get_population_data($options) {
     $url = parent::$base_url."index.php/services/data";
-    $request = "$url/".$options['table']."?mode=json";
-
+    $request = "$url/".$options['table']."?mode=json";    
     if (array_key_exists('extraParams', $options)) {
+      // make a copy of the extra params
+      $params = array_merge($options['extraParams']);
+      // process them to turn any array parameters into a query parameter for the service call
+      $filterToEncode = array('where'=>array(array()));
+      $otherParams = array();
+      foreach($params as $param=>$value) {
+        if (is_array($value))
+          $filterToEncode['in'] = array($param, $value);
+        elseif ($param=='orderby' || param=='sortdir' || $param=='auth_token' || $param=='nonce')
+          // these params are not filters, so can't go in the query
+          $otherParams[$param] = $value;
+        else
+          $filterToEncode['where'][0][$param] = $value;
+      }
       $cacheOpts = $options['extraParams'];
-      $request .= '&'.self::array_to_query_string($options['extraParams']);
+      // use advanced querying technique if we need to
+      if (isset($filterToEncode['in']))
+        $request .= '&query='.json_encode($filterToEncode).'&'.self::array_to_query_string($otherParams);
+      else
+        $request .= '&'.self::array_to_query_string($options['extraParams']);
     } else
       $cacheOpts = array();
 
