@@ -72,6 +72,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
       }
     });
     ctrl.bind('result', handleSelectedTaxon);
+    ctrl.focus();
   }
   
   makeSpareRow();
