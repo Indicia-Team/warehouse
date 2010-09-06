@@ -689,7 +689,7 @@ class Data_Controller extends Data_Service_Base_Controller {
         case 'where':
           if (count($params)==2 && !is_array($params[0] && !is_array($params[1])))
             $this->db->where($params[0],$params[1]);
-          elseif (count($params)==1 && is_array($params[1]))
+          elseif (count($params)===1 && is_array($params[0]))
             $this->db->where($params[0]);
           else
             kohana::log('error','Queries using WHERE must provide 2 parameters, the field name and value, or an '.
