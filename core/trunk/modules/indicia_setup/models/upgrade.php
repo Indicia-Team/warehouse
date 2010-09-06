@@ -107,7 +107,7 @@ class Upgrade_Model extends Model
      */
     public function begin()
     {
-        $this->db->query("BEGIN");
+        $this->db->query("BEGIN READ WRITE");
     }
 
     /**
