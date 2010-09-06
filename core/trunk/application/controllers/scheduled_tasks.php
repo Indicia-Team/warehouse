@@ -227,46 +227,32 @@ class Scheduled_Tasks_Controller extends Controller {
   
   /**
    * Takes the output of a report. Parses it to return an associative array containing the following information:
-   *   'headings' => HTML containing the head section of the report table
    *   'headingData' => Array of column headings
-   *   'websiteRecords' => HTML containing the body section of the report table
    *   'websiteRecordData' => Array of records, each containing an array of values.
    * Website records and record data are split into an array keyed by website ID, so that it is easier to provide
    * data back to the notified users appropriate to their website rights.
    */
   private function parseData($data) {
     // build the column headers. Get the HTML (for immediate use) as well as the array data (for storing the notifications).
-    $headings = '<thead>';
     $headingData = array();
     foreach ($data['content']['columns'] as $column=>$cfg) {
-      if ($cfg['visible']!=='false') {
-        $headings .= '<th>'.(empty($cfg['display']) ? $column : $cfg['display']).'</th>';
+      if ($cfg['visible']!=='false') {        
         $headingData[] = empty($cfg['display']) ? $column : $cfg['display'];
       }
     }
-    $headings .= '<thead>';        
     // build the blocks of data, one per website, so we can tailor the output table to each recipient.
-    // Also build this as HTML for immediate use, or array data for storing the notifications
-    $websiteRecords = array();
     $websiteRecordData = array();              
     foreach ($data['content']['data'] as $idx => $record) {
-      if (!isset($websiteRecords[$record['website_id']]))
-        $websiteRecords[$record['website_id']] = '';
-      $websiteRecords[$record['website_id']] .= '<tr>';
       $recordAsArray = array(); 
-      foreach ($record as $col=>$value) {
-        if ($data['content']['columns'][$col]['visible']!=='false') {
-          $websiteRecords[$record['website_id']] .= "<td>$value</td>";
-          $recordAsArray[] = $value;
+      foreach ($data['content']['columns'] as $column=>$cfg) {
+        if ($cfg['visible']!=='false') {
+          $recordAsArray[] = $record[$column];          
         }
       }
       $websiteRecordData[$record['website_id']][] = $recordAsArray;
-      $websiteRecords[$record['website_id']] .= "</tr>";
     }
     return array(
-      'headings' => $headings,
       'headingData' => $headingData,
-      'websiteRecords' => $websiteRecords,
       'websiteRecordData' => $websiteRecordData
     );
   }
