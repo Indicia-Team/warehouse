@@ -2494,22 +2494,22 @@ class data_entry_helper extends helper_config {
         }
         foreach ($occAttrControls as $attrId => $control) {
           $oc = str_replace('{ttlId}', $id, $control);
-		  // ctrlId initially assumes not reloading an existing value, to check in the reloaded data
-		  $ctrlId = "sc:$id::occAttr:$attrId";		  
+		      // ctrlId initially assumes not reloading an existing value, to check in the reloaded data
+		      $ctrlId = "sc:$id::occAttr:$attrId";		  
           // If there is an existing value to load for this control, we need to put the value in the control.
           $existing_value = '';
           if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
                 && !empty(self::$entity_to_load[$ctrlId])) {
-		    // this case happens after reloading page on validation failure of a new record
+		        // this case happens after reloading page on validation failure of a new record
             $existing_value = self::$entity_to_load[$ctrlId];
           } else if(array_key_exists('default', $attributesForThisRow[$attrId])){
-		    // this case happens when reloading an existing record
+		        // this case happens when reloading an existing record
             $existing_value = $attributesForThisRow[$attrId]['default'];
-			// mark this as an existing value by using the fieldname supplied when loading the data. 
-			$ctrlId = $attributesForThisRow[$attrId]['fieldname'];
+			      // mark this as an existing value by using the fieldname supplied when loading the data. 
+			      $ctrlId = $attributesForThisRow[$attrId]['fieldname'];
           }
-		  // inject the field name into the control HTML
-		  $oc = str_replace('{fieldname}', $ctrlId, $oc);
+		      // inject the field name into the control HTML
+		      $oc = str_replace('{fieldname}', $ctrlId, $oc);
           if (!empty($existing_value)) {
             // For select controls, specify which option is selected from the existing value
             if (substr($oc, 0, 7)=='<select') {			  
@@ -2587,7 +2587,8 @@ class data_entry_helper extends helper_config {
    * @return array The taxon list to store in the grid.
    */
   private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
-    // Get the list of species that are always added to the grid    
+    // Get the list of species that are always added to the grid
+    if (isset($options['
     $taxalist = self::get_population_data($options);
     // build a list of the ids we have got from the default list.
     $taxaLoaded = array();
@@ -2595,9 +2596,13 @@ class data_entry_helper extends helper_config {
       $taxaLoaded[] = $taxon['id'];
     // If there are any extra taxa to add to the list, get their details
     if(self::$entity_to_load) {
+      // copy the options array so we can modify it
       $extraTaxonOptions = array_merge(array(), $options);
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
-	  unset($extraTaxonOptions['extraParams']['preferred']);
+	    unset($extraTaxonOptions['extraParams']['preferred']);
+      // create an array to hold the IDs, so that get_population_data can construct a single IN query, faster
+      // than multiple requests.
+      $extraTaxonOptions['extraParams']['id'] = array();
       foreach(self::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
         // Is this taxon attribute data?
@@ -2607,12 +2612,13 @@ class data_entry_helper extends helper_config {
           // If not already loaded
           if(!in_array($parts[1], $taxaLoaded)) {
             $taxaLoaded[] = $parts[1];
-            $extraTaxonOptions['extraParams']['id']=$parts[1];
-            // append the taxon to the list to load into the grid
-            $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
+            // store the id of the taxon in the array, so we can load them all in one go later
+            $extraTaxonOptions['extraParams']['id'][]=$parts[1];
           }
         }
       }
+      // append the taxa to the list to load into the grid
+      $taxalist = array_merge($taxalist, self::get_population_data($extraTaxonOptions));
     }
   	return $taxalist;
   }
