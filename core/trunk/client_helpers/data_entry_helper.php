@@ -2588,8 +2588,10 @@ class data_entry_helper extends helper_config {
    */
   private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
     // Get the list of species that are always added to the grid
-    if (isset($options['
-    $taxalist = self::get_population_data($options);
+    if (isset($options['listId']))
+      $taxalist = self::get_population_data($options);
+    else
+      $taxalist = array();
     // build a list of the ids we have got from the default list.
     $taxaLoaded = array();
     foreach ($taxalist as $taxon)
