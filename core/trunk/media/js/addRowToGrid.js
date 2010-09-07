@@ -30,11 +30,11 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
         row.remove();
       });
     // Finally, a blank row is added for the next record
-    makeSpareRow(); 
+    makeSpareRow(true); 
   };
   
   // Create an inner function for adding blank rows to the bottom of the grid
-  var makeSpareRow = function() {
+  var makeSpareRow = function(scroll) {
     // get a copy of the new row template
     var newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
     // build an auto-complete control for selecting the species to add to the bottom of the grid
@@ -72,8 +72,14 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
       }
     });
     ctrl.bind('result', handleSelectedTaxon);
-    ctrl.focus();
+    ctrl.focus();    
+    // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
+    if (scroll && ctrl.offset().top > $(window).scrollTop() + $(window).height() - 180) {
+      var newTop = ctrl.offset().top - $(window).height() + 180;
+      // slide the body upwards so the grid entry box remains in view, as does the drop down content on the autocomplete for taxa
+      $('html,body').animate({scrollTop: newTop}, 500);       
+    }
   }
   
-  makeSpareRow();
+  makeSpareRow(false);
 }
