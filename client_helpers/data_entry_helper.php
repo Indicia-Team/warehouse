@@ -1752,6 +1752,9 @@ class data_entry_helper extends helper_config {
       }
       // Output any other get parameters from our URL as hidden fields
       foreach ($reloadUrl['params'] as $key => $value) {
+        // since any param will be from a URL it could be encoded. So we don't want to double encode if they repeatedly
+        // run the report.
+        $value = urldecode($value);
         // ignore any parameters that are going to be in the grid parameters form
         if (substr($key,0,6)!='param-')
           $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
