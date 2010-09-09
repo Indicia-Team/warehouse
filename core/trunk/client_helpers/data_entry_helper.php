@@ -3518,7 +3518,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       foreach($params as $param=>$value) {
         if (is_array($value))
           $filterToEncode['in'] = array($param, $value);
-        elseif ($param=='orderby' || param=='sortdir' || $param=='auth_token' || $param=='nonce')
+        elseif ($param=='orderby' || $param=='sortdir' || $param=='auth_token' || $param=='nonce')
           // these params are not filters, so can't go in the query
           $otherParams[$param] = $value;
         else
