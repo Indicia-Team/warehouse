@@ -311,7 +311,7 @@
         var corner1;
         var corner2;
         var epsg = (places[0].epsg === undefined ? 4326 : places[0].epsg);
-        if (places.length==1 && places[0].name.toLowerCase()==$('#' + div.georefOpts.georefSearchId).val()) {
+        if (places.length==1 && places[0].name.toLowerCase()==$('#' + div.georefOpts.georefSearchId).val().toLowerCase()) {
           ref=places[0].centroid.y + ', ' + places[0].centroid.x;
           corner1=places[0].boundingBox.northEast.y + ', ' + places[0].boundingBox.northEast.x;
           corner2=places[0].boundingBox.southWest.y + ', ' + places[0].boundingBox.southWest.x;
