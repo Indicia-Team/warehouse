@@ -402,7 +402,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       // if there are any lookup lists in the attributes, preload the options     
       if (!empty($attr['termlist_id'])) {
         $r['terms_'.$attr['termlist_id']]=$this->get_termlist_terms($attr['termlist_id']);
-        $r['terms_'.$attr['termlist_id']][0] = '-no value-';
+        $r['terms_'.$attr['termlist_id']][''] = '-no value-';
       }
     }
   }
