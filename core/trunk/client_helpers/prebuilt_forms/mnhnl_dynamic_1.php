@@ -81,6 +81,13 @@ class iform_mnhnl_dynamic_1 {
           'type'=>'boolean',
           'group' => 'User Interface'
         ),
+		array(
+          'name'=>'location_name_ctrl',
+          'caption'=>'Location Name Control',
+          'description'=>'Should a control for entering free text place names on the map be added to the form?',
+          'type'=>'boolean',
+          'group' => 'User Interface'
+        ),
         array(
           'name'=>'location_ctrl',
           'caption'=>'Location Control Type',
