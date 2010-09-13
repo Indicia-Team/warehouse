@@ -3512,6 +3512,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('extraParams', $options)) {
       // make a copy of the extra params
       $params = array_merge($options['extraParams']);
+	  $cacheOpts = array();
       // process them to turn any array parameters into a query parameter for the service call
       $filterToEncode = array('where'=>array(array()));
       $otherParams = array();
@@ -3523,8 +3524,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           $otherParams[$param] = $value;
         else
           $filterToEncode['where'][0][$param] = $value;
+		// implode array parameters (for IN clauses) in the cache options, since we need a single depth array
+		$cacheOpts[$param]= is_array($value) ? implode('|',$value) : $value;
       }
-      $cacheOpts = $options['extraParams'];
       // use advanced querying technique if we need to
       if (isset($filterToEncode['in']))
         $request .= '&query='.json_encode($filterToEncode).'&'.self::array_to_query_string($otherParams);
@@ -3532,7 +3534,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $request .= '&'.self::array_to_query_string($options['extraParams']);
     } else
       $cacheOpts = array();
-
     $cacheOpts['table'] = $options['table'];
     $cacheOpts['indicia_website_id'] = self::$website_id;
     /* If present 'auth_token' and 'nonce' are ignored as these are session dependant. */
