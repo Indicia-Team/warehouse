@@ -27,13 +27,10 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	'LANG_Location' => 'Location',
-	'LANG_Date' => 'Date',
-	'LANG_Num_Occurrences' => '# Occurrences',
-	'LANG_Spatial_ref' => 'Spatial Ref.',
-	'LANG_Completed' => 'Completed',
 	'LANG_Edit' => 'Edit',
 	'LANG_Add_Sample' => 'Add New Sample',
+  'LANG_Add_Sample_Single' => 'Add Single Occurrence',
+  'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
 
 	'LANG_Tab_aboutyou' => 'About You',      
 	'LANG_Tab_Instructions_aboutyou' => '<strong>About You</strong><br/>Please tell us about yourself first.',

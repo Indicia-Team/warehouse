@@ -1579,7 +1579,7 @@ class data_entry_helper extends helper_config {
       if (isset($field['visible']) && $field['visible']=='false')
         continue; // skip this column as marked invisible
       // allow the display caption to be overriden in the column specification
-      $caption = empty($field['display']) ? $field['fieldname'] : $field['display'];
+      $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
       if (isset($field['fieldname'])) {
         if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
         $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
@@ -2603,8 +2603,10 @@ class data_entry_helper extends helper_config {
     if(self::$entity_to_load) {
       // copy the options array so we can modify it
       $extraTaxonOptions = array_merge(array(), $options);
+      // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
 	    unset($extraTaxonOptions['extraParams']['preferred']);
+      unset($extraTaxonOptions['extraParams']['language_iso']);
       // create an array to hold the IDs, so that get_population_data can construct a single IN query, faster
       // than multiple requests.
       $extraTaxonOptions['extraParams']['id'] = array();
@@ -2647,10 +2649,11 @@ class data_entry_helper extends helper_config {
         'PHPtaxonLabel' => false,
         'id' => 'species-grid-'.rand(0,1000)
     ), $options);
-    $options['extraParams'] = array_merge(array(
-      'preferred'=>'t', // default to preferred taxa only
-      'orderby'=>'taxon' // default sort by taxon name
-    ), $options['extraParams']);
+    
+    $options['extraParams']['orderby'] = 'taxon';
+    // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
+    if (!isset($options['extraParams']['language_iso']))
+      $options['extraParams']['preferred'] = 't';
     if (array_key_exists('listId', $options)) {
       $options['extraParams']['taxon_list_id']=$options['listId'];
     }
@@ -3512,20 +3515,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('extraParams', $options)) {
       // make a copy of the extra params
       $params = array_merge($options['extraParams']);
-	  $cacheOpts = array();
+      $cacheOpts = array();
       // process them to turn any array parameters into a query parameter for the service call
       $filterToEncode = array('where'=>array(array()));
       $otherParams = array();
       foreach($params as $param=>$value) {
         if (is_array($value))
           $filterToEncode['in'] = array($param, $value);
-        elseif ($param=='orderby' || $param=='sortdir' || $param=='auth_token' || $param=='nonce')
+        elseif ($param=='orderby' || $param=='sortdir' || $param=='auth_token' || $param=='nonce' || $param=='view')
           // these params are not filters, so can't go in the query
           $otherParams[$param] = $value;
         else
           $filterToEncode['where'][0][$param] = $value;
-		// implode array parameters (for IN clauses) in the cache options, since we need a single depth array
-		$cacheOpts[$param]= is_array($value) ? implode('|',$value) : $value;
+        // implode array parameters (for IN clauses) in the cache options, since we need a single depth array
+        $cacheOpts[$param]= is_array($value) ? implode('|',$value) : $value;
       }
       // use advanced querying technique if we need to
       if (isset($filterToEncode['in']))

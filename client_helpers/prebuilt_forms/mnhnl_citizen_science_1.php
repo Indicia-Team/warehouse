@@ -79,6 +79,13 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'User Interface'
         ),
         array(
+        	'name'=>'preferred',
+          'caption'=>'Preferred species only?',
+          'description'=>'Should the selection of species be limited to preferred names only?',
+          'type'=>'boolean',
+  	      'group'=>'User Interface'
+        ),
+        array(
           'name'=>'abundance_ctrl',
           'caption'=>'Abundance Control Type',
           'description'=>'The type of control that will be available to select the approximate abundance.',
@@ -105,14 +112,7 @@ class iform_mnhnl_citizen_science_1 {
           'description'=>'The Indicia ID for the species list that species can be selected from.',
           'type'=>'int',
           'group'=>'Misc'
-        ),
-  	    array(
-        	'name'=>'preferred',
-          'caption'=>'Preferred species only?',
-          'description'=>'Should the selection of species be limited to preferred names only?',
-          'type'=>'boolean',
-  	      'group'=>'Misc'
-        ),
+        ),  	    
         array(
           'name'=>'survey_id',
           'caption'=>'Survey ID',
