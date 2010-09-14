@@ -719,7 +719,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
         return isset($_GET['gridmode']);
       else {        
         // A grid, unless there is only one taxon
-        return count(self::occurrenceIds)!==1;
+        return count(self::$occurrenceIds)!==1;
       }
     } else
       return 
@@ -740,6 +740,10 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
         $userIdAttr = $attrId;
         break;
       }
+    }
+    if ($user->uid===0) {
+      // Return a login link that takes you back to this form when done.
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
     }
     if (!isset($userIdAttr)) {
       return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
