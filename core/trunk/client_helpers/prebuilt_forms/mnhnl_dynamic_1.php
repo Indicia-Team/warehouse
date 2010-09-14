@@ -29,8 +29,12 @@
  */
 
 require_once('includes/map.php');
+require_once('includes/language_utils.php');
 
 class iform_mnhnl_dynamic_1 {
+
+  // A list of the taxon ids we are loading
+  private static $occurrenceIds = array();
 
 	/* TODO
 	 *  Photo upload: not sure how to do this as images are attached to occurrences, and occurrences
@@ -55,13 +59,6 @@ class iform_mnhnl_dynamic_1 {
       iform_map_get_georef_parameters(),
       array(
         array(
-          'name'=>'spatial_systems',
-          'caption'=>'Allowed Spatial Ref Systems',      
-          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
-          'type'=>'string',
-          'group'=>'Map'
-        ),
-        array(
           'name'=>'interface',
           'caption'=>'Interface Style Option',
           'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
@@ -74,19 +71,105 @@ class iform_mnhnl_dynamic_1 {
           ),
           'group' => 'User Interface'
         ),
-		array(
+        array(
+          'name' => 'grid_report',
+          'caption' => 'Grid Report',
+          'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
+              'field for linking to the data entry form. As a starting point, try reports_for_prebuilt_forms/simple_occurrence_list_1 or '.
+              'reports_for_prebuilt_forms/simple_sample_list_1 for a list of occurrences or samples respectively.',
+          'type'=>'string',
+          'group' => 'User Interface',
+          'default' => 'reports_for_prebuilt_forms/simple_sample_list_1'
+        ),
+        array(
+          'name'=>'save_button_below_all_pages',
+          'caption'=>'Save button below all pages?',
+          'description'=>'Should the save button be present below all the pages (checked), or should it be only on the last page (unchecked)? '.
+              'Only applies to the Tabs interface style.',
+          'type'=>'boolean',
+          'default' => 'false',
+          'group' => 'User Interface'
+        ),        
+        array(
+          'name'=>'multiple_occurrence_mode',
+          'caption'=>'Single or multiple occurrences per sample',
+          'description'=>'Method of data entry, via a grid of occurrences, one occurrence at a time, or allow the user to choose.',
+          'type'=>'select',
+          'options' => array(
+            'single' => 'Only allow entry of one occurrence at a time',
+            'multi' => 'Only allow entry of multiple occurrences using a grid',
+            'either' => 'Allow the user to choose single or multiple occurrence data entry.'
+          ),
+          'default' => 'multi',
+          'group' => 'Species'
+        ),
+        array(
+          'name'=>'species_ctrl',
+          'caption'=>'Single Species Selection Control Type',
+          'description'=>'The type of control that will be available to select a single species.',
+          'type'=>'select',
+          'options' => array(
+            'autocomplete' => 'Autocomplete',
+            'select' => 'Select',
+            'listbox' => 'List box',
+            'radio_group' => 'Radio group',
+            'treeview' => 'Treeview',
+            'tree_browser' => 'Tree browser'
+          ),
+          'default' => 'autocomplete',
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'list_id',
+          'caption'=>'Initial Species List ID',
+          'description'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
+              'into the grid when doing grid based data entry.',
+          'type'=>'int',          
+          'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'extra_list_id',
+          'caption'=>'Extra Species List ID',
+          'description'=>'The Indicia ID for the second species list that species can be selected from. This list is available for additional '.
+              'taxa being added to the grid when doing grid based data entry.',
+          'type'=>'int',
+          'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'species_names_filter',
+          'caption'=>'Species Names Filter',
+          'description'=>'Select the filter to apply to the species names which are available to choose from.',
+          'type'=>'select',          
+          'options' => array(
+            'all' => 'All names are available',
+            'language' => 'Only allow selection of species using common names in the user\'s language',
+            'preferred' => 'Only allow selection of species using names which are flagged as preferred'            
+          ),
+          'default' => 'autocomplete',
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'spatial_systems',
+          'caption'=>'Allowed Spatial Ref Systems',      
+          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
+          'type'=>'string',
+          'group'=>'Map'
+        ),
+        array(
           'name'=>'place_search_control',
           'caption'=>'Place Search Control',
           'description'=>'Should a control for searching for place names on the map be added to the form?',
           'type'=>'boolean',
-          'group' => 'User Interface'
+          'group' => 'Map'
         ),
-		array(
+        array(
           'name'=>'location_name_ctrl',
           'caption'=>'Location Name Control',
           'description'=>'Should a control for entering free text place names on the map be added to the form?',
           'type'=>'boolean',
-          'group' => 'User Interface'
+          'group' => 'Map'
         ),
         array(
           'name'=>'location_ctrl',
@@ -94,42 +177,27 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'The type of control that will be available to select a location.',
           'type'=>'select',
           'options' => array(
-		    'none' => 'None',
+		        'none' => 'None',
             'location_autocomplete' => 'Autocomplete',
             'location_select' => 'Select'
           ),
-          'group'=>'User Interface'
-        ),
+          'group'=>'Map'
+        ),        
         array(
           'name'=>'survey_id',
           'caption'=>'Survey ID',
           'description'=>'The Indicia ID of the survey that data will be posted into.',
           'type'=>'int'
-        ),
-        array(
-          'name'=>'list_id',
-          'caption'=>'Initial Species List ID',
-          'description'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
-              'into the grid.',
-          'type'=>'int'
-        ),
-        array(
-          'name'=>'extra_list_id',
-          'caption'=>'Extra Species List ID',
-          'description'=>'The Indicia ID for the species list that species can be selected from. This list is available for additional '.
-              'taxa being added to the grid.',
-          'type'=>'int',
-          'required'=>false
-        ),
-		array(
+        ),        
+		    array(
           'name'=>'defaults',
           'caption'=>'Default Values',
           'description'=>'Supply default values for each field as required. On each line, enter fieldname=value. For custom attributes, '.
-		      'the fieldname is the untranslated caption. For other fields, it is the model and fieldname, e.g. occurrence.record_status. '.
-			  'For date fields, use today to dynamically default to today\'s date. NOTE, currently only supports occurrence:record_status and '.
-			  'sample:date but will be extended in future.',
+              'the fieldname is the untranslated caption. For other fields, it is the model and fieldname, e.g. occurrence.record_status. '.
+              'For date fields, use today to dynamically default to today\'s date. NOTE, currently only supports occurrence:record_status and '.
+              'sample:date but will be extended in future.',
           'type'=>'textarea',
-		  'default'=>'occurrence:record_status=C'
+          'default'=>'occurrence:record_status=C'
         )		
       )
     );
@@ -193,42 +261,8 @@ class iform_mnhnl_dynamic_1 {
     // default mode 0 : display grid of the samples to add a new one 
     // or edit an existing one.
     ///////////////////////////////////////////////////////////////////
-    if($mode == 0) {
-      // get the CMS User ID attribute so we can filter the grid to this user
-      foreach($attributes as $attrId => $attr) {
-        if (strcasecmp($attr['caption'],'CMS User ID')==0) {
-          $userIdAttr = $attrId;
-          break;
-        }
-      }
-      if (!isset($userIdAttr)) {
-        return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
-            'be tagged against the user.');
-      }
-      $r .= data_entry_helper::report_grid(array(
-        'id' => 'samples-grid',
-        'dataSource' => 'reports_for_prebuilt_forms/simple_sample_list_1',
-        'mode' => 'report',
-        'readAuth' => $auth['read'],
-        'columns' => array(
-          array('fieldname' => 'location_name', 'display' => lang::get('location_name')),
-          array('fieldname' => 'entered_sref', 'display' => lang::get('entered_sref')),
-          array('fieldname' => 'num_occurrences', 'display' => lang::get('num_occurrences')),
-          array('fieldname' => 'completed', 'display' => lang::get('completed')),
-          array('display' => 'Actions', 'actions' => array(
-            array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{id}')),
-          ))
-        ),
-        'itemsPerPage' =>10,
-        'autoParamsForm' => true,
-        'extraParams' => array(
-          'survey_id'=>$args['survey_id'], 
-          'userID_attr_id'=>$userIdAttr,
-          'userID'=>$user->uid
-        )
-      ));	
-      $r .= '<form><input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'"></form>';
-      return $r;
+    if($mode == 0) {      
+      return self::getSampleListGrid($args, $node, $auth, $attributes);
     }
     ///////////////////////////////////////////////////////////////////
     
@@ -247,9 +281,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
                                     {styleMap: locStyleMap});
 ";
     
-    if($loadID){
-      // Can't cache these as data may have just changed
-      data_entry_helper::$entity_to_load['occurrence:record_status']='I';
+    if($loadID){      
       $url = $svcUrl.'/data/sample/'.$loadID;
       $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
       $session = curl_init($url);
@@ -268,9 +300,10 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       foreach($entities as $entity){
         data_entry_helper::$entity_to_load['occurrence:record_status']=$entity['record_status'];
         data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
+        self::$occurrenceIds[] = $entity['id']; // the occurrence ID
       }
       data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
-      data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
+      data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.      
     }	
     $defAttrOptions = array('extraParams'=>$auth['read']);
         
@@ -358,23 +391,23 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       $instruct = lang::get("LANG_Tab_Instructions_$alias");
       if ($instruct!="LANG_Tab_Instructions_$alias") 
         $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.$instruct."</p>";
-      if (method_exists('iform_mnhnl_dynamic_1', "get_fixed_controls_$alias")) {
-        // dynamically call a method to add controls to this page, if there are non dynamic ones.
-        $method = "get_fixed_controls_$alias";
+      // dynamically call a method to add controls to this page, if there are non dynamic ones.
+      $method = "get_fixed_controls_$alias";
+      if (method_exists('iform_mnhnl_dynamic_1', $method))
         $r .= self::$method($auth, $args);
-      }
+
       $r .= self::get_attribute_html($attributes, $defAttrOptions, $heading);
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
-          'page'=>($pageIdx==0 ? 'first' : ($pageIdx==count($heading)-1) ? 'last' : 'middle')
-        ));
-      } elseif ($pageIdx==count($attributeHeadings)-1)
-        // last part of a non wizard interface must insert a save button
+          'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($attributeHeadings)-1) ? 'last' : 'middle')
+        ));        
+      } elseif ($pageIdx==count($attributeHeadings)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
+        // last part of a non wizard interface must insert a save button, unless it is tabbed interface with save button beneath all pages 
         $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
 
       $pageIdx++;
-      $r .= "</div>\n";
+      $r .= "</div>\n";      
     }
         
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -384,13 +417,10 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 //    $r .= "<label for='occurrence:image'>".lang::get('LANG_Image_Label')."</label>\n".
 //        data_entry_helper::image_upload('occurrence:image');
     
-    if ($args['interface']=='wizard') {
-      $r .= data_entry_helper::wizard_buttons(array(
-        'divId'=>'controls',
-        'page'=>'last'
-      ));
+    $r .= "</div>\n";
+    if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) {
+      $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
     }
-    $r .= "</div>\n"; 
     if(!empty(data_entry_helper::$validation_errors)){
 		$r .= data_entry_helper::dump_remaining_errors();
     }   
@@ -460,20 +490,77 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     return $r;
   }
   
+  /**
+   * Get the contents of the species tab, either a grid or a single species input control.
+   */
   private static function get_fixed_controls_species($auth, $args) {
     global $indicia_templates;
-    $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
-    $r = '';
-    $species_list_args=array(
-        'listId'=>$args['list_id'],
-        'label'=>lang::get('occurrence:taxa_taxon_list_id'),
-        'columns'=>1,
-        'view'=>'detail',
-        'extraParams'=>$auth['read'],
-        'survey_id'=>$args['survey_id']
-    );
-    if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
-    $r .= data_entry_helper::species_checklist($species_list_args);
+    
+    $extraParams = $auth['read'] + array('view' => 'detail');
+    if ($args['species_names_filter']=='preferred') {
+      $extraParams += array('preferred' => 't');
+    }
+    if ($args['species_names_filter']=='language') {
+      $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
+    }  
+    if (self::getGridMode($args)) {      
+      // multiple species being input via a grid
+      $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
+      $r = '';
+      $species_list_args=array(
+          'listId'=>$args['list_id'],
+          'label'=>lang::get('occurrence:taxa_taxon_list_id'),
+          'columns'=>1,          
+          'extraParams'=>$extraParams,
+          'survey_id'=>$args['survey_id']
+      );
+      if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
+      $r .= data_entry_helper::species_checklist($species_list_args);
+    }
+    else {      
+      // A single species entry control of some kind
+      if ($args['extra_list_id']=='')
+        $extraParams['taxon_list_id'] = $args['list_id'];
+      else
+        $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
+      $species_list_args=array(
+          'label'=>lang::get('occurrence:taxa_taxon_list_id'),
+          'fieldname'=>'occurrence:taxa_taxon_list_id',
+          'table'=>'taxa_taxon_list',
+          'captionField'=>'taxon',
+          'valueField'=>'id',
+          'columns'=>2,          
+          'parentField'=>'parent_id',
+          'extraParams'=>$extraParams
+      );
+      if ($args['species_ctrl']=='tree_browser') {
+        // change the node template to include images
+        global $indicia_templates;
+        $indicia_templates['tree_browser_node']='<div>'.
+            '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
+            '<span>{caption}</span>';
+      }
+      // Dynamically generate the species selection control required.
+      $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+      // Add any dynamically generated controls
+      $attrArgs = array(
+         'valuetable'=>'occurrence_attribute_value',
+         'attrtable'=>'occurrence_attribute',
+         'key'=>'occurrence_id',
+         'fieldprefix'=>'occAttr',
+         'extraParams'=>$auth['read'],
+         'survey_id'=>$args['survey_id']
+      );
+      if (count(self::$occurrenceIds)==1) {
+        // if we have a single occurrence Id to load, use it to get attribute values
+        $attrArgs['id'] = self::$occurrenceIds[0];
+        // also output a hidden input to contain the occurrence id
+        $r .= '<input type="hidden" name="occurrence:id" value="'.self::$occurrenceIds[0].'" />'."\n";
+      }
+      $attributes = data_entry_helper::getAttributes($attrArgs);
+      $defAttrOptions = array('extraParams'=>$auth['read']);
+      $r .= self::get_attribute_html($attributes, $defAttrOptions);
+    }
     $r .= data_entry_helper::textarea(array(
       'fieldname'=>'sample:comment',
       'label'=>lang::get('Comments')
@@ -499,12 +586,12 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     );
     if ($args['location_ctrl']!='none')
       $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
-	if ($args['location_name_ctrl'])
+    if ($args['location_name_ctrl'])
       $r .= data_entry_helper::text_input(array(
-	    'label' => lang::get('LANG_Location_Name'),
-		'fieldname' => 'sample:location_name',
-		'class' => 'control-width-5'
-	  ));
+      'label' => lang::get('LANG_Location_Name'),
+      'fieldname' => 'sample:location_name',
+      'class' => 'control-width-5'
+    ));
     if ($args['place_search_control'])
       $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
     $options = iform_map_get_map_options($args, $auth['read']);
@@ -588,7 +675,11 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    $sampleMod = data_entry_helper::build_sample_occurrences_list_submission($values);
+    // default for forms setup on old versions is grid - list of occurrences
+    if (self::getGridMode($args))
+      $sampleMod = data_entry_helper::build_sample_occurrences_list_submission($values);
+    else
+      $sampleMod = data_entry_helper::build_sample_occurrence_submission($values);      
     return($sampleMod);
   }
 
@@ -607,13 +698,85 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
    */
   private static function parse_defaults(&$args) {
     $result=array();
-	if (isset($args['defaults'])) {
-	  $defaults = explode("\n", $args['defaults']);
-	  foreach($defaults as $default) {
-	    $tokens = explode('=', $default);
-		$result[trim($tokens[0])] = trim($tokens[1]);
-	  }	  
-	}  
-	$args['defaults']=$result;
+    if (isset($args['defaults'])) {
+      $defaults = explode("\n", $args['defaults']);
+      foreach($defaults as $default) {
+        $tokens = explode('=', $default);
+        $result[trim($tokens[0])] = trim($tokens[1]);
+      }	  
+    }  
+    $args['defaults']=$result;
   }
+  
+  /**
+   * Returns true if this form should be displaying a multipled occurrence entry grid.
+   */
+  private static function getGridMode($args) {
+    // if loading an existing sample and we are allowed to display a grid or single species selector
+    if ($args['multiple_occurrence_mode']=='either') {
+      if (is_null(data_entry_helper::$entity_to_load))
+        // in a new sample, so displaying a grid depends on the present of the query string param gridmode
+        return isset($_GET['gridmode']);
+      else {        
+        // A grid, unless there is only one taxon
+        return count(self::occurrenceIds)!==1;
+      }
+    } else
+      return 
+          // a form saved using a previous version might not have this setting, so default to grid mode=true
+          (!isset($args['multiple_occurrence_mode'])) ||
+          // Are we fixed in grid mode?
+          $args['multiple_occurrence_mode']=='multi';
+  }
+  
+  /**
+   * When viewing the list of samples for this user, get the grid to insert into the page.
+   */
+  private static function getSampleListGrid($args, $node, $auth, $attributes) {
+    global $user;
+    // get the CMS User ID attribute so we can filter the grid to this user
+    foreach($attributes as $attrId => $attr) {
+      if (strcasecmp($attr['caption'],'CMS User ID')==0) {
+        $userIdAttr = $attrId;
+        break;
+      }
+    }
+    if (!isset($userIdAttr)) {
+      return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
+          'be tagged against the user.');
+    }
+    if (isset($args['grid_report']))
+      $reportName = $args['grid_report'];
+    else
+      // provide a default in case the form settings were saved in an old version of the form
+      $reportName = 'reports_for_prebuilt_forms/simple_sample_list_1';
+    $r = data_entry_helper::report_grid(array(
+      'id' => 'samples-grid',
+      'dataSource' => $reportName,
+      'mode' => 'report',
+      'readAuth' => $auth['read'],
+      'columns' => array(
+        array('display' => 'Actions', 'actions' => array(
+          array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')),
+        ))
+      ),
+      'itemsPerPage' =>10,
+      'autoParamsForm' => true,
+      'extraParams' => array(
+        'survey_id'=>$args['survey_id'], 
+        'userID_attr_id'=>$userIdAttr,
+        'userID'=>$user->uid
+      )
+    ));	
+    $r .= '<form>';    
+    if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Grid').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample&gridmode')).'\'">';
+    } else {
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
+    }
+    $r .= '</form>';
+    return $r;
+  }
+
 }

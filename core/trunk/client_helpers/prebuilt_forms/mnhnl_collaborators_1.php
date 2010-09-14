@@ -219,7 +219,7 @@ class iform_mnhnl_collaborators_1 {
         'readAuth' => $auth['read'],
         'columns' => array(
           array('display' => 'Actions', 'actions' => array(
-            array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{id}')),
+            array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')),
           ))
         ),
         'itemsPerPage' =>10,
