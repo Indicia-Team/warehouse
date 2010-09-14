@@ -34,7 +34,7 @@
   </params>
   <columns>
     <column name='id' display='ID' />
-    <column name='location_name' display='Transact' />
+    <column name='location_name' display='Site name' />
     <column name='entered_sref' display='SRef' />
     <column name='date' display='Date' />
     <column name='num_occurrences' display='# Occurrences' />
