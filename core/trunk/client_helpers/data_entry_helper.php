@@ -2591,7 +2591,7 @@ class data_entry_helper extends helper_config {
    */
   private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
     // Get the list of species that are always added to the grid
-    if (isset($options['listId']))
+    if (isset($options['listId']) && !empty($options['listId']))
       $taxalist = self::get_population_data($options);
     else
       $taxalist = array();
@@ -2654,7 +2654,7 @@ class data_entry_helper extends helper_config {
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))
       $options['extraParams']['preferred'] = 't';
-    if (array_key_exists('listId', $options)) {
+    if (array_key_exists('listId', $options) && !empty($options['listId'])) {
       $options['extraParams']['taxon_list_id']=$options['listId'];
     }
     if (array_key_exists('readAuth', $options)) {
