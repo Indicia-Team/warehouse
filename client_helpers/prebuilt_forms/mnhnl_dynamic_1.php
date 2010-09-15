@@ -509,7 +509,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     if (self::getGridMode($args)) {      
       // multiple species being input via a grid
       $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
-      $r = '';
+      // Start by outputting a hidden value that tells us we are using a grid when the data is posted
+      $r = '<input type="hidden" value="true" name="gridmode" />';
       $species_list_args=array(
           'listId'=>$args['list_id'],
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
@@ -683,7 +684,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
    */
   public static function get_submission($values, $args) {
     // default for forms setup on old versions is grid - list of occurrences
-    if (self::getGridMode($args))
+    // Can't call getGridMode in this context as we might not have the $_GET value to indicate grid
+    if (isset($values['gridmode']))
       $sampleMod = data_entry_helper::build_sample_occurrences_list_submission($values);
     else
       $sampleMod = data_entry_helper::build_sample_occurrence_submission($values);      
@@ -724,7 +726,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       if (is_null(data_entry_helper::$entity_to_load))
         // in a new sample, so displaying a grid depends on the present of the query string param gridmode
         return isset($_GET['gridmode']);
-      else {        
+      else {
         // A grid, unless there is only one taxon
         return count(self::$occurrenceIds)!==1;
       }
