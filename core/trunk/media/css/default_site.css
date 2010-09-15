@@ -318,3 +318,7 @@ tr.odd {
   cursor: pointer;
   width: 8px;
 }
+
+.ui-tabs .ui-tabs-nav li {
+  list-style-type: none;
+}

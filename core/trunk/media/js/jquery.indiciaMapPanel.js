@@ -239,16 +239,19 @@
 
       $('#imp-location').change(function()
       {
-        // Change the location control requests the location's geometry to place on the map.
-        $.getJSON(div.settings.indiciaSvc + "index.php/services/data/location/"+this.value +
-          "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
-            // store value in saved field?
-            if (data.length>0) {
-              _showWktFeature(div, data[0].centroid_geom, div.map.editLayer, null);
+        div.map.editLayer.destroyFeatures();
+        if (this.value!=='') {
+          // Change the location control requests the location's geometry to place on the map.
+          $.getJSON(div.settings.indiciaSvc + "index.php/services/data/location/"+this.value +
+            "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
+              // store value in saved field?
+              if (data.length>0) {
+                _showWktFeature(div, data[0].centroid_geom, div.map.editLayer, null);
+              }
             }
-          }
-        );
-      });
+          );
+        }
+      });      
     }
     
     function _handleEnteredSref(value, div) {
