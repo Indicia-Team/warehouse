@@ -435,27 +435,30 @@ locationChange = function(obj){
 		jQuery.getJSON(\"".$svcUrl."\" + \"/data/location/\"+obj.value +
 			\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
 			\"&callback=?\", function(data) {
-            if (data.length>0) {
-            	var parser = new OpenLayers.Format.WKT();
-            	for (var i=0;i<data.length;i++)
-				{
-	      			if(data[i].centroid_geom){
-						feature = parser.read(data[i].centroid_geom);
-						centre = feature.geometry.getCentroid();
-						centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name});
-						locationLayer.addFeatures([feature, centrefeature]); 
-					}
-					if(data[i].boundary_geom){
-						feature = parser.read(data[i].boundary_geom);
-						feature.style = {strokeColor: \"Blue\",
-    	                	strokeWidth: 2,
-  							label: (data[i].centroid_geom ? \"\" : data[i].name)};
-						locationLayer.addFeatures([feature]);
- 					}
-    				locationLayer.map.zoomToExtent(locationLayer.getDataExtent());
-  				}
-			}
-		});
+        if (data.length>0) {
+          var parser = new OpenLayers.Format.WKT();
+          for (var i=0;i<data.length;i++) {
+            if(data[i].centroid_geom){
+              feature = parser.read(data[i].centroid_geom);
+              centre = feature.geometry.getCentroid();
+              centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name});
+              locationLayer.addFeatures([feature, centrefeature]); 
+            }
+            if (data[i].boundary_geom){
+              feature = parser.read(data[i].boundary_geom);
+              feature.style = {strokeColor: \"Blue\",
+                  strokeWidth: 2,
+                  label: (data[i].centroid_geom ? \"\" : data[i].name)};
+                  locationLayer.addFeatures([feature]);
+            }
+          }
+          var extent=locationLayer.getDataExtent();
+          if (extent!==null) {
+            locationLayer.map.zoomToExtent(extent);
+          }
+        }
+		  }
+    );
   }
 };
 jQuery('#imp-location').unbind('change');
@@ -521,6 +524,10 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       // A single species entry control of some kind
       if ($args['extra_list_id']=='')
         $extraParams['taxon_list_id'] = $args['list_id'];
+      // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should 
+      // update to support 2 lists.
+      elseif ($args['species_ctrl']=='autocomplete')
+        $extraParams['taxon_list_id'] = $args['extra_list_id'];
       else
         $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
       $species_list_args=array(
@@ -582,7 +589,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     $location_list_args=array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
-        'extraParams'=>array_merge(array('view'=>'detail', 'orderby'=>'name'), $auth['read'])
+        'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
     );
     if ($args['location_ctrl']!='none')
       $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);

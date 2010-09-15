@@ -4444,6 +4444,7 @@ $onload_javascript
   * 'write' => the write authorisation input controls to insert into your form.
   */
   public static function get_read_write_auth($website_id, $password) {
+    self::$website_id = $website_id; /* Store this for use with data caching */
     $postargs = "website_id=$website_id";
     $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_write_nonces', $postargs);
     $nonces = json_decode($response['output'], true);
