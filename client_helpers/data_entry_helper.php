@@ -48,7 +48,7 @@ $indicia_templates = array(
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
-  'checkbox' => '<input type="checkbox" id="{id}" name="{fieldname}"{class}{checked}{disabled} {title} />'."\n",
+  'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
   'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
   'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
   'select_item' => '<option value="{value}" {selected} >{caption}</option>',
@@ -4945,7 +4945,7 @@ $('.ui-state-default').live('mouseout', function() {
   *    validation
   *    noBlankText
   *    extraParams
-  *    booleanCtrl - radio or checkbox for boolean attribute output, default is radio. Can also be a checkbox_group, used to
+  *    booleanCtrl - radio or checkbox for boolean attribute output, default is checkbox. Can also be a checkbox_group, used to
   *    allow selection of both yes and no, e.g. on a filter form.
   *    language - iso 639:3 code for the language to output for terms in a termlist. If not set no language filter is used.
   * @return string HTML to insert into the page for the control.
@@ -4977,12 +4977,12 @@ $('.ui-state-default').live('mouseout', function() {
             if(array_key_exists('containerClass', $options)){
               $attrOptions['containerClass'] = $options['containerClass'];
             }
-            if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox') {
-              $output = self::checkbox($attrOptions);
+            if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='radio') {
+              $output = self::boolean_attribute('radio', $attrOptions);
             } elseif(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox_group') {
               $output = self::boolean_attribute('checkbox', $attrOptions);
             } else {
-              $output = self::boolean_attribute('radio', $attrOptions);
+              $output = self::checkbox($attrOptions);
             }
 
             break;
