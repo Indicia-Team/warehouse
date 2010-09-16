@@ -297,10 +297,17 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entities = json_decode(curl_exec($session), true);
+      // first get a list of all occurrence ids, so we can correctly ascertain if grid mode is required in a moment
+      foreach($entities as $entity)        
+        self::$occurrenceIds[] = $entity['id']; // the occurrence ID
       foreach($entities as $entity){
         data_entry_helper::$entity_to_load['occurrence:record_status']=$entity['record_status'];
-        data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
-        self::$occurrenceIds[] = $entity['id']; // the occurrence ID
+        if (self::getGridMode($args)) 
+          data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
+        else {
+          data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id']=$entity['taxa_taxon_list_id'];
+          data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$entity['taxon'];          
+        }
       }
       data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
       data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.      
@@ -317,6 +324,9 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
       $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
+    }
+    if(array_key_exists('occurrence:id', data_entry_helper::$entity_to_load)){
+      $hiddens .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";	
     }
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
@@ -688,7 +698,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     if (isset($values['gridmode']))
       $sampleMod = data_entry_helper::build_sample_occurrences_list_submission($values);
     else
-      $sampleMod = data_entry_helper::build_sample_occurrence_submission($values);      
+      $sampleMod = data_entry_helper::build_sample_occurrence_submission($values);
     return($sampleMod);
   }
 
@@ -723,13 +733,11 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   private static function getGridMode($args) {
     // if loading an existing sample and we are allowed to display a grid or single species selector
     if ($args['multiple_occurrence_mode']=='either') {
-      if (is_null(data_entry_helper::$entity_to_load))
-        // in a new sample, so displaying a grid depends on the present of the query string param gridmode
-        return isset($_GET['gridmode']);
-      else {
-        // A grid, unless there is only one taxon
-        return count(self::$occurrenceIds)!==1;
-      }
+      // Either we are in grid mode because we were instructed to externally, or because the form is reloading
+      // after a validation failure with a hidden input indicating grid mode.
+      return isset($_GET['gridmode']) || 
+          isset(data_entry_helper::$entity_to_load['gridmode']) ||
+          count(self::$occurrenceIds)>1;
     } else
       return 
           // a form saved using a previous version might not have this setting, so default to grid mode=true

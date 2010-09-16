@@ -119,6 +119,8 @@ $indicia_templates = array(
         },
         parse: function(data)
         {
+          // Clear the current selected key as the user has changed the search text
+          jQuery('input#{escaped_id}').val('');
           var results = [];
           jQuery.each(data, function(i, item) {
             results[results.length] =
@@ -2467,10 +2469,10 @@ class data_entry_helper extends helper_config {
         $attributesForThisRow = $attributes;
         $existing_record_id = '';
         // Are we reloading any data for this row?
-        if(self::$entity_to_load && in_array($id, $taxaThatExist)) {
-          foreach(self::$entity_to_load as $key => $value){
+        if (self::$entity_to_load && in_array($id, $taxaThatExist)) {
+          foreach (self::$entity_to_load as $key => $value){
             $parts = explode(':', $key);
-            if(count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
+            if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
               $existing_record_id = $parts[2];
               // As this is an existing row, we need to reload the attributes data with the row values
               // @todo Optimisation to get all the data in one service call
@@ -2508,11 +2510,10 @@ class data_entry_helper extends helper_config {
           } else if(array_key_exists('default', $attributesForThisRow[$attrId])){
 		        // this case happens when reloading an existing record
             $existing_value = $attributesForThisRow[$attrId]['default'];
-			      // mark this as an existing value by using the fieldname supplied when loading the data. 
-			      $ctrlId = $attributesForThisRow[$attrId]['fieldname'];
           }
-		      // inject the field name into the control HTML
-		      $oc = str_replace('{fieldname}', $ctrlId, $oc);
+          $ctrlId = $attributesForThisRow[$attrId]['fieldname'];
+          // inject the field name into the control HTML
+          $oc = str_replace('{fieldname}', $ctrlId, $oc);
           if (!empty($existing_value)) {
             // For select controls, specify which option is selected from the existing value
             if (substr($oc, 0, 7)=='<select') {			  
@@ -4063,15 +4064,16 @@ if (errors.length>0) {
       if ((array_key_exists('present', $record)) ||
           (array_key_exists('id', $record)) ||
           ($include_if_any_data && implode('',$record)!='')) {
-      if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
-        // checkboxes do not appear if not checked. If uncheck, delete record.
-        $record['deleted'] = 't';
-      }
+        if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
+          // checkboxes do not appear if not checked. If uncheck, delete record.
+          $record['deleted'] = 't';
+        }
+        
         $record['taxa_taxon_list_id'] = $id;
-      $record['website_id'] = $website_id;
-      if (isset($determiner_id)) {
-          $record['determiner_id'] = $determiner_id;
-      }
+        $record['website_id'] = $website_id;
+        if (isset($determiner_id)) {
+            $record['determiner_id'] = $determiner_id;
+        }
         if (isset($record_status)) {
           $record['record_status'] = $record_status;
         }
