@@ -50,6 +50,13 @@ class iform_mnhnl_bird_transect_walks {
    * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so
    * we can display all the occurrences on the map.
    * When displaying transects, we should display children locations as well as parent.
+   * 
+   * Main Locations:
+   * centroid is the grid square boundary surrounding the transect.
+   * boundary is the actual transect walk.
+   * Child Locations:
+   * centroid is the buffer surrounding the transect.
+   * boundary are the points defining the start and end of the walk.
    */
   /**
    * Get the list of parameters for this form.
