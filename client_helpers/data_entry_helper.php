@@ -4249,11 +4249,25 @@ if (errors.length>0) {
   * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
   */
   public static function dump_javascript() {
-    global $indicia_templates;
     // Add the default stylesheet to the end of the list, so it has highest CSS priority
     if (self::$default_styles) self::add_resource('defaultStylesheet');
-    // If required, setup jQuery validation. We can't prep this JavaScript earlier since we would
-    // not know all the control messages.
+    self::setup_jquery_validation_js();    
+    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, self::$required_resources);
+    // ensure scripted JS does not output again if recalled.
+    self::$javascript = "";
+    self::$late_javascript = "";
+    self::$onload_javascript = "";
+    return $dump;
+  }
+  
+  /**
+   * If required, setup jQuery validation. This JavaScript must be added at the end of form preparation otherwise we would
+   * not know all the control messages. It will normally be called by dump_javascript automatically, but is exposed here
+   * as a public method since the iform Drupal module does not call dump_javascript, but is responsible for adding JavaScript
+   * to the page via drupal_add_js.
+   */
+  public static function setup_jquery_validation_js() {
+    global $indicia_templates;
     // In the following block, we set the validation plugin's error class to our template.
     // We also define the error label to be wrapped in a <p> if it is on a newline.
     if (self::$validated_form_id) {
@@ -4261,17 +4275,21 @@ if (errors.length>0) {
         errorClass: \"".$indicia_templates['error_class']."\",
         ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
         "highlight: function(element, errorClass) {
-           // Don't highlight the actual control, as it could be hidden anyway
+          $(element).addClass('ui-state-error');
+        },
+        unhighlight: function(element, errorClass) {
+          $(element).removeClass('ui-state-error');
+        },
+        invalidHandler: function(form, validator) {
+          // select the tab containing the first error control
+          jQuery.each(validator.errorMap, function(ctrlId, error) {
+            tabs.tabs('select',$('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.ui-tabs-panel')[0].id);
+            return false; // only do the first error
+          });
         },
         messages: ".json_encode(self::$validation_messages)."
       });\n";
     }
-    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, self::$required_resources);
-    // ensure scripted JS does not output again if recalled.
-    self::$javascript = "";
-    self::$late_javascript = "";
-    self::$onload_javascript = "";
-    return $dump;
   }
 
   /**
