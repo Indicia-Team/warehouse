@@ -21,14 +21,16 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+print form::open($controllerpath.'/upload_shp', array('ENCTYPE'=>'multipart/form-data'));
+if ($staticFields != null) {
+  foreach ($staticFields as $a => $b) {
+    print form::hidden($a, $b);
+  }
+}
 ?>
-<div class="location">
-<?php echo $table ?>
-<br/>
-<form action="<?php echo url::site().'location/create'; ?>" method="post">
-<input type="submit" value="New location" class="ui-corner-all ui-state-default button" />
+<fieldset>
+<label for="zip_upload" class="auto">Upload a Zipped up SHP fileset into this list:</label>
+<input type="file" name="zip_upload" id="zip_upload" size="40" />
+<input type="submit" value="Upload ZIP File" />
+</fieldset>
 </form>
-<br />
-<?php echo $upload_csv_form ?>
-<?php echo $upload_shp_form ?>
-</div>
