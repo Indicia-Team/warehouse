@@ -72,6 +72,38 @@ class iform_mnhnl_dynamic_1 {
           'group' => 'User Interface'
         ),
         array(
+          'name'=>'structure',
+          'caption'=>'Form Structure',
+          'description'=>'Define the structure of the form. Each component goes on a new line and is nested inside the previous component where appropriate. The following types of '.
+            "component can be specified, with text inside <> is used to indicate where you should replace the text with your own values. ".
+            "=tab name= is used to specify the name of a tab. ".
+            "=*= indicates a placeholder for putting any custom attribute tabs not defined in this form structure. ".
+            "[<control name>] indicates a predefined control is to be added to the form with the following predefined controls available: '.
+                '[species] (a species grid or input control); [species_attributes] (any custom attributes for the occurrence, if not using the grid); '.
+                '[date]; [map]; [spatial reference]; [location name]; [location autocomplete]; [location select]; [place search]; [record status];[sample comment]. ".
+            "[*] is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. ".
+            "?<help text>? is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
+          'type'=>'textarea',
+          'default' => "=Species=\n".
+              "?Some Help Text.?\n".
+              "[species]\n".
+              "[species attributes]\n".
+              "[*]\n".
+              "=Place=\n".
+              "?Some Help Text.?\n".
+              "[location search]\n".
+              "[spatial reference]\n".
+              "[map]\n".
+              "[*]\n".
+              "=Other Information=\n".
+              "?Some Help Text.?\n".
+              "[date]\n".
+              "[sample comment]\n".
+              "[*]\n".
+              "=*=",
+          'group' => 'User Interface'
+        ),
+        array(
           'name' => 'grid_report',
           'caption' => 'Grid Report',
           'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
@@ -170,19 +202,7 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'Should a control for entering free text place names on the map be added to the form?',
           'type'=>'boolean',
           'group' => 'Map'
-        ),
-        array(
-          'name'=>'location_ctrl',
-          'caption'=>'Location Control Type',
-          'description'=>'The type of control that will be available to select a location.',
-          'type'=>'select',
-          'options' => array(
-		        'none' => 'None',
-            'location_autocomplete' => 'Autocomplete',
-            'location_select' => 'Select'
-          ),
-          'group'=>'Map'
-        ),        
+        ),       
         array(
           'name'=>'survey_id',
           'caption'=>'Survey ID',
@@ -328,6 +348,13 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     if(array_key_exists('occurrence:id', data_entry_helper::$entity_to_load)){
       $hiddens .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";	
     }
+    // Check if Record Status is included as a control. If not, then add it as a hidden.
+    $arr = explode("\r\n", $args['structure']);
+    if (!in_array('[record status]', $arr)) {
+      $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C'; 
+      $hiddens .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"$value\" />\n";	
+    }
+    
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
     $attributes = data_entry_helper::getAttributes(array(
@@ -362,23 +389,18 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
       }
     }
-    $attributeHeadings = self::get_attribute_headings($attributes);
-    if (!in_array('place', $attributeHeadings)) {
-      array_splice($attributeHeadings, 0, 0, array('place'));
-    }
-    if (!in_array('species', $attributeHeadings)) {
-      array_splice($attributeHeadings, 0, 0, array('species'));
-    }
+    $customAttributeTabs = self::get_attribute_tabs($attributes);
+    $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     $r .= "<div id=\"controls\">\n";
     // Output the dynamic tab headers
     if ($args['interface']!='one_page') {
       $r .= "<ul>\n";
-      foreach ($attributeHeadings as $heading) {
-        $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($heading));
+      foreach ($tabs as $tab=>$tabContent) {
+        $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
         $tabtitle = lang::get("LANG_Tab_$alias");
         if ($tabtitle=="LANG_Tab_$alias") {
           // if no translation provided, we'll just use the standard heading
-          $tabtitle = $heading;
+          $tabtitle = $tab;
         }
         $r .= '  <li><a href="#'.$alias.'"><span>'.$tabtitle."</span></a></li>\n";
       }
@@ -390,43 +412,42 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     }
     // Output the dynamic tab content
     $pageIdx = 0;
-    foreach ($attributeHeadings as $heading) {
+    foreach ($tabs as $tab=>$tabContent) {
       // get a machine readable alias for the heading
-      $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($heading));
+      $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $r .= '<div id="'.$alias.'">'."\n";
       if ($pageIdx==0)
         // output the hidden inputs on the first tab
         $r .= $hiddens;
-      // Check if there is a translation for the instructions for this tab. If so, put it on the tab.
-      $instruct = lang::get("LANG_Tab_Instructions_$alias");
-      if ($instruct!="LANG_Tab_Instructions_$alias") 
-        $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.$instruct."</p>";
-      // dynamically call a method to add controls to this page, if there are non dynamic ones.
-      $method = "get_fixed_controls_$alias";
-      if (method_exists('iform_mnhnl_dynamic_1', $method))
-        $r .= self::$method($auth, $args);
-
-      $r .= self::get_attribute_html($attributes, $defAttrOptions, $heading);
+      // Now output the content of the tab
+      foreach ($tabContent as $component) {
+        if (preg_match('/\A\?[^¬]*\?\z/', trim($component))===1) {
+          // Component surrounded by ? so represents a help text
+          $helpText = substr(trim($component), 1, -1);
+          $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</p>";
+        } elseif (preg_match('/\A\[[^¬]*\]\z/', trim($component))===1) {
+          // Component surrounded by [] so represents a control
+          $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
+          if (method_exists('iform_mnhnl_dynamic_1', $method)) 
+            $r .= self::$method($auth, $args);
+          elseif (trim($component)==='[*]')
+            $r .= self::get_attribute_html($attributes, $defAttrOptions, $tab);
+          else          
+            $r .= "The form structure includes a control called $component which is not recognised.<br/>";
+        }      
+      }
+      // Add any buttons required at the bottom of the tab
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
-          'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($attributeHeadings)-1) ? 'last' : 'middle')
+          'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabs)-1) ? 'last' : 'middle')
         ));        
-      } elseif ($pageIdx==count($attributeHeadings)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
+      } elseif ($pageIdx==count($tabs)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
         // last part of a non wizard interface must insert a save button, unless it is tabbed interface with save button beneath all pages 
-        $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
-
+        $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";      
       $pageIdx++;
       $r .= "</div>\n";      
     }
-        
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    //  TODO image upload - not sure how to do this as images are attached to occurrences, and occurrences
-//  are embedded in the species list.
-//    $r .= "<label for='occurrence:image'>".lang::get('LANG_Image_Label')."</label>\n".
-//        data_entry_helper::image_upload('occurrence:image');
-    
     $r .= "</div>\n";
     if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) {
       $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
@@ -491,22 +512,72 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
 
   }
   
-  private static function get_attribute_headings(&$attributes) {
+  /**
+   * Finds the list of tab names that are going to be required by the custom attributes.
+   */
+  private static function get_attribute_tabs(&$attributes) {
     $r = array();
     foreach($attributes as &$attribute) {
       // Assign any ungrouped attributes to a block called Other Information 
       if (empty($attribute['outer_structure_block'])) 
         $attribute['outer_structure_block']='Other Information';
-      if (!in_array($attribute['outer_structure_block'], $r))
-        $r[] = $attribute['outer_structure_block'];
+      if (!array_key_exists($attribute['outer_structure_block'], $r))
+        // Create a tab for this structure block and mark it with [*] so the content goes in
+        $r[$attribute['outer_structure_block']] = array("[*]");
     }
     return $r;
   }
   
   /**
-   * Get the contents of the species tab, either a grid or a single species input control.
+   * Finds the list of all tab names that are going to be required, either by the form
+   * structure, or by custom attributes.
    */
-  private static function get_fixed_controls_species($auth, $args) {
+  private static function get_all_tabs($structure, $attrTabs) {
+    $structureArr = explode("\r\n", $structure);
+    $structureTabs = array();
+    foreach ($structureArr as $component) {
+      if (preg_match('/^=[A-Za-z0-9 \*]+=$/', trim($component), $matches)===1) {
+        $currentTab = substr($matches[0], 1, -1);
+        $structureTabs[$currentTab] = array();
+      } else {
+        if (!isset($currentTab)) 
+          throw new Exception('The form structure parameter must start with a tab title, e.g. =Species=');
+        $structureTabs[$currentTab][] = $component;
+      }
+    }
+    // If any additional tabs are required by attributes, add them to the position marked by a dummy tab named [*].
+    // First get rid of any tabs already in the structure
+    foreach ($attrTabs as $tab => $tabContent) {
+      if (array_key_exists($tab, $structureTabs))
+        unset($attrTabs[$tab]);
+    }
+    // Now we have a list of form structure tabs, with the position of the $attrTabs marked by *. So join it all together.
+    // Maybe there is a better way to do this?
+    $allTabs = array();
+    foreach($structureTabs as $tab => $tabContent) {
+      if ($tab=='*') 
+        $allTabs += $attrTabs;
+      else
+        $allTabs[$tab] = $tabContent;
+    }
+    return $allTabs;
+  }
+  
+  /** 
+   * Get the map control.
+   */
+  private static function get_control_map($auth, $args) {
+    $options = iform_map_get_map_options($args, $auth['read']);
+    $options['layers'][] = 'locationLayer';
+    $options['tabDiv'] = 'place';
+    $olOptions = iform_map_get_ol_options($args);
+    return data_entry_helper::map_panel($options, $olOptions);
+  }
+  
+  /**
+   * Get the control for species input, either a grid or a single species input control.
+   */
+  private static function get_control_species($auth, $args) {
     global $indicia_templates;
     
     $extraParams = $auth['read'] + array('view' => 'detail');
@@ -519,8 +590,6 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     if (self::getGridMode($args)) {      
       // multiple species being input via a grid
       $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
-      // Start by outputting a hidden value that tells us we are using a grid when the data is posted
-      $r = '<input type="hidden" value="true" name="gridmode" />';
       $species_list_args=array(
           'listId'=>$args['list_id'],
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
@@ -529,10 +598,16 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'survey_id'=>$args['survey_id']
       );
       if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
-      $r .= data_entry_helper::species_checklist($species_list_args);
+      // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
+      // then output the grid control
+      return '<input type="hidden" value="true" name="gridmode" />'.
+          data_entry_helper::species_checklist($species_list_args);
     }
     else {      
       // A single species entry control of some kind
+      if (count(self::$occurrenceIds)==1)
+        // output a hidden input to contain the occurrence id
+        $r .= '<input type="hidden" name="occurrence:id" value="'.self::$occurrenceIds[0].'" />'."\n";
       if ($args['extra_list_id']=='')
         $extraParams['taxon_list_id'] = $args['list_id'];
       // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should 
@@ -559,7 +634,26 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
             '<span>{caption}</span>';
       }
       // Dynamically generate the species selection control required.
-      $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+     return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+    }
+  }
+  
+    
+  /**
+   * Get the sample comment control
+   */
+  private static function get_control_samplecomment($auth, $args) {
+    return data_entry_helper::textarea(array(
+      'fieldname'=>'sample:comment',
+      'label'=>lang::get('Overall Comment')
+    )); 
+  }
+  
+  /**
+   * Get the block of custom attributes at the species (occurrence) level
+   */
+  private static function get_control_speciesattributes($auth, $args) {
+    if (!self::getGridMode($args)) {  
       // Add any dynamically generated controls
       $attrArgs = array(
          'valuetable'=>'occurrence_attribute_value',
@@ -572,77 +666,102 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       if (count(self::$occurrenceIds)==1) {
         // if we have a single occurrence Id to load, use it to get attribute values
         $attrArgs['id'] = self::$occurrenceIds[0];
-        // also output a hidden input to contain the occurrence id
-        $r .= '<input type="hidden" name="occurrence:id" value="'.self::$occurrenceIds[0].'" />'."\n";
       }
       $attributes = data_entry_helper::getAttributes($attrArgs);
       $defAttrOptions = array('extraParams'=>$auth['read']);
-      $r .= self::get_attribute_html($attributes, $defAttrOptions);
-    }
-    $r .= data_entry_helper::textarea(array(
-      'fieldname'=>'sample:comment',
-      'label'=>lang::get('Comments')
-    ));
-    return $r; 
+      return self::get_attribute_html($attributes, $defAttrOptions);
+    } else 
+      // in grid mode the attributes are embedded in the grid.
+      return '';
   }
   
-  private static function get_fixed_controls_place($auth, $args) {
+  /** 
+   * Get the date control.
+   */
+  private static function get_control_date($auth, $args) {
+    return data_entry_helper::date_picker(array(
+      'label'=>lang::get('LANG_Date'),
+      'fieldname'=>'sample:date',
+		  'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
+    ));
+  }
+  
+  /** 
+   * Get the spatial reference control.
+   */
+  private static function get_control_spatialreference($auth, $args) {
     // Build the array of spatial reference systems into a format Indicia can use.
     $systems=array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
     }    
-    $r .= data_entry_helper::sref_and_system(array(
+    return data_entry_helper::sref_and_system(array(
       'label' => lang::get('LANG_SRef_Label'),
       'systems' => $systems
     ));
+  }
+  
+  /** 
+   * Get the location control as an autocomplete.
+   */
+  private static function get_control_locationautocomplete($auth, $args) {
     $location_list_args=array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
         'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
     );
-    if ($args['location_ctrl']!='none')
-      $r .= call_user_func(array('data_entry_helper', $args['location_ctrl']), $location_list_args);
-    if ($args['location_name_ctrl'])
-      $r .= data_entry_helper::text_input(array(
+    return data_entry_helper::location_autocomplete($location_list_args);
+  }
+  
+  /** 
+   * Get the location control as a select dropdown.
+   */
+  private static function get_control_locationselect($auth, $args) {
+    $location_list_args=array(
+        'label'=>lang::get('LANG_Location_Label'),
+        'view'=>'detail',
+        'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
+    );
+    return data_entry_helper::location_select($location_list_args);
+  }
+  
+  /** 
+   * Get the location name control.
+   */
+  private static function get_control_locationname($auth, $args) {
+    return data_entry_helper::text_input(array(
       'label' => lang::get('LANG_Location_Name'),
       'fieldname' => 'sample:location_name',
       'class' => 'control-width-5'
     ));
-    if ($args['place_search_control'])
-      $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
-    $options = iform_map_get_map_options($args, $auth['read']);
-    $options['layers'][] = 'locationLayer';
-    $options['tabDiv'] = 'place';
-    $olOptions = iform_map_get_ol_options($args);
-    $r .= data_entry_helper::map_panel($options, $olOptions);
-    return $r;
   }
   
-  private static function get_fixed_controls_otherinformation($auth, $args) {
-    $r .= data_entry_helper::date_picker(array(
-        'label'=>lang::get('LANG_Date'),
-        'fieldname'=>'sample:date',
-		'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
-    ));
-    if (!isset($args['defaults']['occurrence:record_status'])) {
-      $values = array('I', 'C'); // not initially doing V=Verified
-      $r .= '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
-      $r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
-      foreach($values as $value){
-        $r .= '<option value="'.$value.'"';
-        if(isset(data_entry_helper::$entity_to_load['occurrence:record_status'])){
-        if(data_entry_helper::$entity_to_load['occurrence:record_status'] == $value){
-          $r .= ' selected="selected"';
-        }
-        }
-        $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
+  /** 
+   * Get the location search control.
+   */
+  private static function get_control_placesearch($auth, $args) {
+    return data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
+  }
+  
+  /**
+   * Get the control for the record status.
+   */
+  private static function get_control_recordstatus($auth, $args) {    
+    $default = isset(data_entry_helper::$entity_to_load['occurrence:record_status']) ? 
+        data_entry_helper::$entity_to_load['occurrence:record_status'] :
+        isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C';
+    $values = array('I', 'C'); // not initially doing V=Verified
+    $r = '<label for="occurrence:record_status">'.lang::get('LANG_Record_Status_Label')."</label>\n";
+    $r .= '<select id="occurrence:record_status" name="occurrence:record_status">';
+    foreach($values as $value){
+      $r .= '<option value="'.$value.'"';
+      if ($value == $default){
+        $r .= ' selected="selected"';
       }
-      $r .= "</select><br/>\n";
-    } else  {
-      $r .= '<input type="hidden" name="occurrence:record_status" value="'.$args['defaults']['occurrence:record_status'].'"/>';
+      $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
     }
+    $r .= "</select><br/>\n";
   	return $r;
   }
   
