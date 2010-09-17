@@ -84,22 +84,22 @@ class iform_mnhnl_dynamic_1 {
             "[*] is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. ".
             "?<help text>? is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
-          'default' => "=Species=\n".
-              "?Some Help Text.?\n".
-              "[species]\n".
-              "[species attributes]\n".
-              "[*]\n".
-              "=Place=\n".
-              "?Some Help Text.?\n".
-              "[location search]\n".
-              "[spatial reference]\n".
-              "[map]\n".
-              "[*]\n".
-              "=Other Information=\n".
-              "?Some Help Text.?\n".
-              "[date]\n".
-              "[sample comment]\n".
-              "[*]\n".
+          'default' => "=Species=\r\n".
+              "?Please enter the species you saw and any other information about them.?\r\n".
+              "[species]\r\n".
+              "[species attributes]\r\n".
+              "[*]\r\n".
+              "=Place=\r\n".
+              "?Please provide the spatial reference of the record. You can enter the reference directly, or search for a place then click on the map.?\r\n".
+              "[place search]\r\n".
+              "[spatial reference]\r\n".
+              "[map]\r\n".
+              "[*]\r\n".
+              "=Other Information=\r\n".
+              "?Please provide the following additional information.?\r\n".
+              "[date]\r\n".
+              "[sample comment]\r\n".
+              "[*]\r\n".
               "=*=",
           'group' => 'User Interface'
         ),
@@ -190,20 +190,6 @@ class iform_mnhnl_dynamic_1 {
           'group'=>'Map'
         ),
         array(
-          'name'=>'place_search_control',
-          'caption'=>'Place Search Control',
-          'description'=>'Should a control for searching for place names on the map be added to the form?',
-          'type'=>'boolean',
-          'group' => 'Map'
-        ),
-        array(
-          'name'=>'location_name_ctrl',
-          'caption'=>'Location Name Control',
-          'description'=>'Should a control for entering free text place names on the map be added to the form?',
-          'type'=>'boolean',
-          'group' => 'Map'
-        ),       
-        array(
           'name'=>'survey_id',
           'caption'=>'Survey ID',
           'description'=>'The Indicia ID of the survey that data will be posted into.',
@@ -239,6 +225,7 @@ class iform_mnhnl_dynamic_1 {
    */
   public static function get_form($args, $node) {
     self::parse_defaults($args);
+    self::getArgDefaults($args);
     global $user;
     $logged_in = $user->uid>0;
     $r = '';
@@ -535,6 +522,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   private static function get_all_tabs($structure, $attrTabs) {
     $structureArr = explode("\r\n", $structure);
     $structureTabs = array();
+    print_r($structureArr);
     foreach ($structureArr as $component) {
       if (preg_match('/^=[A-Za-z0-9 \*]+=$/', trim($component), $matches)===1) {
         $currentTab = substr($matches[0], 1, -1);
@@ -917,6 +905,32 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     }
     $r .= '</form>';
     return $r;
+  }
+  
+  /**
+   * When a form version is upgraded introducing new parameters, old forms will not get the defaults for the 
+   * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
+   * working.
+   */
+  private function getArgDefaults(&$args) {
+     if (!isset($args['structure']) || empty($args['structure']))
+      $args['structure'] = "=Species=\r\n".
+              "?Please enter the species you saw and any other information about them.?\r\n".
+              "[species]\r\n".
+              "[species attributes]\r\n".
+              "[*]\r\n".
+              "=Place=\r\n".
+              "?Please provide the spatial reference of the record. You can enter the reference directly, or search for a place then click on the map.?\r\n".
+              "[place search]\r\n".
+              "[spatial reference]\r\n".
+              "[map]\r\n".
+              "[*]\r\n".
+              "=Other Information=\r\n".
+              "?Please provide the following additional information.?\r\n".
+              "[date]\r\n".
+              "[sample comment]\r\n".
+              "[*]\r\n".
+              "=*=";
   }
 
 }
