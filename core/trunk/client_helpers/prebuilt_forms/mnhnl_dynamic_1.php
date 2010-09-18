@@ -151,6 +151,14 @@ class iform_mnhnl_dynamic_1 {
           'default' => 'autocomplete',
           'group'=>'Species'
         ),
+		array(
+          'name'=>'occurrence_comment',
+          'caption'=>'Occurrence Comment',
+          'description'=>'Should an input box be present for a comment against each occurrence?',
+          'type'=>'boolean',
+		  'default'=>false,
+		  'group'=>'Species'
+		),
         array(
           'name'=>'list_id',
           'caption'=>'Initial Species List ID',
@@ -307,11 +315,13 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       // first get a list of all occurrence ids, so we can correctly ascertain if grid mode is required in a moment
       foreach($entities as $entity)        
         self::$occurrenceIds[] = $entity['id']; // the occurrence ID
+      $gridMode = self::getGridMode($args);
       foreach($entities as $entity){
         data_entry_helper::$entity_to_load['occurrence:record_status']=$entity['record_status'];
-        if (self::getGridMode($args)) 
+        if ($gridMode) {
           data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
-        else {
+		  data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':occurrence:comment'] = $entity['comment'];
+        } else {
           data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id']=$entity['taxa_taxon_list_id'];
           data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$entity['taxon'];          
         }
@@ -522,7 +532,6 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   private static function get_all_tabs($structure, $attrTabs) {
     $structureArr = explode("\r\n", $structure);
     $structureTabs = array();
-    print_r($structureArr);
     foreach ($structureArr as $component) {
       if (preg_match('/^=[A-Za-z0-9 \*]+=$/', trim($component), $matches)===1) {
         $currentTab = substr($matches[0], 1, -1);
@@ -583,7 +592,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'columns'=>1,          
           'extraParams'=>$extraParams,
-          'survey_id'=>$args['survey_id']
+          'survey_id'=>$args['survey_id'],
+		  'occurrenceComment'=>$args['occurrence_comment']
       );
       if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
@@ -622,7 +632,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
             '<span>{caption}</span>';
       }
       // Dynamically generate the species selection control required.
-     return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+     $r = call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     }
   }
   
@@ -657,7 +667,13 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       }
       $attributes = data_entry_helper::getAttributes($attrArgs);
       $defAttrOptions = array('extraParams'=>$auth['read']);
-      return self::get_attribute_html($attributes, $defAttrOptions);
+      $r = self::get_attribute_html($attributes, $defAttrOptions);
+	  if ($args['occurrence_comment'])
+        $r .= data_entry_helper::textarea(array(
+          'fieldname'=>'occurrence:comment',
+          'label'=>lang::get('Record Comment')
+        )); 
+	  return $r;
     } else 
       // in grid mode the attributes are embedded in the grid.
       return '';
@@ -931,6 +947,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
               "[sample comment]\r\n".
               "[*]\r\n".
               "=*=";
+    if (!isset($args['occurrence_comment']))
+	  $args['occurrence_comment'] == false; 
   }
 
 }
