@@ -2406,6 +2406,8 @@ class data_entry_helper extends helper_config {
   * if this is not specified then 1 hour.</li>
   * <li><b>survey_id</b><br/>
   * Optional. Used to determine which attributes are valid for this website/survey combination</li>
+  * <li><b>occurrenceComment</b><br/>
+  * Optional. If set to true, then an occurrence comment input field is included on each row.</li>
   * <li><b>attrCellTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each cell containing an attribute input control. Valid replacements are {label} and {content}.
@@ -2420,15 +2422,12 @@ class data_entry_helper extends helper_config {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     $options = self::get_species_checklist_options($options);
-
     self::add_resource('json');
     self::add_resource('autocomplete');
     $occAttrControls = array();
     $occAttrs = array();
-
     $taxaThatExist = array();
     $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
-
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist))
     {
@@ -2444,7 +2443,7 @@ class data_entry_helper extends helper_config {
       ));
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
-      $grid = '';
+      $grid = '';	
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls);
       }
@@ -2491,11 +2490,11 @@ class data_entry_helper extends helper_config {
         }
         if ($options['checkboxCol']=='true') {
           if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
-            $checked = ' checked="checked"';
+            $checked = ' checked="checked"';			
           } else {
             $checked='';
           }
-          $row .= "\n<td class='scPresenceCell'><input type='checkbox' name='sc:$id:$existing_record_id:present' $checked /></td>";
+          $row .= "\n<td class=\"scPresenceCell\"><input type=\"checkbox\" name=\"sc:$id:$existing_record_id:present\" $checked /></td>";
         }
         foreach ($occAttrControls as $attrId => $control) {
           $oc = str_replace('{ttlId}', $id, $control);
@@ -2529,6 +2528,10 @@ class data_entry_helper extends helper_config {
             }
           }
           $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributesForThisRow[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
+        }
+		if ($options['occurrenceComment']) {
+          $row .= "\n<td class=\"ui-widget-content\"><input class=\"control-width-4\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
+		      "value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
         if ($rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
@@ -2578,6 +2581,9 @@ class data_entry_helper extends helper_config {
         foreach ($occAttrs as $a) {
           $r .= "<th>$a</th>";
         }
+		if ($options['occurrenceComment']) {
+          $r .= "<th>".lang::get('Comment')."</th>";
+        }
       }
       $r .= '</tr></thead>';
       return $r;
@@ -2606,7 +2612,7 @@ class data_entry_helper extends helper_config {
       $extraTaxonOptions = array_merge(array(), $options);
       // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
       unset($extraTaxonOptions['extraParams']['taxon_list_id']);
-	    unset($extraTaxonOptions['extraParams']['preferred']);
+      unset($extraTaxonOptions['extraParams']['preferred']);
       unset($extraTaxonOptions['extraParams']['language_iso']);
       // create an array to hold the IDs, so that get_population_data can construct a single IN query, faster
       // than multiple requests.
@@ -2648,6 +2654,7 @@ class data_entry_helper extends helper_config {
         'checkboxCol'=>'true',
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
+		'occurrenceComment' => false,
         'id' => 'species-grid-'.rand(0,1000)
     ), $options);
     
@@ -2740,14 +2747,16 @@ class data_entry_helper extends helper_config {
     $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
     if ($options['checkboxCol']=='true') {
-
-      $r .= "<td class=\"scPresenceCell\"><input type='checkbox' name='' value='' /></td>";
+      $r .= '<td class="scPresenceCell"><input type="checkbox" name="" value="" /></td>';
     }
     foreach ($occAttrControls as $attrId=>$oc) {
       $r .= str_replace('{content}', 
           str_replace('{fieldname}', "sc:{ttlId}::occAttr:$attrId", $oc),
           $indicia_templates['attribute_cell']
       );
+    }
+	if ($options['occurrenceComment']) {
+      $r .= '<td class=\"ui-widget-content\"><input class=\"control-width-4\" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
     }
     $r .= "</tr></tbody></table>";
     return $r;
@@ -4047,6 +4056,8 @@ if (errors.length>0) {
     }
     // Species checklist entries take the following format
     // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
+	// or
+	// sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence:comment]
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
