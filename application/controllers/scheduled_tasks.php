@@ -44,7 +44,15 @@ class Scheduled_Tasks_Controller extends Controller {
    * to run the scheduled tasks.
    */
   public function index() {
+    $this->last_run_date = ORM::Factory('system', 1)->getLastScheduledTaskCheck();    
+    // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
+    $currentTime = time();
     $this->checkTriggers();
+    $swift = email::connect();
+    $this->doRecordOwnerNotifications($swift);
+    $this->doDigestNotifications($swift);    
+    // mark the time of the last scheduled task check, so we can get diffs next time
+    $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
     echo "Ok!";
   }
   
@@ -54,10 +62,6 @@ class Scheduled_Tasks_Controller extends Controller {
   */
   protected function checkTriggers() {
     echo "Checking triggers<br/>";
-    // @todo Need to get the timestamp of last run
-    $this->last_run_date = ORM::Factory('system', 1)->getLastScheduledTaskCheck();    
-    // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
-    $currentTime = time();
     // Override escaping in the database config, since we don't want it for our queries.
     $dbConfig = Kohana::config('database.default');
     $dbConfig['escape'] = false;    
@@ -123,16 +127,12 @@ class Scheduled_Tasks_Controller extends Controller {
         }        
       }      
     }
-    $this->doDigestNotifications();
-    $this->db
-        ->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
   }
   
   /**
   * Takes any notifications stored in the database and builds emails to send for any that are now due.
   */
-  private function doDigestNotifications() {
-    $swift = email::connect();
+  private function doDigestNotifications($swift) {
     // First, build a list of the notifications we are going to do    
     $digestTypes = array('I');
     $date = getdate();    
@@ -277,4 +277,103 @@ class Scheduled_Tasks_Controller extends Controller {
     $r .= "</tbody>\n</table>\n";
     return $r;
   }
+  
+  /**
+   * Look for records posted by recorders who have given their email address and want to receive a summary of the record they are posting.
+   */
+  private function doRecordOwnerNotifications($swift) {
+    // Get a list of the records which contributors want to get a summary back for
+    $emailsRequired = $this->db
+        ->select('DISTINCT occurrences.id as occurrence_id, sav2.text_value as email_address, surveys.title as survey')
+        ->from('occurrences')
+        ->join('samples', 'samples.id', 'occurrences.sample_id')
+        ->join('surveys', 'surveys.id', 'samples.survey_id')
+        ->join('sample_attribute_values as sav1', 'sav1.sample_id', 'samples.id')
+        ->join('sample_attributes sa1', 'sa1.id', 'sav1.sample_attribute_id')
+        ->join('sample_attribute_values as sav2', 'sav2.sample_id', 'samples.id')
+        ->join('sample_attributes sa2', 'sa2.id', 'sav2.sample_attribute_id')
+        ->where(array(
+            'sa1.caption'=>'\'Email me a copy of the record\'', 
+            'sa2.caption'=>'\'Email\'', 
+            'samples.created_on>=' => '\''.$this->last_run_date.'\''
+        ))
+        ->get();
+    
+    // get a list of the records we need details of, so we can hit the db more efficiently.
+    $recordsToFetch = array();
+    foreach ($emailsRequired as $email) {
+      $recordsToFetch[] = $email->occurrence_id;
+    }
+    $occurrences = $this->db
+        ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, '.
+            's.location_name, o.comment as sample_comment, o.comment as occurrence_comment')
+        ->from('samples s')
+        ->join('occurrences o','o.sample_id','s.id')
+        ->join('list_taxa_taxon_lists ttl','ttl.id','o.taxa_taxon_list_id')
+        ->in('o.id',$recordsToFetch)
+        ->get();
+    // Copy the occurrences to an array so we can build a structured list of data, keyed by ID
+    $occurrenceArray = array();
+    foreach ($occurrences as $occurrence) {
+      $occurrenceArray[$occurrence->id] = $occurrence;
+    }
+    $attrArray = array();
+    // Get the sample attributes
+    $attrValues = $this->db
+        ->select('o.id, av.caption, av.value')
+        ->from('list_sample_attribute_values av')
+        ->join('samples s','s.id','av.sample_id')
+        ->join('occurrences o','o.sample_id','s.id')        
+        ->in('o.id',$recordsToFetch)
+        ->get();
+    foreach ($attrValues as $attrValue) {
+      $attrArray[$attrValue->id][$attrValue->caption] = $attrValue->value;
+    }
+    // Get the occurrence attributes
+    $attrValues = $this->db
+        ->select('av.occurrence_id, av.caption, av.value')
+        ->from('list_occurrence_attribute_values av')        
+        ->in('av.occurrence_id',$recordsToFetch)
+        ->get();
+    foreach ($attrValues as $attrValue) {
+      $attrArray[$attrValue->occurrence_id][$attrValue->caption] = $attrValue->value;
+    }
+    $email_config = Kohana::config('email');
+    foreach ($emailsRequired as $email) {
+      $emailContent = 'Thank you for sending your record to '.$email->survey.'. Here are the details of your contribution for your records.<br/><table>';
+      $this->addArrayToEmailTable($email->occurrence_id, $occurrenceArray, $emailContent);
+      $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
+      $emailContent .= "</table>";
+      
+      $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
+                                     'text/html');
+      $recipients = new Swift_RecipientList();            
+      $recipients->addTo($email->email_address);            
+      // send the email            
+      $swift->send($message, $recipients, $email_config['address']);
+    }
+  }
+  
+  /*
+  * Takes the content of an array keyed bby occurrence ID, looks up the item for the required 
+  * occurrence, and puts the content of this item into a set of rows (one row per name/value pair)
+  * with one table cell for the key, and one for the value
+  */
+  private function addArrayToEmailTable($occurrenceId, $array, &$emailContent) {
+    $excludedFields = array('date_end','date_type','Email me a copy of the record','CMS Username','CMS User ID','Email','Happy for Contact?');
+    foreach ($array[$occurrenceId] as $field=>$value) {
+      if ($field=='date_start') {
+        $value = vague_date::vague_date_to_string(array(
+          $array[$occurrenceId]->date_start,
+          $array[$occurrenceId]->date_end,
+          $array[$occurrenceId]->date_type
+        ));
+        $field = 'date';
+      }
+      if (!empty($value) && !in_array($field, $excludedFields)) {
+        $emailContent .= "<tr><td>$field</td><td>$value</td></tr>";
+      }
+    }
+  }
+   
 }
