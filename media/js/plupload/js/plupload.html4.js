@@ -153,13 +153,19 @@
 
 						// Reset action and target
 						/// JVB changed this to fix bug where it is not reset if the action or target is null
-						//if (form.tmpAction) {
-							form.setAttribute("action", form.tmpAction);
-						//}
+						if (form.tmpAction) {
+							form.setAttribute('action', form.tmpAction);
+						}
+            else {
+              form.removeAttribute('action');
+            }
 
-						//if (form.tmpTarget) {
-							form.setAttribute("target", form.tmpTarget);
-						//}
+						if (form.tmpTarget) {
+							form.setAttribute('target', form.tmpTarget);
+						}
+            else {
+              form.removeAttribute('target');
+            }
 					}
 				});
 
