@@ -7,7 +7,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     // replace each field in the label template
     $.each(data, function(field, value) {
       regex = new RegExp('\\{' + field + '\\}', 'g');
-      label = label.replace(regex, value==null ? '' : value);
+      label = label.replace(regex, value===null ? '' : value);
     });
     // clear the event handler
     $(event.target).unbind('result', handleSelectedTaxon);
@@ -18,6 +18,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     $(taxonCell).html(label);
     // Replace the tags in the row template with the taxa_taxon_list_ID
     row.innerHTML = row.innerHTML.replace(/\{ttlId\}/g, data.id);
+	$(row).find('.add-image-link').show();
     // auto-check the row
     var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');
@@ -39,7 +40,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     var newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
     // build an auto-complete control for selecting the species to add to the bottom of the grid
     selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].childElementCount;
-    var speciesSelector = '<input type="text" id="' + selectorId + '" />'
+    var speciesSelector = '<input type="text" id="' + selectorId + '" />';
     // put this inside the new row template in place of the species label.
     $(newRow).html($(newRow.html().replace('{content\}', speciesSelector)));
     // add the row to the bottom of the grid
@@ -68,7 +69,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
         return results;
       },
       formatItem: function(item) {
-        return item.taxon; alert('here');
+        return item.taxon;
       }
     });
     ctrl.bind('result', handleSelectedTaxon);
@@ -79,7 +80,44 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
       // slide the body upwards so the grid entry box remains in view, as does the drop down content on the autocomplete for taxa
       $('html,body').animate({scrollTop: newTop}, 500);       
     }
-  }
+  };
   
   makeSpareRow(false);
 }
+
+$('.add-image-link').live('click', function(evt) {
+  evt.preventDefault();
+  var ctrlId='file-box-'+evt.target.id;
+  ctrlId = ctrlId.replace(/:/g,'-');
+  colspan = $($(evt.target).parent().parent()).children().length;
+  var imageRow = '<tr><td colspan="' + colspan + '">';
+  imageRow += '<div class="file-box" id="' + ctrlId + '"></div>';
+  imageRow += '</td></tr>';
+  $($(evt.target).parent().parent()).after(imageRow);
+  $('#' + ctrlId).uploader({
+    caption : 'Files',
+	  //id : 'occurrence_image-',
+	  //upload : '1',
+	  maxFileCount : '4',
+	  autoupload : '1',
+	  flickr : '',
+	  uploadSelectBtnCaption : 'Select file(s)',
+	  //flickrSelectBtnCaption : 'Choose photo from Flickr',
+	  startUploadBtnCaption : 'Start upload',
+	  msgUploadError : 'An error occurred uploading the file.',
+	  msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
+	  runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
+	  imagewidth : '250',
+	  uploadScript : '/bioblitz/sites/all/modules/iform/client_helpers/upload.php',
+	  destinationFolder : '/bioblitz/sites/all/modules/iform/client_helpers/upload/',
+	  swfAndXapFolder : 'sites/all/modules/iform/client_helpers/plupload/',
+	  buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
+	  table : evt.target.id.replace('images','sc') + ':occurrence_image',
+	  maxUploadSize : '1048576',
+	  jsPath : 'sites/all/modules/iform/media/js/'
+	  //codeGenerated : 'all',
+	  //label : 'Upload your photos',
+	  //tabDiv : 'species'
+  });
+  $(evt.target).hide();
+});

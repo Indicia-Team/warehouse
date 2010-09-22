@@ -165,7 +165,7 @@
                 .replace(/\{idValue\}/g, '') // Set ID to blank, as this is a new record.
           );
           // Copy the path into the hidden path input. Watch colon escaping for jQuery selectors.
-          $('#' + div.settings.table + '\\:path\\:' + file.id).val(file.name);
+          $('#' + div.settings.table.replace(/:/g,'\\:') + '\\:path\\:' + file.id).val(file.name);
         }
       });
       
