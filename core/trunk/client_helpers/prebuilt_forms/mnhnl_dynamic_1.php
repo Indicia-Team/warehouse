@@ -159,6 +159,14 @@ class iform_mnhnl_dynamic_1 {
 		  'default'=>false,
 		  'group'=>'Species'
 		),
+		array(
+          'name'=>'occurrence_images',
+          'caption'=>'Occurrence Images',
+          'description'=>'Should occurrences allow images to be uploaded?',
+          'type'=>'boolean',
+		  'default'=>false,
+		  'group'=>'Species'
+		),
         array(
           'name'=>'list_id',
           'caption'=>'Initial Species List ID',
@@ -242,25 +250,21 @@ class iform_mnhnl_dynamic_1 {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
-    $mode = 0; // default mode : display survey selector
+    $mode = 0; // default mode : display grid of existing data
     			// mode 1: display new sample
     			// mode 2: display existing sample
     $loadID = null;
-    $displayThisOcc = true; // when populating from the DB rather than POST we have to be
-    						            // careful with selection object, as geom in wrong format.
     if ($_POST) {
     	if(!is_null(data_entry_helper::$entity_to_load)){
-			  $mode = 2; // errors with new sample, entity poulated with post, so display this data.
+	      $mode = 2; // errors with new sample, entity populated with post, so display this data.
     	} // else valid save, so go back to gridview: default mode 0
-    } else {
-  		if (array_key_exists('sample_id', $_GET)){
-		    $mode = 2;
-		    $loadID = $_GET['sample_id'];
-      } else if (array_key_exists('newSample', $_GET)){
-        $mode = 1;
-        data_entry_helper::$entity_to_load = array();
-      } // else default to mode 0
-    }
+    } elseif (array_key_exists('sample_id', $_GET)){
+      $mode = 2;
+      $loadID = $_GET['sample_id'];
+    } else if (array_key_exists('newSample', $_GET)){
+      $mode = 1;
+      data_entry_helper::$entity_to_load = array();
+	} // else default to mode 0
     
     $attributes = data_entry_helper::getAttributes(array(
     	'id' => data_entry_helper::$entity_to_load['sample:id']
@@ -295,39 +299,19 @@ locStyleMap = new OpenLayers.StyleMap({
 locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
                                     {styleMap: locStyleMap});
 ";
-    
     if($loadID){      
       $url = $svcUrl.'/data/sample/'.$loadID;
       $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entity = json_decode(curl_exec($session), true);
-      // Attributes should be loaded by get_attributes.
+      // Build a list of the sample data.
       data_entry_helper::$entity_to_load = array();
       foreach($entity[0] as $key => $value){
         data_entry_helper::$entity_to_load['sample:'.$key] = $value;
       }
-      $url = $svcUrl.'/data/occurrence';
-      $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&sample_id=".$loadID."&deleted=FALSE";
-      $session = curl_init($url);
-      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-      $entities = json_decode(curl_exec($session), true);
-      // first get a list of all occurrence ids, so we can correctly ascertain if grid mode is required in a moment
-      foreach($entities as $entity)        
-        self::$occurrenceIds[] = $entity['id']; // the occurrence ID
-      $gridMode = self::getGridMode($args);
-      foreach($entities as $entity){
-        data_entry_helper::$entity_to_load['occurrence:record_status']=$entity['record_status'];
-        if ($gridMode) {
-          data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
-		  data_entry_helper::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':occurrence:comment'] = $entity['comment'];
-        } else {
-          data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id']=$entity['taxa_taxon_list_id'];
-          data_entry_helper::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$entity['taxon'];          
-        }
-      }
-      data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
-      data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.      
+	  data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
+      data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
     }	
     $defAttrOptions = array('extraParams'=>$auth['read']);
         
@@ -426,7 +410,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           // Component surrounded by [] so represents a control
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
           if (method_exists('iform_mnhnl_dynamic_1', $method)) 
-            $r .= self::$method($auth, $args);
+            $r .= self::$method($auth, $args, $alias);
           elseif (trim($component)==='[*]')
             $r .= self::get_attribute_html($attributes, $defAttrOptions, $tab);
           else          
@@ -545,7 +529,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     // If any additional tabs are required by attributes, add them to the position marked by a dummy tab named [*].
     // First get rid of any tabs already in the structure
     foreach ($attrTabs as $tab => $tabContent) {
-      if (array_key_exists($tab, $structureTabs))
+      // case -insensitive check if attribute tab already in form structure
+      if (in_array(strtolower($tab), array_map('strtolower', array_keys($structureTabs))))
         unset($attrTabs[$tab]);
     }
     // Now we have a list of form structure tabs, with the position of the $attrTabs marked by *. So join it all together.
@@ -563,10 +548,10 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   /** 
    * Get the map control.
    */
-  private static function get_control_map($auth, $args) {
+  private static function get_control_map($auth, $args, $alias) {
     $options = iform_map_get_map_options($args, $auth['read']);
     $options['layers'][] = 'locationLayer';
-    $options['tabDiv'] = 'place';
+    $options['tabDiv'] = $alias;
     $olOptions = iform_map_get_ol_options($args);
     return data_entry_helper::map_panel($options, $olOptions);
   }
@@ -593,7 +578,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'columns'=>1,          
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
-		  'occurrenceComment'=>$args['occurrence_comment']
+		  'occurrenceComment'=>$args['occurrence_comment'],
+		  'occurrenceImages'=>$args['occurrence_images']
       );
       if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
@@ -632,7 +618,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
             '<span>{caption}</span>';
       }
       // Dynamically generate the species selection control required.
-     $r = call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+     return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     }
   }
   
@@ -650,7 +636,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   /**
    * Get the block of custom attributes at the species (occurrence) level
    */
-  private static function get_control_speciesattributes($auth, $args) {
+  private static function get_control_speciesattributes($auth, $args, $alias) {
     if (!self::getGridMode($args)) {  
       // Add any dynamically generated controls
       $attrArgs = array(
@@ -673,6 +659,12 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'fieldname'=>'occurrence:comment',
           'label'=>lang::get('Record Comment')
         )); 
+      if ($args['occurrence_images'])
+        $r .= data_entry_helper::file_box(array(
+          'table'=>'occurrence_image',
+          'label'=>lang::get('Upload your photos'),
+		  'tabDiv'=>$alias
+        ));
 	  return $r;
     } else 
       // in grid mode the attributes are embedded in the grid.
@@ -949,6 +941,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
               "=*=";
     if (!isset($args['occurrence_comment']))
 	  $args['occurrence_comment'] == false; 
+	if (!isset($args['occurrence_images']))
+	  $args['occurrence_images'] == false; 
   }
 
 }

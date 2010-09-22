@@ -595,6 +595,8 @@ class data_entry_helper extends helper_config {
   * <li><b>table</b><br/>
   * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
   * Defaults to occurrence_image.
+  * <li><b>id</b><br/>
+  * Optional. Provide a unique identifier for this image uploader control if more than one are required on the page.
   * <li><b>caption</b><br/>
   * Caption to display at the top of the uploader box. Defaults to the translated string for "Files".
   * </li>
@@ -687,6 +689,7 @@ class data_entry_helper extends helper_config {
     // Allow options to be defaulted and overridden
     $defaults = array(
       'caption' => lang::get('Files'),
+	  'id' => 'default',
       'upload' => true,
       'maxFileCount' => 4,
       'autoupload' => false,
@@ -714,7 +717,8 @@ class data_entry_helper extends helper_config {
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('flash'));
     if ($browser['name']=='chrome')
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('html5'));
-    $options['id'] = str_replace('_', ':', $options['table']);
+	$options['id'] = $options['table'].'-'.$options['id'];
+	$containerId = 'container-'.$options['id'];
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
     if ($indicia_templates['file_box_initial_file_info']!='')
@@ -732,7 +736,7 @@ class data_entry_helper extends helper_config {
       // convert runtimes list to plupload format
       $options['runtimes'] = implode(',', $options['runtimes']);
 
-      $javascript = "\n$('.file-box').uploader({";
+      $javascript = "\n$('#$containerId').uploader({";
       // Just pass the options array through
       $idx = 0;
       foreach($options as $option=>$value) {
@@ -760,21 +764,24 @@ class data_entry_helper extends helper_config {
     elseif ($options['codeGenerated']=='all') {
       if (isset($options['tabDiv'])) {
         // The file box is displayed on a tab, so we must only generate it when the tab is displayed.
-        self::$onload_javascript .=
-            "var tabHandler = function(event, ui) { \n";
-        self::$onload_javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ";
-      }
-      self::$onload_javascript .= $javascript;
-      if (isset($options['tabDiv'])) {
-        self::$onload_javascript .= "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n";
-        self::$onload_javascript .= "  }\n};\n";
-        self::$onload_javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
-      }
+        $javascript =
+            "var tabHandler = function(event, ui) { \n".
+            "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ".
+			$javascript.
+			"    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n".
+            "  }\n};\n".
+            "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
+	    // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
+		// first tab cannot fire the event
+		self::$javascript = $javascript . self::$javascript;
+      }	else
+        self::$onload_javascript .= $javascript;
     }
     // Output a placeholder div for the jQuery plugin. Also output a normal file input for the noscripts
     // version.
-    return '<div class="file-box" id="container-'.$options['id'].'"></div><noscript>'.self::image_upload(array(
+    return '<div class="file-box" id="'.$containerId.'"></div><noscript>'.self::image_upload(array(
       'label' => $options['caption'],
+	  // Convert table into a psuedo field name for the images
       'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
@@ -2408,6 +2415,8 @@ class data_entry_helper extends helper_config {
   * Optional. Used to determine which attributes are valid for this website/survey combination</li>
   * <li><b>occurrenceComment</b><br/>
   * Optional. If set to true, then an occurrence comment input field is included on each row.</li>
+  * <li><b>occurrenceImages</b><br/>
+  * Optional. If set to true, then images can be uploaded for each occurrence row.</li>
   * <li><b>attrCellTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each cell containing an attribute input control. Valid replacements are {label} and {content}.
@@ -2424,10 +2433,35 @@ class data_entry_helper extends helper_config {
     $options = self::get_species_checklist_options($options);
     self::add_resource('json');
     self::add_resource('autocomplete');
+	if (isset($options['occurrenceImages']) && $options['occurrenceImages']) 
+	  self::add_resource('plupload');
     $occAttrControls = array();
     $occAttrs = array();
     $taxaThatExist = array();
-    $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
+	
+	  if (isset(self::$entity_to_load['sample:id']) && is_null(self::$validation_errors)) {
+        $url = $svcUrl.'/data/occurrence';
+        $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&sample_id=".self::$entity_to_load['sample:id']."&deleted=FALSE";
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entities = json_decode(curl_exec($session), true);
+        // first get a list of all occurrence ids, so we can correctly ascertain if grid mode is required in a moment
+        foreach($entities as $entity)        
+          self::$occurrenceIds[] = $entity['id']; // the occurrence ID
+        $gridMode = self::getGridMode($args);
+        foreach($entities as $entity){
+          self::$entity_to_load['occurrence:record_status']=$entity['record_status'];
+          if ($gridMode) {
+            self::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
+		    self::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':occurrence:comment'] = $entity['comment'];
+          } else {
+            self::$entity_to_load['occurrence:taxa_taxon_list_id']=$entity['taxa_taxon_list_id'];
+            self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$entity['taxon'];          
+          }
+		}
+      }
+	  
+	$taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist))
     {
@@ -2467,23 +2501,25 @@ class data_entry_helper extends helper_config {
         // record ID if if exists.
         $attributesForThisRow = $attributes;
         $existing_record_id = '';
-        // Are we reloading any data for this row?
-        if (self::$entity_to_load && in_array($id, $taxaThatExist)) {
+        // Are we reloading any data for this row? Don't load from the db if reloading after a validation failure
+		// as the data is in the $_POST
+        if (is_null(self::$validation_errors) && self::$entity_to_load && in_array($id, $taxaThatExist)) {
           foreach (self::$entity_to_load as $key => $value){
             $parts = explode(':', $key);
             if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
               $existing_record_id = $parts[2];
-              // As this is an existing row, we need to reload the attributes data with the row values
-              // @todo Optimisation to get all the data in one service call
-              $attributesForThisRow = self::getAttributes(array(
-                  'id' => $existing_record_id
-                  ,'valuetable'=>'occurrence_attribute_value'
-                  ,'attrtable'=>'occurrence_attribute'
-                  ,'key'=>'occurrence_id'
-                  ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
-                  ,'extraParams'=>$options['readAuth']
-                  ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
-              ));
+			  if (!empty($existing_record_id))
+                // As this is an existing row, we need to reload the attributes data with the row values
+                // @todo Optimisation to get all the data in one service call
+                $attributesForThisRow = self::getAttributes(array(
+                    'id' => $existing_record_id
+                    ,'valuetable'=>'occurrence_attribute_value'
+                    ,'attrtable'=>'occurrence_attribute'
+                    ,'key'=>'occurrence_id'
+                    ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
+                    ,'extraParams'=>$options['readAuth']
+                    ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
+                ));
               break;
             }
           }
@@ -2532,6 +2568,9 @@ class data_entry_helper extends helper_config {
 		if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content\"><input class=\"control-width-4\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
 		      "value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
+        }
+		if ($options['occurrenceImages']) {
+          $row .= "\n<td class=\"ui-widget-content\"><a href=\"\" class=\"add-image-link\" id=\"images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
         }
         if ($rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
@@ -2583,6 +2622,9 @@ class data_entry_helper extends helper_config {
         }
 		if ($options['occurrenceComment']) {
           $r .= "<th>".lang::get('Comment')."</th>";
+        }
+		if ($options['occurrenceImages']) {
+          $r .= "<th>".lang::get('Images')."</th>";
         }
       }
       $r .= '</tr></thead>';
@@ -2655,6 +2697,7 @@ class data_entry_helper extends helper_config {
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
 		'occurrenceComment' => false,
+		'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000)
     ), $options);
     
@@ -2756,8 +2799,12 @@ class data_entry_helper extends helper_config {
       );
     }
 	if ($options['occurrenceComment']) {
-      $r .= '<td class=\"ui-widget-content\"><input class=\"control-width-4\" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
+      $r .= '<td class="ui-widget-content"><input class="control-width-4" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
     }
+	if ($options['occurrenceComment']) {
+	  // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
+      $r .= '<td class=\"ui-widget-content\"><a href="" class="add-image-link" style="display: none" id="images:{ttlId}:">'.lang::get('add images').'</a></td>';
+	}
     $r .= "</tr></tbody></table>";
     return $r;
   }
@@ -4057,7 +4104,9 @@ if (errors.length>0) {
     // Species checklist entries take the following format
     // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
 	// or
-	// sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence:comment]
+	// sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence:comment
+	// or
+	// sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
@@ -4091,6 +4140,7 @@ if (errors.length>0) {
         $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
         $occ = data_entry_helper::wrap($record, 'occurrence');
         $occ['metaFields']['occAttributes']['value'] = $occAttrs;
+		self::attachOccurrenceImagesToModel($occ, $record);
         $subModels[] = array(
           'fkId' => 'sample_id',
           'model' => $occ
@@ -4098,6 +4148,30 @@ if (errors.length>0) {
       }
     }
     return $subModels;
+  }
+  
+  /**
+   * When wrapping a species checklist submission, scan the contents of the data for a single grid row to 
+   * look for attached images. If found they are attached to the occurrence model as sub-models.
+   */
+  private static function attachOccurrenceImagesToModel(&$occ, $record) {
+    $images = array();
+    foreach ($record as $key=>$value) {
+	  if (substr($key, 0, 17)=='occurrence_image:') {
+	    $tokens = explode(':', $key);
+		// build an array of the data keyed by the unique image id (token 2)
+		$images[$tokens[2]][$tokens[1]] = array('value' => $value);
+	  }
+	}
+	foreach($images as $image => $data) {
+	  $occ['subModels'][] = array(
+	    'fkId' => 'occurrence_id',
+		'model' => array(
+		  'id' => 'occurrence_image',
+		  'fields' => $data
+		)
+	  );
+	}
   }
 
   /**
