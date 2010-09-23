@@ -1,3 +1,22 @@
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ */
+
+/**
+ * Helper methods for additional JavaScript functionality required by the species_checklist control.
+ */
+ 
 function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
 	
   // inner function to handle a selection of a taxon from the autocomplete
@@ -18,7 +37,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     $(taxonCell).html(label);
     // Replace the tags in the row template with the taxa_taxon_list_ID
     row.innerHTML = row.innerHTML.replace(/\{ttlId\}/g, data.id);
-	$(row).find('.add-image-link').show();
+    $(row).find('.add-image-link').show();
     // auto-check the row
     var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');
@@ -85,6 +104,11 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
   makeSpareRow(false);
 }
 
+/**
+ * Click handler for the add image link that is displayed alongside each occurrence row in the grid once 
+ * it has been linked to a taxon. Adds a row to the grid specifically to contain a file uploader for images
+ * linked to that occurrence.
+ */
 $('.add-image-link').live('click', function(evt) {
   evt.preventDefault();
   var ctrlId='file-box-'+evt.target.id;
@@ -96,28 +120,22 @@ $('.add-image-link').live('click', function(evt) {
   $($(evt.target).parent().parent()).after(imageRow);
   $('#' + ctrlId).uploader({
     caption : 'Files',
-	  //id : 'occurrence_image-',
-	  //upload : '1',
-	  maxFileCount : '4',
-	  autoupload : '1',
-	  flickr : '',
-	  uploadSelectBtnCaption : 'Select file(s)',
-	  //flickrSelectBtnCaption : 'Choose photo from Flickr',
-	  startUploadBtnCaption : 'Start upload',
-	  msgUploadError : 'An error occurred uploading the file.',
-	  msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
-	  runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
-	  imagewidth : '250',
-	  uploadScript : '/bioblitz/sites/all/modules/iform/client_helpers/upload.php',
-	  destinationFolder : '/bioblitz/sites/all/modules/iform/client_helpers/upload/',
-	  swfAndXapFolder : 'sites/all/modules/iform/client_helpers/plupload/',
-	  buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
-	  table : evt.target.id.replace('images','sc') + ':occurrence_image',
-	  maxUploadSize : '1048576',
-	  jsPath : 'sites/all/modules/iform/media/js/'
-	  //codeGenerated : 'all',
-	  //label : 'Upload your photos',
-	  //tabDiv : 'species'
+    maxFileCount : '4',
+    autoupload : '1',
+    flickr : '',
+    uploadSelectBtnCaption : 'Select file(s)',
+    startUploadBtnCaption : 'Start upload',
+    msgUploadError : 'An error occurred uploading the file.',
+    msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
+    runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
+    imagewidth : '250',
+    uploadScript : uploadScript,
+    destinationFolder : destinationFolder,
+    swfAndXapFolder : swfAndXapFolder,
+    jsPath : jsPath,
+    buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
+    table : evt.target.id.replace('images','sc') + ':occurrence_image',
+    maxUploadSize : '1048576'    
   });
   $(evt.target).hide();
 });

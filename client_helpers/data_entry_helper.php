@@ -689,7 +689,7 @@ class data_entry_helper extends helper_config {
     // Allow options to be defaulted and overridden
     $defaults = array(
       'caption' => lang::get('Files'),
-	  'id' => 'default',
+      'id' => 'default',
       'upload' => true,
       'maxFileCount' => 4,
       'autoupload' => false,
@@ -705,10 +705,10 @@ class data_entry_helper extends helper_config {
       'uploadScript' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . 'upload.php',
       'destinationFolder' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder,
       'swfAndXapFolder' => $relpath . 'plupload/',
+      'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
-      'jsPath' => self::$js_path,
       'codeGenerated' => 'all'
     );
     $browser = self::get_browser_info();
@@ -717,8 +717,8 @@ class data_entry_helper extends helper_config {
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('flash'));
     if ($browser['name']=='chrome')
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('html5'));
-	$options['id'] = $options['table'].'-'.$options['id'];
-	$containerId = 'container-'.$options['id'];
+    $options['id'] = $options['table'].'-'.$options['id'];
+    $containerId = 'container-'.$options['id'];
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
     if ($indicia_templates['file_box_initial_file_info']!='')
@@ -2433,39 +2433,27 @@ class data_entry_helper extends helper_config {
     $options = self::get_species_checklist_options($options);
     self::add_resource('json');
     self::add_resource('autocomplete');
-	if (isset($options['occurrenceImages']) && $options['occurrenceImages']) 
-	  self::add_resource('plupload');
+	  if ($options['occurrenceImages']) {
+	    self::add_resource('plupload');
+      // store some globals that we need later when creating uploaders
+      $relpath = self::relative_client_helper_path();
+      $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+      self::$javascript .= "uploadScript = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "upload.php';\n";
+      self::$javascript .= "destinationFolder = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder."';\n";
+      self::$javascript .= "swfAndXapFolder = '".$relpath . "plupload/';\n";
+      self::$javascript .= "jsPath = '".self::$js_path."';\n";
+    }
     $occAttrControls = array();
     $occAttrs = array();
     $taxaThatExist = array();
-	
-	  if (isset(self::$entity_to_load['sample:id']) && is_null(self::$validation_errors)) {
-        $url = $svcUrl.'/data/occurrence';
-        $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&sample_id=".self::$entity_to_load['sample:id']."&deleted=FALSE";
-        $session = curl_init($url);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $entities = json_decode(curl_exec($session), true);
-        // first get a list of all occurrence ids, so we can correctly ascertain if grid mode is required in a moment
-        foreach($entities as $entity)        
-          self::$occurrenceIds[] = $entity['id']; // the occurrence ID
-        $gridMode = self::getGridMode($args);
-        foreach($entities as $entity){
-          self::$entity_to_load['occurrence:record_status']=$entity['record_status'];
-          if ($gridMode) {
-            self::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':present'] = true;
-		    self::$entity_to_load['sc:'.$entity['taxa_taxon_list_id'].':'.$entity['id'].':occurrence:comment'] = $entity['comment'];
-          } else {
-            self::$entity_to_load['occurrence:taxa_taxon_list_id']=$entity['taxa_taxon_list_id'];
-            self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$entity['taxon'];          
-          }
-		}
-      }
-	  
-	$taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
+    
+    // Load any existing sample's occurrence data into $entity_to_load
+    if (isset(self::$entity_to_load['sample:id']))
+      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth']);
+    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.  
+	  $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
     // If we managed to read the species list data we can proceed
-    if (! array_key_exists('error', $taxalist))
-    {
-      $url = parent::$base_url."index.php/services/data";
+    if (! array_key_exists('error', $taxalist)) {
       $attributes = self::getAttributes(array(
           'id' => null
            ,'valuetable'=>'occurrence_attribute_value'
@@ -2475,6 +2463,7 @@ class data_entry_helper extends helper_config {
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
+    
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $grid = '';	
@@ -2497,32 +2486,12 @@ class data_entry_helper extends helper_config {
         $row = str_replace('{content}', $firstCell,
             str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell'])
         );
-        // go through list in entity to load and find first entry for this taxon, then extract the
-        // record ID if if exists.
-        $attributesForThisRow = $attributes;
-        $existing_record_id = '';
-        // Are we reloading any data for this row? Don't load from the db if reloading after a validation failure
-		// as the data is in the $_POST
-        if (is_null(self::$validation_errors) && self::$entity_to_load && in_array($id, $taxaThatExist)) {
-          foreach (self::$entity_to_load as $key => $value){
-            $parts = explode(':', $key);
-            if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1] == $id){
-              $existing_record_id = $parts[2];
-			  if (!empty($existing_record_id))
-                // As this is an existing row, we need to reload the attributes data with the row values
-                // @todo Optimisation to get all the data in one service call
-                $attributesForThisRow = self::getAttributes(array(
-                    'id' => $existing_record_id
-                    ,'valuetable'=>'occurrence_attribute_value'
-                    ,'attrtable'=>'occurrence_attribute'
-                    ,'key'=>'occurrence_id'
-                    ,'fieldprefix'=>"sc:$id:$existing_record_id:occAttr"
-                    ,'extraParams'=>$options['readAuth']
-                    ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
-                ));
-              break;
-            }
-          }
+
+        $existing_record_id = false;
+        $search = preg_grep("/^sc:$id:[0-9]*:present$/", array_keys(self::$entity_to_load));
+        if (count($search)===1) {
+          // we have to implode the search result as the key can be not zero, then strip out the stuff other than the occurrence Id.
+          $existing_record_id = str_replace(array("sc:$id:",":present"), '', implode('', $search));
         }
         if ($options['checkboxCol']=='true') {
           if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
@@ -2533,22 +2502,21 @@ class data_entry_helper extends helper_config {
           $row .= "\n<td class=\"scPresenceCell\"><input type=\"checkbox\" name=\"sc:$id:$existing_record_id:present\" $checked /></td>";
         }
         foreach ($occAttrControls as $attrId => $control) {
-          $oc = str_replace('{ttlId}', $id, $control);
-		      // ctrlId initially assumes not reloading an existing value, to check in the reloaded data
-		      $ctrlId = "sc:$id::occAttr:$attrId";		  
-          // If there is an existing value to load for this control, we need to put the value in the control.
-          $existing_value = '';
-          if (self::$entity_to_load != null && array_key_exists($ctrlId, self::$entity_to_load)
-                && !empty(self::$entity_to_load[$ctrlId])) {
-		        // this case happens after reloading page on validation failure of a new record
-            $existing_value = self::$entity_to_load[$ctrlId];
-          } else if(array_key_exists('default', $attributesForThisRow[$attrId])){
-		        // this case happens when reloading an existing record
-            $existing_value = $attributesForThisRow[$attrId]['default'];
+          if ($existing_record_id) {
+            $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
+            $ctrlId = (count($search)===1) ? implode('', $search) : $attributes[$attrId]['fieldname'];
+          } else {
+            $ctrlId = str_replace('{ttlId}', $id, $attributes[$attrId]['fieldname']);
           }
-          $ctrlId = $attributesForThisRow[$attrId]['fieldname'];
+          if (isset(self::$entity_to_load[$ctrlId])) {
+            $existing_value = self::$entity_to_load[$ctrlId];
+          } elseif (array_key_exists('default', $attributes[$attrId])) {
+		        // this case happens when reloading an existing record
+            $existing_value = $attributes[$attrId]['default'];
+          } else
+            $existing_value = '';
           // inject the field name into the control HTML
-          $oc = str_replace('{fieldname}', $ctrlId, $oc);
+          $oc = str_replace('{fieldname}', $ctrlId, $control);
           if (!empty($existing_value)) {
             // For select controls, specify which option is selected from the existing value
             if (substr($oc, 0, 7)=='<select') {			  
@@ -2565,13 +2533,12 @@ class data_entry_helper extends helper_config {
           }
           $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributesForThisRow[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
         }
-		if ($options['occurrenceComment']) {
+        if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content\"><input class=\"control-width-4\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
 		      "value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
-		if ($options['occurrenceImages']) {
+        if ($options['occurrenceImages']) 
           $row .= "\n<td class=\"ui-widget-content\"><a href=\"\" class=\"add-image-link\" id=\"images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
-        }
         if ($rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
         } else {
@@ -2586,7 +2553,7 @@ class data_entry_helper extends helper_config {
       if (isset($options['lookupListId'])) {
         // Javascript to add further rows to the grid
         self::add_resource('addrowtogrid');
-        self::$javascript .= "addRowToGrid('$url', '".
+        self::$javascript .= "addRowToGrid('".parent::$base_url."index.php/services/data"."', '".
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
             "'".$indicia_templates['taxon_label']."');\r\n";
@@ -2599,6 +2566,48 @@ class data_entry_helper extends helper_config {
       return $taxalist['error'];
     }
 
+  }
+  
+  /**
+   * Normally, the species checklist will handle loading the list of occurrences from the database automatically.
+   * However, when a form needs access to occurrence data before loading the species checklist, this method 
+   * can be called to preload the data. The data is loaded into data_entry_helper::$entity_to_load and the count
+   * of occurrences loaded is returned.
+   * @param int $sampleId ID of the sample to load
+   * @param array $readAuth Read authorisation array
+   * @return int Number of occurrences that were loaded.
+   */
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth) {
+    $occurrenceIds = array();
+    // don't load from the db if there are validation errors, since the $_POST will already contain all the 
+    // data we need.
+    if (is_null(self::$validation_errors)) {
+      $occurrences = self::get_population_data(array(
+        'table' => 'occurrence',
+        'extraParams' => $readAuth + array('view'=>'detail','sample_id'=>$sampleId,'deleted'=>'f'),
+        'nocache' => true
+      ));
+      foreach($occurrences as $occurrence){
+        self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];          
+        self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':present'] = true;
+        self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
+        self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
+        self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
+        // Keep a list of all Ids
+        $occurrenceIds[$occurrence['id']] = $occurrence['taxa_taxon_list_id'];
+      }
+      // load the attribute values into the entity to load as well
+      $attrValues = self::get_population_data(array(
+        'table' => 'occurrence_attribute_value',
+        'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+        'nocache' => true
+      ));
+      foreach($attrValues as $attrValue) {
+        self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].':'.$attrValue['id']]
+            = $attrValue['raw_value'];
+      }
+    }
+    return count($occurrenceIds);
   }
 
   /**
@@ -2620,10 +2629,10 @@ class data_entry_helper extends helper_config {
         foreach ($occAttrs as $a) {
           $r .= "<th>$a</th>";
         }
-		if ($options['occurrenceComment']) {
+        if ($options['occurrenceComment']) {
           $r .= "<th>".lang::get('Comment')."</th>";
         }
-		if ($options['occurrenceImages']) {
+        if ($options['occurrenceImages']) {
           $r .= "<th>".lang::get('Images')."</th>";
         }
       }
@@ -2696,8 +2705,8 @@ class data_entry_helper extends helper_config {
         'checkboxCol'=>'true',
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
-		'occurrenceComment' => false,
-		'occurrenceImages' => false,
+        'occurrenceComment' => false,
+        'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000)
     ), $options);
     
@@ -2723,35 +2732,28 @@ class data_entry_helper extends helper_config {
   /**
    * Internal function to prepare the list of occurrence attribute columns for a species_checklist control.
    */
-  private static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {	
+  private static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
     $idx=0;  
     if (array_key_exists('occAttrs', $options))
       $attrs = $options['occAttrs'];
     else
-      // There is no specified list of occurrence attributes, so use them all
+      // There is no specified list of occurrence attributes, so use all available for the survey
       $attrs = array_keys($attributes);
-    foreach ($attrs as $occAttr) {
+    foreach ($attrs as $occAttrId) {
       // test that this occurrence attribute is linked to the survey
-      if (!array_key_exists($occAttr, $attributes))
+      if (!isset($attributes[$occAttrId]))
         throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
-      $a = self::get_population_data(array(
-        'table'=>'occurrence_attribute',
-        'extraParams'=>$options['readAuth'] + array('id'=>$occAttr)
-      ));
-      if (count($a)>0 && !array_key_exists('error', $a))
-      {
-        $b = $a[0];
-        $occAttrs[$occAttr] = $b['caption'];
-        // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-        $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? 
-		    $options['occAttrClasses'][$idx] : 
-			strtolower(str_replace(' ', '_', $b['caption'])); // provide a default class based on the control caption
-        // Build the correct control
-        switch ($b['data_type'])
-        {
+      $attrDef = $attributes[$occAttrId];
+      $occAttrs[$occAttrId] = $attrDef['caption'];
+      // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
+      $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? 
+      $options['occAttrClasses'][$idx] : 
+          strtolower(str_replace(' ', '_', $attrDef['caption'])); // provide a default class based on the control caption
+      // Build the correct control
+      switch ($attrDef['data_type']) {
         case 'L':
-          $tlId = $b['termlist_id'];
-          $occAttrControls[$occAttr] = data_entry_helper::select(array(
+          $tlId = $attrDef['termlist_id'];
+          $occAttrControls[$occAttrId] = data_entry_helper::select(array(
             'fieldname' => '{fieldname}',
             'table'=>'termlists_term',
             'captionField'=>'term',
@@ -2764,15 +2766,14 @@ class data_entry_helper extends helper_config {
         case 'D':
         case 'V':
           // Date-picker control
-          $occAttrControls[$occAttr] = '<input type="text" class="date $class" ' .
+          $occAttrControls[$occAttrId] = '<input type="text" class="date $class" ' .
             'id="{fieldname}" name="{fieldname}" ' .
             "value=\"".lang::get('click here')."\"/>";
           break;
         default:
-          $occAttrControls[$occAttr] =
+          $occAttrControls[$occAttrId] =
             "<input type=\"text\" id=\"{fieldname}\" name=\"{fieldname}\" class=\"$class\" value=\"\" />";
           break;
-        }
       }
       $idx++;      
     }
@@ -2798,13 +2799,13 @@ class data_entry_helper extends helper_config {
           $indicia_templates['attribute_cell']
       );
     }
-	if ($options['occurrenceComment']) {
+    if ($options['occurrenceComment']) {
       $r .= '<td class="ui-widget-content"><input class="control-width-4" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
-    }
-	if ($options['occurrenceComment']) {
-	  // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
+    } 
+    if ($options['occurrenceImages']) {
+      // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
       $r .= '<td class=\"ui-widget-content\"><a href="" class="add-image-link" style="display: none" id="images:{ttlId}:">'.lang::get('add images').'</a></td>';
-	}
+    }
     $r .= "</tr></tbody></table>";
     return $r;
   }
@@ -3511,7 +3512,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   private static function _getCachedResponse($file, $timeout, $options)
   {
     // Note the random element, we only timeout a cached file sometimes.
-    if (!isset($_GET['nocache']) && ($timeout && $file && is_file($file) &&
+    if (($timeout && $file && is_file($file) &&
         (rand(1, self::$cache_chance_refresh_file)!=1 || filemtime($file) >= (time() - $timeout)))
     ) {
       $response = array();
@@ -3561,7 +3562,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   /**
    * Issue a post request to get the population data required for a control. Depends on the
    * options' table and extraParams values what is requested. This is now cacheable.
-   * NB that this function only uses the 'table' and 'extraParams' of $options
+   * NB that this function only uses the 'table' and 'extraParams' of $options. If $options
+   * contains a value for nocache=true then caching is skipped as well.
    * When generating the cache for this data we need to use the table and
    * any extra params, excluding the read_auth and the nonce. The cache should be
    * used by all accesses to the DB.
@@ -3604,11 +3606,15 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       unset($cacheOpts['nonce']);
     }
 
-    $cacheTimeOut = self::_getCacheTimeOut($options);
-    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
-    $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
-    if(!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
+    if (isset($_GET['nocache']) || (isset($options['nocache']) && $options['nocache'])) 
       $response = self::http_post($request, null);
+    else {
+      $cacheTimeOut = self::_getCacheTimeOut($options);
+      $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+      $cacheFile = self::_getCacheFileName($cacheFolder, $cacheOpts, $cacheTimeOut);
+      if (!($response = self::_getCachedResponse($cacheFile, $cacheTimeOut, $cacheOpts)))
+        $response = self::http_post($request, null);
+    } 
     $r = json_decode($response['output'], true);
     if (!is_array($r)) {
       throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
@@ -4140,7 +4146,7 @@ if (errors.length>0) {
         $occAttrs = data_entry_helper::wrap_attributes($record, 'occurrence');
         $occ = data_entry_helper::wrap($record, 'occurrence');
         $occ['metaFields']['occAttributes']['value'] = $occAttrs;
-		self::attachOccurrenceImagesToModel($occ, $record);
+		    self::attachOccurrenceImagesToModel($occ, $record);
         $subModels[] = array(
           'fkId' => 'sample_id',
           'model' => $occ
