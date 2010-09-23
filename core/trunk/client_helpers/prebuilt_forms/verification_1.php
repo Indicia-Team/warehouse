@@ -88,6 +88,22 @@ class iform_verification_1 {
         'required'=>false,
         'group' => 'Notification emails',
        ), array(
+        'name'=>'email_subject_send_to_verifier',
+        'caption'=>'Send to Verifier Email Subject',
+        'description'=>'Default subject for the send to verifier email. Replacements allowed include %taxon% and %id%.',
+        'type'=>'string',
+        'default' => 'Record of %taxon% requires verification (ID:%id%)',
+        'group' => 'Notification emails'
+      ), array(
+        'name'=>'email_body_send_to_verifier',
+        'caption'=>'Send to Verifier Email Body',
+        'description'=>'Default body for the acceptance email. Replacements allowed include %taxon%, %id% and %record% which is replaced to give details of the record.',
+        'type'=>'textarea',
+        'default' => 'The following record requires verification. Please reply to this mail with the word Verified or Rejected '.
+            'in the email body, followed by any comments you have including the proposed re-identification if relevant on the next line.'.
+            "\n\n%record%",
+        'group' => 'Notification emails'
+      ),array(
         'name'=>'email_subject_verified',
         'caption'=>'Acceptance Email Subject',
         'description'=>'Default subject for the acceptance email. Replacements allowed include %action% (verified or rejected), '.
@@ -228,7 +244,15 @@ class iform_verification_1 {
     
     drupal_add_js('
 var verifiers_mapping = "'.$args['verifiers_mapping'].'";
-var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';', 'inline');
+var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';
+var email_subject_send_to_verifier = "'.$args['email_subject_send_to_verifier'].'";
+var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_verifier']).'";
+', 'inline'
+);
+
+/*.';
+
+');*/
     drupal_add_js('sites/all/modules/iform/client_helpers/prebuilt_forms/js/verification_1.js');
     return $r;
   }

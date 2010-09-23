@@ -95,21 +95,21 @@ function indicia_save_verification_comment(taxon, id, valid, cmsUser) {
 function indicia_send_to_verifier(taxon, id, cmsUser, websiteId) {
   // build email to send a request for verification to a verifier
   jQuery('#send_for_verification_subject').val('This is the subject');
-  var subject = 'Record of ' + taxon + ' requires verification (ID:'+id+')';
+  var subject = email_subject_send_to_verifier.replace(/%taxon%/g, taxon).replace(/%id%/g, id);
   var photoHTML = '';
   var row = jQuery('#row' + id)[0];
-  var body='The following record requires verification. Please reply to this mail with the word Verified or Rejected in the email body, followed by any '+
-     'comments you have including the proposed re-identification if relevant on the next line.\n\n';      
+  var record='';
   jQuery.each(row.childNodes, function(i, item) {
     if (jQuery.trim(item.textContent)!=='' && item.classList.length >= 2 && item.classList[0] == 'data') {
-      body += item.classList[1] + ': ' + item.textContent + "\n";
+      record += item.classList[1] + ': ' + item.textContent + "\n";
     } else if (item.childElementCount===1 && item.children[0].attributes.getNamedItem('href')!==null) {
       // replace the photo with a tag, since our email is edited in a textarea that cannot show HTML. 
-      body += item.classList[1] + ': [photo]\n';
+      record += item.classList[1] + ': [photo]\n';
       // capture the HTML required for the image link, so it can be used in the email
       photoHTML=item.innerHTML;
     }
   });
+  var body=email_body_send_to_verifier.replace(/%taxon%/g, taxon).replace(/%id%/g, id).replace(/%record%/g, record);
   jQuery.fancybox(
 '<form id="send_for_verification_email" action="" method="post" >'+
 '<fieldset><legend>Compose email to verifier</legend>'+
