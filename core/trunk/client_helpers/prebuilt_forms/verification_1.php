@@ -79,6 +79,21 @@ class iform_verification_1 {
         'default'=>true,
         'group' => 'Notification emails'
        ), array(
+        'name'=>'log_send_to_verifier',
+        'caption'=>'Log sending to verifier',
+        'description'=>'If checked, then an automatic comment is created to log the sending of a record to a verifier.',
+        'type'=>'boolean',
+        'default'=>true,
+        'group' => 'Notification emails'
+       ), array(
+        'name'=>'log_send_to_verifier_comment',
+        'caption'=>'Send to verifier log comment',
+        'description'=>'Comment used to log when sending to verifier. Replacements allowed include %email%, %date%, %user%.',
+        'type'=>'string',
+        'default' => 'Sent to %email% for verification on %date% by %user%',
+        'group' => 'Notification emails'
+      ),
+       array(
         'name'=>'email_request_attribute',
         'caption'=>'Check Email Requested',
         'description'=>'Enter the caption of a sample attribute and the value will be checked and'.
@@ -183,15 +198,31 @@ class iform_verification_1 {
              $_POST['email_subject'],
              wordwrap($emailBody, 70),
              $headers);        
-        if ($success) 
+        if ($success) {
           $r .= '<div class="page-notice ui-state-highlight ui-corner-all"><p>An email was set to '.$_POST['email_to'].'.</p></div>';
-         else
+        }  
+        else
           $r.= '<div class="page-notice ui-widget-content ui-corner-all ui-state-highlight left">The webserver is not correctly configured to send emails. Please send the following email manually: <br/>'.
               '<div id="manual-email"><span>To:</span><div>' . $_POST['email_to'] . '</div>' .
               '<span>Subject:</span><div>' . $_POST['email_subject'] . '</div>' .
               '<span>Content:</span><div>' . $emailBody . '</div>'.
               '</div></div><div style="clear: both">';
-          
+        
+        if (isset($_POST['action']) && $_POST['action']='send_to_verifier' && $args['log_send_to_verifier']) {
+          $comment = str_replace(array('%email%', '%date%', '%user%'), array($_POST['email_to'], date('jS F Y'), $user->name), $args['log_send_to_verifier_comment']);
+          // get our own write tokens for this submission, as the main ones are used in the JavaScript form.
+          $loggingAuth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+          $_POST['auth_token'] = $writeAuth['auth_token'];
+          $_POST['nonce'] = $writeAuth['nonce'];
+          $sub = data_entry_helper::wrap(array(
+            'comment' => $comment,
+            'occurrence_id' => $_POST['occurrence:id']            
+          ), 'occurrence_comment');
+          $logResponse = data_entry_helper::forward_post_to('occurrence_comment', $sub, $loggingAuth['write_tokens']);
+          if (!array_key_exists('success', $logResponse)) {
+            $r .= data_entry_helper::dump_errors($response, false);
+          }
+        }  
       } else if (isset($_POST['occurrence:record_status']) && isset($response['success']) && $args['emails_enabled']) {        
         $r .= self::get_notification_email_form($args, $response, $auth);
       }
@@ -231,6 +262,7 @@ class iform_verification_1 {
       'autoParamsForm' => $args['auto_params_form'],
       'extraParams' => $extraParams
     ));
+    // Put in a blank form, which lets JavaScript set the values and post the data.
     $r .= '
 <form id="verify" method="post" action="">
   '.$auth['write'].'

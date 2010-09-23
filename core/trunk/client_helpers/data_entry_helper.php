@@ -4027,8 +4027,10 @@ if (errors.length>0) {
   /**
    * Either takes the passed in submission, or creates it from the post data if this is null, and forwards
    * it to the data services for saving as a member of the entity identified.
+   * @param array $writeTokens Array containing auth_token and nonce for the write operation. If null then
+   * the values are read from $_POST.
    */
-  public static function forward_post_to($entity, $submission = null) {
+  public static function forward_post_to($entity, $submission = null, $writeTokens = null) {
     if (self::$validation_errors==null) {
       $remembered_fields = self::get_remembered_fields();
 
@@ -4048,11 +4050,16 @@ if (errors.length>0) {
       $images = self::extract_image_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
-      // passthrough the authentication tokens as POST data
-      if (array_key_exists('auth_token', $_POST))
-        $postargs .= '&auth_token='.$_POST['auth_token'];
-      if (array_key_exists('nonce', $_POST))
-        $postargs .= '&nonce='.$_POST['nonce'];
+      // passthrough the authentication tokens as POST data. Use parameter writeTokens, or current $_POST if not supplied.
+      if ($writeTokens) {
+        $postargs .= '&auth_token='.$writeTokens['auth_token'];
+        $postargs .= '&nonce='.$writeTokens['nonce'];
+      } else {
+        if (array_key_exists('auth_token', $_POST))
+          $postargs .= '&auth_token='.$_POST['auth_token'];
+        if (array_key_exists('nonce', $_POST))
+          $postargs .= '&nonce='.$_POST['nonce'];
+      }
       // if there are images, we will send them after the main post, so we need to persist the write nonce
       if (count($images)>0)
         $postargs .= '&persist_auth=true';
@@ -4553,6 +4560,7 @@ $onload_javascript
   * @return Returns an array containing:
   * 'read' => the read authorisation array,
   * 'write' => the write authorisation input controls to insert into your form.
+  * 'writeTokens' => the write authorisation array, if needed as separate tokens rather than just placing in form.
   */
   public static function get_read_write_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */
@@ -4568,7 +4576,11 @@ $onload_javascript
       'read' => array(
         'auth_token' => sha1($nonces['read'].':'.$password),
         'nonce' => $nonces['read']
-      )
+      ),
+      'write_tokens' => array(
+        'auth_token' => sha1($nonces['write'].':'.$password),
+        'nonce' => $nonces['write']
+      ),
     );
   }
 

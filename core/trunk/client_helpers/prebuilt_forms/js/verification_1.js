@@ -123,6 +123,7 @@ function indicia_send_to_verifier(taxon, id, cmsUser, websiteId) {
 '<input type="hidden" name="photoHTML" value="' + escapeHTML(photoHTML) + '">'+
 '<input type="hidden" name="email" value="1">'+
 auth['write'] + 
+'<input type="hidden" name="action" value="send_to_verifier" />'+
 '<input type="hidden" id="occurrence:id" name="occurrence:id" value="'+id+'" />'+
 '<input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="S" />'+
 '<input type="hidden" id="website_id" name="website_id" value="' + websiteId + '" />'+
