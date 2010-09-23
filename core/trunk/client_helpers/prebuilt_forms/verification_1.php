@@ -133,7 +133,7 @@ class iform_verification_1 {
             '%verifier% (username of verifier), %taxon%, %date_start%, %entered_sref%, %comment%.',
         'type'=>'textarea',
         'default' => "Your record of %taxon%, recorded on %date_start% at grid reference %entered_sref% has been checked by ".
-          "an expert and %action%. They commented:\n%comment%\n\nMany thanks for the contribution.\n\n%verifier%",
+          "an expert and %action%.\nMany thanks for the contribution.\n\n%verifier%",
         'group' => 'Notification emails'
       ), array(
         'name'=>'email_subject_rejected',
@@ -323,8 +323,11 @@ var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\
           (($args['email_request_attribute'] == '') ||
           (!empty($email_request_attr[0]['value']) && $email_request_attr[0]['value']))) {
         $subject = self::get_email_component('subject', $action, $occ[0], $args);
-        $body = self::get_email_component('body', $action, $occ[0], $args);     
-        $body = str_replace("\r\n", '\n', $body);
+        if ($action=='verified') 
+          // Use the verifier's comment, not the comment from the record, in the email body
+          $occ[0]['comment'] = $_POST['occurrence_comment:comment'];
+        $body = self::get_email_component('body', $action, $occ[0], $args);
+        $body = str_replace(array("\r","\n"), array('','\n'), $body);
         data_entry_helper::$javascript .= 'jQuery.fancybox(\''.
           '<form id="email" action="" method="post">'.
           '<fieldset>'.
