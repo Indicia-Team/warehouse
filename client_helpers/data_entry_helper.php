@@ -709,7 +709,7 @@ class data_entry_helper extends helper_config {
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
-      'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '1M'),
+      'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
       'codeGenerated' => 'all'
     );
     $browser = self::get_browser_info();
