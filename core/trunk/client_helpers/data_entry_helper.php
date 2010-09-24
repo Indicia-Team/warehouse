@@ -2562,7 +2562,8 @@ class data_entry_helper extends helper_config {
             $totalCols = ($options['lookupListId'] ? 2 : 1) + ($options['checkboxCol'] ? 1 : 0) + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
               'table'=>"sc:$id:$existing_record_id:occurrence_image",
-              'label'=>lang::get('Upload your photos')            
+              'label'=>lang::get('Upload your photos'),
+              'maxFileCount' => 3              
             )).'</td>';
             $rowIdx++;
           }          

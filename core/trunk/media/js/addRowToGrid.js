@@ -120,7 +120,7 @@ $('.add-image-link').live('click', function(evt) {
   $($(evt.target).parent().parent()).after(imageRow);
   $('#' + ctrlId).uploader({
     caption : 'Files',
-    maxFileCount : '4',
+    maxFileCount : '3',
     autoupload : '1',
     flickr : '',
     uploadSelectBtnCaption : 'Select file(s)',
