@@ -663,7 +663,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
         $r .= data_entry_helper::file_box(array(
           'table'=>'occurrence_image',
           'label'=>lang::get('Upload your photos'),
-		  'tabDiv'=>$alias
+		      'tabDiv'=>$alias
         ));
 	  return $r;
     } else 

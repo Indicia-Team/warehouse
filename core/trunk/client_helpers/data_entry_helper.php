@@ -704,6 +704,7 @@ class data_entry_helper extends helper_config {
       'imagewidth' => 250,
       'uploadScript' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . 'upload.php',
       'destinationFolder' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder,
+      'finalImageFolder' => self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/'),
       'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
@@ -717,7 +718,7 @@ class data_entry_helper extends helper_config {
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('flash'));
     if ($browser['name']=='chrome')
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('html5'));
-    $options['id'] = $options['table'].'-'.$options['id'];
+    $options['id'] = $options['table']. (isset($options['id']) ? '-'.$options['id'] : '');
     $containerId = 'container-'.$options['id'];
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
@@ -736,7 +737,7 @@ class data_entry_helper extends helper_config {
       // convert runtimes list to plupload format
       $options['runtimes'] = implode(',', $options['runtimes']);
 
-      $javascript = "\n$('#$containerId').uploader({";
+      $javascript = "\n$('#".str_replace(':','\\\\:',$containerId)."').uploader({";
       // Just pass the options array through
       $idx = 0;
       foreach($options as $option=>$value) {
@@ -2416,7 +2417,8 @@ class data_entry_helper extends helper_config {
   * <li><b>occurrenceComment</b><br/>
   * Optional. If set to true, then an occurrence comment input field is included on each row.</li>
   * <li><b>occurrenceImages</b><br/>
-  * Optional. If set to true, then images can be uploaded for each occurrence row.</li>
+  * Optional. If set to true, then images can be uploaded for each occurrence row. Currently not supported for 
+  * multi-column grids.</li>
   * <li><b>attrCellTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each cell containing an attribute input control. Valid replacements are {label} and {content}.
@@ -2431,6 +2433,9 @@ class data_entry_helper extends helper_config {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
     $options = self::get_species_checklist_options($options);
+    if ($options['columns']>1 && $options['occurrenceImages'])
+      throw new Exception('The species_checklist control does not support having more than one occurrence per row (columns option > 0) '.
+          'at the same time has having the occurrenceImages option enabled.');
     self::add_resource('json');
     self::add_resource('autocomplete');
 	  if ($options['occurrenceImages']) {
@@ -2449,7 +2454,7 @@ class data_entry_helper extends helper_config {
     
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']))
-      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth']);
+      self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], $options['occurrenceImages']);
     // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.  
 	  $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
     // If we managed to read the species list data we can proceed
@@ -2536,15 +2541,32 @@ class data_entry_helper extends helper_config {
         if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content\"><input class=\"control-width-4\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
 		      "value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
+        }        
+        if ($options['occurrenceImages']) {
+          $existingImages = preg_grep("/^sc:$id:$existing_record_id:occurrence_image:id:[0-9]*$/", array_keys(self::$entity_to_load));
+          if (count($existingImages)===0)
+            $row .= "\n<td class=\"ui-widget-content\"><a href=\"\" class=\"add-image-link\" id=\"add-images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
+          else
+            $row .= "\n<td class=\"ui-widget-content\"><a href=\"\" class=\"hide-image-link\" id=\"hide-images:$id:$existing_record_id\">".lang::get('hide images').'</a></td>';
         }
-        if ($options['occurrenceImages']) 
-          $row .= "\n<td class=\"ui-widget-content\"><a href=\"\" class=\"add-image-link\" id=\"images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
-        if ($rowIdx < count($taxalist)/$options['columns']) {
+        // Are we in the first column? Note this is disabled if using occurrenceImages as it adds extra rows and messes things up.
+        if ($options['occurrenceImages'] || $rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
         } else {
           $rows[$rowIdx % (ceil(count($taxalist)/$options['columns']))] .= $row;
         }
         $rowIdx++;
+        if ($options['occurrenceImages']) {
+          // If there are existing images for this row, display the image control
+          if (count($existingImages)>0) {
+            $totalCols = ($options['lookupListId'] ? 2 : 1) + ($options['checkboxCol'] ? 1 : 0) + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
+            $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
+              'table'=>"sc:$id:$existing_record_id:occurrence_image",
+              'label'=>lang::get('Upload your photos')            
+            )).'</td>';
+            $rowIdx++;
+          }          
+        }
       }
       $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
       $grid .= '</tbody></table>';
@@ -2577,7 +2599,7 @@ class data_entry_helper extends helper_config {
    * @param array $readAuth Read authorisation array
    * @return int Number of occurrences that were loaded.
    */
-  public static function preload_species_checklist_occurrences($sampleId, $readAuth) {
+  public static function preload_species_checklist_occurrences($sampleId, $readAuth, $loadImages) {
     $occurrenceIds = array();
     // don't load from the db if there are validation errors, since the $_POST will already contain all the 
     // data we need.
@@ -2605,6 +2627,21 @@ class data_entry_helper extends helper_config {
       foreach($attrValues as $attrValue) {
         self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].':'.$attrValue['id']]
             = $attrValue['raw_value'];
+      }
+      if ($loadImages) {
+        $images = self::get_population_data(array(
+          'table' => 'occurrence_image',
+          'extraParams' => $readAuth + array('occurrence_id' => array_keys($occurrenceIds)),
+          'nocache' => true
+        ));
+        foreach($images as $image) {
+          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:id:'.$image['id']]
+              = $image['id'];
+          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:path:'.$image['id']]
+              = $image['path'];
+          self::$entity_to_load['sc:'.$occurrenceIds[$image['occurrence_id']].':'.$image['occurrence_id'].':occurrence_image:caption:'.$image['id']]
+              = $image['caption'];
+        }
       }
     }
     return count($occurrenceIds);
@@ -5177,7 +5214,8 @@ $('.ui-state-default').live('mouseout', function() {
       }
     }
     //remove local copy
-    unlink(realpath($uploadpath.$path));
+    //unlink(realpath($uploadpath.$path));
+    watchdog('file exists', realpath($uploadpath.$path));
     return $r;
   }
 
