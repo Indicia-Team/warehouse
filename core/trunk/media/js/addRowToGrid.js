@@ -111,14 +111,14 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
  */
 $('.add-image-link').live('click', function(evt) {
   evt.preventDefault();
-  var table = evt.target.id.replace('images','sc') + ':occurrence_image'
+  var table = evt.target.id.replace('add-images','sc') + ':occurrence_image'
   var ctrlId='container-'+table;
   colspan = $($(evt.target).parent().parent()).children().length;
   var imageRow = '<tr><td colspan="' + colspan + '">';
   imageRow += '<div class="file-box" id="' + ctrlId + '"></div>';
   imageRow += '</td></tr>';
   $($(evt.target).parent().parent()).after(imageRow);
-  $('#' + ctrlId).uploader({
+  $('#' + ctrlId.replace(/:/g, '\\:')).uploader({
     caption : 'Files',
     maxFileCount : '3',
     autoupload : '1',
@@ -135,7 +135,7 @@ $('.add-image-link').live('click', function(evt) {
     jsPath : jsPath,
     buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
     table : table,
-    maxUploadSize : '1048576'    
+    maxUploadSize : '4M'    
   });
   $(evt.target).hide();
 });
