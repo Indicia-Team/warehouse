@@ -111,8 +111,8 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
  */
 $('.add-image-link').live('click', function(evt) {
   evt.preventDefault();
-  var ctrlId='file-box-'+evt.target.id;
-  ctrlId = ctrlId.replace(/:/g,'-');
+  var table = evt.target.id.replace('images','sc') + ':occurrence_image'
+  var ctrlId='container-'+table;
   colspan = $($(evt.target).parent().parent()).children().length;
   var imageRow = '<tr><td colspan="' + colspan + '">';
   imageRow += '<div class="file-box" id="' + ctrlId + '"></div>';
@@ -134,8 +134,22 @@ $('.add-image-link').live('click', function(evt) {
     swfAndXapFolder : swfAndXapFolder,
     jsPath : jsPath,
     buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
-    table : evt.target.id.replace('images','sc') + ':occurrence_image',
+    table : table,
     maxUploadSize : '1048576'    
   });
   $(evt.target).hide();
+});
+
+$('.hide-image-link').live('click', function(evt) {
+  evt.preventDefault();
+  var ctrlId=(evt.target.id.replace(/^hide\-images/, 'container-sc') + ':occurrence_image').replace(/:/g, '\\:');
+  if ($(evt.target).hasClass('images-hidden')) {
+    $('#'+ctrlId).show();
+    $(evt.target).removeClass('images-hidden');
+    $(evt.target).html('hide images');
+  } else {
+    $('#'+ctrlId).hide();
+    $(evt.target).addClass('images-hidden');
+    $(evt.target).html('show images');
+  }
 });

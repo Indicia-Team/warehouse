@@ -87,11 +87,13 @@
             .replace(/\{filename\}/g, file.caption)
             .replace(/\{filesize\}/g, 'Uploaded')
             .replace(/\{imagewidth\}/g, div.settings.imageWidth);
-        $('#filelist').append(existing);
-        var filepath = div.settings.destinationFolder + file.path;
+        $('#' + div.id.replace(/:/g,'\\:') + ' #filelist').append(existing);
+        var thumbnailfilepath = div.settings.finalImageFolder + 'med-' + file.path;
+        var origfilepath = div.settings.finalImageFolder + file.path;
         $('#' + uniqueId + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
               .replace(/\{id\}/g, uniqueId)
-              .replace(/\{filepath\}/g, filepath)
+              .replace(/\{thumbnailfilepath\}/g, thumbnailfilepath)
+              .replace(/\{origfilepath\}/g, origfilepath)
               .replace(/\{imagewidth\}/g, div.settings.imageWidth)
               .replace(/\{captionField\}/g, div.settings.table + ':caption:' + uniqueId)
               .replace(/\{captionValue\}/g, file.caption.replace(/\"/g, '&quot;'))
@@ -127,13 +129,14 @@
             // change the file name to be unique
             file.name=plupload.guid() + '.jpg';
           }
+          $('#' + file.id + ' .progress-percent').progressbar ({value: 0});
+          if (div.settings.resizeWidth!==0 && div.settings.resizeHeight!==0) {
+            $('#' + file.id + ' .progress-percent').html('Resizing...');
+          } else {
+            $('#' + file.id + ' .progress-percent').html('0% Uploaded...');
+          }
         });
-        $('.progress-bar').progressbar ({value: 0});
-        if (div.settings.resizeWidth!==0 && div.settings.resizeHeight!==0) {
-          $('.progress-percent').html('Resizing...');
-        } else {
-          $('.progress-percent').html('0% Uploaded...');
-        }
+        
       });
       
       // As a file uploads, update the progress bar and percentage indicator
@@ -155,7 +158,8 @@
           // Show the uploaded file, and also set the mini-form values to contain the file details.
           $('#' + file.id + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
                 .replace(/\{id\}/g, file.id)
-                .replace(/\{filepath\}/g, filepath)
+                .replace(/\{thumbnailfilepath\}/g, filepath)
+                .replace(/\{origfilepath\}/g, filepath)
                 .replace(/\{imagewidth\}/g, div.settings.imageWidth)
                 .replace(/\{captionField\}/g, div.settings.table + ':caption:' + file.id)
                 .replace(/\{captionValue\}/g, '')
@@ -213,7 +217,7 @@ $.fn.uploader.defaults = {
   file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div id="filelist"></div>' +
                  '{uploadStartBtn}</fieldset>',
   file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all">{filename} ({filesize})</div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div><div class="progress-percent"></div></div><span class="photo-wrapper"></span></div>',
-  file_box_uploaded_imageTemplate : '<a class="fancybox" href="{filepath}"><img src="{filepath}" width="{imagewidth}"/></a>' +
+  file_box_uploaded_imageTemplate : '<a class="fancybox" href="{origfilepath}"><img src="{thumbnailfilepath}" width="{imagewidth}"/></a>' +
       '<input type="hidden" name="{idField}" id="{idField}" value="{idValue}" />' +
       '<input type="hidden" name="{pathField}" id="{pathField}" value="{pathValue}" />' +
       '<label for="{captionField}">Caption:</label><br/><input type="text" maxlength="100" style="width: {imagewidth}px" name="{captionField}" id="{captionField}" value="{captionValue}"/>',
