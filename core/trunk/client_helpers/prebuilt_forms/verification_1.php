@@ -207,24 +207,25 @@ class iform_verification_1 {
               '<span>Subject:</span><div>' . $_POST['email_subject'] . '</div>' .
               '<span>Content:</span><div>' . $emailBody . '</div>'.
               '</div></div><div style="clear: both">';
-        
-        if (isset($_POST['action']) && $_POST['action']='send_to_verifier' && $args['log_send_to_verifier']) {
-          $comment = str_replace(array('%email%', '%date%', '%user%'), array($_POST['email_to'], date('jS F Y'), $user->name), $args['log_send_to_verifier_comment']);
-          // get our own write tokens for this submission, as the main ones are used in the JavaScript form.
-          $loggingAuth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-          $_POST['auth_token'] = $writeAuth['auth_token'];
-          $_POST['nonce'] = $writeAuth['nonce'];
-          $sub = data_entry_helper::wrap(array(
-            'comment' => $comment,
-            'occurrence_id' => $_POST['occurrence:id']            
-          ), 'occurrence_comment');
-          $logResponse = data_entry_helper::forward_post_to('occurrence_comment', $sub, $loggingAuth['write_tokens']);
-          if (!array_key_exists('success', $logResponse)) {
-            $r .= data_entry_helper::dump_errors($response, false);
-          }
-        }  
       } else if (isset($_POST['occurrence:record_status']) && isset($response['success']) && $args['emails_enabled']) {        
         $r .= self::get_notification_email_form($args, $response, $auth);
+      }
+      if (isset($_POST['action']) && $_POST['action']=='send_to_verifier' && $args['log_send_to_verifier']) 
+        $comment = str_replace(array('%email%', '%date%', '%user%'), array($_POST['email_to'], date('jS F Y'), $user->name), $args['log_send_to_verifier_comment']);
+      elseif (isset($_POST['action']) && $_POST['action']='general_comment')
+        $comment = $_POST['comment'];
+      // If there is a comment to save, add it to the occurrence comments
+      if (isset($comment)) {
+        // get our own write tokens for this submission, as the main ones are used in the JavaScript form.
+        $loggingAuth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+        $sub = data_entry_helper::wrap(array(
+          'comment' => $comment,
+          'occurrence_id' => $_POST['occurrence:id']            
+        ), 'occurrence_comment');
+        $logResponse = data_entry_helper::forward_post_to('occurrence_comment', $sub, $loggingAuth['write_tokens']);
+        if (!array_key_exists('success', $logResponse)) {
+          $r .= data_entry_helper::dump_errors($response, false);
+        }
       }
     }
 
@@ -248,6 +249,8 @@ class iform_verification_1 {
     }
     $actions[] = array('caption' => 'Verify', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, true, '.$user->uid.'); return false;');
     $actions[] = array('caption' => 'Reject', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, false, '.$user->uid.'); return false;');
+    $actions[] = array('caption' => 'Comments', 'javascript'=>'indicia_comments(\'{taxon}\', {occurrence_id}, '.$user->uid.
+        ', \''.$auth['read']['nonce'].'\', \''.$auth['read']['auth_token'].'\'); return false;');
 
     $r .= data_entry_helper::report_grid(array(
       'id' => 'verification-grid',
@@ -277,6 +280,7 @@ class iform_verification_1 {
     drupal_add_js('
 var verifiers_mapping = "'.$args['verifiers_mapping'].'";
 var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';
+var svc = "'.data_entry_helper::$base_url.'index.php/services/data/";
 var email_subject_send_to_verifier = "'.$args['email_subject_send_to_verifier'].'";
 var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_verifier']).'";
 ', 'inline'

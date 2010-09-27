@@ -35,3 +35,28 @@
 #send_for_verification_email fieldset, #email fieldset {
   width: 650px;
 }
+
+#comment-popup table {
+  border-collapse: separate;  
+  border-spacing: 0 10pt;
+}
+
+#comment-popup tr {
+  border: solid silver 1px;
+  border: outset 5pt;
+}
+
+#comment-popup  td {
+  vertical-align: top;
+  border: solid #E0E0E0;
+  border-width: 1pt 0;
+  border-right: solid #E0E0E0 1px;
+}
+
+#comment-popup  td.metadata {
+  padding-right: 1.5em;
+  background-color: #F0F0F0;
+  border-left: solid #E0E0E0 1px;
+  border-right: none;
+}
+  

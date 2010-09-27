@@ -140,3 +140,37 @@ auth['write'] +
 escapeHTML = function(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 };
+
+/**
+ * Method to display a comments popup, with the ability to add a new one.
+ */
+indicia_comments = function(taxon, id, cmsUser, read_nonce, read_auth_token, write_nonce, write_auth_token) {
+  jQuery.getJSON(svc + 'occurrence_comment', {mode: 'json', nonce: read_nonce, auth_token: read_auth_token, occurrence_id: id}, function(response) {
+    var html = '<div id="comment-popup"><h1>Comments on record of '+taxon+'</h1>';
+    if (response.length>0) {
+      html += '<table>';
+      jQuery.each(response, function(i, item) {
+        html += '<tr>';
+        html += '<td class="metadata">' + item.username + '<br/>' + item.updated_on + '</td>';
+        html += '<td>' + item.comment + '</td>';
+        html += '</tr>';
+      });
+      html += '</table>';    
+    } else {
+      html += '<p>There are no comments for this record yet.</p>';
+    }
+    
+    html += '<form id="general_comment" action="'+submit_to()+'" method="post" >'+
+        '<fieldset><legend>Enter comment for record of '+taxon+'</legend>'+
+        '<label for="comment">Comment:</label>'+
+        '<textarea name="comment" class="required" rows="10" cols="80"></textarea><br/>'+
+        '<input type="hidden" name="occurrence:id" value="'+id+'" />'+
+        '<input type="hidden" name="action" value="general_comment" />'+
+        '</fieldset>'+
+        '<input type="submit" value="Save Comment">'+
+        '<input type="button" name="Cancel" value="Cancel" onclick="indicia_close_comment_form();">'+
+        '</form>'
+    html += '</div>';
+    jQuery.fancybox(html);
+  });
+}
