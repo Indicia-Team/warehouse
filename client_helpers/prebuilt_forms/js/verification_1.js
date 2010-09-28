@@ -145,7 +145,7 @@ escapeHTML = function(s) {
  * Method to display a comments popup, with the ability to add a new one.
  */
 indicia_comments = function(taxon, id, cmsUser, read_nonce, read_auth_token, write_nonce, write_auth_token) {
-  jQuery.getJSON(svc + 'occurrence_comment', {mode: 'json', nonce: read_nonce, auth_token: read_auth_token, occurrence_id: id}, function(response) {
+  jQuery.getJSON(svc + 'occurrence_comment?callback=?', {"mode": 'json', "nonce": read_nonce, "auth_token": read_auth_token, "occurrence_id": id}, function(response) {
     var html = '<div id="comment-popup"><h1>Comments on record of '+taxon+'</h1>';
     if (response.length>0) {
       html += '<table>';
