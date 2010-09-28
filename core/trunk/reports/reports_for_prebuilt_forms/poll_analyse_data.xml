@@ -12,7 +12,7 @@
 	sav2.text_value as email,
 	sav3.int_value as userid,
 	(CASE sav4.int_value WHEN 0 THEN 'Non' ELSE 'Oui' END) as complete,
-	sav5_t.term::text as  as protocol,
+	sav5_t.term::text as protocol,
 	l.centroid_sref as sref,
 	li.path as location_image_path,
 	ARRAY(select t.term::text from location_attribute_values lav
