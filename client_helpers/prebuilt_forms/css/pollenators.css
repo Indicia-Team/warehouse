@@ -84,6 +84,27 @@ div#cc-1-summary {
   border: #878787 thin solid;
 }
 
+.node-creer-une-collection #cc-1-trailer-image {
+  border: none;
+  width: auto;
+  height: auto;
+  text-align: center;
+}
+
+.node-creer-une-collection #cc-1-trailer {
+  color: #999;
+  font-size: 0.85em;
+}
+
+#page .node-creer-une-collection .poll-section-trailer {
+      border:1px solid #D5D5D5;
+      border-bottom:medium none;
+      border-top:medium none;
+      overflow:auto;
+      padding:13px 15px;
+      text-align: center;
+}
+
 .poll-map-container {
 	float: left;
 	padding-right: 20px;
