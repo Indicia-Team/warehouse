@@ -75,14 +75,27 @@ class iform_mnhnl_dynamic_1 {
           'name'=>'structure',
           'caption'=>'Form Structure',
           'description'=>'Define the structure of the form. Each component goes on a new line and is nested inside the previous component where appropriate. The following types of '.
-            "component can be specified, with text inside <> is used to indicate where you should replace the text with your own values. ".
-            "=tab name= is used to specify the name of a tab. ".
-            "=*= indicates a placeholder for putting any custom attribute tabs not defined in this form structure. ".
-            "[<control name>] indicates a predefined control is to be added to the form with the following predefined controls available: '.
-                '[species] (a species grid or input control); [species_attributes] (any custom attributes for the occurrence, if not using the grid); '.
-                '[date]; [map]; [spatial reference]; [location name]; [location autocomplete]; [location select]; [place search]; [record status];[sample comment]. ".
-            "[*] is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. ".
-            "?<help text>? is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
+            "component can be specified. <br/>".
+            "<strong>=tab name=</strong> is used to specify the name of a tab. <br/>".
+            "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
+            "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
+                "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
+				"&nbsp;&nbsp;<strong>[species_attributes]</strong> - any custom attributes for the occurrence, if not using the grid<br/>".
+				"&nbsp;&nbsp;<strong>[date]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[map]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[location name]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[location autocomplete</strong>br/>".
+				"&nbsp;&nbsp;<strong>[location select]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[place search]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[record status]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
+            "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
+			"available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. ".
+			"Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
+			"classes to the control such as control-width-3). <br/>".
+			"<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab.<br/>".
+            "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
           'default' => "=Species=\r\n".
               "?Please enter the species you saw and any other information about them.?\r\n".
@@ -395,13 +408,14 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     $pageIdx = 0;
     foreach ($tabs as $tab=>$tabContent) {
       // get a machine readable alias for the heading
-      $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
-      $r .= '<div id="'.$alias.'">'."\n";
+      $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
+      $r .= '<div id="'.$tabalias.'">'."\n";
       if ($pageIdx==0)
         // output the hidden inputs on the first tab
         $r .= $hiddens;
-      // Now output the content of the tab
-      foreach ($tabContent as $component) {
+      // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
+	  for ($i = 0; $i < count($tabContent); $i++) {
+        $component = $tabContent[$i];
         if (preg_match('/\A\?[^¬]*\?\z/', trim($component))===1) {
           // Component surrounded by ? so represents a help text
           $helpText = substr(trim($component), 1, -1);
@@ -409,8 +423,15 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         } elseif (preg_match('/\A\[[^¬]*\]\z/', trim($component))===1) {
           // Component surrounded by [] so represents a control
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
+		  // Anything following the component that starts with @ is an option to pass to the control
+		  $options = array();
+		  while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@') {
+		    $i++;
+			$option = explode('=',substr($tabContent[$i],1));
+			$options[$option[0]]=$option[1];
+		  }
           if (method_exists('iform_mnhnl_dynamic_1', $method)) 
-            $r .= self::$method($auth, $args, $alias);
+            $r .= self::$method($auth, $args, $tabalias, $options);
           elseif (trim($component)==='[*]')
             $r .= self::get_attribute_html($attributes, $defAttrOptions, $tab);
           else          
@@ -548,10 +569,13 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   /** 
    * Get the map control.
    */
-  private static function get_control_map($auth, $args, $alias) {
-    $options = iform_map_get_map_options($args, $auth['read']);
+  private static function get_control_map($auth, $args, $tabalias, $options) {
+    $options = array_merge(
+	  iform_map_get_map_options($args, $auth['read']),
+	  $options
+	);
     $options['layers'][] = 'locationLayer';
-    $options['tabDiv'] = $alias;
+    $options['tabDiv'] = $tabalias;
     $olOptions = iform_map_get_ol_options($args);
     return data_entry_helper::map_panel($options, $olOptions);
   }
@@ -559,7 +583,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   /**
    * Get the control for species input, either a grid or a single species input control.
    */
-  private static function get_control_species($auth, $args) {
+  private static function get_control_species($auth, $args, $tabalias, $options) {
     global $indicia_templates;
     
     $extraParams = $auth['read'] + array('view' => 'detail');
@@ -572,7 +596,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     if (self::getGridMode($args)) {      
       // multiple species being input via a grid
       $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
-      $species_list_args=array(
+      $species_list_args=array_merge(array(
           'listId'=>$args['list_id'],
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'columns'=>1,          
@@ -580,7 +604,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'survey_id'=>$args['survey_id'],
 		  'occurrenceComment'=>$args['occurrence_comment'],
 		  'occurrenceImages'=>$args['occurrence_images']
-      );
+      ), $options);
       if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
       // then output the grid control
@@ -600,7 +624,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
         $extraParams['taxon_list_id'] = $args['extra_list_id'];
       else
         $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
-      $species_list_args=array(
+      $species_list_args=array_merge(array(
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'fieldname'=>'occurrence:taxa_taxon_list_id',
           'table'=>'taxa_taxon_list',
@@ -609,7 +633,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'columns'=>2,          
           'parentField'=>'parent_id',
           'extraParams'=>$extraParams
-      );
+      ), $options);
       if ($args['species_ctrl']=='tree_browser') {
         // change the node template to include images
         global $indicia_templates;
@@ -626,17 +650,17 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   /**
    * Get the sample comment control
    */
-  private static function get_control_samplecomment($auth, $args) {
-    return data_entry_helper::textarea(array(
+  private static function get_control_samplecomment($auth, $args, $tabalias, $options) {
+    return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:comment',
       'label'=>lang::get('Overall Comment')
-    )); 
+    ), $options)); 
   }
   
   /**
    * Get the block of custom attributes at the species (occurrence) level
    */
-  private static function get_control_speciesattributes($auth, $args, $alias) {
+  private static function get_control_speciesattributes($auth, $args, $tabalias, $options) {
     if (!self::getGridMode($args)) {  
       // Add any dynamically generated controls
       $attrArgs = array(
@@ -663,7 +687,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
         $r .= data_entry_helper::file_box(array(
           'table'=>'occurrence_image',
           'label'=>lang::get('Upload your photos'),
-		      'tabDiv'=>$alias
+		      'tabDiv'=>$tabalias
         ));
 	  return $r;
     } else 
@@ -674,70 +698,73 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   /** 
    * Get the date control.
    */
-  private static function get_control_date($auth, $args) {
-    return data_entry_helper::date_picker(array(
+  private static function get_control_date($auth, $args, $tabalias, $options) {
+    return data_entry_helper::date_picker(array_merge(array(
       'label'=>lang::get('LANG_Date'),
       'fieldname'=>'sample:date',
 		  'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
-    ));
+    ), $options));
   }
   
   /** 
    * Get the spatial reference control.
    */
-  private static function get_control_spatialreference($auth, $args) {
+  private static function get_control_spatialreference($auth, $args, $tabalias, $options) {
     // Build the array of spatial reference systems into a format Indicia can use.
     $systems=array();
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
     }    
-    return data_entry_helper::sref_and_system(array(
+    return data_entry_helper::sref_and_system(array_merge(array(
       'label' => lang::get('LANG_SRef_Label'),
       'systems' => $systems
-    ));
+    ), $options));
   }
   
   /** 
    * Get the location control as an autocomplete.
    */
-  private static function get_control_locationautocomplete($auth, $args) {
-    $location_list_args=array(
+  private static function get_control_locationautocomplete($auth, $args, $tabalias, $options) {
+    $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
         'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
-    );
+    ), $options);
     return data_entry_helper::location_autocomplete($location_list_args);
   }
   
   /** 
    * Get the location control as a select dropdown.
    */
-  private static function get_control_locationselect($auth, $args) {
-    $location_list_args=array(
+  private static function get_control_locationselect($auth, $args, $tabalias, $options) {
+    $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
         'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $auth['read'])
-    );
+    ), $options);
     return data_entry_helper::location_select($location_list_args);
   }
   
   /** 
    * Get the location name control.
    */
-  private static function get_control_locationname($auth, $args) {
-    return data_entry_helper::text_input(array(
+  private static function get_control_locationname($auth, $args, $tabalias, $options) {
+    return data_entry_helper::text_input(array_merge(array(
       'label' => lang::get('LANG_Location_Name'),
       'fieldname' => 'sample:location_name',
       'class' => 'control-width-5'
-    ));
+    ), $options));
   }
   
   /** 
    * Get the location search control.
    */
-  private static function get_control_placesearch($auth, $args) {
-    return data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
+  private static function get_control_placesearch($auth, $args, $tabalias, $options) {
+    return data_entry_helper::georeference_lookup(array_merge(
+	  iform_map_get_georef_options($args),
+	  $options
+	));
   }
   
   /**
