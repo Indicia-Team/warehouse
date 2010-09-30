@@ -199,7 +199,7 @@ class iform_verification_1 {
              wordwrap($emailBody, 70),
              $headers);        
         if ($success) {
-          $r .= '<div class="page-notice ui-state-highlight ui-corner-all"><p>An email was set to '.$_POST['email_to'].'.</p></div>';
+          $r .= '<div class="page-notice ui-state-highlight ui-corner-all"><p>An email was sent to '.$_POST['email_to'].'.</p></div>';
         }  
         else
           $r.= '<div class="page-notice ui-widget-content ui-corner-all ui-state-highlight left">The webserver is not correctly configured to send emails. Please send the following email manually: <br/>'.
