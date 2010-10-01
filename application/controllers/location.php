@@ -120,7 +120,7 @@ class Location_Controller extends Gridview_Base_Controller {
       $zip = new ZipArchive;
       $res = $zip->open($zipTempFile);
       if ($res != TRUE) {
-        $this->setError('Upload file problem', 'Could not open Zip archive file.');
+        $this->setError('Upload file problem', 'Could not open Zip archive file - possible invalid format.');
         return;
       }
       $directory = Kohana::config('upload.zip_extract_directory', TRUE);
@@ -131,11 +131,11 @@ class Location_Controller extends Gridview_Base_Controller {
           mkdir($directory, 0777, TRUE);
       }
       if ( ! is_dir($directory) ) {
-        $this->setError('Upload file problem', 'Could not create Zip extraction directory.');
+        $this->setError('Upload file problem', 'Zip extraction directory '.$directory.' does not exist. Please create, or set Indicia upload.create_directories configuration item to true.');
         return;
       }
       if ( ! is_writable($directory)) {
-        $this->setError('Upload file problem', 'Zip extraction directory not writable.');
+        $this->setError('Upload file problem', 'Zip extraction directory '.$directory.' is not writable.');
         return;
       }
       if ( ! $zip->extractTo($directory)) {
@@ -196,14 +196,17 @@ class Location_Controller extends Gridview_Base_Controller {
       $this->page_breadcrumbs[] = 'Setup SHP File upload';
     } else {
       $errors = $_FILES->errors();
-      $error = '';      
+      $error = '';
       foreach ($errors as $key => $val) {
         switch ($val) {
+          case 'required': 
+            $error .= 'You must specify a Zip Archive file to upload, containing the .shp and .dbf files.<br/>';
+            break;
           case 'valid': 
             $error .= 'The uploaded file is not valid.<br/>';
             break;
-          case 'zip': 
-            $error .= 'The uploaded file is not a zip file.<br/>';
+          case 'type': 
+            $error .= 'The uploaded file is not a zip file. The Shapefile should be uploaded in a Zip Archive file, which should also contain the .dbf file containing the data for each record.<br/>';
             break;
           case 'size': 
             $error .= 'The upload file is greater than the limit of '.$sizelimit.'b.<br/>';
