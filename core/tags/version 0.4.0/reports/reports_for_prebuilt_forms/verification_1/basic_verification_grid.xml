@@ -1,0 +1,53 @@
+<report
+    title="Basic Verification Grid"
+    description="Grid provided for verification."
+    row_class="biota"
+>
+  <query>
+  SELECT o.id as occurrence_id, su.title, su.website_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
+  s.entered_sref, l.name as location_name, oi.path, 
+  CASE o.record_status 
+    WHEN 'C' THEN 'Data Entry Complete' 
+    WHEN 'V' THEN 'Verified'
+    WHEN 'R' THEN 'Rejected'
+    WHEN 'I' THEN 'In Progress'
+    WHEN 'T' THEN 'Test'
+    WHEN 'S' THEN 'Sent for verification'
+    ELSE ''
+  END AS record_status,
+  u.username as verified_by
+  FROM samples s
+  JOIN occurrences o ON o.sample_id=s.id
+  LEFT JOIN occurrence_images oi ON oi.occurrence_id=o.id
+  JOIN surveys su ON s.survey_id = su.id
+  JOIN list_taxa_taxon_lists lttl ON lttl.id=o.taxa_taxon_list_id
+  LEFT JOIN locations l ON l.id=s.location_id
+  LEFT JOIN users u ON u.id=o.verified_by_id
+  WHERE (su.id=#survey# or #id#&lt;&gt;0)
+  AND (o.record_status = '#record_status#' OR '#record_status#' = 'all' OR #id#&lt;&gt;0)
+  AND (o.id=#id# OR #id# = 0)
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>date_start DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='id' display='Record ID' description='Enter the ID of a record to view or leave blank for all records.' datatype='integer' emptyvalue='0' />
+    <param name='survey' display='Survey' description='Select the survey to return data for (not applicable when viewing a single record by ID).' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' emptyvalue='0' />
+    <param name='record_status' display='Record Status' description='Select the record status to view data for (not applicable when viewing a single record by ID).' datatype='lookup'
+        lookup_values='all:All,C:Complete,S:Sent for verification,V:Verified' />
+  </params>
+  <columns>
+    <column name='occurrence_id' display='ID' />
+    <column name='title' display='Survey' />
+    <column name='website_id' visible='false' />
+    <column name='taxon' display='Taxon' class='sci binomial' />
+    <column name='date' display='Date' orderby='date_start' />
+    <column name='entered_sref' display='Spatial Ref.' />
+    <column name='location_name' display='Location' />
+    <column name='path' display='Photo' img='true' />
+    <column name='record_status' display='Record Status' />
+    <column name='verified_by' display='Verified By' />
+  </columns>
+</report>
