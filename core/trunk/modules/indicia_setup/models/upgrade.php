@@ -46,8 +46,6 @@ class Upgrade_Model extends Model
       if (1 == version_compare('0.2.3', $old_version) ) {
         $old_version='0.2.3';
       }
-      // start transaction
-      $this->begin();
       try
       {
         $currentVersionNumbers = explode('.', $old_version);
@@ -63,9 +61,15 @@ class Upgrade_Model extends Model
             kohana::log('debug', "Method ran for $version_name");
           }
           if (file_exists($this->base_dir . "/modules/indicia_setup/db/" . $version_name)) {
+            // start transaction for each folder full of scripts
+            $this->begin();
             // we have a folder containing scripts
             $this->execute_sql_scripts($version_name);
             $updatedTo = implode('.', $currentVersionNumbers);
+            // update the version number of the db since we succeeded
+            $this->set_new_version($updatedTo);
+            // commit transaction
+            $this->commit();
             kohana::log('debug', "Scripts ran for $version_name");
           }
           
@@ -86,11 +90,8 @@ class Upgrade_Model extends Model
           }        
         }
         // update system table entry to new version
-        kohana::log('debug', "Upgrade completed to $updatedTo");
-        $this->set_new_version($updatedTo);                
+        kohana::log('debug', "Upgrade completed to $updatedTo");        
         
-        // commit transaction
-        $this->commit();
         kohana::log('debug', "Upgrade committed");        
       }
       catch(Exception $e)
