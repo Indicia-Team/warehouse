@@ -252,7 +252,7 @@ class ORM extends ORM_Core {
     // Where fields are numeric, ensure that we don't try to submit strings to
     // them.
     foreach ($this->submission['fields'] as $field => $content) {
-      if ($content['value'] == '' && array_key_exists($field, $this->table_columns)) {
+      if (isset($content['value']) && $content['value'] == '' && array_key_exists($field, $this->table_columns)) {
         $type = $this->table_columns[$field];
         switch ($type) {
           case 'int':
