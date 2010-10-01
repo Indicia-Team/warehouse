@@ -272,8 +272,9 @@ class iform_mnhnl_dynamic_1 {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
-    $mode = 0; // default mode : display grid of existing data
-    			// mode 1: display new sample
+    $mode = (isset($args['no_grid']) && $args['no_grid']) 
+        ? $mode = 1 // default mode when no_grid set to true - display new sample
+        : $mode = 0; // default mode when no grid set to false - display grid of existing data
     			// mode 2: display existing sample
     $loadID = null;
     if ($_POST) {
@@ -283,7 +284,7 @@ class iform_mnhnl_dynamic_1 {
     } elseif (array_key_exists('sample_id', $_GET)){
       $mode = 2;
       $loadID = $_GET['sample_id'];
-    } else if (array_key_exists('newSample', $_GET) || (isset($args['no_grid']) && $args['no_grid'])){
+    } else if (array_key_exists('newSample', $_GET)){
       $mode = 1;
       data_entry_helper::$entity_to_load = array();
 	} // else default to mode 0
@@ -345,10 +346,10 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
           "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
-    if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
+    if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
     }
-    if(array_key_exists('occurrence:id', data_entry_helper::$entity_to_load)){
+    if (isset(data_entry_helper::$entity_to_load['occurrence:id'])) {
       $hiddens .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";	
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
