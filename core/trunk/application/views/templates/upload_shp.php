@@ -21,12 +21,13 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-print form::open($controllerpath.'/upload_shp', array('ENCTYPE'=>'multipart/form-data'));
-if ($staticFields != null) {
-  foreach ($staticFields as $a => $b) {
-    print form::hidden($a, $b);
+if (function_exists('dbase_open') && function_exists('zip_open')) {
+  print form::open($controllerpath.'/upload_shp', array('ENCTYPE'=>'multipart/form-data'));
+  if ($staticFields != null) {
+    foreach ($staticFields as $a => $b) {
+      print form::hidden($a, $b);
+    }
   }
-}
 ?>
 <fieldset>
 <label for="zip_upload" class="auto">Upload a Zipped up SHP fileset into this list:</label>
@@ -34,3 +35,13 @@ if ($staticFields != null) {
 <input type="submit" value="Upload ZIP File" />
 </fieldset>
 </form>
+<?php 
+} else {
+  print "<p><i>";
+  if (!function_exists('dbase_open'))
+    print "PHP dBase Library is not loaded. ";
+  if (!function_exists('zip_open'))
+    print "PHP Zip Library is not loaded. ";
+  print "Shape file upload disabled.</i></p>";
+}
+?>
