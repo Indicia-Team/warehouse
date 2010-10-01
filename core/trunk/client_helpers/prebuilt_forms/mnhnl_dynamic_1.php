@@ -117,6 +117,15 @@ class iform_mnhnl_dynamic_1 {
           'group' => 'User Interface'
         ),
         array(
+          'name'=>'no_grid',
+          'caption'=>'Skip initial grid of data',
+          'description'=>'If checked, then when initially loading the form the data entry form is immediately displayed, as opposed to '.
+              'the default of displaying a grid of the user\'s data which they can add to.',
+          'type'=>'boolean',
+          'default' => false,
+          'group' => 'User Interface'
+        ),    
+        array(
           'name' => 'grid_report',
           'caption' => 'Grid Report',
           'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
@@ -132,7 +141,7 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'Should the save button be present below all the pages (checked), or should it be only on the last page (unchecked)? '.
               'Only applies to the Tabs interface style.',
           'type'=>'boolean',
-          'default' => 'false',
+          'default' => false,
           'group' => 'User Interface'
         ),        
         array(
@@ -274,7 +283,7 @@ class iform_mnhnl_dynamic_1 {
     } elseif (array_key_exists('sample_id', $_GET)){
       $mode = 2;
       $loadID = $_GET['sample_id'];
-    } else if (array_key_exists('newSample', $_GET)){
+    } else if (array_key_exists('newSample', $_GET) || (isset($args['no_grid']) && $args['no_grid'])){
       $mode = 1;
       data_entry_helper::$entity_to_load = array();
 	} // else default to mode 0
