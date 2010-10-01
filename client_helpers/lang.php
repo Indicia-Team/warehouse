@@ -19,6 +19,9 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+/**
+ * Link in other required php files.
+ */
 require_once('lang/default.php');
 
 /**
