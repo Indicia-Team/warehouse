@@ -188,15 +188,15 @@ jQuery('#{parentControlId}').change();\n",
  * data_entry_helper::$helpTextPos, which can be set to before or after (default). The template is defined by
  * global $indicia_templates['helpText'] and can be replaced on an instance by instance basis by specifying an
  * option 'helpTextTemplate' for the control.
- * <li><b>helpTextTemplate</b></li>
+ * <li><b>helpTextTemplate</b>
  * If helpText is supplied but you need to change the template for this control only, set this to refer to the name of an
  * alternate template you have added to the $indicia_templates array. The template should contain a {helpText} replacement
  * string.</li>
- * <li><b>prefixTemplate</b></li>
+ * <li><b>prefixTemplate</b>
  * If you need to change the prefix for this control only, set this to refer to the name of an alternate template you
  * have added to the global $indicia_templates array. To change the prefix for all controls, you can update the value of
  * $indicia_templates['prefix'] before building the form.</li>
- * <li><b>suffixTemplate</b></li>
+ * <li><b>suffixTemplate</b>
  * If you need to change the suffix for this control only, set this to refer to the name of an alternate template you
  * have added to the global $indicia_templates array. To change the suffix for all controls, you can update the value of
  * $indicia_templates['suffix'] before building the form.</li>
@@ -374,16 +374,22 @@ class data_entry_helper extends helper_config {
 /* Start of main controls section */
 /**********************************/
 
-
-
  /**
   * Helper function to generate an autocomplete box from an Indicia core service query.
-  * Because this generates a hidden ID control as well as a text input control, the HTML label you
-  * associate with this control should be of the form "$id:$caption" rather than just the $id which
+  * Because this generates a hidden ID control as well as a text input control, if you are outputting your own HTML label
+  * then the label you associate with this control should be of the form "$id:$caption" rather than just the $id which
   * is normal for other controls. For example:
+  * <code>
   * <label for='occurrence:taxa_taxon_list_id:taxon'>Taxon:</label>
-  * <?php echo data_entry_helper::autocomplete('occurrence:taxa_taxon_list_id', 'taxa_taxon_list', 'taxon', 'id', $readAuth); ?>
-  * <br/>
+  * <?php echo data_entry_helper::autocomplete(array(
+  *     'fieldname' => 'occurrence:taxa_taxon_list_id', 
+  *     'table' => 'taxa_taxon_list', 
+  *     'captionField' => 'taxon', 
+  *     'valueField' => 'id', 
+  *     'extraParams' => $readAuth
+  * )); ?>
+  * </code>
+  * Of course if you use the built in label option in the options array then this is handled for you.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -585,18 +591,20 @@ class data_entry_helper extends helper_config {
   }
 
 /**
-  * <p>Outputs a file upload control suitable for linking images to records. The control allows selection
-  * of multiple files, and depending on the browser functionality it gives progress feedback.</p>
-  * <p>The control uses Google Gears, Flash, Silverlight, Browserplus or HTML5 to enhance the functionality
+  * Outputs a file upload control suitable for linking images to records. 
+  * The control allows selection of multiple files, and depending on the browser functionality it gives progress feedback.
+  * The control uses Google Gears, Flash, Silverlight, Browserplus or HTML5 to enhance the functionality
   * where available. The output of the control can be configured by changing the content of the templates called
-  * file_box, file_box_initial_file_info, file_box_uploaded_image and button.</p>
+  * file_box, file_box_initial_file_info, file_box_uploaded_image and button.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>table</b><br/>
   * Name of the image table to upload images into, e.g. occurrence_image, location_image, sample_image or taxon_image.
   * Defaults to occurrence_image.
+  * </li>
   * <li><b>id</b><br/>
   * Optional. Provide a unique identifier for this image uploader control if more than one are required on the page.
+  * </li>  
   * <li><b>caption</b><br/>
   * Caption to display at the top of the uploader box. Defaults to the translated string for "Files".
   * </li>
@@ -657,11 +665,12 @@ class data_entry_helper extends helper_config {
   * Internet Explorer 6 and html5 is removed for Chrome. You should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
-  * Override the destination folder for uploaded files. You should not normally need to change this.</li>
+  * Override the destination folder for uploaded files. You should not normally need to change this.
   * </li>
   * <li><b>swfAndXapFolder</b><br/>
   * Override the folder which the Plupload Flash (swf) and Silverlight (xap) files are loaded from. You should not
-  * normally need to change this.</li>
+  * normally need to change this.
+  * </li>
   * <li><b>codeGenerated</b>
   * If set to all (default), then this returns the HTML required and also inserts JavaScript in the document onload event. However, if you
   * need to delay the loading of the control until a certain event, e.g. when a radio button is checked, then this can be set
@@ -671,15 +680,14 @@ class data_entry_helper extends helper_config {
   * <li><b>tabDiv</b><br/>
   * If loading this control onto a set of tabs, specify the tab control's div ID here. This allows the control to
   * automatically generate code which only generates the uploader when the tab is shown, reducing problems in certain
-  * runtimes. This has no effect if codeGenerated is not left to the default state of all.</li>
+  * runtimes. This has no effect if codeGenerated is not left to the default state of all.
+  * </li>
   * </ul>
   *
-  * @todo max file count
   * @todo select file button pointer overriden by the flash shim
   * @todo flickr
   * @todo if using a normal file input, after validation, the input needs to show that the file upload has worked.
   * @todo Cleanup uploaded files that never got submitted because of validation failure elsewhere.
-  * @todo Ensure existing data reloads properly when editing records.
   */
   public static function file_box($options) {
     global $indicia_templates;
@@ -790,10 +798,10 @@ class data_entry_helper extends helper_config {
 
  /**
   * Generates a text input control with a search button that looks up an entered place against a georeferencing
-  * web service. At this point in time only the Yahoo! GeoPlanet service is supported. The control is automatically
-  * linked to any map panel added to the page.
+  * web service. The control is automatically linked to any map panel added to the page.
   *
-  * @param array $options Options array with the following possibilities:<ul>
+  * @param array $options Options array with the following possibilities:
+  * <ul>
   * <li><b>fieldname</b><br/>
   * Optional. The name of the database field this control is bound to if any.</li>
   * <li><b>class</b><br/>
@@ -807,10 +815,12 @@ class data_entry_helper extends helper_config {
   * <li><b>georefLang</b><br/>
   * Optional. Language to request place names in. Defaults to en-EN for English place names.</li>
   * <li><b>driver</b><br/>
-  * Optional. Driver to use for the georeferencing operation. Supported options are:
-  *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.
+  * Optional. Driver to use for the georeferencing operation. Supported options are:<br/>
+  *   geoplanet - uses the Yahoo! GeoPlanet place search. This is the default.<br/>
   *   google_search_api - uses the Google AJAX API LocalSearch service. This method requires both a
-  *       georefPreferredArea and georefCountry to work correctly.</li>
+  *       georefPreferredArea and georefCountry to work correctly.<br/>
+  *   geoportal_lu - Use the Luxembourg specific place name search provided by geoportal.lu.
+  * </li>
   * </ul>
   * @link http://code.google.com/apis/ajaxsearch/terms.html Google AJAX Search API Terms of Use.
   * @link http://code.google.com/p/indicia/wiki/GeoreferenceLookupDrivers Documentation for the driver architecture.
@@ -856,9 +866,10 @@ class data_entry_helper extends helper_config {
   }
 
  /**
-  * Helper function to support image upload by inserting a file path upload control. Note that when using this control,
-  * it is essential that the form's HTML enctype attribute is set to enctype="multipart/form-data" so that the image file
-  * is included in the form data.
+  * Simple file upload control suitable for uploading images to attach to occurrences. 
+  * Note that when using this control, it is essential that the form's HTML enctype attribute is 
+  * set to enctype="multipart/form-data" so that the image file is included in the form data. For multiple 
+  * image support and more advanced options, see the file_box control.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -973,7 +984,9 @@ class data_entry_helper extends helper_config {
   }
 
  /**
-  * Helper function to generate a list box from a Indicia core service query. The list box can
+  * An HTML list box control.
+  * Options can be either populated from a web-service call to the Warehouse, e.g. the contents of 
+  * a termlist, or can be populated from a fixed supplied array. The list box can
   * be linked to populate itself when an item is selected in another control by specifying the
   * parentControlId and filterField options.
   *
@@ -1116,6 +1129,7 @@ class data_entry_helper extends helper_config {
   * True or false to include the geolocate controls.</li>
   * <li><b>wkt</b><br/>
   * Well Known Text of a spatial object to add to the map at startup.</li>
+  * </ul>
   */
   public static function map() {
     $options = self::check_arguments(func_get_args(), array('div', 'presetLayers', 'edit', 'locate', 'wkt'));
@@ -1349,11 +1363,12 @@ class data_entry_helper extends helper_config {
   *     'label'=>'Postcode',
   *     'fieldname'=>'smpAttr:8',
   *     'linkedAddressBoxId'=>'address'
-  * ); ?>
-  * <br />
-  * <label for="address">Address:</label>
-  * <textarea name="address" id="address"></textarea>
-  * <br />
+  * ); 
+  * echo data_entry_helper::textarea(array(
+  *     'label' => 'Address',
+  *     'id' => 'address',
+  *     'fieldname' => 'smpAttr:9'
+  * ));?>
   * </code>
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -2017,26 +2032,20 @@ class data_entry_helper extends helper_config {
   * <li><b>chartType</b><br/>
   * Currently supports line, bar or pie.</li>
   * <li><b>rendererOptions</b><br/>
-  * Associative array of options to pass to the jqplot renderer.</li>
-  * @link http://www.jqplot.com/docs/files/plugins/jqplot-barRenderer-js.html
-  * @link http://www.jqplot.com/docs/files/plugins/jqplot-lineRenderer-js.html
-  * @link http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html
+  * Associative array of options to pass to the jqplot renderer.
   * </li>
   * <li><b>legendOptions</b><br/>
-  * Associative array of options to pass to the jqplot legend. For more information see links below.
-  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
+  * Associative array of options to pass to the jqplot legend. For more information see links below.  
   * </li>
   * <li><b>seriesOptions</b><br/>
   * For line and bar charts, associative array of options to pass to the jqplot series. For example:<br/>
   * 'seriesOptions' => array(array('label'=>'My first series','label'=>'My 2nd series'))<br/>
   * For more information see links below.
-  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Series
   * </li>
   * <li><b>axesOptions</b><br/>
   * For line and bar charts, associative array of options to pass to the jqplot axes. For example:<br/>
   * 'axesOptions' => array('yaxis'=>array('min' => 0, 'max' => '3', 'tickInterval' => 1))<br/>
   * For more information see links below.
-  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Axes
   * </li>
   * <li><b>yValues</b><br/>
   * Report or table field name(s) which contains the data values for the y-axis (or the pie segment sizes). Can be
@@ -2050,6 +2059,12 @@ class data_entry_helper extends helper_config {
   * charts.</li>
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
+  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Series
+  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Axes
+  * @link http://www.jqplot.com/docs/files/plugins/jqplot-barRenderer-js.html
+  * @link http://www.jqplot.com/docs/files/plugins/jqplot-lineRenderer-js.html
+  * @link http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html
+  * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend
   */
   public static function report_chart($options) {
     $options = array_merge(array(
@@ -3096,6 +3111,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * <li><b>page</b><br/>
   * Specify first, middle or last to indicate which page this is for. Use middle (the default) for
   * all pages other than the first or last.</li>
+  * </ul>
   *
   * @link http://docs.jquery.com/UI/Tabs
   */
@@ -3166,11 +3182,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
  /**
   * Call the enable_validation method to turn on client-side validation for any controls with
-  * validation rules defined. To specify validation on each control, set the control's options array
+  * validation rules defined. 
+  * To specify validation on each control, set the control's options array
   * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
   * validation format. For example, 'validation' => array('required', 'email').
   * @param string @form_id Id of the form the validation is being attached to.
-  *
   */
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
@@ -3872,9 +3888,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   }
 
  /**
-  * Helper method to enable the support for tabbed interfaces for a div. The jQuery documentation
-  * describes how to specify a list within the div which defines the tabs that are present. This method
-  * also automatically selects the first tab that contains validation errors if the form is being
+  * Helper method to enable the support for tabbed interfaces for a div.
+  * The jQuery documentation describes how to specify a list within the div which defines the tabs that are present.
+  * This method also automatically selects the first tab that contains validation errors if the form is being
   * reloaded after a validation attempt.
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -3886,6 +3902,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
   * is not displayed and the navigation should be provided by the tab_button control. This
   * must be manually added to each tab page div.</li>
+  * </ul>
   *
   * @link http://docs.jquery.com/UI/Tabs
   */
@@ -4065,6 +4082,9 @@ if (errors.length>0) {
   /**
    * Either takes the passed in submission, or creates it from the post data if this is null, and forwards
    * it to the data services for saving as a member of the entity identified.
+   * @param string $entity Name of the top level entity being submitted, e.g. sample or occurrence.
+   * @param array $submission The wrapped submission structure. If null, then this is automatically constructer
+   * from the form data in $_POST.
    * @param array $writeTokens Array containing auth_token and nonce for the write operation. If null then
    * the values are read from $_POST.
    */
@@ -4341,27 +4361,8 @@ if (errors.length>0) {
    * The advantage of dump_javascript is that it intelligently builds the required links
    * depending on what is on your form. dump_header is not intelligent because the form is not
    * built yet, but placing links in the header leads to cleaner code which validates better.
-   * @param $resources List of resources to include in the header. The available options are:
-   * <ul>
-   * <li>jquery<li>
-   * <li>openlayers<li>
-   * <li>addrowtogrid<li>
-   * <li>indiciaMap<li>
-   * <li>indiciaMapPanel<li>
-   * <li>indiciaMapEdit<li>
-   * <li>locationFinder<li>
-   * <li>autocomplete<li>
-   * <li>jquery_ui<li>
-   * <li>json<li>
-   * <li>treeview<li>
-   * <li>googlemaps<li>
-   * <li>multimap<li>
-   * <li>virtualearth<li>
-   * <li>google_search<li>
-   * <li>flickr<li>
-   * <li>defaultStylesheet<li>
-   * </ul>
-   * The default for this is jquery_ui and defaultStylesheet.
+   * @param $resources List of resources to include in the header. The available options are described
+   * in the documentation for the add_resource method. The default for this is jquery_ui and defaultStylesheet.
    *
    * @return string Text to place in the head section of the html file.
    */
@@ -4534,9 +4535,11 @@ $onload_javascript
   }
 
   /**
-   * Retrieves any errors that have not been emitted alongside a form control and adds them to the page. This is useful
-   * when added to the bottom of a form, because occasionally an error can be returned which is not associated with a form
+   * Retrieves any errors that have not been emitted alongside a form control and adds them to the page. 
+   * This is useful when added to the bottom of a form, because occasionally an error can be returned which is not associated with a form
    * control, so calling dump_errors with the inline option set to true will not emit the errors onto the page.
+   * @return string HTML block containing the error information, built by concatenating the 
+   * validation_message template for each error.
    */
   public static function dump_remaining_errors()
   {
@@ -4742,10 +4745,30 @@ $('.ui-state-default').live('mouseout', function() {
 
   /**
    * Method to link up the external css or js files associated with a set of code.
-   * Ensures each file is only linked once.
+   * This is normally called internally by the control methods to ensure the required files are linked into the page so
+   * does not need to be called directly. However it can be useful when writing custom code that uses one of these standard
+   * libraries such as jQuery. Ensures each file is only linked once. 
    *
-   * @param string $resource Name of resource to link.
-   * @todo Document the list of resources. See the get_resources method.
+   * @param string $resource Name of resource to link. The following options are available:
+   * <ul>
+   * <li>jquery</li>
+   * <li>openlayers</li>
+   * <li>addrowtogrid</li>
+   * <li>indiciaMap</li>
+   * <li>indiciaMapPanel</li>
+   * <li>indiciaMapEdit</li>
+   * <li>locationFinder</li>
+   * <li>autocomplete</li>
+   * <li>jquery_ui</li>
+   * <li>json</li>
+   * <li>treeview</li>
+   * <li>googlemaps</li>
+   * <li>multimap</li>
+   * <li>virtualearth</li>
+   * <li>google_search</li>
+   * <li>flickr</li>
+   * <li>defaultStylesheet</li>
+   * </ul>
    */
   public static function add_resource($resource)
   {
@@ -4807,8 +4830,8 @@ $('.ui-state-default').live('mouseout', function() {
   }
 
   /**
-   * Returns the default value for the control with the supplied Id. The default value is
-   * taken as either the $_POST value for this control, or the first of the remaining
+   * Returns the default value for the control with the supplied Id. 
+   * The default value is taken as either the $_POST value for this control, or the first of the remaining
    * arguments which contains a non-empty value.
    *
    * @param string $id Id of the control to select the default for.
@@ -4972,8 +4995,10 @@ $('.ui-state-default').live('mouseout', function() {
   }
 
   /**
-  * Helper function to fetch details of attributes
-  * TODO at moment this assumes non multiplevalue attributes.
+  * Helper function to fetch details of attributes associated with a survey.
+  * This can be used to auto-generated the forum structure for a survey for example.
+  * @todo at moment this assumes non multiplevalue attributes.
+  * @todo Improved documentation
   *
   * @return array of attributes.
   */
@@ -5245,7 +5270,7 @@ $('.ui-state-default').live('mouseout', function() {
   /**
    * Retrieves an array of just the image data from a $_POST or set of control values.
    *
-   * @param arraay $values
+   * @param array $values Pass the $_POST data or other array of form values in this parameter.
    * @param string $modelName The singular name of the image table, e.g. location_image or occurrence_image etc. If
    * null, then any image model will be used.
    * @param boolean $simpleFileInputs If true, then allows a file input with name=occurrence:image (or similar)
@@ -5422,6 +5447,7 @@ $('.ui-state-default').live('mouseout', function() {
   }
 
   /**
+   * Provides access to a list of remembered field values from the last time the form was used. 
    * Accessor for the $remembered_fields variable. This is a list of the fields on the form
    * which are to be remembered the next time the form is loaded, e.g. for values that do not change
    * much from record to record. This creates the list on demand, by calling a hook indicia_define_remembered_fields
@@ -5440,8 +5466,8 @@ $('.ui-state-default').live('mouseout', function() {
   }
 
   /**
-   * Accessor to set the list of remembered fields. Should only be called by the hook method
-   * indicia_define_remembered_fields.
+   * Accessor to set the list of remembered fields. 
+   * Should only be called by the hook method indicia_define_remembered_fields.
    * @see get_rememebered_fields
    * @param $arr Array of field names
    */

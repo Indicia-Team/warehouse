@@ -19,6 +19,9 @@
  * @link   http://code.google.com/p/indicia/
  */
 
+/**
+ * Link in other required php files.
+ */
 require_once('lang.php');
 require_once('helper_config.php');
 require_once('data_entry_helper.php');

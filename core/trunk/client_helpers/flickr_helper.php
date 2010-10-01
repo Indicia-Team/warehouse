@@ -20,11 +20,15 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+/**
+ * Link in other required php files.
+ */
 require_once('helper_config.php');
 require_once('phpFlickr\phpFlickr.php');
 
 /**
  * Static helper class for interaction with the Flickr photo storage website.
+ * @package Client
  */
 class flickr_helper extends helper_config {
 
