@@ -414,7 +414,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         // output the hidden inputs on the first tab
         $r .= $hiddens;
       // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
-	  for ($i = 0; $i < count($tabContent); $i++) {
+      for ($i = 0; $i < count($tabContent); $i++) {
         $component = $tabContent[$i];
         if (preg_match('/\A\?[^¬]*\?\z/', trim($component))===1) {
           // Component surrounded by ? so represents a help text
@@ -423,13 +423,13 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         } elseif (preg_match('/\A\[[^¬]*\]\z/', trim($component))===1) {
           // Component surrounded by [] so represents a control
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
-		  // Anything following the component that starts with @ is an option to pass to the control
-		  $options = array();
-		  while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@') {
-		    $i++;
-			$option = explode('=',substr($tabContent[$i],1));
-			$options[$option[0]]=$option[1];
-		  }
+          // Anything following the component that starts with @ is an option to pass to the control
+          $options = array();
+          while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@') {
+            $i++;
+            $option = explode('=',substr($tabContent[$i],1));
+            $options[$option[0]]=$option[1];
+          }
           if (method_exists('iform_mnhnl_dynamic_1', $method)) 
             $r .= self::$method($auth, $args, $tabalias, $options);
           elseif (trim($component)==='[*]')
@@ -791,9 +791,11 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
   private static function get_attribute_html($attributes, $defAttrOptions, $outerFilter=null) {
   	$lastOuterBlock='';
     $lastInnerBlock='';
+    $r = '';
     foreach ($attributes as $attribute) {
       // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
       if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {
+        
         if (empty($outerFilter) && $lastOuterBlock!=$attribute['outer_structure_block']) {
           if (!empty($lastInnerBlock)) {
             $r .= '</fieldset>';
