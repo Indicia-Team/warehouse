@@ -776,13 +776,13 @@ class data_entry_helper extends helper_config {
         $javascript =
             "var tabHandler = function(event, ui) { \n".
             "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ".
-			$javascript.
-			"    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n".
+        $javascript.
+            "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n".
             "  }\n};\n".
             "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
-	    // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
-		// first tab cannot fire the event
-		self::$javascript = $javascript . self::$javascript;
+        // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
+        // first tab cannot fire the event
+        self::$javascript = $javascript . self::$javascript;
       }	else
         self::$onload_javascript .= $javascript;
     }
@@ -1331,18 +1331,23 @@ class data_entry_helper extends helper_config {
       if ($olOptions) {
         $json .= ','.json_encode($olOptions);
       }
+      $javascript = '';
       if (isset($options['tabDiv'])) {
-        // The map is displayed on a tab, so we must only generate it when the tab is displayed.
-        self::$onload_javascript .=
-            "var tabHandler = function(event, ui) { \n";
-        self::$onload_javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ";
+        // The map is displayed on a tab, so we must only generate it when the tab is displayed.        
+        $javascript .= "var tabHandler = function(event, ui) { \n";
+        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ";        
       }
-      self::$onload_javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+      $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
       if (isset($options['tabDiv'])) {
-        self::$onload_javascript .= "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n";
-        self::$onload_javascript .= "  }\n};\n";
-        self::$onload_javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
-      }
+        $javascript .= "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n";
+        $javascript .= "  }\n};\n";
+        $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
+        // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
+        // first tab cannot fire the event
+        self::$javascript = $javascript . self::$javascript;
+      }	else
+        self::$onload_javascript .= $javascript;
+      
       return self::apply_template('map_panel', $options);
     }
   }
@@ -3902,16 +3907,27 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * Optional. Possible values are tabs (default) or wizard. If set to wizard, then the tab header
   * is not displayed and the navigation should be provided by the tab_button control. This
   * must be manually added to each tab page div.</li>
+  * <li><b>progressBar</b><br/>
+  * Optional. Set to true to output a progress header above the tabs/wizard which shows which 
+  * stage the user is on out of the sequence of steps in the wizard.</li>  
   * </ul>
   *
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function enable_tabs($options) {
+    $scrollTopIntoView = "if ($('.wiz-prog').length>0) {
+    topDiv = $('.wiz-prog')[0];
+  } else {
+    topDiv = $('#".$options['divId']."')[0];
+  }
+  if ($(topDiv).offset().top-$(window).scrollTop()<0) {
+    topDiv.scrollIntoView(true);
+  }";
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
       // Scroll to the top of the page. This may be required if subsequent tab pages are longer than the first one, meaning the
-      // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
+        // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
       // drags the scroll bar while the page is loading.
       self::$javascript .= "\nscroll(0,0);";
       self::$javascript .= "\n$('.tab-submit').click(function() {
@@ -3928,18 +3944,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       // it forces it into view. This helps a lot when the tabs vary in height.
       self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
   $(a).click();
-  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {
-    document.getElementById('".$options['divId']."').scrollIntoView(true);
-  }
+  ".$scrollTopIntoView."
 });";
 
       self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
-  if ($('#".$options['divId']."').offset().top-$(window).scrollTop()<0) {
-    document.getElementById('".$options['divId']."').scrollIntoView(true);
-  }
+  ".$scrollTopIntoView."
 });\n";
 
       // We put this javascript into $late_javascript so that it can come after the other controls.
@@ -3964,6 +3976,11 @@ if (errors.length>0) {
       if (array_key_exists('style', $options) && $options['style']=='wizard') {
         self::$late_javascript .= "$('#$divId .ui-tabs-nav').hide();\n";
       }
+    }
+    // add a progress bar to indicate how many steps are complete in the wizard
+    if (isset($options['progressBar']) && $options['progressBar']==true) {
+      data_entry_helper::add_resource('wizardprogress');	
+      data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'controls'});\n";
     }
     self::add_resource('jquery_ui');
   }

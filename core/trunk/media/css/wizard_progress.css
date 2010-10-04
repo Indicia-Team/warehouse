@@ -1,32 +1,80 @@
 .wiz-prog {
-  background-image: url(../img/grx/prog_border.png);
-  width: 878px;
-  height: 80px;
-  margin: 0 auto;
+  width: 94%;
+  padding: 1% 0 1% 1%;
+  margin: 2%;
+  border-width: 2px;
 }
+
 .wiz-prog li {
-  position: relative;
-  float: left;
-  margin: 15px 3px;
+  text-align: center;  
+  position: relative;  
   padding: 0;
+  float: left;
   list-style: none;
+  background: none;
 }
+
+.wiz-prog li.arrow-block {
+  border-style: solid  none solid solid;
+  border-width: 2px;  
+  height: 20px;
+  margin-right: 0;
+}
+
+.wiz-prog li.arrow-head {
+  margin-left: 0;
+  margin-right: 1%;
+  background: no-repeat top right;
+  width: 20px;
+  height: 24px;
+}
+
 .wiz-prog li a {
   display: block;
   width: 100%;
   height: 100%;
+  vertical-align: bottom;
+  text-decoration: none;
 }
+
+.wiz-prog li {
+  opacity: 0.5;
+  border-color: #52bb55;
+}
+
+.wiz-prog li.wiz-complete {
+  opacity: 0.4;
+  border-color: #aaaaaa;
+}
+
 .wiz-prog li.wiz-selected {
-  border: solid blue 1px;
+  opacity: 1;
+  border-color: #efad68;
 }
-.wiz-prog li.wiz-enabled {
-  opacity: 0.5;
-}
+
 .wiz-prog li.wiz-disabled {
-  opacity: 0.5;
+  opacity: 0.4;
+  border-color: #ff6060;
 }
+
+.wiz-prog li.arrow-head {
+  background-image: url(../images/arrow-head-green.gif);
+}
+
+.wiz-prog li.arrow-head.wiz-complete {
+  background-image: url(../images/arrow-head-complete.gif);
+}
+
+.wiz-prog li.arrow-head.wiz-selected {
+  background-image: url(../images/arrow-head-amber.gif);
+}
+
+.wiz-prog li.arrow-head.wiz-disabled { 
+  background-image: url(../images/arrow-head-red.gif);
+}
+
 .wiz-prog li.wiz-hover {
-  border-color: #000;
+  opacity: 1;
 }
 .wiz-prog li.wiz-selected a,
 .wiz-prog li.wiz-disabled a{
@@ -34,44 +82,7 @@
 }
 .wiz-prog li a{
   cursor: pointer;
-}
-.wiz-prog li.your-details {
-  background-image: url(../img/grx/prog_your_details.png);
-  width: 147px;
-  height: 50px;
-  margin-left: 14px;
-}
-.wiz-prog li.place-seen {
-  background-image: url(../img/grx/prog_place_seen.png);
-  width: 139px;
-  height: 50px;
-}
-.wiz-prog li.sighting-details {
-  background-image: url(../img/grx/prog_sighting_details.png);
-  width: 139px;
-  height: 50px;
-}
-.wiz-prog li.which-species {
-  background-image: url(../img/grx/prog_which_species.png);
-  border: none;
-  width: 139px;
-  height: 50px;
-}
-.wiz-prog li.what-emerged {
-  background-image: url(../img/grx/prog_what_emerged.png);
-  border: none;
-  width: 139px;
-  height: 50px;
-}
-.wiz-prog li.your-photos {
-  background-image: url(../img/grx/prog_your_photos.png);
-  width: 139px;
-  height: 50px;
-}
-.wiz-prog li.survey-submitted {
-  background-image: url(../img/grx/prog_survey_submitted.png);
-  width: 115px;
-  height: 50px;
+  color: #333333;
 }
 .wiz-prog li span {
   display: block;

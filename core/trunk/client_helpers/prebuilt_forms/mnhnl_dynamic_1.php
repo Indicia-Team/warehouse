@@ -341,10 +341,9 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       foreach($entity[0] as $key => $value){
         data_entry_helper::$entity_to_load['sample:'.$key] = $value;
       }
-	  data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
+      data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
       data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
     }	
-    $defAttrOptions = array('extraParams'=>$auth['read']);
         
 //    $r .= "<h1>MODE = ".$mode."</h1>";
 //    $r .= "<h2>readOnly = ".$readOnly."</h2>";
@@ -404,10 +403,12 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     $customAttributeTabs = self::get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     $r .= "<div id=\"controls\">\n";
+    // Build a list of the tabs that actually have content
+    $tabHtml = self::get_tab_html($tabs, $auth, $args, $attributes, $hiddens);
     // Output the dynamic tab headers
     if ($args['interface']!='one_page') {
       $r .= "<ul>\n";
-      foreach ($tabs as $tab=>$tabContent) {
+      foreach ($tabHtml as $tab=>$tabContent) {
         $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
         $tabtitle = lang::get("LANG_Tab_$alias");
         if ($tabtitle=="LANG_Tab_$alias") {
@@ -419,47 +420,18 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       $r .= "</ul>\n";
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
-          'style'=>$args['interface']
+          'style'=>$args['interface'],
+          'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
       ));
     }
-	if ($args['tabProgress']==true) {
-	  data_entry_helper::add_resource('wizardprogress');	
-	  data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'controls'});\n";
-	}
+    
     // Output the dynamic tab content
     $pageIdx = 0;
-    foreach ($tabs as $tab=>$tabContent) {
+    foreach ($tabHtml as $tab=>$tabContent) {
       // get a machine readable alias for the heading
       $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $r .= '<div id="'.$tabalias.'">'."\n";
-      if ($pageIdx==0)
-        // output the hidden inputs on the first tab
-        $r .= $hiddens;
-      // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
-      for ($i = 0; $i < count($tabContent); $i++) {
-        $component = $tabContent[$i];
-        if (preg_match('/\A\?[^¬]*\?\z/', trim($component))===1) {
-          // Component surrounded by ? so represents a help text
-          $helpText = substr(trim($component), 1, -1);
-          $r .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</p>";
-        } elseif (preg_match('/\A\[[^¬]*\]\z/', trim($component))===1) {
-          // Component surrounded by [] so represents a control
-          $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
-          // Anything following the component that starts with @ is an option to pass to the control
-          $options = array();
-          while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@') {
-            $i++;
-            $option = explode('=',substr($tabContent[$i],1));
-            $options[$option[0]]=$option[1];
-          }
-          if (method_exists('iform_mnhnl_dynamic_1', $method)) 
-            $r .= self::$method($auth, $args, $tabalias, $options);
-          elseif (trim($component)==='[*]')
-            $r .= self::get_attribute_html($attributes, $defAttrOptions, $tab);
-          else          
-            $r .= "The form structure includes a control called $component which is not recognised.<br/>";
-        }      
-      }
+      $r .= $tabContent;    
       // Add any buttons required at the bottom of the tab
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
@@ -532,8 +504,50 @@ var updatePlaceTabHandler = function(event, ui) {
 jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
 
 ";
-	return $r;
+    return $r;
 
+  }
+  
+  private static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
+    $defAttrOptions = array('extraParams'=>$auth['read']);
+    $tabHtml = array();
+    foreach ($tabs as $tab=>$tabContent) {
+      // get a machine readable alias for the heading
+      $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
+      $html = '';
+      if ($pageIdx==0)
+        // output the hidden inputs on the first tab
+        $html .= $hiddens;
+      // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
+      for ($i = 0; $i < count($tabContent); $i++) {
+        $component = $tabContent[$i];
+        if (preg_match('/\A\?[^¬]*\?\z/', trim($component))===1) {
+          // Component surrounded by ? so represents a help text
+          $helpText = substr(trim($component), 1, -1);
+          $html .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</p>";
+        } elseif (preg_match('/\A\[[^¬]*\]\z/', trim($component))===1) {
+          // Component surrounded by [] so represents a control
+          $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
+          // Anything following the component that starts with @ is an option to pass to the control
+          $options = array();
+          while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@') {
+            $i++;
+            $option = explode('=',substr($tabContent[$i],1));
+            $options[$option[0]]=$option[1];
+          }
+          if (method_exists('iform_mnhnl_dynamic_1', $method)) 
+            $html .= self::$method($auth, $args, $tabalias, $options);
+          elseif (trim($component)==='[*]')
+            $html .= self::get_attribute_html($attributes, $defAttrOptions, $tab);
+          else          
+            $html .= "The form structure includes a control called $component which is not recognised.<br/>";
+        }      
+      }
+      if (!empty($html)) {
+        $tabHtml[$tab] = $html;
+      }
+    }
+    return $tabHtml;
   }
   
   /**
