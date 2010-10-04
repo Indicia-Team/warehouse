@@ -4738,6 +4738,7 @@ $('.ui-state-default').live('mouseout', function() {
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
         'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js')),
+		'wizardprogress' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."wizard_progress.css"), 'javascript' => array(self::$js_path.'wizard_progress.js')),
       );
     }
     return self::$resource_list;
