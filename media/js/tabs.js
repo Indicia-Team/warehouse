@@ -21,9 +21,9 @@ function wizardProgressIndicator(options) {
   var headingUl = $('> ul', div);
   var li=[];  
   $.each(headingUl.children(), function(i, item) {
-    li.push(item.innerText);
+    li.push($(item).text());
     var wizClass = (i===o.start ? 'wiz-selected' : 'wiz-disabled');
-    progressUl.append('<li class="arrow-block '+wizClass+'">'+ (i+1) + '. ' + item.innerText + '</li>');
+    progressUl.append('<li class="arrow-block '+wizClass+'">'+ (i+1) + '. ' + $(item).text() + '</li>');
     progressUl.append('<li class="arrow-head '+wizClass+'"></li>');
   });
   if (o.completionStep!==null && o.completionStep!=='') {
