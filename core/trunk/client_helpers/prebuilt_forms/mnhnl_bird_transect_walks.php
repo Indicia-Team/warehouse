@@ -20,6 +20,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+require_once('includes/map.php');
 require_once('includes/language_utils.php');
 require_once('includes/user.php');
 
@@ -63,7 +64,11 @@ class iform_mnhnl_bird_transect_walks {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {
+  	// When deployed set map_height to 490
+  	// map_width will be overridden to auto
+  	// openlayers options needs to be filled in with projection {"projection":"900913"}
     return array_merge(
+      iform_map_get_map_parameters(),      
       iform_user_get_user_parameters(), array(
       array(
         'name'=>'survey_id',
@@ -96,22 +101,6 @@ class iform_mnhnl_bird_transect_walks {
         'maxlength'=>200
       ),
       array(
-        'name'=>'preset_layers',
-        'caption'=>'Preset Base Layers',
-        'description'=>'Select the preset base layers that are available for the map.',
-        'type'=>'list',
-        'options' => array(
-          'google_physical' => 'Google Physical',
-          'google_streets' => 'Google Streets',
-          'google_hybrid' => 'Google Hybrid',
-          'google_satellite' => 'Google Satellite',
-          'virtual_earth' => 'Microsoft Virtual Earth'
-          // NB Multimap is UK only.
-        ),
-        'group'=>'Maps',
-        'required'=>false
-      ),
-      array(
 	    'name'=>'map_projection',
 	    'caption'=>'Map Projection (EPSG code)',
 	    'description'=>'EPSG code to use for the map. If using 900913 then the preset layers such as Google maps will work, but for any other '.
@@ -120,28 +109,6 @@ class iform_mnhnl_bird_transect_walks {
 	    'default' => '900913',
 	    'group'=>'Maps'
       ),
-      array(
-        'name'=>'map_centroid_lat',
-        'caption'=>'Centre of Map Latitude',
-        'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
-        'type'=>'string',
-        'group'=>'Maps'
-      ),
-      array(
-        'name'=>'map_centroid_long',
-        'caption'=>'Centre of Map Longitude',
-        'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
-        'type'=>'string',
-        'group'=>'Maps'
-      ),
-      array(
-        'name'=>'map_zoom',
-        'caption'=>'Map Zoom Level',
-        'description'=>'Zoom level of the initially displayed map.',
-        'type'=>'int',
-        'group'=>'Maps'
-      ),
-
       array(
         'name'=>'sample_walk_direction_id',
         'caption'=>'Sample Walk Direction Custom Attribute ID',
@@ -314,15 +281,6 @@ class iform_mnhnl_bird_transect_walks {
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
-    $presetLayers = array();
-    // read out the activated preset layers
-    if(isset($args['preset_layers'])) {
-      foreach($args['preset_layers'] as $layer => $active) {
-        if ($active!==0) {
-          $presetLayers[] = $layer;
-        }
-      }
-    }
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
     data_entry_helper::link_default_stylesheet();
     data_entry_helper::add_resource('jquery_ui');
@@ -598,17 +556,17 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "direction_attr_id":'.$args['sample_walk_direction_id'].', "closed_attr_id":'.$args['sample_closure_id'].'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Direction_Report_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv\">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Initial_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "INITIAL"}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Initial_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv\">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Confirm_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "CONFIRM"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Confirm_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv\">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=mnhnl_btw_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
       <p>'.lang::get('LANG_Final_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "closed_attr_id":'.$args['sample_closure_id'].', "download": "FINAL"}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Final_Download_Button').'">
@@ -616,17 +574,16 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
   </div>';
       }
       // Create Map
-      $r .= "<div class=\"mnhnl-btw-mappanel\">\n".(data_entry_helper::map_panel(array('presetLayers' => $presetLayers
-                , 'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationListLayer')
-                , 'initialFeatureWkt' => null
-                , 'width'=>'auto'
-                , 'height'=>490
-                , 'editLayer'=> false
-                , 'initial_lat'=>$args['map_centroid_lat']
-                , 'initial_long'=>$args['map_centroid_long']
-                , 'initial_zoom'=>(int) $args['map_zoom']
-                , 'scroll_wheel_zoom' => false
-                ), array('projection'=>$args['map_projection'])))."</div>\n";
+      $options = iform_map_get_map_options($args, $readAuth);
+      $olOptions = iform_map_get_ol_options($args);
+      $options['layers'] = array('baseLayer_1', 'baseLayer_2', 'locationListLayer');
+      $options['searchLayer'] = 'false';
+      $options['editLayer'] = 'false';
+      $options['initialFeatureWkt'] = null;
+      $options['proxy'] = '';
+      $options['scroll_wheel_zoom'] = false;
+      $options['width'] = 'auto'; // TBD remove from arglist
+      $r .= "<div class=\"mnhnl-btw-mappanel\">\n".(data_entry_helper::map_panel($options, $olOptions))."</div>\n";
 
       data_entry_helper::$javascript .= "
 $('#controls').bind('tabsshow', function(event, ui) {
@@ -1145,17 +1102,18 @@ jQuery(\"input[name='".$escaped_terr_id."']\").change(setAtlasStatus);\n";
   $r .= '</div>';
 
     // add map panel.
+      $options = iform_map_get_map_options($args, $readAuth);
+      $olOptions = iform_map_get_ol_options($args);
+      $options['layers'] = array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer');
+      $options['searchLayer'] = 'false';
+      $options['initialFeatureWkt'] = null;
+      $options['proxy'] = '';
+      $options['scroll_wheel_zoom'] = false;
+      $options['width'] = 'auto'; // TBD remove from arglist
+  
     $r .= "<div class=\"mnhnl-btw-mappanel\">\n";
-    $r .= data_entry_helper::map_panel(array('presetLayers' => $presetLayers
-                , 'layers'=>array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer')
-                , 'initialFeatureWkt' => null
-                , 'width'=>'auto'
-                , 'height'=>490
-                , 'initial_lat'=>$args['map_centroid_lat']
-                , 'initial_long'=>$args['map_centroid_long']
-                , 'initial_zoom'=>(int) $args['map_zoom']
-                , 'scroll_wheel_zoom' => false
-                ), array('projection'=>$args['map_projection']));
+    $r .= data_entry_helper::map_panel($options, $olOptions);
+    
     // for timing reasons, all the following has to be done after the map is loaded.
     // 1) feature selector for occurrence list must have the map present to attach the control
     // 2) location placer must have the location layer populated and the map present in
