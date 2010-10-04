@@ -23,7 +23,7 @@ function wizardProgressIndicator(options) {
   $.each(headingUl.children(), function(i, item) {
     li.push(item.innerText);
     var wizClass = (i===o.start ? 'wiz-selected' : 'wiz-disabled');
-    progressUl.append('<li class="arrow-block '+wizClass+'"><a href="'+$('a', item).attr('href') + '">'+ (i+1) + '. ' + item.innerText + '</a></li>');
+    progressUl.append('<li class="arrow-block '+wizClass+'">'+ (i+1) + '. ' + item.innerText + '</li>');
     progressUl.append('<li class="arrow-head '+wizClass+'"></li>');
   });
   if (o.completionStep!==null && o.completionStep!=='') {
@@ -57,30 +57,28 @@ function wizardProgressIndicator(options) {
     var wizList = $("#" + tabs.attr('id') + "-wiz-prog");
     var wizLis = $("li", wizList);
     var prevLi = $(".wiz-selected", wizList);
-    var prevA =  prevLi.children("a:first");
     
     prevLi.removeClass('wiz-selected');
     prevLi.addClass('wiz-enabled');
-    prevA.click(function(e){
+    prevLi.click(function(e){
       //transfer the click to the tab anchor
-      var wizLi = $(this).parent();
-      var wizList = wizLi.parent();
+      var wizList = $(this).parent();
       var wizLis = wizList.children("li");
-      var index = wizLis.index(wizLi);
+      var index = wizLis.index($(this));
       var tabs = wizList.parent();
-      var tabAnchor = $("ul.ui-tabs-nav a", tabs)[index];
+      var tabAnchor = $("ul.ui-tabs-nav a", tabs)[index/2]; // /2 because there is an arrow header li after every li
       $(tabAnchor).click();
     });
 
-    prevA.hover(
+    prevLi.hover(
       function()
       {
-        $(this).parent().addClass('wiz-hover');
-        $(this).parent().next().addClass('wiz-hover');
+        $(this).addClass('wiz-hover');
+        $(this).next().addClass('wiz-hover');
       },
       function(){
-        $(this).parent().removeClass('wiz-hover');
-        $(this).parent().next().removeClass('wiz-hover');
+        $(this).removeClass('wiz-hover');
+        $(this).next().removeClass('wiz-hover');
       }
     );
         
@@ -94,4 +92,30 @@ function wizardProgressIndicator(options) {
     $(wizLis[ui.index*2+1]).removeClass('wiz-disabled');
   })
 
+}
+
+/**
+ * Function that prepares the tabset for being addressable.
+ * @link http://www.asual.com/jquery/address/
+ */
+function initTabAddressing(divId) {
+
+  $.address.externalChange(function(event){
+    // Changes tab
+    $("#"+divId).tabs('select', $('#link-' + event.value).attr('href'));
+    if ($('.wiz-prog').length>0)
+      scrollTopIntoView('.wiz-prog');
+    else
+      scrollTopIntoView('#'.divId);
+  });
+}
+
+/**
+ * Function to ensure the top part of the wizard (inluding progress bar if present) is visible
+ * when navigating between pages.
+ */
+function scrollTopIntoView(topDiv) {
+  if ($(topDiv).offset().top-$(window).scrollTop()<0) {
+    $(topDiv)[0].scrollIntoView(true);
+  }
 }
