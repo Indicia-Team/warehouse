@@ -407,7 +407,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     $tabHtml = self::get_tab_html($tabs, $auth, $args, $attributes, $hiddens);
     // Output the dynamic tab headers
     if ($args['interface']!='one_page') {
-      $r .= "<ul>\n";
+      $headerOptions = array('tabs'=>array());
       foreach ($tabHtml as $tab=>$tabContent) {
         $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
         $tabtitle = lang::get("LANG_Tab_$alias");
@@ -415,9 +415,9 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           // if no translation provided, we'll just use the standard heading
           $tabtitle = $tab;
         }
-        $r .= '  <li><a href="#'.$alias.'"><span>'.$tabtitle."</span></a></li>\n";
+        $headerOptions['tabs']['#'.$alias] = $tabtitle;        
       }
-      $r .= "</ul>\n";
+      $r .= data_entry_helper::tab_header($headerOptions);
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
           'style'=>$args['interface'],

@@ -3915,14 +3915,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * @link http://docs.jquery.com/UI/Tabs
   */
   public static function enable_tabs($options) {
-    $scrollTopIntoView = "if ($('.wiz-prog').length>0) {
-    topDiv = $('.wiz-prog')[0];
-  } else {
-    topDiv = $('#".$options['divId']."')[0];
-  }
-  if ($(topDiv).offset().top-$(window).scrollTop()<0) {
-    topDiv.scrollIntoView(true);
-  }";
+    // A jquery selector for the element which must be at the top of the page when moving to the next page. Could be the progress bar or the 
+    // tabbed div itself.
+    if (isset($options['progressBar']) && $options['progressBar']==true)
+      $topSelector = '.wiz-prog';
+    else
+      $topSelector = '#'.$options['divId'];
     // Only do anything if the id of the div to be tabified is specified
     if (array_key_exists('divId', $options)) {
       $divId = $options['divId'];
@@ -3944,14 +3942,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       // it forces it into view. This helps a lot when the tabs vary in height.
       self::$javascript .= "  var a = $('ul.ui-tabs-nav a')[current+1];
   $(a).click();
-  ".$scrollTopIntoView."
+  scrollTopIntoView('$topSelector');
 });";
 
       self::$javascript .= "\n$('.tab-prev').click(function() {
   var current=$('#$divId').tabs('option', 'selected');
   var a = $('ul.ui-tabs-nav a')[current-1];
   $(a).click();
-  ".$scrollTopIntoView."
+  scrollTopIntoView('$topSelector');
 });\n";
 
       // We put this javascript into $late_javascript so that it can come after the other controls.
@@ -3980,25 +3978,26 @@ if (errors.length>0) {
     // add a progress bar to indicate how many steps are complete in the wizard
     if (isset($options['progressBar']) && $options['progressBar']==true) {
       data_entry_helper::add_resource('wizardprogress');	
-      data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'controls'});\n";
+      data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'$divId'});\n";
+    } else {
+      data_entry_helper::add_resource('tabs');	
     }
-    self::add_resource('jquery_ui');
   }
 
+  /**
+   * Outputs the ul element that needs to go inside a tabified div control to define the header tabs.
+   * This is required for wizard interfaces as well. 
+   * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>tabs</b><br/>
+  * Array of tabs, with each item being the tab title, keyed by the tab ID including the #.</li>
+  */
   public static function tab_header($options) {
     $options = self::check_options($options);
     // Convert the tabs array to a string of <li> elements
     $tabs = "";
     foreach($options['tabs'] as $link => $caption) {
       $tabId=substr("$link-tab",1);
-
-      //rel="address:..." enables use of jQuery.address module (http://www.asual.com/jquery/address/)
-      if ($tabs == ""){
-        $address = "";
-      } else {
-        $address = (substr($link, 0, 1) == '#') ? substr($link, 1) : $link;
-      }
-      $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
+      $tabs .= "<li id=\"$tabId\"><a href=\"$link\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);
@@ -4755,7 +4754,8 @@ $('.ui-state-default').live('mouseout', function() {
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
         'jqplot_category_axis_renderer' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.categoryAxisRenderer.min.js')),
         'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js')),
-		'wizardprogress' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."wizard_progress.css"), 'javascript' => array(self::$js_path.'wizard_progress.js')),
+        'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
+        'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
       );
     }
     return self::$resource_list;
@@ -5258,8 +5258,7 @@ $('.ui-state-default').live('mouseout', function() {
       }
     }
     //remove local copy
-    //unlink(realpath($uploadpath.$path));
-    watchdog('file exists', realpath($uploadpath.$path));
+    unlink(realpath($uploadpath.$path));
     return $r;
   }
 
