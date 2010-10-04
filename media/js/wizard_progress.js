@@ -1,10 +1,11 @@
 function wizardProgressIndicator(options) {
   var defaults = {
     divId: 'controls',
-    listClass: 'wiz-prog ui-helper-clearfix',
+    listClass: 'wiz-prog ui-corner-all ui-widget-content ui-helper-clearfix',
     a: [],
     equalWidth: true,
-    start: 0
+    start: 0,
+    completionStep: 'Survey submitted'
   };
 
   var o = $.extend({}, defaults, options);
@@ -17,21 +18,28 @@ function wizardProgressIndicator(options) {
   var progressUl = $($("#" + o.divId + "-wiz-prog")[0]);
   
   // find the list of tab headings
-  var headingUl = div.find('> ul');
-  var li=[];
-  $.each(headingUl.find('> li'), function(i, item) {
-    li.push(item.textContent);
-	
-	progressUl.append('<li><a href="'+$('a', item).attr('href') + '"><span>'+item.textContent+'</span></a></li>');
+  var headingUl = $('> ul', div);
+  var li=[];  
+  $.each(headingUl.children(), function(i, item) {
+    li.push(item.innerText);
+    var wizClass = (i===o.start ? 'wiz-selected' : 'wiz-disabled');
+    progressUl.append('<li class="arrow-block '+wizClass+'"><a href="'+$('a', item).attr('href') + '">'+ (i+1) + '. ' + item.innerText + '</a></li>');
+    progressUl.append('<li class="arrow-head '+wizClass+'"></li>');
   });
+  if (o.completionStep!==null && o.completionStep!=='') {
+    progressUl.append('<li class="arrow-block wiz-complete">'+ (headingUl.children().length+1) + '. ' + o.completionStep + '</li>');
+    progressUl.append('<li class="arrow-head wiz-complete"></li>');
+  }
   
   //size the <li> equally
   if (o.equalWidth) {
-    var wizLis = $("li", progressUl);
+    var arrowBlockLis = $("li.arrow-block", progressUl);
+    var arrowHeadLis = $("li.arrow-head", progressUl);
     var totalWidth = progressUl.width();
-    var spacing = wizLis.outerWidth(true) - wizLis.width();
-    var width = ((totalWidth / (wizLis.length)) | 0) - spacing;
-    wizLis.css('width', width + 'px');
+    // Get difference in width of li between width including margin, and width of part inside padding. 
+    var spacing = arrowBlockLis.outerWidth(true) - arrowBlockLis.width();
+    var width = ((totalWidth / (arrowBlockLis.length)) | 0) - spacing - 1 - arrowHeadLis.outerWidth(true);
+    arrowBlockLis.css('width', width + 'px');
   }
   
   progressUl.addClass('wiz-disabled');
@@ -68,15 +76,22 @@ function wizardProgressIndicator(options) {
       function()
       {
         $(this).parent().addClass('wiz-hover');
+        $(this).parent().next().addClass('wiz-hover');
       },
       function(){
         $(this).parent().removeClass('wiz-hover');
+        $(this).parent().next().removeClass('wiz-hover');
       }
     );
         
-    $(wizLis[ui.index]).addClass('wiz-selected');
-    $(wizLis[ui.index]).removeClass('wiz-enabled');
-    $(wizLis[ui.index]).removeClass('wiz-disabled');
+    // update classes on the arrow bodyy
+    $(wizLis[ui.index*2]).addClass('wiz-selected');
+    $(wizLis[ui.index*2]).removeClass('wiz-enabled');
+    $(wizLis[ui.index*2]).removeClass('wiz-disabled');
+    // update classes on the arrow header
+    $(wizLis[ui.index*2+1]).addClass('wiz-selected');
+    $(wizLis[ui.index*2+1]).removeClass('wiz-enabled');
+    $(wizLis[ui.index*2+1]).removeClass('wiz-disabled');
   })
 
 }
