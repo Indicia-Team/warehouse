@@ -71,6 +71,14 @@ class iform_mnhnl_dynamic_1 {
           ),
           'group' => 'User Interface'
         ),
+		array(
+          'name'=>'tabProgress',
+          'caption'=>'Show Progress through Wizard/Tabs',
+          'description'=>'For Wizard or Tabs interfaces, check this option to show a progress summary above the controls.',
+          'type'=>'boolean',
+          'default' => false,
+          'group' => 'User Interface'
+        ),
         array(
           'name'=>'structure',
           'caption'=>'Form Structure',
@@ -414,6 +422,10 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           'style'=>$args['interface']
       ));
     }
+	if ($args['tabProgress']==true) {
+	  data_entry_helper::add_resource('wizardprogress');	
+	  data_entry_helper::$javascript .= "wizardProgressIndicator({divId:'controls'});\n";
+	}
     // Output the dynamic tab content
     $pageIdx = 0;
     foreach ($tabs as $tab=>$tabContent) {
