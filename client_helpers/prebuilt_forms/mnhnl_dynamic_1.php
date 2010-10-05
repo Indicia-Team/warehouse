@@ -71,7 +71,7 @@ class iform_mnhnl_dynamic_1 {
           ),
           'group' => 'User Interface'
         ),
-		array(
+        array(
           'name'=>'tabProgress',
           'caption'=>'Show Progress through Wizard/Tabs',
           'description'=>'For Wizard or Tabs interfaces, check this option to show a progress summary above the controls.',
@@ -99,10 +99,10 @@ class iform_mnhnl_dynamic_1 {
 				"&nbsp;&nbsp;<strong>[record status]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
-			"available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. ".
-			"Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
-			"classes to the control such as control-width-3). <br/>".
-			"<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab.<br/>".
+        "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. ".
+        "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
+        "classes to the control such as control-width-3). <br/>".
+        "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab.<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
           'default' => "=Species=\r\n".
@@ -181,22 +181,22 @@ class iform_mnhnl_dynamic_1 {
           'default' => 'autocomplete',
           'group'=>'Species'
         ),
-		array(
+        array(
           'name'=>'occurrence_comment',
           'caption'=>'Occurrence Comment',
           'description'=>'Should an input box be present for a comment against each occurrence?',
           'type'=>'boolean',
-		  'default'=>false,
-		  'group'=>'Species'
-		),
-		array(
+          'default'=>false,
+          'group'=>'Species'
+        ),
+        array(
           'name'=>'occurrence_images',
           'caption'=>'Occurrence Images',
           'description'=>'Should occurrences allow images to be uploaded?',
           'type'=>'boolean',
-		  'default'=>false,
-		  'group'=>'Species'
-		),
+          'default'=>false,
+          'group'=>'Species'
+        ),
         array(
           'name'=>'list_id',
           'caption'=>'Initial Species List ID',
