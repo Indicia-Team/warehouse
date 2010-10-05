@@ -3997,7 +3997,14 @@ if (errors.length>0) {
     $tabs = "";
     foreach($options['tabs'] as $link => $caption) {
       $tabId=substr("$link-tab",1);
-      $tabs .= "<li id=\"$tabId\"><a href=\"$link\"><span>$caption</span></a></li>";
+      //rel="address:..." enables use of jQuery.address module (http://www.asual.com/jquery/address/)
+      if ($tabs == ""){
+        $address = "";
+      } else {
+        $address = (substr($link, 0, 1) == '#') ? substr($link, 1) : $link;
+      }
+      $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
+    }
     }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);
