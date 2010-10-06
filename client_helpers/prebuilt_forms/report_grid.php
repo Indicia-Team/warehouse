@@ -50,21 +50,21 @@ class iform_report_grid {
         'caption' => 'Preset Parameter Values',
         'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
             'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6.',
-        'type' => 'textarea'
+        'type' => 'textarea',
+        'required' => false
       ), array(
-	    'name' => 'refresh_timer',
-		'caption' => 'Automatic reload seconds',
-		'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
+        'name' => 'refresh_timer',
+        'caption' => 'Automatic reload seconds',
+        'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
 		    'displaying live data updates at BioBlitzes. Combine this with Page to reload to define a sequence of pages that load in turn.',
-	    'type' => 'int',
-		'required' => false
-      ),
-      array(
-	    'name' => 'load_on_refresh',
-		'caption' => 'Page to reload',
-		'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
-	    'type' => 'string',
-		'required' => false
+        'type' => 'int',
+        'required' => false
+      ), array(
+        'name' => 'load_on_refresh',
+        'caption' => 'Page to reload',
+        'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
+        'type' => 'string',
+        'required' => false
       )
     );
   }
@@ -88,15 +88,17 @@ class iform_report_grid {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     global $user;
     $r = '';
-    $presetList = explode("\n", $args['param_presets']);
-    $presets = array();
-    foreach ($presetList as $param) {
-      $tokens = explode('=', $param);
-      if (count($tokens)==2) {
-        $presets[$tokens[0]]=$tokens[1];
-      } else {
-        $r .= '<div class="page-notice ui-widget ui-widget-content ui-corner-all ui-state-error">' .
-            'Some of the preset parameters defined for this page are not of the form param=value.</div>';
+    if ($args['param_presets'] != ''){
+      $presetList = explode("\n", $args['param_presets']);
+      $presets = array();
+      foreach ($presetList as $param) {
+        $tokens = explode('=', $param);
+        if (count($tokens)==2) {
+          $presets[$tokens[0]]=$tokens[1];
+        } else {
+          $r .= '<div class="page-notice ui-widget ui-widget-content ui-corner-all ui-state-error">' .
+              'Some of the preset parameters defined for this page are not of the form param=value.</div>';
+        }
       }
     }
     $reportOptions = array(
