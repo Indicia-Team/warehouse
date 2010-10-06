@@ -46,7 +46,7 @@ class Trigger_Model extends ORM {
     $array->add_rules('trigger_template_file', 'required');
     $array->add_rules('params_json', 'required');
     $values = $array->as_array();
-    $array['public'] = (isset($values['public']) && $values['public']=='on') ? 't' : 'f';    
+    $array['public'] = (isset($values['public']) && ($values['public']=='on' || $values['public']==1)) ? 't' : 'f';    
     $this->unvalidatedFields = array('description','public');
     return parent::validate($array, $save);
   }
