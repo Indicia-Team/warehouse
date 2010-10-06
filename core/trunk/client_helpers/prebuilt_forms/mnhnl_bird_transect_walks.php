@@ -77,22 +77,6 @@ class iform_mnhnl_bird_transect_walks {
         'type'=>'int'
       ),
       array(
-        'name'=>'layer1',
-        'caption'=>'Layer 1 Definition',
-        'description'=>'Comma separated list of option definitions for the first layer',
-        'type'=>'string',
-        'group'=>'Maps',
-      'maxlength'=>200
-      ),
-      array(
-        'name'=>'layer2',
-        'caption'=>'Layer 2 Definition',
-        'description'=>'Comma separated list of option definitions for the first layer',
-        'type'=>'string',
-        'group'=>'Maps',
-        'maxlength'=>200
-      ),
-      array(
         'name'=>'locationLayer',
         'caption'=>'Location Layer Definition',
         'description'=>'Comma separated list of option definitions for the location layer',
@@ -344,23 +328,7 @@ class iform_mnhnl_bird_transect_walks {
     // define layers for all maps.
     // each argument is a comma separated list eg:
     // "Name:Lux Outline,URL:http://localhost/geoserver/wms,LAYERS:indicia:nation2,SRS:EPSG:2169,FORMAT:image/png,minScale:0,maxScale:1000000,units:m";
-    $optionArray_1 = array();
-    $optionArray_2 = array();
-    $optionArray_Location = array();
-    $options = explode(',', $args['layer1']);
-    foreach($options as $option){
-      $parts = explode(':', $option);
-      $optionName = $parts[0];
-      unset($parts[0]);
-      $optionsArray_1[$optionName] = implode(':', $parts);
-    }
-    $options = explode(',', $args['layer2']);
-    foreach($options as $option){
-      $parts = explode(':', $option);
-      $optionName = $parts[0];
-      unset($parts[0]);
-      $optionsArray_2[$optionName] = implode(':', $parts);
-    }
+    $optionsArray_Location = array();
     $options = explode(',', $args['locationLayer']);
     foreach($options as $option){
       $parts = explode(':', $option);
@@ -376,40 +344,6 @@ class iform_mnhnl_bird_transect_walks {
     data_entry_helper::$javascript .= "
 // Create Layers.
 // Base Layers first.
-var WMSoptions = {
-          LAYERS: '".$optionsArray_1['LAYERS']."',
-          SERVICE: 'WMS',
-          VERSION: '1.1.0',
-          STYLES: '',
-          SRS: '".$optionsArray_1['SRS']."',
-          FORMAT: '".$optionsArray_1['FORMAT']."'
-    };
-baseLayer_1 = new OpenLayers.Layer.WMS('".$optionsArray_1['Name']."',
-        '".iform_proxy_url($optionsArray_1['URL'])."',
-        WMSoptions, {
-             minScale: ".$optionsArray_1['minScale'].",
-            maxScale: ".$optionsArray_1['maxScale'].",
-            units: '".$optionsArray_1['units']."',
-            isBaseLayer: true,
-            singleTile: true
-        });
-WMSoptions = {
-          LAYERS: '".$optionsArray_2['LAYERS']."',
-          SERVICE: 'WMS',
-          VERSION: '1.1.0',
-          STYLES: '',
-          SRS: '".$optionsArray_2['SRS']."',
-          FORMAT: '".$optionsArray_2['FORMAT']."'
-    };
-baseLayer_2 = new OpenLayers.Layer.WMS('".$optionsArray_2['Name']."',
-        '".iform_proxy_url($optionsArray_2['URL'])."',
-        WMSoptions, {
-             minScale: ".$optionsArray_2['minScale'].",
-            maxScale: ".$optionsArray_2['maxScale'].",
-            units: '".$optionsArray_2['units']."',
-            isBaseLayer: true,
-            singleTile: true
-        });
 WMSoptions = {
           SERVICE: 'WMS',
           VERSION: '1.1.0',
@@ -524,7 +458,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
         $r .= '
   <div id="setLocations" class="mnhnl-btw-datapanel">
     <form method="post">
-      <input type="hidden" id="mnhnlbtw" name="mnhnlbtw" value="mnhnlbtw" />\n';
+      <input type="hidden" id="mnhnlbtw" name="mnhnlbtw" value="mnhnlbtw" />';
         $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&parent_id=NULL&orderby=name";
         $session = curl_init($url);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -576,7 +510,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
       // Create Map
       $options = iform_map_get_map_options($args, $readAuth);
       $olOptions = iform_map_get_ol_options($args);
-      $options['layers'] = array('baseLayer_1', 'baseLayer_2', 'locationListLayer');
+      $options['layers'] = array('locationListLayer');
       $options['searchLayer'] = 'false';
       $options['editLayer'] = 'false';
       $options['initialFeatureWkt'] = null;
@@ -844,7 +778,19 @@ jQuery('#SurveyForm').ajaxForm({
   			jQuery('.loading-button').removeClass('loading-button');
 			return false;
   		};
-		return true;
+  		SurveyFormRetVal = true;
+//        jQuery.ajax({ 
+//            type: 'GET', 
+//            url: \"".$svcUrl."/data/sample\" + jQuery('#imp-location').val() + \"?mode=json&view=list\" +
+//                \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+//                \"&orderby=id&callback=?\", 
+//            data: {}, 
+//            success: function(detData) {
+//            },
+//            dataType: 'json', 
+//            async: false 
+//        }); 
+		return SurveyFormRetVal;
 	},
     success:   function(data){
        // this will leave all the fields populated.
@@ -1104,7 +1050,7 @@ jQuery(\"input[name='".$escaped_terr_id."']\").change(setAtlasStatus);\n";
     // add map panel.
       $options = iform_map_get_map_options($args, $readAuth);
       $olOptions = iform_map_get_ol_options($args);
-      $options['layers'] = array('baseLayer_1', 'baseLayer_2', 'locationLayer', 'occListLayer');
+      $options['layers'] = array('locationLayer', 'occListLayer');
       $options['searchLayer'] = 'false';
       $options['initialFeatureWkt'] = null;
       $options['proxy'] = '';
