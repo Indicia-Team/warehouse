@@ -368,7 +368,7 @@ WMSoptions = {
     }
     data_entry_helper::$javascript .= "
     };
-locationListLayer = new OpenLayers.Layer.WMS('".$optionArray_Location['Name']."',
+locationListLayer = new OpenLayers.Layer.WMS('".$optionsArray_Location['Name']."',
         '".iform_proxy_url($optionsArray_Location['URL'])."',
         WMSoptions, {
              minScale: ".$optionsArray_Location['minScale'].",
