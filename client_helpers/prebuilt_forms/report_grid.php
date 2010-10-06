@@ -39,12 +39,12 @@ class iform_report_grid {
         'description'=>'The name of the report file to load into the verification grid, excluding the .xml suffix.',
         'type'=>'string'
       ), array(
-        'name'=>'auto_params_form',
-        'caption'=>'Automatic Parameters Form',
+        'name' => 'auto_params_form',
+        'caption' => 'Automatic Parameters Form',
         'description'=>'If the report requires input parameters, shall an automatic form be generated to allow the user to '.
             'specify those parameters?',
-        'type'=>'boolean',
-        'default'=>true
+        'type' => 'boolean',
+        'default' => true
       ), array(
         'name' => 'param_presets',
         'caption' => 'Preset Parameter Values',
@@ -65,6 +65,13 @@ class iform_report_grid {
         'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
         'type' => 'string',
         'required' => false
+      ), array(
+        'name' => 'items_per_page',
+        'caption' => 'Items per page',
+        'description' => 'Maximum number of rows shown on each page of the table',
+		    'type' => 'int',
+        'default' => 20,
+        'required' => true
       )
     );
   }
@@ -88,9 +95,9 @@ class iform_report_grid {
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     global $user;
     $r = '';
+    $presets = array();
     if ($args['param_presets'] != ''){
       $presetList = explode("\n", $args['param_presets']);
-      $presets = array();
       foreach ($presetList as $param) {
         $tokens = explode('=', $param);
         if (count($tokens)==2) {
@@ -109,7 +116,7 @@ class iform_report_grid {
       'mode' => 'report',
       'readAuth' => $auth['read'],
       'columns' => array(),
-      'itemsPerPage' =>20,
+      'itemsPerPage' => $args['items_per_page'],
       'autoParamsForm' => $args['auto_params_form'],
       'extraParams' => $presets
     );
