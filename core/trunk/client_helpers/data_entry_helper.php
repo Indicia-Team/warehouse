@@ -4005,7 +4005,6 @@ if (errors.length>0) {
       }
       $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
     }
-    }
     $options['tabs'] = $tabs;
     return self::apply_template('tab_header', $options);
   }
