@@ -99,7 +99,8 @@ class iform_mnhnl_dynamic_1 {
 				"&nbsp;&nbsp;<strong>[record status]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
-        "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. ".
+        "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
+		"option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"]. ".
         "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
         "classes to the control such as control-width-3). <br/>".
         "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab.<br/>".
@@ -533,7 +534,9 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@') {
             $i++;
             $option = explode('=',substr($tabContent[$i],1));
-            $options[$option[0]]=$option[1];
+            $options[$option[0]]=json_decode($option[1]);
+			// if not json then need to use option value as it is
+			if ($options[$option[0]]=='') $options[$option[0]]=$option[1];			
           }
           if (method_exists('iform_mnhnl_dynamic_1', $method)) 
             $html .= self::$method($auth, $args, $tabalias, $options);
