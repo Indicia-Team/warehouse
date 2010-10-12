@@ -2,8 +2,13 @@
   padding-right: 1em;
 }
 
-.scTaxonCell input {
+.species-grid input {
   width: 95%;
+  margin: 0;
+}
+
+.species-grid td {
+  padding: 4px;
 }
 
 .scPresenceCell {
@@ -310,7 +315,7 @@ tr.odd {
   background-color: #eeeeee;
 }
 
-.ui-widget td {
+.report-grid .ui-widget td {
   padding: 0 0.3em;
 }
 
