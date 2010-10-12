@@ -164,7 +164,7 @@ jQuery('#{parentControlId}').change();\n",
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" />' .
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
         '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />',
-  'attribute_cell' => "\n<td class='scOccAttrCell ui-widget-content'>{content}</td>",
+  'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\">{content}</td>",
   'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\"{colspan}>{content}</td>",
   'helpText' => "\n<p class=\"helpText\">{helpText}</p>",
   'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
@@ -1937,7 +1937,7 @@ class data_entry_helper extends helper_config {
       'mode' => 'report',
       'id' => 'grid-'.$uniqueId,
       'itemsPerPage' => 20,
-      'class' => 'ui-widget ui-widget-content',
+      'class' => 'ui-widget ui-widget-content report-grid',
       'thClass' => 'ui-widget-header',
       'altRowClass' => 'odd',
       'columns' => array(),
@@ -2441,7 +2441,7 @@ class data_entry_helper extends helper_config {
   * multi-column grids.</li>
   * <li><b>attrCellTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
-  * for each cell containing an attribute input control. Valid replacements are {label} and {content}.
+  * for each cell containing an attribute input control. Valid replacements are {label}, {class} and {content}.
   * Default is attribute_cell.</li>
   * <li><b>PHPtaxonLabel</b></li>
   * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each
@@ -2493,9 +2493,9 @@ class data_entry_helper extends helper_config {
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $grid = '';	
       if (isset($options['lookupListId'])) {
-        $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls);
+        $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
-      $grid .= '<table class="ui-widget ui-widget-content '.$options['class'].'" id="'.$options['id'].'">';
+      $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
       $grid .= self::get_species_checklist_header($options, $occAttrs);
       $rows = array();
       $rowIdx = 0;
@@ -2524,7 +2524,7 @@ class data_entry_helper extends helper_config {
           } else {
             $checked='';
           }
-          $row .= "\n<td class=\"scPresenceCell\"><input type=\"checkbox\" name=\"sc:$id:$existing_record_id:present\" $checked /></td>";
+          $row .= "\n<td class=\"scPresenceCell\"><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked /></td>";
         }
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
@@ -2559,15 +2559,15 @@ class data_entry_helper extends helper_config {
           $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributesForThisRow[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
         }
         if ($options['occurrenceComment']) {
-          $row .= "\n<td class=\"ui-widget-content\"><input class=\"control-width-4\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
+          $row .= "\n<td class=\"ui-widget-content scCommentCell\"><input class=\"control-width-4 scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
 		      "value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
-        }        
+        }
         if ($options['occurrenceImages']) {
           $existingImages = preg_grep("/^sc:$id:$existing_record_id:occurrence_image:id:[0-9]*$/", array_keys(self::$entity_to_load));
           if (count($existingImages)===0)
-            $row .= "\n<td class=\"ui-widget-content\"><a href=\"\" class=\"add-image-link\" id=\"add-images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"add-image-link scImageLink\" id=\"add-images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
           else
-            $row .= "\n<td class=\"ui-widget-content\"><a href=\"\" class=\"hide-image-link\" id=\"hide-images:$id:$existing_record_id\">".lang::get('hide images').'</a></td>';
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$id:$existing_record_id\">".lang::get('hide images').'</a></td>';
         }
         // Are we in the first column? Note this is disabled if using occurrenceImages as it adds extra rows and messes things up.
         if ($options['occurrenceImages'] || $rowIdx < count($taxalist)/$options['columns']) {
@@ -2804,9 +2804,7 @@ class data_entry_helper extends helper_config {
       $attrDef = $attributes[$occAttrId];
       $occAttrs[$occAttrId] = $attrDef['caption'];
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-      $class = (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? 
-      $options['occAttrClasses'][$idx] : 
-          strtolower(str_replace(' ', '_', $attrDef['caption'])); // provide a default class based on the control caption
+      $class = self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']); // provide a default class based on the control caption
       // Build the correct control
       switch ($attrDef['data_type']) {
         case 'L':
@@ -2836,6 +2834,16 @@ class data_entry_helper extends helper_config {
       $idx++;      
     }
   }
+  
+  /**
+   * Returns the class to apply to a control for an occurrence attribute, identified by an index. 
+   * @access private
+   */
+  private static function species_checklist_occ_attr_class($options, $idx, $caption) {
+    return (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ? 
+          $options['occAttrClasses'][$idx] : 
+          'sc'.str_replace(' ', '', ucWords($caption)); // provide a default class based on the control caption
+  }
 
   /**
    * When the species checklist grid has a lookup list associated with it, this is a
@@ -2843,26 +2851,29 @@ class data_entry_helper extends helper_config {
    * a hidden table is used to store a clonable row which provides the template for new rows
    * to be added to the grid.
    */
-  private static function get_species_checklist_clonable_row($options, $occAttrControls) {
+  private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
     $r = "<table style='display: none'><tbody><tr id='".$options['id']."-scClonableRow'>";
     $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
     if ($options['checkboxCol']=='true') {
-      $r .= '<td class="scPresenceCell"><input type="checkbox" name="" value="" /></td>';
+      $r .= '<td class="scPresenceCell"><input type="checkbox" class="scPresence" name="" value="" /></td>';
     }
+	$idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
-      $r .= str_replace('{content}', 
-          str_replace('{fieldname}', "sc:{ttlId}::occAttr:$attrId", $oc),
+	  $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']); 
+      $r .= str_replace(array('{content}', '{class}'), 
+          array(str_replace('{fieldname}', "sc:{ttlId}::occAttr:$attrId", $oc), $class.'Cell'),
           $indicia_templates['attribute_cell']
       );
+	  $idx++;
     }
     if ($options['occurrenceComment']) {
-      $r .= '<td class="ui-widget-content"><input class="control-width-4" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
+      $r .= '<td class="ui-widget-content scCommentCell"><input class="control-width-4 scComment" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
     } 
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class=\"ui-widget-content\"><a href="" class="add-image-link" style="display: none" id="images:{ttlId}:">'.lang::get('add images').'</a></td>';
+      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="images:{ttlId}:">'.lang::get('add images').'</a></td>';
     }
     $r .= "</tr></tbody></table>";
     return $r;
