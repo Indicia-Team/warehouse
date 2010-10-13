@@ -5155,6 +5155,7 @@ $('.ui-state-default').live('mouseout', function() {
     $attrOptions = array('label'=>$item['caption'],
               'fieldname'=>$item['fieldname'],
               'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
+    if(isset($options['id'])) $attrOptions['id'] = $options['id'];
     if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
     if(isset($item['default'])) $attrOptions['default']= $item['default'];
     else if(isset($options['default'])) $attrOptions['default']= $options['default'];

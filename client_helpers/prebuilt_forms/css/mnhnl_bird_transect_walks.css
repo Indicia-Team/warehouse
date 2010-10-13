@@ -30,3 +30,6 @@ textarea {
   width: 95px;
 }
 
+.loading-button {  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px  !important ;}
+
+
