@@ -261,13 +261,14 @@ class iform_mnhnl_bird_transect_walks {
     $r = '';
 
     // Get authorisation tokens to update and read from the Warehouse.
-    $writeAuth = data_entry_helper::get_auth($args['website_id'], $args['password']);
-    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $readAuth = $auth['read'];
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
     data_entry_helper::link_default_stylesheet();
     data_entry_helper::add_resource('jquery_ui');
+    $language = iform_lang_iso_639_2($args['language']);
     if($args['language'] != 'en')
         data_entry_helper::add_resource('jquery_ui_'.$args['language']);
     
@@ -279,9 +280,11 @@ class iform_mnhnl_bird_transect_walks {
     // Additional argument - newSample: mode 1.
     // Additional argument - sample_id=<id>: mode 2.
     // Additional argument - occurrence_id=<id>: mode 3.
+    // Additional arguments - merge_sample_id1=<id>&merge_sample_id2=<id> : mode 2.1
     $mode = 0; // default mode : output survey selector
           // mode 1: output the main Data Entry page: occurrence list or add/edit occurrence tabs hidden. "Survey" tab active
           // mode 2: output the main Data Entry page, display existing sample. Active tab determined by iform params. No occurence details filled in.
+          // mode 2.1: sample 2 has all its occurrences merged into sample 1. sample 2 is then flagged as deleted. sample 1 is then viewed as in normal mode 2.
           // mode 3: output the main Data Entry page, display existing occurrence. "Edit Occurrence" tab active. Occurence details filled in.
 
     $surveyReadOnly = false; // On top of this, things can be flagged as readonly. RO mode 2+4 means no Add Occurrence tab.
@@ -293,7 +296,8 @@ class iform_mnhnl_bird_transect_walks {
     $childSample = array();
     $childLoadID = null;
     $thisOccID=-1; // IDs have to be >0, so this is outside the valid range
-
+    $adminPerm = 'IForm node '.$node->nid.' admin';
+    
     if ($_POST) {
       if(!array_key_exists('website_id', $_POST)) { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
         if(iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnlbtw', $_POST)){
@@ -307,7 +311,57 @@ class iform_mnhnl_bird_transect_walks {
         }
       }
     } else {
-      if (array_key_exists('sample_id', $_GET)){
+      if (array_key_exists('merge_sample_id1', $_GET) && array_key_exists('merge_sample_id2', $_GET) && user_access($adminPerm)){
+        $mode = 2;
+        // firsst check can access the 2 samples given
+        $parentLoadID = $_GET['merge_sample_id1'];
+        $url = $svcUrl.'/data/sample/'.$parentLoadID."?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entity = json_decode(curl_exec($session), true);
+        if(count($entity)==0 || $entity[0]["parent_id"])
+          return '<p>'.lang::get('LANG_No_Access_To_Sample').' '.$parentLoadID.'</p>';
+        $url = $svcUrl.'/data/sample/'.$_GET['merge_sample_id2']."?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entity = json_decode(curl_exec($session), true);
+        if(count($entity)==0 || $entity[0]["parent_id"])
+          return '<p>'.lang::get('LANG_No_Access_To_Sample').' '.$_GET['merge_sample_id2'].'</p>';
+        // now get child samples and point to new parent.
+        $url = $svcUrl.'/data/sample?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&parent_id='.$_GET['merge_sample_id2'];
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entities = json_decode(curl_exec($session), true);
+        if(count($entities)>0){
+         foreach($entities as $entity){
+          $Model = data_entry_helper::wrap(array('id'=>$entity['id'], 'parent_id' => $_GET['merge_sample_id1']), 'sample');
+          var_dump($Model);
+          $request = data_entry_helper::$base_url."/index.php/services/data/save";
+          $postargs = 'submission='.json_encode($Model);
+          $postargs .= '&auth_token='.$auth['write_tokens']['auth_token'];
+          $postargs .= '&nonce='.$auth['write_tokens']['nonce'].'&persist_auth=true';
+          $postresponse = data_entry_helper::http_post($request, $postargs, false);
+          // the response array will always feature an output, which is the actual response or error message.
+          $response = $postresponse['output'];
+          // if it is not json format, assume error text, and json encode that.
+          if (!json_decode($response, true))
+             return "<p>".lang::get('LANG_Error_When_Moving_Sample').": id ".$entity['id']." : ".$response;
+         }
+        }
+        // finally delete the no longer used sample
+        $Model = data_entry_helper::wrap(array('id'=>$_GET['merge_sample_id2'], 'deleted' => 'true'), 'sample');
+        var_dump($Model);
+        $request = data_entry_helper::$base_url."/index.php/services/data/save";
+        $postargs = 'submission='.json_encode($Model);
+        $postargs .= '&auth_token='.$auth['write_tokens']['auth_token'];
+        $postargs .= '&nonce='.$auth['write_tokens']['nonce'].'&persist_auth=true';
+        $postresponse = data_entry_helper::http_post($request, $postargs, false);
+        // the response array will always feature an output, which is the actual response or error message.
+        $response = $postresponse['output'];
+        // if it is not json format, assume error text, and json encode that.
+        if (!json_decode($response, true))
+             return "<p>".lang::get('LANG_Error_When_Deleting_Sample').": id ".$entity['id']." : ".$response;
+      } else if (array_key_exists('sample_id', $_GET)){
         $mode = 2;
         $parentLoadID = $_GET['sample_id'];
       } else if (array_key_exists('occurrence_id', $_GET)){
@@ -355,7 +409,7 @@ WMSoptions = {
       // when given a restricted feature list we have to use the feature id to filter in order to not go over 2000 char limit on the URL
       // Can only generate the feature id if we access a table directly, not through a view. Go direct to the locations table.
       // don't need to worry about parent_id in this case as we know exactly which features we want.
-      // need to use btw_transects view for unrestricted so we can filter by parent_id.
+      // need to use btw_transects view for unrestricted so we can filter by parent_id=NULL.
       $locFeatures = array();
       foreach($locations as $location)
         $locFeatures[] = "locations.".$location;
@@ -365,6 +419,7 @@ WMSoptions = {
     } else {
       data_entry_helper::$javascript .= "
         LAYERS: '".$optionsArray_Location['LAYERS']."'";
+      // TBD add filter  for website_id.
     }
     data_entry_helper::$javascript .= "
     };
@@ -534,15 +589,24 @@ $('#controls').bind('tabsshow', function(event, ui) {
       return $r;
     }
     ///////////////////////////////////////////////////////////////////
-
+    // At this point there are 3 modes:
+    // Adding a new survey
+    // editing/showing an existing survey
+    // editing/showing an existing occurrence
+    // First load the occurrence (and its position sample) if provided
+    // Then load the parent sample if provided, or derived from occurrence.
+    // $occReadOnly is set if the occurrence has been downloaded. Not even an admin user can modify it in this case.
     $occReadOnly = false;
+    $childSample = array();
     if($childLoadID){ // load the occurrence and its associated sample (which holds the position)
       $url = $svcUrl.'/data/occurrence/'.$childLoadID;
       $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entity = json_decode(curl_exec($session), true);
-      $childSample = array();
+      if(count($entity)==0){
+        return '<p>'.lang::get('LANG_No_Access_To_Occurrence').'</p>';
+      }
       foreach($entity[0] as $key => $value){
         $childSample['occurrence:'.$key] = $value;
       }
@@ -554,21 +618,26 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entity = json_decode(curl_exec($session), true);
+      if(count($entity)==0){
+        return '<p>'.lang::get('LANG_No_Access_To_Occurrence').'</p>';
+      }
       foreach($entity[0] as $key => $value){
         $childSample['sample:'.$key] = $value;
       }
       $childSample['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
-      $thisOccID = $childLoadID; // this will be used to load the occurrence into the editlayer.
       $childSample['taxon']=$childSample['occurrence:taxon'];
       $parentLoadID=$childSample['sample:parent_id'];
     }
+    $parentSample = array();
     if($parentLoadID){ // load the container master sample
       $url = $svcUrl.'/data/sample/'.$parentLoadID;
       $url .= "?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $entity = json_decode(curl_exec($session), true);
-      $parentSample = array();
+      if(count($entity)==0){
+        return '<p>'.lang::get('LANG_No_Access_To_Sample').'</p>';
+      }
       foreach($entity[0] as $key => $value){
         $parentSample['sample:'.$key] = $value;
       }
@@ -579,9 +648,10 @@ $('#controls').bind('tabsshow', function(event, ui) {
         return '<p>'.lang::get('LANG_No_Access_To_Sample').'</p>';
       }
       $parentSample['sample:date'] = $parentSample['sample:date_start']; // bit of a bodge
+      $childSample['sample:date'] = $parentSample['sample:date']; // enforce a match between child and parent sample dates
       // default values for attributes from DB are picked up automatically.
     }
-    $childSample['sample:date'] = $parentSample['sample:date']; // enforce a match between child and parent sample dates
+
     data_entry_helper::$entity_to_load=$parentSample;
     $attributes = data_entry_helper::getAttributes(array(
       'id' => data_entry_helper::$entity_to_load['sample:id']
@@ -593,7 +663,6 @@ $('#controls').bind('tabsshow', function(event, ui) {
     ));
     $closedFieldName = $attributes[$args['sample_closure_id']]['fieldname'];
     $closedFieldValue = data_entry_helper::check_default_value($closedFieldName, array_key_exists('default', $attributes[$args['sample_closure_id']]) ? $attributes[$args['sample_closure_id']]['default'] : '0'); // default is not closed
-    $adminPerm = 'IForm node '.$node->nid.' admin';
     if($closedFieldValue == '1' && !user_access($adminPerm)){
       // sample has been closed, no admin perms. Everything now set to read only.
       $surveyReadOnly = true;
@@ -601,7 +670,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       $defAttrOptions = array('extraParams'=>$readAuth,
                   'disabled'=>$disabledText);
     } else {
-      // sample open.
+      // sample editable. Admin users can modify closed samples.
       $disabledText="";
       $defAttrOptions = array('extraParams'=>$readAuth);
     }
@@ -635,16 +704,42 @@ $('#controls').bind('tabsshow', function(event, ui) {
 
     // Set up main Survey Form.
     $r .= "<div id=\"survey\" class=\"mnhnl-btw-datapanel\">
-  <p id=\"read-only-survey\"><strong>".lang::get('LANG_Read_Only_Survey')."</strong></p>
-  <form id=\"SurveyForm\" action=\"".iform_ajaxproxy_url($node, 'sample')."\" method=\"post\">
+  <p id=\"read-only-survey\"><strong>".lang::get('LANG_Read_Only_Survey')."</strong></p>";
+    if(user_access($adminPerm) && array_key_exists('sample:id', data_entry_helper::$entity_to_load)) {
+    	// check for other surveys of same date/transect: only if admin user.
+        $url = $svcUrl.'/data/sample?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"]."&date_start=".$parentSample['sample:date_start']."&location_id=".$parentSample['sample:location_id'];
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entity = json_decode(curl_exec($session), true);
+        if(count($entity)>1){ // ignore ourselves!
+        	$r .= "<div id=\"mergeSurveys\"><p><strong>".lang::get('LANG_Found_Mergable_Surveys')."</strong></p>";
+        	foreach($entity as $survey){
+        		if($survey['id'] != $parentSample['sample:id']){
+                  $r .= "<form action=\"".url('node/'.($node->nid), array())."\" method=\"get\"><input type=\"submit\" value=\"".lang::get('LANG_Merge_With_ID')." ".$survey['id']."\"><input type=\"hidden\" name=\"merge_sample_id1\" value=\"".$parentSample['sample:id']."\" /><input type=\"hidden\" name=\"merge_sample_id2\" value=\"".$survey['id']."\" /></form>";
+        		}
+        	}
+        	$r .= "</div>";
+        }    	
+    }
+    $r .= "<form id=\"SurveyForm\" action=\"".iform_ajaxproxy_url($node, 'sample')."\" method=\"post\">
     <input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />
-    <input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />
-    ".iform_user_get_hidden_inputs($args);
+    <input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />";
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
       $r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";
     } else {
       $r .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"\" disabled=\"disabled\" />\n";
     }
+
+    $fieldName = $attributes[$args['uid_attr_id']]['fieldname'];
+    $fieldValue = data_entry_helper::check_default_value($fieldName, $user->uid);
+    $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
+    $fieldName = $attributes[$args['email_attr_id']]['fieldname'];
+    $fieldValue = data_entry_helper::check_default_value($fieldName, $user->mail);
+    $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
+    $fieldName = $attributes[$args['username_attr_id']]['fieldname'];
+    $fieldValue = data_entry_helper::check_default_value($fieldName, $user->name);
+    $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
+      
     $defAttrOptions['validation'] = array('required');
     $defAttrOptions['suffixTemplate']='requiredsuffix';
     if($locations == 'all'){
@@ -695,12 +790,18 @@ $('#controls').bind('tabsshow', function(event, ui) {
       // the post. This means they can't be disabled, so we enable all fields in this case.
       // Normal users can only set this to closed, and they do this using a button/hidden field.
       $r .= data_entry_helper::outputAttribute($attributes[$args['sample_closure_id']], $defAttrOptions);
+      // In addition admin users can delete a survey/sample.
+      $r .= data_entry_helper::checkbox(array('label'=>lang::get('Deleted'), 'fieldname'=>'sample:deleted', 'id'=>'main-sample-deleted'));
     } else {
       // hidden closed
-      $r .= "<input type=\"hidden\" id=\"".$closedFieldName."\" name=\"".$closedFieldName."\" value=\"".$closedFieldValue."\" />\n";
+      $r .= "<input type=\"hidden\" id=\"main-sample-closed\" name=\"".$closedFieldName."\" value=\"".$closedFieldValue."\" />\n";
     }
+	data_entry_helper::$javascript .= "
+$.validator.messages.required = \"".lang::get('validation_required')."\";
+$.validator.defaults.onsubmit = false; // override default - so that we handle all submission validation.
+";
+
     
-    $escaped_id=str_replace(':','\\\\:',$closedFieldName);
     if(!$surveyReadOnly){
       // NB that we don't even include the buttons when readonly.
       data_entry_helper::$javascript .= "
@@ -716,7 +817,7 @@ jQuery('#ro-sur-occ-warn').hide();
             jQuery('#close1').addClass('loading-button');
             jQuery('#SurveyForm').submit();\">\n";
       if(!user_access($adminPerm)) {
-      	if($mode != 1) data_entry_helper::$javascript .= "jQuery('#close2').hide();\n";
+      	if($mode == 1) data_entry_helper::$javascript .= "jQuery('#close2').hide();\n";
        $r .= "<input type=button id=\"close2\" class=\"ui-state-default ui-corner-all \" value=\"".lang::get('LANG_Save_Survey_And_Close')."\"
         onclick=\"if(confirm('".lang::get('LANG_Close_Survey_Confirm')."')){
           var result = $('#SurveyForm input').valid();
@@ -724,7 +825,7 @@ jQuery('#ro-sur-occ-warn').hide();
           if (!result || !result2) {
               return;
             }
-            jQuery('#".$escaped_id."').val('1');
+            jQuery('#main-sample-closed').val('1');
             jQuery('#close2').addClass('loading-button');
             jQuery('#SurveyForm').submit();
           };\">\n";
@@ -779,47 +880,76 @@ jQuery('#SurveyForm').ajaxForm({
 			return false;
   		};
   		SurveyFormRetVal = true;
-//        jQuery.ajax({ 
-//            type: 'GET', 
-//            url: \"".$svcUrl."/data/sample\" + jQuery('#imp-location').val() + \"?mode=json&view=list\" +
-//                \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-//                \"&orderby=id&callback=?\", 
-//            data: {}, 
-//            success: function(detData) {
-//            },
-//            dataType: 'json', 
-//            async: false 
-//        }); 
+  		
+        jQuery.ajax({ // now check if there are any other samples with this combination of date and location
+            type: 'GET', 
+            url: \"".$svcUrl."/data/sample?mode=json&view=detail\" +
+                \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+                \"&orderby=id&callback=?&location_id=\"+jQuery('#imp-location').val()+\"&date_start=\"+jQuery('#SurveyForm [name=sample\\:date]').val(), 
+            data: {}, 
+            success: function(detData) {
+              for(i=0, j=0; i< detData.length; i++){
+                if(detData[i].id != jQuery('#SurveyForm [name=sample\\:id]').val()) j++;
+              }
+              if(j) {
+              	SurveyFormRetVal = confirm(\"".lang::get('LANG_Survey_Already_Exists')."\");
+              }
+            },
+            dataType: 'json', 
+            async: false 
+        }); 
 		return SurveyFormRetVal;
 	},
     success:   function(data){
        // this will leave all the fields populated.
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
+            jQuery('#occ-form').show();
+            jQuery('#na-occ-warn').hide();
+            jQuery('#mergeSurveys').hide();
+       	";
+    if(!user_access($adminPerm)) {
+    	data_entry_helper::$javascript .= "
+			if(jQuery('#main-sample-closed').val() == '1'){
+				jQuery('#read-only-survey').show();
+				jQuery('#close1').hide();
+				jQuery('#close2').hide();
+				jQuery('#occ-form').hide(); //can't enter any more occurrences
+				jQuery('#ro-sur-occ-warn').show();
+				jQuery('#SurveyForm').children().attr('disabled','disabled');
+    	};\n";
+    } else {
+    	data_entry_helper::$javascript .= "
+    	    if(jQuery('#main-sample-deleted:checked').length > 0){
+    	    	jQuery('#return-to-main').click();
+    	    	return;
+    		};\n";
+    }
+    data_entry_helper::$javascript .= "
 			window.scroll(0,0);
             jQuery('#SurveyForm > input[name=sample\\:id]').removeAttr('disabled').val(data.outer_id);
             jQuery('#occ-form > input[name=sample\\:parent_id]').val(data.outer_id);
             jQuery('#occ-form > input[name=sample\\:date]').val(jQuery('#SurveyForm > input[name=sample\\:date]').val());
-            jQuery('#occ-form').show();
-            jQuery('#na-occ-warn').hide();";
-    if(!user_access($adminPerm)) {
-    	data_entry_helper::$javascript .= "
-			if(jQuery('#".$escaped_id."').val() == '1'){
-				jQuery('#read-only-survey').show();
-				jQuery('#close1').hide();
-				jQuery('#close2').hide();
-			};\n";
-    }
-    data_entry_helper::$javascript .= "
-			switch(\"".$args["on_save_survey_nav"]."\"){
+            loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', data.outer_id, 'smpAttr');
+            switch(\"".$args["on_save_survey_nav"]."\"){
 				case \"list\":
 					var a = $('ul.ui-tabs-nav a')[2];
 					$(a).click();
 					break;
 				case \"survey\":
 					break;
-				default:
+				default:";
+    if(!user_access($adminPerm)) {
+    	data_entry_helper::$javascript .= "
+					if(jQuery('#main-sample-closed').val() == 0){
+						var a = $('ul.ui-tabs-nav a')[1];
+						$(a).click();
+					};";
+    } else {
+    	data_entry_helper::$javascript .= "
 					var a = $('ul.ui-tabs-nav a')[1];
-					$(a).click();
+					$(a).click();";
+    }
+    data_entry_helper::$javascript .= "
 					break;
 			}
         } else {
@@ -845,7 +975,33 @@ jQuery('#SurveyForm').ajaxForm({
     complete: function (){
   		jQuery('.loading-button').removeClass('loading-button');
   	}
-});";
+});
+// In this case, all the samples attributes are on the survey tab, and all the occurrence attributes are on the occurrence tab. No need to worry about getting the correct form.
+loadAttributes = function(attributeTable, attributeKey, key, keyValue, prefix){
+    jQuery.ajax({ 
+        type: \"GET\", 
+        url: \"".$svcUrl."/data/\" + attributeTable + \"?mode=json&view=list\" +
+        	\"&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+   			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
+        data: {}, 
+        success: (function(attrPrefix, attrKey) {
+          var retVal = function(attrdata) {
+            if(!(attrdata instanceof Array)){
+              alertIndiciaError(attrdata);
+            } else if (attrdata.length>0) {
+              for (var i=0;i<attrdata.length;i++){
+                // in all cases if the attribute already has the <prefix>:<X>:<Y> format name we leave. Other wise we update <prefix>:<X> to <prefix>:<X>:<Y>
+                // We leave all values unchanged.
+                if (attrdata[i].id && (attrdata[i].iso == null || attrdata[i].iso == '' || attrdata[i].iso == '".$language."'))
+                  jQuery('[name='+attrPrefix+'\\:'+attrdata[i][attrKey]+']').attr('name', attrPrefix+':'+attrdata[i][attrKey]+':'+attrdata[i].id)
+              }
+            }};
+          return retVal;
+          })(prefix, attributeKey),
+		dataType: 'json', 
+	    async: false  
+	});
+}";
     
 
     // Set up Occurrence List tab: don't include when creating a new sample as it will have no occurrences
@@ -902,7 +1058,6 @@ jQuery('#ro-occ-occ-warn').hide();
           'disabled'=>$disabledText,
           'defaultCaption' => data_entry_helper::$entity_to_load['occurrence:taxon']
   );
-  $escaped_terr_id = str_replace(':','\\\\:',$attributes[$args['occurrence_territorial_id']]['fieldname']);
   $r .= "  <div id=\"occurrence\" class=\"mnhnl-btw-datapanel\">
     <p id=\"ro-occ-occ-warn\"><strong>".lang::get('LANG_Read_Only_Occurrence')."</strong></p>
     <p id=\"ro-sur-occ-warn\"><strong>".lang::get('LANG_Read_Only_Survey')."</strong></p>
@@ -922,12 +1077,15 @@ jQuery('#ro-occ-occ-warn').hide();
     <p>".lang::get('LANG_Click_on_map')."</p>
     ".data_entry_helper::outputAttribute($attributes[$args['occurrence_count_id']], array_merge($defAttrOptions, array('default'=>1, 'suffixTemplate'=>'requiredsuffix')))."
     ".data_entry_helper::outputAttribute($attributes[$args['occurrence_approximation_id']], $defAttrOptions)."
-    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_territorial_id']], array_merge($defAttrOptions, array('default'=>1)))."
+    ".data_entry_helper::outputAttribute($attributes[$args['occurrence_territorial_id']], array_merge($defAttrOptions, array('default'=>1, 'id' => 'occ-territorial')))."
     ".data_entry_helper::outputAttribute($attributes[$args['occurrence_atlas_code_id']], $languageFilteredAttrOptions)."
     ".data_entry_helper::outputAttribute($attributes[$args['occurrence_overflying_id']], $defAttrOptions)."
     ".data_entry_helper::textarea(array('label'=>lang::get('LANG_Comment'), 'fieldname'=>'occurrence:comment', 'disabled'=>$disabledText));
-    if(!$surveyReadOnly && !$occReadOnly)
-       $r .= "<input type=\"submit\" id=\"occ-submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Occurrence_Details')."\" />";
+    if(!$surveyReadOnly && !$occReadOnly){
+      if($mode == 3)
+        $r .= data_entry_helper::checkbox(array('label'=>lang::get('Delete'), 'fieldname'=>'sample:deleted', 'id'=>'occ-sample-deleted'));
+      $r .= "<input type=\"submit\" id=\"occ-submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Occurrence_Details')."\" />";
+    }
     $r .= "  </form>\n";
 
   data_entry_helper::$javascript .= "
@@ -983,9 +1141,10 @@ jQuery('#occ-form').ajaxForm({
 			jQuery('form#occ-form').find('[name=occurrence\\:taxa_taxon_list_id],[name=occurrence\\:taxa_taxon_list_id\\:taxon],[name=sample\\:entered_sref],[name=sample\\:geom],[name=occurrence\\:comment]').val('');
 			jQuery('form#occ-form').find('[name=occAttr\\:".$args['occurrence_confidence_id']."]').find('option').removeAttr('selected');
 			jQuery('form#occ-form').find('[name=occAttr\\:".$args['occurrence_count_id']."]').val('1');
-			jQuery('form#occ-form').find('input[name=occAttr\\:".$args['occurrence_approximation_id']."],input[name=occAttr\\:".$args['occurrence_overflying_id']."]').filter('[value=0]').attr('checked','checked');
-			jQuery('form#occ-form').find('input[name=occAttr\\:".$args['occurrence_territorial_id']."]').filter('[value=1]').attr('checked','checked');
-			jQuery('form#occ-form').find('select[name=occAttr\\:".$args['occurrence_atlas_code_id']."]').val('');
+			jQuery('form#occ-form').find('input[name=occAttr\\:".$args['occurrence_approximation_id']."],input[name=occAttr\\:".$args['occurrence_overflying_id']."]').removeAttr('checked','checked');
+			jQuery('form#occ-form').find('#occ-territorial').attr('checked','checked');
+			jQuery('label[for=occ-sample-deleted]').remove(); // sample deleted only applicable when editing an existing occurrence. After saving reverts to Add Occurreence: no delete. Remove label then actual checkbox
+			jQuery('form#occ-form').find('[name=sample\\:deleted]').remove(); // This removes both parts of the checkbox.
 			setAtlasStatus();
 			retriggerGrid();
 			locationLayer.map.editLayer.destroyFeatures();
@@ -1028,7 +1187,8 @@ jQuery('#occ-form').ajaxForm({
   	}
 });
 setAtlasStatus = function() {
-  if (jQuery(\"input[name=occAttr\\:".$args['occurrence_territorial_id']."]:checked,input[name^=occAttr\\:".$args['occurrence_territorial_id']."\\:]:checked\").val() == '0') {
+
+  if (jQuery(\"#occ-territorial:checked\").length == 0) {
       jQuery(\"select[name=occAttr\\:".$args['occurrence_atlas_code_id']."],select[name^=occAttr\\:".$args['occurrence_atlas_code_id']."\\:]\").val('');
   } else {
       if(jQuery(\"select[name=occAttr\\:".$args['occurrence_atlas_code_id']."],select[name^=occAttr\\:".$args['occurrence_atlas_code_id']."\\:]\").val() == '') {
@@ -1044,7 +1204,7 @@ setAtlasStatus = function() {
       }
   }
 };
-jQuery(\"input[name='".$escaped_terr_id."']\").change(setAtlasStatus);\n";
+jQuery(\"#occ-territorial\").change(setAtlasStatus);\n";
   $r .= '</div>';
 
     // add map panel.
@@ -1248,7 +1408,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
 
 ";
     };
-    $r .= "</div><div><form><input type=\"button\" value=\"".lang::get('LANG_Return')."\" onclick=\"window.location.href='".url('node/'.($node->nid), array('query' => 'Main'))."'\"></form></div></div>\n";
+    $r .= "</div><div><form><input id=\"return-to-main\" type=\"button\" value=\"".lang::get('LANG_Return')."\" onclick=\"window.location.href='".url('node/'.($node->nid), array('query' => 'Main'))."'\"></form></div></div>\n";
 
     return $r;
   }
