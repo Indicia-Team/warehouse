@@ -75,6 +75,13 @@ $custom_terms = array(
 	'LANG_Return' => 'Retour à l\'écran principal des échantillonnages',
 	'validation_required' => 'Veuillez entrer une valeur pour ce champ',
 
+	'LANG_Error_When_Moving_Sample' => 'An error has occurred during the merge process. Failed to move an occurrence.',
+	'LANG_Error_When_Deleting_Sample' => 'An error has occurred during the merge process. Failed to delete empty survey.',
+	'LANG_Found_Mergable_Surveys' => 'A number of surveys have been found which share the same transect and date combination as this one.',
+	'LANG_Merge_With_ID' => 'Merge this survey with id',
+	'LANG_Indicia_Warehouse_Error' => 'Error returned from Indicia Warehouse',
+	'LANG_Survey_Already_Exists' => 'Un échantillonnage existe déjà pour cette combinaison de transecte/date. Êtes-vous sûre de vouloir rajouter/sauvegarder celle-ci?',
+	'LANG_No_Access_To_Occurrence' => 'This record is not a valid occurrence.',
 
 	// Can also add entries for 'Yes' and 'No' for the boolean attributes,
 	//   and one for each of the attribute captions. As these are in English
