@@ -1187,7 +1187,6 @@ jQuery('#occ-form').ajaxForm({
   	}
 });
 setAtlasStatus = function() {
-
   if (jQuery(\"#occ-territorial:checked\").length == 0) {
       jQuery(\"select[name=occAttr\\:".$args['occurrence_atlas_code_id']."],select[name^=occAttr\\:".$args['occurrence_atlas_code_id']."\\:]\").val('');
   } else {
@@ -1205,6 +1204,9 @@ setAtlasStatus = function() {
   }
 };
 jQuery(\"#occ-territorial\").change(setAtlasStatus);\n";
+  if($mode != 3)
+    data_entry_helper::$javascript .= "setAtlasStatus();\n"; // reset the atlas when not looking at a old occurrence.
+    
   $r .= '</div>';
 
     // add map panel.
@@ -1338,12 +1340,8 @@ $('#controls').bind('tabsshow', function(event, ui) {
         }
     }
 );
-";
-  if($mode != 1){
-    data_entry_helper::$onload_javascript .= "
 activateAddList = 1;
 thisOccID = ".$thisOccID.";
-
 addListFeature = function(div, r, record, count) {
   if(activateAddList == 0)
     return;
@@ -1388,6 +1386,9 @@ highlight = function(id){
     }
   }
 }
+";
+  if($mode != 1){
+    data_entry_helper::$onload_javascript .= "
 $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
     indiciaSvc: '".$svcUrl."',
     dataColumns: ['taxon', 'territorial', 'count'],
