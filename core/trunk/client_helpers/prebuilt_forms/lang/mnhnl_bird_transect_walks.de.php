@@ -93,6 +93,14 @@ $custom_terms = array(
 	'Visit number in year' => 'Begehung',
 	'Walk started at end' => 'Wegverlauf',
 	'Wind Force' => 'Windstärke',
-	'Yes' => 'Ja'
+	'Yes' => 'Ja',
 
+	'LANG_Error_When_Moving_Sample' => 'An error has occurred during the merge process. Failed to move an occurrence.',
+	'LANG_Error_When_Deleting_Sample' => 'An error has occurred during the merge process. Failed to delete empty survey.',
+	'LANG_Found_Mergable_Surveys' => 'A number of surveys have been found which share the same transect and date combination as this one.',
+	'LANG_Merge_With_ID' => 'Merge this survey with id',
+	'LANG_Indicia_Warehouse_Error' => 'Error returned from Indicia Warehouse',
+	'LANG_Survey_Already_Exists' => 'Eine Erfassung besteht bereits für diese Kombination Transekt/Datum. Sind Sie sicher diese hinzuzufügen/zu speichern?',
+	'LANG_No_Access_To_Occurrence' => 'This record is not a valid occurrence.'
+	
 );
