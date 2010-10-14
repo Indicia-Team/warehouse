@@ -641,8 +641,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'columns'=>1,          
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
-		  'occurrenceComment'=>$args['occurrence_comment'],
-		  'occurrenceImages'=>$args['occurrence_images']
+          'occurrenceComment'=>$args['occurrence_comment'],
+          'occurrenceImages'=>$args['occurrence_images']          
       ), $options);
       if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,

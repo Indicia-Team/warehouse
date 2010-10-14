@@ -2421,9 +2421,14 @@ class data_entry_helper extends helper_config {
   * <li><b>columns</b><br/>
   * Number of repeating columns of output. For example, a simple grid of species checkboxes could be output in 2 or 3 columns.
   * Defaults to 1.</li>
-  * <li><b>checkboxCol</b><br/>
-  * Include a presence checkbox column in the grid. If present, then this contains a checkbox for each row which must be ticked for the
-  * row to be saved. Otherwise any row containing data in an attribute gets saved.</li>
+  * <li><b>rowInclusionCheck</b><br/>
+  * Defines how the system determines whether a row in the grid actually contains an occurrence or not. There are 3 options: <br/>
+  * checkbox - a column is included in the grid containing a presence checkbox. If checked then an occurrence is created for the row. This is the default.<br/>
+  * alwaysFixed - occurrences are created for all rows in the grid. Rows cannot be removed from the grid apart from newly added rows.<br/>
+  * alwaysRemovable - occurrences are created for all rows in the grid. Rows can always be removed from the grid. Best used with no listId so there are 
+  * no default taxa in the grid, otherwise editing an existing sample will re-add all the existing taxa.<br/>
+  * hasData - occurrences are created for any row which has a data value specified in at least one of its columns. <br/>
+  * This option supercedes the checkboxCol option which is still recognised for backwards compatibility.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>cachetimeout</b><br/>
@@ -2507,8 +2512,12 @@ class data_entry_helper extends helper_config {
         // If the taxon label template is PHP, evaluate it.
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
         // Now create the table cell to contain this.
-        $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
-        $row = str_replace('{content}', $firstCell,
+        $colspan = isset($options['lookupListId']) && $options['rowInclusionCheck']!='alwaysRemovable' ? ' colspan="2"' : '';
+        $row = '';
+        // Add a X button if the user can remove rows
+        if ($options['rowInclusionCheck']=='alwaysRemovable')
+          $row .= '<td class="ui-state-default remove-row">X</td>';
+        $row .= str_replace('{content}', $firstCell,
             str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell'])
         );
 
@@ -2518,14 +2527,19 @@ class data_entry_helper extends helper_config {
           // we have to implode the search result as the key can be not zero, then strip out the stuff other than the occurrence Id.
           $existing_record_id = str_replace(array("sc:$id:",":present"), '', implode('', $search));
         }
-        if ($options['checkboxCol']=='true') {
-          if (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load)) {
-            $checked = ' checked="checked"';			
-          } else {
-            $checked='';
-          }
-          $row .= "\n<td class=\"scPresenceCell\"><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked /></td>";
+        $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
+        // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
+        // AlwayeRemovable except that the rows can be removed.
+        if ($options['rowInclusionCheck']=='alwaysFixed' || $options['rowInclusionCheck']=='alwaysRemovable' ||
+            (self::$entity_to_load!=null && array_key_exists("sc:$id:$existing_record_id:present", self::$entity_to_load))) {
+          $checked = ' checked="checked"';			
+        } else {
+          $checked='';
         }
+        $row .= "\n<td class=\"scPresenceCell\"$hidden>";
+        if ($options['rowInclusionCheck']!='hasData')
+          $row .= "<input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked />";
+        $row .= "</td>";
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
             $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
@@ -2568,8 +2582,8 @@ class data_entry_helper extends helper_config {
             $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"add-image-link scImageLink\" id=\"add-images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
           else
             $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$id:$existing_record_id\">".lang::get('hide images').'</a></td>';
-        }
-        // Are we in the first column? Note this is disabled if using occurrenceImages as it adds extra rows and messes things up.
+        }        
+        // Are we in the first column? Note multi-column grids are disabled if using occurrenceImages as it adds extra rows and messes things up.
         if ($options['occurrenceImages'] || $rowIdx < count($taxalist)/$options['columns']) {
           $rows[$rowIdx]=$row;
         } else {
@@ -2579,7 +2593,7 @@ class data_entry_helper extends helper_config {
         if ($options['occurrenceImages']) {
           // If there are existing images for this row, display the image control
           if (count($existingImages)>0) {
-            $totalCols = ($options['lookupListId'] ? 2 : 1) + ($options['checkboxCol'] ? 1 : 0) + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
+            $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
               'table'=>"sc:$id:$existing_record_id:occurrence_image",
               'label'=>lang::get('Upload your photos'),
@@ -2591,6 +2605,10 @@ class data_entry_helper extends helper_config {
       }
       $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
       $grid .= '</tbody></table>';
+      // in hasData mode, the wrap_species_checklist method must be notified of the different default way of checking if a row is to be 
+      // made into an occurrence
+      if ($options['rowInclusionCheck']=='hasData')
+        $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
@@ -2600,9 +2618,6 @@ class data_entry_helper extends helper_config {
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
             "'".$indicia_templates['taxon_label']."');\r\n";
-      }
-      if ($options['checkboxCol']=='true') { // need to tag if checkboxes active so can delete entry if needed
-        $grid .= "<input type='hidden' id='control:checkbox' name='control:checkbox' value='YES'/>";
       }
       return $grid;
     } else {
@@ -2679,11 +2694,10 @@ class data_entry_helper extends helper_config {
     if ($options['header']) {
       $r .= "<thead class=\"ui-widget-header\"><tr>";
       for ($i=0; $i<$options['columns']; $i++) {
-        $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
+        $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
         $r .= "<th$colspan>".lang::get('species_checklist.species')."</th>";
-        if ($options['checkboxCol']=='true') {
-          $r .= "<th>".lang::get('species_checklist.present')."</th>";
-        }
+        $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
+        $r .= "<th $hidden>".lang::get('species_checklist.present')."</th>";
         foreach ($occAttrs as $a) {
           $r .= "<th>$a</th>";
         }
@@ -2760,7 +2774,7 @@ class data_entry_helper extends helper_config {
     $options = array_merge(array(
         'header'=>'true',
         'columns'=>1,
-        'checkboxCol'=>'true',
+        'rowInclusionCheck'=>isset($options['checkboxCol']) && $options['checkboxCol']==false ? 'hasData' : 'checkbox',
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
@@ -2854,11 +2868,10 @@ class data_entry_helper extends helper_config {
   private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
     $r = "<table style='display: none'><tbody><tr id='".$options['id']."-scClonableRow'>";
-    $colspan = isset($options['lookupListId']) ? ' colspan="2"' : '';
+    $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
-    if ($options['checkboxCol']=='true') {
-      $r .= '<td class="scPresenceCell"><input type="checkbox" class="scPresence" name="" value="" /></td>';
-    }
+    $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
+    $r .= '<td class="scPresenceCell"'.$hidden.'><input type="checkbox" class="scPresence" name="" value="" /></td>';
 	$idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
 	  $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']); 
@@ -4189,7 +4202,8 @@ if (errors.length>0) {
   *
   * @param array $arr Array of data generated by data_entry_helper::species_checklist method.
   * @param boolean $include_if_any_data If true, then any list entry which has any data
-  * set will be included in the submission. Set this to true when hiding the select checkbox
+  * set will be included in the submission. This defaults to false, unless the grid was 
+  * created with rowInclusionCheck=hasData. 
   * in the grid.
   */
   public static function wrap_species_checklist($arr, $include_if_any_data=false){
@@ -4205,6 +4219,8 @@ if (errors.length>0) {
     if (array_key_exists('occurrence:record_status', $arr)){
       $record_status = $arr['occurrence:record_status'];
     }
+    // Set the default method of looking for rows to include - either using data, or the checkbox (which could be hidden)
+    $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
     // Species checklist entries take the following format
     // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
 	// or
@@ -4223,12 +4239,11 @@ if (errors.length>0) {
           $records[$a[1]]['id'] = $a[2];
         }
       }
-    }
-    foreach ($records as $id => $record){
-      if ((array_key_exists('present', $record)) ||
-          (array_key_exists('id', $record)) ||
-          ($include_if_any_data && implode('',$record)!='')) {
-        if (array_key_exists('id', $record) && array_key_exists('control:checkbox', $arr) && !array_key_exists('present', $record)){
+    }    
+    foreach ($records as $id => $record) {
+      if (array_key_exists('id', $record) ||  // must always handle row if already present in the db
+          self::wrap_species_checklist_record_present($record, $include_if_any_data)) {
+        if (!self::wrap_species_checklist_record_present($record, $include_if_any_data)) {
           // checkboxes do not appear if not checked. If uncheck, delete record.
           $record['deleted'] = 't';
         }
@@ -4252,6 +4267,17 @@ if (errors.length>0) {
       }
     }
     return $subModels;
+  }
+  
+  /**
+   * Test whether the data extracted from the $_POST for a species_checklist grid row refers to an occurrence record.
+   * @access Private
+   */
+  private static function wrap_species_checklist_record_present($record, $include_if_any_data) {
+    // as we are working on a copy of the record, discard the ID so it is easy to check if there is any other data for the row.
+    unset($record['id']);
+    return ($include_if_any_data && implode('',$record)!='') ||       // inclusion of record is detected from having a value in any cell
+      (!$include_if_any_data && array_key_exists('present', $record)); // inclusion of record detected from the presence checkbox
   }
   
   /**

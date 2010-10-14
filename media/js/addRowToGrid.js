@@ -34,6 +34,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     $(taxonCell).attr('colspan',1);
     var row=taxonCell.parentNode;
     $(taxonCell).before('<td class="ui-state-default remove-row">X</td>');
+    $(taxonCell).parent().addClass('added-row');
     $(taxonCell).html(label);
     // Replace the tags in the row template with the taxa_taxon_list_ID
     row.innerHTML = row.innerHTML.replace(/\{ttlId\}/g, data.id);
@@ -42,13 +43,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');
     // and rename the controls so they post into the right species record
-    checkbox.attr('name', 'sc:' + data.id + '::present');
-    $(row).find('.remove-row').click(function(e) {
-        e.preventDefault();
-        // @todo unbind all event handlers
-        row = $(e.target.parentNode);
-        row.remove();
-      });
+    checkbox.attr('name', 'sc:' + data.id + '::present');    
     // Finally, a blank row is added for the next record
     makeSpareRow(true); 
   };
@@ -104,6 +99,24 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
   makeSpareRow(false);
 }
 
+$('.remove-row').live('click', function(e) {
+  e.preventDefault();
+  // @todo unbind all event handlers
+  row = $(e.target.parentNode);
+  if (row.next().find('.file-box').length>0) {
+    row.next().remove();
+  }
+  if (row.hasClass('added-row')) {
+    row.remove();
+  } else {
+    // This was a pre-existing occurrence so we can't just delete the row from the grid.
+    row.css('opacity',0.25);
+    row.attr('disabled','disabled');  
+    // Append an input marking this occurrence as deleted to the table
+    row.find('.scPresence').attr('checked',false);
+  }
+});
+
 /**
  * Click handler for the add image link that is displayed alongside each occurrence row in the grid once 
  * it has been linked to a taxon. Adds a row to the grid specifically to contain a file uploader for images
@@ -114,7 +127,7 @@ $('.add-image-link').live('click', function(evt) {
   var table = evt.target.id.replace('add-images','sc') + ':occurrence_image'
   var ctrlId='container-'+table;
   colspan = $($(evt.target).parent().parent()).children().length;
-  var imageRow = '<tr><td colspan="' + colspan + '">';
+  var imageRow = '<tr class="image-row"><td colspan="' + colspan + '">';
   imageRow += '<div class="file-box" id="' + ctrlId + '"></div>';
   imageRow += '</td></tr>';
   $($(evt.target).parent().parent()).after(imageRow);
