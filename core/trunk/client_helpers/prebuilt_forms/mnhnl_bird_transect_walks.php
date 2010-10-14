@@ -1203,7 +1203,13 @@ setAtlasStatus = function() {
       }
   }
 };
-jQuery(\"#occ-territorial\").change(setAtlasStatus);\n";
+jQuery(\"#occ-territorial\").change(setAtlasStatus);
+if($.browser.msie) { 
+    jQuery(\"#occ-territorial\").click(function() { 
+        $(this).change(); 
+    }); 
+} 
+\n";
   if($mode != 3)
     data_entry_helper::$javascript .= "setAtlasStatus();\n"; // reset the atlas when not looking at a old occurrence.
     
