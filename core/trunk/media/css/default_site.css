@@ -2,7 +2,7 @@
   padding-right: 1em;
 }
 
-.species-grid input {
+.species-grid input, .species-grid select {
   width: 95%;
   margin: 0;
 }
