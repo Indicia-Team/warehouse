@@ -36,7 +36,10 @@ foreach ($checks as $check) {
 if ($failures>0) {
   foreach ($checks as $check) {
     if ($check['success']) {
-  echo html::page_notice($check['title'], $check['description'], 'check');
+      if (isset($check['warning']))
+        echo html::page_error($check['title'], $check['description']);
+      else
+        echo html::page_notice($check['title'], $check['description'], 'check');
     } else {
       if (array_key_exists('action', $check)) {
         echo html::page_error($check['title'], $check['description'],
