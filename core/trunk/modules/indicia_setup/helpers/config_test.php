@@ -257,12 +257,15 @@ class config_test {
    */
   private static function check_dBase(&$messages, $problems_only) {
     if (!function_exists('dbase_open')) {
+      // Note that this does NOT prevent installation, only give a warning.
       array_push($messages, array(
         'title' => 'dBase Library',
-        'description' => '<p>The dBase library is not installed on this web server. To fix this for Windows servers, find your php.ini file in the PHP installation folder and ' .
+        'description' => '<p>The dBase library is not installed on this web server. This is required to enable upload of SHP files containing location boundaries, but '.
+            'does not stop Indicia working. To fix this for servers running PHP 5.2, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_dbase.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
-            'webserver. For Linux systems, you must compile PHP with dbase support by using the --enable-dbase configuration option. Please pass this information to the administrator of your webserver if you are not sure how to do this.</p>',
-        'success' => false
+            'webserver process. If you compiled PHP yourself, you must compile PHP with dbase support by using the --enable-dbase configuration option.</p>',
+        'success' => true,
+        'warning' => true
       ));
     } elseif (!$problems_only) {
       array_push($messages, array(
