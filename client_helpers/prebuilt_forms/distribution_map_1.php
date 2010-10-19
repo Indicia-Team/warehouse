@@ -50,17 +50,18 @@ class iform_distribution_map_1 {
         array(
           'name' => 'wms_feature_type',
           'caption' => 'Feature Type',
-          'description' => 'Name of the feature type exposed in GeoServer to contain the occurrences. This must expose a taxon_meaning_id and a website_id attribute '.
-              'for the filtering.',
+          'description' => 'Name of the feature type (layer) exposed in GeoServer to contain the occurrences. This must expose a taxon_meaning_id and a website_id attribute. '.
+              'for the filtering. The detail_occurrences view is suitable for this purpose, though make sure you include the namespace, e.g. indicia:detail_occurrences. '.
+              'The list of feature type names can be viewed by clicking on the Layer Preview link in the GeoServer installation.',
           'type' => 'textfield',
           'group' => 'Distribution Layer'
         ),
         array(
-		  'name' => 'wms_style',
-		  'caption' => 'Style',
-		  'description' => 'Name of the SLD style file that describes how the distribution points are shown. Leave blank if not sure.',
-		  'type' => 'textfield',
-		  'required' => false,
+          'name' => 'wms_style',
+          'caption' => 'Style',
+          'description' => 'Name of the SLD style file that describes how the distribution points are shown. Leave blank if not sure.',
+          'type' => 'textfield',
+          'required' => false,
           'group' => 'Distribution Layer'
         ),
         array(
@@ -72,14 +73,14 @@ class iform_distribution_map_1 {
           'type' => 'textfield',
           'group' => 'Distribution Layer'
         ),
-		array(
+        array(
           'name' => 'show_all_species',
-		  'caption' => 'Show all species',
-		  'description' => 'Set this flag to show a map of all species occurrences rather than just one species',
-		  'type' => 'boolean',
-		  'default' => false,
+          'caption' => 'Show all species',
+          'description' => 'Set this flag to show a map of all species occurrences rather than just one species',
+          'type' => 'boolean',
+          'default' => false,
           'group' => 'Distribution Layer'
-		),
+        ),
         array(
           'name' => 'taxon_list_id',
           'caption' => 'Taxon List ID',
@@ -88,11 +89,11 @@ class iform_distribution_map_1 {
           'group' => 'Distribution Layer'
         ),
         array(
-		  'name' => 'external_key',
-		  'caption' => 'External Key',
-		  'description' => 'Check this box if the taxon is to be identified using the external key instead of the Meaning ID, either through the Taxon ID ' .
-		      'box above or through the URL taxon parameter.',
-		  'type' => 'boolean',
+          'name' => 'external_key',
+          'caption' => 'External Key',
+          'description' => 'Check this box if the taxon is to be identified using the external key instead of the Meaning ID, either through the Taxon ID ' .
+              'box above or through the URL taxon parameter.',
+          'type' => 'boolean',
           'group' => 'Distribution Layer'
         ), array(
           'name' => 'refresh_timer',
