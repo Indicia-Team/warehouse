@@ -129,7 +129,9 @@ auth['write'] +
 '<input type="hidden" id="website_id" name="website_id" value="' + websiteId + '" />'+
 '</fieldset>'+
 '<input type="button" value="Send Email" onclick="'+
-'$(\'form#send_for_verification_email\').attr(\'action\', submit_to());'+
+//'$(\'form#send_for_verification_email\').attr(\'action\', submit_to());'+
+//jQuery is confused by the hidden input called "action"
+'$(\'form#send_for_verification_email\').get(0).setAttribute(\'action\', submit_to());'+
 '$(\'form#send_for_verification_email\').submit();'+
 '">'+
 '</form>');
