@@ -84,7 +84,7 @@ class iform_mnhnl_dynamic_1 {
           'caption'=>'Form Structure',
           'description'=>'Define the structure of the form. Each component goes on a new line and is nested inside the previous component where appropriate. The following types of '.
             "component can be specified. <br/>".
-            "<strong>=tab name=</strong> is used to specify the name of a tab. <br/>".
+            "<strong>=tab name=</strong> is used to specify the name of a tab. (Alpha-numeric characters only)<br/>".
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
@@ -93,7 +93,7 @@ class iform_mnhnl_dynamic_1 {
 				"&nbsp;&nbsp;<strong>[map]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[location name]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[location autocomplete</strong>br/>".
+				"&nbsp;&nbsp;<strong>[location autocomplete]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[location select]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[place search]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[record status]</strong><br/>".
@@ -522,11 +522,11 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object
       for ($i = 0; $i < count($tabContent); $i++) {
         $component = $tabContent[$i];
-        if (preg_match('/\A\?[^¬]*\?\z/', trim($component))===1) {
+        if (preg_match('/\A\?[^ï¿½]*\?\z/', trim($component))===1) {
           // Component surrounded by ? so represents a help text
           $helpText = substr(trim($component), 1, -1);
           $html .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</p>";
-        } elseif (preg_match('/\A\[[^¬]*\]\z/', trim($component))===1) {
+        } elseif (preg_match('/\A\[[^ï¿½]*\]\z/', trim($component))===1) {
           // Component surrounded by [] so represents a control
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
           // Anything following the component that starts with @ is an option to pass to the control
