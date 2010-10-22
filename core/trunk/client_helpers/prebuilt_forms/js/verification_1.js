@@ -100,15 +100,20 @@ function indicia_send_to_verifier(taxon, id, cmsUser, websiteId) {
   var row = jQuery('#row' + id)[0];
   var record='';
   jQuery.each(row.childNodes, function(i, item) {
-    if (jQuery.trim(item.textContent)!=='' && item.classList.length >= 2 && item.classList[0] == 'data') {
-      record += item.classList[1] + ': ' + item.textContent + "\n";
-    } else if (item.childElementCount===1 && item.children[0].attributes.getNamedItem('href')!==null) {
-      // replace the photo with a tag, since our email is edited in a textarea that cannot show HTML. 
-      record += item.classList[1] + ': [photo]\n';
-      // capture the HTML required for the image link, so it can be used in the email
-      photoHTML=item.innerHTML;
+    var $item = jQuery(item);
+    var attrClass = $item.attr('class');
+    if (attrClass !== undefined) {
+      var classList = attrClass.split(/\s+/);
+      if (jQuery.trim($item.text())!=='' && classList.length >= 2 && classList[0] == 'data') {
+        record += classList[1] + ': ' + $item.text() + "\n";
+      } else if ($item.children().length===1 && $item.children().attr('href')!==undefined) {
+        // replace the photo with a tag, since our email is edited in a textarea that cannot show HTML.
+        record += classList[1] + ': [photo]\n';
+        // capture the HTML required for the image link, so it can be used in the email
+        photoHTML=$item.html();
+      }
     }
-  });
+   });
   var body=email_body_send_to_verifier.replace(/%taxon%/g, taxon).replace(/%id%/g, id).replace(/%record%/g, record);
   jQuery.fancybox(
 '<form id="send_for_verification_email" action="" method="post" >'+
