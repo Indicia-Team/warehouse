@@ -313,7 +313,7 @@ class iform_mnhnl_bird_transect_walks {
     } else {
       if (array_key_exists('merge_sample_id1', $_GET) && array_key_exists('merge_sample_id2', $_GET) && user_access($adminPerm)){
         $mode = 2;
-        // firsst check can access the 2 samples given
+        // first check can access the 2 samples given
         $parentLoadID = $_GET['merge_sample_id1'];
         $url = $svcUrl.'/data/sample/'.$parentLoadID."?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
         $session = curl_init($url);
@@ -321,46 +321,40 @@ class iform_mnhnl_bird_transect_walks {
         $entity = json_decode(curl_exec($session), true);
         if(count($entity)==0 || $entity[0]["parent_id"])
           return '<p>'.lang::get('LANG_No_Access_To_Sample').' '.$parentLoadID.'</p>';
+        // The check for id2 is slightly different: there is the possiblity that someone will F5/refresh their browser, after the transfer and delete have taken place.
+        // In this case we carry on, but do not do the transfer and delete.
         $url = $svcUrl.'/data/sample/'.$_GET['merge_sample_id2']."?mode=json&view=detail&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth["nonce"];
         $session = curl_init($url);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entity = json_decode(curl_exec($session), true);
-        if(count($entity)==0 || $entity[0]["parent_id"])
-          return '<p>'.lang::get('LANG_No_Access_To_Sample').' '.$_GET['merge_sample_id2'].'</p>';
-        // now get child samples and point to new parent.
-        $url = $svcUrl.'/data/sample?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&parent_id='.$_GET['merge_sample_id2'];
-        $session = curl_init($url);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $entities = json_decode(curl_exec($session), true);
-        if(count($entities)>0){
-         foreach($entities as $entity){
-          $Model = data_entry_helper::wrap(array('id'=>$entity['id'], 'parent_id' => $_GET['merge_sample_id1']), 'sample');
-          var_dump($Model);
+        if(count($entity)>0 && !$entity[0]["parent_id"]) {
+          // now get child samples and point to new parent.
+          $url = $svcUrl.'/data/sample?mode=json&view=detail&auth_token='.$readAuth['auth_token']."&nonce=".$readAuth["nonce"].'&parent_id='.$_GET['merge_sample_id2'];
+          $session = curl_init($url);
+          curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+          $entities = json_decode(curl_exec($session), true);
+          if(count($entities)>0){
+            foreach($entities as $entity){
+              $Model = data_entry_helper::wrap(array('id'=>$entity['id'], 'parent_id' => $_GET['merge_sample_id1']), 'sample');
+              $request = data_entry_helper::$base_url."/index.php/services/data/save";
+              $postargs = 'submission='.json_encode($Model).'&auth_token='.$auth['write_tokens']['auth_token'].'&nonce='.$auth['write_tokens']['nonce'].'&persist_auth=true';
+              $postresponse = data_entry_helper::http_post($request, $postargs, false);
+              // the response array will always feature an output, which is the actual response or error message. if it is not json format, assume error text, and json encode that.
+              $response = $postresponse['output'];
+              if (!json_decode($response, true))
+                return "<p>".lang::get('LANG_Error_When_Moving_Sample').": id ".$entity['id']." : ".$response;
+            }
+          }
+          // finally delete the no longer used sample
+          $Model = data_entry_helper::wrap(array('id'=>$_GET['merge_sample_id2'], 'deleted' => 'true'), 'sample');
           $request = data_entry_helper::$base_url."/index.php/services/data/save";
-          $postargs = 'submission='.json_encode($Model);
-          $postargs .= '&auth_token='.$auth['write_tokens']['auth_token'];
-          $postargs .= '&nonce='.$auth['write_tokens']['nonce'].'&persist_auth=true';
+          $postargs = 'submission='.json_encode($Model).'&auth_token='.$auth['write_tokens']['auth_token'].'&nonce='.$auth['write_tokens']['nonce'].'&persist_auth=true';
           $postresponse = data_entry_helper::http_post($request, $postargs, false);
-          // the response array will always feature an output, which is the actual response or error message.
+          // the response array will always feature an output, which is the actual response or error message. if it is not json format, assume error text, and json encode that.
           $response = $postresponse['output'];
-          // if it is not json format, assume error text, and json encode that.
           if (!json_decode($response, true))
-             return "<p>".lang::get('LANG_Error_When_Moving_Sample').": id ".$entity['id']." : ".$response;
-         }
+            return "<p>".lang::get('LANG_Error_When_Deleting_Sample').": id ".$entity['id']." : ".$response;
         }
-        // finally delete the no longer used sample
-        $Model = data_entry_helper::wrap(array('id'=>$_GET['merge_sample_id2'], 'deleted' => 'true'), 'sample');
-        var_dump($Model);
-        $request = data_entry_helper::$base_url."/index.php/services/data/save";
-        $postargs = 'submission='.json_encode($Model);
-        $postargs .= '&auth_token='.$auth['write_tokens']['auth_token'];
-        $postargs .= '&nonce='.$auth['write_tokens']['nonce'].'&persist_auth=true';
-        $postresponse = data_entry_helper::http_post($request, $postargs, false);
-        // the response array will always feature an output, which is the actual response or error message.
-        $response = $postresponse['output'];
-        // if it is not json format, assume error text, and json encode that.
-        if (!json_decode($response, true))
-             return "<p>".lang::get('LANG_Error_When_Deleting_Sample').": id ".$entity['id']." : ".$response;
       } else if (array_key_exists('sample_id', $_GET)){
         $mode = 2;
         $parentLoadID = $_GET['sample_id'];
@@ -880,8 +874,8 @@ jQuery('#SurveyForm').ajaxForm({
 			return false;
   		};
   		SurveyFormRetVal = true;
-  		
-        jQuery.ajax({ // now check if there are any other samples with this combination of date and location
+  		if(jQuery('#main-sample-deleted:checked').length == 0){ // only do check if not deleting
+          jQuery.ajax({ // now check if there are any other samples with this combination of date and location
             type: 'GET', 
             url: \"".$svcUrl."/data/sample?mode=json&view=detail\" +
                 \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -897,7 +891,8 @@ jQuery('#SurveyForm').ajaxForm({
             },
             dataType: 'json', 
             async: false 
-        }); 
+          });
+        } 
 		return SurveyFormRetVal;
 	},
     success:   function(data){
@@ -959,9 +954,7 @@ jQuery('#SurveyForm').ajaxForm({
 					if(data.errors){
 						// TODO translation
 						for (i in data.errors){
-							var label = $('<p/>')
-								.addClass('inline-error')
-								.html(data.errors[i]);
+							var label = $('<p/>').addClass('inline-error').html(data.errors[i]);
 							label.insertAfter('[name='+i+']');
 						}
 						myScrollToError();
@@ -1169,9 +1162,7 @@ jQuery('#occ-form').ajaxForm({
 					if(data.errors){
 						// TODO translation
 						for (i in data.errors){
-							var label = $('<p/>')
-								.addClass('inline-error')
-								.html(data.errors[i]);
+							var label = $('<p/>').addClass('inline-error').html(data.errors[i]);
 							label.insertAfter('[name='+i+']');
 						}
 						myScrollToError();
