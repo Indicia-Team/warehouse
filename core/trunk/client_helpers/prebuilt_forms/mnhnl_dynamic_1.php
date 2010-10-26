@@ -112,6 +112,7 @@ class iform_mnhnl_dynamic_1 {
 				"&nbsp;&nbsp;<strong>[location autocomplete]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[location select]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[place search]</strong><br/>".
+				"&nbsp;&nbsp;<strong>[recorder names]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[record status]</strong><br/>".
 				"&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
@@ -832,7 +833,17 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
 	  $options
 	));
   }
-  
+
+   /**
+   * Get the recorder names control
+   */
+  private static function get_control_recordernames($auth, $args, $tabalias, $options) {
+    return data_entry_helper::textarea(array_merge(array(
+      'fieldname'=>'sample:recorder_names',
+      'label'=>lang::get('Recorder names')
+    ), $options));
+  }
+
   /**
    * Get the control for the record status.
    */
@@ -853,7 +864,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     $r .= "</select><br/>\n";
   	return $r;
   }
-  
+
   private static function get_attribute_html($attributes, $defAttrOptions, $outerFilter=null) {
   	$lastOuterBlock='';
     $lastInnerBlock='';
