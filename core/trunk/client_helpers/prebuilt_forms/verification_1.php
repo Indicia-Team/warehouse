@@ -174,6 +174,7 @@ class iform_verification_1 {
    */
   public static function get_form($args, $node, $response) {
     global $user;
+	$indicia_user_id=self::get_indicia_user_id($args);
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $r = '';
     if ($_POST) {
@@ -220,7 +221,8 @@ class iform_verification_1 {
         $loggingAuth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
         $sub = data_entry_helper::wrap(array(
           'comment' => $comment,
-          'occurrence_id' => $_POST['occurrence:id']            
+          'occurrence_id' => $_POST['occurrence:id'],
+		  'created_by_id' => $indicia_user_id
         ), 'occurrence_comment');
         $logResponse = data_entry_helper::forward_post_to('occurrence_comment', $sub, $loggingAuth['write_tokens']);
         if (!array_key_exists('success', $logResponse)) {
@@ -272,13 +274,14 @@ class iform_verification_1 {
   <input type="hidden" id="occurrence:id" name="occurrence:id" value="" />
   <input type="hidden" id="occurrence:record_status" name="occurrence:record_status" value="" />
   <input type="hidden" id="occurrence_comment:comment" name="occurrence_comment:comment" value="" />
+  <input type="hidden" name="occurrence_comment:created_by_id" value="'.$indicia_user_id.'" />
   <input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
   <input type="hidden" id="occurrence:verified_by_id" name="occurrence:verified_by_id" value="" />
 </form>
 ';
     
     drupal_add_js('
-var verifiers_mapping = "'.$args['verifiers_mapping'].'";
+var indicia_user_id = '.$indicia_user_id.';
 var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';
 var svc = "'.data_entry_helper::$base_url.'index.php/services/data/";
 var email_subject_send_to_verifier = "'.$args['email_subject_send_to_verifier'].'";
@@ -291,6 +294,26 @@ var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\
 ');*/
     drupal_add_js('sites/all/modules/iform/client_helpers/prebuilt_forms/js/verification_1.js');
     return $r;
+  }
+  
+  /**
+   * Use the mapping from Drupal to Indicia users to get the Indicia user ID for the current logged in Drupal user.
+   */
+  private static function get_indicia_user_id($args) {
+    $userId = '';
+	global $user;
+	$arr = explode(',', $args['verifiers_mapping']);
+	foreach ($arr as $mapping) {
+	  $mapArr = explode('=', $mapping);
+	  if (count($mapArr) == 0) {
+	    return trim($mapping);
+	  } else {
+	    if (trim($mapArr[0])==$user->uid) {
+		  return trim($mapArr[1]);
+		}
+	  }
+	}
+	return 1; // default to admin  
   }
   
   private static function get_send_for_verification_form() {
