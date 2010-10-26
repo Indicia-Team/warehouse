@@ -80,6 +80,22 @@ class iform_mnhnl_dynamic_1 {
           'group' => 'User Interface'
         ),
         array(
+          'name'=>'emailShow',
+          'caption'=>'Show email field even if logged in',
+          'description'=>'If the survey requests an email address, it is sent implicitly for logged in users. Check this box to show it explicitly.',
+          'type'=>'boolean',
+          'default' => false,
+          'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'nameShow',
+          'caption'=>'Show first name and last name fields even if logged in',
+          'description'=>'If the survey requests first name and last name, these are ignored for logged in users where user id is sent instead. Check this box to show these fields.',
+          'type'=>'boolean',
+          'default' => false,
+          'group' => 'User Interface'
+        ),
+        array(
           'name'=>'structure',
           'caption'=>'Form Structure',
           'description'=>'Define the structure of the form. Each component goes on a new line and is nested inside the previous component where appropriate. The following types of '.
@@ -387,15 +403,26 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       elseif (strcasecmp($attribute['caption'], 'cms username')==0) {
         if ($logged_in) $attribute['value'] = $user->name;
         $attribute['handled']=true; // username attribute is never displayed
-      } elseif (strcasecmp($attribute['caption'], 'email')==0) {
+      }
+      elseif (strcasecmp($attribute['caption'], 'email')==0) {
         if ($logged_in) {
-          $attribute['value'] = $user->mail;
-          $attribute['handled']=true; // email attribute is displayed unless logged in
+          if ($args['emailShow'] != true)
+          {// email attribute is not displayed
+            $attribute['value'] = $user->mail;
+            $attribute['handled']=true; 
+          }
+          else
+            $attribute['default'] = $user->mail;
         }
-      } elseif ((strcasecmp($attribute['caption'], 'first name')==0 || 
-          strcasecmp($attribute['caption'], 'last name')==0 || 
-          strcasecmp($attribute['caption'], 'surname')==0) && $logged_in)
-        $attribute['handled']=true; // name attributes are displayed unless logged in
+      }
+      elseif ((strcasecmp($attribute['caption'], 'first name')==0 ||
+               strcasecmp($attribute['caption'], 'last name')==0 ||
+               strcasecmp($attribute['caption'], 'surname')==0) && $logged_in) {
+         if ($args['nameShow'] != true)
+          {// name attributes are not displayed
+             $attribute['handled']=true;
+          }
+      }
       
       if (isset($attribute['value'])) {
         $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
