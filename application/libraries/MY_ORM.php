@@ -142,14 +142,15 @@ class ORM extends ORM_Core {
    * @param Validation $array Validation array object.
    * @param boolean $save Optional. True if this call also saves the data, false to just validate. Default is false.
    */
-  public function validate(Validation $array, $save = FALSE) {    
-    if (count($this->unvalidatedFields)>0) {
-      foreach ($this->unvalidatedFields as $a)
-      {
-        if (array_key_exists($a, $array->as_array())) {
-          $this->__set($a, $array[$a]);
-        }
-      }
+  public function validate(Validation $array, $save = FALSE) {
+    // the created_by_id field can be specified by web service calls if the caller knows which Indicia user
+	// is making the post.
+    $fields_to_copy=array_merge(array('created_by_id'), $this->unvalidatedFields);
+    foreach ($fields_to_copy as $a)
+    {
+	  if (array_key_exists($a, $array->as_array())) {
+	    $this->__set($a, $array[$a]);
+	  }
     }
     $this->set_metadata();
     if (parent::validate($array, $save)) {
