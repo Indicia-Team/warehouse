@@ -62,19 +62,7 @@ function indicia_save_verification_comment(taxon, id, valid, cmsUser) {
   }
   if (confirm("Are you sure you want to " + action + " this record of " + taxon + "?")) {
     $("#occurrence\\:id").attr("value", id);
-    var verifier = "";
-    if (verifiers_mapping.indexOf("=")==-1) {
-      verifier = verifiers_mapping;
-    } else {
-      var verifierMaps = verifiers_mapping.split(",");
-      var keyval = [];
-      $.each(verifierMaps, function(idx, map) {
-        keyval = map.split("=");
-        if (parseInt($.trim(keyval[0]))==cmsUser) {
-          verifier = $.trim(keyval[1]);
-        }
-      });
-    }
+    var verifier = indicia_user_id;
     if (verifier === ""){
       alert("You do not have a mapping to an Indicia user so cannot verify records");
     } else {
@@ -84,6 +72,7 @@ function indicia_save_verification_comment(taxon, id, valid, cmsUser) {
     }
   }
 }
+
 
 /**
  * When send to verifier is clicked, the FancyBox plugin is used to overlay an email form. The
