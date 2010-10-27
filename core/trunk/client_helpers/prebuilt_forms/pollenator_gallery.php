@@ -1606,7 +1606,10 @@ flowerIDstruc = {
 toolPoller = function(toolStruct){
 	if(toolStruct.pollFile == '') return;
 	toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
-	$.get(toolStruct.pollURL+toolStruct.pollFile, function(data){
+	jQuery.ajax({
+	 url: toolStruct.pollURL+toolStruct.pollFile,
+	 async: false,
+	 success: function(data){
 	  pollReset(toolStruct);
 	  var da = data.split('\\n');
       jQuery(toolStruct.mainForm+' [name=determination\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
@@ -1644,6 +1647,7 @@ toolPoller = function(toolStruct){
 			comment.val('".lang::get('LANG_ID_Unrecognised')." '+notFound+' '+comment.val());
 		}
   	  }
+  	 }
     });
 };
 
@@ -1848,143 +1852,88 @@ runSearch = function(forCollections){
   	var ORgroup = [];
   	if(searchLayer != null)
 		searchLayer.destroy();
-	var queryMode = 0; // 0 - bare minimum, speed, uses layer POLL_COLL_FAST1
-						// 1 - normal without insects
-						// 2 - with insects
     jQuery('#results-collections-results,#results-insects-results').empty();
 	jQuery('#focus-occurrence,#focus-collection').hide();
 	var filters = [];
-	var minFilters = [];
 
 	// By default restrict selection to area displayed on map. When using the georeferencing system the map searchLayer
 	// will contain a single point zoomed in appropriately.
 	var mapBounds = jQuery('#map')[0].map.getExtent();
-	if (mapBounds != null) {
-	  filters.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.BBOX, property: 'geom', value: mapBounds}));
-	  minFilters.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.BBOX, property: 'geom', value: mapBounds}));
-	}
+	if (mapBounds != null) filters.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.BBOX, property: 'geom', value: mapBounds}));
 	// should only be one entry in the inseeLayer
 	if(inseeLayer != null)
-  		if(inseeLayer.features.length > 0) {
+  		if(inseeLayer.features.length > 0)
 			filters.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.WITHIN, property: 'geom',value: inseeLayer.features[0].geometry}));
-			minFilters.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.WITHIN, property: 'geom',value: inseeLayer.features[0].geometry}));
-		}
 	if(polygonLayer != null)
   		if(polygonLayer.features.length > 0){
   			ORgroup = [];
   			for(i=0; i< polygonLayer.features.length; i++)
 				ORgroup.push(new OpenLayers.Filter.Spatial({type: OpenLayers.Filter.Spatial.WITHIN, property: 'geom', value: polygonLayer.features[i].geometry}));
-		  	if(ORgroup.length >= 1) {
-		  		filters.push(combineOR(ORgroup));
-		  		minFilters.push(combineOR(ORgroup));
-  			}
-  		}
+		  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+		}
 
-  	// Only deal with completed collections on our survey.
-  	filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'collection_attributes', value: '*{|".$args['complete_attr_id']."|,1}*'}));
-  	minFilters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'closed_attr_id', value: '".$args['complete_attr_id']."'}));
-  	minFilters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'closed_attr_value', value: '1'}));
-  	minFilters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'username_attr_id', value: '".$args['username_attr_id']."'}));
-  	filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'survey_id', value: '".$args['survey_id']."' }));
-  	minFilters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'survey_id', value: '".$args['survey_id']."' }));
-  	
+  	// filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'survey_id', value: '".$args['survey_id']."' }));
+
   	var user = jQuery('input[name=username]').val();
-  	if(user != '') {
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'collection_attributes', value: '*{|".$args['username_attr_id']."|,'+user+'}*'}));
-  		minFilters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'username_attr_value', value: '*'+user+'*'}));
-  	}
+  	if(user != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'cms_username', value: user}));
   	var start_date = jQuery('input[name=real_start_date]').val();
   	var end_date = jQuery('input[name=real_end_date]').val();
-  	if(start_date != '".lang::get('click here')."' && start_date != '') {
+  	if(start_date != '".lang::get('click here')."' && start_date != '')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN, property: 'date_end', value: start_date}));
-  		minFilters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN, property: 'date_end', value: start_date}));
-  	}
-  	if(end_date != '".lang::get('click here')."' && end_date != '') {
+  	if(end_date != '".lang::get('click here')."' && end_date != '')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN, property: 'date_start', value: end_date}));
-  		minFilters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN, property: 'date_start', value: end_date}));
-  	}
-  	
-  	// The filters from here on are not available on fast.
+ 	
   	var flower = jQuery('select[name=flower\\:taxa_taxon_list_id]').val();
-  	if(flower != '') {
-  		queryMode = 1; // up to this point it can only be 0
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon', value: '*|'+flower+'|*'}));
-  	}
+  	if(flower != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon', value: '*|'+flower+'|*'}));
   	flower = jQuery('[name=flower\\:taxon_extra_info]').val();
-  	if(flower != '' && flower != '".lang::get('LANG_More_Precise')."') {
-  		queryMode = 1; 
+  	if(flower != '' && flower != '".lang::get('LANG_More_Precise')."')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_extra_info', value: '*'+flower+'*' }));
-  	}
+
   	ORgroup = [];
   	jQuery('#flower-filter-body').find('[name^=occAttr:".$args['flower_type_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_attributes', value: '*{|".$args['flower_type_attr_id']."|,'+elem.value+'}*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'flower_type', value: elem.value}));
   	});
-  	if(ORgroup.length >= 1) {
-  		queryMode = 1;
-  		filters.push(combineOR(ORgroup));
-  	}
+  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	ORgroup = [];
   	jQuery('#flower-filter-body').find('[name^=locAttr:".$args['habitat_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'location_attributes', value: '*{|".$args['habitat_attr_id']."|,'+elem.value+'}*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'habitat', value: '*|'+elem.value+'|*'}));
   	});
-  	if(ORgroup.length >= 1){
-  		queryMode = 1;
-  		filters.push(combineOR(ORgroup));
-  	}
+  	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+
   	var insect = jQuery('select[name=insect\\:taxa_taxon_list_id]').val();
-  	if(insect != ''){
-  		queryMode = 2;
-   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: forCollections ? 'insects' : 'insect_taxon', value: '*|'+insect+'|*'}));
-  	}
+  	if(insect != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_taxon', value: '*|'+insect+'|*'}));
   	insect = jQuery('[name=insect\\:taxon_extra_info]').val();
-  	if(insect != '' && insect != '".lang::get('LANG_More_Precise')."'){
-  		queryMode = 2;
+  	if(insect != '' && insect != '".lang::get('LANG_More_Precise')."')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_extra_info', value: '*'+insect+'*'}));
-  	}
-  	
+
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['sky_state_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		queryMode = 2;
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'session_attributes', value: '*{|".$args['sky_state_attr_id']."|,'+elem.value+'}*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'sky', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['temperature_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		queryMode = 2;
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'session_attributes', value: '*{|".$args['temperature_attr_id']."|,'+elem.value+'}*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'temp', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['wind_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		queryMode = 2;
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'session_attributes', value: '*{|".$args['wind_attr_id']."|,'+elem.value+'}*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'wind', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['shade_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		queryMode = 2;
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'session_attributes', value: '*{|".$args['shade_attr_id']."|,'+elem.value+'}*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'shade', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	if(forCollections){
 		properties = ['collection_id','date_start','date_end','geom','location_name','location_image_path','flower_image_path','flower_id']
-		switch(queryMode){
-			case 0:
-				feature = 'poll_coll_fast';
-				filters = minFilters;
-				break;
-			case 1:
-				feature = 'poll_collections';
-				break;
-			default:
-				feature = 'poll_collection_insects';	
-				break;
-		};
+		feature = 'spipoll_collections_cache';
   	} else {
-  		feature = 'poll_insects';
+  		feature = 'spipoll_insects_cache';
   		properties = ['insect_id','collection_id','geom','insect_image_path'];
   	}
 	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
