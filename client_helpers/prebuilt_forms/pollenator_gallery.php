@@ -560,24 +560,24 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     }
  	$r .= '<div id="filter-spec" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active">
 	  <div class="ui-accordion ui-widget ui-helper-reset">
-		<div id="name-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
-	  		<div id="fold-name-button" class="ui-state-default ui-corner-all fold-button">&nbsp;</div>
+		<div id="name-filter-header" class="ui-accordion-header ui-helper-reset ui-state-default ui-corner-all">
+	  		<div id="fold-name-button" class="ui-state-default ui-corner-all fold-button fold-button-folded">&nbsp;</div>
 	  		<div id="reset-name-button" class="ui-state-default ui-corner-all reset-button">'.lang::get('LANG_Reset_Filter').'</div>
 	  		<div id="general-filter-title">
 		  		<span>'.lang::get('LANG_Name_Filter_Title').'</span>
       		</div>
 		</div>
-	    <div id="name-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
+	    <div id="name-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
 	        '.data_entry_helper::text_input(array('label'=>lang::get('LANG_Name'),'fieldname'=>'username', 'suffixTemplate'=>'nosuffix')).'
   		</div>
-		<div id="date-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
-	  		<div id="fold-date-button" class="ui-state-default ui-corner-all fold-button">&nbsp;</div>
+		<div id="date-filter-header" class="ui-accordion-header ui-helper-reset ui-state-default ui-corner-all">
+	  		<div id="fold-date-button" class="ui-state-default ui-corner-all fold-button fold-button-folded">&nbsp;</div>
 	  		<div id="reset-date-button" class="ui-state-default ui-corner-all reset-button">'.lang::get('LANG_Reset_Filter').'</div>
 	  		<div id="general-filter-title">
 		  		<span>'.lang::get('LANG_Date_Filter_Title').'</span>
       		</div>
 		</div>
-	    <div id="date-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
+	    <div id="date-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
         	<label for="start_date" >'.lang::get('LANG_Created_Between').':</label>
   			<input type="text" size="10" id="start_date" name="start_date" value="'.lang::get('click here').'" />
   			<input type="hidden" id="real_start_date" name="real_start_date" />
@@ -585,14 +585,14 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
   			<input type="text" size="10" id="end_date" name="end_date" value="'.lang::get('click here').'" />
   			<input type="hidden" id="real_end_date" name="real_end_date" />
   		</div>
-  		<div id="flower-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
-	  		<div id="fold-flower-button" class="ui-state-default ui-corner-all fold-button">&nbsp;</div>
+  		<div id="flower-filter-header" class="ui-accordion-header ui-helper-reset ui-state-default ui-corner-all">
+	  		<div id="fold-flower-button" class="ui-state-default ui-corner-all fold-button fold-button-folded">&nbsp;</div>
 	  		<div id="reset-flower-button" class="ui-state-default ui-corner-all reset-button">'.lang::get('LANG_Reset_Filter').'</div>
 	  		<div id="flower-filter-title">
 		  		<span>'.lang::get('LANG_Flower_Filter_Title').'</span>
       		</div>
 		</div>
-		<div id="flower-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
+		<div id="flower-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
 		  '.data_entry_helper::select($flower_ctrl_args).'
  		  <input type="text" name="flower:taxon_extra_info" class="taxon-info" value="'.lang::get('LANG_More_Precise').'"
 	 		onclick="if(this.value==\''.lang::get('LANG_More_Precise').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
@@ -600,27 +600,27 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		  '.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defAttrOptions))
     	  .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], $defAttrOptions)).'
     	</div>
-		<div id="insect-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
-	  		<div id="fold-insect-button" class="ui-state-default ui-corner-all fold-button">&nbsp;</div>
+		<div id="insect-filter-header" class="ui-accordion-header ui-helper-reset ui-state-default ui-corner-all">
+	  		<div id="fold-insect-button" class="ui-state-default ui-corner-all fold-button fold-button-folded">&nbsp;</div>
 			<div id="reset-insect-button" class="ui-state-default ui-corner-all reset-button">'.lang::get('LANG_Reset_Filter').'</div>
 	  		<div id="insect-filter-title">
 		  		<span>'.lang::get('LANG_Insect_Filter_Title').'</span>
       		</div>
 		</div>
-		<div id="insect-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
+		<div id="insect-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
 		  '.data_entry_helper::select($insect_ctrl_args).'
  		  <input type="text" name="insect:taxon_extra_info" class="taxon-info" value="'.lang::get('LANG_More_Precise').'"
 	 		onclick="if(this.value==\''.lang::get('LANG_More_Precise').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
             onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_More_Precise').'\'; this.style.color=\'#555\'}" />
 		</div>
-		<div id="conditions-filter-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all">
-	  		<div id="fold-conditions-button" class="ui-state-default ui-corner-all fold-button">&nbsp;</div>
+		<div id="conditions-filter-header" class="ui-accordion-header ui-helper-reset ui-state-default ui-corner-all">
+	  		<div id="fold-conditions-button" class="ui-state-default ui-corner-all fold-button fold-button-folded">&nbsp;</div>
 			<div id="reset-conditions-button" class="ui-state-default ui-corner-all reset-button">'.lang::get('LANG_Reset_Filter').'</div>
 	  		<div id="conditions-filter-title">
 		  		<span>'.lang::get('LANG_Conditions_Filter_Title').'</span>
       		</div>
 		</div>
-		<div id="conditions-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
+		<div id="conditions-filter-body" class="ui-accordion-content ui-helper-reset ui-widget-content ui-corner-all">
     	  '.str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defAttrOptions))
 		  .str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defAttrOptions))
 		  .str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defAttrOptions))
@@ -1314,20 +1314,20 @@ addCollection = function(index, attributes, geom, first){
     		value: geom
   	});
 	flower.appendTo(collection);
-	insertImage('med-'+attributes.flower_image_path, flower, ".$args['Flower_Image_Ratio'].");
+	insertImage('med-'+attributes.image_de_la_fleur, flower, ".$args['Flower_Image_Ratio'].");
 	var location = jQuery('<div class=\"collection-image collection-environment\" />').appendTo(collection);
-	insertImage('med-'+attributes.location_image_path, location, ".$args['Environment_Image_Ratio'].");
+	insertImage('med-'+attributes.image_de_environment, location, ".$args['Environment_Image_Ratio'].");
 	var photoReel = jQuery('<div class=\"collection-photoreel\"></div>').appendTo(collection);
 	var displayButtonContainer = jQuery('<div class=\"collection-buttons\"></div>').appendTo(collection);
 	var displayButton = jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>').click(function(){
 		loadCollection(jQuery(this).data('value'), jQuery(this).data('index'));
 	}).appendTo(displayButtonContainer).data('value',attributes.collection_id).data('index',index);
-	if(attributes.date_start == attributes.date_end){
-	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.date_start,false)+'</p>').appendTo(details);
+	if(attributes.datedebut == attributes.datefin){
+	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.datedebut,false)+'</p>').appendTo(details);
     } else {
-	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.date_start,false)+' - '+convertDate(attributes.date_end,false)+'</p>').appendTo(details);
+	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.datedebut,false)+' - '+convertDate(attributes.datefin,false)+'</p>').appendTo(details);
     }
-	jQuery('<p class=\"collection-name\">'+attributes.location_name+'</p>').appendTo(details);
+	jQuery('<p class=\"collection-name\">'+attributes.nom+'</p>').appendTo(details);
 	var locality = jQuery('<p  class=\"collection-locality\"></p>').appendTo(details);
 	var scope = {target: locality};
 	inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope, async: false});
@@ -1393,7 +1393,7 @@ addInsect = function(index, attributes, endOfRow, first){
 		loadInsect(jQuery(this).data('occID'), null, jQuery(this).data('insectIndex'), 'S');
 	});
 	insect.appendTo(container);
-	insertImage('med-'+attributes.insect_image_path, insect, ".$args['Insect_Image_Ratio'].");
+	insertImage('med-'+attributes.image_d_insecte, insect, ".$args['Insect_Image_Ratio'].");
 	var determination = jQuery('<div />').appendTo(container);
 	jQuery.ajax({ 
 	    type: 'GET', 
@@ -1875,66 +1875,66 @@ runSearch = function(forCollections){
   	// filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'survey_id', value: '".$args['survey_id']."' }));
 
   	var user = jQuery('input[name=username]').val();
-  	if(user != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'cms_username', value: user}));
+  	if(user != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'username', value: user}));
   	var start_date = jQuery('input[name=real_start_date]').val();
   	var end_date = jQuery('input[name=real_end_date]').val();
   	if(start_date != '".lang::get('click here')."' && start_date != '')
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN, property: 'date_end', value: start_date}));
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN, property: 'datefin', value: start_date}));
   	if(end_date != '".lang::get('click here')."' && end_date != '')
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN, property: 'date_start', value: end_date}));
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN, property: 'datedebut', value: end_date}));
  	
   	var flower = jQuery('select[name=flower\\:taxa_taxon_list_id]').val();
-  	if(flower != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon', value: '*|'+flower+'|*'}));
+  	if(flower != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon_ids', value: '*|'+flower+'|*'}));
   	flower = jQuery('[name=flower\\:taxon_extra_info]').val();
   	if(flower != '' && flower != '".lang::get('LANG_More_Precise')."')
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_extra_info', value: '*'+flower+'*' }));
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'taxons_fleur_precise', value: '*'+flower+'*' }));
 
   	ORgroup = [];
   	jQuery('#flower-filter-body').find('[name^=occAttr:".$args['flower_type_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'flower_type', value: elem.value}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'flower_type_id', value: elem.value}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	ORgroup = [];
   	jQuery('#flower-filter-body').find('[name^=locAttr:".$args['habitat_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'habitat', value: '*|'+elem.value+'|*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'habitat_ids', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
 
   	var insect = jQuery('select[name=insect\\:taxa_taxon_list_id]').val();
-  	if(insect != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_taxon', value: '*|'+insect+'|*'}));
+  	if(insect != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_taxon_ids', value: '*|'+insect+'|*'}));
   	insect = jQuery('[name=insect\\:taxon_extra_info]').val();
   	if(insect != '' && insect != '".lang::get('LANG_More_Precise')."')
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_extra_info', value: '*'+insect+'*'}));
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'taxons_insecte_precise', value: '*'+insect+'*'}));
 
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['sky_state_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'sky', value: '*|'+elem.value+'|*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'sky_ids', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['temperature_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'temp', value: '*|'+elem.value+'|*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'temp_ids', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['wind_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'wind', value: '*|'+elem.value+'|*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'wind_ids', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['shade_attr_id']."]').filter('[checked]').each(function(index, elem){
-  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'shade', value: '*|'+elem.value+'|*'}));
+  		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'shade_ids', value: '*|'+elem.value+'|*'}));
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	if(forCollections){
-		properties = ['collection_id','date_start','date_end','geom','location_name','location_image_path','flower_image_path','flower_id']
+		properties = ['collection_id','datedebut','datefin','geom','nom','image_de_environment','image_de_la_fleur','flower_id']
 		feature = 'spipoll_collections_cache';
   	} else {
   		feature = 'spipoll_insects_cache';
-  		properties = ['insect_id','collection_id','geom','insect_image_path'];
+  		properties = ['insect_id','collection_id','geom','image_d_insecte'];
   	}
 	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
 	searchLayer = new OpenLayers.Layer.Vector('Search Layer', {
@@ -2778,7 +2778,8 @@ jQuery('#fo-prev-button,#fo-next-button').click(function(){
     		loadFilter();";
     		if($userID != ''){
     			$thisuser = user_load($userID);
-    			data_entry_helper::$onload_javascript .= "jQuery('[name=username]').val('".($thisuser->name)."');";
+    			data_entry_helper::$onload_javascript .= "jQuery('[name=username]').val('".($thisuser->name)."');
+    			jQuery('#fold-name-button').click();";
     		}
     		data_entry_helper::$onload_javascript .= "jQuery('#search-collections-button').click();";
     		break;
