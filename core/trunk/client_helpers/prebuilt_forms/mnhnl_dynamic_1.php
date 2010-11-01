@@ -917,10 +917,10 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     // default for forms setup on old versions is grid - list of occurrences
     // Can't call getGridMode in this context as we might not have the $_GET value to indicate grid
     if (isset($values['gridmode']))
-      $sampleMod = data_entry_helper::build_sample_occurrences_list_submission($values);
+      $submission = data_entry_helper::build_sample_occurrences_list_submission($values);
     else
-      $sampleMod = data_entry_helper::build_sample_occurrence_submission($values);
-    return($sampleMod);
+      $submission = data_entry_helper::build_sample_occurrence_submission($values);
+    return($submission);
   }
 
   /**
