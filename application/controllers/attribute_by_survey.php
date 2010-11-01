@@ -53,7 +53,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     $this->pagetitle = 'Attributes for '.$this->survey->title;
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = $this->pagetitle;
-    $this->template->content=new View('Attribute_by_survey/index');
+    $this->template->content=new View('attribute_by_survey/index');
     $this->template->title=$this->pagetitle;
     $filter = array('survey_id'=>$this->survey);;
     if ($this->auth_filter) 
