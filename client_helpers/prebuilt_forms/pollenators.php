@@ -519,8 +519,22 @@ jQuery('#".$id."').click(function(){
     // There are 2 types of submission:
     // When a user validates a panel using the validate button, the following panel is opened on success
     // When a user presses a modify button, the open panel gets validated, and the panel to be modified is opened.
-	
- 	$r .= '
+	// loadAttribute
+    // <form id="cc-1-collection-details"
+    // has the main sample (+attributes), location (no attributes).
+    // form id="cc-1-delete-collection" just has the main sample.
+    // form id="cc-2-flower-upload" just uploads the flower picture: no DB
+    // form id="cc-2-environment-upload" just uploads the location picture: no DB
+    // form id="cc-2-floral-station"
+    // has the location (+attributes), location_image, main sample (no attributes), flower occurrence (+attributes), determination, flower_image
+    // form id="cc-3-delete-session" just has the session sample.
+    // form class=\"poll-session-form\" has the session (+attributes) 
+    // form id="cc-4-insect-upload" just uploads the insect picture: no DB
+    // form id="cc-4-main-form"
+    // has the insect occurrence (+attributes), determination, insect image
+    // form id="cc-4-delete-insect" just has the insect occurrence.
+    // form id="cc-5-collection" has the main sample and closed attribute (forced to 1).
+    $r .= '
 <div id="refresh-message" style="display:none" ><p>'.lang::get('LANG_Please_Refresh_Page').'</p></div>
 <div id="cc-1" class="poll-section">
   <div id="cc-1-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top poll-section-title">
@@ -656,9 +670,16 @@ $.fn.resetPanel = function(){
 		jQuery(this).find('[name=location_image\\:id],[name=occurrence\\:id],[name=determination\\:id],[name=occurrence_image\\:id]').val('').attr('disabled', 'disabled');
 		jQuery(this).find('[name=sample\\:date]:hidden').val('2010-01-01');		
         jQuery(this).find('input[name=locations_website\\:website_id]').removeAttr('disabled');
-		jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').each(function(){
+        jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').each(function(){
 			var name = jQuery(this).attr('name').split(':');
+			if(name[1].indexOf('[]') > 0) name[1] = name[1].substr(0, name[1].indexOf('[]'));
 			jQuery(this).attr('name', name[0]+':'+name[1]);
+		});
+		jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').filter(':checkbox').removeAttr('checked').each(function(){
+			var myName = jQuery(this).attr('name').split(':');
+			var similar = jQuery('[name='+name[0]+'\\:'+name[1]+'],[name='+name[0]+'\\:'+name[1]+'\\[\\]]').filter(':checkbox');
+			if(similar.length > 1)
+				jQuery(this).attr('name', name[0]+':'+name[1]+'[]');
 		});
 		jQuery(this).find('input[name=location\\:centroid_sref]').val('');
 		jQuery(this).find('input[name=location\\:centroid_geom]').val('');
@@ -871,8 +892,8 @@ $('#cc-1-collection-details').ajaxForm({
 			       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[0].id);
 			        	    jQuery('#cc-1-collection-details > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
 			        	    jQuery('#cc-2-floral-station > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
-			        	    // In this case we use loadAttributes to set the names of the attributes to include the attribute_value id.
-   	       					loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data[0].id, 'smpAttr', true);
+			        	    // In this case we use loadAttributes to set the names of the attributes to include the attribute_value id. Must ensure the 
+   	       					loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data[0].id, 'smpAttr', true);
 						}
 				});
 			   	checkProtocolStatus(true);
@@ -1503,7 +1524,7 @@ $('#cc-2-floral-station').ajaxForm({
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
        		// the sample and location ids are already fixed, so just need to populate the occurrence and image IDs, and rename the location and occurrence attribute.
 		    var location_id = jQuery('#cc-2-floral-station > input[name=location\\:id]').val();
-       		loadAttributes('location_attribute_value', 'location_attribute_id', 'location_id', 'location\\:id', location_id, 'locAttr', true);
+       		loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', location_id, 'locAttr', true);
        		$.getJSON(\"".$svcUrl."\" + \"/data/occurrence\" +
 		          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 		          \"&sample_id=\"+data.outer_id+\"&deleted=f&callback=?\", function(occdata) {
@@ -1511,7 +1532,7 @@ $('#cc-2-floral-station').ajaxForm({
    					alertIndiciaError(occdata);
    				} else if (occdata.length>0) {
 		        	jQuery('#cc-2-floral-station > input[name=occurrence\\:id]').removeAttr('disabled').val(occdata[0].id);
-       				loadAttributes('occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', 'occurrence\\:id', occdata[0].id, 'occAttr', false);
+       				loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', occdata[0].id, 'occAttr', false);
 					$.getJSON(\"".$svcUrl."/data/occurrence_image/\" +
        						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
        						\"&occurrence_id=\"+occdata[0].id+\"&callback=?\", function(imgdata) {
@@ -1746,7 +1767,7 @@ addSession = function(){
    	    	var thisSession = form.parents('.poll-session');
     		if(data.success == 'multiple records' && data.outer_table == 'sample'){
    	    	    form.children('input[name=sample\\:id]').removeAttr('disabled').val(data.outer_id);
-   	    	    loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data.outer_id, 'smpAttr', true);
+   	    	    loadAttributes(form, 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data.outer_id, 'smpAttr', true);
 				thisSession.show();
 				thisSession.children(':first').show().find('*').show();
 				thisSession.children().not(':first').hide();
@@ -2039,9 +2060,16 @@ clearInsect = function(){
     jQuery('#cc-4-main-form').find('[name=determination\\:determination_type]').val('A'); 
     jQuery('#cc-4-main-form').find('[name=occurrence_image\\:path]').val('');
 	jQuery('#cc-4-main-form').find('[name=occurrence\\:id],[name=occurrence_image\\:id],[name=determination\\:id]').val('').attr('disabled', 'disabled');
+	// First rename, to be safe. Then add [] to multiple choice checkboxes.
 	jQuery('#cc-4-main-form').find('[name^=occAttr\\:]').each(function(){
 		var name = jQuery(this).attr('name').split(':');
-		jQuery(this).attr('name', name[0]+':'+name[1]);
+		if(name[1].indexOf('[]') > 0) name[1] = name[1].substr(0, name[1].indexOf('[]'));
+		jQuery(this).attr('name', 'occAttr:'+name[1]);
+	});
+	jQuery('#cc-4-main-form').find('[name^=occAttr\\:]').filter(':checkbox').removeAttr('checked').each(function(){
+		var myName = jQuery(this).attr('name').split(':');
+		var similar = jQuery('[name=occAttr\\:'+name[1]+'],[name=occAttr\\:'+name[1]+'\\[\\]]').filter(':checkbox');
+		if(similar.length > 1) jQuery(this).attr('name', 'occAttr:'+name[1]+'[]');
 	});
     jQuery('#cc-4-insect-image').empty();
     populateSessionSelect();
@@ -2052,7 +2080,7 @@ clearInsect = function(){
 loadInsect = function(id){
 	clearInsect();
 	jQuery('form#cc-4-main-form > input[name=occurrence\\:id]').removeAttr('disabled').val(id);
-	loadAttributes('occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', 'occurrence\\:id', id, 'occAttr', true);
+	loadAttributes('form#cc-4-main-form', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', id, 'occAttr', true);
 	loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', id, '#cc-4-insect-image', ".$args['Insect_Image_Ratio'].");
 	$.getJSON(\"".$svcUrl."/data/occurrence/\" + id +
           \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?\", function(data) {
@@ -2332,14 +2360,19 @@ $('#cc-5-complete-collection').click(function(){
 </div></div>';
  
 data_entry_helper::$javascript .= "
- 			
-loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, prefix, reset_timeout){
-	var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parents('form');
-	var checkboxes = jQuery('[name^='+prefix+'\\:]', form).filter(':checkbox').removeAttr('checked');
-	checkboxes.each(function(){
+// 
+loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, prefix, reset_timeout){
+	// First rename, to be safe. Then add [] to multiple choice checkboxes.
+	jQuery(formsel).find('[name^='+prefix+'\\:]').each(function(){
 		var name = jQuery(this).attr('name').split(':');
-		if(name.length > 2)
-			jQuery(this).attr('name', name[0]+':'+name[1]+'[]');
+		if(name[1].indexOf('[]') > 0) name[1] = name[1].substr(0, name[1].indexOf('[]'));
+		jQuery(this).attr('name', name[0]+':'+name[1]);
+	});
+	jQuery(formsel).find('[name^='+prefix+'\\:]').filter(':checkbox').removeAttr('checked').each(function(){
+		var myName = jQuery(this).attr('name').split(':');
+		var similar = jQuery('[name='+myName[0]+'\\:'+myName[1]+'],[name='+myName[0]+'\\:'+myName[1]+'\\[\\]]').filter(':checkbox');
+		if(similar.length > 1)
+			jQuery(this).attr('name', myName[0]+':'+myName[1]+'[]');
 	});
     jQuery.ajax({ 
         type: \"GET\", 
@@ -2351,22 +2384,31 @@ loadAttributes = function(attributeTable, attributeKey, key, keyName, keyValue, 
 		  if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		  } else if (attrdata.length>0) {
-			var form = jQuery('input[name='+keyName+'][value='+keyValue+']').parent();
 			for (var i=0;i<attrdata.length;i++){
 				if (attrdata[i].id && (attrdata[i].iso == null || attrdata[i].iso == '' || attrdata[i].iso == '".$language."')){
-					var checkboxes = jQuery('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'\\[\\]],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]', form).filter(':checkbox');
-					var radiobuttons = jQuery('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]', form).filter(':radio');
-					if(radiobuttons.length > 0){
+					var radiobuttons = jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+'\\:]').filter(':radio');
+					var multicheckboxes = jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'\\[\\]],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]').filter(':checkbox');
+					var boolcheckbox = jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]').filter(':checkbox');
+					if(radiobuttons.length > 0){ // radio buttons all share the same name, only one checked.
 						radiobuttons
 							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id)
 							.filter('[value='+attrdata[i].raw_value+']')
 							.attr('checked', 'checked');
-					} else 	if(checkboxes.length > 0){
-						var checkbox = checkboxes.filter('[value='+attrdata[i].raw_value+']')
+					} else if(multicheckboxes.length > 0){ // individually named
+						multicheckboxes.filter('[value='+attrdata[i].raw_value+']')
 							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id)
 							.attr('checked', 'checked');
+					} else if(boolcheckbox.length > 0){ // has extra hidden field to force zero if unchecked.
+						jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]')
+							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id);
+						if (attrdata[i].raw_value)
+							boolcheckbox.attr('checked', 'checked');
+					} else if (prefix == 'smpAttr' && attrdata[i][attributeKey] == ".$args['complete_attr_id'].") {
+						// The hidden closed attributes are special: these have forced values, and are used to control the state. Do not update their values.
+						jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+']')
+							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id);
 					} else {
-						jQuery('[name='+prefix+'\\:'+attrdata[i][attributeKey]+']', form)
+						jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+']')
 							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id)
 							.val(attrdata[i].raw_value);
 					}
@@ -2470,7 +2512,7 @@ jQuery.ajax({
        			// load up collection details: existing ID, location name and protocol
        			jQuery('#cc-1-collection-details,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
        			// main sample date is only set when collection is completed, so leave default.
-       			loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', data[i].id, 'smpAttr', false);
+       			loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data[i].id, 'smpAttr', false);
   				var locData = [];
   				jQuery.ajax({ 
 					type: 'GET', 
@@ -2487,7 +2529,7 @@ jQuery.ajax({
 	    				jQuery('input[name=location\\:name]').val(locationdata[0].name);
        					jQuery('input[name=sample\\:location_name]').val(locationdata[0].name); // make sure the 2 coincide
 	    				jQuery('input[name=locations_website\\:website_id]').attr('disabled', 'disabled');
-	    				loadAttributes('location_attribute_value', 'location_attribute_id', 'location_id', 'location\\:id', locationdata[0].id, 'locAttr');
+	    				loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', locationdata[0].id, 'locAttr', false);
     	   				loadImage('location_image', 'location_id', 'location\\:id', locationdata[0].id, '#cc-2-environment-image', ".$args['Environment_Image_Ratio'].", false);
   					  }
   					}, 
@@ -2522,7 +2564,7 @@ jQuery.ajax({
 						$('#cc-2').showPanel();
 						jQuery('form#cc-2-floral-station > input[name=occurrence\\:sample_id]').val(data[i].id);
 						jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val(flowerData[0].id).removeAttr('disabled');
-						loadAttributes('occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', 'occurrence\\:id', flowerData[0].id, 'occAttr', false);
+						loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', flowerData[0].id, 'occAttr', false);
 						loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', flowerData[0].id, '#cc-2-flower-image', ".$args['Flower_Image_Ratio'].");
 
 						jQuery.ajax({ 
@@ -2557,7 +2599,7 @@ jQuery.ajax({
 									jQuery('input[name=sample\\:id]', thisSession).val(sessiondata[i].id).removeAttr('disabled');
 									jQuery('input[name=sample\\:date]', thisSession).val(sessiondata[i].date_start);
 									jQuery('input[name=dummy_date]', thisSession).datepicker('disable').datepicker('setDate', new Date(sessiondata[i].date_start)).datepicker('enable');
-									loadAttributes('sample_attribute_value', 'sample_attribute_id', 'sample_id', 'sample\\:id', sessiondata[i].id, 'smpAttr', false);
+									loadAttributes(thisSession, 'sample_attribute_value', 'sample_attribute_id', 'sample_id', sessiondata[i].id, 'smpAttr', false);
   									// fold this session.
   									thisSession.show();
 									thisSession.children(':first').show().children().show();

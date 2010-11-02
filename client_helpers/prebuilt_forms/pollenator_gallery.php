@@ -1881,7 +1881,7 @@ runSearch = function(forCollections){
   	if(start_date != '".lang::get('click here')."' && start_date != '')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN, property: 'datefin', value: start_date}));
   	if(end_date != '".lang::get('click here')."' && end_date != '')
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN, property: 'datedebut', value: end_date}));
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN_OR_EQUAL_TO, property: 'datedebut', value: end_date}));
  	
   	var flower = jQuery('select[name=flower\\:taxa_taxon_list_id]').val();
   	if(flower != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon_ids', value: '*|'+flower+'|*'}));
@@ -1931,9 +1931,9 @@ runSearch = function(forCollections){
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	if(forCollections){
 		properties = ['collection_id','datedebut','datefin','geom','nom','image_de_environment','image_de_la_fleur','flower_id']
-		feature = 'spipoll_collections_cache';
+		feature = 'spipoll_collections_cache_view';
   	} else {
-  		feature = 'spipoll_insects_cache';
+  		feature = 'spipoll_insects_cache_view';
   		properties = ['insect_id','collection_id','geom','image_d_insecte'];
   	}
 	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
@@ -1949,7 +1949,8 @@ runSearch = function(forCollections){
               srsName: 'EPSG:900913',
               version: '1.1.0',   
               maxFeatures: ".$args['max_features'].",
-              propertyNames: properties
+              propertyNames: properties,
+              sortBy: 'datedebut' // not supported by Openlayers, so have to use orderby in a DB view.
 		  })
 	});
 	if(forCollections) {
