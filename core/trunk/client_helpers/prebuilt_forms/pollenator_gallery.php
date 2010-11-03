@@ -1589,7 +1589,17 @@ searchLayer = null;
 inseeLayer = null;
 polygonLayer = null;     
 locationLayer = null;
-inseeProtocol = null;
+inseeProtocol = new OpenLayers.Protocol.WFS({
+              url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['INSEE_url'])."',
+              featurePrefix: '".$args['INSEE_prefix']."',
+              featureType: '".$args['INSEE_type']."',
+              geometryName:'the_geom',
+              featureNS: '".$args['INSEE_ns']."',
+              srsName: 'EPSG:900913',
+              version: '1.1.0'                  
+      		  ,propertyNames: ['NOM', 'INSEE_NEW', 'DEPT_NUM', 'DEPT_NOM', 'REG_NUM', 'REG_NOM']
+});
+
 
 flowerIDstruc = {
 	type: 'flower',
@@ -2700,16 +2710,6 @@ loadFilter = function(){
 			if(inseeLayer != null)
 				inseeLayer.destroyFeatures();
 		});
-		inseeProtocol = new OpenLayers.Protocol.WFS({
-              url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['INSEE_url'])."',
-              featurePrefix: '".$args['INSEE_prefix']."',
-              featureType: '".$args['INSEE_type']."',
-              geometryName:'the_geom',
-              featureNS: '".$args['INSEE_ns']."',
-              srsName: 'EPSG:900913',
-              version: '1.1.0'                  
-      		  ,propertyNames: ['NOM', 'INSEE_NEW', 'DEPT_NUM', 'DEPT_NOM', 'REG_NUM', 'REG_NOM']
-  			});
     	".$map1JS."
     	editControl = new MyEditingToolbar(polygonLayer, {'displayClass':'olControlEditingToolbar'});
 		polygonLayer.map.addControl(this.editControl);
