@@ -2401,7 +2401,7 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 					} else if(boolcheckbox.length > 0){ // has extra hidden field to force zero if unchecked.
 						jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]')
 							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id);
-						if (attrdata[i].raw_value)
+						if (attrdata[i].raw_value == '1')
 							boolcheckbox.attr('checked', 'checked');
 					} else if (prefix == 'smpAttr' && attrdata[i][attributeKey] == ".$args['complete_attr_id'].") {
 						// The hidden closed attributes are special: these have forced values, and are used to control the state. Do not update their values.
