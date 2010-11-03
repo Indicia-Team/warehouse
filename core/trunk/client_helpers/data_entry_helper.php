@@ -2522,10 +2522,12 @@ class data_entry_helper extends helper_config {
         );
 
         $existing_record_id = false;
-        $search = preg_grep("/^sc:$id:[0-9]*:present$/", array_keys(self::$entity_to_load));
-        if (count($search)===1) {
-          // we have to implode the search result as the key can be not zero, then strip out the stuff other than the occurrence Id.
-          $existing_record_id = str_replace(array("sc:$id:",":present"), '', implode('', $search));
+        if (is_array(self::$entity_to_load)) {
+          $search = preg_grep("/^sc:$id:[0-9]*:present$/", array_keys(self::$entity_to_load));
+          if (count($search)===1) {
+            // we have to implode the search result as the key can be not zero, then strip out the stuff other than the occurrence Id.
+            $existing_record_id = str_replace(array("sc:$id:",":present"), '', implode('', $search));
+          }
         }
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
         // AlwaysFixed mode means all rows in the default checklist are included as occurrences. Same for
@@ -2570,7 +2572,7 @@ class data_entry_helper extends helper_config {
               $oc .= $error;
             }
           }
-          $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributesForThisRow[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
+          $row .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
         }
         if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\"><input class=\"control-width-4 scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
@@ -2872,14 +2874,14 @@ class data_entry_helper extends helper_config {
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
     $r .= '<td class="scPresenceCell"'.$hidden.'><input type="checkbox" class="scPresence" name="" value="" /></td>';
-	$idx = 0;
+    $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
-	  $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']); 
+      $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']); 
       $r .= str_replace(array('{content}', '{class}'), 
           array(str_replace('{fieldname}', "sc:{ttlId}::occAttr:$attrId", $oc), $class.'Cell'),
           $indicia_templates['attribute_cell']
       );
-	  $idx++;
+      $idx++;
     }
     if ($options['occurrenceComment']) {
       $r .= '<td class="ui-widget-content scCommentCell"><input class="control-width-4 scComment" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
@@ -4976,8 +4978,11 @@ $('.ui-state-default').live('mouseout', function() {
       // Run through the expected configuration settings, checking they are present and not empty
       self::check_config('$base_url', isset(self::$base_url), empty(self::$base_url), $missing_configs, $blank_configs);
       self::check_config('$upload_path', isset(self::$upload_path), empty(self::$upload_path), $missing_configs, $blank_configs);
-	  // don't test $indicia_upload_path as it is assumed to be upload/ if missing.
+      // don't test $indicia_upload_path as it is assumed to be upload/ if missing.
       self::check_config('$geoserver_url', isset(self::$geoserver_url), empty(self::$geoserver_url), $missing_configs, $blank_configs);
+      if (substr(self::$geoserver_url, 0, 4) != 'http') {
+         $r .= '<li class="ui-widget ui-state-error">Warning: The $geoserver_url setting in helper_config.php should include the protocol (e.g. http://).</li>';
+      }
       self::check_config('$geoplanet_api_key', isset(self::$geoplanet_api_key), empty(self::$geoplanet_api_key), $missing_configs, $blank_configs);
       self::check_config('$google_search_api_key', isset(self::$google_search_api_key), empty(self::$google_search_api_key), $missing_configs, $blank_configs);
       self::check_config('$google_api_key', isset(self::$google_api_key), empty(self::$google_api_key), $missing_configs, $blank_configs);
