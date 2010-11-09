@@ -313,11 +313,13 @@ class iform_my_dot_map {
       }
       $layerName = self::build_distribution_layer(1, $args, $occurrence);            
       if ($layerName) {        
-	          $options['layers'][] = $layerName;
-	          $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/png'.
-	              '&STYLE='.$args["wms_dist_1_style"].'" alt=""/>'.$args["wms_dist_1_title"].'</div>'.$legend;
+        $options['layers'][] = $layerName;
+        $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/png'.
+              '&STYLE='.$args["wms_dist_1_style"].'" alt=""/>'.$args["wms_dist_1_title"].'</div>'.$legend;
       }
       if ($layerName) $options['layers'][] = $layerName;
+      // This is not a map used for input
+      $options['editLayer']=false;
       // Now output a grid of the occurrences that were just saved.
       $r .= "<table class=\"submission\"><thead><tr><th>".lang::get('Species')."</th><th>".lang::get('Latin Name')."</th><th>".lang::get('Date')."</th><th>".lang::get('Spatial Ref')."</th></tr></thead>\n";
       $r .= "<tbody>\n";

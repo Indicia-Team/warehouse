@@ -82,6 +82,52 @@ class iform_distribution_map_1 {
           'group' => 'Distribution Layer'
         ),
         array(
+          'name' => 'click_on_occurrences_mode',
+          'caption' => 'Click on Occurrences Mode',
+          'description' => 'This option allows you to enable querying the occurrences under a point by clicking on the map, displaying the results in a div or popup. '.
+              'For this to work, the IForm Proxy module must be enabled in Drupal.',
+          'type' => 'select',
+          'options' => array(
+            'none' => 'None',
+            'popup' => 'Popup',
+            'div' => 'HTML Div'
+          ),
+          'default' => 'none',
+          'group' => 'Click to Query Occurrences'
+        ),
+        array(
+          'name' => 'click_columns',
+          'caption' => 'Click Columns',
+          'description' => 'List of the columns to display in the click results, one line per column using format <em>column name</em>=<em>column title</em>. Leave blank for all.',
+          'required' => false,
+          'type' => 'textarea',
+          'default' => "taxon=Species\r\n".
+              "entered_sref=Grid Ref\r\n".
+              "date_start=Date",
+          'group' => 'Click to Query Occurrences'
+        ),
+        array(
+          'name' => 'include_species_picker',
+          'caption' => 'Include species picker',
+          'description' => 'When Show all species is unchecked, use this setting to control the species picker that is available to the user.',
+          'type' => 'select',
+          'options' => array(
+            'none' => 'None',
+            'autocomplete' => 'Autocomplete',
+            'select' => 'Drop down'
+          ),
+          'default' => 'none',
+          'group' => 'Distribution Layer'
+        ),
+        array(
+          'name' => 'require_go_button',
+          'caption' => 'Require Go button click',
+          'description' => 'Provide a Go button for the user to click before loading the map for a selected species. Otherwise the map loads as soon as they input or select a value.',
+          'type' => 'boolean',
+          'default' => true,
+          'group' => 'Distribution Layer'
+        ),
+        array(
           'name' => 'taxon_list_id',
           'caption' => 'Taxon List ID',
           'description' => 'ID of the taxon list from which taxa are being selected.',
@@ -133,7 +179,7 @@ class iform_distribution_map_1 {
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
-	if (!$args['show_all_species']) {
+    if (!$args['show_all_species']) {
       if (isset($args['taxon_identifier']) && !empty($args['taxon_identifier']))
         // This page is for a predefined species map
         $taxonIdentifier = $args['taxon_identifier'];
@@ -169,49 +215,75 @@ class iform_distribution_map_1 {
       } else
         // the taxon identifier is the meaning ID.
         $meaningId = $taxonIdentifier;
-	  // We still need to fetch the species record, to get its common name
-	  $fetchOpts = array(
-        'table' => 'taxa_taxon_list',
-        'extraParams' => $readAuth + array(
-	        'view' => 'detail',
-          'language_iso' => iform_lang_iso_639_2($user->lang),
-		      'taxon_meaning_id' => $meaningId
+      // We still need to fetch the species record, to get its common name
+      $fetchOpts = array(
+      'table' => 'taxa_taxon_list',
+      'extraParams' => $readAuth + array(
+        'view' => 'detail',
+        'language_iso' => iform_lang_iso_639_2($user->lang),
+        'taxon_meaning_id' => $meaningId
         )
-	  );
+      );
       $taxonRecords = data_entry_helper::get_population_data($fetchOpts);
     }
 
     $url = data_entry_helper::$geoserver_url.'wms';
     // Get the style if there is one selected
     $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
-	data_entry_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
-  if (!$args['show_all_species'])
-    data_entry_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
-  data_entry_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
-	        '".$args['layer_title']."',
-	        '$url',
-	        {layers: '".$args["wms_feature_type"]."', transparent: true, CQL_FILTER: filter $style},
-	        {isBaseLayer: false, sphericalMercator: true, singleTile: true}
-      );\n";
+    data_entry_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
+    if (!$args['show_all_species'])
+      data_entry_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
+    data_entry_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
+          '".$args['layer_title']."',
+          '$url',
+          {layers: '".$args["wms_feature_type"]."', transparent: true, CQL_FILTER: filter $style},
+          {isBaseLayer: false, sphericalMercator: true, singleTile: true}
+    );\n";
     $options['layers'][]='distLayer';
+    if (isset($args['click_on_occurrences_mode']) && $args['click_on_occurrences_mode']!='none') {
+      $options['clickableLayersOutputMode'] = $args['click_on_occurrences_mode'];
+      $options['clickableLayersOutputDiv'] = 'getinfo-output';
+      $options['clickableLayers'][]='distLayer';
+      if (!empty($args['click_columns'])) {
+        // convert the input column list argument to a structured array to pass to the map
+        $inputarr = explode("\r\n", $args['click_columns']);
+        $outputarr = array();
+        foreach ($inputarr as $coldef) {
+          $coldef = explode('=', $coldef);
+          $outputarr[$coldef[0]] = $coldef[1];
+        }
+        $options['clickableLayersOutputColumns'] = $outputarr;
+      }
+    }
+    // This is not a map used for input
+    $options['editLayer'] = false;
+    // if in Drupal, and IForm proxy is installed, then use this path as OpenLayers proxy
+    if (defined('DRUPAL_BOOTSTRAP_CONFIGURATION') && module_exists('iform_proxy')) {
+      global $base_url;
+      $options['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
+    }
     // output a legend
-	if ($args['show_all_species'])
-	  $layerTitle = lang::get('All species occurrences');
-	else
+    if ($args['show_all_species'])
+      $layerTitle = lang::get('All species occurrences');
+    else
       $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
     $r .= '<div id="legend" class="ui-widget ui-widget-content ui-corner-all">';
     $r .= '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER='.$args['wms_feature_type'].'&Format=image/jpeg'.
-	              '&STYLE='.$args["wms_style"].'" alt=""/>'.$layerTitle.'</div>';
+        '&STYLE='.$args["wms_style"].'" alt=""/>'.$layerTitle.'</div>';
     $r .= '</div>';
-    // output a map
+    // output a map    
     $r .= data_entry_helper::map_panel($options, $olOptions);
-	// Set up a page refresh for dynamic update of the map at set intervals
-	if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
+    // add an empty div for the output of getinfo requests
+    if (isset($args['click_on_occurrences_mode']) && $args['click_on_occurrences_mode']=='div') {
+      $r .= '<div id="getinfo-output"></div>';
+    }
+    // Set up a page refresh for dynamic update of the map at set intervals
+    if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
       if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
-	    data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
-	  else
-	    data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
-	}
+        data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
+      else
+        data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
+    }
     return $r;
   }
 
