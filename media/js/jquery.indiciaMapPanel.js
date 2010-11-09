@@ -1,3 +1,4 @@
+
 /* Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -120,81 +121,81 @@
      * bound to them to associate them with the map.
      */
     function _bindControls(div) {
-      // Setup a click event handler for the map
-      OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
-        defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
-        initialize: function(options)
-        {
-          this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
-          OpenLayers.Control.prototype.initialize.apply(this, arguments);
-          this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
-        },
-
-        trigger: function(e)
-        {
-          var lonlat = div.map.getLonLatFromViewPortPx(new
-            OpenLayers.Pixel(e.xy.x , e.xy.y));          
-          // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-          var precision, metres = div.map.getScale()/200;
-          // now round to find appropriate square size
-          if (metres<30) {
-            precision=8;
-          } else if (metres<300) {
-            precision=6;
-          } else if (metres<3000) {
-            precision=4;
-          } else {
-            precision=2;
-          }
-          // enforce precision limits if specifid in the settings
-          if (div.settings.clickedSrefPrecisionMin!=='') {
-          precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
-          }
-          if (div.settings.clickedSrefPrecisionMax!=='') {
-            precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
-          }
-          var sref, wkt, outputSystem = _getSystem();
-          if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
-            // no transform required
-            if (div.map.getUnits()=='m') {
-	          // in metres, so we can round (no need for sub-metre precision)
-              sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
-            } else {
-              sref = lonlat.lat + ', ' + lonlat.lon;
-            }
-            if (outputSystem != '900913') {
-              lonlat.transform(div.map.projection, div.indiciaProjection);
-            }
-            wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-            _setClickPoint({
-             'sref' : sref,
-             'wkt' : wkt
-            }, div);
-          } else {
-            if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-              // Indicia expects the WKT in 900913 (it's internal format)
-              lonlat.transform(div.map.projection, div.indiciaProjection);
-            }
-            wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-            $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
-                    "?wkt=" + wkt +
-                    "&system=" + outputSystem +
-                    "&precision=" + precision +
-                    "&output=" + div.settings.latLongFormat +
-                    "&callback=?", function(data)
-              {
-                _setClickPoint(data, div);
-              }
-            );
-          }
-        }
-      });
-
-      // Add the click control to the map.
-      var click = new OpenLayers.Control.Click();
-      div.map.addControl(click);
-      click.activate();
       if (div.settings.editLayer) {
+        // Setup a click event handler for the map
+        OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
+          defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
+          initialize: function(options)
+          {
+            this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
+            OpenLayers.Control.prototype.initialize.apply(this, arguments);
+            this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
+          },
+
+          trigger: function(e)
+          {
+            var lonlat = div.map.getLonLatFromViewPortPx(new
+              OpenLayers.Pixel(e.xy.x , e.xy.y));          
+            // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+            var precision, metres = div.map.getScale()/200;
+            // now round to find appropriate square size
+            if (metres<30) {
+              precision=8;
+            } else if (metres<300) {
+              precision=6;
+            } else if (metres<3000) {
+              precision=4;
+            } else {
+              precision=2;
+            }
+            // enforce precision limits if specifid in the settings
+            if (div.settings.clickedSrefPrecisionMin!=='') {
+            precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+            }
+            if (div.settings.clickedSrefPrecisionMax!=='') {
+              precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+            }
+            var sref, wkt, outputSystem = _getSystem();
+            if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
+              // no transform required
+              if (div.map.getUnits()=='m') {
+              // in metres, so we can round (no need for sub-metre precision)
+                sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
+              } else {
+                sref = lonlat.lat + ', ' + lonlat.lon;
+              }
+              if (outputSystem != '900913') {
+                lonlat.transform(div.map.projection, div.indiciaProjection);
+              }
+              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+              _setClickPoint({
+               'sref' : sref,
+               'wkt' : wkt
+              }, div);
+            } else {
+              if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+                // Indicia expects the WKT in 900913 (it's internal format)
+                lonlat.transform(div.map.projection, div.indiciaProjection);
+              }
+              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+              $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
+                      "?wkt=" + wkt +
+                      "&system=" + outputSystem +
+                      "&precision=" + precision +
+                      "&output=" + div.settings.latLongFormat +
+                      "&callback=?", function(data)
+                {
+                  _setClickPoint(data, div);
+                }
+              );
+            }
+          }
+        });
+
+        // Add the click control to the map.
+        var click = new OpenLayers.Control.Click();
+        div.map.addControl(click);
+        click.activate();
         div.map.editLayer.clickControl = click;
       }
       
@@ -442,11 +443,7 @@
         tcLayer = new OpenLayers.Layer.TileCache(item.caption, item.servers, item.layerName, item.settings);
         div.map.addLayer(tcLayer);
       });
-      // OpenLayers does not automatically set up a layer switcher for tile cache layers
-      if (this.settings.tilecacheLayers.length>1) {
-        div.map.addControl(new OpenLayers.Control.LayerSwitcher());
-      }
-
+      
       // Iterate over the preset layers, adding them to the map
       $.each(this.settings.presetLayers, function(i, item)
       {
@@ -521,9 +518,77 @@
       $.each(this.settings.controls, function(i, item) {
         div.map.addControl(item);
       });
+      
+      if (this.settings.clickableLayers.length!==0) {
+        var clickableLayerNames = [];
+        $.each(div.settings.clickableLayers, function(i, item) {
+          clickableLayerNames.push(item.params.LAYERS);
+        });
+        clickableLayerNames = clickableLayerNames.join(',');
+        var infoCtrl = new OpenLayers.Control({
+          activate: function() {
+            var handlerOptions = {
+              'single': true,
+              'double': false,
+              'pixelTolerance': 0,
+              'stopSingle': false,
+              'stopDouble': false
+            };
+            this.handler = new OpenLayers.Handler.Click(this, {
+              'click': this.onClick
+            }, handlerOptions);
+            this.protocol = new OpenLayers.Protocol.HTTP({
+              url: div.settings.indiciaGeoSvc + 'wms',
+              format: new OpenLayers.Format.WMSGetFeatureInfo()
+            });
+            OpenLayers.Control.prototype.activate.call(this);
+          },
+  
+          onClick: function(e) {
+            div.settings.lastclick = e.xy;
+            this.protocol.read({
+              params: {
+                  REQUEST: "GetFeatureInfo",
+                  EXCEPTIONS: "application/vnd.ogc.se_xml",
+                  VERSION: "1.1.0",
+                  STYLES: '',
+                  BBOX: div.map.getExtent().toBBOX(),
+                  X: e.xy.x,
+                  Y: e.xy.y,
+                  INFO_FORMAT: 'application/vnd.ogc.gml',
+                  LAYERS: clickableLayerNames,
+                  QUERY_LAYERS: clickableLayerNames,
+                  WIDTH: div.map.size.w,
+                  HEIGHT: div.map.size.h,
+                  SRS: div.map.projection
+              },
+              callback: this.onResponse,
+              scope: this
+            });
+          },
+  
+          onResponse: function(response) {
+            if (div.settings.clickableLayersOutputMode=='popup') {
+              div.map.addPopup(new OpenLayers.Popup.FramedCloud(
+                  "popup", 
+                  div.map.getLonLatFromPixel(div.settings.lastclick),
+                  null,
+                  div.settings.clickableLayersOutputFn(response.features, div),
+                  null,
+                  true
+              ));
+            } else {
+              $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFn(response.features, div));
+            }
+          }
+        });
+
+        div.map.addControl(infoCtrl);
+        infoCtrl.activate();      
+      }
 
       // Add a layer switcher if there are multiple layers
-      if ((this.settings.presetLayers.length + this.settings.layers.length) > 1) {
+      if ((this.settings.presetLayers.length + this.settings.layers.length + this.settings.tilecacheLayers.length) > 1) {
         div.map.addControl(new OpenLayers.Control.LayerSwitcher());
       }
 
@@ -555,13 +620,18 @@ $.fn.indiciaMapPanel.defaults = {
     initial_long: -2,
     initial_zoom: 5,
     scroll_wheel_zoom: true,
-    proxy: "http://localhost/cgi-bin/proxy.cgi?url=",
+    proxy: '',
     displayFormat: "image/png",
     presetLayers: [],
     tilecacheLayers: [],
     indiciaWMSLayers: {},
     indiciaWFSLayers : {},
     layers: [],
+    clickableLayers: [],
+    clickableLayersOutputMode: 'popup', // options are popup or div
+    clickableLayersOutputFn: format_getinfo_gml,
+    clickableLayersOutputDiv: '',
+    clickableLayersOutputColumns: [],
     controls: [],
     editLayer: true,
     editLayerName: 'Selection layer',
@@ -581,6 +651,7 @@ $.fn.indiciaMapPanel.defaults = {
     clickedSrefPrecisionMax: '',
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
+    msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
     maxZoom: 13, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
 
@@ -681,3 +752,33 @@ $.fn.indiciaMapPanel.convertFilterToText = function(filter) {
   }
   return serialized;
 };
+
+/**
+ * Function that formats the response from a WMSGetFeatureInfo request.
+ * Can be replaced through the setting clickableLayersOutputFn.
+ */
+function format_getinfo_gml(features, div) {
+  if (features.length===0) {
+    return div.settings.msgGetInfoNothingFound;
+  } else {
+    var html='<table><thead><tr>';
+    // use normal for (in) to get object properties
+    for(var attr in features[0].attributes) {
+      if (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!=undefined) {
+        html += '<th>' + div.settings.clickableLayersOutputColumns[attr] + '</th>';
+      }
+    };
+    html += '</tr></thead><tbody>';
+    $.each(features, function(i, item) {
+      html += '<tr>';
+      for(var attr in item.attributes) {
+        if (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!=undefined) {
+          html += '<td>' + item.attributes[attr] + '</td>';
+        }
+      };
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+}

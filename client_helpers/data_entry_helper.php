@@ -1327,6 +1327,10 @@ class data_entry_helper extends helper_config {
         $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
         unset($options['layers']);
       }
+      if (array_key_exists('clickableLayers', $options)) {
+        $json_insert .= ',"clickableLayers":['.implode(',', $options['clickableLayers']).']';
+        unset($options['clickableLayers']);
+      }
       $json=substr(json_encode($options), 0, -1).$json_insert.'}';
       if ($olOptions) {
         $json .= ','.json_encode($olOptions);
