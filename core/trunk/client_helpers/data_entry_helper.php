@@ -2615,11 +2615,13 @@ class data_entry_helper extends helper_config {
       // made into an occurrence
       if ($options['rowInclusionCheck']=='hasData')
         $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
+      if (isset($options['lookupListId']) || (isset($options['occurrenceImages']) && $options['occurrenceImages'])) 
+        // include a js file that has code for handling grid rows, including adding image rows.
+        self::add_resource('addrowtogrid');
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
-        // Javascript to add further rows to the grid
-        self::add_resource('addrowtogrid');
+        // Javascript to add further rows to the grid        
         self::$javascript .= "addRowToGrid('".parent::$base_url."index.php/services/data"."', '".
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
