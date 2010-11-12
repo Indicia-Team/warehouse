@@ -4074,7 +4074,7 @@ if (errors.length>0) {
    * which is replaced by a loading panel while the page is loading.
    */
   public static function loading_block_start() {
-    global $indicia_templates, $indicia_theme_path, $indicia_theme;
+    global $indicia_templates;
     self::add_resource('jquery_ui');
     // For clean code, the jquery_ui stuff should have gone out in the page header, but just in case.
     // Don't bother from inside Drupal, since the header is added after the page code runs
@@ -4758,8 +4758,7 @@ $('.ui-state-default').live('mouseout', function() {
         // ensure a trailing slash
         self::$css_path .= "/";
       }
-      global $indicia_theme;
-      global $indicia_theme_path;
+      global $indicia_theme, $indicia_theme_path;
       if (!isset($indicia_theme)) {
         // Use default theme if page does not specify it's own.
         $indicia_theme="default";
