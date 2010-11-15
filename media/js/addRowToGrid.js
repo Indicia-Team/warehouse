@@ -38,7 +38,8 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     $(taxonCell).html(label);
     // Replace the tags in the row template with the taxa_taxon_list_ID
     row.innerHTML = row.innerHTML.replace(/\{ttlId\}/g, data.id);
-    $(row).find('.add-image-link').show();
+    $(row).find('.add-image-select-species').hide();
+    $(row).find('.add-image-link').show();    
     // auto-check the row
     var checkbox=$(row).find('.scPresenceCell input');
     checkbox.attr('checked', 'checked');

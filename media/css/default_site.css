@@ -327,3 +327,7 @@ tr.odd {
 .ui-tabs .ui-tabs-nav li {
   list-style-type: none;
 }
+
+.add-image-select-species {
+  font-style: italic;
+}
