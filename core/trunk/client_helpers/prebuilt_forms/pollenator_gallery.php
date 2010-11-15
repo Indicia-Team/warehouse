@@ -758,7 +758,6 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
 	if(user_access('IForm n'.$node->nid.' insect expert')){
 		$r .= '		<select name="determination:determination_type" />
-			<option value="A">'.lang::get('LANG_Det_Type_A').'</option>
 			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
 			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
 		</select>';
@@ -792,7 +791,6 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
 	if(user_access('IForm n'.$node->nid.' flower expert')){
 		$r .= '		<select name="determination:determination_type" />
-			<option value="A">'.lang::get('LANG_Det_Type_A').'</option>
 			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
 			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
 		</select>';
@@ -803,7 +801,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
           <input type="hidden" name="determination:taxon_details" />
           <span id="flower-id-button" class="ui-state-default ui-corner-all poll-id-button" >'.lang::get('LANG_Launch_ID_Key').'</span>
 		  <span id="flower-id-cancel" class="ui-state-default ui-corner-all poll-id-cancel" >'.lang::get('LANG_Cancel_ID').'</span>
- 	      <p id="flower_taxa_list"></p>
+ 	      <p id="flower_taxa_list" class="taxa_list" ></p>
  	    </div>
  	    <div class="id-specified-group">
  	      '.data_entry_helper::select($focus_flower_ctrl_args).'
@@ -1072,7 +1070,6 @@ loadCollection = function(id, index){
 	jQuery('#flower-image').data('occID', 'none').data('collectionIndex', index);
 	jQuery('#collection-insects,#collection-date,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
 	loadComments(id, '#fc-comment-list', 'sample_comment', 'sample_id', 'sample-comment-block', 'sample-comment-body', true);
-	// this has a fixed target so could be done asynchronously, but need to reset timeout
 	// only need to reset the timeout on the first fetch as rest follow on quickly.
 	$.getJSON(\"".$svcUrl."/data/occurrence\" +
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -1080,7 +1077,7 @@ loadCollection = function(id, index){
    		if(!(flowerData instanceof Array)){
    			alertIndiciaError(flowerData);
    		} else if (flowerData.length>0) {
-			loadImage('occurrence_image', 'occurrence_id', flowerData[0].id, '#flower-image', ".$args['Flower_Image_Ratio'].", function(imageRecord){collection_preferred_object.flower_image_path = imageRecord.path});
+			loadImage('occurrence_image', 'occurrence_id', flowerData[0].id, '#flower-image', ".$args['Flower_Image_Ratio'].", function(imageRecord){collection_preferred_object.flower_image_path = imageRecord.path}, 'med-', false);
 			jQuery('#flower-image').data('occID', flowerData[0].id);
 			collection_preferred_object.flower_id = flowerData[0].id;
 			$.getJSON(\"".$svcUrl."/data/determination\" + 
@@ -1146,7 +1143,6 @@ loadCollection = function(id, index){
 							break;
     }}}}});
   	
-	// this has a fixed target so can be done asynchronously.
 	$.getJSON(\"".$svcUrl."/data/sample/\" +id+
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&callback=?\", function(collectionData) {
@@ -1168,7 +1164,7 @@ loadCollection = function(id, index){
    				if(!(locationData instanceof Array)){
    					alertIndiciaError(locationData);
    				} else if (locationData.length>0) {
-					loadImage('location_image', 'location_id', locationData[0].id, '#environment-image', ".$args['Environment_Image_Ratio'].", function(imageRecord){collection_preferred_object.environment_image_path = imageRecord.path});
+					loadImage('location_image', 'location_id', locationData[0].id, '#environment-image', ".$args['Environment_Image_Ratio'].", function(imageRecord){collection_preferred_object.environment_image_path = imageRecord.path}, 'med-', false);
 					var parser = new OpenLayers.Format.WKT();
 					var feature = parser.read(locationData[0].centroid_geom);
 					locationLayer.addFeatures([feature]);
@@ -1181,7 +1177,7 @@ loadCollection = function(id, index){
 				  	});
 					var locality = jQuery('#collection-locality');
 				  	var scope = {target: locality};
-					inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope, async: false});
+					inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope});
 				}
 			});
 			$.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
@@ -1200,53 +1196,62 @@ loadCollection = function(id, index){
 		}
 	});
 	// we want to tag end of row pictuure, so we need to keep track of its position in list.
-	// session and occurrence fetches set to synchronous
-	var insectNumber = 0;
 	collection_preferred_object.insects = [];
-    jQuery.ajax({ 
-        type: \"GET\", 
-        url: \"".$svcUrl."/data/sample\" + 
-			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
-			\"&parent_id=\"+id+\"&callback=?\", 
-        data: {}, 
-        success: function(sessiondata) {
+	jQuery.ajax({
+		url: \"".$svcUrl."/data/sample?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?&parent_id=\"+id,
+		dataType: 'json',
+		myIndex: index,
+		success: function(sessiondata) {
           if(!(sessiondata instanceof Array)){
    			alertIndiciaError(sessiondata);
    		  } else if (sessiondata.length>0) {
-			for (var i=0;i<sessiondata.length;i++){
-				jQuery.ajax({ 
-			        type: \"GET\", 
-        			url: \"".$svcUrl."/data/occurrence/\" +
-						\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-						\"&sample_id=\"+sessiondata[i].id+\"&deleted=f&orderby=id&callback=?\", 
-        			data: {}, 
-        			success:  function(insectData) {
+   			var sessList=[];
+   			// code has been changed to fetch all insects at once, so we can now go async
+			for (var i=0;i<sessiondata.length;i++)
+				sessList.push(sessiondata[i].id);
+			jQuery.ajax({
+					url: \"".$svcUrl."/data/occurrence?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&deleted=f&orderby=id&callback=?&query=\"+escape(JSON.stringify({'in': ['sample_id', sessList]})),
+					dataType: 'json',
+					myIndex: this.myIndex,
+					success: function(insectData) {
 					  if(!(insectData instanceof Array)){
    						alertIndiciaError(insectData);
    		  			  } else if (insectData.length>0) {
 						for (var j=0;j<insectData.length;j++){
-							insectNumber++;
 							var insect=jQuery('<div class=\"ui-widget-content ui-corner-all collection-insect\" />').attr('occID', insectData[j].id).appendTo('#collection-insects');
-							if(insectNumber/".$args['insectsPerRow']." == parseInt(insectNumber/".$args['insectsPerRow']."))
+							if((j+1)/".$args['insectsPerRow']." == parseInt((j+1)/".$args['insectsPerRow']."))
 								insect.addClass('end-of-row');
 							jQuery('<p class=\"insect-tag insect-unknown\" />').appendTo(insect);
-							var image = jQuery('<div class=\"insect-image\" />').appendTo(insect).data('occID',insectData[j].id)
-									.data('collectionIndex',index).click(function(){
+							var image = jQuery('<div class=\"insect-image empty\" />').appendTo(insect).data('occID',insectData[j].id)
+									.data('collectionIndex',this.myIndex).click(function(){
 								loadInsect(jQuery(this).data('occID'),jQuery(this).data('collectionIndex'),null,'C');								
 							});
-							jQuery('<p class=\"insect-determination\" />').appendTo(insect);
-							var displayButton = jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>')
-									.appendTo(insect).attr('occID',insectData[j].id).data('collectionIndex',index).data('collectionInsectIndex',insectNumber-1).click(function(){
+							jQuery('<p class=\"insect-determination empty\" />').appendTo(insect);
+							jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>')
+									.appendTo(insect).attr('occID',insectData[j].id).data('collectionIndex',this.myIndex).data('collectionInsectIndex',j).click(function(){
 								loadInsect(jQuery(this).attr('occID'),jQuery(this).data('collectionIndex'),null,'C');								
 							});
-							loadImage('occurrence_image', 'occurrence_id', insectData[j].id, image, ".$args['Insect_Image_Ratio'].", function(imageRecord){collection_preferred_object.insects.push({insect_id: imageRecord.occurrence_id, insect_image_path: imageRecord.path})});
-							// have to do this synchronously due to multiple targets
-							$.getJSON(\"".$svcUrl."/data/determination\" + 
+							loadImage('occurrence_image', 'occurrence_id', insectData[j].id, image, ".$args['Insect_Image_Ratio'].", function(imageRecord){collection_preferred_object.insects.push({insect_id: imageRecord.occurrence_id, insect_image_path: imageRecord.path})}, 'med-',
+								function(img){
+									var group = jQuery('#collection-insects').find('.collection-insect');
+									jQuery(img).parent().removeClass('empty');
+									if(group.find('.empty').length == 0){
+										var tallest = 0;
+										group.each(function(){ tallest = Math.max($(this).height(), tallest); });
+										group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
+									}
+								});
+							jQuery.ajax({
+								url: \"".$svcUrl."/data/determination\" + 
 					    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
-					    			\"&occurrence_id=\" + insectData[j].id + \"&deleted=f&orderby=id&callback=?\", function(detData) {
-   								if(!(detData instanceof Array)){
+					    			\"&occurrence_id=\" + insectData[j].id + \"&deleted=f&orderby=id&callback=?\",
+								dataType: 'json',
+								myID: insectData[j].id,
+								success: function(detData) {
+   								  if(!(detData instanceof Array)){
    									alertIndiciaError(detData);
-   		  			  			} else if (detData.length>0) {
+   		  			  			  } else {
+   		  			  			   if (detData.length>0) {
 					    			var insect = jQuery('.collection-insect').filter('[occID='+detData[0].occurrence_id+']');
 					    			var tag = insect.find('.insect-tag');
 					    			var det = insect.find('.insect-determination');
@@ -1260,7 +1265,7 @@ loadCollection = function(id, index){
 									  	var resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 										if(resultsIDs[0] != '') {
 											for(var j=0; j < resultsIDs.length; j++){
-												for(k = 0; k< insectTaxa.length; k++){
+												for(var k = 0; k< insectTaxa.length; k++){
 													if(insectTaxa[k].id == resultsIDs[j]){
 														string = (string == '' ? '' : string + ', ') + insectTaxa[k].taxon;
 													}
@@ -1275,19 +1280,19 @@ loadCollection = function(id, index){
 									} else {
 										tag.removeClass('insect-unknown').addClass('insect-ok');
 									}
-  								}});  					
+								   }
+									var group = jQuery('#collection-insects').find('.collection-insect');
+									group.filter('[occID='+this.myID+']').find('.insect-determination').removeClass('empty');
+									if(group.find('.empty').length == 0){
+										var tallest = 0;
+										group.each(function(){ tallest = Math.max($(this).height(), tallest); });
+										group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
+							}}}});
 						}
 					}
-				  }, 
-    			  dataType: 'json', 
-	    		  async: false 
-    			});
-			}
-  		  }
-	    }, 
-    	dataType: 'json', 
-	    async: false 
-    });
+				  }}); 
+			}}
+	    });
 	myScrollTo('#poll-banner');
 };
 fillLocationDetails = function(a1)
@@ -1314,12 +1319,12 @@ addCollection = function(index, attributes, geom, first){
     		value: geom
   	});
 	flower.appendTo(collection);
-	insertImage('med-'+attributes.image_de_la_fleur, flower, ".$args['Flower_Image_Ratio'].");
+	insertImage('med-'+attributes.image_de_la_fleur, flower, ".$args['Flower_Image_Ratio'].", false);
 	var location = jQuery('<div class=\"collection-image collection-environment\" />').appendTo(collection);
-	insertImage('med-'+attributes.image_de_environment, location, ".$args['Environment_Image_Ratio'].");
-	var photoReel = jQuery('<div class=\"collection-photoreel\"></div>').appendTo(collection);
+	insertImage('med-'+attributes.image_de_environment, location, ".$args['Environment_Image_Ratio'].", false);
+	jQuery('<div class=\"collection-photoreel\"></div>').attr('collID', attributes.collection_id).appendTo(collection);
 	var displayButtonContainer = jQuery('<div class=\"collection-buttons\"></div>').appendTo(collection);
-	var displayButton = jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>').click(function(){
+	jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>').click(function(){
 		loadCollection(jQuery(this).data('value'), jQuery(this).data('index'));
 	}).appendTo(displayButtonContainer).data('value',attributes.collection_id).data('index',index);
 	if(attributes.datedebut == attributes.datefin){
@@ -1330,16 +1335,14 @@ addCollection = function(index, attributes, geom, first){
 	jQuery('<p class=\"collection-name\">'+attributes.nom+'</p>').appendTo(details);
 	var locality = jQuery('<p  class=\"collection-locality\"></p>').appendTo(details);
 	var scope = {target: locality};
-	inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope, async: false});
-	jQuery.ajax({ 
-	    type: 'GET', 
-	    url: \"".$svcUrl."/data/sample?mode=json&view=detail\" +
-	    	(first ? \"&reset_timeout=true\" : \"\") + \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+attributes.collection_id+\"&callback=?\", 
-        data: {}, 
-        success: function(sessiondata) {
+	inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope});
+	jQuery.getJSON(\"".$svcUrl."/data/sample?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + (first ? \"&reset_timeout=true\" : \"\") + \"&callback=?&parent_id=\"+attributes.collection_id,
+        function(sessiondata) {
 		  if(!(sessiondata instanceof Array)){
    			alertIndiciaError(sessiondata);
    		  } else for (var i=0;i<sessiondata.length;i++){
+   		  	var photoreel = jQuery('.collection-photoreel').filter('[collID='+sessiondata[i].parent_id+']');
+   		  	jQuery('<span class=\"photoreel-session\"></span>').attr('sessID', sessiondata[i].id).appendTo(photoreel);
 			$.getJSON(\"".$svcUrl."/data/occurrence/\" +
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&orderby=id\" +
 					\"&sample_id=\"+sessiondata[i].id+\"&deleted=f&callback=?\", function(insectData) {
@@ -1351,7 +1354,7 @@ addCollection = function(index, attributes, geom, first){
 							loadInsect(jQuery(this).attr('occID'),jQuery(this).data('collectionIndex'),null,'P');
 						});
 						jQuery('<span>".lang::get('LANG_Unknown')."</span>').addClass('thumb-text').appendTo(container);
-						photoReel.append(container);
+						jQuery('.photoreel-session').filter('[sessID='+insectData[j].sample_id+']').append(container);
 						$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
 					   			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    								\"&occurrence_id=\" + insectData[j].id + \"&callback=?\", function(imageData) {
@@ -1380,42 +1383,48 @@ addCollection = function(index, attributes, geom, first){
   						}});  					
 					}
 				}});
-		}}, 
-    	dataType: 'json', 
-	    async: false 
-    });
+		}});
 };
 addInsect = function(index, attributes, endOfRow, first){
-	var container=jQuery('<div class=\"ui-widget-content ui-corner-all filter-insect\" />').appendTo('#results-insects-results');
+	var container=jQuery('<div class=\"ui-widget-content ui-corner-all filter-insect\" />').attr('occID',attributes.insect_id).appendTo('#results-insects-results');
 	if(endOfRow) container.addClass('end-of-row');
-	var flag = jQuery('<div />').addClass('insect-ok').appendTo(container);
-	var insect = jQuery('<div class=\"insect-image\" />').data('occID',attributes.insect_id).data('insectIndex',index).click(function(){
+	jQuery('<div />').addClass('insect-unknown').appendTo(container); // flag
+	var insect = jQuery('<div class=\"insect-image empty\" />').data('occID',attributes.insect_id).data('insectIndex',index).click(function(){
 		loadInsect(jQuery(this).data('occID'), null, jQuery(this).data('insectIndex'), 'S');
 	});
 	insect.appendTo(container);
-	insertImage('med-'+attributes.image_d_insecte, insect, ".$args['Insect_Image_Ratio'].");
-	var determination = jQuery('<div />').appendTo(container);
-	jQuery.ajax({ 
-	    type: 'GET', 
-	    url: \"".$svcUrl."/data/determination?mode=json&view=list\" +
-	    	(first ? \"&reset_timeout=true\" : \"\") + \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&occurrence_id=\" + attributes.insect_id + \"&orderby=id&callback=?\", 
-        data: {}, 
-          success: function(detData) {
+	jQuery('<div class=\"insect-determinationX empty\" />').attr('occID',attributes.insect_id).appendTo(container).append(\"<p>".lang::get('LANG_No_Determinations')."</p>\");
+	insertImage('med-'+attributes.image_d_insecte, insect, ".$args['Insect_Image_Ratio'].", function(img){
+			var group = jQuery('#results-insects-results').find('.filter-insect');
+			jQuery(img).parent().removeClass('empty');
+			if(group.find('.empty').length == 0){
+				var tallest = 0;
+				group.each(function(){ tallest = Math.max($(this).height(), tallest); });
+				group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
+			}
+		});
+	jQuery.ajax({
+		url: \"".$svcUrl."/data/determination?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + (first ? \"&reset_timeout=true\" : \"\") + \"&orderby=id&callback=?&occurrence_id=\" + attributes.insect_id,
+		dataType: 'json',
+		myID: attributes.insect_id,
+		success: function(detData) {
    		  if(!(detData instanceof Array)){
    			alertIndiciaError(detData);
-   		  } else if (detData.length>0) {
+   		  } else {
+   		   if (detData.length>0) {
 			var i = detData.length-1;
    			var string = '';
+			var determination = jQuery('.insect-determinationX').filter('[occID='+detData[i].occurrence_id+']').empty();
+			var flag = determination.parent().find('.insect-unknown');
 			if(detData[i].taxon != '' && detData[i].taxon != null){
 				string = detData[i].taxon;
 			}
-			if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null){
+			if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null && detData[i].taxa_taxon_list_id_list != '{}'){
 				detData[i].taxa_taxon_list_id_list;
 				var resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 				if(resultsIDs[0] != '') {
 					for(var j=0; j < resultsIDs.length; j++){
-						for(k = 0; k< insectTaxa.length; k++){
+						for(var k = 0; k< insectTaxa.length; k++){
 							if(insectTaxa[k].id == resultsIDs[j]){
 								string = (string == '' ? '' : string + ', ') + insectTaxa[k].taxon;
 							}
@@ -1425,18 +1434,20 @@ addInsect = function(index, attributes, endOfRow, first){
 			}
 			jQuery('<p>'+string+'</p>').appendTo(determination)
 			if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
-				jQuery(flag).removeClass('insect-ok').addClass('insect-dubious');
-			}
-		  } else {
-			jQuery(flag).removeClass('insect-ok').addClass('insect-unknown');
-			jQuery(\"<p>".lang::get('LANG_No_Determinations')."</p>\")
-					.appendTo(determination);
-		}}, 
-		dataType: 'json', 
-		async: false 
-	});
-	var displayButton = jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>');
-	displayButton.click(function(){
+				flag.removeClass('insect-unknown').addClass('insect-dubious');
+			} else 
+				flag.removeClass('insect-unknown').addClass('insect-ok');
+		   }
+		   var group = jQuery('#results-insects-results').find('.filter-insect');
+		   group.filter('[occID='+this.myID+']').find('.insect-determinationX').removeClass('empty');
+		   if(group.find('.empty').length == 0){
+				var tallest = 0;
+				group.each(function(){ tallest = Math.max($(this).height(), tallest); });
+				group.each(function(){ $(this).height(Math.max($(this).height(), tallest)); }); // have synchronicity problems.
+		   
+  		  }}
+	}});
+	jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>').click(function(){
 		loadInsect(jQuery(this).attr('occID'), null, jQuery(this).data('insectIndex'), 'S');
 	}).appendTo(container).attr('occID',attributes.insect_id).data('insectIndex',index);
 };
@@ -1478,7 +1489,7 @@ setCollectionPage = function(pageNum){
 		}
 		if(pageNum != numPages){
 			item = jQuery('<li class=\"pager-next\"></li>').attr('value',pageNum+1).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
-			jQuery('<a class=\"active\"></a>').appendTo(item);
+			jQuery('<a class=\"active\">&nbsp;</a>').appendTo(item);
   			item = jQuery('<li class=\"pager-last\"></li>').attr('value',numPages).click(function(){setCollectionPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
 			jQuery('<a class=\"active\">'+numPages+'</a>').appendTo(item);
   		}
@@ -1498,9 +1509,9 @@ setCollectionPage = function(pageNum){
 		}
 		if(pageNum != 1){
 			item = jQuery('<li class=\"pager-previous\"></li>').attr('value',pageNum-1).click(function(){setCollectionPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
-			jQuery('<a class=\"active\"></a>').appendTo(item);
+			jQuery('<a class=\"active\">&nbsp;</a>').appendTo(item);
   			item = jQuery('<li class=\"pager-first\"></li>').click(function(){setCollectionPage(1)}).prependTo(pageCtrl);
-			jQuery('<a class=\"active\"></a>').appendTo(item);
+			jQuery('<a class=\"active\">&nbsp;</a>').appendTo(item);
   		}
   		pageCtrl.find('li').filter(':first').addClass('first');
   		pageCtrl.find('li').filter(':last').addClass('last');
@@ -1548,7 +1559,7 @@ setInsectPage = function(pageNum){
 		}
 		if(pageNum != numPages){
 			item = jQuery('<li class=\"pager-next\"></li>').attr('value',pageNum+1).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
-			jQuery('<a class=\"active\"></a>').appendTo(item);
+			jQuery('<a class=\"active\">&nbsp;</a>').appendTo(item);
   			item = jQuery('<li class=\"pager-last\"></li>').attr('value',numPages).click(function(){setInsectPage(jQuery(this).attr('value'))}).appendTo(pageCtrl);
 			jQuery('<a class=\"active\">'+numPages+'</a>').appendTo(item);
   		}
@@ -1568,9 +1579,9 @@ setInsectPage = function(pageNum){
 		}
 		if(pageNum != 1){
 			item = jQuery('<li class=\"pager-previous\"></li>').attr('value',pageNum-1).click(function(){setInsectPage(jQuery(this).attr('value'))}).prependTo(pageCtrl);
-			jQuery('<a class=\"active\"></a>').appendTo(item);
+			jQuery('<a class=\"active\">&nbsp;</a>').appendTo(item);
   			item = jQuery('<li class=\"pager-first\"></li>').click(function(){setInsectPage(1)}).prependTo(pageCtrl);
-			jQuery('<a class=\"active\"></a>').appendTo(item);
+			jQuery('<a class=\"active\">&nbsp;</a>').appendTo(item);
   		}
   		pageCtrl.find('li').filter(':first').addClass('first');
   		pageCtrl.find('li').filter(':last').addClass('last');
@@ -1610,7 +1621,8 @@ flowerIDstruc = {
 	invokeURL: '".$args['ID_tool_flower_url']."',
 	pollURL: '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_flower_poll_dir'])."',
 	name: 'flowerIDstruc',
-	determinationType: '".(user_access('IForm n'.$node->nid.' flower expert') ? 'C' : 'A')."'
+	determinationType: '".(user_access('IForm n'.$node->nid.' flower expert') ? 'C' : 'A')."',
+	taxaList: flowerTaxa
 };
 
 toolPoller = function(toolStruct){
@@ -1618,11 +1630,11 @@ toolPoller = function(toolStruct){
 	toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
 	jQuery.ajax({
 	 url: toolStruct.pollURL+toolStruct.pollFile,
-	 async: false,
+	 toolStruct: toolStruct,
 	 success: function(data){
-	  pollReset(toolStruct);
+	  pollReset(this.toolStruct);
 	  var da = data.split('\\n');
-      jQuery(toolStruct.mainForm+' [name=determination\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
+      jQuery(this.toolStruct.mainForm+' [name=determination\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
 	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '').replace(/\\\\/g, '');
 	  var items = da[1].split(':');
 	  var count = items.length;
@@ -1630,8 +1642,8 @@ toolPoller = function(toolStruct){
 	  if(items[count-1] == '') count--;
 	  if(count <= 0){
 	  	// no valid stuff so blank it all out.
-	  	jQuery('#'+toolStruct.type+'_taxa_list').append(\"".lang::get('LANG_Taxa_Unknown_In_Tool')."\");
-	  	jQuery(toolStruct.mainForm+' [name=determination\\:determination_type]').val('X'); // Unidentified.
+	  	jQuery('#'+this.toolStruct.type+'_taxa_list').append(\"".lang::get('LANG_Taxa_Unknown_In_Tool')."\");
+	  	jQuery(this.toolStruct.mainForm+' [name=determination\\:determination_type]').val('X'); // Unidentified.
       } else {
       	var resultsIDs = [];
       	var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
@@ -1639,9 +1651,9 @@ toolPoller = function(toolStruct){
 		for(var j=0; j < count; j++){
 			var found = false;
 			itemText = items[j].replace(/</g, '&lt;').replace(/>/g, '&gt;');
-			for(i = 0; i< toolStruct.taxaList.length; i++){
-				if(toolStruct.taxaList[i].taxon == itemText){
-					resultsIDs.push(toolStruct.taxaList[i].id);
+			for(i = 0; i< this.toolStruct.taxaList.length; i++){
+				if(this.toolStruct.taxaList[i].taxon == itemText){
+					resultsIDs.push(this.toolStruct.taxaList[i].id);
 					resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + itemText;
 					found = true;
   				}
@@ -1650,10 +1662,10 @@ toolPoller = function(toolStruct){
   				notFound = (notFound == '' ? '' : notFound + ', ') + itemText;
   			}
   		}
-		jQuery('#'+toolStruct.type+'_taxa_list').append(resultsText+ ' }');
-		jQuery('#'+toolStruct.type+'-id-button').data('toolRetValues', resultsIDs);
+		jQuery('#'+this.toolStruct.type+'_taxa_list').append(resultsText+ ' }');
+		jQuery('#'+this.toolStruct.type+'-id-button').data('toolRetValues', resultsIDs);
 	  	if(notFound != ''){
-			var comment = jQuery(toolStruct.mainForm+' [name=determination\\:comment]');
+			var comment = jQuery(this.toolStruct.mainForm+' [name=determination\\:comment]');
 			comment.val('".lang::get('LANG_ID_Unrecognised')." '+notFound+' '+comment.val());
 		}
   	  }
@@ -1718,7 +1730,8 @@ insectIDstruc = {
 	invokeURL: '".$args['ID_tool_insect_url']."',
 	pollURL: '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_insect_poll_dir'])."',
 	name: 'insectIDstruc',
-	determinationType: '".(user_access('IForm n'.$node->nid.' insect expert') ? 'C' : 'A')."'
+	determinationType: '".(user_access('IForm n'.$node->nid.' insect expert') ? 'C' : 'A')."',
+	taxaList: insectTaxa
 };
 
 jQuery('#insect-id-button').click(function(){
@@ -1889,7 +1902,7 @@ runSearch = function(forCollections){
   	var start_date = jQuery('input[name=real_start_date]').val();
   	var end_date = jQuery('input[name=real_end_date]').val();
   	if(start_date != '".lang::get('click here')."' && start_date != '')
-  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN, property: 'datefin', value: start_date}));
+  		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.GREATER_THAN_OR_EQUAL_TO, property: 'datefin', value: start_date}));
   	if(end_date != '".lang::get('click here')."' && end_date != '')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN_OR_EQUAL_TO, property: 'datedebut', value: end_date}));
  	
@@ -2322,13 +2335,13 @@ loadOccurrenceAttributes = function(keyValue){
 }
 loadLocationAttributes = function(keyValue){
 	jQuery('#focus-habitat').empty();
-	habitat_string = '';
 	$.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&location_id=\" + keyValue + \"&iso=".$language."&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		} else if (attrdata.length>0) {
+   			var habitat_string = '';
 			for(i=0; i< attrdata.length; i++){
 				if (attrdata[i].id){
 					switch(parseInt(attrdata[i].location_attribute_id)){
@@ -2340,7 +2353,7 @@ loadLocationAttributes = function(keyValue){
   }});
 }
 
-insertImage = function(path, target, ratio){
+insertImage = function(path, target, ratio, callback){
 	var img = new Image();
 	jQuery(img).load(function () {
         target.append(this);
@@ -2349,30 +2362,31 @@ insertImage = function(path, target, ratio){
   		} else {
 	        jQuery(this).css('width', (100*this.width/(this.height*ratio))+'%').css('height', 'auto').css('vertical-align', 'middle').css('margin-left', 'auto').css('margin-right', 'auto').css('display', 'block');
   		}
+  		if(callback)
+  			callback(this);
 	}).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."'+path);
 }
 
-loadImage = function(imageTable, key, keyValue, target, imageRatio, callback){
+loadImage = function(imageTable, key, keyValue, target, imageRatio, callback, prepend, imgCallback){
 	jQuery(target).empty();
-	var retVal = '';
     jQuery.ajax({ 
-        type: \"GET\", 
+        type: \"GET\",
+        myTarget: target,
+        myCallback: callback,
+        myPrepend: prepend,
+        myImgCallback: imgCallback,
         url: \"".$svcUrl."/data/\" + imageTable +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
-        data: {}, 
         success: function(imageData) {
 		  if(!(imageData instanceof Array)){
    			alertIndiciaError(imageData);
    		  } else if (imageData.length>0) {
-   		  	retVal = imageData[0].path;
-			insertImage(imageData[0].path, jQuery(target), imageRatio);
-			if(callback) callback(imageData[0]);
+ 			insertImage(this.myPrepend+imageData[0].path, jQuery(this.myTarget), imageRatio, this.myImgCallback);
+			if(this.myCallback) this.myCallback(imageData[0]);
 		  }},
-		dataType: 'json', 
-	    async: false  
+		dataType: 'json'
 	});
-	return retVal;
 }
 
 loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, expert, can_doubt, taxaList, type){
@@ -2380,39 +2394,50 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 	jQuery(currentID).empty();
 	jQuery('#poll-banner').empty();
 	jQuery('#fo-doubt-button').hide();
+	jQuery('#fo-express-doubt-form').find('[name=determination:taxon_extra_info]').val('');
+	jQuery('#fo-express-doubt-form').find('[name=determination:taxa_taxon_list_id]').val('');
+	jQuery('#fo-doubt-button').data('toolRetValues',[]);
+	jQuery('.poll-id-button').data('toolRetValues',[]);
 	jQuery('#fo-warning').addClass('occurrence-ok').removeClass('occurrence-dubious').removeClass('occurrence-unknown');
-    jQuery.ajax({ 
+	jQuery('.taxa_list').empty();
+	jQuery.ajax({ 
         type: \"GET\", 
-        url: \"".$svcUrl."/data/determination?mode=json&view=list\" +
-   			\"&reset_timeout=true&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&occurrence_id=\" + keyValue + \"&orderby=id&callback=?\", 
-        data: {}, 
+        url: \"".$svcUrl."/data/determination?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&reset_timeout=true&orderby=id&callback=?&occurrence_id=\" + keyValue,
+        myCurrentID: currentID,
+        myHistoryID: historyID,
+        myCallback: callback,
+        myLookup: lookup,
+		dataType: 'json',
         success: function(detData) {
    		  var callbackArgs = [];
    		  if(!(detData instanceof Array)){
    			alertIndiciaError(detData);
    		  } else if (detData.length>0) {
 			var i = detData.length-1;
-			callbackEntry = {date: detData[i].updated_on, user_id: detData[i].cms_ref, taxa: []};
+			var callbackEntry = {date: detData[i].updated_on, user_id: detData[i].cms_ref, taxa: []};
    			jQuery('#fo-express-doubt-form').find('[name=determination\\:occurrence_id]').val(detData[i].occurrence_id);
    			var string = '';
+   			var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
 			if(detData[i].taxon != '' && detData[i].taxon != null){
 				string = detData[i].taxon;
 				callbackEntry.taxa.push(detData[i].taxon);
   			}
 			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxa_taxon_list_id]').val(detData[i].taxa_taxon_list_id);
-			jQuery('#fo-doubt-button').data('toolRetValues',[]);
-			if(detData[i].taxa_taxon_list_id_list != null && detData[i].taxa_taxon_list_id_list != ''){
+			jQuery(this.myLookup).find('[name=determination:taxa_taxon_list_id]').val(detData[i].taxa_taxon_list_id);
+			if(detData[i].taxa_taxon_list_id_list != null && detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != '{}'){
 			  	resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 			  	for(j=0; j < resultsIDs.length; j++){
 					for(k = 0; k< taxaList.length; k++)
 						if(taxaList[k].id == resultsIDs[j]) {
 							string = (string == '' ? '' : string + ', ') + taxaList[k].taxon;
 							callbackEntry.taxa.push(taxaList[k].taxon);
-						}
+							resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + taxaList[k].taxon;
+  						}
 		  		}
 	  			if(resultsIDs.length>1 || resultsIDs[0] != '') {
-					jQuery('#fo-doubt-button').data('toolRetValues',resultsIDs)
+					jQuery('#fo-doubt-button').data('toolRetValues',resultsIDs);
+					jQuery('.poll-id-button').data('toolRetValues',resultsIDs);
+					jQuery('.taxa_list').append(resultsText+ ' }');
 				}
 			}
 			callbackArgs.push(callbackEntry);
@@ -2421,42 +2446,43 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 				string = (string == '' ? '' : string + ' ') + '('+detData[i].taxon_extra_info+')';
 			}
 			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info);
+			jQuery(this.myLookup).find('[name=determination:taxon_extra_info]').val(detData[i].taxon_extra_info);
 			if(string != '')
-				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(currentID)
+				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(this.myCurrentID)
 			else
-				jQuery('<p>".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(currentID)
+				jQuery('<p>".lang::get('LANG_Comment_By')."' + detData[i].person_name + ' ' + convertDate(detData[i].updated_on,false) + '</p>').appendTo(this.myCurrentID)
 			if(detData[i].determination_type == 'A' && (expert || can_doubt)){
 				jQuery('#fo-doubt-button').show();
 			} else if(detData[i].determination_type == 'B'){
-				jQuery(\"<p>".lang::get('LANG_Doubt_Expressed')."</p>\").appendTo(currentID);
+				jQuery(\"<p>".lang::get('LANG_Doubt_Expressed')."</p>\").appendTo(this.myCurrentID);
 				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-dubious');
 			} else if(detData[i].determination_type == 'C'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Valid')."</p>\").appendTo(currentID);
+				jQuery(\"<p>".lang::get('LANG_Determination_Valid')."</p>\").appendTo(this.myCurrentID);
 				if(!expert)
 					jQuery('.new-id-button').hide();
 			} else if(detData[i].determination_type == 'I'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Incorrect')."</p>\").appendTo(currentID);
+				jQuery(\"<p>".lang::get('LANG_Determination_Incorrect')."</p>\").appendTo(this.myCurrentID);
 				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-dubious');
 			} else if(detData[i].determination_type == 'U'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Unconfirmed')."</p>\").appendTo(currentID);
+				jQuery(\"<p>".lang::get('LANG_Determination_Unconfirmed')."</p>\").appendTo(this.myCurrentID);
 				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-dubious');
 			} else if(detData[i].determination_type == 'X'){
-				jQuery(\"<p>".lang::get('LANG_Determination_Unknown')."</p>\").appendTo(currentID);
+				jQuery(\"<p>".lang::get('LANG_Determination_Unknown')."</p>\").appendTo(this.myCurrentID);
 //				jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-unknown');
 			}
 			if(detData[i].comment != '' && detData[i].comment != null){
-				jQuery('<p>'+detData[i].comment+'</p>').appendTo(currentID);
+				jQuery('<p>'+detData[i].comment+'</p>').appendTo(this.myCurrentID);
 			}
 			
 			for(i=detData.length - 2; i >= 0; i--){ // deliberately miss last one, in reverse order
 				callbackEntry = {date: detData[i].updated_on, user_id: detData[i].cms_ref, taxa: []};
 				string = '';
-				var item = jQuery('<div></div>').addClass('history-item').appendTo(historyID);
+				var item = jQuery('<div></div>').addClass('history-item').appendTo(this.myHistoryID);
 				if(detData[i].taxon != '' && detData[i].taxon != null){
 					string = detData[i].taxon;
 		  			callbackEntry.taxa.push(detData[i].taxon);
   				}
-				if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null){
+				if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null && detData[i].taxa_taxon_list_id_list != '{}'){
 					var resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 					for(j=0; j < resultsIDs.length; j++){
 						for(k = 0; k< taxaList.length; k++)
@@ -2490,46 +2516,47 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 			jQuery('#fo-doubt-button').hide();
 			jQuery('#fo-warning').removeClass('occurrence-ok').addClass('occurrence-unknown');
 			jQuery('<p>".lang::get('LANG_No_Determinations')."</p>')
-					.appendTo(historyID);
+					.appendTo(this.myHistoryID);
 			jQuery('<p>".lang::get('LANG_No_Determinations')."</p>')
-					.appendTo(currentID);
+					.appendTo(this.myCurrentID);
 		  }
-		  if(callback) callback(callbackArgs, type);
-		},
-		dataType: 'json', 
-	    async: false  
+		  if(this.myCallback) this.myCallback(callbackArgs, type);
+		}  
 	});
+	// when the occurrence is loaded (eg in loadInsect) all determination:occurrence_ids are set.
+	jQuery(lookup).find('[name=determination\\:determination_type]').val(expert ? 'C' : 'A');
 };
 
 loadComments = function(keyValue, block, table, key, blockClass, bodyClass, reset_timeout){
 	jQuery(block).empty();
     jQuery.ajax({ 
-        type: \"GET\", 
+        type: \"GET\",
         url: \"".$svcUrl."/data/\" + table + \"?mode=json&view=list\" +
         	(reset_timeout ? \"&reset_timeout=true\" : \"\") + \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
-        data: {}, 
+        myBlock: block,
+        myBlockClass: blockClass,
+        myBodyClass: bodyClass,
+		dataType: 'json',
         success: function(commentData) {
    		  if(!(commentData instanceof Array)){
    			alertIndiciaError(commentData);
    		  } else if (commentData.length>0) {
    			for(i=commentData.length - 1; i >= 0; i--){
-	   			var newCommentDetails = jQuery('<div class=\"'+blockClass+'\"/>')
+	   			var newCommentDetails = jQuery('<div class=\"'+this.myBlockClass+'\"/>')
 					.appendTo(block);
 				jQuery('<span>".lang::get('LANG_Comment_By')."' + commentData[i].person_name + ' ' + convertDate(commentData[i].updated_on,false) + '</span>')
 					.appendTo(newCommentDetails);
 	   			var newComment = jQuery('<div class=\"'+bodyClass+'\"/>')
-					.appendTo(block);
+					.appendTo(this.myBlock);
 				jQuery('<p>' + commentData[i].comment + '</p>')
 					.appendTo(newComment);
 			}
 		  } else {
 			jQuery('<p>".lang::get('LANG_No_Comments')."</p>')
-					.appendTo(block);
+					.appendTo(this.myBlock);
 		  }
-		},
-		dataType: 'json', 
-	    async: false  
+		}
 	});
 };
 
@@ -2645,7 +2672,7 @@ loadInsect = function(insectID, collectionIndex, insectIndex, type){
 	jQuery('#fo-new-flower-id-button').hide();
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' insect expert') || user_access('IForm n'.$node->nid.' create insect comment')) ? "show()" : "hide()").";
 	loadDeterminations(insectID, '#fo-id-history', '#fo-current-id', 'form#fo-new-insect-id-form', null, ".(user_access('IForm n'.$node->nid.' insect expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious insect') ? '1' : '0').", insectTaxa, 'I');
-	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image', ".$args['Insect_Image_Ratio'].", function(imageRecord){insect_alert_object.insect_image_path = imageRecord.path});
+	loadImage('occurrence_image', 'occurrence_id', insectID, '#fo-image', ".$args['Insect_Image_Ratio'].", function(imageRecord){insect_alert_object.insect_image_path = imageRecord.path}, '', false);
 	loadInsectAddnInfo(insectID, collectionIndex);
 	loadComments(insectID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body', false);
 	myScrollTo('#poll-banner');
@@ -2665,7 +2692,7 @@ loadFlower = function(flowerID, collectionIndex){
 	jQuery('#fo-new-insect-id-button').hide();
 	jQuery('#fo-new-comment-button').".((user_access('IForm n'.$node->nid.' flower expert') || user_access('IForm n'.$node->nid.' create flower comment')) ? "show()" : "hide()").";
 	loadDeterminations(flowerID, '#fo-id-history', '#fo-current-id', 'form#fo-new-flower-id-form', null, ".(user_access('IForm n'.$node->nid.' flower expert') ? '1' : '0').", ".(user_access('IForm n'.$node->nid.' flag dubious flower') ? '1' : '0').", flowerTaxa, 'F');
-	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image', ".$args['Flower_Image_Ratio'].", function(imageRecord){flower_alert_object.flower_image_path = imageRecord.path});
+	loadImage('occurrence_image', 'occurrence_id', flowerID, '#fo-image', ".$args['Flower_Image_Ratio'].", function(imageRecord){flower_alert_object.flower_image_path = imageRecord.path}, '', false);
 	loadFlowerAddnInfo(flowerID, collectionIndex);
 	loadComments(flowerID, '#fo-comment-list', 'occurrence_comment', 'occurrence_id', 'occurrence-comment-block', 'occurrence-comment-body', false);
 	myScrollTo('#poll-banner');

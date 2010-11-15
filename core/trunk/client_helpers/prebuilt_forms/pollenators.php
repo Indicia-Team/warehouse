@@ -2108,25 +2108,19 @@ updatePhotoReel = function(occId){
 	else
 		container.empty();
 	jQuery('<span>?</span>').addClass('thumb-text').appendTo(container);
-	// the picture can be async but the determination can't : we use the presence of the text to determine whether the 
+	// we use the presence of the text to determine whether the 
 	// insect has been identified or not. NB an insect tagged as unidentified (type = 'X') has actually been through the ID
 	// process, so is not unidentified!!!
-	jQuery.ajax({ 
-        type: \"GET\", 
-        url: \"".$svcUrl."/data/determination\" + 
+	jQuery.getJSON(\"".$svcUrl."/data/determination\" + 
     		\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
     		\"&reset_timeout=true&occurrence_id=\" + occId + \"&orderby=id&deleted=f&callback=?\", 
-        data: {}, 
-        success: function(detData) {
+        function(detData) {
 	    	if(!(detData instanceof Array)){
    				alertIndiciaError(detData);
    			} else if (detData.length>0) {
-	    		container.find('.thumb-text').remove();
+	    		jQuery('[occId='+detdata[0].occurrence_id+']').find('.thumb-text').remove();
 	    	}
-  		}, 
-    	dataType: 'json', 
-	    async: false 
-    });
+  		});
 	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
@@ -2134,6 +2128,7 @@ updatePhotoReel = function(occId){
 			alertIndiciaError(imageData);
 		} else if (imageData.length>0) {
 			var img = new Image();
+			var container = jQuery('[occId='+imageData[0].occurrence_id+']');
 			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
 		}
