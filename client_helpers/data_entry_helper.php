@@ -2448,6 +2448,9 @@ class data_entry_helper extends helper_config {
   * <li><b>occurrenceImages</b><br/>
   * Optional. If set to true, then images can be uploaded for each occurrence row. Currently not supported for 
   * multi-column grids.</li>
+  * <li><b>colWidths</b><br/>
+  * Optional. Array containing percentage values for each visible column's width, with blank entries for columns that are not specified. If the array is shorter
+  * than the actual number of columns then the remaining columns use the default width determined by the browser.</li>
   * <li><b>attrCellTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each cell containing an attribute input control. Valid replacements are {label}, {class} and {content}.
@@ -2520,7 +2523,7 @@ class data_entry_helper extends helper_config {
         $row = '';
         // Add a X button if the user can remove rows
         if ($options['rowInclusionCheck']=='alwaysRemovable')
-          $row .= '<td class="ui-state-default remove-row">X</td>';
+          $row .= '<td class="ui-state-default remove-row" style="width: 1%">X</td>';
         $row .= str_replace('{content}', $firstCell,
             str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell'])
         );
@@ -2699,27 +2702,36 @@ class data_entry_helper extends helper_config {
    */
   private static function get_species_checklist_header($options, $occAttrs) {
     $r = '';
+    $visibleColIdx = 0;
     if ($options['header']) {
       $r .= "<thead class=\"ui-widget-header\"><tr>";
       for ($i=0; $i<$options['columns']; $i++) {
         $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
-        $r .= "<th$colspan>".lang::get('species_checklist.species')."</th>";
+        $r .= self::get_species_checklist_col_header(lang::get('species_checklist.species'), $visibleColIdx, $options['colWidths'], $colspan);        
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
-        $r .= "<th $hidden>".lang::get('species_checklist.present')."</th>";
+        $r .= self::get_species_checklist_col_header(lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], $hidden);
+        
         foreach ($occAttrs as $a) {
-          $r .= "<th>$a</th>";
+          $r .= self::get_species_checklist_col_header($a, $visibleColIdx, $options['colWidths']) ;
         }
         if ($options['occurrenceComment']) {
-          $r .= "<th>".lang::get('Comment')."</th>";
+          $r .= self::get_species_checklist_col_header(lang::get('Comment'), $visibleColIdx, $options['colWidths']) ;          
         }
         if ($options['occurrenceImages']) {
-          $r .= "<th>".lang::get('Images')."</th>";
+          $r .= self::get_species_checklist_col_header(lang::get('Images'), $visibleColIdx, $options['colWidths']) ;          
         }
       }
       $r .= '</tr></thead>';
       return $r;
     }
   }
+  
+  private static function get_species_checklist_col_header($caption, &$colIdx, $colWidths, $attrs='') {    
+    $width = count($colWidths)>$colIdx && $colWidths[$colIdx] ? ' style="width: '.$colWidths[$colIdx].'%;"' : '';    
+    if (!strpos($attrs, 'display:none')) $colIdx++;
+    return "<th$attrs$width>".$caption."</th>";
+  }
+  
   /**
    * Private method to build the list of taxa to add to a species checklist grid.
    * @param array $options Options array for the control
@@ -2787,7 +2799,8 @@ class data_entry_helper extends helper_config {
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
         'occurrenceImages' => false,
-        'id' => 'species-grid-'.rand(0,1000)
+        'id' => 'species-grid-'.rand(0,1000),
+        'colWidths' => array()        
     ), $options);
     
     $options['extraParams']['orderby'] = 'taxon';
