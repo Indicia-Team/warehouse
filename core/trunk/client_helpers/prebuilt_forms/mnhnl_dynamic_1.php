@@ -217,6 +217,14 @@ class iform_mnhnl_dynamic_1 {
           'group'=>'Species'
         ),
         array(
+          'name'=>'col_widths',
+          'caption'=>'Grid Column Widths',
+          'description'=>'Provide percentage column widths for each species checklist grid column as a comma separated list. To leave a column at its default with, put a blank '.
+              'entry in the list. E.g. "25,,20" would set the first column to 25% width and the 3rd column to 20%, leaving the other columns as they are.',
+          'type'=>'string',
+          'group'=>'Species'
+        ),
+        array(
           'name'=>'list_id',
           'caption'=>'Initial Species List ID',
           'description'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
@@ -674,6 +682,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           'occurrenceImages'=>$args['occurrence_images']          
       ), $options);
       if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
+      if ($args['col_widths']) $species_list_args['colWidths']=explode(',', $args['col_widths']);
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
       // then output the grid control
       return '<input type="hidden" value="true" name="gridmode" />'.

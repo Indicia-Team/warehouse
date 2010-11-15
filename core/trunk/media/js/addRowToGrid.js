@@ -33,7 +33,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     var taxonCell=event.target.parentNode;
     $(taxonCell).attr('colspan',1);
     var row=taxonCell.parentNode;
-    $(taxonCell).before('<td class="ui-state-default remove-row">X</td>');
+    $(taxonCell).before('<td class="ui-state-default remove-row" style="width: 1%">X</td>');
     $(taxonCell).parent().addClass('added-row');
     $(taxonCell).html(label);
     // Replace the tags in the row template with the taxa_taxon_list_ID
