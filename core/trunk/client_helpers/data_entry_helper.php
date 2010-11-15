@@ -2894,7 +2894,8 @@ class data_entry_helper extends helper_config {
     } 
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="images:{ttlId}:">'.lang::get('add images').'</a></td>';
+      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="images:{ttlId}:">'.
+          lang::get('add images').'</a><span class="add-image-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>";
     return $r;
