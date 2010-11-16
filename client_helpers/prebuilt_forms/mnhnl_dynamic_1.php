@@ -374,8 +374,10 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         
 //    $r .= "<h1>MODE = ".$mode."</h1>";
 //    $r .= "<h2>readOnly = ".$readOnly."</h2>";
-    
-    $r = "<form method=\"post\" id=\"entry_form\">\n";
+    // Make sure the form action points back to this page
+    $reload = data_entry_helper::get_reload_link_parts();
+    $reloadPath = $reload['path'];
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".

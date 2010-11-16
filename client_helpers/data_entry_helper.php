@@ -2892,7 +2892,7 @@ class data_entry_helper extends helper_config {
    */
   private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
-    $r = "<table style='display: none'><tbody><tr id='".$options['id']."-scClonableRow'>";
+    $r = '<table style="display: none"><tbody><tr id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']);
     $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
@@ -4801,7 +4801,7 @@ $('.ui-state-default').live('mouseout', function() {
       	'json' => array('javascript' => array(self::$js_path."json2.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
         self::$js_path."jquery.treeview.edit.js")),
-        'googlemaps' => array('javascript' => array("http://maps.google.com/maps?file=api&v=2&key=".parent::$google_api_key)),
+        'googlemaps' => array('javascript' => array("http://maps.google.com/maps?file=api&amp;v=2&amp;key=".parent::$google_api_key)),
         'multimap' => array('javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'google_search' => array('stylesheets' => array(),
@@ -4816,7 +4816,7 @@ $('.ui-state-default').live('mouseout', function() {
         'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
         'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.validate.js')),
         'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
-            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')),
+            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', '/plupload/js/plupload.html4.js')),
         'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
         'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
