@@ -1242,6 +1242,10 @@ class data_entry_helper extends helper_config {
   * <li><b>tabDiv</b><br/>
   * If loading this control onto a set of tabs, specify the tab control's div ID here. This allows the control to
   * automatically generate code which only generates the map when the tab is shown.</li>
+  * <li><b>setupJs</b><br/>
+  * When there is JavaScript to run before the map is initialised, put the JavaScript into this option. This allows the map to run the 
+  * setup JavaScript just in time, immediately before the map is created. This avoids problems where the setup JavaScript causes the OpenLayers library 
+  * to be initialised too earlier if the map is on a div.</li>
   * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.
@@ -1331,7 +1335,11 @@ class data_entry_helper extends helper_config {
         $json_insert .= ',"clickableLayers":['.implode(',', $options['clickableLayers']).']';
         unset($options['clickableLayers']);
       }
-      $json=substr(json_encode($options), 0, -1).$json_insert.'}';
+      // make a copy of the options to pass into JavaScript, with a few entries removed.
+      $jsoptions = array_merge($options);
+      unset($jsoptions['setupJs']);
+      unset($jsoptions['tabDiv']);
+      $json=substr(json_encode($jsoptions), 0, -1).$json_insert.'}';
       if ($olOptions) {
         $json .= ','.json_encode($olOptions);
       }
@@ -1340,6 +1348,9 @@ class data_entry_helper extends helper_config {
         // The map is displayed on a tab, so we must only generate it when the tab is displayed.        
         $javascript .= "var tabHandler = function(event, ui) { \n";
         $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ";        
+      }
+      if (isset($options['setupJs'])) {
+        $javascript .= $options['setupJs']."\n";
       }
       $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
       if (isset($options['tabDiv'])) {

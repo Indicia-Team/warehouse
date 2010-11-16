@@ -343,20 +343,6 @@ class iform_mnhnl_dynamic_1 {
     }
     ///////////////////////////////////////////////////////////////////
     
-        data_entry_helper::$javascript .= "
-// Create vector layers: one to display the location onto, and another for the occurrence list
-// the default edit layer is used for the occurrences themselves
-locStyleMap = new OpenLayers.StyleMap({
-                \"default\": new OpenLayers.Style({
-                    fillColor: \"Green\",
-                    strokeColor: \"Black\",
-                    fillOpacity: 0.3,
-                    strokeWidth: 1
-                  })
-  });
-locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
-                                    {styleMap: locStyleMap});
-";
     if($loadID){      
       $url = $svcUrl.'/data/sample/'.$loadID;
       $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
@@ -649,11 +635,24 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
    */
   private static function get_control_map($auth, $args, $tabalias, $options) {
     $options = array_merge(
-	  iform_map_get_map_options($args, $auth['read']),
-	  $options
-	);
+      iform_map_get_map_options($args, $auth['read']),
+      $options
+    );
     $options['layers'][] = 'locationLayer';
     $options['tabDiv'] = $tabalias;
+  // Create vector layers to display a selected location onto   
+    $options['setupJs'] = "
+locStyleMap = new OpenLayers.StyleMap({
+                \"default\": new OpenLayers.Style({
+                    fillColor: \"Green\",
+                    strokeColor: \"Black\",
+                    fillOpacity: 0.3,
+                    strokeWidth: 1
+                  })
+  });
+locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
+                                    {styleMap: locStyleMap});
+";
     $olOptions = iform_map_get_ol_options($args);
     return data_entry_helper::map_panel($options, $olOptions);
   }
