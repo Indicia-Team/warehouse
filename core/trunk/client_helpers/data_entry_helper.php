@@ -2496,14 +2496,14 @@ class data_entry_helper extends helper_config {
            ,'valuetable'=>'occurrence_attribute_value'
            ,'attrtable'=>'occurrence_attribute'
            ,'key'=>'occurrence_id'
-           ,'fieldprefix'=>"sc:{ttlId}::occAttr"
+           ,'fieldprefix'=>"sc:-ttlId-::occAttr"
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
     
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
-      $grid = '';	
+      $grid = "\n";	
       if (isset($options['lookupListId'])) {
         $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
       }
@@ -2554,7 +2554,7 @@ class data_entry_helper extends helper_config {
             $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
             $ctrlId = (count($search)===1) ? implode('', $search) : $attributes[$attrId]['fieldname'];
           } else {
-            $ctrlId = str_replace('{ttlId}', $id, $attributes[$attrId]['fieldname']);
+            $ctrlId = str_replace('-ttlId-', $id, $attributes[$attrId]['fieldname']);
           }
           if (isset(self::$entity_to_load[$ctrlId])) {
             $existing_value = self::$entity_to_load[$ctrlId];
@@ -2612,8 +2612,12 @@ class data_entry_helper extends helper_config {
           }          
         }
       }
-      $grid .= "<tbody>\n<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
-      $grid .= '</tbody></table>';
+      $grid .= "\n<tbody>\n";
+      if (count($rows)>0) 
+        $grid .= "<tr>".implode("</tr>\n<tr>", $rows)."</tr>\n";
+      else
+        $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
+      $grid .= "</tbody>\n</table>\n";
       // in hasData mode, the wrap_species_checklist method must be notified of the different default way of checking if a row is to be 
       // made into an occurrence
       if ($options['rowInclusionCheck']=='hasData')
@@ -2763,7 +2767,7 @@ class data_entry_helper extends helper_config {
       foreach(self::$entity_to_load as $key => $value) {
         $parts = explode(':', $key);
         // Is this taxon attribute data?
-        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='{ttlId}') {
+        if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
           // track that this taxon row has existing data to load
           if (!in_array($parts[1], $taxaThatExist)) $taxaThatExist[] = $parts[1];
           // If not already loaded
@@ -2897,20 +2901,20 @@ class data_entry_helper extends helper_config {
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']); 
       $r .= str_replace(array('{content}', '{class}'), 
-          array(str_replace('{fieldname}', "sc:{ttlId}::occAttr:$attrId", $oc), $class.'Cell'),
+          array(str_replace('{fieldname}', "sc:-ttlId-::occAttr:$attrId", $oc), $class.'Cell'),
           $indicia_templates['attribute_cell']
       );
       $idx++;
     }
     if ($options['occurrenceComment']) {
-      $r .= '<td class="ui-widget-content scCommentCell"><input class="control-width-4 scComment" type="text" name="sc:{ttlId}::occurrence:comment" value="" /></td>';
+      $r .= '<td class="ui-widget-content scCommentCell"><input class="control-width-4 scComment" type="text" name="sc:-ttlId-::occurrence:comment" value="" /></td>';
     } 
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="images:{ttlId}:">'.
+      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="images:-ttlId-:">'.
           lang::get('add images').'</a><span class="add-image-select-species">'.lang::get('select a species first').'</span></td>';
     }
-    $r .= "</tr></tbody></table>";
+    $r .= "</tr></tbody></table>\n";
     return $r;
   }
 

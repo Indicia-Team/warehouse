@@ -553,7 +553,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       // get a machine readable alias for the heading
       $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $html = '';
-      if ($pageIdx==0)
+      if (count($tabHtml)===0)
         // output the hidden inputs on the first tab
         $html .= $hiddens;
       // Now output the content of the tab. Use a for loop, not each, so we can treat several rows as one object

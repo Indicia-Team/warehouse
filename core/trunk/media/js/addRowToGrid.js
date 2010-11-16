@@ -37,7 +37,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     $(taxonCell).parent().addClass('added-row');
     $(taxonCell).html(label);
     // Replace the tags in the row template with the taxa_taxon_list_ID
-    row.innerHTML = row.innerHTML.replace(/\{ttlId\}/g, data.id);
+    row.innerHTML = row.innerHTML.replace(/-ttlId-/g, data.id);
     $(row).find('.add-image-select-species').hide();
     $(row).find('.add-image-link').show();    
     // auto-check the row
@@ -53,7 +53,8 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
   var makeSpareRow = function(scroll) {
     // get a copy of the new row template
     var newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
-    // build an auto-complete control for selecting the species to add to the bottom of the grid
+    // build an auto-complete control for selecting the species to add to the bottom of the grid. 
+    // The next line gets a unique id for the autocomplete.
     selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].childElementCount;
     var speciesSelector = '<input type="text" id="' + selectorId + '" />';
     // put this inside the new row template in place of the species label.
