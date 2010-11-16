@@ -37,7 +37,9 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     $(taxonCell).parent().addClass('added-row');
     $(taxonCell).html(label);
     // Replace the tags in the row template with the taxa_taxon_list_ID
-    row.innerHTML = row.innerHTML.replace(/-ttlId-/g, data.id);
+    $.each($(row).children(), function(i, cell) {
+      cell.innerHTML = cell.innerHTML.replace(/-ttlId-/g, data.id);
+    });    
     $(row).find('.add-image-select-species').hide();
     $(row).find('.add-image-link').show();    
     // auto-check the row
@@ -58,7 +60,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].childElementCount;
     var speciesSelector = '<input type="text" id="' + selectorId + '" />';
     // put this inside the new row template in place of the species label.
-    $(newRow).html($(newRow.html().replace('{content\}', speciesSelector)));
+    $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' tbody').removeAttr('id');
   
@@ -104,7 +106,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
 $('.remove-row').live('click', function(e) {
   e.preventDefault();
   // @todo unbind all event handlers
-  row = $(e.target.parentNode);
+  var row = $(e.target.parentNode);
   if (row.next().find('.file-box').length>0) {
     row.next().remove();
   }
@@ -123,17 +125,19 @@ $('.remove-row').live('click', function(e) {
  * Click handler for the add image link that is displayed alongside each occurrence row in the grid once 
  * it has been linked to a taxon. Adds a row to the grid specifically to contain a file uploader for images
  * linked to that occurrence.
+ * @todo Check why flash and silverlight are not working in the grid, and re-instate in the runtimes if possible
  */
 $('.add-image-link').live('click', function(evt) {
   evt.preventDefault();
-  var table = evt.target.id.replace('add-images','sc') + ':occurrence_image'
+  var table = evt.target.id.replace('add-images','sc') + ':occurrence_image';
   var ctrlId='container-'+table;
-  colspan = $($(evt.target).parent().parent()).children().length;
+  var colspan = $($(evt.target).parent().parent()).children().length;
   var imageRow = '<tr class="image-row"><td colspan="' + colspan + '">';
   imageRow += '<div class="file-box" id="' + ctrlId + '"></div>';
   imageRow += '</td></tr>';
+  imageRow = $(imageRow);
   $($(evt.target).parent().parent()).after(imageRow);
-  $('#' + ctrlId.replace(/:/g, '\\:')).uploader({
+  imageRow.find('div').uploader({
     caption : 'Files',
     maxFileCount : '3',
     autoupload : '1',
@@ -142,7 +146,7 @@ $('.add-image-link').live('click', function(evt) {
     startUploadBtnCaption : 'Start upload',
     msgUploadError : 'An error occurred uploading the file.',
     msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
-    runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
+    runtimes : 'html5,gears,browserplus,html4',
     imagewidth : '250',
     uploadScript : uploadScript,
     destinationFolder : destinationFolder,
