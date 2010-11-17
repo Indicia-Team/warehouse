@@ -1,0 +1,12 @@
+
+label.narrow {
+  width: 30px;
+}
+
+.trSpeciesContainer {
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
+

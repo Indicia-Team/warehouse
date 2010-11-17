@@ -139,6 +139,7 @@ $indicia_templates = array(
     });
     jQuery('input#{escaped_input_id}').result(function(event, data) {
       jQuery('input#{escaped_id}').attr('value', data.id);
+      jQuery('input#{escaped_id}').change();
     });\r\n",
   'linked_list_javascript' => "
 {fn} = function() {
