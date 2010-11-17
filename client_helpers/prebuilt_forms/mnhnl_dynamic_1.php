@@ -35,7 +35,7 @@ class iform_mnhnl_dynamic_1 {
 
   // A list of the taxon ids we are loading
   private static $occurrenceIds = array();
-
+  
 	/* TODO
 	 *  Photo upload: not sure how to do this as images are attached to occurrences, and occurrences
 	 *  	are embedded in the species list.
@@ -563,8 +563,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
 			// if not json then need to use option value as it is
 			if ($options[$option[0]]=='') $options[$option[0]]=$option[1];			
           }
-          if (method_exists('iform_mnhnl_dynamic_1', $method)) 
-            $html .= self::$method($auth, $args, $tabalias, $options);
+          if (method_exists(get_called_class(), $method)) 
+            $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
           elseif (trim($component)==='[*]')
             $html .= self::get_attribute_html($attributes, $defAttrOptions, $tab);
           else          
