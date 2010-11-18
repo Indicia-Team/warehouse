@@ -35,20 +35,19 @@ class iform_mnhnl_dynamic_1 {
 
   // A list of the taxon ids we are loading
   private static $occurrenceIds = array();
-  
-	/* TODO
-	 *  Photo upload: not sure how to do this as images are attached to occurrences, and occurrences
-	 *  	are embedded in the species list.
-	 * 	Survey List
-	 * 		Put in "loading" message functionality.
-	 *  	Add a map and put samples on it, clickable
-	 *  
-	 *  Sort out {common}.
-	 * 
-	 * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
-	 * we can display all the occurrences on the map.
-	 * When displaying transects, we should display children locations as well as parent.
-	 */
+
+  /* TODO
+   *  
+   *   Survey List
+   *     Put in "loading" message functionality.
+   *    Add a map and put samples on it, clickable
+   *  
+   *  Sort out {common}.
+   * 
+   * The report paging will not be converted to use LIMIT & OFFSET because we want the full list returned so 
+   * we can display all the occurrences on the map.
+   * When displaying transects, we should display children locations as well as parent.
+   */
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -156,7 +155,7 @@ class iform_mnhnl_dynamic_1 {
           'name' => 'grid_report',
           'caption' => 'Grid Report',
           'description' => 'Name of the report to use to populate the grid for selecting existing data from. The report must return a sample_id '.
-              'field for linking to the data entry form. As a starting point, try reports_for_prebuilt_forms/simple_occurrence_list_1 or '.
+              'field or occurrence_id field for linking to the data entry form. As a starting point, try reports_for_prebuilt_forms/simple_occurrence_list_1 or '.
               'reports_for_prebuilt_forms/simple_sample_list_1 for a list of occurrences or samples respectively.',
           'type'=>'string',
           'group' => 'User Interface',
@@ -356,10 +355,21 @@ class iform_mnhnl_dynamic_1 {
       }
       data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
       data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
+	  /*if (!self::getGridMode($args)) {
+	    // also need to load the single occurrence, as we are not in grid mode.
+		$url = $svcUrl.'/data/occurrence';
+        $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entity = json_decode(curl_exec($session), true);
+        // Build a list of the sample data.
+        data_entry_helper::$entity_to_load = array();
+        foreach($entity[0] as $key => $value){
+          data_entry_helper::$entity_to_load['sample:'.$key] = $value;
+        }
+	  }*/
     }	
-        
-//    $r .= "<h1>MODE = ".$mode."</h1>";
-//    $r .= "<h2>readOnly = ".$readOnly."</h2>";
+
     // Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
     $reloadPath = $reload['path'];
@@ -475,11 +485,12 @@ class iform_mnhnl_dynamic_1 {
       $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
     }
     if(!empty(data_entry_helper::$validation_errors)){
-		$r .= data_entry_helper::dump_remaining_errors();
+      $r .= data_entry_helper::dump_remaining_errors();
     }   
     $r .= "</form>";
         
     // may need to keep following code for location change functionality
+	// @todo Why is this not in the data entry helper, and is it really needed?
 	data_entry_helper::$onload_javascript .= "
     
 locationChange = function(obj){
@@ -673,7 +684,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     if (self::getGridMode($args)) {      
       // multiple species being input via a grid
       $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
-      $species_list_args=array_merge(array(
+      $species_ctrl_opts=array_merge(array(
           'listId'=>$args['list_id'],
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'columns'=>1,          
@@ -682,12 +693,12 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           'occurrenceComment'=>$args['occurrence_comment'],
           'occurrenceImages'=>$args['occurrence_images']          
       ), $options);
-      if ($args['extra_list_id']) $species_list_args['lookupListId']=$args['extra_list_id'];
-      if ($args['col_widths']) $species_list_args['colWidths']=explode(',', $args['col_widths']);
+      if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
+      if ($args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
       // then output the grid control
       return '<input type="hidden" value="true" name="gridmode" />'.
-          data_entry_helper::species_checklist($species_list_args);
+          data_entry_helper::species_checklist($species_ctrl_opts);
     }
     else {      
       // A single species entry control of some kind
@@ -702,7 +713,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         $extraParams['taxon_list_id'] = $args['extra_list_id'];
       else
         $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
-      $species_list_args=array_merge(array(
+      $species_ctrl_opts=array_merge(array(
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'fieldname'=>'occurrence:taxa_taxon_list_id',
           'table'=>'taxa_taxon_list',
@@ -720,7 +731,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
             '<span>{caption}</span>';
       }
       // Dynamically generate the species selection control required.
-     return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
+     return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_ctrl_opts);
     }
   }
   
@@ -1010,7 +1021,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       'readAuth' => $auth['read'],
       'columns' => array(
         array('display' => 'Actions', 'actions' => array(
-          array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')),
+          array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')),
         ))
       ),
       'itemsPerPage' =>10,
