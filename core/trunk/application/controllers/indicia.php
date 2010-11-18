@@ -134,8 +134,8 @@ class Indicia_Controller extends Template_Controller {
       $this->access_denied();
       return;
     }
-	  $this->model = ORM::Factory($this->model->object_name, $id);        
-	  $values = $this->getModelValues();
+    $this->model = ORM::Factory($this->model->object_name, $id);
+    $values = $this->getModelValues();
     $this->showEditPage($values);     
   }
   
@@ -147,7 +147,7 @@ class Indicia_Controller extends Template_Controller {
    * @param array $valuse Associative array of valuse to populate into the form.   * 
    * @access private   
    */
-  protected function showEditPage($values) {    
+  protected function showEditPage($values) { 
     $other = $this->prepareOtherViewData($values);
     $this->setView($this->editViewName(), $this->model->caption(), array(
       'values'=>$values,
@@ -215,7 +215,7 @@ class Indicia_Controller extends Template_Controller {
       foreach ($struct['joinsTo'] as $joinsTo) {        
         $ids = array();    
         foreach ($this->model->$joinsTo as $joinedModel) {
-          $r['joinsTo:'.inflector::singular($joinsTo).':'.$joinedModel->id] = 'on';          
+          $r['joinsTo:'.inflector::singular($joinsTo).':'.$joinedModel->id] = 'on';
         }                 
       }      
     }
@@ -279,7 +279,7 @@ class Indicia_Controller extends Template_Controller {
       $deletion = $_POST['submit'] == kohana::lang('misc.delete') || $_POST['submit'] == kohana::lang('misc.unsubscribe');    
       $_POST['deleted'] = $deletion ? 't' : 'f';
       // Pass the post object to the model and then submit it
-      $this->model->set_submission_data($_POST);       
+      $this->model->set_submission_data($_POST);
       $this->submit($deletion);
     }
   }
