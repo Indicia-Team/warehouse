@@ -102,6 +102,9 @@ $lang = array (
     'length' => 'The surname must be between 1 and 30 letters.',
     'default' => 'Invalid Input.',
   ),
+  'survey_id' => Array (
+    'required' => 'The survey must be supplied.',
+  ),
   'taxon' => array (
     'required' => 'The taxon name is required.',
   ),
