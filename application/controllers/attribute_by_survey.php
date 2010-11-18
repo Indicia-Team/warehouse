@@ -213,6 +213,9 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     return $r;  
   }
   
+  /**
+   * Load additional data required by the edit view.
+   */
   protected function prepareOtherViewData($values) {
     $survey = ORM::Factory('survey', $values[$this->type.'_attributes_website:restrict_to_survey_id']);
 	$attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']);

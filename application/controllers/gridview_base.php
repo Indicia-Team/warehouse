@@ -278,7 +278,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
           $index++;
         }
         // Any $_GET data that contains field data should also go in the save array. For example, we may want to specify
-        // the taxon list id for all imported taxon records. Valid data should always be keyed table:field. 
+        // the taxon list id for all imported taxon records. Valid data should always be keyed table:field or *attr:attrId 
         foreach($_GET as $key=>$value) {
           if (strpos($key, ':')!==false) $saveArray[$key] = $value;
         }
@@ -287,7 +287,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $this->model->set_submission_data($saveArray, true);
         if (($id = $this->model->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
-          $errors = implode('<br/>', $this->model->getAllErrors());
+          $errors = implode('<br/>', array_unique($this->model->getAllErrors()));
           $data[] = $errors;
           $data[] = $count + $offset + 1; // 1 for header
           fputcsv($errorHandle, $data);
