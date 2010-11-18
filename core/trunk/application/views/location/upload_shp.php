@@ -26,8 +26,9 @@
 <input type='checkbox' name="use_parent" >Select the checkbox if the locations are associated with a parent location.</input><br/>
 <label for='SRID' class='wide' >SRID used in Shapefile</label>
 <select id='SRID' name='srid' >
+  <option value="27700">EPSG:27700 British National Grid</option>
   <option value="4326">EPSG:4326 WGS 84</option>
-  <option value="900913">Google Projection (900913)</option>
+  <option value="900913">EPSG:900913: Google Projection</option>
   <option value="2169">EPSG:2169 Luxembourg 1930</option>
 </select><br/>
 <label for='SRID' class='wide' >Default Website to attach any new locations to</label>
