@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package    Core
  * @subpackage Libraries
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author    Indicia Team
+ * @license    http://www.gnu.org/licenses/gpl.html GPL
+ * @link     http://code.google.com/p/indicia/
  */
 
 class ORM extends ORM_Core {
@@ -38,6 +38,11 @@ class ORM extends ORM_Core {
    * posting a record.
    */
   protected $unvalidatedFields = array();
+  
+  /**
+   * Does the model have custom attributes? Defaults to false.
+   */
+  protected $has_attributes = false;
 
   /**
    * Override load_values to add in a vague date field.
@@ -72,7 +77,7 @@ class ORM extends ORM_Core {
       // Vague date
       if (array_key_exists('date_type', $this->table_columns))
       {
-        $this->table_columns['vague_date']['type'] = 'String';
+        $this->table_columns['date']['type'] = 'String';
       }
     }
 
@@ -144,13 +149,13 @@ class ORM extends ORM_Core {
    */
   public function validate(Validation $array, $save = FALSE) {
     // the created_by_id field can be specified by web service calls if the caller knows which Indicia user
-	// is making the post.
+    // is making the post.
     $fields_to_copy=array_merge(array('created_by_id'), $this->unvalidatedFields);
     foreach ($fields_to_copy as $a)
     {
-	  if (array_key_exists($a, $array->as_array())) {
-	    $this->__set($a, $array[$a]);
-	  }
+      if (array_key_exists($a, $array->as_array())) {
+        $this->__set($a, $array[$a]);
+      }
     }
     $this->set_metadata();
     if (parent::validate($array, $save)) {
@@ -174,8 +179,10 @@ class ORM extends ORM_Core {
   /**
    * For a model that is about to be saved, sets the metadata created and
    * updated field values.
+   * @param object $obj The object which will have metadata set on it. Defaults to this model.
    */
-  public function set_metadata() {
+  public function set_metadata($obj=null) {
+    if ($obj==null) $obj=$this;
     $defaultUserId = Kohana::config('indicia.defaultPersonId');
     $force=false;
     // At this point we determine the id of the logged in user,
@@ -186,15 +193,15 @@ class ORM extends ORM_Core {
     } else
       $userId = ($defaultUserId ? $defaultUserId : 1);
     // Set up the created and updated metadata for the record
-    if (!$this->id && array_key_exists('created_on', $this->table_columns)) {
-      $this->created_on = date("Ymd H:i:s");
-      if ($force or !$this->created_by_id) $this->created_by_id = $userId;
+    if (!$obj->id && array_key_exists('created_on', $obj->table_columns)) {
+      $obj->created_on = date("Ymd H:i:s");
+      if ($force or !$obj->created_by_id) $obj->created_by_id = $userId;
     }
     // TODO: Check if updated metadata present in this entity,
     // and also use correct user.
-    if (array_key_exists('updated_on', $this->table_columns)) {
-      $this->updated_on = date("Ymd H:i:s");
-      if ($force or !$this->updated_by_id) $this->updated_by_id = $userId;
+    if (array_key_exists('updated_on', $obj->table_columns)) {
+      $obj->updated_on = date("Ymd H:i:s");
+      if ($force or !$obj->updated_by_id) $obj->updated_by_id = $userId;
     }
   }
 
@@ -302,6 +309,7 @@ class ORM extends ORM_Core {
   public function inner_submit(){
     $return = $this->populateFkLookups();
     $return = $this->createParentRecords() && $return;
+
     // No point doing any more if the parent records did not post
     if ($return) {
       $this->preSubmit();
@@ -330,13 +338,13 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Remove any fields from the submission that are not in the model.
+   * Remove any fields from the submission that are not in the model or are custom attributes.
    */
   private function removeUnwantedFields() {
-    $this->submission['fields'] = array_intersect_key(
-        $this->submission['fields'],
-        $this->table_columns
-    );
+    foreach($this->submission['fields'] as $field => $content) {
+      if (!array_key_exists($field, $this->table_columns) && (!isset($this->attrs_field_prefix) || !preg_match('/^'.$this->attrs_field_prefix.'\:/', $field))) 
+        unset($this->submission['fields'][$field]);
+    }
   }
 
   /**
@@ -354,10 +362,6 @@ class ORM extends ORM_Core {
          }');
     // Flatten the array to one that can be validated
     $vArray = array_map($collapseVals, $this->submission['fields']);
-    $this->submission['fields']=array_intersect_key(
-        $this->submission['fields'],
-        $this->table_columns
-    );
     // If we're editing an existing record, merge with the existing data.
     if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
       $this->find($vArray['id']);
@@ -371,13 +375,13 @@ class ORM extends ORM_Core {
         $this->deleted='t';
         $v=$this->save();
       } else {
-   	    // Create a new record by calling the validate method
+        // Create a new record by calling the validate method
         $v=$this->validate(new Validation($vArray), true);
       }
     } catch (Exception $e) {
-    	$v=false;
-    	$this->errors['general']=$e->getMessage();
-    	error::log_error('Exception during validation', $e);
+        $v=false;
+        $this->errors['general']=$e->getMessage();
+        error::log_error('Exception during validation', $e);
     }
     if ($v) {
       // Record has successfully validated so return the id.
@@ -407,9 +411,8 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
-        // Establish the correct model
+	  // Establish the correct model
         $m = ORM::factory($b['fkTable']);
-
         // Check that it has the required search field
         if (array_key_exists($b['fkSearchField'], $m->table_columns)) {
           $fkRecords = $m->like(array(
@@ -541,39 +544,72 @@ class ORM extends ORM_Core {
   private function checkRequiredAttributes() {
     $r = true;
     // Test if this model has an attributes sub-table.
-    if (isset($this->has_attributes) && $this->has_attributes) {
-      $attr_entity = $this->object_name.'_attribute';
-      $this->db->from($attr_entity.'s_websites');
-      $this->db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
-      $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
-      $this->db->like($attr_entity.'s.validation_rules','%required%');
-      $this->db->where($attr_entity.'s.deleted', 'f');
-      $this->db->where($attr_entity.'s_websites.deleted', 'f');
-      if ($this->identifiers['website_id']) {
-        $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
-      }
-      $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
-      $result=$this->db->get();
+    if ($this->has_attributes) {
       $got_values=array();
-      // Attributes are stored in a metafield. Find the ones we actually have a value for
-      if (array_key_exists('metaFields', $this->submission) &&
-          array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
+      $empties = array();
+      if (isset($this->submission['metaFields'][$this->attrs_submission_name]))
       {
+        // Old way of submitting attribute values but still supported - attributes are stored in a metafield. Find the ones we actually have a value for
+        // Provided for backwards compatibility only
         foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr) {
           if ($attr['fields']['value']) {
             array_push($got_values, $attr['fields'][$this->object_name.'_attribute_id']);
           }
         }
+      } else {
+        // New way of submitting attributes embeds attr values direct in the main table submission values.
+        foreach($this->submission['fields'] as $field => $content) {
+          // look for pattern smpAttr:nn (or occAttr or locAttr)
+          $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:[0-9]+/', $field, $baseAttrName);   
+          if ($isAttribute) {
+            // extract the nn, this is the attribute id
+            preg_match('/[0-9]+/', $baseAttrName[0], $attrId);
+            if ($content['value'])  
+              array_push($got_values, $attrId[0]);
+            else {
+              // keep track of the empty field names, so we can attach any required validation errors 
+              // directly to the exact field name
+              $empties[$baseAttrName[0]] = $field;
+            }
+          }
+        }
       }
       $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
+	  // setup basic query to get custom attrs
+	  $this->setupDbToQueryAttributes();
+	  $attr_entity = $this->object_name.'_attribute';
+	  // We only want globally or locally required ones
+	  $this->db->like($attr_entity.'s.validation_rules','%required%');
+      $this->db->orlike($attr_entity.'s_websites.validation_rules','%required%');
+      $result=$this->db->get();
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
-          $this->errors[$fieldPrefix.$this->attrs_field_prefix.':'.$row->id]='Please specify a value for the '.$row->caption;
+          $fieldname = $fieldPrefix.$this->attrs_field_prefix.':'.$row->id;
+          // map to the exact name of the field if it is available
+          if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
+          $this->errors[$fieldname]='Please specify a value for the '.$row->caption;
+		  kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, true));
           $r=false;
         }
       }
     }
     return $r;
+  }
+  
+  /** 
+   * Prepares the db object query builder to query the list of custom attributes for this model.
+   */
+  protected function setupDbToQueryAttributes() {
+    $attr_entity = $this->object_name.'_attribute';
+    $this->db->from($attr_entity.'s_websites');
+    $this->db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
+    $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
+    $this->db->where($attr_entity.'s.deleted', 'f');
+    $this->db->where($attr_entity.'s_websites.deleted', 'f');
+    if ($this->identifiers['website_id'])
+	  $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
+	if ($this->identifiers['survey_id'])
+      $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
   }
 
   /**
@@ -589,14 +625,22 @@ class ORM extends ORM_Core {
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
       foreach ($struct['superModels'] as $super=>$content) {
-        $fields = array_merge($fields, ORM::factory($super)->getPrefixedColumnsArray($fk));
+        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk));
       }
     }
     if (array_key_exists('metaFields', $struct)) {
       foreach ($struct['metaFields'] as $metaField) {
-        array_push($fields, "metaFields:$metaField");
+        $fields["metaFields:$metaField"]='';
       }
     }
+	if ($this->has_attributes) {
+	  $this->setupDbToQueryAttributes();
+	  $result = $this->db->get();
+	  foreach($result as $row) {
+	    $fieldname = $this->attrs_field_prefix.':'.$row->id;
+	    $fields[$fieldname] = $row->caption;
+	  }
+	}
     return $fields;
   }
 
@@ -623,14 +667,14 @@ class ORM extends ORM_Core {
    *
    * @return array Prefixed columns.
    */
-  public function getPrefixedColumnsArray($fk=false) {
+  protected function getPrefixedColumnsArray($fk=false) {
     $r = array();
     $prefix=$this->object_name;
     foreach ($this->table_columns as $column=>$type) {
       if ($fk && substr($column, -3) == "_id") {
-        array_push($r, "$prefix:fk_".substr($column, 0, -3));
+        $r["$prefix:fk_".substr($column, 0, -3)]='';
       } else {
-        array_push($r, "$prefix:$column");
+        $r["$prefix:$column"]='';
       }
     }
     return $r;
@@ -640,74 +684,114 @@ class ORM extends ORM_Core {
   * Create the records for any attributes attached to the current submission.
   */
   protected function createAttributes() {
-    if (isset($this->has_attributes) && $this->has_attributes) {
-      // Attributes are stored in a metafield.
-      if (array_key_exists('metaFields', $this->submission) &&
-          array_key_exists($this->attrs_submission_name, $this->submission['metaFields']))
-      {
-        foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr)
-        {
-          $value = $attr['fields'];
-          if ($value['value'] != '') {
-          	// work out the *_attribute this is attached to, to figure out the field(s) to store the value in.
-            $attrId = $attr['fields'][$this->object_name.'_attribute_id'];
-            // If this is an existing attribute value, get the record id to overwrite
-            $valueId = (array_key_exists('id', $attr['fields'])) ? $attr['fields']['id'] : null;
-            $oa = ORM::factory($this->object_name.'_attribute', $attrId);
-            $vf = null;
-            switch ($oa->data_type) {
-              case 'T':
-                $vf = 'text_value';
-                break;
-              case 'F':
-                $vf = 'float_value';
-                break;
-              case 'D':
-                // Date
-                $vd=vague_date::string_to_vague_date($value['value']);
-                $attr['fields']['date_start_value']['value'] = $vd['start'];
-                $attr['fields']['date_end_value']['value'] = $vd['end'];
-                $attr['fields']['date_type_value']['value'] = $vd['type'];
-                break;
-              case 'V':
-                // Vague Date
-                $vd=vague_date::string_to_vague_date($value['value']);
-                $attr['fields']['date_start_value']['value'] = $vd['start'];
-                $attr['fields']['date_end_value']['value'] = $vd['end'];
-                $attr['fields']['date_type_value']['value'] = $vd['type'];
-                break;
-              default:
-                // Lookup in list, int or boolean
-                $vf = 'int_value';
-                break;
-            }
-
-            if ($vf != null) $attr['fields'][$vf] = $value;
-
-            // Hook to the owning entity (the sample, location or occurrence)
-            $attr['fields'][$this->object_name.'_id']['value'] = $this->id;
-
-            // Create a attribute value, loading the existing value id if it exists
-            $oam = ORM::factory($this->object_name.'_attribute_value', $valueId);
-
-            $oam->submission = $attr;
-            if (!$oam->inner_submit()) {
-              $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
-              // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
-              // the table and field name as normal.
-              $fieldId = $fieldPrefix.$this->attrs_field_prefix.':'.$attrId;
-              if ($oam->id) {
-                $fieldId .= ':' . $oam->id;
-              }
-              foreach($oam->errors as $key=>$value) {
-                // concatenate the errors if more than one per field.
-                $this->errors[$fieldId] = array_key_exists($fieldId, $this->errors) ? $this->errors[$fieldId] . '  ' . $value : $value;
-              }
+    if ($this->has_attributes) {
+      // Deprecated submission format attributes are stored in a metafield.
+      if (isset($this->submission['metaFields'][$this->attrs_submission_name])) {
+        return self::createAttributesFromMetafields();
+      } else {
+        // loop to find the custom attributes embedded in the table fields
+        foreach ($this->submission['fields'] as $field => $content) {
+          if (preg_match('/^'.$this->attrs_field_prefix.'\:/', $field)) {
+            $value = $content['value'];
+            // Attribute name is of form tblAttr:attrId:valId:uniqueIdx
+            $arr = explode(':', $field);
+            $attrId = $arr[1];
+            $valueId = count($arr)>2 ? $arr[2] : null;
+            if (!$this->createAttributeRecord($attrId, $valueId, $value)) 
               return false;
-            }
           }
         }
       }
+    }
+    return true;
+  }
+
+  /**
+   * Up to Indicia v0.4, the custom attributes associated with a submission where held in a sub-structure of the submission
+   * called metafields. This code is used to provide backwards compatibility with this submission format.
+   */
+  protected function createAttributesFromMetafields() {
+    foreach ($this->submission['metaFields'][$this->attrs_submission_name]['value'] as $idx => $attr)
+    {
+      $value = $attr['fields']['value'];
+      if ($value != '') {
+        // work out the *_attribute this is attached to, to figure out the field(s) to store the value in.
+        $attrId = $attr['fields'][$this->object_name.'_attribute_id'];
+        // If this is an existing attribute value, get the record id to overwrite
+        $valueId = (array_key_exists('id', $attr['fields'])) ? $attr['fields']['id'] : null;
+        if (!$this->createAttributeRecord($attrId, $valueId, $value)) 
+          return false;
+      }
+    }
+    return true;
+  }
+  
+  protected function createAttributeRecord($attrId, $valueId, $value) {  
+    kohana::log('debug', "$attrId $valueId, $value");
+    // Create a attribute value, loading the existing value id if it exists
+    $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
+    
+    $dataType = ORM::factory($this->object_name.'_attribute', $attrId)->data_type;
+    $vf = null;
+    
+    switch ($dataType) {
+      case 'T':
+        $vf = 'text_value';
+        break;
+      case 'F':
+        $vf = 'float_value';
+        break;
+      case 'D':
+        // Date
+        $vd=vague_date::string_to_vague_date($value['value']);
+        $attrValueModel->date_start_value = $vd['start'];
+        $attrValueModel->date_end_value = $vd['end'];
+        $attrValueModel->date_type_value = $vd['type'];
+        break;
+      case 'V':
+        // Vague Date
+        $vd=vague_date::string_to_vague_date($value['value']);
+        $attrValueModel->date_start_value = $vd['start'];
+        $attrValueModel->date_end_value = $vd['end'];
+        $attrValueModel->date_type_value = $vd['type'];
+        break;
+      default:
+        // Lookup in list, int or boolean
+        $vf = 'int_value';
+        break;
+    }
+
+    if ($vf != null) $attrValueModel->$vf = $value;
+
+    // Hook to the owning entity (the sample, location or occurrence)
+    $thisFk = $this->object_name.'_id';
+    $attrValueModel->$thisFk = $this->id;
+    // and hook to the attribute
+    $attrFk = $this->object_name.'_attribute_id';
+    $attrValueModel->$attrFk = $attrId;
+    // set metadata
+    $this->set_metadata($attrValueModel);
+
+    try {
+      $v=$attrValueModel->save();
+    } catch (Exception $e) {
+        $v=false;
+        $this->errors['general']=$e->getMessage();
+        error::log_error('Exception during validation', $e);
+    }
+    if (!$v) {
+      $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
+      // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
+      // the table and field name as normal.
+      $fieldId = $fieldPrefix.$this->attrs_field_prefix.':'.$attrId;
+      if ($attrValueModel->id) {
+        $fieldId .= ':' . $attrValueModel->id;
+      }
+      foreach($attrValueModel->errors as $key=>$value) {
+        // concatenate the errors if more than one per field.
+        $this->errors[$fieldId] = array_key_exists($fieldId, $this->errors) ? $this->errors[$fieldId] . '  ' . $value : $value;
+      }
+      return false;
     }
     return true;
   }
@@ -798,13 +882,16 @@ class ORM extends ORM_Core {
            $fkTable = $fieldName;
         }
         $fkModel = ORM::factory($fkTable);
+        // let the model map the lookup against a view if necessary
+        if (isset($fkModel->lookup_against)) 
+          $fkTable = $fkModel->lookup_against;
         // Generate a foreign key instance
         $array['fkFields'][$field] = array
         (
           // Foreign key id field is table_id
           'fkIdField' => "$fieldName"."_id",
           'fkTable' => $fkTable,
-          'fkSearchField' => ORM::factory($fkTable)->get_search_field(),
+          'fkSearchField' => $fkModel->get_search_field(),
           'fkSearchValue' => trim($value['value'])
         );
       }
@@ -831,16 +918,16 @@ class ORM extends ORM_Core {
   public function getDefaults() {
     return array();
   }
-  
+
   /**
   * Convert an array of field data (a record) into a sanitised version, with email and password hidden.
   */
-  private function sanitise($array) { 
+  private function sanitise($array) {
     // make a copy of the array
-    $r = $array;  
-	if (array_key_exists('password', $r)) $r['password'] = '********';
-	if (array_key_exists('email', $r)) $r['email'] = '********';
-	return $r; 
+    $r = $array;
+    if (array_key_exists('password', $r)) $r['password'] = '********';
+    if (array_key_exists('email', $r)) $r['email'] = '********';
+    return $r;
   }
 }
 
