@@ -391,6 +391,32 @@
         return selector.val();
       }
     }
+    
+    /**
+    * Some pre-configured layers that can be added to the map.
+    */    
+    function _getPresetLayers() {
+      var r={
+        openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true}); },
+        nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true}); },
+        virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
+        multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
+        multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
+      };
+      // To protect ourselves against exceptions because the Google script would not link up, we
+      // only enable these layers if the Google constants are available.
+      if (typeof G_PHYSICAL_MAP != "undefined") {
+        r.google_physical =
+            function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': true}); };
+        r.google_streets =
+            function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
+        r.google_hybrid =
+            function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+        r.google_satellite =
+            function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+      }
+      return r;
+    }
 
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
@@ -445,12 +471,13 @@
       });
       
       // Iterate over the preset layers, adding them to the map
+      var presetLayers=_getPresetLayers();
       $.each(this.settings.presetLayers, function(i, item)
       {
         // Check whether this is a defined layer
-        if ($.fn.indiciaMapPanel.presetLayers.hasOwnProperty(item))
+        if (presetLayers.hasOwnProperty(item))
         {
-          var layer = $.fn.indiciaMapPanel.presetLayers[item]();
+          var layer = presetLayers[item]();
           div.map.addLayer(layer);
           if (item=='multimap_landranger') {
             // Landranger is not just a simple layer - need to set a Multimap option
@@ -709,29 +736,6 @@ $.fn.indiciaMapPanel.openLayersDefaults = {
     maxResolution: 156543.0339,
     maxExtent: new OpenLayers.Bounds(-20037508, -20037508, 20037508, 20037508.34)
 };
-
-/**
- * Some pre-configured layers that can be added to the map.
- */
-$.fn.indiciaMapPanel.presetLayers = {
-  openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true}); },
-  nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true}); },
-  virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
-  multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
-  multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
-};
-// To protect ourselves against exceptions because the Google script would not link up, we
-// only enable these layers if the Google constants are available.
-if (typeof G_PHYSICAL_MAP != "undefined") {
-  $.fn.indiciaMapPanel.presetLayers.google_physical =
-      function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': true}); };
-  $.fn.indiciaMapPanel.presetLayers.google_streets =
-      function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
-  $.fn.indiciaMapPanel.presetLayers.google_hybrid =
-      function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
-  $.fn.indiciaMapPanel.presetLayers.google_satellite =
-      function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
-}
 
 /**
  * A utility function to convert an OpenLayers filter into text, which can be supplied to a WMS filter call to GeoServer.
