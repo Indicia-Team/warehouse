@@ -25,8 +25,23 @@ class spatial_ref {
 			}
 		} else {
 			// validate the notation by calling the module which translates it for us
-			return (bool) call_user_func("$system::is_valid", $sref);
+			self::validateSystemClass($system);
+			if (method_exists($system, 'is_valid'))
+			  return (bool) call_user_func("$system::is_valid", $sref);
+			else 
+			  throw new Exception("The spatial reference system $sref is not recognised.");
 		}
+	}
+	
+	/** 
+	 * Throw an exception if the class name provided for spatial reference translation is not recognisable.
+	 */
+	private static function validateSystemClass($system) {
+	  if (!method_exists($system, 'is_valid') ||
+	      !method_exists($system, 'get_srid') ||
+		  !method_exists($system, 'sref_to_wkt') ||
+		  !method_exists($system, 'wkt_to_sref')) 
+	    throw new Exception("The spatial reference system $system is not recognised.");
 	}
 
 	/**
@@ -67,8 +82,9 @@ class spatial_ref {
 			}
 			$srid = $system;
 		} else {
-			$wkt = call_user_func("$system::sref_to_wkt", $sref);
-			$srid = call_user_func("$system::get_srid");
+          self::validateSystemClass($system);
+          $wkt = call_user_func("$system::sref_to_wkt", $sref);
+          $srid = call_user_func("$system::get_srid");
 		}
 		return self::wkt_to_internal_wkt($wkt, $srid);
 	}
@@ -98,8 +114,10 @@ class spatial_ref {
     $system = strtolower($sref_system);
     if (is_numeric($system))
       $srid = $system;
-    else
+    else {
+      self::validateSystemClass($system);
       $srid = call_user_func("$system::get_srid");
+	}
     $db = new Database;
     $result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText(" .
         "'$wkt',".kohana::config('sref_notations.internal_srid')."),$srid)) AS wkt;")->current();
