@@ -71,6 +71,7 @@ class Sample_Model extends ORM_Tree
     );
     
     $array->add_rules('date_type', 'required', 'length[1,2]');
+	$array->add_rules('survey_id', 'required');
     $array->add_rules('date_start', 'date_in_past');
     // We need either at least one of the location_id and sref/geom : in some cases may have both
     if (array_key_exists('location_id', $orig_values) && $orig_values['location_id']!=='' && $orig_values['location_id']!== null) { // if a location is provided, we don't need an sref.
