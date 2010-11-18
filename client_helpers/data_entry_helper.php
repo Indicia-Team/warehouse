@@ -837,8 +837,7 @@ class data_entry_helper extends helper_config {
       'search' => lang::get('search'),
       'close' => lang::get('close'),
     ), $options);
-    // dynamically build a resource to link us to the driver js file, and ensure the map is included.
-    self::add_resource('indiciaMapPanel');
+    // dynamically build a resource to link us to the driver js file.    
     self::$required_resources[] = 'georeference_default_'.$options['driver'];
     self::$resource_list['georeference_default_'.$options['driver']] = array(
       'javascript' => array(self::$js_path.'drivers/georeference/'.$options['driver'].'.js')
