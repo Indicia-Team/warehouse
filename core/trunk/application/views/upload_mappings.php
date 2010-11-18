@@ -79,9 +79,10 @@ $(document).ready(function(){
 <tr><th>Column in CSV File</th><th>Maps to attribute</th></tr>
 </thead>
 <tbody>
-<?php $options = html::model_field_options($model, '<please select>');
+<?php 
 $i=0;
 foreach ($columns as $col):
+  $options = html::model_field_options($model, '<please select>', $col);
   echo '<tr class="';
   echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
   $i++;  ?>

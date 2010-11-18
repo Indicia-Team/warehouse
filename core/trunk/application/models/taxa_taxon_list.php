@@ -39,6 +39,9 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   );
 
   protected $ORM_Tree_children = 'taxa_taxon_lists';
+  
+  protected $search_field='taxon';
+  protected $lookup_against='gv_taxon_lists_taxon';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');
@@ -243,12 +246,12 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   public function get_submission_structure()
   {
     return array(
-    	'model'=>$this->object_name,
-      'superModels'=>array(
-        'taxon_meaning'=>array('fk' => 'taxon_meaning_id'),
-        'taxon'=>array('fk' => 'taxon_id')
-      ),
-      'metaFields'=>array('synonyms', 'commonNames')      
+        'model'=>$this->object_name,
+        'superModels'=>array(
+          'taxon_meaning'=>array('fk' => 'taxon_meaning_id'),
+          'taxon'=>array('fk' => 'taxon_id')
+        ),
+        'metaFields'=>array('synonyms', 'commonNames')      
     );
   }
   

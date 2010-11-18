@@ -106,6 +106,15 @@ class Occurrence_Model extends ORM
    }
    parent::preSubmit();
  }
-
+ 
+  public function get_submission_structure() {
+    return array(
+        'model'=>$this->object_name,
+        'superModels'=>array(
+          'sample'=>array('fk' => 'sample_id')
+        )     
+    );
+  }
+  
 }
 ?>

@@ -55,7 +55,8 @@ switch ($dataType) {
 <legend><?php echo $other_data['name']; ?> Attribute details</legend>
 <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:id"
 	value="<?php echo $values[$this->type.'_attributes_website:id']; ?>" />
-<input type="hidden" name="survey_id" value="<?php echo $values[$this->type.'_attributes_website:restrict_to_survey_id']; ?>" />
+<input type="hidden" name="<?php echo $this->type; ?>_attributes_website:restrict_to_survey_id" value="<?php echo $values[$this->type.'_attributes_website:restrict_to_survey_id']; ?>" />
+<input type="hidden" name="<?php echo $this->type; ?>_attributes_website:<?php echo $this->type; ?>_attribute_id" value="<?php echo $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']; ?>" />
 <ol>
 <?php if (in_array('valid_required', $enable_list)) : ?>
 	<li id="li_valid_required"><label class="narrow" for="valid_required">Required</label><?php echo form::checkbox('valid_required', TRUE, isset($model->valid_required) AND ($model->valid_required == 't'), 'class="vnarrow" ' ) ?></li>

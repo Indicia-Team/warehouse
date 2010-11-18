@@ -25,4 +25,5 @@
 <div class="occurrence">
 <?php echo $table ?>
 <br/>
+<?php echo $upload_csv_form ?>
 </div>
