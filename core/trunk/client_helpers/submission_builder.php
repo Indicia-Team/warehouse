@@ -82,7 +82,7 @@ class submission_builder extends helper_config {
       }
     }
     // Wrap the main model and attrs into JSON
-    $modelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $structure) ? $structure['fieldPrefix'] : $structure['model']);
+    $modelWrapped = self::wrap_with_images($values, array_key_exists('fieldPrefix', $structure) ? $structure['fieldPrefix'] : $structure['model']);
     // Attach the specially handled fields to the model
     if (array_key_exists('metaFields', $structure)) {
        // need to be careful merging metafields in the structure and those auto generated in wrap_with_attrs (ie sample/location/occurrence attributes)
@@ -144,72 +144,34 @@ class submission_builder extends helper_config {
     if ($field_prefix) {
       $sa['field_prefix']=$field_prefix;
     }
-
+	$attrEntity = self::get_attr_entity_prefix($entity, false).'Attr';
     // Iterate through the array
     foreach ($array as $key => $value)
     {
       // Don't wrap the authentication tokens, or any attributes tagged as belonging to another entity
-      if ($key!='auth_token' && $key!='nonce' && (strpos($key, "$entity:")===0 || !strpos($key, ':')))
-      {
-        // strip the entity name tag if present, as should not be in the submission attribute names
-        $key = str_replace("$entity:", '', $key);
-        // This should be a field in the model.
-        // Add a new field to the save array
-        $sa['fields'][$key] = array('value' => $value);
-      }
+      if ($key!='auth_token' && $key!='nonce') {
+	    if (strpos($key, "$entity:")===0 || !strpos($key, ':'))
+        {
+          // strip the entity name tag if present, as should not be in the submission attribute names
+          $key = str_replace("$entity:", '', $key);
+          // This should be a field in the model.
+          // Add a new field to the save array
+          $sa['fields'][$key] = array('value' => $value);
+        } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0)) {
+		  // custom attribute data can also go straight into the submission for the "master" table
+		  $sa['fields'][$key] = array('value' => $value);
+		}
+	  } 
     }
     return $sa;
   }
 
   /**
-  * Wraps attribute fields (entered as normal) into a suitable container for submission.
-  * Throws an error if $entity is not something for which attributes are known to exist.
-  *
-  * @return array Attribute part of submission structure.
-  */
-  public static function wrap_attributes($arr, $entity) {
-    $prefix=self::get_attr_entity_prefix($entity).'Attr';
-    $oap = array();
-    $occAttrs = array();
-    foreach ($arr as $key => $value) {
-      // Null out any blank dates
-      if ($value==lang::get('click here')) {
-        $value='';
-      }
-      if (strpos($key, $prefix) === 0) {
-        $a = explode(':', $key);
-        // Attribute in the form occAttr:36 for attribute with attribute id
-        // of 36.
-        // for multiple values where existing value did not exist, the value will be an array.
-        if(is_array($value)){
-        foreach ($value as $individual) {
-            $oap[] = array($entity."_attribute_id" => $a[1], 'value' => $individual);
-        }
-        } else {
-          $oap[] = array(
-            $entity."_attribute_id" => $a[1], 'value' => $value
-          );
-        }
-        // If it is an existing attribute value, we need to also put the ID in the array so it
-        // can update the same value rather than create a new one
-        if (count($a)>2) {
-          $oap[count($oap)-1]['id'] = $a[2];
-        }
-
-      }
-    }
-    foreach ($oap as $oa) {
-      $occAttrs[] = array(
-        'id' => $entity,
-        'fields' => $oa
-      );
-    }
-    return $occAttrs;
-  }
-
-  /**
    * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,
-   * and also grabs the custom attributes (if there are any) and links them to the model.
+   * and also grabs the images and links them to the model. In previous versions of this method, this
+   * included wrapping the attributes but this is no longer necessary so this method just delegates to 
+   * wrap_with_images and is here for backwards compatibility only.
+   * @deprecated
    *
    * @param array $values Array of form data (e.g. $_POST).
    * @param string $modelName Name of the model to wrap data for. If this is sample, occurrence or location
@@ -217,6 +179,19 @@ class submission_builder extends helper_config {
    * contain an image upload (as long as a suitable entity is available to store the image in).
    */
   public static function wrap_with_attrs($values, $modelName, $fieldPrefix=null) {
+    return self::wrap_with_images($values, $modelName, $fieldPrefix);
+  }
+  
+  /**
+   * Wraps a set of values for a model into JSON suitable for submission to the Indicia data services,
+   * and also grabs the images and links them to the model.
+   *
+   * @param array $values Array of form data (e.g. $_POST).
+   * @param string $modelName Name of the model to wrap data for. If this is sample, occurrence or location
+   * then custom attributes will also be wrapped. Furthermore, any attribute called $modelName:image can
+   * contain an image upload (as long as a suitable entity is available to store the image in).
+   */
+  public static function wrap_with_images($values, $modelName, $fieldPrefix=null) {
     // Now search for an input controls with the name image_upload.
     // For example, this occurs on the taxon_image edit page of the Warehouse.
     // We do this first so the uploaded image path can be put into the submission
@@ -238,17 +213,7 @@ class submission_builder extends helper_config {
     }
     // Get the parent model into JSON
     $modelWrapped = self::wrap($values, $modelName, $fieldPrefix);
-    // Might it have custom attributes?
-    if (strcasecmp($modelName, 'occurrence')==0 ||
-        strcasecmp($modelName, 'sample')==0 ||
-        strcasecmp($modelName, 'location')==0) {
-      // Get the attributes
-      $attrs = self::wrap_attributes($values, $modelName);
-      // If any exist, then store them in the model
-      if (count($attrs)>0) {
-        $modelWrapped['metaFields'][self::get_attr_entity_prefix($modelName).'Attributes']['value']=$attrs;
-      }
-    }
+    
     // Build sub-models for the image files. Don't post to the warehouse until after validation success. This 
     // also moves any simple uploaded files to the interim image upload folder.
     $images = data_entry_helper::extract_image_data($values, $modelName.'_image', true, true);
@@ -388,9 +353,11 @@ class submission_builder extends helper_config {
    * Returns a 3 character prefix representing an entity name that can have
    * custom attributes attached.
    * @param string $entity Entity name (location, sample or occurrence).
+   * @param boolean $except If true, raises an exception if the entity name does not have custom attributes. 
+   * Otherwise returns false. Default true.
    * @access private
    */
-  private static function get_attr_entity_prefix($entity) {
+  private static function get_attr_entity_prefix($entity, $except=true) {
     switch ($entity) {
       case 'occurrence':
         $prefix = 'occ';
@@ -402,7 +369,10 @@ class submission_builder extends helper_config {
         $prefix = 'smp';
         break;
       default:
-        throw new Exception('Unknown attribute type. ');
+        if ($except) 
+		  throw new Exception('Unknown attribute type. ');
+		else
+		  return false;
     }
     return $prefix;
   }
