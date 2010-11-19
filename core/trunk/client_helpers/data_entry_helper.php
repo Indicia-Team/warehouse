@@ -4169,8 +4169,8 @@ if (errors.length>0) {
    * @param string $entity Name of the top level entity being submitted, e.g. sample or occurrence.
    * @param array $submission The wrapped submission structure. If null, then this is automatically constructer
    * from the form data in $_POST.
-   * @param array $writeTokens Array containing auth_token and nonce for the write operation. If null then
-   * the values are read from $_POST.
+   * @param array $writeTokens Array containing auth_token and nonce for the write operation, plus optionally persist_auth=true
+   * to prevent the authentication tokens from expiring after use. If null then the values are read from $_POST.
    */
   public static function forward_post_to($entity, $submission = null, $writeTokens = null) {
     if (self::$validation_errors==null) {
@@ -4196,6 +4196,8 @@ if (errors.length>0) {
       if ($writeTokens) {
         $postargs .= '&auth_token='.$writeTokens['auth_token'];
         $postargs .= '&nonce='.$writeTokens['nonce'];
+        if (isset($writeTokens['persist_auth']) && $writeTokens['persist_auth'])
+          $postargs .= '&persist_auth=true';
       } else {
         if (array_key_exists('auth_token', $_POST))
           $postargs .= '&auth_token='.$_POST['auth_token'];
