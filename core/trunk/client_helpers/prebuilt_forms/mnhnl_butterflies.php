@@ -22,13 +22,14 @@
 
 /**
  * Prebuilt Indicia data entry form.
- * NB has Drupal specific code. Relies on presence of IForm loctools and IForm Proxy.
+ * NB has Drupal specific code.
  * 
  * @package	Client
  * @subpackage PrebuiltForms
  * 
  * TBD:
- * Remove functionality for grid should delete existing records.
+ * Check processing of zeros/blanks for existing records.
+ * Transect restrictions?
  * Sort out front Page.
  * If species already on List, flag alert.
  */
@@ -218,6 +219,13 @@ build_empty_transectgrid = function(speciesID){
   if(jQuery('.transectgrid').find('[taxonID='+speciesID+']').length > 0) return;
   var container = jQuery('<div class=\"trSpeciesContainer\" ></div>').prependTo('.transectgrid');
   jQuery('<span class=\"right\">Remove</span>').attr('taxonID',speciesID).appendTo(container).click(function(){
+    jQuery(this).parent().find('select').each(function(){
+      var parts = jQuery(this).attr('name').split(':');
+      if(parts[5] != '-'){
+        var delList = jQuery('#TGDEL').val();
+        jQuery('#TGDEL').val((delList == '' ? '' : delList+',')+parts[5]);
+      }
+    });
     jQuery(this).parent().remove();
   });;
   jQuery('<span class=\"trgridspecname\"></span>').attr('taxonID',speciesID).appendTo(container);
@@ -256,12 +264,14 @@ jQuery('#transectgrid_taxa_taxon_list_id').change(function(){
         if ($parts[0] == 'TG' && $value != $args['ignore_qual_dist_id']){
           data_entry_helper::$javascript .= "build_transectgrid(".$parts[1].",".$parts[2].",".$parts[3].",\"".$parts[4]."\",\"".$parts[5]."\",\"".$parts[6]."\",".$value.");
 ";
-        } else if ($parts[0] == 'TGS'){
+        } else if ($parts[0] == 'TGS' || $parts[0] == 'TGDEL'){
           $myHidden .= '<input type="hidden" name="'.$key.'" value="'.$value.'">';
         }
-        
       }
-    else if(isset(data_entry_helper::$entity_to_load['sample:id'])){ //sample specified
+    else {
+     $myHidden = '<input type="hidden" id="TGDEL" name="TGDEL" value="" >';
+     data_entry_helper::$javascript .= "jQuery('#TGDEL').val('');";
+     if(isset(data_entry_helper::$entity_to_load['sample:id'])){ //sample specified
       $url = data_entry_helper::$base_url.'/index.php/services/data/sample?parent_id='.data_entry_helper::$entity_to_load['sample:id'];
       $url .= "&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
       $session = curl_init($url);
@@ -289,12 +299,22 @@ build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCe
           }
         }
       }
+     }
     }
     return $myHidden.'<div>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</div><div class="transectgrid"></div>';
   }
 
 
   protected static function get_control_sectionlist($auth, $args, $tabalias, $options) {
+    $numAttrs=count($options['smpAttr']);
+    $attributes = data_entry_helper::getAttributes(array(
+       'valuetable'=>'sample_attribute_value'
+       ,'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
+       ,'fieldprefix'=>'smpAttr'
+       ,'extraParams'=>$auth['read']
+       ,'survey_id'=>$args['survey_id']
+    ));
   	/* We will make the assumption that only one of these will be put onto a form.
   	 * A lot of this is copied from the species control and has the same features. */
   	$maxNumSections = 10;
@@ -322,6 +342,13 @@ build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCe
           'parentField'=>'parent_id',
           'extraParams'=>$extraParams
     ), $options);
+    $defNRAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'),
+    				'lookUpKey' => 'meaning_id',
+//    				'language' => iform_lang_iso_639_2($args['language']),
+    				'suffixTemplate'=>'nosuffix');
+    $defAttrOptions=$defNRAttrOptions;
+    $defAttrOptions ['validation'] = array('required');
+    
     // do not allow tree browser
     if ($args['species_ctrl']=='tree_browser')
       return '<p>Can not use tree browser in this context</p>';
@@ -334,9 +361,9 @@ add_section_species_row = function(speciesID){
   var row = jQuery('<tr></tr>').data('taxonID',speciesID).insertBefore('.seclistspecrow').append(cell);
   for(var i=1; i<= ".$maxNumSections."; i++){
     if(jQuery('.sectionlist').find('[section='+i+']').length > 0) {
-      // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrID
+      // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrValID
       var sampleID = jQuery('.sectionlist').find('tr:eq(0)').find('th:eq('+i+')').data('sampleID');
-      jQuery('<td><input type=\"text\" name=\"SL:'+speciesID+':'+i+':'+sampleID+':-:-\" class=\"number\" value=\"\" /></td>').appendTo(row);
+      jQuery('<td><input type=\"text\" name=\"SL:'+speciesID+':'+i+':'+sampleID+':-:-\" class=\"sl-input number\" value=\"\" /></td>').appendTo(row);
     }
   }
   jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/\"+speciesID +
@@ -355,20 +382,36 @@ add_section_column = function(column, sampleID){
     		if(j==0){ //header
     		  var header = jQuery('<span>".lang::get('sectionlist:section')." '+i+'</span>').attr('section',i);
     		  jQuery('<th></th>').data('sampleID', i==column ? sampleID : '-').append(header).appendTo(rows[j]);
-    		} else if(j == (rows.length-1)) // final row has no data.
-    		  jQuery('<td></td>').appendTo(rows[j]);
-      		else {
+    		} else if(j == (rows.length-".(1+$numAttrs).")) {// species selection row has no data.
+    		  jQuery('<td></td>').appendTo(rows[j]);";
+    global $indicia_templates;
+    $tempLabel = $indicia_templates['label'];
+    $indicia_templates['label'] = ''; // we don't want labels in the cell
+      // Fieldname is SLA:section:SectionsampleID:AttrValID:AttrID
+    for($i=0; $i<$numAttrs; $i++){	
+      data_entry_helper::$javascript .= "
+    		} else if(j == (rows.length-".($numAttrs-$i).")) { // section sample attribute rows.
+    		  var newName = 'SLA:'+i+':'+(i==column ? sampleID : '-')+':-'; //this will replace the smpAttr, so the AttrID is left alone at the end.
+    		  var attr = '".str_replace("\n", "", data_entry_helper::outputAttribute($attributes[$options['smpAttr'][$i]], $defAttrOptions))."';
+    		  jQuery('<td>'+attr.replace(/smpAttr/g, newName)+'</td>').appendTo(rows[j]);";
+    }
+    $indicia_templates['label'] = $tempLabel;
+    data_entry_helper::$javascript .= "
+            } else {
               // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrID
               var taxonID = jQuery(rows[j]).find('.seclistspecname').attr('taxonID');
-              jQuery('<td><input type=\"text\" name=\"SL:'+taxonID+':'+i+':'+(i==column ? sampleID : '-')+':-:-\" class=\"number\" value=\"\" /></td>').appendTo(rows[j]);
+              jQuery('<td><input type=\"text\" name=\"SL:'+taxonID+':'+i+':'+(i==column ? sampleID : '-')+':-:-\" class=\"sl-input number\" value=\"\" /></td>').appendTo(rows[j]);
             }
     	}
     } else if (i==column && jQuery(rows[0]).find('th:eq('+i+')').data('sampleID') == '-' && sampleID != '-'){
       jQuery(rows[0]).find('th:eq('+i+')').data('sampleID', sampleID);
       for(var j = 1; j < rows.length-1; j++){
-        var input = jQuery(rows[j]).find('td:eq('+i+')').find('input');
+        var input = jQuery(rows[j]).find('td:eq('+i+')').find('input,select');
         var parts = input.attr('name').split(':');
-        input.attr('name','SL:'+parts[1]+':'+i+':'+sampleID+':'+parts[4]+':'+parts[5]);
+        if(parts[0]=='SL')
+          input.attr('name','SL:'+parts[1]+':'+i+':'+sampleID+':'+parts[4]+':'+parts[5]);
+        else if(parts[0]=='SLA')
+          input.attr('name','SLA:'+i+':'+sampleID+':'+parts[3]+':'+parts[4]);
       }
     }
   }
@@ -381,6 +424,23 @@ add_section_species = function(speciesID, section, sectionSampleID, occurrenceID
   add_section_column(section, sectionSampleID);
   add_section_species_row(speciesID);
   jQuery('[name^=SL\\:'+speciesID+'\\:'+section+'\\:]').attr('name','SL:'+speciesID+':'+section+':'+sectionSampleID+':'+occurrenceID+':'+attributeID).val(value);
+};
+add_section_attribute = function(section, sectionSampleID, attrValID, attributeID, value){
+  // Fieldname is SLA:section:SectionsampleID:AttrValID:AttrID
+  add_section_column(section, sectionSampleID);
+  jQuery('[name^=SLA\\:'+section+'\\:]').each(function(){
+    var parts = jQuery(this).attr('name').split(':');
+    if(attributeID == parts[4]) {
+      var myName = jQuery(this).attr('name');
+      var checkboxes = jQuery('[name='+myName+']:checkbox');
+      if(checkboxes.length > 0){
+        checkboxes.attr('checked', value == '1' ? true : false);
+      } else {
+        jQuery(this).val(value);
+      }
+      jQuery(this).attr('name','SL:'+section+':'+sectionSampleID+':'+attrValID+':'+attributeID);
+    }
+  });
 };
 jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
   add_section_species_row(jQuery('#sectionlist_taxa_taxon_list_id').val());
@@ -403,6 +463,9 @@ jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
 ";
         } else if ($parts[0] == 'SLS'){
           $myHidden .= '<input type="hidden" name="'.$key.'" value="'.$value.'">';
+        } else if ($parts[0] == 'SLA' && $value != ''){
+          data_entry_helper::$javascript .= "add_section_attribute(".$parts[1].",".$parts[2].",\"".$parts[3]."\",\"".$parts[4]."\",\"".$value."\");
+";
         }
       }
     else if(isset(data_entry_helper::$entity_to_load['sample:id'])){ //sample specified
@@ -430,11 +493,26 @@ jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
               	data_entry_helper::$javascript .= "
 add_section_species(".($OCCentity['taxa_taxon_list_id']).",".$section.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".($ATTRentity['id']).",".($ATTRentity['raw_value']).");";
             }
+          } // TBS SLA
+          $url = data_entry_helper::$base_url.'/index.php/services/data/sample_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&sample_id='.($entity['id']);
+          $session = curl_init($url);
+          curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+          $ATTRentities = json_decode(curl_exec($session), true);
+          foreach($ATTRentities as $ATTRentity){
+      // Fieldname is SLA:section:SectionsampleID:AttrValID:AttrID
+          	if($ATTRentity['id']!='')
+          	  data_entry_helper::$javascript .= "
+add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).",".($ATTRentity['sample_attribute_id']).",".($ATTRentity['raw_value']).");";
           }
         }
       }
     }
-    return $myHidden.'<div class="sectionlist"><table border="1" ><tr><th>'.lang::get('sectionlist:species').'</th></tr><tr class="seclistspecrow" ><td>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</td></tr></table></div>';
+    $retVal = $myHidden.'<div class="sectionlist"><table border="1" ><tr><th>'.lang::get('sectionlist:species').'</th></tr><tr class="seclistspecrow" ><td>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</td></tr>';
+    for($i=0; $i<$numAttrs; $i++){
+      $retVal .= '<tr><td>'.$attributes[$options['smpAttr'][$i]]['caption'].'</td></tr>';
+    }
+    $retVal .= '</table></div>';
+    return $retVal;
   }
 
   protected static function get_control_sectionnumber($auth, $args, $tabalias, $options) {
@@ -495,12 +573,25 @@ add_section_species(".($OCCentity['taxa_taxon_list_id']).",".$section.",".($OCCe
                   $suboccs[] = $occ;
             }
         }
+        if(isset($values['TGDEL'])){
+        	if($values['TGDEL'] != ''){
+        		$delList = explode(',', $values['TGDEL']);
+        		foreach($delList as $occID){
+        		  $occ = array('fkId' => 'sample_id',
+                             'model' => array('id' => 'occurrence', 'fields' => array()));
+                  $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+                  $occ['model']['fields']['id'] = array('value' => $occID);
+                  $occ['model']['fields']['deleted'] = array('value' => 't');
+                  $suboccs[] = $occ;
+        		}
+        	}
+        }
         $sa['model']['subModels'] = $suboccs;
         if(isset($sa['model']['fields']['id']) || count($suboccs)>0)
           $subsamples[] = $sa;
       }
   	}
-    // next do transect grid
+    // next do section list
   	for($i=1; $i<=10; $i++) {
       // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrID
       $sa = array(
@@ -516,6 +607,20 @@ add_section_species(".($OCCentity['taxa_taxon_list_id']).",".$section.",".($OCCe
       $sa['model']['fields']['location_name'] = array('value' => 'SL '.$values['sample:location_name'].' '.$i);
       $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
       $sa['model']['fields']['survey_id'] = array('value' => $values['sample:survey_id']);
+      $saattrs = array();
+      foreach($values as $key => $value){
+        $parts = explode(':', $key);
+        if ($parts[0] == 'SLA' && $parts[1] == (string)$i){
+          // Fieldname is SLA:section:SectionsampleID:AttrValID:AttrID
+          $attr = array("id" => "sample", "fields" => array());
+          $attr['fields']['sample_attribute_id'] = $parts[4];
+          if($parts[3] != '-') $attr['fields']['id'] = $parts[3];
+          $attr['fields']['value'] = $value;
+          if($parts[3] != '-' || $value != '') $saattrs[] = $attr;
+        }
+      }
+      if(count($saattrs)>0)
+          $sa['model']['metaFields'] = array('smpAttributes' => array('value' => $saattrs));
       $suboccs = array();
       foreach($values as $key => $value){
         $parts = explode(':', $key);
@@ -533,7 +638,7 @@ add_section_species(".($OCCentity['taxa_taxon_list_id']).",".$section.",".($OCCe
         }
       }
       $sa['model']['subModels'] = $suboccs;
-      if(isset($sa['model']['fields']['id']) || count($suboccs)>0) $subsamples[] = $sa;
+      if(isset($sa['model']['fields']['id']) || count($suboccs)>0 || count($saattrs)>0) $subsamples[] = $sa;
   	}
   	if(count($subsamples)>0)
       $sampleMod['subModels'] = $subsamples;
