@@ -68,7 +68,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       'survey',
       'user',
       'taxa_taxon_list',
-      'taxon_relation'
+      'taxon_relation',
+      'taxon_group'
   );
   
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -77,7 +78,8 @@ class Data_Controller extends Data_Service_Base_Controller {
   // So if we wish total access to a given dataset, the entity must appear in the following list.
   protected $allow_full_access = array(
       'taxa_taxon_list',
-      'taxon_relation'
+      'taxon_relation',
+      'taxon_group'
   );
 
   /**
@@ -371,10 +373,10 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->response=json_encode(array('success'=>$id));
       $this->delete_nonce();
     }
-    else if (isset($model))
-      Throw new ArrayException($model->getAllErrors());
+    else if (isset($model) && is_array($model->getAllErrors()))
+      Throw new ArrayException('Error occurred on model submission', $model->getAllErrors());
     else
-      Throw new Exception('Unknown error on submission (to do - get correct error info)');
+      Throw new Exception('Unknown error on submission of the model');
 
   }
 
