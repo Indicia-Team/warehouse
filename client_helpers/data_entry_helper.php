@@ -837,7 +837,8 @@ class data_entry_helper extends helper_config {
       'search' => lang::get('search'),
       'close' => lang::get('close'),
     ), $options);
-    // dynamically build a resource to link us to the driver js file.    
+    self::add_resource('indiciaMapPanel');
+    // dynamically build a resource to link us to the driver js file.
     self::$required_resources[] = 'georeference_default_'.$options['driver'];
     self::$resource_list['georeference_default_'.$options['driver']] = array(
       'javascript' => array(self::$js_path.'drivers/georeference/'.$options['driver'].'.js')
@@ -1354,7 +1355,7 @@ class data_entry_helper extends helper_config {
       }
       $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
       if (isset($options['tabDiv'])) {
-        $javascript .= "    jQuery(jQuery('#".$options['tabDiv']."').parent()).unbind('tabsshow', tabHandler);\n";
+        $javascript .= "    $(this).unbind(event);\n";
         $javascript .= "  }\n};\n";
         $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
