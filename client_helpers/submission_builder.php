@@ -47,7 +47,7 @@ class submission_builder extends helper_config {
    *         'fk' => 'foreign key name',
    *         'image_entity' => 'name of image entity if present'
    *     )),
-   *     'superModels' => array('child model name' =>  array(
+   *     'superModels' => array('parent model name' =>  array(
    *         'fieldPrefix'=>'Optional prefix for HTML form fields in the sub model. If not specified then the sub model name is used.',
    *         'fk' => 'foreign key name',
    *         'image_entity' => 'name of image entity if present'
