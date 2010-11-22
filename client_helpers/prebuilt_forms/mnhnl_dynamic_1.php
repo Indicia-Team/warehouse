@@ -296,6 +296,9 @@ class iform_mnhnl_dynamic_1 {
    * @return Form HTML.
    */
   public static function get_form($args, $node) {
+    define ("MODE_GRID", 0);
+    define ("MODE_NEW_SAMPLE", 1);
+    define ("MODE_EXISTING", 2);
     self::parse_defaults($args);
     self::getArgDefaults($args);
     global $user;
@@ -307,21 +310,28 @@ class iform_mnhnl_dynamic_1 {
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
     $mode = (isset($args['no_grid']) && $args['no_grid']) 
-        ? $mode = 1 // default mode when no_grid set to true - display new sample
-        : $mode = 0; // default mode when no grid set to false - display grid of existing data
-    			// mode 2: display existing sample
-    $loadID = null;
+        ? $mode = MODE_NEW_SAMPLE // default mode when no_grid set to true - display new sample
+        : $mode = MODE_GRID; // default mode when no grid set to false - display grid of existing data
+    			// mode MODE_EXISTING: display existing sample
+    $loadedSampleId = null;
+    $loadedOccurrenceId = null;
     if ($_POST) {
     	if(!is_null(data_entry_helper::$entity_to_load)){
-	      $mode = 2; // errors with new sample, entity populated with post, so display this data.
+	      $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
     	} // else valid save, so go back to gridview: default mode 0
-    } elseif (array_key_exists('sample_id', $_GET)){
-      $mode = 2;
-      $loadID = $_GET['sample_id'];
-    } else if (array_key_exists('newSample', $_GET)){
-      $mode = 1;
+    }
+    if (array_key_exists('sample_id', $_GET)){
+      $mode = MODE_EXISTING;
+      $loadedSampleId = $_GET['sample_id'];
+    }
+    if (array_key_exists('occurrence_id', $_GET)){
+      $mode = MODE_EXISTING;
+      $loadedOccurrenceId = $_GET['occurrence_id'];
+    } 
+    if ($mode!=MODE_EXISTING && array_key_exists('newSample', $_GET)){
+      $mode = MODE_NEW_SAMPLE;
       data_entry_helper::$entity_to_load = array();
-	} // else default to mode 0
+    } // else default to mode MODE_GRID or MODE_NEW_SAMPLE depending on no_grid parameter
     
     $attributes = data_entry_helper::getAttributes(array(
     	'id' => data_entry_helper::$entity_to_load['sample:id']
@@ -333,43 +343,47 @@ class iform_mnhnl_dynamic_1 {
        ,'survey_id'=>$args['survey_id']
     ));
 
-    ///////////////////////////////////////////////////////////////////
-    // default mode 0 : display grid of the samples to add a new one 
-    // or edit an existing one.
-    ///////////////////////////////////////////////////////////////////
-    if($mode == 0) {      
+    // default mode MODE_GRID : display grid of the samples to add a new one 
+    // or edit an existing one.    
+    if ($mode == MODE_GRID) {      
       return self::getSampleListGrid($args, $node, $auth, $attributes);
-    }
-    ///////////////////////////////////////////////////////////////////
+    }    
     
-    if($loadID){      
-      $url = $svcUrl.'/data/sample/'.$loadID;
-      $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
-      $session = curl_init($url);
-      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-      $entity = json_decode(curl_exec($session), true);
-      // Build a list of the sample data.
+    if ($mode == MODE_EXISTING) {
       data_entry_helper::$entity_to_load = array();
-      foreach($entity[0] as $key => $value){
-        data_entry_helper::$entity_to_load['sample:'.$key] = $value;
+      // Displaying an existing sample. If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
+      // rather than a grid of occurrences then we must load the occurrence data.
+      if ($loadedOccurrenceId && (!$loadedSampleId || !self::getGridMode($args))) {
+        // The URL has provided us with an occurrence ID, but we need to know the sample ID as well.      
+        $url = $svcUrl."/data/occurrence/$loadedOccurrenceId";
+        $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entity = json_decode(curl_exec($session), true);
+        // Get the sample ID for the occurrence. This overwrites it if supply in GET but did not match the occurrence's sample
+        $loadedSampleId = $entity[0]['sample_id'];
+        if (!self::getGridMode($args)) {
+          // populate the entity to load with the single occurrence's data
+          foreach($entity[0] as $key => $value){
+            data_entry_helper::$entity_to_load['occurrence:'.$key] = $value;
+          }
+        }
       }
-      data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
-      data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
-	  /*if (!self::getGridMode($args)) {
-	    // also need to load the single occurrence, as we are not in grid mode.
-		$url = $svcUrl.'/data/occurrence';
+      if ($loadedSampleId){     
+        $url = $svcUrl.'/data/sample/'.$loadedSampleId;
         $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
         $session = curl_init($url);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entity = json_decode(curl_exec($session), true);
         // Build a list of the sample data.
-        data_entry_helper::$entity_to_load = array();
         foreach($entity[0] as $key => $value){
           data_entry_helper::$entity_to_load['sample:'.$key] = $value;
         }
-	  }*/
-    }	
-
+        data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
+        data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
+      }	
+    }
+    
     // Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
     $reloadPath = $reload['path'];
@@ -377,7 +391,7 @@ class iform_mnhnl_dynamic_1 {
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
-          "<input type=\"hidden\" id=\"sample:survey_id\" name=\"sample:survey_id\" value=\"".$args['survey_id']."\" />\n";
+          "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
     }
@@ -1074,3 +1088,35 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
   }
 
 }
+
+/**
+ * For PHP 5.2, declare the get_called_class method which allows us to use subclasses of this form.
+ */
+if(!function_exists('get_called_class')) {
+function get_called_class() {
+    $matches=array();
+    $bt = debug_backtrace();
+    $l = 0;
+    do {
+        $l++;
+        if(isset($bt[$l]['class']) AND !empty($bt[$l]['class'])) {
+            return $bt[$l]['class'];
+        }
+        $lines = file($bt[$l]['file']);
+        $callerLine = $lines[$bt[$l]['line']-1];
+        preg_match('/([a-zA-Z0-9\_]+)::'.$bt[$l]['function'].'/',
+                   $callerLine,
+                   $matches);
+        if (!isset($matches[1])) $matches[1]=NULL; //for notices
+        if ($matches[1] == 'self') {
+               $line = $bt[$l]['line']-1;
+               while ($line > 0 && strpos($lines[$line], 'class') === false) {
+                   $line--;                 
+               }
+               preg_match('/class[\s]+(.+?)[\s]+/si', $lines[$line], $matches);
+       }
+    }
+    while ($matches[1] == 'parent'  && $matches[1]);
+    return $matches[1];
+}
+} 

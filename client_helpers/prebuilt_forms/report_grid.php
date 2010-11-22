@@ -53,6 +53,12 @@ class iform_report_grid {
         'type' => 'textarea',
         'required' => false
       ), array(
+        'name' => 'columns_config',
+        'caption' => 'Columns Configuration JSON',
+        'description' => 'JSON that describes the columns configuration parameter sent to the report grid component.',
+        'type' => 'textarea',
+        'required' => false
+      ), array(
         'name' => 'refresh_timer',
         'caption' => 'Automatic reload seconds',
         'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
@@ -108,6 +114,11 @@ class iform_report_grid {
         }
       }
     }
+    // default columns behaviour is to just include anything returned by the report
+    $columns = array();
+    // this can be overridden
+    if (isset($args['columns_config']) && !empty($args['columns_config']))
+      $columns = json_decode($args['columns_config'], true);
     $reportOptions = array(
       'id' => 'report-grid',
       'class' => '',
@@ -115,7 +126,7 @@ class iform_report_grid {
       'dataSource' => $args['report_name'],
       'mode' => 'report',
       'readAuth' => $auth['read'],
-      'columns' => array(),
+      'columns' => $columns,
       'itemsPerPage' => $args['items_per_page'],
       'autoParamsForm' => $args['auto_params_form'],
       'extraParams' => $presets

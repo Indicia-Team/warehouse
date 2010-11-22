@@ -4411,7 +4411,7 @@ if (errors.length>0) {
    */
   public static function build_sample_occurrences_list_submission($values, $include_if_any_data=false) {
     // We're mainly submitting to the sample model
-    $sampleMod = data_entry_helper::wrap_with_images($values, 'sample');
+    $sampleMod = submission_builder::wrap_with_images($values, 'sample');
     $occurrences = data_entry_helper::wrap_species_checklist($values, $include_if_any_data);
 
     // Add the occurrences in as subModels
