@@ -1177,10 +1177,13 @@ flowerIDstruc = {
 toolPoller = function(toolStruct){
 	if(toolStruct.pollFile == '') return;
 	toolStruct.pollTimer = setTimeout('toolPoller('+toolStruct.name+');', ".$args['ID_tool_poll_interval'].");
-	$.get(toolStruct.pollURL+toolStruct.pollFile, function(data){
-	  pollReset(toolStruct);
+	jQuery.ajax({
+	 url: toolStruct.pollURL+toolStruct.pollFile,
+	 toolStruct: toolStruct,
+	 success: function(data){
+	  pollReset(this.toolStruct);
 	  var da = data.split('\\n');
-      jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
+      jQuery(this.toolStruct.selector+' [name='+this.toolStruct.type+'\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
 	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '').replace(/\\\\/g, '');
 	  var items = da[1].split(':');
 	  var count = items.length;
@@ -1188,8 +1191,8 @@ toolPoller = function(toolStruct){
 	  if(items[count-1] == '') count--;
 	  if(count <= 0){
 	  	// no valid stuff so blank it all out.
-	  	jQuery('#'+toolStruct.type+'_taxa_list').append(\"".lang::get('LANG_Taxa_Unknown_In_Tool')."\");
-	  	jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:determination_type]').val('X'); // Unidentified.
+	  	jQuery('#'+this.toolStruct.type+'_taxa_list').append(\"".lang::get('LANG_Taxa_Unknown_In_Tool')."\");
+	  	jQuery(this.toolStruct.selector+' [name='+this.toolStruct.type+'\\:determination_type]').val('X'); // Unidentified.
       } else {
       	var resultsIDs = [];
       	var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
@@ -1197,9 +1200,9 @@ toolPoller = function(toolStruct){
 		for(var j=0; j < count; j++){
 			itemText = items[j].replace(/</g, '&lt;').replace(/>/g, '&gt;');
 			var found = false;
-			for(i = 0; i< toolStruct.taxaList.length; i++){
-  				if(toolStruct.taxaList[i].taxon == itemText){
-	  				resultsIDs.push(toolStruct.taxaList[i].id);
+			for(i = 0; i< this.toolStruct.taxaList.length; i++){
+  				if(this.toolStruct.taxaList[i].taxon == itemText){
+	  				resultsIDs.push(this.toolStruct.taxaList[i].id);
 	  				resultsText = resultsText + (j == 0 ? '' : '<br />&nbsp;&nbsp;') + itemText;
 	  				found = true;
   				}
@@ -1208,14 +1211,14 @@ toolPoller = function(toolStruct){
   				notFound = (notFound == '' ? '' : notFound + ', ') + itemText;
   			}
   		}
-		jQuery('#'+toolStruct.type+'_taxa_list').append(resultsText+ ' }');
-		jQuery('#'+toolStruct.type+'-id-button').data('toolRetValues', resultsIDs);
+		jQuery('#'+this.toolStruct.type+'_taxa_list').append(resultsText+ ' }');
+		jQuery('#'+this.toolStruct.type+'-id-button').data('toolRetValues', resultsIDs);
 	  	if(notFound != ''){
-			var comment = jQuery(toolStruct.selector+' [name='+toolStruct.type+'\\:comment]');
+			var comment = jQuery(this.toolStruct.selector+' [name='+this.toolStruct.type+'\\:comment]');
 			comment.val('".lang::get('LANG_ID_Unrecognised')." '+notFound+' '+comment.val());
 		}
   	  }
-    });
+    }});
 };
 
 pollReset = function(toolStruct){
@@ -2028,7 +2031,7 @@ $('#cc-4-main-form').ajaxForm({
 	},
     success:   function(data){
        	if(data.success == 'multiple records' && data.outer_table == 'occurrence'){
-       		updatePhotoReel(data.outer_id);
+       		updatePhotoReel(data.outer_id, false); // do sync
 			window.scroll(0,0);
         } else
 			alertIndiciaError(data);
@@ -2101,26 +2104,37 @@ loadInsect = function(id){
 	jQuery('[occId='+id+']').addClass('currentPhoto');
 }
 
-updatePhotoReel = function(occId){
+updatePhotoReel = function(occId, doAsync){
 	var container = jQuery('[occId='+occId+']');
 	if(container.length == 0)
-		container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', occId.toString()).click(function () {setInsect(occId)});
+		container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', occId.toString()).click(function () {
+		    setInsect(occId)});
 	else
 		container.empty();
 	jQuery('<span>?</span>').addClass('thumb-text').appendTo(container);
 	// we use the presence of the text to determine whether the 
 	// insect has been identified or not. NB an insect tagged as unidentified (type = 'X') has actually been through the ID
 	// process, so is not unidentified!!!
-	jQuery.getJSON(\"".$svcUrl."/data/determination\" + 
+	// When generating the photoreel when loading an existing collection this can be done async. BUT If we 'validate the photos'
+	// (as opposed to 'validate the insect'), the presence of the thumb-text is used immediately after to
+	// count if the insect is identified before allowing the collection to be closed. This must therefore
+	// wait until the data is returned - ie done synchronously. This must be done before the image fetch so it
+	// doesn't block it.
+	jQuery.ajax({ 
+        type: \"GET\", 
+        url: \"".$svcUrl."/data/determination\" + 
     		\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
     		\"&reset_timeout=true&occurrence_id=\" + occId + \"&orderby=id&deleted=f&callback=?\", 
-        function(detData) {
+        success: function(detData) {
 	    	if(!(detData instanceof Array)){
    				alertIndiciaError(detData);
    			} else if (detData.length>0) {
-	    		jQuery('[occId='+detdata[0].occurrence_id+']').find('.thumb-text').remove();
+	    		jQuery('[occId='+detData[0].occurrence_id+']').find('.thumb-text').remove();
 	    	}
-  		});
+  		}, 
+    	dataType: 'json', 
+	    async: doAsync 
+    });
 	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
@@ -2374,37 +2388,39 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
         url: \"".$svcUrl."/data/\" + attributeTable + \"?mode=json&view=list\" +
         	(reset_timeout ? \"&reset_timeout=true\" : \"\") + \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
-        data: {}, 
+        data: {},
+        myFormsel: formsel,
+        myAttributeKey: attributeKey,
         success: function(attrdata) {
 		  if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		  } else if (attrdata.length>0) {
 			for (var i=0;i<attrdata.length;i++){
 				if (attrdata[i].id && (attrdata[i].iso == null || attrdata[i].iso == '' || attrdata[i].iso == '".$language."')){
-					var radiobuttons = jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+'\\:]').filter(':radio');
-					var multicheckboxes = jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'\\[\\]],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]').filter(':checkbox');
-					var boolcheckbox = jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]').filter(':checkbox');
+					var radiobuttons = jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'\\:]').filter(':radio');
+					var multicheckboxes = jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'\\[\\]],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+':]').filter(':checkbox');
+					var boolcheckbox = jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+':]').filter(':checkbox');
 					if(radiobuttons.length > 0){ // radio buttons all share the same name, only one checked.
 						radiobuttons
-							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id)
+							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id)
 							.filter('[value='+attrdata[i].raw_value+']')
 							.attr('checked', 'checked');
 					} else if(multicheckboxes.length > 0){ // individually named
 						multicheckboxes.filter('[value='+attrdata[i].raw_value+']')
-							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id)
+							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id)
 							.attr('checked', 'checked');
 					} else if(boolcheckbox.length > 0){ // has extra hidden field to force zero if unchecked.
-						jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][attributeKey]+':]')
-							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id);
+						jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+':]')
+							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id);
 						if (attrdata[i].raw_value == '1')
 							boolcheckbox.attr('checked', 'checked');
-					} else if (prefix == 'smpAttr' && attrdata[i][attributeKey] == ".$args['complete_attr_id'].") {
+					} else if (prefix == 'smpAttr' && attrdata[i][this.myAttributeKey] == ".$args['complete_attr_id'].") {
 						// The hidden closed attributes are special: these have forced values, and are used to control the state. Do not update their values.
-						jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+']')
-							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id);
+						jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+']')
+							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id);
 					} else {
-						jQuery(formsel).find('[name='+prefix+'\\:'+attrdata[i][attributeKey]+']')
-							.attr('name', prefix+':'+attrdata[i][attributeKey]+':'+attrdata[i].id)
+						jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+']')
+							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id)
 							.val(attrdata[i].raw_value);
 					}
 				}
@@ -2413,8 +2429,7 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 		  checkProtocolStatus('leave');
 		  populateSessionSelect();
 		},
-		dataType: 'json', 
-	    async: false  
+		dataType: 'json'
 	});
 }
 
@@ -2606,7 +2621,7 @@ jQuery.ajax({
    											alertIndiciaError(insectData);
    					  		  			} else if (insectData.length>0) {
  											for (var j=0;j<insectData.length;j++){
-												updatePhotoReel(insectData[j].id);
+												updatePhotoReel(insectData[j].id, true);
 											}
 										}
 		    						});
