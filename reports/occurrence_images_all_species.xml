@@ -5,7 +5,7 @@
 >
   <query>
   SELECT su.title, su.website_id, o.id as occurrence_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
-  s.entered_sref, l.name as location_name, oi.path, lttl.external_key
+  s.entered_sref, l.name as location_name, oi.path, lttl.external_key,
   CASE o.record_status 
     WHEN 'C' THEN 'Data Entry Complete' 
     WHEN 'V' THEN 'Verified'
