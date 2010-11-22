@@ -452,7 +452,6 @@ class ORM extends ORM_Core {
         $m->submission = $a['model'];
         $result = $m->inner_submit();
         if ($result) {
-          Kohana::log("debug", "Setting field ".$a['fkId']." to ".$result);
           $this->submission['fields'][$a['fkId']]['value'] = $result;
         } else {
           $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
@@ -483,7 +482,6 @@ class ORM extends ORM_Core {
 
         // Set the correct parent key in the subModel
         $fkId = $a['fkId'];
-        Kohana::log("debug", "Setting field ".$fkId." to ".$this->id);
         $a['model']['fields'][$fkId]['value'] = $this->id;
 
         // Call the submit method for that model and
@@ -575,12 +573,14 @@ class ORM extends ORM_Core {
         }
       }
       $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
-	  // setup basic query to get custom attrs
-	  $this->setupDbToQueryAttributes();
-	  $attr_entity = $this->object_name.'_attribute';
-	  // We only want globally or locally required ones
-	  $this->db->like($attr_entity.'s.validation_rules','%required%');
-      $this->db->orlike($attr_entity.'s_websites.validation_rules','%required%');
+      // setup basic query to get custom attrs
+      $this->setupDbToQueryAttributes(); 
+      $attr_entity = $this->object_name.'_attribute';
+      // We only want globally or locally required ones
+      if ($this->identifiers['website_id'] || $this->identifiers['survey_id']) 
+        $this->db->where('('.$attr_entity."s_websites.validation_rules like '%required%' or ".$attr_entity."s.validation_rules like '%required%')");
+      else 
+        $this->db->like($attr_entity.'s.validation_rules','%required%');
       $result=$this->db->get();
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
@@ -588,7 +588,7 @@ class ORM extends ORM_Core {
           // map to the exact name of the field if it is available
           if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
           $this->errors[$fieldname]='Please specify a value for the '.$row->caption;
-		  kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, true));
+          kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, true));
           $r=false;
         }
       }
@@ -601,15 +601,17 @@ class ORM extends ORM_Core {
    */
   protected function setupDbToQueryAttributes() {
     $attr_entity = $this->object_name.'_attribute';
-    $this->db->from($attr_entity.'s_websites');
-    $this->db->join($attr_entity.'s', $attr_entity.'s.id', $attr_entity.'s_websites.'.$attr_entity.'_id', 'right');
     $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
+    $this->db->from($attr_entity.'s');
     $this->db->where($attr_entity.'s.deleted', 'f');
-    $this->db->where($attr_entity.'s_websites.deleted', 'f');
-    if ($this->identifiers['website_id'])
-	  $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
-	if ($this->identifiers['survey_id'])
-      $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
+    if ($this->identifiers['website_id'] || $this->identifiers['survey_id']) {
+      $this->db->join($attr_entity.'s_websites', $attr_entity.'s_websites.'.$attr_entity.'_id', $attr_entity.'s.id');
+      $this->db->where($attr_entity.'s_websites.deleted', 'f');
+      if ($this->identifiers['website_id'])
+        $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
+      if ($this->identifiers['survey_id'])
+        $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
+    }
   }
 
   /**
@@ -641,7 +643,7 @@ class ORM extends ORM_Core {
 	    $fields[$fieldname] = $row->caption;
 	  }
 	}
-    return $fields;
+  return $fields;
   }
 
   /**
@@ -726,8 +728,7 @@ class ORM extends ORM_Core {
     return true;
   }
   
-  protected function createAttributeRecord($attrId, $valueId, $value) {  
-    kohana::log('debug', "$attrId $valueId, $value");
+  protected function createAttributeRecord($attrId, $valueId, $value) {
     // Create a attribute value, loading the existing value id if it exists
     $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
     
