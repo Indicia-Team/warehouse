@@ -5235,6 +5235,9 @@ $('.ui-state-default').live('mouseout', function() {
   * @return string HTML to insert into the page for the control.
   */
   public static function outputAttribute($item, $options=array()) {
+    $options = array_merge(array(
+	  'extraParams' => array()
+	), $options);
     $attrOptions = array('label'=>$item['caption'],
               'fieldname'=>$item['fieldname'],
               'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');

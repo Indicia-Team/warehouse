@@ -63,11 +63,12 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     // Read calls are done using get values, so we merge the two arrays
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE; // default
-    kohana::log('debug', 'authenticating');
+    kohana::log('debug', 'authenticating, '.print_r($array, true));
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
     {
       $nonce = $array['nonce'];
       $this->cache = new Cache;
+	  kohana::log('debug', $nonce);
       // get all cache entries that match this nonce
       $paths = $this->cache->exists($nonce);
       foreach($paths as $path) {
