@@ -20,6 +20,8 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+ 
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
 $attrModelName = str_replace('s_website', '', $model->object_name);
 $dataType = $model->$attrModelName->data_type;
 switch ($dataType) {
@@ -131,6 +133,21 @@ if (in_array('valid_date_in_past', $enable_list)) : ?>
 <?php endif; ?>
 </ol>
 </fieldset>
-<?php echo $metadata;
+<fieldset>
+<legend>Other information</legend>
+<?php 
+$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+echo data_entry_helper::outputAttribute(array(
+    'caption' => 'Default value',
+    'data_type' => $dataType,
+    'fieldname' => 'default_value',
+	'id' => 'default_value',
+    'termlist_id' => $model->$attrModelName->termlist_id, 
+	'default' => $model->default_value),
+  array(
+    'extraParams' => $readAuth
+  )
+);
+echo $metadata;
 echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null);
 ?></form>
