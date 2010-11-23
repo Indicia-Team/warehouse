@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -98,7 +98,12 @@ class Gridview_Controller extends Controller {
         $client_filter = array_combine($arrcols,$arrfilters);
         // For id filters, use a WHERE filter for exact match
         if (isset($client_filter['id'])) {
-          $lists = $lists->where(array('id' => $client_filter['id']));
+          // only do an id filter if the provided text is numeric
+          if (preg_match('/^[0-9]$/', $client_filter['id']))
+            $lists = $lists->where(array('id' => $client_filter['id']));
+          else
+            // a dummy filter to force return no records, since the user searched for text in a number.
+            $lists = $lists->where(array('id' => 0));
           unset($client_filter['id']);
         }
         // Other filters are a LIKE filter.
@@ -108,8 +113,6 @@ class Gridview_Controller extends Controller {
       }
     }    
     $limit = kohana::config('pagination.default.items_per_page');
-    kohana::log('debug', 'page '.$this->page);
-    kohana::log('debug', 'limit '.$limit);
     $offset = ($this->page -1) * $limit;
     $table = $lists->find_all($limit, $offset);  
     $pagination = new Pagination(array(
@@ -131,7 +134,7 @@ class Gridview_Controller extends Controller {
       $gridview_body->actionColumns = $this->actionColumns;
       if(request::is_ajax() && !$forceFullTable) {
         // request for just the grid body
-      	$this->auto_render=false;
+        $this->auto_render=false;
         return $gridview_body->render(true);       
       } else {
         $gridview = new View('gridview');
