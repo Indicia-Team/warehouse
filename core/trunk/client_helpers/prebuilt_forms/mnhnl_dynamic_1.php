@@ -221,7 +221,8 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'Provide percentage column widths for each species checklist grid column as a comma separated list. To leave a column at its default with, put a blank '.
               'entry in the list. E.g. "25,,20" would set the first column to 25% width and the 3rd column to 20%, leaving the other columns as they are.',
           'type'=>'string',
-          'group'=>'Species'
+          'group'=>'Species',
+		  'required' => false
         ),
         array(
           'name'=>'list_id',
