@@ -2867,19 +2867,21 @@ class data_entry_helper extends helper_config {
             'valueField'=>'id',
             'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
             'class' => $class,
-            'blankText' => ''
+            'blankText' => '',
+            'default' => $attrDef['default']
           ));
           break;
         case 'D':
         case 'V':
           // Date-picker control
+          $defaultValue = empty($attrDef['default']) ? lang::get('click here') : $attrDef['default'];
           $occAttrControls[$occAttrId] = '<input type="text" class="date $class" ' .
             'id="{fieldname}" name="{fieldname}" ' .
-            "value=\"".lang::get('click here')."\"/>";
+            "value=\"$defaultValue\"/>";
           break;
         default:
           $occAttrControls[$occAttrId] =
-            "<input type=\"text\" id=\"{fieldname}\" name=\"{fieldname}\" class=\"$class\" value=\"\" />";
+            "<input type=\"text\" id=\"{fieldname}\" name=\"{fieldname}\" class=\"$class\" value=\"".$attrDef['default']."\" />";
           break;
       }
       $idx++;      
@@ -5113,34 +5115,57 @@ $('.ui-state-default').live('mouseout', function() {
     );
     $response = self::get_population_data($attrOptions);
     if (array_key_exists('error', $response))
-        return $response;
+      return $response;
     foreach ($response as $item){
-        $itemId=$item['id'];
-        unset($item['id']);
-        $item['fieldname']=$options['fieldprefix'].':'.$itemId.($item['multi_value'] == 't' ? '[]' : '');
-        $item['caption']=lang::get($item['caption']);
-        $retVal[$itemId] = $item;
+      $itemId=$item['id'];
+      unset($item['id']);
+      $item['fieldname']=$options['fieldprefix'].':'.$itemId.($item['multi_value'] == 't' ? '[]' : '');
+      $item['caption']=lang::get($item['caption']);
+      $item['default'] = self::attributes_get_default($item);
+      $retVal[$itemId] = $item;
     }
     if(!$options['id'])
       return $retVal;
 
     $options['extraParams'][$options['key']] = $options['id'];
     $existingValuesOptions = array(
-          'table'=>$options['valuetable']
-        ,'cachetimeout' => 0 // can't cache
-           ,'extraParams'=> $options['extraParams']);
+        'table'=>$options['valuetable'],
+        'cachetimeout' => 0, // can't cache
+        'extraParams'=> $options['extraParams']);
     $response = self::get_population_data($existingValuesOptions);
     if (array_key_exists('error', $response))
       return $response;
     foreach ($response as $item){
-        if(isset($retVal[$item[$options['attrtable'].'_id']])){
+      if(isset($retVal[$item[$options['attrtable'].'_id']])){
         if(isset($item['id'])){
           $retVal[$item[$options['attrtable'].'_id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
-             $retVal[$item[$options['attrtable'].'_id']]['default'] = $item['raw_value'];
+          $retVal[$item[$options['attrtable'].'_id']]['default'] = $item['raw_value'];
         }
       }
     }
     return $retVal;
+  }
+  
+  /** 
+   * For a single sample or occurrence attribute array loaded from the database, find the appropriate default value depending on the
+   * data type.
+   * @todo Handle vague dates. At the moment we just use the start date.
+   */
+  private static function attributes_get_default($item) {
+    switch ($item['data_type']) {
+	  case 'T':
+		return $item['default_text_value'];
+	  case 'F':
+		return $item['default_float_value'];
+	  case 'I':
+	  case 'L':
+		return $item['default_int_value'];
+	  case 'D':
+	  case 'V':
+		return $item['default_date_start_value'];
+	  default:
+	    return '';
+	}
   }
 
   private static function boolean_attribute($ctrl, $options) {
