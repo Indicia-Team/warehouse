@@ -200,6 +200,22 @@ class iform_mnhnl_dynamic_1 {
           'group'=>'Species'
         ),
         array(
+          'name' => 'species_include_both_names',
+          'caption' => 'Include both names in species autocomplete and added rows',
+          'description' => 'When using a species grid with the ability to add new rows, the autocomplete control by default shows just the searched taxon name in the drop down. '.
+              'Set this to include both the latin and common names, with the searched one first. This also controls the label when adding a new taxon row into the grid.',
+          'type' => 'boolean',
+          'group' => 'Species'
+        ),
+        array(
+          'name' => 'species_include_taxon_group',
+          'caption' => 'Include taxon group name in species autocomplete and added rows',
+          'description' => 'When using a species grid with the ability to add new rows, the autocomplete control by default shows just the searched taxon name in the drop down. '.
+              'Set this to include the taxon group title.  This also controls the label when adding a new taxon row into the grid.',
+          'type' => 'boolean',
+          'group' => 'Species'
+        ),
+        array(
           'name'=>'occurrence_comment',
           'caption'=>'Occurrence Comment',
           'description'=>'Should an input box be present for a comment against each occurrence?',
@@ -222,7 +238,7 @@ class iform_mnhnl_dynamic_1 {
               'entry in the list. E.g. "25,,20" would set the first column to 25% width and the 3rd column to 20%, leaving the other columns as they are.',
           'type'=>'string',
           'group'=>'Species',
-		  'required' => false
+          'required' => false
         ),
         array(
           'name'=>'list_id',
@@ -746,18 +762,15 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
    * Get the control for species input, either a grid or a single species input control.
    */
   private static function get_control_species($auth, $args, $tabalias, $options) {
-    global $indicia_templates;
-    
-    $extraParams = $auth['read'] + array('view' => 'detail');
+    $extraParams = $auth['read'];
     if ($args['species_names_filter']=='preferred') {
       $extraParams += array('preferred' => 't');
     }
     if ($args['species_names_filter']=='language') {
-      $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
+      $extraParams += array('language' => iform_lang_iso_639_2($user->lang));
     }  
     if (self::getGridMode($args)) {      
-      // multiple species being input via a grid
-      $indicia_templates ['taxon_label'] = '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority}</div>';
+      // multiple species being input via a grid      
       $species_ctrl_opts=array_merge(array(
           'listId'=>$args['list_id'],
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
@@ -765,10 +778,15 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
-          'occurrenceImages'=>$args['occurrence_images']          
+          'occurrenceImages'=>$args['occurrence_images'],
+          'PHPtaxonLabel' => true          
       ), $options);
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
-      if ($args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
+      if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
+      
+      self::build_grid_taxon_label_function($args);
+      self::build_grid_autocomplete_function($args);
+      
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
       // then output the grid control
       return '<input type="hidden" value="true" name="gridmode" />'.
@@ -807,6 +825,68 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       // Dynamically generate the species selection control required.
      return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_ctrl_opts);
     }
+  }
+  
+  /**
+   * Build a PHP function  to format the species added to the grid according to the form parameters
+   * autocomplete_include_both_names and autocomplete_include_taxon_group.
+   */
+  private static function build_grid_autocomplete_function($args) {
+    global $indicia_templates;  
+    // always include the searched name
+    $fn = "function(item) { \n".
+        "  var r;\n".
+        "  if (item.language=='lat') {\n".
+        "    r = '<em>'+item.taxon+'</em>';\n".
+        "  } else {\n".
+        "    r = item.taxon;\n".
+        "  }\n";
+    // This bit optionally adds '- common' or '- latin' depending on what was being searched
+    if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+      $fn .= "  if (item.preferred='t' && item.common!=item.taxon) {\n".
+        "    r += ' - ' + item.common;\n".
+        "  } else if (item.preferred='f' && item.preferred_name!=item.taxon) {\n".
+        "    r += ' - <em>' + item.preferred_name + '</em>';\n".
+        "  }\n";
+    }
+    // this bit optionally adds the taxon group
+    if (isset($args['species_include_taxon_group']) && $args['species_include_taxon_group'])
+      $fn .= "  r += '<br/><strong>' + item.taxon_group + '</strong>'\n";
+    // Close the function
+    $fn .= " return r;\n".
+        "}\n";
+    // Set it into the indicia templates
+    $indicia_templates['format_species_autocomplete_fn'] = $fn;
+  }
+  
+  /**
+   * Build a JavaScript function  to format the autocomplete item list according to the form parameters
+   * autocomplete_include_both_names and autocomplete_include_taxon_group.
+   */
+  private static function build_grid_taxon_label_function($args) {
+    global $indicia_templates;  
+    // always include the searched name
+    $php = '$r="";'."\n".
+        'if ("{language}"=="lat") {'."\n".
+        '  $r = "<em>{taxon}</em>";'."\n".
+        '} else {'."\n".
+        '  $r = "{taxon}";'."\n".
+        '}'."\n";
+    // This bit optionally adds '- common' or '- latin' depending on what was being searched
+    if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+      $php .= "\n\n".'if ("{preferred}"=="t" && "{common}"!="{taxon}" && "{common}"!="") {'."\n\n\n".
+        '  $r .= " - {common}";'."\n".
+        '} else if ("{preferred}"=="f" && "{preferred_name}"!="{taxon}" && "{preferred_name}"!="") {'."\n".
+        '  $r .= " - <em>{preferred_name}</em>";'."\n".
+        '}'."\n";
+    }
+    // this bit optionally adds the taxon group
+    if (isset($args['species_include_taxon_group']) && $args['species_include_taxon_group'])
+      $php .= '$r .= "<br/><strong>{taxon_group}</strong>";'."\n";
+    // Close the function
+    $php .= 'return $r;'."\n";
+    // Set it into the indicia templates
+    $indicia_templates['taxon_label'] = $php;
   }
   
     

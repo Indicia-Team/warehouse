@@ -2410,9 +2410,14 @@ class data_entry_helper extends helper_config {
   * control from the parent list of the one given. This will take the form of an autocomplete
   * box against the parent list which will add an extra row to the control upon selection.</p>
   *
-  * <p>To change the format of the label displayed for each taxon, use the global $indicia_templates variable
-  * to set the value for the entry 'taxon_label'. The tags available in the template are {taxon},
-  * {authority} and {common}.</p>
+  * <p>To change the format of the label displayed for each taxon in the grid rows that are pre-loaded into the grid, 
+  * use the global $indicia_templates variable to set the value for the entry 'taxon_label'. The tags available in the template are {taxon}, {preferred_name},
+  * {authority} and {common}. This can be a PHP snippet if PHPtaxonLabel is set to true.</p>
+  *
+  * <p>To change the format of the label displayed for each taxon in the autocomplete used for searching for species to add to the grid,
+  * use the global $indicia_templates variable to set the value for the entry 'format_species_autocomplete_fn'. This must be a JavaScript function 
+  * which takes a single parameter. The parameter is the item returned from the database with attributes taxon, preferred ('t' or 'f'), 
+  * preferred_name, common, authority, taxon_group, language. The function must return the string to display in the autocomplete list.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>listId</b><br/>
@@ -2499,7 +2504,7 @@ class data_entry_helper extends helper_config {
     // Load any existing sample's occurrence data into $entity_to_load
     if (isset(self::$entity_to_load['sample:id']))
       self::preload_species_checklist_occurrences(self::$entity_to_load['sample:id'], $options['readAuth'], $options['occurrenceImages']);
-    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.  
+    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
 	  $taxalist = self::get_species_checklist_taxa_list($options, $taxaThatExist);
     // If we managed to read the species list data we can proceed
     if (! array_key_exists('error', $taxalist)) {
@@ -2597,12 +2602,14 @@ class data_entry_helper extends helper_config {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\"><input class=\"control-width-4 scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
 		      "value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
-        if ($options['occurrenceImages']) {
-          $existingImages = preg_grep("/^sc:$id:$existing_record_id:occurrence_image:id:[0-9]*$/", array_keys(self::$entity_to_load));
+        if ($options['occurrenceImages']) {          
+          $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$id:$existing_record_id:occurrence_image:id:[0-9]*$/", array_keys(self::$entity_to_load)) : array();
           if (count($existingImages)===0)
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"add-image-link scImageLink\" id=\"add-images:$id:$existing_record_id\">".lang::get('add images').'</a></td>';
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"add-image-link scImageLink\" id=\"add-images:$id:$existing_record_id\">".
+                str_replace(' ','&nbsp;',lang::get('add images')).'</a></td>';
           else
-            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$id:$existing_record_id\">".lang::get('hide images').'</a></td>';
+            $row .= "\n<td class=\"ui-widget-content scImageLinkCell\"><a href=\"\" class=\"hide-image-link scImageLink\" id=\"hide-images:$id:$existing_record_id\">".
+                str_replace(' ','&nbsp;',lang::get('hide images')).'</a></td>';
         }        
         // Are we in the first column? Note multi-column grids are disabled if using occurrenceImages as it adds extra rows and messes things up.
         if ($options['occurrenceImages'] || $rowIdx < count($taxalist)/$options['columns']) {
@@ -2640,11 +2647,16 @@ class data_entry_helper extends helper_config {
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
-        // Javascript to add further rows to the grid        
+        // Javascript to add further rows to the grid
+        if (isset($indicia_templates['format_species_autocomplete_fn'])) {
+          self::$javascript .= 'var formatter = '.$indicia_templates['format_species_autocomplete_fn'];
+        } else {
+          self::$javascript .= "var formatter = '".$indicia_templates['taxon_label']."';\n";
+        }
         self::$javascript .= "addRowToGrid('".parent::$base_url."index.php/services/data"."', '".
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
-            "'".$indicia_templates['taxon_label']."');\r\n";
+            " formatter);\r\n";
       }
       return $grid;
     } else {
@@ -2757,9 +2769,9 @@ class data_entry_helper extends helper_config {
    */
   private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
     // Get the list of species that are always added to the grid
-    if (isset($options['listId']) && !empty($options['listId']))
+    if (isset($options['listId']) && !empty($options['listId'])) {
       $taxalist = self::get_population_data($options);
-    else
+    } else
       $taxalist = array();
     // build a list of the ids we have got from the default list.
     $taxaLoaded = array();
