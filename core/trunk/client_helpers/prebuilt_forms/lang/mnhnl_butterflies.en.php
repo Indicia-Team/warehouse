@@ -29,8 +29,8 @@ global $custom_terms;
 $custom_terms = array(
 	'LANG_Edit' => 'Edit',
 	'LANG_Add_Sample' => 'Add New Sample',
-  'LANG_Add_Sample_Single' => 'Add Single Occurrence',
-  'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
+	'LANG_Add_Sample_Single' => 'Add Single Occurrence',
+	'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
 
 	'LANG_Tab_aboutyou' => 'About You',      
 	'LANG_Tab_Instructions_aboutyou' => '<strong>About You</strong><br/>Please tell us about yourself first.',
@@ -72,6 +72,11 @@ $custom_terms = array(
 	'transectgrid:taxa_taxon_list_id' => 'Add Species',
 	'sectionlist:species' => 'Species',
 	'sectionlist:section' => 'Section',
-	'sectionlist:numberlabel' => 'Number of Sections'
+	'sectionlist:numberlabel' => 'Number of Sections',
+	'transectgrid:confirmremove' => 'You are about to delete a species grid. If you do this any previously saved data will be lost. Do you still wish to remove ',
+	'sectionlist:confirmremove' => 'You are about to delete a species row. If you do this any previously saved data will be lost. Do you still wish to remove ',
+	'sectionlist:confirmremovecolumns' => 'You are about to remove some sections. If you do this any previously saved data will be lost. Do you still wish to do this?',
+	'transectgrid:rowexists' => 'A grid for this species already exists. It is present under the preferred name of ',
+	'sectionlist:rowexists' => 'A row for this species already exists. It is present under the preferred name of '
 
 );
