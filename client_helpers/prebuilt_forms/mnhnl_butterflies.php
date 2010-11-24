@@ -33,6 +33,7 @@
  * Improve deletion: need to maintain the attachment to correct_sample, to enable undeleting if needed.
  * Transect restrictions?
  * Sort out front Page.
+ * Streamline attributes in submission - use new method?
  */
 
 require_once('mnhnl_dynamic_1.php');
@@ -678,8 +679,8 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
         $sa['model']['fields']['date'] = array('value' => $values['sample:date']);
         $sa['model']['fields']['location_id'] = array('value' => $values['sample:location_id']);
         $sa['model']['fields']['location_name'] = array('value' => 'GR '.$values['sample:location_name'].' '.($j*2).($i*2));
-//        $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
-//        $sa['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
+        $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
+        $sa['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
         $suboccs = array();
         foreach($values as $key => $value){
         	$parts = explode(':', $key);
@@ -687,7 +688,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
         		$occ = array('fkId' => 'sample_id',
                              'model' => array('id' => 'occurrence', 'fields' => array()));
                 $occ['model']['fields']['taxa_taxon_list_id'] = array('value' => $parts[1]);
-//                $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+                $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
                 if($parts[5] != '-'){
                   $occ['model']['fields']['id'] = array('value' => $parts[5]);
                 }
@@ -719,8 +720,8 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
       $sa['model']['fields']['date'] = array('value' => $values['sample:date']);
       $sa['model']['fields']['location_id'] = array('value' => $values['sample:location_id']);
       $sa['model']['fields']['location_name'] = array('value' => 'SL '.$values['sample:location_name'].' '.$i);
-//      $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
-//      $sa['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
+      $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
+      $sa['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
       $saattrs = array();
       foreach($values as $key => $value){
         $parts = explode(':', $key);
@@ -742,7 +743,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
           $occ = array('fkId' => 'sample_id',
                              'model' => array('id' => 'occurrence', 'fields' => array()));
           $occ['model']['fields']['taxa_taxon_list_id'] = array('value' => $parts[1]);
-//          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
           if($parts[4] != '-') $occ['model']['fields']['id'] = array('value' => $parts[4]);
           $attrFields = array('occurrence_attribute_id' => $args['quant_dist_attr_id'], 'value' => $value);
           if($parts[5] != '-') $attrFields['id'] = $parts[5];
@@ -760,7 +761,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
         foreach($delList as $occID){
           $occ = array('fkId' => 'sample_id',
                              'model' => array('id' => 'occurrence', 'fields' => array()));
-//          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
           $occ['model']['fields']['id'] = array('value' => $occID);
           $occ['model']['fields']['deleted'] = array('value' => 't');
           $subsamples[] = $occ;
@@ -773,7 +774,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
         foreach($delList as $occID){
           $occ = array('fkId' => 'sample_id',
                              'model' => array('id' => 'occurrence', 'fields' => array()));
-//          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
           $occ['model']['fields']['id'] = array('value' => $occID);
           $occ['model']['fields']['deleted'] = array('value' => 't');
           $subsamples[] = $occ;
