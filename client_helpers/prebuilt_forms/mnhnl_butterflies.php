@@ -28,15 +28,18 @@
  * @subpackage PrebuiltForms
  * 
  * TBD:
- * Check processing of zeros/blanks for existing records.
+ * Introduce read only fields on section list for transect and date, copied over from front page.
+ * Check processing of zeros/blanks for existing records in list. Validation doesn't alwys seem to work.
+ * Improve deletion: need to maintain the attachment to correct_sample, to enable undeleting if needed.
  * Transect restrictions?
  * Sort out front Page.
- * If species already on List, flag alert.
  */
 
 require_once('mnhnl_dynamic_1.php');
 
 class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
+  protected static $locations;
+  protected static $svcUrl;
   /** 
    * Return the form title.
    * @return string The title of the form.
@@ -106,6 +109,13 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
           'description'=>'The maximum value for the second field describing the transect.',
           'default'=>136,
           'type'=>'int'
+        ),
+        array(
+          'name'=>'max_number_sections',
+          'caption'=>'Maximum Number of Sections',
+          'description'=>'The Maximum Number of Sections in the Section List.',
+          'default'=>8,
+          'type'=>'int'
         )		
       )
     );
@@ -115,11 +125,14 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   public static function get_form($args, $node, $response=null) {
     global $indicia_templates;
     // we don't use the map, but a lot of the inherited code assumes the map is present.
+    self::$svcUrl = data_entry_helper::$base_url.'/index.php/services';
     data_entry_helper::add_resource('openlayers');
     $indicia_templates['label'] = '<label for="{id}"{labelClass}>{label}:</label>'; // can't have the CR on the end
     $indicia_templates['zilch'] = ''; // can't have the CR on the end
-    
-    return parent::get_form($args, $node, $response);
+    self::$locations = iform_loctools_listlocations($node);
+    $retVal = parent::get_form($args, $node, $response);
+    data_entry_helper::$javascript .= "jQuery('#date\\:sample').datepicker( \"option\", \"minDate\", new Date(2010, 4 - 1, 1) );";
+    return $retVal;
   }
     
   public static function get_css() {
@@ -135,37 +148,38 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
    * Get the transect control
    */
   protected static function get_control_transect($auth, $args, $tabalias, $options) {
-  	if(isset(data_entry_helper::$entity_to_load['sample:entered_sref'])){
-  		$esref = data_entry_helper::$entity_to_load['sample:entered_sref'];
-  		$parts = explode(', ', $esref);
-  		$tr1 = substr($parts[0], 0, -3);
-  		$tr2 = substr($parts[1], 0, -3);
-  	} else {
-  		$esref = '';
-  		$tr1 = '';
-  		$tr2 = '';
-  	}
-  	if(isset(data_entry_helper::$entity_to_load['sample:location_name'])){
-  		$lname = data_entry_helper::$entity_to_load['sample:location_name'];
-  	} else {
-  		$lname = '';
-  	}
-  	$ret = "<input type=hidden name=\"sample:entered_sref_system\" value=\"2169\" />
-    <input type=hidden name=\"sample:entered_sref\" value=\"".$esref."\" />
-    <input type=hidden name=\"sample:location_name\" value=\"".$lname."\" />
-    <label for=\"tr_f1\" >".lang::get('Transect')."</label><select id=\"tr_f1\" name=\"tr_f1\" ><option> </option>";
-    for($i = $args['tr_f1_min']; $i <= $args['tr_f1_max']; $i++)
-      $ret .= "<option ".((string)$i == $tr1 ? "selected=\"selected\"" : "")." value=\"".$i."\">".($i<100?'0':'').$i."</option>";
-    $ret .= "</select><span>_</span><select id=\"tr_f2\" name=\"tr_f2\" ><option> </option>";
-    for($i = $args['tr_f2_min']; $i <= $args['tr_f2_max']; $i++)
-      $ret .= "<option ".((string)$i == $tr2 ? "selected=\"selected\"" : "")." value=\"".$i."\">".($i<100?'0':'').$i."</option>";
-    $ret .= "</select><br />";
-    data_entry_helper::$javascript .= "jQuery('#tr_f1,#tr_f2').change(function(){
-  var X = jQuery('#tr_f1').val();
-  var Y = jQuery('#tr_f2').val();
-  jQuery('[name=sample\\:entered_sref]').val(X+'000, '+Y+'000');
-  jQuery('[name=sample\\:location_name]').val((X<100?'0':'')+X+'_'+(Y<100?'0':'')+Y);
-  });
+    $defAttrOptions = array('extraParams'=>$auth['read'], 'validation' => array('required'));
+    if(self::$locations == 'all'){
+      $locOptions = array_merge(array('label'=>lang::get('LANG_Transect'), 'id'=>'sample:location_id'), $defAttrOptions);
+      $locOptions['extraParams'] = array_merge(array('parent_id'=>'NULL', 'view'=>'detail', 'orderby'=>'name'), $locOptions['extraParams']);
+      $ret = data_entry_helper::location_select($locOptions);
+    } else {
+      // can't use location select due to location filtering.
+      $ret = "<label for=\"sample:location_id\">".lang::get('LANG_Transect').":</label>\n<select id=\"sample:location_id\" name=\"sample:location_id\" ".$disabled_text." class=\" \"  >";
+      $url = self::$svcUrl.'/data/location?mode=json&view=detail&parent_id=NULL&orderby=name&auth_token='.$auth['read']['auth_token'].'&nonce='.$auth['read']["nonce"]; // could do new multiple fetch query
+      $session = curl_init($url);
+      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+      $entities = json_decode(curl_exec($session), true);
+      if(!empty($entities)){
+        foreach($entities as $entity){
+          if(in_array($entity["id"], self::$locations)) {
+            if($entity["id"] == data_entry_helper::$entity_to_load['sample:location_id']) {
+              $selected = 'selected="selected"';
+            } else {
+              $selected = '';
+            }
+            $ret .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
+          }
+        }
+      }
+      $ret .= "</select>";
+    }
+    $ret .= "<input type=hidden name=\"sample:location_name\" value=\"\" /><br />";
+    data_entry_helper::$javascript .= "
+jQuery(\"#sample\\\\:location_id\").change(function(){
+  jQuery('[name=sample\\:location_name]').val(jQuery(this).find(':selected')[0].text);
+});
+jQuery(\"#sample\\\\:location_id\").change();
 ";
     return $ret;
   }
@@ -193,7 +207,7 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
           'id'=>'transectgrid_taxa_taxon_list_id',
           'table'=>'taxa_taxon_list',
           'captionField'=>'taxon',
-          'valueField'=>'id',
+          'valueField'=>'taxon_meaning_id',
           'columns'=>2,          
           'parentField'=>'parent_id',
           'extraParams'=>$extraParams
@@ -215,20 +229,24 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     );
     data_entry_helper::$javascript .= "
 build_empty_transectgrid = function(speciesID){
+  // at this point the species ID should be the preferred one.
   // first check if already set up. If yes do nothing.
   if(jQuery('.transectgrid').find('[taxonID='+speciesID+']').length > 0) return;
   var container = jQuery('<div class=\"trSpeciesContainer\" ></div>').prependTo('.transectgrid');
-  jQuery('<span class=\"right\">Remove</span>').attr('taxonID',speciesID).appendTo(container).click(function(){
-    jQuery(this).parent().find('select').each(function(){
+  jQuery('<span class=\"right\"><img src=\"/misc/watchdog-error.png\" alt=\"Delete\"/></span>').attr('taxonID',speciesID).appendTo(container).click(function(){
+    if(confirm(\"".lang::get('transectgrid:confirmremove')."\"+jQuery(this).parent().find('.trgridspecname')[0].textContent+\"?\")){
+     jQuery(this).parent().find('select').each(function(){
       var parts = jQuery(this).attr('name').split(':');
       if(parts[5] != '-'){
         var delList = jQuery('#TGDEL').val();
         jQuery('#TGDEL').val((delList == '' ? '' : delList+',')+parts[5]);
       }
-    });
-    jQuery(this).parent().remove();
-  });;
+     });
+     jQuery(this).parent().remove();
+    }
+  });
   jQuery('<span class=\"trgridspecname\"></span>').attr('taxonID',speciesID).appendTo(container);
+  jQuery('<br /><span class=\"trgridothernames\"></span>').attr('taxonID',speciesID).appendTo(container);
   var table = jQuery('<table border=\"1\"></table>').appendTo(container);
   var sel = '".data_entry_helper::select($detail_args)."';
   for(var i=0; i<5; i++) {
@@ -237,24 +255,46 @@ build_empty_transectgrid = function(speciesID){
     for(var j=0; j<5; j++)
       jQuery('<td><span>'+((sel.replace(/{LABEL}/g, (j*2).toString()+((4-i)*2).toString())).replace(/{FIELDNAME}/g, 'TG:'+speciesID+':'+(j*2)+':'+(4-i)*2+':-:-:-'))+'</td>').appendTo(row);
   }
-  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/\"+speciesID +
-		\"?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
+  jQuery.getJSON(\"".self::$svcUrl."/data/taxa_taxon_list/\"+speciesID +
+		\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
 			\"&callback=?\", function(data) {
         if (data.length>0) {
-          jQuery('.trgridspecname').filter('[taxonID='+data[0].id+']').empty().append('<b>'+data[0].taxon+'</b>');
-        }}
-  );
+          jQuery('.trgridspecname').filter('[taxonID='+data[0].id+']').empty().attr('meaningID', data[0].taxon_meaning_id).append('<b>'+data[0].taxon+'</b>');
+          jQuery('.trgridothernames').filter('[taxonID='+data[0].id+']').empty().attr('meaningID', data[0].taxon_meaning_id);
+          jQuery.getJSON(\"".self::$svcUrl."/data/taxa_taxon_list/\"+
+              \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&preferred=false&taxon_meaning_id=\" + data[0].taxon_meaning_id +
+              \"&callback=?\", function(data) {
+            if (data.length>0) {
+              for(var i = 0; i<data.length; i++)
+                jQuery('.trgridothernames').filter('[meaningID='+data[i].taxon_meaning_id+']').append(data[i].taxon+', ');
+            }});
+        }});
 };
 
 build_transectgrid = function(speciesID, X, Y, gridSampleID, occurrenceID, attributeID, value){
+  // at this point the species ID should be the preferred one.
   build_empty_transectgrid(speciesID);
   var sel=jQuery('[name^=TG\\:'+speciesID+'\\:'+X+'\\:'+Y+'\\:]').attr('name','TG:'+speciesID+':'+X+':'+Y+':'+gridSampleID+':'+occurrenceID+':'+attributeID).val(value);
 };
 
 jQuery('#transectgrid_taxa_taxon_list_id').change(function(){
-  build_empty_transectgrid(jQuery('#transectgrid_taxa_taxon_list_id').val());
+  // when this is called the value stored is the taxon_meaning_id: .
+  // Initially check that row does not already exist:
+  var existRows = jQuery('.trgridspecname').filter('[meaningID='+jQuery('#transectgrid_taxa_taxon_list_id').val()+']');
+  if(existRows.length>0)
+    alert(\"".lang::get('transectgrid:rowexists')."\"+existRows[0].textContent);
+  else
+    // Next convert to the preferred ID
+    jQuery.getJSON(\"".self::$svcUrl."/data/taxa_taxon_list\" +
+		\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&preferred=true&taxon_meaning_id=\" + jQuery('#transectgrid_taxa_taxon_list_id').val() +
+			\"&callback=?\", function(data) {
+        if (data.length>0) {
+  			build_empty_transectgrid(data[0].id);
+        }});
   jQuery('#transectgrid_taxa_taxon_list_id\\\\:taxon').val('');
 });
+
+
 ";
     $myHidden = '';
     // here put in a load of JS calls to build the grids
@@ -272,7 +312,7 @@ jQuery('#transectgrid_taxa_taxon_list_id').change(function(){
      $myHidden = '<input type="hidden" id="TGDEL" name="TGDEL" value="" >';
      data_entry_helper::$javascript .= "jQuery('#TGDEL').val('');";
      if(isset(data_entry_helper::$entity_to_load['sample:id'])){ //sample specified
-      $url = data_entry_helper::$base_url.'/index.php/services/data/sample?parent_id='.data_entry_helper::$entity_to_load['sample:id'];
+      $url = self::$svcUrl.'/data/sample?parent_id='.data_entry_helper::$entity_to_load['sample:id'];
       $url .= "&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -282,13 +322,13 @@ jQuery('#transectgrid_taxa_taxon_list_id').change(function(){
           $X = substr($entity['location_name'], -2, 1);
           $Y = substr($entity['location_name'], -1);
           $myHidden .= '<input type="hidden" name="TGS:'.$X.':'.$Y.'" value="'.($entity['id']).'">';
-          $url = data_entry_helper::$base_url.'/index.php/services/data/occurrence?sample_id='.($entity['id']);
+          $url = self::$svcUrl.'/data/occurrence?sample_id='.($entity['id']);
           $url .= "&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
           $session = curl_init($url);
           curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
           $OCCentities = json_decode(curl_exec($session), true);
           foreach($OCCentities as $OCCentity){
-          	$url = data_entry_helper::$base_url.'/index.php/services/data/occurrence_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&occurrence_id='.$OCCentity['id'].'&occurrence_attribute_id='.$args['qual_dist_attr_id'];
+          	$url = self::$svcUrl.'/data/occurrence_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&occurrence_id='.$OCCentity['id'].'&occurrence_attribute_id='.$args['qual_dist_attr_id'];
             $session = curl_init($url);
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             $ATTRentities = json_decode(curl_exec($session), true);
@@ -301,7 +341,16 @@ build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCe
       }
      }
     }
-    return $myHidden.'<div>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</div><div class="transectgrid"></div>';
+    $retVal = '<div>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</div><div class="transectgrid"></div>';
+    data_entry_helper::$javascript .= "
+// override the default results function - doesn't seem to use value field.
+jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').unbind(\"result\");
+jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').result(function(event, data, value) {
+      jQuery('input#transectgrid_taxa_taxon_list_id').attr('value', value);
+      jQuery('input#transectgrid_taxa_taxon_list_id').change();
+});
+";
+    return $retVal;
   }
 
 
@@ -317,7 +366,6 @@ build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCe
     ));
   	/* We will make the assumption that only one of these will be put onto a form.
   	 * A lot of this is copied from the species control and has the same features. */
-  	$maxNumSections = 10;
     $extraParams = $auth['read'] + array('view' => 'detail');
     if ($args['species_names_filter']=='preferred') {
       $extraParams += array('preferred' => 't');
@@ -337,7 +385,7 @@ build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCe
           'id'=>'sectionlist_taxa_taxon_list_id',
           'table'=>'taxa_taxon_list',
           'captionField'=>'taxon',
-          'valueField'=>'id',
+          'valueField'=>'taxon_meaning_id',
           'columns'=>2,          
           'parentField'=>'parent_id',
           'extraParams'=>$extraParams
@@ -353,34 +401,86 @@ build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCe
     if ($args['species_ctrl']=='tree_browser')
       return '<p>Can not use tree browser in this context</p>';
     data_entry_helper::$javascript .= "
+delete_section_species_row = function(row){
+  if(confirm(\"".lang::get('sectionlist:confirmremove')."\"+row.find('.seclistspecname')[0].textContent+\"?\")){
+    row.find('input').each(function(){
+      // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrValID
+      var parts = jQuery(this).attr('name').split(':');
+      if(parts[4] != '-'){
+        var delList = jQuery('#SLDEL').val();
+        jQuery('#SLDEL').val((delList == '' ? '' : delList+',')+parts[4]);
+      }
+    });
+    row.remove();
+  }
+};
+remove_section_columns = function(from, to){
+  var rows=jQuery('.sectionlist').find('tr');
+  for(var i=0; i< rows.length; i++){
+    for(var j=to; j>= from; j--){
+      var cell = jQuery(rows[i]).children(':eq('+j+')');
+      cell.find('input').each(function(){
+        // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrValID
+        var parts = jQuery(this).attr('name').split(':');
+        if(parts[4] != '-'){
+          var delList = jQuery('#SLDEL').val();
+          jQuery('#SLDEL').val((delList == '' ? '' : delList+',')+parts[4]);
+        }
+      });
+      cell.remove();
+    }
+  }
+};
+// at this point, the species ID should hold the preferred taxon id.
 add_section_species_row = function(speciesID){
   // first check if already set up. If yes do nothing.
   if(jQuery('.sectionlist').find('[taxonID='+speciesID+']').length > 0) return;
+  var remButton = jQuery('<img src=\"/misc/watchdog-error.png\" alt=\"Delete\"/>').click(function(){
+    delete_section_species_row(jQuery(this).parent().parent()); // image, td, tr
+  });;
   var name = jQuery('<span class=\"seclistspecname\"></span>').attr('taxonID',speciesID);
-  var cell = jQuery('<td></td>').append(name);
+  var cell = jQuery('<td></td>').append(remButton).append(name);
   var row = jQuery('<tr></tr>').data('taxonID',speciesID).insertBefore('.seclistspecrow').append(cell);
-  for(var i=1; i<= ".$maxNumSections."; i++){
+  for(var i=1; i<= ".$args['max_number_sections']."; i++){
     if(jQuery('.sectionlist').find('[section='+i+']').length > 0) {
-      // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrValID
       var sampleID = jQuery('.sectionlist').find('tr:eq(0)').find('th:eq('+i+')').data('sampleID');
-      jQuery('<td><input type=\"text\" name=\"SL:'+speciesID+':'+i+':'+sampleID+':-:-\" class=\"sl-input number\" value=\"\" /></td>').appendTo(row);
+      add_section_value(row, i, sampleID);
     }
   }
-  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/\"+speciesID +
-		\"?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
+  jQuery.getJSON(\"".self::$svcUrl."/data/taxa_taxon_list/\"+speciesID +
+		\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
 			\"&callback=?\", function(data) {
         if (data.length>0) {
-          jQuery('.seclistspecname').filter('[taxonID='+data[0].id+']').empty().append('<b>'+data[0].taxon+'</b>');
+          // we are assuming that this is the preferred ID
+          jQuery('.seclistspecname').filter('[taxonID='+data[0].id+']').empty().attr('meaningID', data[0].taxon_meaning_id).append('<b>'+data[0].taxon+'</b>');
         }}
   );
 };
+
+section_data_changed = function(){
+  var column = jQuery(this).attr('name').split(':')[2];
+  var aucuneControl = jQuery(':checkbox[name^=\"SLA\\:'+column+'\\:\"]').filter('[name$=\"\\:".$options['aucune_attr_id']."\"]').attr('disabled', false);
+  var rows = jQuery('.sectionlist').find('tr');
+  for(var j = 1; j < (rows.length-".($numAttrs+1)."); j++){
+    if(jQuery(rows[j]).find('td').filter(':eq('+column+')').find('[value!=\"\"]').length > 0)
+      aucuneControl.attr('checked', false).attr('disabled', true);
+  };
+};
+
+add_section_value = function(row, column, sampleID){
+  // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrID
+  var taxonID = jQuery(row).find('.seclistspecname').attr('taxonID');
+  var ctrl = jQuery('<input type=\"text\" name=\"SL:'+taxonID+':'+column+':'+sampleID+':-:-\" class=\"sl-input number\" value=\"\" />').change(section_data_changed);
+  jQuery('<td></td>').append(ctrl).appendTo(row);
+};
+
 add_section_column = function(column, sampleID){
   var rows=jQuery('.sectionlist').find('tr');
   for(var i=1; i<= column; i++){
     if(jQuery('.sectionlist').find('[section='+i+']').length == 0) {
     	for(var j = 0; j < rows.length; j++){
     		if(j==0){ //header
-    		  var header = jQuery('<span>".lang::get('sectionlist:section')." '+i+'</span>').attr('section',i);
+    		  var header = jQuery('<span class=\"sectionlist-column-header\">".lang::get('sectionlist:section')." '+i+'</span>').attr('section',i);
     		  jQuery('<th></th>').data('sampleID', i==column ? sampleID : '-').append(header).appendTo(rows[j]);
     		} else if(j == (rows.length-".(1+$numAttrs).")) {// species selection row has no data.
     		  jQuery('<td></td>').appendTo(rows[j]);";
@@ -397,55 +497,74 @@ add_section_column = function(column, sampleID){
     }
     $indicia_templates['label'] = $tempLabel;
     data_entry_helper::$javascript .= "
-            } else {
-              // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrID
-              var taxonID = jQuery(rows[j]).find('.seclistspecname').attr('taxonID');
-              jQuery('<td><input type=\"text\" name=\"SL:'+taxonID+':'+i+':'+(i==column ? sampleID : '-')+':-:-\" class=\"sl-input number\" value=\"\" /></td>').appendTo(rows[j]);
-            }
+            } else
+              add_section_value(rows[j], i, (i==column ? sampleID : '-'));
     	}
     } else if (i==column && jQuery(rows[0]).find('th:eq('+i+')').data('sampleID') == '-' && sampleID != '-'){
       jQuery(rows[0]).find('th:eq('+i+')').data('sampleID', sampleID);
-      for(var j = 1; j < rows.length-1; j++){
+      for(var j = 1; j < rows.length; j++){
         var input = jQuery(rows[j]).find('td:eq('+i+')').find('input,select');
-        var parts = input.attr('name').split(':');
-        if(parts[0]=='SL')
-          input.attr('name','SL:'+parts[1]+':'+i+':'+sampleID+':'+parts[4]+':'+parts[5]);
-        else if(parts[0]=='SLA')
-          input.attr('name','SLA:'+i+':'+sampleID+':'+parts[3]+':'+parts[4]);
+        if(input.length > 0) {
+          var parts = input.attr('name').split(':');
+          if(parts[0]=='SL')
+            input.attr('name','SL:'+parts[1]+':'+i+':'+sampleID+':'+parts[4]+':'+parts[5]);
+          else if(parts[0]=='SLA')
+            input.attr('name','SLA:'+i+':'+sampleID+':'+parts[3]+':'+parts[4]);
+        }
       }
     }
   }
+  if(jQuery('#sectionlist_number').val() < column) jQuery('#sectionlist_number').val(column);
 };
 jQuery('#sectionlist_number').change(function(){
   // initially we put in the restriction that it is only possible to increase the number of sections.
+  var currentRows = jQuery('.sectionlist-column-header').length;
+  if(currentRows > jQuery('#sectionlist_number').val()){
+    if(!confirm(\"".lang::get('sectionlist:confirmremovecolumns')."\")) return;
+    remove_section_columns(parseInt(jQuery('#sectionlist_number').val())+1, currentRows);
+  }
   add_section_column(jQuery('#sectionlist_number').val(),'-');
 });
 add_section_species = function(speciesID, section, sectionSampleID, occurrenceID, attributeID, value){
   add_section_column(section, sectionSampleID);
   add_section_species_row(speciesID);
-  jQuery('[name^=SL\\:'+speciesID+'\\:'+section+'\\:]').attr('name','SL:'+speciesID+':'+section+':'+sectionSampleID+':'+occurrenceID+':'+attributeID).val(value);
+  jQuery('[name^=\"SL\\:'+speciesID+'\\:'+section+'\\:\"]').attr('name','SL:'+speciesID+':'+section+':'+sectionSampleID+':'+occurrenceID+':'+attributeID).val(value).change()
 };
 add_section_attribute = function(section, sectionSampleID, attrValID, attributeID, value){
   // Fieldname is SLA:section:SectionsampleID:AttrValID:AttrID
   add_section_column(section, sectionSampleID);
-  jQuery('[name^=SLA\\:'+section+'\\:]').each(function(){
+  jQuery('[name^=\"SLA\\:'+section+'\\:\"]').each(function(){
     var parts = jQuery(this).attr('name').split(':');
     if(attributeID == parts[4]) {
       var myName = jQuery(this).attr('name');
-      var checkboxes = jQuery('[name='+myName+']:checkbox');
+      var checkboxes = jQuery('[name=\"'+myName+'\"]:checkbox');
       if(checkboxes.length > 0){
         checkboxes.attr('checked', value == '1' ? true : false);
       } else {
         jQuery(this).val(value);
       }
-      jQuery(this).attr('name','SL:'+section+':'+sectionSampleID+':'+attrValID+':'+attributeID);
+      jQuery(this).attr('name','SLA:'+section+':'+sectionSampleID+':'+attrValID+':'+attributeID);
     }
   });
 };
 jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
-  add_section_species_row(jQuery('#sectionlist_taxa_taxon_list_id').val());
+  // when this is called the value stored is the taxon_meaning_id: .
+  // Initially check that row does not already exist:
+  var existRows = jQuery('.seclistspecname').filter('[meaningID='+jQuery('#sectionlist_taxa_taxon_list_id').val()+']');
+  if(existRows.length>0)
+    alert(\"".lang::get('sectionlist:rowexists')."\"+existRows[0].textContent);
+  else
+    // Next convert to the preferred ID
+    jQuery.getJSON(\"".self::$svcUrl."/data/taxa_taxon_list/\" +
+		\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&preferred=true&taxon_meaning_id=\" + jQuery('#sectionlist_taxa_taxon_list_id').val() +
+			\"&callback=?\", function(data) {
+        if (data.length>0) {
+  			add_section_species_row(data[0].id);
+        }});
   jQuery('#sectionlist_taxa_taxon_list_id\\\\:taxon').val('');
 });
+jQuery('#sectionlist_number').change();
+
 ";
     if($args['init_species_ids'] != '') {
       $init_species = explode(',', $args['init_species_ids']);
@@ -461,7 +580,7 @@ jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
         if ($parts[0] == 'SL' && $value != ''){
           data_entry_helper::$javascript .= "add_section_species(".$parts[1].",".$parts[2].",\"".$parts[3]."\",\"".$parts[4]."\",\"".$parts[5]."\",\"".$value."\");
 ";
-        } else if ($parts[0] == 'SLS'){
+        } else if ($parts[0] == 'SLS' || $parts[0] == 'SLDEL'){
           $myHidden .= '<input type="hidden" name="'.$key.'" value="'.$value.'">';
         } else if ($parts[0] == 'SLA' && $value != ''){
           data_entry_helper::$javascript .= "add_section_attribute(".$parts[1].",".$parts[2].",\"".$parts[3]."\",\"".$parts[4]."\",\"".$value."\");
@@ -469,7 +588,9 @@ jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
         }
       }
     else if(isset(data_entry_helper::$entity_to_load['sample:id'])){ //sample specified
-      $url = data_entry_helper::$base_url.'/index.php/services/data/sample?parent_id='.data_entry_helper::$entity_to_load['sample:id'];
+      $myHidden = '<input type="hidden" id="SLDEL" name="SLDEL" value="" >';
+      data_entry_helper::$javascript .= "jQuery('#SLDEL').val('');";
+      $url = self::$svcUrl.'/data/sample?parent_id='.data_entry_helper::$entity_to_load['sample:id'];
       $url .= "&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -479,13 +600,13 @@ jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
           $section = explode(' ', $entity['location_name']);
           $section = $section[2];
           $myHidden .= '<input type="hidden" name="SLS:'.$section.'" value="'.($entity['id']).'">';
-          $url = data_entry_helper::$base_url.'/index.php/services/data/occurrence?sample_id='.($entity['id']);
+          $url = self::$svcUrl.'/data/occurrence?sample_id='.($entity['id']);
           $url .= "&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
           $session = curl_init($url);
           curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
           $OCCentities = json_decode(curl_exec($session), true);
           foreach($OCCentities as $OCCentity){
-          	$url = data_entry_helper::$base_url.'/index.php/services/data/occurrence_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&occurrence_id='.$OCCentity['id'].'&occurrence_attribute_id='.$args['quant_dist_attr_id'];
+          	$url = self::$svcUrl.'/data/occurrence_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&occurrence_id='.$OCCentity['id'].'&occurrence_attribute_id='.$args['quant_dist_attr_id'];
             $session = curl_init($url);
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             $ATTRentities = json_decode(curl_exec($session), true);
@@ -494,7 +615,7 @@ jQuery('#sectionlist_taxa_taxon_list_id').change(function(){
 add_section_species(".($OCCentity['taxa_taxon_list_id']).",".$section.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".($ATTRentity['id']).",".($ATTRentity['raw_value']).");";
             }
           } // TBS SLA
-          $url = data_entry_helper::$base_url.'/index.php/services/data/sample_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&sample_id='.($entity['id']);
+          $url = self::$svcUrl.'/data/sample_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&sample_id='.($entity['id']);
           $session = curl_init($url);
           curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
           $ATTRentities = json_decode(curl_exec($session), true);
@@ -512,15 +633,23 @@ add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).","
       $retVal .= '<tr><td>'.$attributes[$options['smpAttr'][$i]]['caption'].'</td></tr>';
     }
     $retVal .= '</table></div>';
+    data_entry_helper::$javascript .= "
+// override the default results function - doesn't seem to use value field.
+jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').unbind(\"result\");
+jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, data, value) {
+      jQuery('input#sectionlist_taxa_taxon_list_id').attr('value', value);
+      jQuery('input#sectionlist_taxa_taxon_list_id').change();
+});
+";
+    
     return $retVal;
   }
 
   protected static function get_control_sectionnumber($auth, $args, $tabalias, $options) {
   	/* We will make the assumption that only one of these will be put onto a form.
   	 * A lot of this is copied from the species control and has the same features. */
-  	$maxNumSections = 10;
     $r = '<label for="sectionlist_number">'.lang::get('sectionlist:numberlabel').':</label><select id="sectionlist_number" name="sectionlist_number">';
-    for($i=1; $i<=$maxNumSections; $i++)
+    for($i=1; $i<=$args['max_number_sections']; $i++)
     	$r .= '<option>'.$i.'</option>';
     $r .= '</select>';
     return $r;
@@ -547,11 +676,10 @@ add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).","
         if(isset($values['TGS:'.($j*2).':'.($i*2)]))
           $sa['model']['fields']['id'] = array('value' => $values['TGS:'.($j*2).':'.($i*2)]);
         $sa['model']['fields']['date'] = array('value' => $values['sample:date']);
-        $sa['model']['fields']['entered_sref_system'] = array('value' => $values['sample:entered_sref_system']);
-        $sa['model']['fields']['entered_sref'] = array('value' => $values['tr_f1'].($j*2).'00, '.$values['tr_f2'].($i*2).'00');
+        $sa['model']['fields']['location_id'] = array('value' => $values['sample:location_id']);
         $sa['model']['fields']['location_name'] = array('value' => 'GR '.$values['sample:location_name'].' '.($j*2).($i*2));
-        $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
-        $sa['model']['fields']['survey_id'] = array('value' => $values['sample:survey_id']);
+//        $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
+//        $sa['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
         $suboccs = array();
         foreach($values as $key => $value){
         	$parts = explode(':', $key);
@@ -559,7 +687,7 @@ add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).","
         		$occ = array('fkId' => 'sample_id',
                              'model' => array('id' => 'occurrence', 'fields' => array()));
                 $occ['model']['fields']['taxa_taxon_list_id'] = array('value' => $parts[1]);
-                $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+//                $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
                 if($parts[5] != '-'){
                   $occ['model']['fields']['id'] = array('value' => $parts[5]);
                 }
@@ -573,26 +701,13 @@ add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).","
                   $suboccs[] = $occ;
             }
         }
-        if(isset($values['TGDEL'])){
-        	if($values['TGDEL'] != ''){
-        		$delList = explode(',', $values['TGDEL']);
-        		foreach($delList as $occID){
-        		  $occ = array('fkId' => 'sample_id',
-                             'model' => array('id' => 'occurrence', 'fields' => array()));
-                  $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
-                  $occ['model']['fields']['id'] = array('value' => $occID);
-                  $occ['model']['fields']['deleted'] = array('value' => 't');
-                  $suboccs[] = $occ;
-        		}
-        	}
-        }
         $sa['model']['subModels'] = $suboccs;
         if(isset($sa['model']['fields']['id']) || count($suboccs)>0)
           $subsamples[] = $sa;
       }
   	}
     // next do section list
-  	for($i=1; $i<=10; $i++) {
+  	for($i=1; $i<=$args['max_number_sections']; $i++) {
       // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrID
       $sa = array(
 	      'fkId' => 'parent_id',
@@ -602,11 +717,10 @@ add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).","
       if(isset($values['SLS:'.$i]))
           $sa['model']['fields']['id'] = array('value' => $values['SLS:'.$i]);
       $sa['model']['fields']['date'] = array('value' => $values['sample:date']);
-      $sa['model']['fields']['entered_sref_system'] = array('value' => $values['sample:entered_sref_system']);
-      $sa['model']['fields']['entered_sref'] = array('value' => $values['sample:entered_sref']);
+      $sa['model']['fields']['location_id'] = array('value' => $values['sample:location_id']);
       $sa['model']['fields']['location_name'] = array('value' => 'SL '.$values['sample:location_name'].' '.$i);
-      $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
-      $sa['model']['fields']['survey_id'] = array('value' => $values['sample:survey_id']);
+//      $sa['model']['fields']['website_id'] = array('value' => $values['website_id']);
+//      $sa['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
       $saattrs = array();
       foreach($values as $key => $value){
         $parts = explode(':', $key);
@@ -628,7 +742,7 @@ add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).","
           $occ = array('fkId' => 'sample_id',
                              'model' => array('id' => 'occurrence', 'fields' => array()));
           $occ['model']['fields']['taxa_taxon_list_id'] = array('value' => $parts[1]);
-          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+//          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
           if($parts[4] != '-') $occ['model']['fields']['id'] = array('value' => $parts[4]);
           $attrFields = array('occurrence_attribute_id' => $args['quant_dist_attr_id'], 'value' => $value);
           if($parts[5] != '-') $attrFields['id'] = $parts[5];
@@ -640,7 +754,33 @@ add_section_attribute(".$section.",".($entity['id']).",".($ATTRentity['id']).","
       $sa['model']['subModels'] = $suboccs;
       if(isset($sa['model']['fields']['id']) || count($suboccs)>0 || count($saattrs)>0) $subsamples[] = $sa;
   	}
-  	if(count($subsamples)>0)
+    if(isset($values['TGDEL'])){
+      if($values['TGDEL'] != ''){
+        $delList = explode(',', $values['TGDEL']);
+        foreach($delList as $occID){
+          $occ = array('fkId' => 'sample_id',
+                             'model' => array('id' => 'occurrence', 'fields' => array()));
+//          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+          $occ['model']['fields']['id'] = array('value' => $occID);
+          $occ['model']['fields']['deleted'] = array('value' => 't');
+          $subsamples[] = $occ;
+        }
+      }
+    }
+    if(isset($values['SLDEL'])){
+      if($values['SLDEL'] != ''){
+        $delList = explode(',', $values['SLDEL']);
+        foreach($delList as $occID){
+          $occ = array('fkId' => 'sample_id',
+                             'model' => array('id' => 'occurrence', 'fields' => array()));
+//          $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
+          $occ['model']['fields']['id'] = array('value' => $occID);
+          $occ['model']['fields']['deleted'] = array('value' => 't');
+          $subsamples[] = $occ;
+        }
+      }
+    }
+    if(count($subsamples)>0)
       $sampleMod['subModels'] = $subsamples;
     return($sampleMod);
   }

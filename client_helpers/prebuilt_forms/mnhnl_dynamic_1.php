@@ -268,7 +268,7 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'The Indicia ID of the survey that data will be posted into.',
           'type'=>'int'
         ),        
-		    array(
+        array(
           'name'=>'defaults',
           'caption'=>'Default Values',
           'description'=>'Supply default values for each field as required. On each line, enter fieldname=value. For custom attributes, '.
@@ -277,6 +277,14 @@ class iform_mnhnl_dynamic_1 {
               'sample:date but will be extended in future.',
           'type'=>'textarea',
           'default'=>'occurrence:record_status=C'
+        ),
+        array(
+          'name'=>'includeLocTools',
+          'caption'=>'Include Location Tools',
+          'description'=>'Include a tab for the allocation of locations when displaying the initial grid.',
+          'type'=>'boolean',
+          'default' => false,
+          'group' => 'User Interface'
         )		
       )
     );
@@ -311,13 +319,23 @@ class iform_mnhnl_dynamic_1 {
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 
     $mode = (isset($args['no_grid']) && $args['no_grid']) 
-        ? $mode = MODE_NEW_SAMPLE // default mode when no_grid set to true - display new sample
-        : $mode = MODE_GRID; // default mode when no grid set to false - display grid of existing data
+        ? MODE_NEW_SAMPLE // default mode when no_grid set to true - display new sample
+        : MODE_GRID; // default mode when no grid set to false - display grid of existing data
     			// mode MODE_EXISTING: display existing sample
     $loadedSampleId = null;
     $loadedOccurrenceId = null;
     if ($_POST) {
-    	if(!is_null(data_entry_helper::$entity_to_load)){
+      if(!array_key_exists('website_id', $_POST)) { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
+        if(iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnld1', $_POST)){
+          iform_loctools_deletelocations($node);
+          foreach($_POST as $key => $value){
+            $parts = explode(':', $key);
+            if($parts[0] == 'location' && $value){
+              iform_loctools_insertlocation($node, $value, $parts[1]);
+            }
+          }
+        }
+      } else if(!is_null(data_entry_helper::$entity_to_load)){
 	      $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
     	} // else valid save, so go back to gridview: default mode 0
     }
@@ -344,11 +362,52 @@ class iform_mnhnl_dynamic_1 {
        ,'survey_id'=>$args['survey_id']
     ));
 
-    // default mode MODE_GRID : display grid of the samples to add a new one 
-    // or edit an existing one.    
-    if ($mode == MODE_GRID) {      
-      return self::getSampleListGrid($args, $node, $auth, $attributes);
-    }    
+    // default mode  MODE_GRID : display grid of the samples to add a new one 
+    // or edit an existing one.
+    if($mode ==  MODE_GRID) {
+      $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
+      if($args['includeLocTools'] && iform_loctools_checkaccess($node,'admin')){
+        $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
+      }
+      if(count($tabs) > 1){
+        $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
+        $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
+      }
+      $r .= "<div id=\"sampleList\">".self::getSampleListGrid($args, $node, $auth, $attributes)."</div>";
+      if($args['includeLocTools'] && iform_loctools_checkaccess($node,'admin')){
+        $r .= '
+  <div id="setLocations">
+    <form method="post">
+      <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" />';
+        $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&parent_id=NULL&orderby=name";
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        $entities = json_decode(curl_exec($session), true);
+        $userlist = iform_loctools_listusers($node);
+//        var_dump($entities);
+//        throw(1);
+        if(!empty($entities)){
+          foreach($entities as $entity){
+            if(!$entity["parent_id"]){ // only assign parent locations.
+              $r .= "\n<label for=\"location:".$entity["id"]."\">".$entity["name"].":</label><select id=\"location:".$entity["id"]."\" name=\"location:".$entity["id"]."\"><option value=\"\" >&lt;".lang::get('LANG_Not_Allocated')."&gt;</option>";
+              $defaultuserid = iform_loctools_getuser($node, $entity["id"]);
+              foreach($userlist as $uid => $a_user){
+                $r .= "<option value=\"".$uid."\" ".($uid == $defaultuserid ? 'selected="selected" ' : '').">".$a_user->name."</option>";
+              }
+              $r .= "</select><br />";
+            }
+          }
+        }
+        $r .= "
+      <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
+    </form>
+  </div>";
+      }
+      if(count($tabs)>1){ // close tabs div if present
+        $r .= "</div>";
+      }
+      return $r;
+    }
     
     if ($mode == MODE_EXISTING) {
       data_entry_helper::$entity_to_load = array();
