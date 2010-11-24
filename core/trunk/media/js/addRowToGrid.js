@@ -15,19 +15,17 @@
 
 /**
  * Helper methods for additional JavaScript functionality required by the species_checklist control.
+ * formatter - The taxon label template, OR a JavaScript function that takes an item returned by the web service 
+ * search for a species when adding rows to the grid, and returns a formatted taxon label. Overrides the label 
+ * template and controls the appearance of the species name both in the autocomplete for adding new rows, plus for 
+  the newly added rows.
  */
  
-function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
+function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
 	
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     // on picking a result in the autocomplete, ensure we have a spare row
-    var label = labelTemplate;
-    // replace each field in the label template
-    $.each(data, function(field, value) {
-      regex = new RegExp('\\{' + field + '\\}', 'g');
-      label = label.replace(regex, value===null ? '' : value);
-    });
     // clear the event handler
     $(event.target).unbind('result', handleSelectedTaxon);
     var taxonCell=event.target.parentNode;
@@ -35,11 +33,23 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     var row=taxonCell.parentNode;
     $(taxonCell).before('<td class="ui-state-default remove-row" style="width: 1%">X</td>');
     $(taxonCell).parent().addClass('added-row');
-    $(taxonCell).html(label);
+    // Do we use a JavaScript fn, or a standard template, to format the species label?
+    if ($.isFunction(formatter)) {
+      $(taxonCell).html(formatter(data));
+    } else {
+      // Just a simple PHP template
+      var label = formatter;
+      // replace each field in the label template
+      $.each(data, function(field, value) {
+        regex = new RegExp('\\{' + field + '\\}', 'g');
+        label = label.replace(regex, value===null ? '' : value);
+      });
+      $(taxonCell).html(label);
+    }
     // Replace the tags in the row template with the taxa_taxon_list_ID
     $.each($(row).children(), function(i, cell) {
       cell.innerHTML = cell.innerHTML.replace(/-ttlId-/g, data.id);
-    });    
+    }); 
     $(row).find('.add-image-select-species').hide();
     $(row).find('.add-image-link').show();    
     // auto-check the row
@@ -48,17 +58,23 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
     // and rename the controls so they post into the right species record
     checkbox.attr('name', 'sc:' + data.id + '::present');    
     // Finally, a blank row is added for the next record
-    makeSpareRow(true); 
+    makeSpareRow(true, formatter); 
   };
   
   // Create an inner function for adding blank rows to the bottom of the grid
   var makeSpareRow = function(scroll) {
+    if (!$.isFunction(formatter)) {
+      // provide a default format function
+      formatter = function(item) {
+        return item.taxon;
+      };
+    } 
     // get a copy of the new row template
     var newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
     // build an auto-complete control for selecting the species to add to the bottom of the grid. 
     // The next line gets a unique id for the autocomplete.
     selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].childElementCount;
-    var speciesSelector = '<input type="text" id="' + selectorId + '" />';
+    var speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required" />';
     // put this inside the new row template in place of the species label.
     $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
     // add the row to the bottom of the grid
@@ -86,9 +102,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, labelTemplate) {
         });
         return results;
       },
-      formatItem: function(item) {
-        return item.taxon;
-      }
+      formatItem: formatter
     });
     ctrl.bind('result', handleSelectedTaxon);
     ctrl.focus();    
