@@ -713,7 +713,7 @@ class data_entry_helper extends helper_config {
       'imagewidth' => 250,
       'uploadScript' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . 'upload.php',
       'destinationFolder' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder,
-      'finalImageFolder' => self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/'),
+      'finalImageFolder' => self::get_uploaded_image_folder(),
       'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
@@ -795,6 +795,18 @@ class data_entry_helper extends helper_config {
       'id' => $options['id'],
       'fieldname' => str_replace('_', ':', $options['table'])
     )).'</noscript>';
+  }
+  
+  /**
+   * Calculates the folder that submitted images end up in according to the helper_config.
+   */
+  public static function get_uploaded_image_folder() {
+    if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
+      return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
+    else {
+      $relpath = self::relative_client_helper_path();
+      return dirname($_SERVER['PHP_SELF']) . '/' . $final_image_folder;
+    }      
   }
 
  /**
@@ -1648,7 +1660,7 @@ class data_entry_helper extends helper_config {
     $r .= "</tr></thead><tbody>\n";
     $rowClass = '';
     $outputCount = 0;
-    $imagePath = data_entry_helper::$base_url.(isset(data_entry_helper::$indicia_upload_path) ? data_entry_helper::$indicia_upload_path : 'upload/');
+    $imagePath = self::get_uploaded_image_folder();
     if (count($records)>0) {
       foreach ($records as $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
@@ -4226,14 +4238,27 @@ if (errors.length>0) {
       $output = json_decode($response['output'], true);
       // If this is not JSON, it is an error, so just return it as is.
       if (!$output)
-        $output = $response['output'];
-      if (is_array($output) && array_key_exists('success', $output)) {
-        // submission succeeded. So we also need to move the images to the warehouse.
+        $output = $response['output'];      
+      if (is_array($output) && array_key_exists('success', $output))  {
+        if (isset(self::$final_image_folder) && self::$final_image_folder!='warehouse') {
+          // moving the files on the local machine. Find out where from and to
+          $interim_image_folder = dirname($_SERVER['SCRIPT_FILENAME']) . '/' . self::relative_client_helper_path().
+              (isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/');
+          $final_image_folder = dirname($_SERVER['SCRIPT_FILENAME']) . '/' . self::relative_client_helper_path(). 
+              parent::$final_image_folder;
+        }
+        
+        // submission succeeded. So we also need to move the images to the final location
         foreach ($images as $image) {
-          // SET PERSIST_AUTH false if last file
-          $success = self::send_file_to_warehouse($image['path'], true);
+          if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
+            // Final location is the Warehouse
+            // @todo Set PERSIST_AUTH false if last file
+            $success = self::send_file_to_warehouse($image['path'], true);
+          } else {
+            $success = rename($interim_image_folder.$image['path'], $final_image_folder.$image['path']);
+          }
           if ($success!==true) {
-            return array('error' => lang::get('submit ok but file failed').
+            return array('error' => lang::get('submit ok but file transfer failed').
                 "<br/>$success");
           }
         }
@@ -5045,7 +5070,7 @@ $('.ui-state-default').live('mouseout', function() {
     if (!is_dir($cacheFolder)) {
       $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
       } elseif (!is_writeable($cacheFolder)) {
-      $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . parent::$upload_path . '). This will result in slow form loading performance.</li>';
+      $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). This will result in slow form loading performance.</li>';
     } elseif ($fullInfo) {
         $r .= '<li>Success: Cache directory is present and writeable.</li>';
       }
