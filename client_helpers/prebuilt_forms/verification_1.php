@@ -301,19 +301,24 @@ var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\
    */
   private static function get_indicia_user_id($args) {
     $userId = '';
-	global $user;
-	$arr = explode(',', $args['verifiers_mapping']);
-	foreach ($arr as $mapping) {
-	  $mapArr = explode('=', $mapping);
-	  if (count($mapArr) == 0) {
-	    return trim($mapping);
-	  } else {
-	    if (trim($mapArr[0])==$user->uid) {
-		  return trim($mapArr[1]);
-		}
-	  }
-	}
-	return 1; // default to admin  
+    global $user;
+    if (substr(',', $args['verifiers_mapping'])!==false) {
+      $arr = explode(',', $args['verifiers_mapping']);
+      foreach ($arr as $mapping) {
+        $mapArr = explode('=', $mapping);
+        if (count($mapArr) == 0) {
+          return trim($mapping);
+        } else {
+          if (trim($mapArr[0])==$user->uid) {
+            return trim($mapArr[1]);
+          }
+        }
+      }
+    } else {
+      // verifiers mapping is just a single number
+      return trim($args['verifiers_mapping']);
+    }
+	  return 1; // default to admin  
   }
   
   private static function get_send_for_verification_form() {
