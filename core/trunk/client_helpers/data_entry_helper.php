@@ -712,7 +712,7 @@ class data_entry_helper extends helper_config {
       'autoupload' => true,
       'imagewidth' => 250,
       'uploadScript' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . 'upload.php',
-      'destinationFolder' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder,
+      'destinationFolder' => dirname($_SERVER['REQUEST_URI']) . '/' . $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
       'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
@@ -2504,8 +2504,8 @@ class data_entry_helper extends helper_config {
       // store some globals that we need later when creating uploaders
       $relpath = self::relative_client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      self::$javascript .= "uploadScript = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "upload.php';\n";
-      self::$javascript .= "destinationFolder = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder."';\n";
+      self::$javascript .= "uploadScript = '".dirname($_SERVER['REQUEST_URI']) . '/' . $relpath . "upload.php';\n";
+      self::$javascript .= "destinationFolder = '".dirname($_SERVER['REQUEST_URI']) . '/' . $relpath . $interim_image_folder."';\n";
       self::$javascript .= "swfAndXapFolder = '".$relpath . "plupload/';\n";
       self::$javascript .= "jsPath = '".self::$js_path."';\n";
     }
@@ -4024,7 +4024,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs on the current tab and validate them.
       if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  if (!$('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input').valid()) {\n    return; \n}";
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input')\n";
+        self::$javascript .= "  if (!tabinputs.valid()) {\n";
+        self::$javascript .= "    return;";
+        self::$javascript .= "  }\n";
       }
       // If all is well, move to the next tab. Note the code detects if the top of the tabset is not visible, if so
       // it forces it into view. This helps a lot when the tabs vary in height.
@@ -4859,7 +4862,7 @@ $('.ui-state-default').live('mouseout', function() {
         'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
         'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.validate.js')),
         'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
-            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', '/plupload/js/plupload.html4.js')),
+            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')),
         'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
         'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),

@@ -274,13 +274,6 @@ li.ui-state-error {
   border: none !important;
 }
 
-.ui-tabs .ui-tabs-hide {
-  position: absolute;
-  left: -10000px;
-  max-width: 2000px;
-  display: block !important;
-}
-
 .helpText {
   color:gray;
   font-size:80%;

@@ -122,7 +122,6 @@ class iform_mnhnl_dynamic_1 {
         "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab.<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
-          'allowHtml' => false,
           'default' => "=Species=\r\n".
               "?Please enter the species you saw and any other information about them.?\r\n".
               "[species]\r\n".

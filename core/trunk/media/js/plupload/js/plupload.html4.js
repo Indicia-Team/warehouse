@@ -102,6 +102,7 @@
 				// Force the form into post and multipart
 				form.setAttribute('method', 'post');
 				form.setAttribute('enctype', 'multipart/form-data');
+        form.setAttribute('encoding', 'multipart/form-data');
 
 				// Append mutlipart parameters
 				plupload.each(up.settings.multipart_params, function(value, name) {
