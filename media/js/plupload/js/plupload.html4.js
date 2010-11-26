@@ -238,7 +238,8 @@
 					// Create element and set attributes
 					input = document.createElement('input');
 					input.setAttribute('type', 'file');
-					input.setAttribute('accept', mimes.join(','));
+          // JvB Removed accept attribute for Indicia, as it is not well supported and clashes with jQuery validation.
+					//input.setAttribute('accept', mimes.join(','));
 					input.setAttribute('size', 1);
 
 					// set input styles
