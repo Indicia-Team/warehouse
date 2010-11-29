@@ -337,7 +337,6 @@ $.Autocompleter = function(input, options) {
 			$.each(options.extraParams, function(key, param) {
 				extraParams[key] = typeof param == "function" ? param() : param;
 			});
-			
 			$.ajax({
 				// try to leverage ajaxQueue plugin to abort previous requests
 				mode: "abort",
@@ -346,7 +345,7 @@ $.Autocompleter = function(input, options) {
 				dataType: options.dataType,
 				url: options.url,
 				data: $.extend({
-					q: encodeURI(lastWord(term)),
+					q: encodeURIComponent(lastWord(term)),
 					limit: options.max
 				}, extraParams),
 				success: function(data) {
