@@ -487,6 +487,8 @@ class ORM extends ORM_Core {
         // Call the submit method for that model and
         // check whether it returns correctly
         $m->submission = $a['model'];
+        // copy down the website id and survey id
+        $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
 
         if (!$result) {
@@ -743,18 +745,18 @@ class ORM extends ORM_Core {
         $vf = 'float_value';
         break;
       case 'D':
-        // Date
-        $vd=vague_date::string_to_vague_date($value['value']);
-        $attrValueModel->date_start_value = $vd['start'];
-        $attrValueModel->date_end_value = $vd['end'];
-        $attrValueModel->date_type_value = $vd['type'];
-        break;
       case 'V':
-        // Vague Date
-        $vd=vague_date::string_to_vague_date($value['value']);
-        $attrValueModel->date_start_value = $vd['start'];
-        $attrValueModel->date_end_value = $vd['end'];
-        $attrValueModel->date_type_value = $vd['type'];
+        // Date
+        if (!empty($value['value'])) {
+          $vd=vague_date::string_to_vague_date($value['value']);
+          $attrValueModel->date_start_value = $vd['start'];
+          $attrValueModel->date_end_value = $vd['end'];
+          $attrValueModel->date_type_value = $vd['type'];
+        } else {
+          $attrValueModel->date_start_value = null;
+          $attrValueModel->date_end_value = null;
+          $attrValueModel->date_type_value = 0;
+        }
         break;
       default:
         // Lookup in list, int or boolean
