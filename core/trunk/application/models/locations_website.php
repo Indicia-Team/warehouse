@@ -31,12 +31,12 @@
 class Locations_website_Model extends ORM
 {
 
-    protected $has_one = array(
-      'location',
-        'website',
+  protected $has_one = array(
+    'location',
+    'website',
   );
-    protected $belongs_to = array(
-      'created_by'=>'user',
+  protected $belongs_to = array(
+    'created_by'=>'user',
   );
 
   public function validate(Validation $array, $save = FALSE) {
@@ -44,14 +44,6 @@ class Locations_website_Model extends ORM
     $array->pre_filter('trim');
     $this->unvalidatedFields = array('location_id','website_id');
     return parent::validate($array, $save);
-  }
-
-  public function set_metadata() {
-    // Set up the created and updated metadata for the record
-    if (!$this->id) {
-      $this->created_on = date("Ymd H:i:s");
-      $this->created_by_id = 1; // dummy user
-    }
   }
 
 }

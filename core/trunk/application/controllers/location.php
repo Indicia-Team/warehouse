@@ -284,24 +284,20 @@ class Location_Controller extends Gridview_Base_Controller {
               return;
             }
             $myLocation = ORM::factory('location', array('name' => $_POST['prepend'].trim($row[$_POST['name']]), 'parent_id' => $parent_locations[0]->id, 'deleted' => 'false'));
-          } else {
-            $my_locations=ORM::factory('location')->where('name', $_POST['prepend'].trim($row[$_POST['name']]))->where('deleted', 'false')->find_all();
-            if(count($my_locations) > 1) {
-              $this->setError('Upload problem', 'Found more than one non deleted location where name = '.$_POST['prepend'].trim($row[$_POST['name']]));
+          } else {            $my_locations = $this->db                ->select('locations.id')                ->from('locations')                ->join('locations_websites', 'locations_websites.location_id', 'locations.id')                ->where('locations.deleted', 'false')                ->where('locations_websites.deleted', 'false')                ->where('locations.name', $_POST['prepend'].trim($row[$_POST['name']]))                ->where('locations_websites.website_id', $_POST['website_id'])                ->get();            if(count($my_locations) > 1) {
+              $this->setError('Upload problem', 'Found more than one location where name = '.$_POST['prepend'].trim($row[$_POST['name']]));
               return;
-            }
-            $myLocation = ORM::factory('location', array('name' => $_POST['prepend'].trim($row[$_POST['name']]), 'deleted' => 'false'));
+            }            if (count($my_locations===1)) {              $r=$my_locations[0];
+              $myLocation = ORM::factory('location', $r->id);            } else {              $myLocation = ORM::factory('location');            }
           }
           if ($myLocation->loaded){
             // existing record
-            kohana::log('debug', 'Saving existing record: '.$this->firstPoint);
             $myLocation->__set((array_key_exists('boundary', $_POST) ? 'boundary_geom' : 'centroid_geom'), $this->wkt);
             $myLocation->__set('centroid_sref', $this->firstPoint);
             $myLocation->save();
             $view->update[] = $_POST['prepend'].trim($row[$_POST['name']]).(array_key_exists('use_parent', $_POST) ? ' - parent '.trim($row[$_POST['parent']]) : '');
           } else {
             // create a new record
-            kohana::log('debug', 'Saving new record: '.$this->firstPoint);
             $fields = array('name' => array('value' => $_POST['prepend'].trim($row[$_POST['name']]))
                           ,'deleted' => array('value' => 'f')
                           ,'centroid_sref' => array('value' => $this->firstPoint)
@@ -324,7 +320,7 @@ class Location_Controller extends Gridview_Base_Controller {
         }
         fclose($handle);
         dbase_close($dbasedb);
-      }
+      }      kohana::log('debug', 'locations import done');
       $view->onCompletePage = 'test.php';
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
@@ -353,8 +349,6 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->SHPFile = $handle;
         $this->loadStoreHeaders($handle);
         $this->firstPoint = "";
-        kohana::log('debug', 'Shape type '.$this->shapeType.' found');
-        kohana::log('debug', 'clearing first point');
         switch ($this->shapeType) {
             case 0:
                 $this->loadFromFile($handle);
@@ -382,7 +376,6 @@ class Location_Controller extends Gridview_Base_Controller {
         $y1 = $this->loadData("d", fread($this->SHPFile, 8));
         $data = "$x1 $y1";
         if($this->firstPoint == "") $this->firstPoint = "$x1".Kohana::lang('misc.x_y_separator')." $y1";
-        kohana::log('debug', 'first point: '.$this->firstPoint);
         return $data;
     }
 
@@ -429,12 +422,11 @@ class Location_Controller extends Gridview_Base_Controller {
     
     /**
      * Read a PolyLineZ record. This is the same as a PolyLine for our purposes since we do not hold Z data.
-     * But we must skip past the extra parts of the record. This is done automatically by the seek at the end of the func.
      */
     private function loadPolyLineZRecord($title)
     {
       $this->loadPolyLineRecord($title);
-      // According to the spec there are 2 sets of minima and maxima, plus 2 arrays of values * numpoints, that we skip
+      // According to the spec there are 2 sets of minima and maxima, plus 2 arrays of values * numpoints, that we skip, but since each       // record's length is read and used to find the next record, this does not matter.
     }
     
 }
