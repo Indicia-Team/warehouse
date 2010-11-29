@@ -1,4 +1,4 @@
-<?php
+<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -264,9 +264,9 @@ class Location_Controller extends Gridview_Base_Controller {
           $row = dbase_get_record_with_names($dbasedb, $i);
           $this->loadFromFile($handle);
           if(kohana::config('sref_notations.internal_srid') != $_POST['srid']) {
-          	$result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('".$this->wkt."',".$_POST['srid']."),".
-				kohana::config('sref_notations.internal_srid').")) AS wkt;")->current();
-			$this->wkt = $result->wkt;
+            $result = $this->db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('".$this->wkt."',".$_POST['srid']."),".
+            kohana::config('sref_notations.internal_srid').")) AS wkt;")->current();
+            $this->wkt = $result->wkt;
           }
           if(array_key_exists('use_parent', $_POST)) {
             $parent_locations=ORM::factory('location')->where('name', trim($row[$_POST['parent']]))->where('deleted', 'false')->find_all();
@@ -294,12 +294,14 @@ class Location_Controller extends Gridview_Base_Controller {
           }
           if ($myLocation->loaded){
             // existing record
+            kohana::log('debug', 'Saving existing record: '.$this->firstPoint);
             $myLocation->__set((array_key_exists('boundary', $_POST) ? 'boundary_geom' : 'centroid_geom'), $this->wkt);
             $myLocation->__set('centroid_sref', $this->firstPoint);
             $myLocation->save();
             $view->update[] = $_POST['prepend'].trim($row[$_POST['name']]).(array_key_exists('use_parent', $_POST) ? ' - parent '.trim($row[$_POST['parent']]) : '');
           } else {
             // create a new record
+            kohana::log('debug', 'Saving new record: '.$this->firstPoint);
             $fields = array('name' => array('value' => $_POST['prepend'].trim($row[$_POST['name']]))
                           ,'deleted' => array('value' => 'f')
                           ,'centroid_sref' => array('value' => $this->firstPoint)
@@ -339,18 +341,20 @@ class Location_Controller extends Gridview_Base_Controller {
       return current($tmp);
     }
 
-     function loadStoreHeaders($handle)
+    function loadStoreHeaders($handle)
     {
         $this->recordNumber = $this->loadData("N", fread($this->SHPFile, 4));
         $tmp = $this->loadData("N", fread($this->SHPFile, 4)); //We read the length of the record
         $this->shapeType = $this->loadData("V", fread($this->SHPFile, 4));
     }
 
-    function loadFromFile($handle)
+    private function loadFromFile($handle)
     {
         $this->SHPFile = $handle;
         $this->loadStoreHeaders($handle);
         $this->firstPoint = "";
+        kohana::log('debug', 'Shape type '.$this->shapeType.' found');
+        kohana::log('debug', 'clearing first point');
         switch ($this->shapeType) {
             case 0:
                 $this->loadFromFile($handle);
@@ -364,6 +368,9 @@ class Location_Controller extends Gridview_Base_Controller {
             case 5:
                 $this->loadPolyLineRecord('POLYGON');
                 break;
+            case 15:
+                $this->loadPolyLineZRecord('POLYGON');
+                break;
             default:
                 break;
         }
@@ -375,6 +382,7 @@ class Location_Controller extends Gridview_Base_Controller {
         $y1 = $this->loadData("d", fread($this->SHPFile, 8));
         $data = "$x1 $y1";
         if($this->firstPoint == "") $this->firstPoint = "$x1".Kohana::lang('misc.x_y_separator')." $y1";
+        kohana::log('debug', 'first point: '.$this->firstPoint);
         return $data;
     }
 
@@ -416,7 +424,20 @@ class Location_Controller extends Gridview_Base_Controller {
         }
 
         $this->wkt .= ')';
-        fseek($this->SHPFile, $firstIndex + ($readPoints * 16));
+        // Seek to the exact end of this record        
+        fseek($this->SHPFile, $firstIndex + ($this->SHPData["numpoints"] * 16));
+    }
+    
+    /**
+     * Read a PolyLineZ record. This is the same as a PolyLine for our purposes since we do not hold Z data.
+     * But we must skip past the extra parts of the record.
+     */
+    private function loadPolyLineZRecord($title)
+    {
+      $this->loadPolyLineRecord($title);
+      $firstIndex = ftell($this->SHPFile);
+      // According to the spec there are 2 sets of minima and maxima, plus 2 arrays of values * numpoints, that we skip
+      fseek($this->SHPFile, $firstIndex + (($this->SHPData["numpoints"]*2+4) * 8));
     }
     
 }
