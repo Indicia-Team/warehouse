@@ -85,7 +85,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     $segments=$this->uri->segment_array();
     $this->survey_id = $segments[3];
     $structure = json_decode($_POST['layout_updates'],true);
-	  $websiteId = ORM::Factory('survey', $this->survey_id)->website_id;
+    $websiteId = ORM::Factory('survey', $this->survey_id)->website_id;
     $this->saveBlockList($structure['blocks'], null, $websiteId);
     $this->saveControlList($structure['controls'], null, $websiteId);
     $this->session->set_flash('flash_info', "The form layout changes have been saved.");
@@ -95,7 +95,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   private function saveBlockList($list, $blockId, $websiteId) {
     $weight = 0;
     foreach ($list as $block) {
-	  $changed = false;
+    $changed = false;
       if (substr($block['id'], 0, 10)=='new-block-') {
         $model = ORM::factory('form_structure_block');
         $model->name = $block['name'];
@@ -110,23 +110,23 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
         if ($model->weight!=$weight || $model->parent_id!=$blockId || $model->name!=$block['name']) {
           $model->parent_id=$blockId;
           $model->weight = $weight;
-		  $model->name = $block['name'];
-          $changed = true;		  
+          $model->name = $block['name'];
+          $changed = true;      
         }
       } else {
-	    continue;
-	  }
-	  if (isset($block['deleted']) && $block['deleted']) {
-	    // deleting, so existing blocks must be removed
-	    if (substr($block['id'], 0, 6)=='block-')
-		  $model->delete();
-	    $id=null;
-	  }
-	  elseif ($changed) {	    
-        $model->save();
-		$id = $model->id;
+        continue;
       }
-      if (isset($block['blocks'])) $this->saveBlockList($block['blocks'], $model->id, $websiteId);
+      if (isset($block['deleted']) && $block['deleted']) {
+        // deleting, so existing blocks must be removed
+        if (substr($block['id'], 0, 6)=='block-')
+        $model->delete();
+        $id=null;
+      } elseif ($changed) {      
+        $model->save();
+        $id = $model->id;
+      }
+      if (isset($block['blocks']))
+      $this->saveBlockList($block['blocks'], $model->id, $websiteId);
       $this->saveControlList($block['controls'], $id, $websiteId);
       $weight++;
     }  
@@ -139,20 +139,20 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       if (substr($control['id'], 0, 8)=='control-') {
         $ctrlId = str_replace('control-','',$control['id']);
         $model = ORM::factory($_GET['type'].'_attributes_website', $ctrlId);
-	    } elseif (substr($control['id'], 0, 10)=='attribute-') {	    
-	      $attrId = str_replace('attribute-','',$control['id']);
-		    // get model for a new record
+      } elseif (substr($control['id'], 0, 10)=='attribute-') {      
+        $attrId = str_replace('attribute-','',$control['id']);
+        // get model for a new record
         $model = ORM::factory($_GET['type'].'_attributes_website');
         $attrVar = $this->type.'_attribute_id';
         // link the model to the existing attribute we have the ID for
         $model->$attrVar = $attrId;
         $model->restrict_to_survey_id = $this->survey_id;
-        $model->website_id = $websiteId;	
-        $changed = true;		
-	    } else {
-	      continue;
-      }	  
-	    if ($model->weight!=$weight) {
+        $model->website_id = $websiteId;  
+        $changed = true;    
+      } else {
+        continue;
+      }    
+      if ($model->weight!=$weight) {
         $model->weight = $weight;
         $changed = true;
       }
@@ -161,18 +161,18 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
         $changed = true;
       }
       $weight++;
-	    if (isset($control['deleted']) && $control['deleted']) {
-	      // deleting, so existing control must be removed
-	      if (substr($control['id'], 0, 8)=='control-')
-		    $model->delete();
-	      $id=null;
-	    } elseif ($changed) {
+      if (isset($control['deleted']) && $control['deleted']) {
+        // deleting, so existing control must be removed
+        if (substr($control['id'], 0, 8)=='control-')
+        $model->delete();
+        $id=null;
+      } elseif ($changed) {
         $model->set_metadata();
-		    $model->save();
-		    if (count($model->getAllErrors())!==0) {
-		      throw new Exception(kohana::debug($model->getAllErrors()));
-		    }
-	    }
+        $model->save();
+        if (count($model->getAllErrors())!==0) {
+          throw new Exception(kohana::debug($model->getAllErrors()));
+        }
+      }
     }
   }
   
@@ -186,7 +186,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       $site_role = (new Site_role_Model('Admin'));
       $websites=ORM::factory('users_website')->where(
       array('user_id' => $_SESSION['auth_user']->id,
-              'site_role_id' => $site_role->id))->find_all();
+            'site_role_id' => $site_role->id))->find_all();
       $website_id_values = array();
       foreach($websites as $website)
         $website_id_values[] = $website->website_id;
@@ -218,11 +218,17 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    */
   protected function prepareOtherViewData($values) {
     $survey = ORM::Factory('survey', $values[$this->type.'_attributes_website:restrict_to_survey_id']);
-	$attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']);
+    $attr = ORM::Factory($_GET['type'].'_attribute', $values[$this->type.'_attributes_website:'.$this->type.'_attribute_id']);
+    $controlTypes = $this->db->
+        select('id, control')
+        ->from('control_types')
+        ->where('for_data_type', $attr->data_type)
+        ->get();
     return array(
-	  'name' => $attr->caption,
-	  'survey' => $survey->title
-	);
+      'name' => $attr->caption,
+      'survey' => $survey->title,
+      'controlTypes' => $controlTypes
+    );
   }
   
   public function save() {       
@@ -235,9 +241,9 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     }
     if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1)   $rules[] = 'length['.$_POST['valid_length_min'].','.$_POST['valid_length_max'].']';
     if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1) $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
-    if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)		 $rules[] = 'regex['.$_POST['valid_regex_format'].']';
-    if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)		     $rules[] = 'minimum['.$_POST['valid_min_value'].']';
-    if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)		     $rules[] = 'maximum['.$_POST['valid_max_value'].']';
+    if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)     $rules[] = 'regex['.$_POST['valid_regex_format'].']';
+    if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)         $rules[] = 'minimum['.$_POST['valid_min_value'].']';
+    if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)         $rules[] = 'maximum['.$_POST['valid_max_value'].']';
 
     $_POST['validation_rules'] = implode("\r\n", $rules);
     
@@ -246,9 +252,9 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   
   protected function get_return_page() {
     if (array_key_exists('survey_id', $_POST)) {
-	  return 'attribute_by_survey/'.$_POST['survey_id'].'?type='.$this->type;      
+      return 'attribute_by_survey/'.$_POST['survey_id'].'?type='.$this->type;      
     } else {
-	  // If $_POST data not available, then just return to the survey list. Shouldn't really happen.
+      // If $_POST data not available, then just return to the survey list. Shouldn't really happen.
       return 'survey';
     }    
   }
@@ -258,8 +264,8 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    */
   protected function defineEditBreadcrumbs() { 
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
-	  $survey = ORM::Factory('survey', $this->model->restrict_to_survey_id);
-	  $this->page_breadcrumbs[] = html::anchor('/attribute_by_survey/'.$this->model->restrict_to_survey_id.'?type='.$this->type, 'Attributes for '.$survey->title);
-	  $this->page_breadcrumbs[] = $this->model->caption();
+    $survey = ORM::Factory('survey', $this->model->restrict_to_survey_id);
+    $this->page_breadcrumbs[] = html::anchor('/attribute_by_survey/'.$this->model->restrict_to_survey_id.'?type='.$this->type, 'Attributes for '.$survey->title);
+    $this->page_breadcrumbs[] = $this->model->caption();
   }
 }
