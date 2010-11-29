@@ -344,8 +344,8 @@ class Location_Controller extends Gridview_Base_Controller {
     function loadStoreHeaders($handle)
     {
         $this->recordNumber = $this->loadData("N", fread($this->SHPFile, 4));
-        $tmp = $this->loadData("N", fread($this->SHPFile, 4)); //We read the length of the record
-        $this->shapeType = $this->loadData("V", fread($this->SHPFile, 4));
+        $this->recordLength = $this->loadData("N", fread($this->SHPFile, 4)); //We read the length of the record: NB this ignores the header
+        $this->recordStart =  ftell($this->SHPFile);        $this->shapeType = $this->loadData("V", fread($this->SHPFile, 4));
     }
 
     private function loadFromFile($handle)
@@ -369,7 +369,7 @@ class Location_Controller extends Gridview_Base_Controller {
                 $this->loadPolyLineRecord('POLYGON');
                 break;
             case 15:
-                $this->loadPolyLineZRecord('POLYGON');
+                $this->loadPolyLineZRecord('POLYGON'); // we discard the Z data.
                 break;
             default:
                 break;
@@ -425,19 +425,16 @@ class Location_Controller extends Gridview_Base_Controller {
 
         $this->wkt .= ')';
         // Seek to the exact end of this record        
-        fseek($this->SHPFile, $firstIndex + ($this->SHPData["numpoints"] * 16));
-    }
+      fseek($this->SHPFile, $this->recordStart + ($this->recordLength * 2));    }
     
     /**
      * Read a PolyLineZ record. This is the same as a PolyLine for our purposes since we do not hold Z data.
-     * But we must skip past the extra parts of the record.
+     * But we must skip past the extra parts of the record. This is done automatically by the seek at the end of the func.
      */
     private function loadPolyLineZRecord($title)
     {
       $this->loadPolyLineRecord($title);
-      $firstIndex = ftell($this->SHPFile);
       // According to the spec there are 2 sets of minima and maxima, plus 2 arrays of values * numpoints, that we skip
-      fseek($this->SHPFile, $firstIndex + (($this->SHPData["numpoints"]*2+4) * 8));
     }
     
 }
