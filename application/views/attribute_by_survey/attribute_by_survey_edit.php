@@ -147,7 +147,17 @@ echo data_entry_helper::outputAttribute(array(
   array(
     'extraParams' => $readAuth
   )
-);
+);?>
+<label for="control_type_id">Default control type:</label>
+<select name="<?php echo $model->object_name; ?>:control_type_id" id="control_type_id">
+<?php
+foreach ($other_data['controlTypes'] as $controlType) {
+  $selected = ($controlType->id==$model->control_type_id) ? ' selected="selected"' : '';
+  echo "<option value=\"$controlType->id\"$selected>$controlType->control</option>";
+}
+?>
+</select>
+<?php
 echo $metadata;
 echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null);
 ?></form>
