@@ -712,7 +712,7 @@ class data_entry_helper extends helper_config {
       'autoupload' => true,
       'imagewidth' => 250,
       'uploadScript' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . 'upload.php',
-      'destinationFolder' => dirname($_SERVER['REQUEST_URI']) . '/' . $relpath . $interim_image_folder,
+      'destinationFolder' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
       'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
@@ -2504,8 +2504,8 @@ class data_entry_helper extends helper_config {
       // store some globals that we need later when creating uploaders
       $relpath = self::relative_client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      self::$javascript .= "uploadScript = '".dirname($_SERVER['REQUEST_URI']) . '/' . $relpath . "upload.php';\n";
-      self::$javascript .= "destinationFolder = '".dirname($_SERVER['REQUEST_URI']) . '/' . $relpath . $interim_image_folder."';\n";
+      self::$javascript .= "uploadScript = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "upload.php';\n";
+      self::$javascript .= "destinationFolder = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder."';\n";
       self::$javascript .= "swfAndXapFolder = '".$relpath . "plupload/';\n";
       self::$javascript .= "jsPath = '".self::$js_path."';\n";
     }
@@ -5273,6 +5273,7 @@ $('.ui-state-default').live('mouseout', function() {
   *    allow selection of both yes and no, e.g. on a filter form.
   *    language - iso 639:3 code for the language to output for terms in a termlist. If not set no language filter is used.
   * @return string HTML to insert into the page for the control.
+  * @todo full handling of the control_type. Only works for text data at the moment.
   */
   public static function outputAttribute($item, $options=array()) {
     $options = array_merge(array(
@@ -5290,6 +5291,15 @@ $('.ui-state-default').live('mouseout', function() {
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
+          if (isset($item['control_type']) && 
+              ($item['control_type']=='text_input' || $item['control_type']=='textarea'
+              || $item['control_type']=='postcode_textbox')) {
+            $ctrl = $item['control_type'];
+          } else {
+            $ctrl = 'text_input';
+          }
+          $output = self::$ctrl($attrOptions);
+          break;
         case 'Float':
         case 'F':
         case 'Integer':

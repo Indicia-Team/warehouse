@@ -482,15 +482,6 @@ class iform_mnhnl_dynamic_1 {
     
     // request automatic JS validation
     data_entry_helper::enable_validation('entry_form');
-    $attributes = data_entry_helper::getAttributes(array(
-    	'id' => data_entry_helper::$entity_to_load['sample:id']
-       ,'valuetable'=>'sample_attribute_value'
-       ,'attrtable'=>'sample_attribute'
-       ,'key'=>'sample_id'
-       ,'fieldprefix'=>'smpAttr'
-       ,'extraParams'=>$auth['read']
-       ,'survey_id'=>$args['survey_id']
-    ));
     // If logged in, output some hidden data about the user
     foreach($attributes as &$attribute) {
       if (strcasecmp($attribute['caption'], 'cms user id')==0) {
@@ -1047,7 +1038,6 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     foreach ($attributes as $attribute) {
       // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
       if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {
-        
         if (empty($outerFilter) && $lastOuterBlock!=$attribute['outer_structure_block']) {
           if (!empty($lastInnerBlock)) {
             $r .= '</fieldset>';
