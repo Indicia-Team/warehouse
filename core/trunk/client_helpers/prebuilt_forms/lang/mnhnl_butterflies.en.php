@@ -68,7 +68,12 @@ $custom_terms = array(
 
 	'validation_required' => 'Please enter a value for this field',
 
+	'LANG_Main_Samples_Tab' => 'Surveys',
+	'LANG_Allocate_Locations' => 'Allocate Locations',
+	'LANG_Save_Location_Allocations' => 'Save Location Allocations',
+	'LANG_Transect' => 'Transect',
 	'Transect' => 'Transect',
+	'MNHNL Month' => 'Month',
 	'transectgrid:taxa_taxon_list_id' => 'Add Species',
 	'sectionlist:species' => 'Species',
 	'sectionlist:section' => 'Section',
@@ -77,6 +82,8 @@ $custom_terms = array(
 	'sectionlist:confirmremove' => 'You are about to delete a species row. If you do this any previously saved data will be lost. Do you still wish to remove ',
 	'sectionlist:confirmremovecolumns' => 'You are about to remove some sections. If you do this any previously saved data will be lost. Do you still wish to do this?',
 	'transectgrid:rowexists' => 'A grid for this species already exists. It is present under the preferred name of ',
-	'sectionlist:rowexists' => 'A row for this species already exists. It is present under the preferred name of '
+	'sectionlist:rowexists' => 'A row for this species already exists. It is present under the preferred name of ',
+	'transectgrid:bumpf1' => 'Observations along the transect and inside the vitual box ("X"), observations along the transect and outside the vitual box ("/") and casual observations ("O").',
+	'transectgrid:bumpf2' => 'Note: whan a species record is associated with multiple codes for the same grid, please specify only the most... [TBC]'
 
 );
