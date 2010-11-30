@@ -3301,9 +3301,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if    ($rule=='required'
           || $rule=='dateISO'
           || $rule=='email'
-          || $rule=='url') {
+          || $rule=='url'
+          || $rule=='time') {
         $converted[] = $rule;
-       } else if ($rule='digit') {
+       } else if ($rule=='digit') {
          $converted[] = 'digits';
        }
        // Now any rules which need parsing or convertion
@@ -4016,15 +4017,24 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         // browser scroll bar is too long making it possible to load the bottom blank part of the page if the user accidentally
       // drags the scroll bar while the page is loading.
       self::$javascript .= "\nscroll(0,0);";
-      self::$javascript .= "\n$('.tab-submit').click(function() {
-      var form = $(this).parents('form:first');
-      form.submit();
+      self::$javascript .= "\n$('.tab-submit').click(function() {\n";
+      self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
+      // Use a selector to find the inputs and selects on the current tab and validate them.
+      if (isset(self::$validated_form_id)) {
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select')\n";
+        self::$javascript .= "  if (!tabinputs.valid()) {\n";
+        self::$javascript .= "    return;";
+        self::$javascript .= "  }\n";
+      }
+      // If all is well, submit.
+      self::$javascript .= "      var form = $(this).parents('form:first');
+        form.submit();
       });";
       self::$javascript .= "\n$('.tab-next').click(function() {\n";
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
-      // Use a selector to find the inputs on the current tab and validate them.
+      // Use a selector to find the inputs and selects on the current tab and validate them.
       if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+') input')\n";
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select')\n";
         self::$javascript .= "  if (!tabinputs.valid()) {\n";
         self::$javascript .= "    return;";
         self::$javascript .= "  }\n";

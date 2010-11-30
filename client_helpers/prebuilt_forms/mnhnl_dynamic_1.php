@@ -36,6 +36,8 @@ class iform_mnhnl_dynamic_1 {
   // A list of the taxon ids we are loading
   private static $occurrenceIds = array();
 
+  protected static $auth = array();
+  
   /* TODO
    *  
    *   Survey List
@@ -141,6 +143,14 @@ class iform_mnhnl_dynamic_1 {
               "=*=",
           'group' => 'User Interface'
         ),
+        array(
+          'name'=>'attributeValidation',
+          'caption'=>'Attribute Validation Rules',
+          'description'=>'TBD.',
+          'type'=>'textarea',
+          'required' => false,
+          'group' => 'User Interface'
+        ),    
         array(
           'name'=>'no_grid',
           'caption'=>'Skip initial grid of data',
@@ -332,7 +342,8 @@ class iform_mnhnl_dynamic_1 {
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
-
+    self::$auth = $auth;
+    
     $mode = (isset($args['no_grid']) && $args['no_grid']) 
         ? MODE_NEW_SAMPLE // default mode when no_grid set to true - display new sample
         : MODE_GRID; // default mode when no grid set to false - display grid of existing data
@@ -376,7 +387,6 @@ class iform_mnhnl_dynamic_1 {
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
     ));
-
     // default mode  MODE_GRID : display grid of the samples to add a new one 
     // or edit an existing one.
     if($mode ==  MODE_GRID) {
@@ -399,8 +409,6 @@ class iform_mnhnl_dynamic_1 {
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entities = json_decode(curl_exec($session), true);
         $userlist = iform_loctools_listusers($node);
-//        var_dump($entities);
-//        throw(1);
         if(!empty($entities)){
           foreach($entities as $entity){
             if(!$entity["parent_id"]){ // only assign parent locations.
@@ -657,7 +665,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           if (method_exists(get_called_class(), $method)) 
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
           elseif (trim($component)==='[*]')
-            $html .= self::get_attribute_html($attributes, $defAttrOptions, $tab);
+            $html .= self::get_attribute_html($attributes, $args, $defAttrOptions, $tab);
           else          
             $html .= "The form structure includes a control called $component which is not recognised.<br/>";
         }      
@@ -910,7 +918,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       }
       $attributes = data_entry_helper::getAttributes($attrArgs);
       $defAttrOptions = array('extraParams'=>$auth['read']);
-      $r = self::get_attribute_html($attributes, $defAttrOptions);
+      $r = self::get_attribute_html($attributes, $args, $defAttrOptions);
 	  if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
@@ -1031,7 +1039,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
   	return $r;
   }
 
-  private static function get_attribute_html($attributes, $defAttrOptions, $outerFilter=null) {
+  private static function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null) {
   	$lastOuterBlock='';
     $lastInnerBlock='';
     $r = '';
@@ -1059,7 +1067,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         }
         $lastInnerBlock=$attribute['inner_structure_block'];
         $lastOuterBlock=$attribute['outer_structure_block'];
-        $r .= data_entry_helper::outputAttribute($attribute, $defAttrOptions);
+        $r .= data_entry_helper::outputAttribute($attribute, $defAttrOptions + self::getAttrValidation($attribute, $args));
         $attribute['handled']=true;
       }
     }
@@ -1162,11 +1170,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
       'dataSource' => $reportName,
       'mode' => 'report',
       'readAuth' => $auth['read'],
-      'columns' => array(
-        array('display' => 'Actions', 'actions' => array(
-          array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')),
-        ))
-      ),
+      'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
       'itemsPerPage' =>10,
       'autoParamsForm' => true,
       'extraParams' => array(
@@ -1216,6 +1220,30 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
 	  $args['occurrence_images'] == false; 
   }
 
+/**
+ * When attributes are fetched from the database the validation isn't passed through. In particular
+ * validation isn't defined at a website/survey level yet, so validation may be specific to this form.
+ * This allows the validation rules to be defined by a $args entry.
+ */
+  private function getAttrValidation($attribute, $args) {
+    $rules = array();
+    $argRules = explode(';', $args['attributeValidation']);
+    foreach($argRules as $rule){
+      $rules[] = explode(',', $rule);
+    }
+    foreach($rules as $rule){
+      if($attribute['fieldname'] == $rule[0] || substr($attribute['fieldname'], 0, strlen($rule[0])+1) == $rule[0].':') {
+        return array('validation' => array_slice($rule, 1));
+      }
+    }
+    return array();
+  }
+
+  protected function getReportActions() {
+    return array(array('display' => 'Actions', 'actions' => 
+        array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
+  }
+  
 }
 
 /**

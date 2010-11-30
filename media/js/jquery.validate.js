@@ -265,6 +265,7 @@ $.extend($.validator, {
 		creditcard: "Please enter a valid credit card number.",
 		equalTo: "Please enter the same value again.",
 		accept: "Please enter a value with a valid extension.",
+		time: "Please enter a time value with the format HH:MM.",
 		maxlength: $.validator.format("Please enter no more than {0} characters."),
 		minlength: $.validator.format("Please enter at least {0} characters."),
 		rangelength: $.validator.format("Please enter a value between {0} and {1} characters long."),
@@ -752,7 +753,8 @@ $.extend($.validator, {
 		number: {number: true},
 		numberDE: {numberDE: true},
 		digits: {digits: true},
-		creditcard: {creditcard: true}
+		creditcard: {creditcard: true},
+		time: {time: true}
 	},
 	
 	addClassRules: function(className, rules) {
@@ -1073,7 +1075,12 @@ $.extend($.validator, {
 				$(element).valid();
 			});
 			return value == target.val();
-		}
+		},
+
+		time: function(value, element) {
+			return this.optional(element) || /^(2[0-3]|[0,1][0-9]):[0-5][0-9]$/.test(value);
+		},
+
 		
 	}
 	
