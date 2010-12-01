@@ -136,6 +136,7 @@ $indicia_templates = array(
       {
         return item.{captionField};
       }
+      {max}
     });
     jQuery('input#{escaped_input_id}').result(function(event, data) {
       jQuery('input#{escaped_id}').attr('value', data.id);
@@ -415,6 +416,8 @@ class data_entry_helper extends helper_config {
   * should at least contain the read authorisation array.</li>
   * <li><b>template</b><br/>
   * Optional. Name of the template entry used to build the HTML for the control. Defaults to autocomplete.</li>
+  * <li><b>numValues</b><br/>
+  * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the autocomplete control.
@@ -424,7 +427,7 @@ class data_entry_helper extends helper_config {
   public static function autocomplete() {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default'
+        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default', 'numValues'
     ));
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
     $options['inputId'] = $options['id'].':'.$options['captionField'];
@@ -436,7 +439,8 @@ class data_entry_helper extends helper_config {
       'escaped_input_id' => str_replace(':', '\\\\:', $options['inputId']),
       'escaped_id' => str_replace(':', '\\\\:', $options['id']),
       'defaultCaption' => self::check_default_value($options['inputId'],
-          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : '')
+          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
+      'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : ''
     ), $options);
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
