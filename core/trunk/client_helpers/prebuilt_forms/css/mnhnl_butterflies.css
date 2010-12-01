@@ -14,3 +14,7 @@ label.narrow {
   width: 50px;
 }
 
+.sectionlist p.inline-error {
+  margin-bottom:0;
+  margin-left:0;
+}

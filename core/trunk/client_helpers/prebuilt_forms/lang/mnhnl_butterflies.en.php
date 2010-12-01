@@ -66,7 +66,7 @@ $custom_terms = array(
 	'LANG_Image_Label' => 'Upload Image',
 	'LANG_Save' => 'Save',
 
-	'validation_required' => 'Please enter a value for this field',
+	'validation_required' => 'Required',
 
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Allocate_Locations' => 'Allocate Locations',
@@ -84,6 +84,6 @@ $custom_terms = array(
 	'transectgrid:rowexists' => 'A grid for this species already exists. It is present under the preferred name of ',
 	'sectionlist:rowexists' => 'A row for this species already exists. It is present under the preferred name of ',
 	'transectgrid:bumpf1' => 'Observations along the transect and inside the vitual box ("X"), observations along the transect and outside the vitual box ("/") and casual observations ("O").',
-	'transectgrid:bumpf2' => 'Note: whan a species record is associated with multiple codes for the same grid, please specify only the most... [TBC]'
+	'transectgrid:bumpf2' => 'Note: when a species record is associated with multiple codes for the same grid, please consider this order of priority (1) "X", (2) "/" and (3) "O".'
 
 );

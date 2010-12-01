@@ -38,6 +38,8 @@ class iform_mnhnl_dynamic_1 {
 
   protected static $auth = array();
   
+  protected static $mode;
+  
   /* TODO
    *  
    *   Survey List
@@ -356,9 +358,7 @@ class iform_mnhnl_dynamic_1 {
           iform_loctools_deletelocations($node);
           foreach($_POST as $key => $value){
             $parts = explode(':', $key);
-            if($parts[0] == 'location' && $value){
-              iform_loctools_insertlocation($node, $value, $parts[1]);
-            }
+            iform_loctools_insertlocation($node, $parts[2], $parts[1]);
           }
         }
       } else if(!is_null(data_entry_helper::$entity_to_load)){
@@ -377,19 +377,18 @@ class iform_mnhnl_dynamic_1 {
       $mode = MODE_NEW_SAMPLE;
       data_entry_helper::$entity_to_load = array();
     } // else default to mode MODE_GRID or MODE_NEW_SAMPLE depending on no_grid parameter
-    
-    $attributes = data_entry_helper::getAttributes(array(
-    	'id' => data_entry_helper::$entity_to_load['sample:id']
-       ,'valuetable'=>'sample_attribute_value'
+    self::$mode = $mode;
+    // default mode  MODE_GRID : display grid of the samples to add a new one 
+    // or edit an existing one.
+    if($mode ==  MODE_GRID) {
+      $attributes = data_entry_helper::getAttributes(array(
+        'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
        ,'key'=>'sample_id'
        ,'fieldprefix'=>'smpAttr'
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
-    ));
-    // default mode  MODE_GRID : display grid of the samples to add a new one 
-    // or edit an existing one.
-    if($mode ==  MODE_GRID) {
+      ));
       $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
       if($args['includeLocTools'] && iform_loctools_checkaccess($node,'admin')){
         $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
@@ -403,25 +402,29 @@ class iform_mnhnl_dynamic_1 {
         $r .= '
   <div id="setLocations">
     <form method="post">
-      <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" />';
+      <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><table border="1"><tr><td></td>';
         $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&parent_id=NULL&orderby=name";
         $session = curl_init($url);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entities = json_decode(curl_exec($session), true);
         $userlist = iform_loctools_listusers($node);
+        foreach($userlist as $uid => $a_user){
+          $r .= '<td>'.$a_user->name.'</td>';
+        }
+        $r .= "</tr>";
         if(!empty($entities)){
           foreach($entities as $entity){
             if(!$entity["parent_id"]){ // only assign parent locations.
-              $r .= "\n<label for=\"location:".$entity["id"]."\">".$entity["name"].":</label><select id=\"location:".$entity["id"]."\" name=\"location:".$entity["id"]."\"><option value=\"\" >&lt;".lang::get('LANG_Not_Allocated')."&gt;</option>";
-              $defaultuserid = iform_loctools_getuser($node, $entity["id"]);
+              $r .= "<tr><td>".$entity["name"]."</td>";
+              $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
               foreach($userlist as $uid => $a_user){
-                $r .= "<option value=\"".$uid."\" ".($uid == $defaultuserid ? 'selected="selected" ' : '').">".$a_user->name."</option>";
+                $r .= '<td><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').'></td>';
               }
-              $r .= "</select><br />";
+              $r .= "</tr>";
             }
           }
         }
-        $r .= "
+        $r .= "</table>
       <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
     </form>
   </div>";
@@ -466,6 +469,16 @@ class iform_mnhnl_dynamic_1 {
         data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
       }	
     }
+    // atributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
+    $attributes = data_entry_helper::getAttributes(array(
+    	'id' => data_entry_helper::$entity_to_load['sample:id']
+       ,'valuetable'=>'sample_attribute_value'
+       ,'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
+       ,'fieldprefix'=>'smpAttr'
+       ,'extraParams'=>$auth['read']
+       ,'survey_id'=>$args['survey_id']
+    ));
     
     // Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
@@ -555,6 +568,10 @@ class iform_mnhnl_dynamic_1 {
       // get a machine readable alias for the heading
       $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $r .= '<div id="'.$tabalias.'">'."\n";
+      // For wizard include the tab title as a header.
+      if ($args['interface']=='wizard') {
+        $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
+      }
       $r .= $tabContent;    
       // Add any buttons required at the bottom of the tab
       if ($args['interface']=='wizard') {

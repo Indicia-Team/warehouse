@@ -78,6 +78,12 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
           'type'=>'int'
         ),
         array(
+          'name'=>'observer_attr_id',
+          'caption'=>'Observer Sample Attribute ID',
+          'description'=>'The Indicia ID of the Sample Attribute for the Observer.',
+          'type'=>'int'
+        ),
+        array(
           'name'=>'init_species_ids',
           'caption'=>'List of default species to be included in Quantative Distribution list',
           'description'=>'Comma separated list of the Indicia IDs of those species to be included by default in the Quantative Distribution list.',
@@ -98,6 +104,7 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   
   public static function get_form($args, $node, $response=null) {
     global $indicia_templates;
+    global $user;
     // we don't use the map, but a lot of the inherited code assumes the map is present.
     self::$svcUrl = data_entry_helper::$base_url.'/index.php/services';
     data_entry_helper::add_resource('openlayers');
@@ -130,7 +137,34 @@ deleteSurvey = function(sampleID){
           jQuery('#form-delete-survey').submit();
   }});
   };
-};";
+};
+";
+    if(self::$mode != 0){
+      data_entry_helper::$javascript .= "
+jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\>Cancel</a></span></div>').appendTo('.buttons');
+$.validator.messages.required = \"".lang::get('validation_required')."\";";
+      if(!iform_loctools_checkaccess($node,'superuser')){
+        data_entry_helper::$javascript .= "
+jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]').attr('readonly',true)";
+        if(self::$mode == 1){
+          data_entry_helper::$javascript .= ".val(\"".$user->name."\");";
+        } else {
+          data_entry_helper::$javascript .= ";";
+        }
+      } else {
+        $userlist = iform_loctools_listusers($node);
+        data_entry_helper::$javascript .= "
+existing = jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]');
+replacement = '<select name=\"'+existing.attr('name')+'\" >";
+        foreach($userlist as $uid => $a_user){
+          data_entry_helper::$javascript .= "<option>".$a_user->name."</option>";
+        }
+        data_entry_helper::$javascript .= "</select>';
+jQuery(replacement).insertBefore(existing).val(existing.val());
+existing.remove();
+";
+      }
+    }
     return $retVal;
   }
     
@@ -209,7 +243,8 @@ jQuery(\"#sample\\\\:location_id\").change();
           'valueField'=>'taxon_meaning_id',
           'columns'=>2,          
           'parentField'=>'parent_id',
-          'extraParams'=>$extraParams
+          'extraParams'=>$extraParams,
+          'numValues'=>25
     ), $options);
     // do not allow tree browser
     if ($args['species_ctrl']=='tree_browser')
@@ -387,7 +422,8 @@ jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').result(function(event,
           'valueField'=>'taxon_meaning_id',
           'columns'=>2,          
           'parentField'=>'parent_id',
-          'extraParams'=>$extraParams
+          'extraParams'=>$extraParams,
+          'numValues'=>25
     ), $options);
     $defNRAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'),
     				'lookUpKey' => 'meaning_id',
@@ -796,7 +832,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
   
   protected function getReportActions() {
     return array(array('display' => '', 'actions' => 
-            array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))),
+            array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
         array('display' => '', 'actions' => 
             array(array('caption' => 'Delete', 'javascript'=>'deleteSurvey({sample_id})'))));
   }
