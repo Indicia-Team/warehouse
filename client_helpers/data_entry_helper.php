@@ -2431,6 +2431,9 @@ class data_entry_helper extends helper_config {
   * which takes a single parameter. The parameter is the item returned from the database with attributes taxon, preferred ('t' or 'f'), 
   * preferred_name, common, authority, taxon_group, language. The function must return the string to display in the autocomplete list.</p>
   *
+  * <p>To perform an action on the event of a new row being added to the grid, write a JavaScript function called hook_new_row(data), where data
+  * is an object containing the details of the taxon row as loaded from the data services.</p>
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>listId</b><br/>
   * Optional. The ID of the taxon_lists record which is to be used to obtain the species or taxon list. This is 
@@ -2875,39 +2878,15 @@ class data_entry_helper extends helper_config {
     foreach ($attrs as $occAttrId) {
       // test that this occurrence attribute is linked to the survey
       if (!isset($attributes[$occAttrId]))
-        throw new Exception('The occurrence attributes requested for the grid are not linked with the survey.');
-      $attrDef = $attributes[$occAttrId];
+        throw new Exception("The occurrence attribute $occAttrId requested for the grid is not linked with the survey.");
+      $attrDef = array_merge($attributes[$occAttrId]);
       $occAttrs[$occAttrId] = $attrDef['caption'];
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-      $class = self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']); // provide a default class based on the control caption
-      // Build the correct control
-      switch ($attrDef['data_type']) {
-        case 'L':
-          $tlId = $attrDef['termlist_id'];
-          $occAttrControls[$occAttrId] = data_entry_helper::select(array(
-            'fieldname' => '{fieldname}',
-            'table'=>'termlists_term',
-            'captionField'=>'term',
-            'valueField'=>'id',
-            'extraParams' => $options['readAuth'] + array('termlist_id' => $tlId),
-            'class' => $class,
-            'blankText' => '',
-            'default' => $attrDef['default']
-          ));
-          break;
-        case 'D':
-        case 'V':
-          // Date-picker control
-          $defaultValue = empty($attrDef['default']) ? lang::get('click here') : $attrDef['default'];
-          $occAttrControls[$occAttrId] = '<input type="text" class="date $class" ' .
-            'id="{fieldname}" name="{fieldname}" ' .
-            "value=\"$defaultValue\"/>";
-          break;
-        default:
-          $occAttrControls[$occAttrId] =
-            "<input type=\"text\" id=\"{fieldname}\" name=\"{fieldname}\" class=\"$class\" value=\"".$attrDef['default']."\" />";
-          break;
-      }
+      $options = array('class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption'])); 
+      // Don't want captions in the grid
+      unset($attrDef['caption']);
+      $attrDef['fieldname'] = '{fieldname}';
+      $occAttrControls[$occAttrId] = self::outputAttribute($attrDef, $options);
       $idx++;      
     }
   }
@@ -5276,6 +5255,7 @@ $('.ui-state-default').live('mouseout', function() {
   *    disabled
   *    suffixTemplate
   *    default
+  *    class
   *    validation
   *    noBlankText
   *    extraParams
@@ -5287,17 +5267,14 @@ $('.ui-state-default').live('mouseout', function() {
   */
   public static function outputAttribute($item, $options=array()) {
     $options = array_merge(array(
-	  'extraParams' => array()
-	), $options);
-    $attrOptions = array('label'=>$item['caption'],
-              'fieldname'=>$item['fieldname'],
-              'disabled'=>isset($options['disabled']) ? $options['disabled'] : '');
-    if(isset($options['id'])) $attrOptions['id'] = $options['id'];
-    if(isset($options['suffixTemplate'])) $attrOptions['suffixTemplate'] = $options['suffixTemplate'];
-    if(isset($item['default'])) $attrOptions['default']= $item['default'];
-    else if(isset($options['default'])) $attrOptions['default']= $options['default'];
-    if(isset($options['validation'])) $attrOptions['validation'] = $options['validation'];
-    if(isset($options['sep'])) $attrOptions['sep'] = $options['sep'];
+	    'extraParams' => array()
+	  ), $options);
+    $attrOptions = array(
+        'fieldname'=>$item['fieldname'],              
+        'disabled'=>'');
+    if (isset($item['caption']))
+      $attrOptions['label']=$item['caption'];
+    $attrOptions = array_merge($attrOptions, $options);
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
@@ -5320,7 +5297,7 @@ $('.ui-state-default').live('mouseout', function() {
         case 'B':
           // Can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
           // in the optional attribute record.
-          // If using this to generate a filter, need also to use checkboxes.
+          // If using this to generate a filter, need also to use checkboxes.          
             $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
             if(array_key_exists('containerClass', $options)){
               $attrOptions['containerClass'] = $options['containerClass'];
