@@ -102,7 +102,7 @@ var report_grid_sortdir = '';
                     // clear null value cells
                     value = (value===null) ? '' : value;
                     if (col.img == 'true') {
-                      value = '<a href="'+div.settings.imagePath+value+'" class="fancybox"><img src="'+div.settings.imagePath+'thumb-'+value+'" /></a>';
+                      value = '<a href="'+div.settings.imageFolder+value+'" class="fancybox"><img src="'+div.settings.imageFolder+'thumb-'+value+'" /></a>';
                     }
                     rowOutput += '<td>' + value + '</td>';
                   }
@@ -164,7 +164,7 @@ var report_grid_sortdir = '';
         if (result !== '') {
           result += '<br/>';
         }
-        result += '<a class="indicia-button action-button ui-state-default ui-corner-all"'+onclick+href+'>'+action.caption+'</a>';
+        result += '<a class="action-button"'+onclick+href+'>'+action.caption+'</a>';
       });
       return result;
     }
@@ -175,6 +175,13 @@ var report_grid_sortdir = '';
         regex = new RegExp('\\{'+param+'\\}','g');
         template = template.replace(regex, params[param]);
       });
+      // Also do some standard params from the settings, for various paths/urls
+      regex = new RegExp('\\{rootFolder\\}','g');
+      template = template.replace(regex, div.settings.rootFolder);
+      regex = new RegExp('\\{imageFolder\\}','g');
+      template = template.replace(regex, div.settings.imageFolder);
+      regex = new RegExp('\\{currentUrl\\}','g');
+      template = template.replace(regex, div.settings.currentUrl);
       return template;
     }
     
@@ -250,6 +257,8 @@ $.fn.reportgrid.defaults = {
   itemsPerPage : null,
   offset : 0,
   altRowClass : 'odd',
-  imagePath : '',
+  imageFolder : '',
+  rootFolder: '',
+  currentUrl: '',
   callback : ''
 };

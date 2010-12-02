@@ -342,7 +342,7 @@ class iform_my_dot_map {
   private static function prepare_layer_titles(&$args, $occurrence) {
     $species = array();
     foreach ($occurrence as $record) {
-      $species[] = $record['lt4_taxon'];
+      $species[] = empty($record['lt4_taxon']) ? $record['lt7_taxon'] : $record['lt4_taxon'];
       $survey = $record['lt8_title'];
     }
     $species = implode(',',$species);

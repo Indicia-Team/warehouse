@@ -527,7 +527,7 @@ class iform_mnhnl_dynamic_1 {
     }
     
     // request automatic JS validation
-    if (!isset($args['client_side_validation']) || !$args['client_side_validation'])
+    if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
     // If logged in, output some hidden data about the user
     foreach($attributes as &$attribute) {
