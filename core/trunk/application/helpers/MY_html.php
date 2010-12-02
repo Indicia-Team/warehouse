@@ -77,7 +77,6 @@ class html extends html_Core {
    * Option is selected if selected=caption.
    */
   private static function model_field_option($field, $caption, $selected) {
-  kohana::log('debug', "Selected: $caption $selected");
     $selHtml = ($caption==$selected) ? ' selected="selected"' : '';
     return '<option value="'.self::specialchars($field)."\"$selHtml>".self::specialchars($caption).'</option>';
   }

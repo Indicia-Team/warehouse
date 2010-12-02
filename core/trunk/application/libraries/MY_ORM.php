@@ -45,12 +45,20 @@ class ORM extends ORM_Core {
   protected $has_attributes = false;
 
   /**
-   * Override load_values to add in a vague date field.
+   * Override load_values to add in a vague date field. Also strips out any custom attribute values which don't go into this model.
    */
   public function load_values(array $values)
   {
+    // clear out any values which match this attribute field prefix
+    if (isset($this->attrs_field_prefix)) {
+      foreach ($values as $key=>$value) {
+        if (substr($key, 0, strlen($this->attrs_field_prefix)+1)==$this->attrs_field_prefix.':') {
+          unset($values[$key]);
+        }
+      }
+    }
     parent::load_values($values);
-    // Add in field
+    // Add in date field
     if (array_key_exists('date_type', $this->object) && !empty($this->object['date_type']))
     {
       $vd = vague_date::vague_date_to_string(array
@@ -59,7 +67,6 @@ class ORM extends ORM_Core {
         date_create($this->object['date_end']),
         $this->object['date_type']
       ));
-
       $this->object['date'] = $vd;
     }
     return $this;
