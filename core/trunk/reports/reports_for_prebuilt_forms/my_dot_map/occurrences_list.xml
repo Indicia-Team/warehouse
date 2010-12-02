@@ -4,34 +4,22 @@
     <param name='sample_id' display='Sample: ' description='ID of sample to return data for' datatype='int' />
     <param name='language' display='Language: ' description='ISO code of language for common names' datatype='int' />
   </params>
-  <vagueDate enableProcessing='true' />
-  <table tablename="samples" where="#this#.id = #sample_id#">   
-    <tabColumn name='id' visible='false'/>
-    <tabColumn name='date_start' visible='false'/>
-    <tabColumn name='date_end' visible='false'/>
-    <tabColumn name='date_type' visible='false'/>
-    <tabColumn name='date' func="''"/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report    
-    <tabColumn name='entered_sref' display='Spatial Reference'/>
-    <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" >
-      <subTable tablename='taxa_taxon_lists' where="#this#.deleted = FALSE" >
-        <tabColumn name='taxon_meaning_id' display='Meaning'/>        
-        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.deleted = FALSE" >          
-          <subTable tablename='taxa' where="#this#.deleted = FALSE">            
-            <tabColumn name='taxon' display='Common Name'/>
-            <subTable tablename='languages' where="#this#.deleted = FALSE AND #this#.iso='#language#'" ></subTable>
-          </subTable>
-        </subTable>
-        <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.deleted = FALSE AND #this#.preferred='t'" >
-	  <subTable tablename='taxa' where="#this#.deleted = FALSE">
-	    <tabColumn name='taxon' display='Latin Name'/>
-	    <tabColumn name='external_key' display='External Key'/>
-	  </subTable>
-        </subTable>
-      </subTable>      
-    </subTable>
-    <subTable tablename='surveys' where="#this#.deleted = FALSE">
-      <tabColumn name='id' display='Survey ID'/>	    
-      <tabColumn name='title' display='Survey Name'/>	    
-    </subTable>
-  </table>
+  <query>SELECT  lt0.id AS lt0_id, lt0.date_start AS lt0_date_start, lt0.date_end AS lt0_date_end, lt0.date_type AS lt0_date_type, '' AS lt0_date, 
+lt0.entered_sref AS lt0_entered_sref, lt2.taxon_meaning_id AS lt2_taxon_meaning_id, lt4.taxon AS lt4_taxon, lt7.taxon AS lt7_taxon, 
+lt7.external_key AS lt7_external_key, lt8.id AS lt8_id, lt8.title AS lt8_title 
+FROM samples lt0 
+INNER JOIN occurrences lt1 ON (lt1.sample_id = lt0.id AND  lt1.deleted = FALSE)  
+INNER JOIN taxa_taxon_lists lt2 ON (lt2.id = lt1.taxa_taxon_list_id AND lt2.deleted = FALSE)  
+LEFT JOIN (taxa_taxon_lists lt3
+INNER JOIN taxa lt4 ON (lt4.id = lt3.taxon_id AND lt4.deleted = FALSE)  
+INNER JOIN languages lt5 ON (lt5.id = lt4.language_id AND lt5.deleted = FALSE AND lt5.iso='#language#')) ON (lt3.taxon_meaning_id = lt2.taxon_meaning_id AND lt3.deleted = FALSE)  
+INNER JOIN taxa_taxon_lists lt6 ON (lt6.taxon_meaning_id = lt2.taxon_meaning_id AND lt6.deleted = FALSE AND lt6.preferred='t')  
+INNER JOIN taxa lt7 ON (lt7.id = lt6.taxon_id AND lt7.deleted = FALSE)  INNER JOIN surveys lt8 ON (lt8.id = lt0.survey_id AND lt8.deleted = FALSE)  
+WHERE lt0.id = #sample_id#
+</query>
+  <params>
+    <param name='sample_id' display='Sample: ' description='ID of sample to return data for' datatype='int' />
+    <param name='language' display='Language: ' description='ISO code of language for common names' datatype='int' />
+  </params>
+
 </report>
