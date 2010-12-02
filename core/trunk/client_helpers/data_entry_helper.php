@@ -1926,6 +1926,7 @@ class data_entry_helper extends helper_config {
 
   private static function get_report_grid_actions($actions, $row) {
     $links = array();
+    $currentUrl = self::get_reload_link_parts(); // needed for params
     foreach ($actions as $action) {
       if (isset($action['url'])) {        
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
@@ -5287,11 +5288,12 @@ $('.ui-state-default').live('mouseout', function() {
 	    'extraParams' => array()
 	  ), $options);
     $attrOptions = array(
-        'fieldname'=>$item['fieldname'],              
+        'fieldname'=>$item['fieldname'],
         'disabled'=>'');
     if (isset($item['caption']))
       $attrOptions['label']=$item['caption'];
     $attrOptions = array_merge($attrOptions, $options);
+    if(isset($item['default'])) $attrOptions['default']= $item['default'];
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
@@ -5361,11 +5363,11 @@ $('.ui-state-default').live('mouseout', function() {
           } else {
             $lookUpKey = 'id';
           }
-          $output = call_user_func(array('data_entry_helper', $ctrl), $attrOptions + array(
+          $output = call_user_func(array('data_entry_helper', $ctrl), array_merge($attrOptions, array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>$lookUpKey,
-                  'extraParams' => $options['extraParams'] + $dataSvcParams));
+                  'extraParams' => array_merge($options['extraParams'] + $dataSvcParams))));
           break;
         default:
             if ($item)
