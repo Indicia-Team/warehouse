@@ -169,8 +169,8 @@
               }
               wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
               _setClickPoint({
-               'sref' : sref,
-               'wkt' : wkt
+                'sref' : sref,
+                'wkt' : wkt
               }, div);
             } else {
               if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
@@ -189,7 +189,7 @@
                 }
               );
             }
-          }
+          }          
         });
 
         // Add the click control to the map.
@@ -252,7 +252,7 @@
             }
           );
         }
-      });      
+      });
     }
     
     function _handleEnteredSref(value, div) {
@@ -262,7 +262,9 @@
             "&system=" + _getSystem() +
             "&callback=?", function(data) {
               // store value in saved field?
-              _showWktFeature(div, data.wkt, div.map.editLayer, null);
+              if (div.map.editLayer) {
+                _showWktFeature(div, data.wkt, div.map.editLayer, null);
+              }
               $('#'+opts.geomId).val(data.wkt);
             }
         );
@@ -517,7 +519,10 @@
 
       if (this.settings.editLayer) {
         // Add an editable layer to the map
-        var editLayer = new OpenLayers.Layer.Vector(this.settings.editLayerName, {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher});
+        var editLayer = new OpenLayers.Layer.Vector(
+            this.settings.editLayerName, 
+            {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
+        );
         div.map.editLayer = editLayer;
         div.map.addLayer(div.map.editLayer);
 

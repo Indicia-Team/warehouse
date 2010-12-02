@@ -292,7 +292,6 @@ var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\
 /*.';
 
 ');*/
-    drupal_add_js('sites/all/modules/iform/client_helpers/prebuilt_forms/js/verification_1.js');
     return $r;
   }
   

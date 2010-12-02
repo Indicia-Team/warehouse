@@ -562,23 +562,25 @@ class data_entry_helper extends helper_config {
 
     self::add_resource('jquery_ui');
     $escaped_id=str_replace(':','\\\\:',$options['id']);
-    self::$javascript .= "jQuery('#$escaped_id').datepicker({
-  dateFormat : 'yy-mm-dd',
-  constrainInput: false";
-    // Filter out future dates
-    if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
-      self::$javascript .= ",
-  maxDate: '0'";
+    // Don't set js up for the datepicker in the clonable row for the species checklist grid 
+    if ($escaped_id!='{fieldname}') {
+      self::$javascript .= "jQuery('#$escaped_id').datepicker({
+    dateFormat : 'yy-mm-dd',
+    constrainInput: false";
+      // Filter out future dates
+      if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
+        self::$javascript .= ",
+    maxDate: '0'";
+      }
+      // If the validation plugin is running, we need to trigger it when the datepicker closes.
+      if (self::$validated_form_id) {
+        self::$javascript .= ",
+    onClose: function() {
+      $(this).valid();
+    }";
+      }
+      self::$javascript .= "\n});\n";
     }
-    // If the validation plugin is running, we need to trigger it when the datepicker closes.
-    if (self::$validated_form_id) {
-      self::$javascript .= ",
-  onClose: function() {
-    $(this).valid();
-  }";
-    }
-    self::$javascript .= "\n});\n";
-
     if (!array_key_exists('default', $options) || $options['default']=='') {
       $options['default']=lang::get('click here');
     }
@@ -1533,7 +1535,9 @@ class data_entry_helper extends helper_config {
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
   *      values for caption, url, urlParams, class and javascript. The javascript, url and urlParams values can all use the
   *      field names from the report in braces as substitutions, for example {id} is replaced by the value of the field
-  *      called id in the respective row. In addition, the url can use {currentUrl} to represent the current page's URL.
+  *      called id in the respective row. In addition, the url can use {currentUrl} to represent the current page's URL,
+  *      {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
+  *      {imageFolder} for the image upload folder.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *  of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
@@ -1670,6 +1674,16 @@ class data_entry_helper extends helper_config {
         // Don't output the additional row we requested just to check if the next page link is required.
         if ($outputCount>=$options['itemsPerPage'])
           break;
+        // Put some extra useful paths into the row data, so it can be used in the templating
+        $relpath = self::relative_client_helper_path();
+        $currentUrl = self::get_reload_link_parts();
+        $row = array_merge($row, array(
+            'rootFolder'=>dirname($_SERVER['PHP_SELF']) . '/',
+            'imageFolder'=>self::get_uploaded_image_folder(),
+            // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
+            // the url is being rewritten.
+            'currentUrl' => $currentUrl['path']
+        ));
         // set a unique id for the row if we know the identifying field.
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
         $r .= "<tr $rowClass$rowId>";
@@ -1680,8 +1694,9 @@ class data_entry_helper extends helper_config {
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row);
             $class=' class="actions"';
-          } elseif (isset($field['template'])) 
+          } elseif (isset($field['template'])) {
             $value = self::mergeParamsIntoTemplate($row, $field['template'], true);
+          }
           else {
             $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
             // The verification_1 form depends on the tds in the grid having a class="data fieldname".
@@ -1911,10 +1926,6 @@ class data_entry_helper extends helper_config {
 
   private static function get_report_grid_actions($actions, $row) {
     $links = array();
-    // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
-    // the url is being rewritten.
-    $currentUrl = self::get_reload_link_parts();
-    $row['currentUrl'] = $currentUrl['path'];    
     foreach ($actions as $action) {
       if (isset($action['url'])) {        
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
@@ -2435,7 +2446,7 @@ class data_entry_helper extends helper_config {
   * which takes a single parameter. The parameter is the item returned from the database with attributes taxon, preferred ('t' or 'f'), 
   * preferred_name, common, authority, taxon_group, language. The function must return the string to display in the autocomplete list.</p>
   *
-  * <p>To perform an action on the event of a new row being added to the grid, write a JavaScript function called hook_new_row(data), where data
+  * <p>To perform an action on the event of a new row being added to the grid, write a JavaScript function called hook_species_checklist_new_row(data), where data
   * is an object containing the details of the taxon row as loaded from the data services.</p>
   *
   * @param array $options Options array with the following possibilities:<ul>
@@ -2932,7 +2943,7 @@ class data_entry_helper extends helper_config {
     } 
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
-      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="images:-ttlId-:">'.
+      $r .= '<td class="ui-widget-content scImageLinkCell"><a href="" class="add-image-link scImageLink" style="display: none" id="add-images:-ttlId-:">'.
           lang::get('add images').'</a><span class="add-image-select-species">'.lang::get('select a species first').'</span></td>';
     }
     $r .= "</tr></tbody></table>\n";
@@ -4332,7 +4343,7 @@ if (errors.length>0) {
           $record['record_status'] = $record_status;
         }
         $occ = data_entry_helper::wrap($record, 'occurrence');        
-		self::attachOccurrenceImagesToModel($occ, $record);
+        self::attachOccurrenceImagesToModel($occ, $record);
         $subModels[] = array(
           'fkId' => 'sample_id',
           'model' => $occ
@@ -4360,21 +4371,21 @@ if (errors.length>0) {
   private static function attachOccurrenceImagesToModel(&$occ, $record) {
     $images = array();
     foreach ($record as $key=>$value) {
-	  if (substr($key, 0, 17)=='occurrence_image:') {
-	    $tokens = explode(':', $key);
-		// build an array of the data keyed by the unique image id (token 2)
-		$images[$tokens[2]][$tokens[1]] = array('value' => $value);
-	  }
-	}
-	foreach($images as $image => $data) {
-	  $occ['subModels'][] = array(
-	    'fkId' => 'occurrence_id',
-		'model' => array(
-		  'id' => 'occurrence_image',
-		  'fields' => $data
-		)
-	  );
-	}
+      if (substr($key, 0, 17)=='occurrence_image:') {
+        $tokens = explode(':', $key);
+        // build an array of the data keyed by the unique image id (token 2)
+        $images[$tokens[2]][$tokens[1]] = array('value' => $value);
+      }
+    }
+    foreach($images as $image => $data) {
+      $occ['subModels'][] = array(
+          'fkId' => 'occurrence_id',
+          'model' => array(
+            'id' => 'occurrence_image',
+            'fields' => $data
+        )
+      );
+    }
   }
 
   /**
@@ -4542,11 +4553,13 @@ if (errors.length>0) {
           $(element).removeClass('ui-state-error');
         },
         invalidHandler: function(form, validator) {
-          // select the tab containing the first error control
-          jQuery.each(validator.errorMap, function(ctrlId, error) {
-            tabs.tabs('select',$('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.ui-tabs-panel')[0].id);
-            return false; // only do the first error
-          });
+          if (typeof(tabs)!=='undefined') {
+            // select the tab containing the first error control
+            jQuery.each(validator.errorMap, function(ctrlId, error) {
+              tabs.tabs('select',$('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.ui-tabs-panel')[0].id);
+              return false; // only do the first error
+            });
+          }
         },
         messages: ".json_encode(self::$validation_messages)."
       });\n";

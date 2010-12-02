@@ -35,6 +35,11 @@ class iform_mnhnl_dynamic_1 {
 
   // A list of the taxon ids we are loading
   private static $occurrenceIds = array();
+  
+  /**
+   * @var Flag indicating if a location control is present, so we can add the location layer to the map.
+   */ 
+  private static $want_location_layer = false;
 
   protected static $auth = array();
   
@@ -96,6 +101,15 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'If the survey requests first name and last name, these are ignored for logged in users where user id is sent instead. Check this box to show these fields.',
           'type'=>'boolean',
           'default' => false,
+          'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'clientSideValidation',
+          'caption'=>'Client Side Validation',
+          'description'=>'Enable client side validation of controls using JavaScript. Note that there are bugs in Internet Explorer which can cause errors when '.
+              'clicking on the map if this box is ticked.',
+          'type'=>'boolean',
+          'default' => true,
           'group' => 'User Interface'
         ),
         array(
@@ -280,6 +294,17 @@ class iform_mnhnl_dynamic_1 {
             'preferred' => 'Only allow selection of species using names which are flagged as preferred'            
           ),
           'default' => 'autocomplete',
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'link_species_popups',
+          'caption'=>'Create popups for certain species',
+          'description'=>'You can mark some blocks of the form to only be shown as a popup when a certain species is entered into the species grid. For each popup block, '.
+              'put the species name on a newline, followed by | then the outer block name, followed by | then the inner block name if relevant. For example, '.
+              '"Lasius niger|Additional info|Colony info" pops up the controls from the block Additional Info > Colony info when a species is entered with this '.
+              'name. For the species name, specify the preferred name from list.',
+          'type' => 'textarea',
+          'required'=>false,
           'group'=>'Species'
         ),
         array(
@@ -502,7 +527,8 @@ class iform_mnhnl_dynamic_1 {
     }
     
     // request automatic JS validation
-    data_entry_helper::enable_validation('entry_form');
+    if (!isset($args['client_side_validation']) || !$args['client_side_validation'])
+      data_entry_helper::enable_validation('entry_form');
     // If logged in, output some hidden data about the user
     foreach($attributes as &$attribute) {
       if (strcasecmp($attribute['caption'], 'cms user id')==0) {
@@ -595,15 +621,16 @@ class iform_mnhnl_dynamic_1 {
     $r .= "</form>";
         
     // may need to keep following code for location change functionality
-	// @todo Why is this not in the data entry helper, and is it really needed?
-	data_entry_helper::$onload_javascript .= "
+    // @todo Why is this not in the data entry helper, and is it really needed?
+    if (self::$want_location_layer) {
+      data_entry_helper::$onload_javascript .= "
     
 locationChange = function(obj){
-	locationLayer.destroyFeatures();
-	if(obj.value != ''){
-		jQuery.getJSON(\"".$svcUrl."\" + \"/data/location/\"+obj.value +
-			\"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
-			\"&callback=?\", function(data) {
+  locationLayer.destroyFeatures();
+  if(obj.value != ''){
+    jQuery.getJSON(\"".$svcUrl."\" + \"/data/location/\"+obj.value +
+      \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
+      \"&callback=?\", function(data) {
         if (data.length>0) {
           var parser = new OpenLayers.Format.WKT();
           for (var i=0;i<data.length;i++) {
@@ -646,8 +673,42 @@ var updatePlaceTabHandler = function(event, ui) {
 jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
 
 ";
+    }
+    $r .= self::link_species_popups($args);
     return $r;
-
+  }
+  
+  /** 
+   * Implement the link_species_popups parameter. This hides any identified blocks and pops them up when a certain species is entered.
+   */
+  private static function link_species_popups($args) {
+    $r='';
+    if (isset($args['link_species_popups']) && !empty($args['link_species_popups'])) {
+      data_entry_helper::add_resource('fancybox');
+      $popups = explode("\n", $args['link_species_popups']);
+      foreach ($popups as $popup) {
+        $tokens = explode("|", $popup);
+        if (count($tokens)==2) 
+          $fieldset = self::get_fieldset_id($tokens[1]);
+        else if (count($tokens)==3) 
+          $fieldset = self::get_fieldset_id($tokens[1],$tokens[2]);
+        else
+          throw new Exception('The link species popups form argument contains an invalid value');
+        // create an empty link that we can fire to fancybox the popup fieldset
+        $r .= "<a href=\"#$fieldset\" id=\"click-$fieldset\"></a>\n";
+        // add a hidden div to the page so we can put the popup fieldset into it when not popped up
+        data_entry_helper::$javascript .= "$('#$fieldset').after('<div style=\"display:none;\" id=\"hide-$fieldset\"></div>');\n";
+        // put the popup fieldset into the hidden div
+        data_entry_helper::$javascript .= "$('#hide-$fieldset').append($('#$fieldset'));\n";
+        // capture new row events on the grid
+        data_entry_helper::$javascript .= "hook_species_checklist_new_row=function(data) { 
+  if (data.preferred_name=='$tokens[0]') {
+    $('#click-$fieldset').fancybox().trigger('click');
+  }
+}\n";
+      }
+    }
+    return $r;
   }
   
   private static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
@@ -676,8 +737,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
             $i++;
             $option = explode('=',substr($tabContent[$i],1));
             $options[$option[0]]=json_decode($option[1]);
-			// if not json then need to use option value as it is
-			if ($options[$option[0]]=='') $options[$option[0]]=$option[1];			
+            // if not json then need to use option value as it is
+            if ($options[$option[0]]=='') $options[$option[0]]=$option[1];			
           }
           if (method_exists(get_called_class(), $method)) 
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
@@ -754,21 +815,23 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
-    $options['layers'][] = 'locationLayer';
-    $options['tabDiv'] = $tabalias;
-  // Create vector layers to display a selected location onto   
-    $options['setupJs'] = "
-locStyleMap = new OpenLayers.StyleMap({
-                \"default\": new OpenLayers.Style({
-                    fillColor: \"Green\",
-                    strokeColor: \"Black\",
-                    fillOpacity: 0.3,
-                    strokeWidth: 1
-                  })
-  });
-locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
-                                    {styleMap: locStyleMap});
-";
+    if ($args['interface']!=='one_page')
+      $options['tabDiv'] = $tabalias;
+    if (self::$want_location_layer) {
+      $options['layers'][] = 'locationLayer';    
+      // Create vector layers to display a selected location onto   
+      $options['setupJs'] = "
+  locStyleMap = new OpenLayers.StyleMap({
+                  \"default\": new OpenLayers.Style({
+                      fillColor: \"Green\",
+                      strokeColor: \"Black\",
+                      fillOpacity: 0.3,
+                      strokeWidth: 1
+                    })
+    });
+  locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
+                                      {styleMap: locStyleMap});\n";
+    }
     $olOptions = iform_map_get_ol_options($args);
     return data_entry_helper::map_panel($options, $olOptions);
   }
@@ -858,9 +921,9 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
         "  }\n";
     // This bit optionally adds '- common' or '- latin' depending on what was being searched
     if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
-      $fn .= "  if (item.preferred='t' && item.common!=item.taxon) {\n".
+      $fn .= "  if (item.preferred='t' && item.common!=item.taxon && item.common) {\n".
         "    r += ' - ' + item.common;\n".
-        "  } else if (item.preferred='f' && item.preferred_name!=item.taxon) {\n".
+        "  } else if (item.preferred='f' && item.preferred_name!=item.taxon && item.preferred_name) {\n".
         "    r += ' - <em>' + item.preferred_name + '</em>';\n".
         "  }\n";
     }
@@ -942,11 +1005,13 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
           'label'=>lang::get('Record Comment')
         )); 
       if ($args['occurrence_images'])
-        $r .= data_entry_helper::file_box(array(
+        $opt = array(
           'table'=>'occurrence_image',
           'label'=>lang::get('Upload your photos'),
-		      'tabDiv'=>$tabalias
-        ));
+        );
+        if ($args['interface']!=='one_page')
+          $opts['tabDiv']=$tabalias;
+        $r .= data_entry_helper::file_box($opts);
 	  return $r;
     } else 
       // in grid mode the attributes are embedded in the grid.
@@ -984,6 +1049,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
    * Get the location control as an autocomplete.
    */
   private static function get_control_locationautocomplete($auth, $args, $tabalias, $options) {
+    self::$want_location_layer = true;
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
@@ -996,6 +1062,7 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
    * Get the location control as a select dropdown.
    */
   private static function get_control_locationselect($auth, $args, $tabalias, $options) {
+    self::$want_location_layer = true;
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
@@ -1071,16 +1138,19 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
             $r .= '</fieldset>';
           }
           if (!empty($attribute['outer_structure_block']))
-            $r .= '<fieldset><legend>'.$attribute['outer_structure_block'].'</legend>';
+            $r .= '<fieldset id="'.self::get_fieldset_id($attribute['outer_structure_block']).
+                '"><legend>'.$attribute['outer_structure_block'].'</legend>';
           if (!empty($attribute['inner_structure_block']))
-            $r .= '<fieldset><legend>'.$attribute['inner_structure_block'].'</legend>';
+            $r .= '<fieldset id="'.self::get_fieldset_id($attribute['outer_structure_block'], $attribute['inner_structure_block']).
+                '"><legend>'.$attribute['inner_structure_block'].'</legend>';
         }
         elseif ($lastInnerBlock!=$attribute['inner_structure_block']) {
           if (!empty($lastInnerBlock)) {
             $r .= '</fieldset>';
           }
           if (!empty($attribute['inner_structure_block']))
-            $r .= '<fieldset><legend>'.$attribute['inner_structure_block'].'</legend>';
+            $r .= '<fieldset id="'.self::get_fieldset_id($lastOuterBlock, $attribute['inner_structure_block']).
+                '"><legend>'.$attribute['inner_structure_block'].'</legend>';
         }
         $lastInnerBlock=$attribute['inner_structure_block'];
         $lastOuterBlock=$attribute['outer_structure_block'];
@@ -1097,7 +1167,22 @@ locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")
     return $r;
   }
   
-    /**
+  /**
+   * Internal function to build an id for a fieldset from the block nesting data. Giving them a unique id helps if 
+   * you want to do interesting things with JavaScript for example.
+   */
+  private static function get_fieldset_id($outerBlock, $innerBlock='') {
+    $parts = array('fieldset');
+    if (!empty($outerBlock)) $parts[]=$outerBlock;
+    if (!empty($innerBlock)) $parts[]=$innerBlock;
+    $r = implode('-', $parts);
+    // Make it lowercase and no whitespace
+    $r = strtolower(preg_replace('/\s+/', '-', $r));
+    return $r;
+  }
+   
+  
+  /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values. 
    * @param array $args iform parameters. 

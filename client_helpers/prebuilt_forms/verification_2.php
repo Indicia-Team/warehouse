@@ -270,7 +270,6 @@ class iform_verification_2 {
 var verifiers_mapping = "'.$args['verifiers_mapping'].'";
 var url = '.json_encode(data_entry_helper::get_reload_link_parts()).';
 var verified_species = "occAttr:'. $args['occ_attr_id'] .'";', 'inline');
-    drupal_add_js('sites/all/modules/iform/client_helpers/prebuilt_forms/js/verification_2.js');
     return $r;
   }
   

@@ -58,7 +58,11 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     // and rename the controls so they post into the right species record
     checkbox.attr('name', 'sc:' + data.id + '::present');    
     // Finally, a blank row is added for the next record
-    makeSpareRow(true, formatter); 
+    makeSpareRow(true, formatter);
+    // Allow forms to hook into the event of a new row being added
+    if (hook_species_checklist_new_row !== undefined) {
+      hook_species_checklist_new_row(data);
+    }
   };
   
   // Create an inner function for adding blank rows to the bottom of the grid
