@@ -153,7 +153,7 @@ class DateParser_Core {
             $weekdays[$a] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.days.'.$i) : "|".Kohana::lang('dates.days.'.$i);
           }
-          $a = eregi("(".$dayStr.")(.*)",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_wday'] = $nValue;
@@ -170,7 +170,7 @@ class DateParser_Core {
             $weekdays[strtolower(Kohana::lang('dates.abbrDays.'.$i))] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.abbrDays.'.$i) : "|".Kohana::lang('dates.abbrDays.'.$i);
           }
-          $a = eregi("/(".$dayStr.")(.*)/",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_wday'] = $nValue;
@@ -193,7 +193,7 @@ class DateParser_Core {
             $weekdays[strtolower(Kohana::lang('dates.months.'.$i))] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.months.'.$i) : "|".Kohana::lang('dates.months.'.$i);
           }
-          $a = eregi("(".$dayStr.")(.*)",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_mon'] = $nValue;
@@ -210,7 +210,7 @@ class DateParser_Core {
             $weekdays[strtolower(Kohana::lang('dates.abbrMonths.'.$i))] = $i;
             $dayStr .= ($i == 0) ? Kohana::lang('dates.abbrMonths.'.$i) : "|".Kohana::lang('dates.abbrMonths.'.$i);
           }
-          $a = eregi("(".$dayStr.")(.*)",$sDate,$refs);
+          $a = preg_match("/(".$dayStr.")(.*)/i",$sDate,$refs);
           if ($a){
             $nValue = $weekdays[strtolower($refs[1])];
             $this->aResult['tm_mon'] = $nValue;
@@ -228,7 +228,7 @@ class DateParser_Core {
             $sRegex .= ($first) ? $season : "|".$season;
             $first = false;
           }
-          $a = eregi("(".$sRegex.")(.*)", $sDate, $refs);
+          $a = preg_match("/(".$sRegex.")(.*)/i", $sDate, $refs);
           if ($a){
             $nValue = strtolower($refs[1]);
             $this->aResult['tm_season'] = $seasons[strtolower($nValue)];
