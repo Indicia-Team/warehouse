@@ -61,6 +61,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'location',
       'occurrence',
       'occurrence_comment',
+      'occurrence_image',
       'determination',
       'person',
       'sample',
