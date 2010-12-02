@@ -4,8 +4,8 @@
     row_class="biota"
 >
   <query>
-  SELECT su.title, su.website_id, o.id as occurrence_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
-  s.entered_sref, l.name as location_name, oi.path, lttl.external_key,
+  SELECT su.title, su.website_id, o.id as occurrence_id, oi.id as occurrence_image_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
+  s.entered_sref, COALESCE(l.name, s.location_name) as location_name, oi.path, oi.caption, lttl.external_key,
   CASE o.record_status 
     WHEN 'C' THEN 'Data Entry Complete' 
     WHEN 'V' THEN 'Verified'
@@ -36,14 +36,16 @@
         query='SELECT id, title as caption FROM taxon_lists' population_call='direct:taxon_list:id:title' />
   </params>
   <columns>
+    <column name='path' display='Photo' img='true' />
+    <column name='caption' display='Photo Caption'/>
     <column name='title' display='Survey' />
     <column name='website_id' visible='false' />
     <column name='occurrence_id' visible='false' />
+    <column name='occurrence_image_id' visible='false' />
     <column name='date' display='Date' orderby='date_start' />
     <column name='taxon' display='Taxon' class='sci binomial' />
     <column name='entered_sref' display='Spatial Ref.' />
     <column name='location_name' display='Location' />
-    <column name='path' display='Photo' img='true' />
     <column name='record_status' display='Record Status' />
     <column name='verified_by' display='Verified By' />
   </columns>
