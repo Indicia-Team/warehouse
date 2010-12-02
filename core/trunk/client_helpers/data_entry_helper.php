@@ -1669,17 +1669,17 @@ class data_entry_helper extends helper_config {
     $rowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
+    $currentUrl = self::get_reload_link_parts();
+    $relpath = self::relative_client_helper_path();
     if (count($records)>0) {
       foreach ($records as $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
         if ($outputCount>=$options['itemsPerPage'])
           break;
         // Put some extra useful paths into the row data, so it can be used in the templating
-        $relpath = self::relative_client_helper_path();
-        $currentUrl = self::get_reload_link_parts();
         $row = array_merge($row, array(
             'rootFolder'=>dirname($_SERVER['PHP_SELF']) . '/',
-            'imageFolder'=>self::get_uploaded_image_folder(),
+            'imageFolder'=>$imagePath,
             // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
             // the url is being rewritten.
             'currentUrl' => $currentUrl['path']
@@ -1742,7 +1742,9 @@ class data_entry_helper extends helper_config {
   extraParams: ".json_encode($options['extraParams']).",
   callback: '".$options['callback']."',
   url: '".parent::$base_url."',
-  imagePath: '".$imagePath."',
+  rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
+  imageFolder: '".self::get_uploaded_image_folder()."',
+  currentUrl: '".$currentUrl['path']."',
   altRowClass: '".$options['altRowClass']."'";
     if (isset($orderby))
       self::$javascript .= ",
@@ -2548,7 +2550,6 @@ class data_entry_helper extends helper_config {
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
-    
       // Get the attribute and control information required to build the custom occurrence attribute columns
       self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
       $grid = "\n";	
@@ -2898,11 +2899,14 @@ class data_entry_helper extends helper_config {
       $attrDef = array_merge($attributes[$occAttrId]);
       $occAttrs[$occAttrId] = $attrDef['caption'];
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
-      $options = array('class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption'])); 
+      $ctrlOptions = array(
+        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']),
+        'extraParams' => $options['readAuth']
+      ); 
       // Don't want captions in the grid
       unset($attrDef['caption']);
       $attrDef['fieldname'] = '{fieldname}';
-      $occAttrControls[$occAttrId] = self::outputAttribute($attrDef, $options);
+      $occAttrControls[$occAttrId] = self::outputAttribute($attrDef, $ctrlOptions);
       $idx++;      
     }
   }
@@ -2933,6 +2937,16 @@ class data_entry_helper extends helper_config {
     $idx = 0;
     foreach ($occAttrControls as $attrId=>$oc) {
       $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']); 
+      if (isset($attributes[$attrId]['default']) && !empty($attributes[$attrId]['default'])) {
+        $existing_value=$attributes[$attrId]['default'];
+        // For select controls, specify which option is selected from the existing value
+        if (substr($oc, 0, 7)=='<select') {
+          $oc = str_replace('value="'.$existing_value.'"',
+              'value="'.$existing_value.'" selected="selected"', $oc);			  
+        } else {
+          $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+        }
+      }
       $r .= str_replace(array('{content}', '{class}'), 
           array(str_replace('{fieldname}', "sc:-ttlId-::occAttr:$attrId", $oc), $class.'Cell'),
           $indicia_templates['attribute_cell']
@@ -5200,19 +5214,19 @@ $('.ui-state-default').live('mouseout', function() {
    */
   private static function attributes_get_default($item) {
     switch ($item['data_type']) {
-	  case 'T':
-		return $item['default_text_value'];
-	  case 'F':
-		return $item['default_float_value'];
-	  case 'I':
-	  case 'L':
-		return $item['default_int_value'];
-	  case 'D':
-	  case 'V':
-		return $item['default_date_start_value'];
-	  default:
-	    return '';
-	}
+      case 'T':
+        return $item['default_text_value'];
+      case 'F':
+        return $item['default_float_value'];
+      case 'I':
+      case 'L':
+        return $item['default_int_value'];
+      case 'D':
+      case 'V':
+        return $item['default_date_start_value'];
+      default:
+        return '';
+    }
   }
 
   private static function boolean_attribute($ctrl, $options) {

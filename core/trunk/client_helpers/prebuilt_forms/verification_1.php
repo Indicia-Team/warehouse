@@ -57,6 +57,12 @@ class iform_verification_1 {
         'type'=>'textarea',
         'required'=>false
       ), array(
+        'name' => 'columns_config',
+        'caption' => 'Columns Configuration JSON',
+        'description' => 'JSON that describes the columns configuration parameter sent to the report grid component.',
+        'type' => 'textarea',
+        'required' => false
+      ), array(
         'name'=>'verifiers_mapping',
         'caption'=>'Verifiers Mapping',
         'description'=>'Provide either the ID of a single Indicia user to act as the verifier, or provide a comma separated list '.
@@ -254,14 +260,20 @@ class iform_verification_1 {
     $actions[] = array('caption' => 'Comments', 'javascript'=>'indicia_comments(\'{taxon}\', {occurrence_id}, '.$user->uid.
         ', \''.$auth['read']['nonce'].'\', \''.$auth['read']['auth_token'].'\'); return false;');
 
+    // default columns behaviour is to just include anything returned by the report plus add an actions column
+    $columns = array(
+        array('display' => 'Actions', 'actions' => $actions)
+    );
+    // this can be overridden
+    if (isset($args['columns_config']) && !empty($args['columns_config']))
+      $columns = array_merge(json_decode($args['columns_config'], true), $columns);
+
     $r .= data_entry_helper::report_grid(array(
       'id' => 'verification-grid',
       'dataSource' => $args['report_name'],
       'mode' => 'report',
       'readAuth' => $auth['read'],
-      'columns' => array(
-        array('display' => 'Actions', 'actions' => $actions)
-      ),
+      'columns' => $columns,
       'rowId' => 'occurrence_id',
       'itemsPerPage' =>10,
       'autoParamsForm' => $args['auto_params_form'],
