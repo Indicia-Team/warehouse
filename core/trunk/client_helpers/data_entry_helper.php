@@ -4854,7 +4854,7 @@ $('.ui-state-default').live('mouseout', function() {
       }
 
       self::$resource_list = array (
-        'jquery' => array('javascript' => array(self::$js_path."jquery.js")),
+        'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
         'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js", self::$js_path."Proj4defs.js")),
         'addrowtogrid' => array('javascript' => array(self::$js_path."addRowToGrid.js")),
         'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
