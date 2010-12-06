@@ -5307,7 +5307,7 @@ $('.ui-state-default').live('mouseout', function() {
     if (isset($item['caption']))
       $attrOptions['label']=$item['caption'];
     $attrOptions = array_merge($attrOptions, $options);
-    if(isset($item['default'])) $attrOptions['default']= $item['default'];
+    if(isset($item['default']) && $item['default']!="") $attrOptions['default']= $item['default'];
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
@@ -5342,7 +5342,6 @@ $('.ui-state-default').live('mouseout', function() {
             } else {
               $output = self::checkbox($attrOptions);
             }
-
             break;
         case 'D': // Date
         case 'Specific Date': // Date
