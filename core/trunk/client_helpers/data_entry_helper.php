@@ -1621,7 +1621,7 @@ class data_entry_helper extends helper_config {
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
       // if we have a complete set of parameters in the URL, we can re-run the report to get the data
       if (count($currentParamValues)==count($response['parameterRequest'])) {
-        $response = self::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues));
+        $response = self::get_report_data($options, $extraParams.'&'.http_build_query($currentParamValues));
         if (isset($response['error'])) return $response['error'];
         $records = $response['records'];
       }
@@ -5632,7 +5632,11 @@ $('.ui-state-default').live('mouseout', function() {
       return $request;
     else {
       $response = self::http_post($request, null);
-      return json_decode($response['output'], true);
+      $decoded = json_decode($response['output'], true);
+      if (empty($decoded)) 
+        return array('error'=>print_r($response, true));
+      else
+        return $decoded;
     }
   }
 
