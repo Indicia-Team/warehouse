@@ -284,10 +284,10 @@ class Location_Controller extends Gridview_Base_Controller {
               return;
             }
             $myLocation = ORM::factory('location', array('name' => $_POST['prepend'].trim($row[$_POST['name']]), 'parent_id' => $parent_locations[0]->id, 'deleted' => 'false'));
-          } else {            $my_locations = $this->db                ->select('locations.id')                ->from('locations')                ->join('locations_websites', 'locations_websites.location_id', 'locations.id')                ->where('locations.deleted', 'false')                ->where('locations_websites.deleted', 'false')                ->where('locations.name', $_POST['prepend'].trim($row[$_POST['name']]))                ->where('locations_websites.website_id', $_POST['website_id'])                ->get();            if(count($my_locations) > 1) {
+          } else {            $my_locations = $this->db                ->select('locations.id')                ->from('locations')                ->join('locations_websites', 'locations_websites.location_id', 'locations.id')                ->where('locations.deleted', 'false')                ->where('locations_websites.deleted', 'false')                ->where('locations.name', $_POST['prepend'].trim($row[$_POST['name']]))                ->where('locations_websites.website_id', $_POST['website_id'])                ->get()->result_array(TRUE);                        if(count($my_locations) > 1) {
               $this->setError('Upload problem', 'Found more than one location where name = '.$_POST['prepend'].trim($row[$_POST['name']]));
               return;
-            }            if (count($my_locations===1)) {              $r=$my_locations[0];
+            } elseif (count($my_locations)===1) {              $r=$my_locations[0];
               $myLocation = ORM::factory('location', $r->id);            } else {              $myLocation = ORM::factory('location');            }
           }
           if ($myLocation->loaded){
