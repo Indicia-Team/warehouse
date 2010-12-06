@@ -40,11 +40,11 @@ class config_test {
     if ($force || kohana::config_load('indicia', false)==null) {
       self::check_php_version($result, $problems_only);
       self::check_postgres($result, $problems_only);
-      self::check_dir_permissions($result, $problems_only);
       self::check_curl($result, $problems_only);
-      self::check_gd2($result, $problems_only);
+	  self::check_gd2($result, $problems_only);
       self::check_dBase($result, $problems_only);
       self::check_zip($result, $problems_only);
+	  self::check_dir_permissions($result, $problems_only);
       self::check_helper($result, $problems_only);
       self::check_email($result, $problems_only);
       // Check db must be the last one

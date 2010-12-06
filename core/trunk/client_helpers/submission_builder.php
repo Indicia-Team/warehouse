@@ -88,7 +88,9 @@ class submission_builder extends helper_config {
        // need to be careful merging metafields in the structure and those auto generated in wrap_with_attrs (ie sample/location/occurrence attributes)
       if(!array_key_exists('metaFields', $modelWrapped))
 	      $modelWrapped['metaFields']=array();
-	  foreach ($metaFields as $key=>$value) {$modelWrapped['metaFields'][$key]=$value;}
+      foreach ($metaFields as $key=>$value) {
+        $modelWrapped['metaFields'][$key]=$value;
+      }
     }
     if (array_key_exists('joinsTo', $structure)) {
       $modelWrapped['joinsTo']=$joinsTo;
@@ -107,12 +109,15 @@ class submission_builder extends helper_config {
     if (array_key_exists('superModels', $structure)) {
       $modelWrapped['superModels']=array();
       foreach ($structure['superModels'] as $name => $struct) {
-        $supermodelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $name);
-        // Join the parent and child models together
-        array_push($modelWrapped['superModels'], array(
-          'fkId' => $struct['fk'],
-          'model' => $supermodelWrapped
-        ));
+        // skip the supermodel if the foreign key is already populated in the main table.
+        if (!isset($modelWrapped['fields'][$struct['fk']]['value']) || empty($modelWrapped['fields'][$struct['fk']]['value'])) {
+          $supermodelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $name);
+          // Join the parent and child models together
+          array_push($modelWrapped['superModels'], array(
+            'fkId' => $struct['fk'],
+            'model' => $supermodelWrapped
+          ));
+        }
       }
     }
     return $modelWrapped;
@@ -144,13 +149,13 @@ class submission_builder extends helper_config {
     if ($field_prefix) {
       $sa['field_prefix']=$field_prefix;
     }
-	$attrEntity = self::get_attr_entity_prefix($entity, false).'Attr';
+    $attrEntity = self::get_attr_entity_prefix($entity, false).'Attr';
     // Iterate through the array
     foreach ($array as $key => $value)
     {
       // Don't wrap the authentication tokens, or any attributes tagged as belonging to another entity
       if ($key!='auth_token' && $key!='nonce') {
-	    if (strpos($key, "$entity:")===0 || !strpos($key, ':'))
+        if (strpos($key, "$entity:")===0 || !strpos($key, ':'))
         {
           // strip the entity name tag if present, as should not be in the submission attribute names
           $key = str_replace("$entity:", '', $key);
@@ -158,10 +163,10 @@ class submission_builder extends helper_config {
           // Add a new field to the save array
           $sa['fields'][$key] = array('value' => $value);
         } elseif ($attrEntity && (strpos($key, "$attrEntity:")===0)) {
-		  // custom attribute data can also go straight into the submission for the "master" table
-		  $sa['fields'][$key] = array('value' => $value);
-		}
-	  } 
+          // custom attribute data can also go straight into the submission for the "master" table
+          $sa['fields'][$key] = array('value' => $value);
+        }
+      } 
     }
     return $sa;
   }

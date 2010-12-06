@@ -40,6 +40,11 @@ class ORM extends ORM_Core {
   protected $unvalidatedFields = array();
   
   /**
+  * An array which a model can populate to declare additional fields that can be submitted for csv upload.
+  */
+  protected $additional_csv_fields=array();
+  
+  /**
    * Does the model have custom attributes? Defaults to false.
    */
   protected $has_attributes = false;
@@ -242,14 +247,6 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Property accessor for read only search_field.
-   */
-  public function get_search_field()
-  {
-    return $this->search_field;
-  }
-
-  /**
    * Ensures that the save array is validated before submission. Classes overriding
    * this method should call this parent method after their changes to perform necessary
    * checks unless they really want to skip them.
@@ -418,13 +415,16 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
-	  // Establish the correct model
+        // Establish the correct model
         $m = ORM::factory($b['fkTable']);
         // Check that it has the required search field
         if (array_key_exists($b['fkSearchField'], $m->table_columns)) {
           $fkRecords = $m->like(array(
-              $b['fkSearchField'] => $b['fkSearchValue']))
-              ->find_all();
+              $b['fkSearchField'] => $b['fkSearchValue']));
+          if (isset($b['fkSearchFilterField'])) {
+            $fkRecords->where($b['fkSearchFilterField'], $b['fkSearchFilterValue']);
+          }
+          $fkRecords = $fkRecords->find_all();
           if (count($fkRecords)<1) {
             $this->errors[$a] = 'Could not find a '.ucwords($b['fkTable']).' by looking for "'.$b['fkSearchValue'].
                 '" in the '.ucwords($b['fkSearchField']).' field.';
@@ -457,6 +457,8 @@ class ORM extends ORM_Core {
         // Call the submit method for that model and
         // check whether it returns correctly
         $m->submission = $a['model'];
+        // copy up the website id and survey id
+        $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
         if ($result) {
           $this->submission['fields'][$a['fkId']]['value'] = $result;
@@ -644,15 +646,16 @@ class ORM extends ORM_Core {
         $fields["metaFields:$metaField"]='';
       }
     }
-	if ($this->has_attributes) {
-	  $this->setupDbToQueryAttributes();
-	  $result = $this->db->get();
-	  foreach($result as $row) {
-	    $fieldname = $this->attrs_field_prefix.':'.$row->id;
-	    $fields[$fieldname] = $row->caption;
-	  }
-	}
-  return $fields;
+    if ($this->has_attributes) {
+      $this->setupDbToQueryAttributes();
+      $result = $this->db->get();
+      foreach($result as $row) {
+        $fieldname = $this->attrs_field_prefix.':'.$row->id;
+        $fields[$fieldname] = $row->caption;
+      }
+    }
+    $fields = array_merge($fields, $this->additional_csv_fields);
+    return $fields;
   }
 
   /**
@@ -815,14 +818,6 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Accessor for search_field.
-   * @return The searchable field in this model.
-   */
-  public function getSearchField() {
-    return $this->search_field;
-  }
-
-  /**
    * Accessor for children.
    * @return The children in this model or an empty string.
    */
@@ -861,12 +856,12 @@ class ORM extends ORM_Core {
     $r = submission_builder::build_submission($array, $this->get_submission_structure(), $fkLink);
       // Map fk_* fields to the looked up id
     if ($fkLink) {
-      $r = $this->getFkFields($r);
+      $r = $this->getFkFields($r, $array);
     }
     if (array_key_exists('superModels', $r)) {
       $idx=0;
       foreach ($r['superModels'] as $super) {
-        $r['superModels'][$idx]['model'] = $this->getFkFields($super['model']);
+        $r['superModels'][$idx]['model'] = $this->getFkFields($super['model'], $array);
         $idx++;
       }
     }
@@ -876,10 +871,12 @@ class ORM extends ORM_Core {
   /**
    * Converts any fk_* fields in a save array into the fkFields structure ready to be looked up.
    *
-   * @param array Structure to convert, passed by reference.
+   * @param $submission Submission containing the foreign key field definitions to convert
+   * @param $saveArray Original form data being wrapped, which can contain filters to operate against the lookup table 
+   * of the form fkFilter:table:field=value.
    */
-  private function getFkFields($array) {
-    foreach ($array['fields'] as $field=>$value) {
+  private function getFkFields($submission, $saveArray) {
+    foreach ($submission['fields'] as $field=>$value) {
       if (substr($field, 0, 3)=='fk_') {
         // This field is a fk_* field which contains the text caption of a record which we need to lookup.
         // First work out the model to lookup against
@@ -893,20 +890,32 @@ class ORM extends ORM_Core {
         }
         $fkModel = ORM::factory($fkTable);
         // let the model map the lookup against a view if necessary
-        if (isset($fkModel->lookup_against)) 
-          $fkTable = $fkModel->lookup_against;
+        $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
         // Generate a foreign key instance
-        $array['fkFields'][$field] = array
+        $submission['fkFields'][$field] = array
         (
           // Foreign key id field is table_id
           'fkIdField' => "$fieldName"."_id",
-          'fkTable' => $fkTable,
-          'fkSearchField' => $fkModel->get_search_field(),
+          'fkTable' => $lookupAgainst,
+          'fkSearchField' => $fkModel->search_field,
           'fkSearchValue' => trim($value['value'])
         );
+        // if the save array defines a filter against the lookup table then also store that. E.g.
+        // a search in the taxa_taxon_list table may want to filter by the taxon list. This is done
+        // by adding a value such as fkFilter:taxa_taxon_list:taxon_list_id=2.
+        // Search through the save array for a filter value
+        foreach ($saveArray as $filterfield=>$filtervalue) {
+          if (substr($filterfield, 0, strlen("fkFilter:$fkTable:")) == "fkFilter:$fkTable:") {
+            // found a filter for this fkTable. So extract the field name as the 3rd part
+            $arr = explode(':', $filterfield);
+            $submission['fkFields'][$field]['fkSearchFilterField'] = $arr[2];
+            // and remember the value
+            $submission['fkFields'][$field]['fkSearchFilterValue'] = $filtervalue;
+          }
+        }
       }
     }
-    return $array;
+    return $submission;
   }
 
   /**
