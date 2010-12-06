@@ -228,7 +228,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     $this->auto_render=false;
     $mappingFile = str_replace('.csv','-map.txt',$_GET['uploaded_csv']);
     $mappingHandle = fopen(DOCROOT . "upload/$mappingFile", "w");
-	fwrite($mappingHandle, json_encode($_POST));
+    fwrite($mappingHandle, json_encode($_POST));
     fclose($mappingHandle);
     echo "OK";
   }
@@ -243,6 +243,16 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   public function upload() {
     $csvTempFile = isset($_GET['uploaded_csv']) ? DOCROOT . "upload/" . $_GET['uploaded_csv'] : $_SESSION['uploaded_csv'];
     $mappings = $this->_get_mappings($csvTempFile);
+    // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
+    // this bulk operation
+    $cache= Cache::instance();
+    $this->previousCsvSupermodel = $cache->get(basename($csvTempFile).'previousSupermodel');
+    if (!$this->previousCsvSupermodel) {
+      $this->previousCsvSupermodel = array(
+        'id'=>array(),
+        'details'=>array()
+      );
+    }
     // make sure the file still exists
     if (file_exists($csvTempFile))
     {
@@ -282,6 +292,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         foreach($_GET as $key=>$value) {
           if (strpos($key, ':')!==false) $saveArray[$key] = $value;
         }
+        // If posting a supermodel, are the details of the supermodel the same as for the previous CSV row? If so, we can link to that
+        // record rather than create a new supermodel record.
+        $updatedPreviousCsvSupermodelDetails=$this->checkForSameSupermodel($saveArray);
         // Save the record
         $this->model->clear();
         $this->model->set_submission_data($saveArray, true);
@@ -292,6 +305,11 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
           $data[] = $count + $offset + 1; // 1 for header
           fputcsv($errorHandle, $data);
           kohana::log('debug', 'Failed to import CSV row: '.$errors);
+        } else {
+          // now the record has successfully posted, we need to store the details of any new supermodels and their Ids, 
+          // in case they are duplicated in the next csv row.
+          $this->previousCsvSupermodel['details'] = array_merge($this->previousCsvSupermodel['details'], $updatedPreviousCsvSupermodelDetails);
+          $this->captureSupermodelIds();
         }
       }
       // Get percentage progress
@@ -303,9 +321,63 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         $this->auto_render=false;
         echo "{uploaded:$count,progress:$progress}";
         kohana::log('debug', "{uploaded:$count,progress:$progress}");
+        $cache->set(basename($csvTempFile).'previousSupermodels', $this->previousCsvSupermodel);
       } else {
         // Normal page access, so need to display the errors page or success.
         $this->display_upload_result($count + $offset + 1);
+      }
+    }
+  }
+  
+  /**
+   * When looping through csv import data, if the import data includes a supermodel (e.g. the sample for an occurrence)
+   * then this method checks to see if the supermodel part of the submission is repeated. If so, then rather than create
+   * a new record for the supermodel, we just link this new record to the existing supermodel record. E.g. a spreadsheet
+   * containing several occurrences in a single sample can repeat the sample details but only one sample gets created.
+   */
+  private function checkForSameSupermodel(&$saveArray) {
+    $submissionStruct = $this->model->get_submission_structure();
+    $updatedPreviousCsvSupermodelDetails = array();
+    if (isset($submissionStruct['superModels'])) {
+      // loop through the supermodels
+      foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
+        // look for data in that supermodel and build something we can use for comparison
+        $hash='';
+        foreach ($saveArray as $field=>$value) {          
+          if (substr($field, 0, strlen($modelName)+1)=="$modelName:") {
+            $hash.="$field|$value|";
+          }
+        }
+        // if we have previously stored a hash for this supermodel, check if they are the same. If so we can get the ID.
+        if (isset($this->previousCsvSupermodel['details'][$modelName]) && $this->previousCsvSupermodel['details'][$modelName]==$hash) {
+          // the details for this supermodel point to an existing record, so we need to re-use it. First, remove the data 
+          // from the submission array so we don't re-submit it.
+          foreach ($saveArray as $field=>$value) {
+            if (substr($field, 0, strlen($modelName)+1)=="$modelName:")
+              unset($saveArray[$field]);
+          }
+          // now link the existing supermodel record to the save array
+          $saveArray[$this->model->object_name.':'.$modelDetails['fk']] = $this->previousCsvSupermodel['id'][$modelName];
+        } else {
+          // this is a new supermodel (e.g. a new sample for the occurrences). So just save the details in case it is repeated
+          $updatedPreviousCsvSupermodelDetails[$modelName]=$hash;
+        }
+      }
+    }
+    return $updatedPreviousCsvSupermodelDetails;
+  }
+  
+  /**
+  * When saving a model with supermodels, we don't want to duplicate the supermodel record if all the details are the same across 2
+  * spreadsheet rows. So this method captures the ID of the supermodels that we have just posted, in case their details are replicated
+  * in the next record.
+  */
+  private function captureSupermodelIds() {
+    $submissionStruct = $this->model->get_submission_structure();
+    if (isset($submissionStruct['superModels'])) {
+      // loop through the supermodels
+      foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
+        $this->previousCsvSupermodel['id'][$modelName]=$this->model->$modelName->id;
       }
     }
   }

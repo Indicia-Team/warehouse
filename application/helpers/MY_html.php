@@ -74,10 +74,10 @@ class html extends html_Core {
    
   /**
    * Private method to build a single select option for the model field options. 
-   * Option is selected if selected=caption.
+   * Option is selected if selected=caption (case insensitive).
    */
   private static function model_field_option($field, $caption, $selected) {
-    $selHtml = ($caption==$selected) ? ' selected="selected"' : '';
+    $selHtml = (strcasecmp($caption,$selected)==0) ? ' selected="selected"' : '';
     return '<option value="'.self::specialchars($field)."\"$selHtml>".self::specialchars($caption).'</option>';
   }
 
