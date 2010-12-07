@@ -1621,7 +1621,7 @@ class data_entry_helper extends helper_config {
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
       // if we have a complete set of parameters in the URL, we can re-run the report to get the data
       if (count($currentParamValues)==count($response['parameterRequest'])) {
-        $response = self::get_report_data($options, $extraParams.'&'.http_build_query($currentParamValues));
+        $response = self::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues, true));
         if (isset($response['error'])) return $response['error'];
         $records = $response['records'];
       }
@@ -1642,7 +1642,7 @@ class data_entry_helper extends helper_config {
     );
     $sortdirval = $sortAndPageUrlParams['sortdir']['value'] ? strtolower($sortAndPageUrlParams['sortdir']['value']) : 'asc';
     foreach ($options['columns'] as $field) {
-      if (isset($field['visible']) && $field['visible']=='false')
+      if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
         continue; // skip this column as marked invisible
       // allow the display caption to be overriden in the column specification
       $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
@@ -1689,7 +1689,7 @@ class data_entry_helper extends helper_config {
         $r .= "<tr $rowClass$rowId>";
         foreach ($options['columns'] as $field) {
           $class='';
-          if (isset($field['visible']) && $field['visible']=='false')
+          if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row);
@@ -4779,14 +4779,15 @@ $onload_javascript
 
   /**
    * Takes an associative array and converts it to a list of params for a query string. This is like
-   * http_build_query but it does not url encode the content.
+   * http_build_query but it does not url encode the & separator, and gives control over urlencoding the array values.
    */
-  private static function array_to_query_string($array) {
+  private static function array_to_query_string($array, $encodeValues=false) {
     $params = array();
     if(is_array($array)) {
       arsort($array);
       foreach ($array as $a => $b)
       {
+        if ($encodeValues) $b=urlencode($b);
         $params[] = "$a=$b";
       }
     }
