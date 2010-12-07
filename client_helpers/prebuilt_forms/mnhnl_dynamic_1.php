@@ -694,6 +694,8 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
           $fieldset = self::get_fieldset_id($tokens[1],$tokens[2]);
         else
           throw new Exception('The link species popups form argument contains an invalid value');
+        // insert a save button into the fancyboxed fieldset, since the normal close X looks like it cancels changes
+        data_entry_helper::$javascript .= "$('#$fieldset').append('<input type=\"button\" value=\"Save\" onclick=\"$.fancybox.close();\" ?>');\n";
         // create an empty link that we can fire to fancybox the popup fieldset
         $r .= "<a href=\"#$fieldset\" id=\"click-$fieldset\"></a>\n";
         // add a hidden div to the page so we can put the popup fieldset into it when not popped up
@@ -703,7 +705,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
         // capture new row events on the grid
         data_entry_helper::$javascript .= "hook_species_checklist_new_row=function(data) { 
   if (data.preferred_name=='$tokens[0]') {
-    $('#click-$fieldset').fancybox().trigger('click');
+    $('#click-$fieldset').fancybox({showCloseButton: false}).trigger('click');
   }
 }\n";
       }
