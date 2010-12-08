@@ -948,6 +948,15 @@ class ORM extends ORM_Core {
     if (array_key_exists('email', $r)) $r['email'] = '********';
     return $r;
   }
+  
+  /**
+   * Override the ORM clear method to clean up errors and identifier tracking.
+   */
+  public function clear() {
+    parent::clear();
+    $this->errors=array();
+    $this->identifiers = array('website_id'=>null,'survey_id'=>null);
+  }
 }
 
 ?>
