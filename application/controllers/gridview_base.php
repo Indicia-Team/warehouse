@@ -114,15 +114,12 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
 
   /**
    * Method to retrieve pages for the index grid of taxa_taxon_list entries from an AJAX
-   * pagination call. Overrides the base class behaviour to enforce a filter on the
-   * taxon list id.
+   * pagination call.
    */
   public function page_gv($page_no, $filter=null) {
     $this->prepare_grid_view();
     $this->auto_render = false;
-    $grid =  Gridview_Controller::factory($this->gridmodel,
-    $page_no,
-    $this->pageNoUriSegment);
+    $grid = Gridview_Controller::factory($this->gridmodel, $page_no, $this->pageNoUriSegment);
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
     $grid->columns = array_intersect_key($this->columns, $grid->columns);
@@ -341,12 +338,15 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     if (isset($submissionStruct['superModels'])) {
       // loop through the supermodels
       foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
-        // look for data in that supermodel and build something we can use for comparison
+        $sm = ORM::factory($modelName);
+        $smAttrsPrefix = isset($sm->attrs_field_prefix) ? $sm->attrs_field_prefix : null;
+        // look for data in that supermodel and build something we can use for comparison. We must capture both normal and custom attributes.
         $hash='';
         foreach ($saveArray as $field=>$value) {          
-          if (substr($field, 0, strlen($modelName)+1)=="$modelName:") {
+          if (substr($field, 0, strlen($modelName)+1)=="$modelName:")            
             $hash.="$field|$value|";
-          }
+          elseif ($smAttrsPrefix && substr($field, 0, strlen($smAttrsPrefix)+1)=="$smAttrsPrefix:")          
+            $hash.="$field|$value|";          
         }
         // if we have previously stored a hash for this supermodel, check if they are the same. If so we can get the ID.
         if (isset($this->previousCsvSupermodel['details'][$modelName]) && $this->previousCsvSupermodel['details'][$modelName]==$hash) {
