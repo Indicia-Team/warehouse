@@ -12,11 +12,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package    Core
  * @subpackage Views
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author    Indicia Team
+ * @license    http://www.gnu.org/licenses/gpl.html GPL
+ * @link     http://code.google.com/p/indicia/
  */
 
 var filter = new HashArray();
@@ -53,7 +53,7 @@ function refreshPager(gridId){
   $.ajax({
     url: pagerString,
     cache: false,
-    success: function(a){	  
+    success: function(a){      
       $('#pager-'+gridId).html(a);      
     }
   });
@@ -82,9 +82,9 @@ function buildAjaxUrl(urlStr) {
   while (url.segment(i)!=null) {
     urlStr += '/' + url.segment(i);
     if (url.segment(i)=='page') {
-    	urlStr += '_gv'
+        urlStr += '_gv'
     }
-    i++;	  
+    i++;      
   }    
   return urlStr;
 }
@@ -119,8 +119,8 @@ function buildQueryString(url) {
   queryString = url + '?'
     + ((sortCols != '') ? 'orderby=' + sortCols
       + '&direction=' + sortDirs + '&': '')
-    + ((filterCols != '') ?	'columns=' + filterCols
-      + '&filters=' + filterStrings : '');
+    + ((filterCols != '') ?    'columns=' + filterCols
+      + '&filters=' + encodeURIComponent(filterStrings) : '');
 };
 
 $(document).ready(function(){
@@ -130,31 +130,33 @@ $(document).ready(function(){
 
   // Sorting
   $('thead th.gvSortable').live('click', function(e) {
-	e.preventDefault();
-	var h = $(this).attr('id').toLowerCase();
-	var a = sort.get(h);
-	if (a != undefined) {
-	  if (a == 'asc') {
-	    sort.unshift(h,'desc');
-	    $(this).removeClass('gvColAsc');
-	    $(this).addClass('gvColDesc');
-	  } else {
-	    sort.remove(h);
-	    $(this).removeClass('gvColDesc');
-	    $(this).addClass('gvCol');
-	  }
-	} else {
-	  sort.unshift(h, 'asc');
-	  $(this).removeClass('gvCol');
-	  $(this).addClass('gvColAsc');
-	}
-	var gridId = $(this).parent().parent().parent().attr('id').split('-')[1];
-	// Because the column header is not a link, we don't know the URL to go to. So we use the filterForm's action to get the URL.
-	url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
-	refresh(gridId, url);
+    e.preventDefault();
+    var h = $(this).attr('id').toLowerCase();
+    var a = sort.get(h);
+    if (a != undefined) {
+      if (a == 'asc') {
+        sort.unshift(h,'desc');
+        $(this).removeClass('gvColAsc');
+        $(this).addClass('gvColDesc');
+      } else {
+        sort.remove(h);
+        $(this).removeClass('gvColDesc');
+        $(this).addClass('gvCol');
+      }
+    } else {
+      sort.unshift(h, 'asc');
+      $(this).removeClass('gvCol');
+      $(this).addClass('gvColAsc');
+    }
+    var gridId = $(this).parent().parent().parent().attr('id').split('-')[1];
+    // Because the column header is not a link, we don't know the URL to go to. So we use the filterForm's action to get the URL.
+    url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
+    refresh(gridId, url);
   });  
 
   // Filtration
+  // kill the live handler, as document ready is called again when the AJAX tab loads
+  $('.gvFilter form').die();
   $('.gvFilter form').live('submit', function(e) {
     e.preventDefault();
     // find the unique ID for this grid so we refresh the correct one.
