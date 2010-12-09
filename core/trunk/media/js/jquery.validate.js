@@ -926,8 +926,8 @@ $.extend($.validator, {
 			case 'input':
 				if ( this.checkable(element) ) {
 					return this.getLength(value, element) > 0;
-        }
-        break;
+                }
+                // in the else case we want it to flow through to default behaviour, so no break statement
 			default:
 				return $.trim(value).length > 0;
 			}
