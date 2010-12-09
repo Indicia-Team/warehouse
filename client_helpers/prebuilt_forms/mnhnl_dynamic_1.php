@@ -781,7 +781,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     $structureArr = explode("\r\n", $structure);
     $structureTabs = array();
     foreach ($structureArr as $component) {
-      if (preg_match('/^=[A-Za-z0-9 \*]+=$/', trim($component), $matches)===1) {
+      if (preg_match('/^=[A-Za-z0-9 \-\*]+=$/', trim($component), $matches)===1) {
         $currentTab = substr($matches[0], 1, -1);
         $structureTabs[$currentTab] = array();
       } else {

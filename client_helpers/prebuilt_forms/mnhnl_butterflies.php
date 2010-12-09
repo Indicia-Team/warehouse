@@ -84,11 +84,30 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
           'type'=>'int'
         ),
         array(
+          'name'=>'month_attr_id',
+          'caption'=>'Month Sample Attribute ID',
+          'description'=>'The Indicia ID of the Sample Month drop down Attribute.',
+          'type'=>'int'
+        ),
+        array(
+          'name'=>'aucune_attr_id',
+          'caption'=>'No Observation Sample Attribute ID',
+          'description'=>'The Indicia ID of the Sample Attribute for No Observation.',
+          'type'=>'int'
+        ),
+        array(
           'name'=>'init_species_ids',
           'caption'=>'List of default species to be included in Quantative Distribution list',
           'description'=>'Comma separated list of the Indicia IDs of those species to be included by default in the Quantative Distribution list.',
           'type'=>'string',
           'required'=>false
+        ),
+        array(
+          'name'=>'max_species_ids',
+          'caption'=>'max number of species to be returned by a search',
+          'description'=>'The maximum number of species to be returned by the drop downs at any one time.',
+          'default'=>25,
+          'type'=>'int'
         ),
         array(
           'name'=>'max_number_sections',
@@ -124,7 +143,23 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
        <input type=\"hidden\" name=\"sample:deleted\" value=\"t\" />
     </form>
 </div>";
-    data_entry_helper::$javascript .= "jQuery('#sample\\:date').datepicker( \"option\", \"minDate\", new Date(2010, 4 - 1, 1) );
+    data_entry_helper::$javascript .= "jQuery('#sample\\\\:date').datepicker( \"option\", \"minDate\", new Date(2010, 4 - 1, 1) );
+Date.prototype.getMonthName = function() {
+var m = ['".lang::get('January')."','".lang::get('February')."','".lang::get('March')."',
+'".lang::get('April')."','".lang::get('May')."','".lang::get('June')."',
+'".lang::get('July')."','".lang::get('August')."','".lang::get('September')."',
+'".lang::get('October')."','".lang::get('November')."','".lang::get('December')."'];
+return m[this.getMonth()];
+} 
+var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').attr('disabled', true);
+monthAttr.before('<input type=\"hidden\" id=\"storedMonth\" name=\"'+monthAttr.attr('name')+'\">');
+jQuery('#sample\\\\:date').change(function(){
+  var myDate = jQuery(this).datepicker(\"getDate\").getMonthName();
+  var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').filter(':not(:hidden)').val(myDate);
+  jQuery('#storedMonth').val(monthAttr.val()); // doing in this order converts the text to a number and stores that number in the storedMonth
+  if(monthAttr.val() == \"\")
+  	alert('Given date is outside valid month range (April to September).');
+});
 deleteSurvey = function(sampleID){
   if(confirm(\"Are you sure you wish to delete survey \"+sampleID)){
     jQuery.getJSON(\"".self::$svcUrl."/data/sample/\"+sampleID +
@@ -138,6 +173,32 @@ deleteSurvey = function(sampleID){
   }});
   };
 };
+jQuery('.tab-submit').unbind('click');
+jQuery('.tab-submit').click(function() {
+  var current=jQuery('#controls').tabs('option', 'selected');
+  var tabinputs = jQuery('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select');
+  var secList = '';
+  if (!tabinputs.valid()) { return; }
+  var rows = jQuery('.sectionlist').find('tr');
+  for(var i=1; i<= ".$args['max_number_sections']."; i++){
+    if(jQuery('.sectionlist').find('[section='+i+']').length > 0) {
+      var aucuneControl = jQuery(':checkbox[name^=\"SLA\\:'+i+'\\:\"]').filter('[name$=\"\\:".$args['aucune_attr_id']."\"]');
+      var foundEntry = false;
+      for(var j = 1; j < (rows.length-(numAttrs+1)); j++){
+        foundEntry = foundEntry || (jQuery(rows[j]).find('td').filter(':eq('+i+')').find('[value!=\"\"]').length > 0);
+      }
+      if(!foundEntry && !aucuneControl.attr('checked')){
+          secList = secList + (secList=='' ? '' : ', ') + i;
+      }
+    }
+  }
+  if (secList != ''){
+    alert('The following sections have no species recorded against them: Section(s) '+secList+'. In these circumstances, the \"No Observation\" checkbox must be checked for the relevant section.'); 
+    return;
+  }
+  var form = jQuery(this).parents('form:first');
+  form.submit();
+});
 ";
     if(self::$mode != 0){
       data_entry_helper::$javascript .= "
@@ -244,7 +305,7 @@ jQuery(\"#sample\\\\:location_id\").change();
           'columns'=>2,          
           'parentField'=>'parent_id',
           'extraParams'=>$extraParams,
-          'numValues'=>25
+          'numValues'=>$args['max_species_ids']
     ), $options);
     // do not allow tree browser
     if ($args['species_ctrl']=='tree_browser')
@@ -423,7 +484,7 @@ jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').result(function(event,
           'columns'=>2,          
           'parentField'=>'parent_id',
           'extraParams'=>$extraParams,
-          'numValues'=>25
+          'numValues'=>$args['max_species_ids']
     ), $options);
     $defNRAttrOptions = array('extraParams'=>$auth['read']+array('orderby'=>'id'),
     				'lookUpKey' => 'meaning_id',
@@ -436,6 +497,7 @@ jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').result(function(event,
     if ($args['species_ctrl']=='tree_browser')
       return '<p>Can not use tree browser in this context</p>';
     data_entry_helper::$javascript .= "
+var numAttrs = ".$numAttrs.";
 delete_section_species_row = function(row){
   if(confirm(\"".lang::get('sectionlist:confirmremove')."\"+row.find('.seclistspecname')[0].textContent+\"?\")){
     row.find('input').each(function(){
@@ -497,9 +559,8 @@ add_section_species_row = function(speciesID){
         }}
   );
 };
-
 section_column_changed = function(column){
-  var aucuneControl = jQuery(':checkbox[name^=\"SLA\\:'+column+'\\:\"]').filter('[name$=\"\\:".$options['aucune_attr_id']."\"]').attr('disabled', false);
+  var aucuneControl = jQuery(':checkbox[name^=\"SLA\\:'+column+'\\:\"]').filter('[name$=\"\\:".$args['aucune_attr_id']."\"]').attr('disabled', false);
   var rows = jQuery('.sectionlist').find('tr');
   for(var j = 1; j < (rows.length-".($numAttrs+1)."); j++){
     if(jQuery(rows[j]).find('td').filter(':eq('+column+')').find('[value!=\"\"]').length > 0)
