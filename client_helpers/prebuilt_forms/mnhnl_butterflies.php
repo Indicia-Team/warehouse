@@ -135,17 +135,32 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     $retVal = parent::get_form($args, $node, $response);
     $reload = data_entry_helper::get_reload_link_parts();
     $reloadPath = $reload['path'];
-    $retVal .= "<div style=\"display:none\" />
-    <form id=\"form-delete-survey\" action=\"".$reloadPath."\" method=\"POST\">".self::$auth['write']."
-       <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
-       <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
-       <input type=\"hidden\" name=\"sample:id\" value=\"\" />
-       <input type=\"hidden\" name=\"sample:date\" value=\"2010-01-01\"/>
-       <input type=\"hidden\" name=\"sample:location_id\" value=\"\" />
-       <input type=\"hidden\" name=\"sample:deleted\" value=\"t\" />
-    </form>
-</div>";
-    data_entry_helper::$javascript .= "jQuery('#sample\\\\:date').datepicker( \"option\", \"minDate\", new Date(2010, 4 - 1, 1) );
+    if(self::$mode != 0){
+      data_entry_helper::$javascript .= "
+jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\>Cancel</a></span></div>').appendTo('.buttons');
+$.validator.messages.required = \"".lang::get('validation_required')."\";";
+      if(!iform_loctools_checkaccess($node,'superuser')){
+        data_entry_helper::$javascript .= "
+jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]').attr('readonly',true)";
+        if(self::$mode == 1){
+          data_entry_helper::$javascript .= ".val(\"".$user->name."\");";
+        } else {
+          data_entry_helper::$javascript .= ";";
+        }
+      } else {
+        $userlist = iform_loctools_listusers($node);
+        data_entry_helper::$javascript .= "
+existing = jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]');
+replacement = '<select name=\"'+existing.attr('name')+'\" >";
+        foreach($userlist as $uid => $a_user){
+          data_entry_helper::$javascript .= "<option value=\"".$a_user->name."\">".$a_user->name."&nbsp;</option>";
+        }
+        data_entry_helper::$javascript .= "</select>';
+jQuery(replacement).insertBefore(existing).val(existing.val());
+existing.remove();
+";
+      }
+      data_entry_helper::$javascript .= "jQuery('#sample\\\\:date').datepicker( \"option\", \"minDate\", new Date(2010, 4 - 1, 1) );
 Date.prototype.getMonthName = function() {
 var m = ['".lang::get('January')."','".lang::get('February')."','".lang::get('March')."',
 '".lang::get('April')."','".lang::get('May')."','".lang::get('June')."',
@@ -155,26 +170,17 @@ return m[this.getMonth()];
 } 
 var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').attr('disabled', true);
 monthAttr.before('<input type=\"hidden\" id=\"storedMonth\" name=\"'+monthAttr.attr('name')+'\">');
-jQuery('#sample\\\\:date').change(function(){
-  var myDate = jQuery(this).datepicker(\"getDate\").getMonthName();
-  var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').filter(':not(:hidden)').val(myDate);
+updateSampleDate = function(context, doAlert){
+  jQuery('.displayDateDetails').empty().append('<span>'+jQuery('[name=sample\\:date]').val()+'</span>');
+  var myDate = jQuery(context).datepicker(\"getDate\").getMonthName();
+  var monthAttr = jQuery('[name=smpAttr\\\\:".$args['month_attr_id']."],[name^=smpAttr\\\\:".$args['month_attr_id']."\\\\:]').filter('select').val(\"\");
+  monthAttr.find(\"option:contains('\"+myDate+\"')\").attr('selected',true) ; 
   jQuery('#storedMonth').val(monthAttr.val()); // doing in this order converts the text to a number and stores that number in the storedMonth
-  if(monthAttr.val() == \"\")
+  if(doAlert && monthAttr.val() == \"\")
   	alert('Given date is outside valid month range (April to September).');
-});
-deleteSurvey = function(sampleID){
-  if(confirm(\"Are you sure you wish to delete survey \"+sampleID)){
-    jQuery.getJSON(\"".self::$svcUrl."/data/sample/\"+sampleID +
-            \"?mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']["nonce"]."\" +
-            \"&callback=?\", function(data) {
-        if (data.length>0) {
-          jQuery('#form-delete-survey').find('[name=sample\\:id]').val(data[0].id);
-          jQuery('#form-delete-survey').find('[name=sample\\:date]').val(data[0].date_start);
-          jQuery('#form-delete-survey').find('[name=sample\\:location_id]').val(data[0].location_id);
-          jQuery('#form-delete-survey').submit();
-  }});
-  };
 };
+jQuery('#sample\\\\:date').change(function(){updateSampleDate(this, true);});
+updateSampleDate('#sample\\\\:date', false);
 jQuery('.tab-submit').unbind('click');
 jQuery('.tab-submit').click(function() {
   var current=jQuery('#controls').tabs('option', 'selected');
@@ -202,31 +208,34 @@ jQuery('.tab-submit').click(function() {
   form.submit();
 });
 ";
-    if(self::$mode != 0){
-      data_entry_helper::$javascript .= "
-jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\>Cancel</a></span></div>').appendTo('.buttons');
-$.validator.messages.required = \"".lang::get('validation_required')."\";";
-      if(!iform_loctools_checkaccess($node,'superuser')){
-        data_entry_helper::$javascript .= "
-jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]').attr('readonly',true)";
-        if(self::$mode == 1){
-          data_entry_helper::$javascript .= ".val(\"".$user->name."\");";
-        } else {
-          data_entry_helper::$javascript .= ";";
-        }
-      } else {
-        $userlist = iform_loctools_listusers($node);
-        data_entry_helper::$javascript .= "
-existing = jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]');
-replacement = '<select name=\"'+existing.attr('name')+'\" >";
-        foreach($userlist as $uid => $a_user){
-          data_entry_helper::$javascript .= "<option>".$a_user->name."&nbsp;</option>";
-        }
-        data_entry_helper::$javascript .= "</select>';
-jQuery(replacement).insertBefore(existing).val(existing.val());
-existing.remove();
+      
+    } else {
+    $retVal .= "<div style=\"display:none\" />
+    <form id=\"form-delete-survey\" action=\"".$reloadPath."\" method=\"POST\">".self::$auth['write']."
+       <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
+       <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
+       <input type=\"hidden\" name=\"sample:id\" value=\"\" />
+       <input type=\"hidden\" name=\"sample:date\" value=\"2010-01-01\"/>
+       <input type=\"hidden\" name=\"sample:location_id\" value=\"\" />
+       <input type=\"hidden\" name=\"sample:deleted\" value=\"t\" />
+    </form>
+</div>";
+    data_entry_helper::$javascript .= "
+deleteSurvey = function(sampleID){
+  if(confirm(\"Are you sure you wish to delete survey \"+sampleID)){
+    jQuery.getJSON(\"".self::$svcUrl."/data/sample/\"+sampleID +
+            \"?mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']["nonce"]."\" +
+            \"&callback=?\", function(data) {
+        if (data.length>0) {
+          jQuery('#form-delete-survey').find('[name=sample\\:id]').val(data[0].id);
+          jQuery('#form-delete-survey').find('[name=sample\\:date]').val(data[0].date_start);
+          jQuery('#form-delete-survey').find('[name=sample\\:location_id]').val(data[0].location_id);
+          jQuery('#form-delete-survey').submit();
+  }});
+  };
+};
 ";
-      }
+	
     }
     return $retVal;
   }
@@ -274,6 +283,7 @@ existing.remove();
     data_entry_helper::$javascript .= "
 jQuery(\"#sample\\\\:location_id\").change(function(){
   jQuery('[name=sample\\:location_name]').val(jQuery(this).find(':selected')[0].text);
+  jQuery('.displayTransectDetails').empty().append('<span>'+jQuery('[name=sample\\:location_name]').val()+'</span>');
 });
 jQuery(\"#sample\\\\:location_id\").change();
 ";
@@ -753,16 +763,19 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
   }
 
   protected static function get_control_sectionnumber($auth, $args, $tabalias, $options) {
-  	/* We will make the assumption that only one of these will be put onto a form.
-  	 * A lot of this is copied from the species control and has the same features. */
     $r = '<label for="sectionlist_number">'.lang::get('sectionlist:numberlabel').':</label><select id="sectionlist_number" name="sectionlist_number">';
     for($i=1; $i<=$args['max_number_sections']; $i++)
-    	$r .= '<option>'.$i.'&nbsp;</option>';
+    	$r .= '<option value="'.$i.'">'.$i.'&nbsp;</option>';
     $r .= '</select>';
     return $r;
   }
   
-    /**
+  protected static function get_control_displaytransectanddate($auth, $args, $tabalias, $options) {
+    $r = '<div><div class="displayTransDateContainer"><b>'.lang::get('Transect').'</b>:<span class="displayTransectDetails"></span></div>
+<div class="displayTransDateContainer"><b>'.lang::get('Date').'</b>:<span class="displayDateDetails"></span></div></div>';
+    return $r;
+  }
+  /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values. 
    * @param array $args iform parameters. 

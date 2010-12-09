@@ -18,3 +18,10 @@ label.narrow {
   margin-bottom:0;
   margin-left:0;
 }
+
+.displayTransDateContainer {
+	display: inline-block;
+	width: 48%;
+	margin-right: 1%;
+	vertical-align: top;
+}
