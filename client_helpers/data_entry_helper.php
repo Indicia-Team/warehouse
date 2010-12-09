@@ -2901,7 +2901,8 @@ class data_entry_helper extends helper_config {
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
       $ctrlOptions = array(
         'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']),
-        'extraParams' => $options['readAuth']
+        'extraParams' => $options['readAuth'],
+        'suffixTemplate' => 'nosuffix'
       ); 
       // Don't want captions in the grid
       unset($attrDef['caption']);
