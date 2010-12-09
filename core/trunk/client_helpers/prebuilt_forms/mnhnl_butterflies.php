@@ -124,6 +124,8 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   public static function get_form($args, $node, $response=null) {
     global $indicia_templates;
     global $user;
+    $indicia_templates['select_item'] = '<option value="{value}" {selected} >{caption}&nbsp;</option>';
+    
     // we don't use the map, but a lot of the inherited code assumes the map is present.
     self::$svcUrl = data_entry_helper::$base_url.'/index.php/services';
     data_entry_helper::add_resource('openlayers');
@@ -218,7 +220,7 @@ jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args[
 existing = jQuery('[name=smpAttr\\:".$args['observer_attr_id']."],[name^=smpAttr\\:".$args['observer_attr_id']."\\:]');
 replacement = '<select name=\"'+existing.attr('name')+'\" >";
         foreach($userlist as $uid => $a_user){
-          data_entry_helper::$javascript .= "<option>".$a_user->name."</option>";
+          data_entry_helper::$javascript .= "<option>".$a_user->name."&nbsp;</option>";
         }
         data_entry_helper::$javascript .= "</select>';
 jQuery(replacement).insertBefore(existing).val(existing.val());
@@ -262,7 +264,7 @@ existing.remove();
             } else {
               $selected = '';
             }
-            $ret .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."</option>";
+            $ret .= "<option value=\"".$entity["id"]."\" ".$selected.">".$entity["name"]."&nbsp;</option>";
           }
         }
       }
@@ -755,7 +757,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
   	 * A lot of this is copied from the species control and has the same features. */
     $r = '<label for="sectionlist_number">'.lang::get('sectionlist:numberlabel').':</label><select id="sectionlist_number" name="sectionlist_number">';
     for($i=1; $i<=$args['max_number_sections']; $i++)
-    	$r .= '<option>'.$i.'</option>';
+    	$r .= '<option>'.$i.'&nbsp;</option>';
     $r .= '</select>';
     return $r;
   }
