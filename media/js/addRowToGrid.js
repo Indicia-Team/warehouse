@@ -29,9 +29,10 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     // clear the event handler
     $(event.target).unbind('result', handleSelectedTaxon);
     var taxonCell=event.target.parentNode;
-    $(taxonCell).attr('colspan',1);
-    var row=taxonCell.parentNode;
     $(taxonCell).before('<td class="ui-state-default remove-row" style="width: 1%">X</td>');
+    // Note case must be colSpan to work in IE!
+    $(taxonCell).attr('colSpan',1);
+    var row=taxonCell.parentNode;
     $(taxonCell).parent().addClass('added-row');
     // Do we use a JavaScript fn, or a standard template, to format the species label?
     if ($.isFunction(formatter)) {
