@@ -164,27 +164,36 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         // If language not found, use english as the default. Future versions may wish this to be
         // user definable.
         $lang_id = $lang_id ? $lang_id : ORM::factory('language')->where(array('iso' => 'eng'))->find()->id;
-        // copy the original post array to pick up the common things, like the common name
-        foreach($this->submission['fields'] as $field=>$content)
-          $syn[$field]=$content['value'];
+        // copy the original post array to pick up the common things, first the taxa_taxon_list data
+        $this->copy_shared_fields_from_submission('taxa_taxon_list', $this->submission['fields'], $syn, array(
+            'description', 'parent', 'taxonomic_sort_order', 'allow_data_entry', 'taxon_list_id'        
+        ));
+        // Next do the data in the taxon supermodel - we have to search for it rather than rely on it being in a particular position in the list
+        foreach($this->submission['superModels'] as $supermodel) {
+          if ($supermodel['model']['id']=='taxon') {
+            $this->copy_shared_fields_from_submission('taxon',$supermodel['model']['fields'], $syn, array(
+                'description', 'external_key', 'taxon_group_id'
+            ));
+            break;
+          }
+        }
         // Now update the record with specifics for this synonym
         $syn['taxon:id'] = null;
         $syn['taxon:taxon'] = $taxon;
         $syn['taxon:authority'] = $auth;
         $syn['taxon:language_id'] = $lang_id;
         $syn['taxa_taxon_list:id'] = '';
-        $syn['taxa_taxon_list:preferred'] = 'f'; 
-        $syn['taxa_taxon_list:allow_data_entry'] = $this->allow_data_entry;
+        $syn['taxa_taxon_list:preferred'] = 'f';
+        // taxon meaning Id cannot be copied from the submission, since for new data it is generated when saved
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
-        $syn['taxon:taxon_group_id'] = $this->taxon->taxon_group_id;
-        // Prevent a recursion by not posting synonyms with a synonym
-        $syn['metaFields:commonNames']='';
-        $syn['metaFields:synonyms']='';
-
         $sub = $this->wrap($syn);
-        // Don't resubmit the meaning record
-        unset($sub['superModels'][0]);
-
+        // Don't resubmit the meaning record, again we can't rely on the order of the supermodels in the list
+        foreach($sub['superModels'] as $idx => $supermodel) {
+          if ($supermodel['model']['id']=='taxon_meaning') {
+            unset($sub['superModels'][$idx]);
+            break;
+          }
+        }
         $sm->submission = $sub;
         if (!$sm->submit()) {
           $result=false;
@@ -204,6 +213,21 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       }      
     }
     return $result;
+  }
+  
+  /**
+   * When posting synonyms or common names, some field values can be re-used from the preferred term such as the 
+   * descriptions and taxon group. This is a utility method for copying submission data matching a list of fields into the 
+   * save array for the synonym/common name.
+   * @param string $modelName The name of the model data is being copied for, used as a prefix when building the save array
+   * @param array $source The array of fields and values for the part of the submission being copied (i.e. 1 model's values).
+   */
+  protected function copy_shared_fields_from_submission($modelName, $source, &$saveArray, $fields) {
+    foreach ($fields as $field) {
+      if (isset($source[$field])) {
+        $saveArray["$modelName:$field"]=$source[$field]['value'];
+      }
+    }
   }
 
   /**
