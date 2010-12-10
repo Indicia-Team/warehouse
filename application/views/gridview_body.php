@@ -58,7 +58,7 @@ foreach ($table as $item)
     {
       if ($this->get_action_visibility($allfields, $name)) {
         $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);        
-        echo html::anchor($action, $name, array('class'=>'grid-action'));
+        echo html::anchor($action, str_replace(' ','&nbsp;',$name), array('class'=>'grid-action'));
       }
     }
     echo "</td>";
