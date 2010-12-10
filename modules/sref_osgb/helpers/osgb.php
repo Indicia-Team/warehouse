@@ -35,6 +35,8 @@ class osgb {
 	 */
 	public static function is_valid($sref)
 	{
+    // ignore any spaces in the grid ref
+    $sref = str_replace(' ','',$sref);
 		$sq100 = strtoupper(substr($sref, 0, 2));
 		if (!preg_match('(H[L-Z]|J[LMQR]|N[A-HJ-Z]|O[ABFGLMQRVW]|S[A-HJ-Z]|T[ABFGLMQRVW])', $sq100))
 			return FALSE;
@@ -53,6 +55,8 @@ class osgb {
 	 */
 	public static function sref_to_wkt($sref)
 	{
+    // ignore any spaces in the grid ref
+    $sref = str_replace(' ','',$sref);
 		if (!self::is_valid($sref))
 			throw new Exception('Spatial reference is not a recognisable grid square.');
 		$sq_100 = self::get_100k_square($sref);
