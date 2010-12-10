@@ -47,13 +47,15 @@ class Occurrence_Model extends ORM
   protected $attrs_submission_name='occAttributes';
   protected $attrs_field_prefix='occAttr';
   protected $additional_csv_fields=array(
-    // allow details of 3 images to be uploaded in CSV files
+    // allow details of 4 images to be uploaded in CSV files
     'occurrence_image:path:1'=>'Image Path 1',
     'occurrence_image:caption:1'=>'Image Caption 1',
     'occurrence_image:path:2'=>'Image Path 2',
     'occurrence_image:caption:2'=>'Image Caption 2',
     'occurrence_image:path:3'=>'Image Path 3',
     'occurrence_image:caption:3'=>'Image Caption 3',
+    'occurrence_image:path:4'=>'Image Path 4',
+    'occurrence_image:caption:4'=>'Image Caption 4',
     // Also allow a field to be uploaded which defines the taxon list to look in when searching for species during a 
     // csv upload
     'fkFilter:taxa_taxon_list:taxon_list_id'=>'Taxon list to search in'

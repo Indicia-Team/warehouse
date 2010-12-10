@@ -451,6 +451,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
       // Setup a breadcrumb
       $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
       $this->page_breadcrumbs[] = 'Upload result';
+      $this->session->set_flash('flash_error', 'The upload was only partially successful. '.($count-count($problems)).' records were uploaded.');
     } else {
       unlink($errorFile);
       $this->session->set_flash('flash_info', "The upload was successful. $count records were uploaded.");
