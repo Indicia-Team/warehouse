@@ -252,15 +252,6 @@ class ORM extends ORM_Core {
    * checks unless they really want to skip them.
    */
   protected function preSubmit() {
-    // Grab the survey id and website id if they are in the submission, as they are used to check
-    // attributes that apply and other permissions.
-    if (array_key_exists('website_id', $this->submission['fields'])) {
-      $this->identifiers['website_id']=$this->submission['fields']['website_id']['value'];
-    }
-    if (array_key_exists('survey_id', $this->submission['fields'])) {
-      $this->identifiers['survey_id']=$this->submission['fields']['survey_id']['value'];
-    }
-
     // Where fields are numeric, ensure that we don't try to submit strings to
     // them.
     foreach ($this->submission['fields'] as $field => $content) {
@@ -272,6 +263,25 @@ class ORM extends ORM_Core {
             break;
           }
       }
+    }
+  }
+  
+  /**
+   * Grab the survey id and website id if they are in the submission, as they are used to check
+   * attributes that apply and other permissions.
+   */
+  protected function populateIdentifiers() {
+    if (array_key_exists('website_id', $this->submission['fields'])) {
+      if (is_array($this->submission['fields']['website_id']))
+        $this->identifiers['website_id']=$this->submission['fields']['website_id']['value'];
+      else
+        $this->identifiers['website_id']=$this->submission['fields']['website_id'];
+    }
+    if (array_key_exists('survey_id', $this->submission['fields'])) {
+      if (is_array($this->submission['fields']['survey_id']))
+        $this->identifiers['survey_id']=$this->submission['fields']['survey_id']['value'];
+      else
+        $this->identifiers['survey_id']=$this->submission['fields']['survey_id'];
     }
   }
 
@@ -312,8 +322,8 @@ class ORM extends ORM_Core {
    */
   public function inner_submit(){
     $return = $this->populateFkLookups();
+    $this->populateIdentifiers();
     $return = $this->createParentRecords() && $return;
-
     // No point doing any more if the parent records did not post
     if ($return) {
       $this->preSubmit();

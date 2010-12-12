@@ -14,19 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
 /**
  * Model class for the Samples table.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Sample_Model extends ORM_Tree
 {
@@ -45,6 +45,12 @@ class Sample_Model extends ORM_Tree
   protected $has_attributes=true;
   protected $attrs_submission_name='smpAttributes';
   protected $attrs_field_prefix='smpAttr';
+  
+  // Declare additional fields required when posting via CSV.
+  protected $additional_csv_fields=array(
+    'survey_id' => 'Survey ID',
+    'website_id' => 'Website ID'
+  );
 
   /**
   * Validate and save the data.
@@ -71,36 +77,35 @@ class Sample_Model extends ORM_Tree
     );
     
     $array->add_rules('date_type', 'required', 'length[1,2]');
-	$array->add_rules('survey_id', 'required');
+    $array->add_rules('survey_id', 'required');
     $array->add_rules('date_start', 'date_in_past');
     // We need either at least one of the location_id and sref/geom : in some cases may have both
     if (array_key_exists('location_id', $orig_values) && $orig_values['location_id']!=='' && $orig_values['location_id']!== null) { // if a location is provided, we don't need an sref.
-        $array->add_rules('location_id', 'required');
-        // if any of the sref fields are also supplied, need all 3 fields
-        if ((array_key_exists('entered_sref', $orig_values) && $orig_values['entered_sref']!=='' && $orig_values['entered_sref']!== null) ||
-        		(array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='' && $orig_values['entered_sref_system']!== null) ||
-        		(array_key_exists('geom', $orig_values)) && $orig_values['geom']!==''  && $orig_values['geom']!== null) {
-        	$array->add_rules('entered_sref', "required");
-    		$array->add_rules('entered_sref_system', 'required');
-	    	$array->add_rules('geom', 'required');
-    		if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
-      			$system = $orig_values['entered_sref_system'];
-      			$array->add_rules('entered_sref', "sref[$system]");
-		        $array->add_rules('entered_sref_system', 'sref_system');
-	    	}    
-
+      $array->add_rules('location_id', 'required');
+      // if any of the sref fields are also supplied, need all 3 fields
+      if ((array_key_exists('entered_sref', $orig_values) && $orig_values['entered_sref']!=='' && $orig_values['entered_sref']!== null) ||
+          (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='' && $orig_values['entered_sref_system']!== null) ||
+          (array_key_exists('geom', $orig_values)) && $orig_values['geom']!==''  && $orig_values['geom']!== null) {
+        $array->add_rules('entered_sref', "required");
+        $array->add_rules('entered_sref_system', 'required');
+        $array->add_rules('geom', 'required');
+        if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
+          $system = $orig_values['entered_sref_system'];
+          $array->add_rules('entered_sref', "sref[$system]");
+          $array->add_rules('entered_sref_system', 'sref_system');
         }
+      }
     } else {
-    	// without a location_id, default to requires an sref.
-    	// no need to copy over location_id, as not present.
-	    $array->add_rules('entered_sref', "required");
-    	$array->add_rules('entered_sref_system', 'required');
-	    $array->add_rules('geom', 'required');
-    	if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
-      		$system = $orig_values['entered_sref_system'];
-      		$array->add_rules('entered_sref', "sref[$system]");
-	        $array->add_rules('entered_sref_system', 'sref_system');
-    	}    
+      // without a location_id, default to requires an sref.
+      // no need to copy over location_id, as not present.
+      $array->add_rules('entered_sref', "required");
+      $array->add_rules('entered_sref_system', 'required');
+      $array->add_rules('geom', 'required');
+      if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
+        $system = $orig_values['entered_sref_system'];
+        $array->add_rules('entered_sref', "sref[$system]");
+        $array->add_rules('entered_sref_system', 'sref_system');
+      }    
     }
 
     return parent::validate($array, $save);
