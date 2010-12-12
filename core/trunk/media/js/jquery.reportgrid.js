@@ -90,7 +90,7 @@ var report_grid_sortdir = '';
               } else {
                 rowOutput = '<tr' + rowclass + '>';
                 $.each(div.settings.columns, function(idx, col) {
-                  if (col.visible!='false') {
+                  if (col.visible!==false && col.visible!='false') {
                     // either template the output, or just use the content according to the fieldname
                     if (typeof col.template !== "undefined") {
                       value = mergeParamsIntoTemplate(row, col.template);
@@ -111,7 +111,7 @@ var report_grid_sortdir = '';
                 rowOutput += '</tr>';
                 tbody.append(rowOutput);
                 tbody.find('a.fancybox').fancybox();
-                rowclass = (rowclass=='' ? ' class="'+div.settings.altRowClass + '"' : '');
+                rowclass = (rowclass==='' ? ' class="'+div.settings.altRowClass + '"' : '');
               }
             });
             // Set a class to indicate the sorted column
@@ -124,10 +124,10 @@ var report_grid_sortdir = '';
             var pager=$(div).find('.pager');
             pager.empty();
             var pagerContent='';
-            if (div.settings.offset!=0) {
+            if (div.settings.offset!==0) {
               pagerContent += '<a class="prev" href="#">&#171 previous</a>';
             }
-            if (div.settings.offset!=0 && hasMore) {
+            if (div.settings.offset!==0 && hasMore) {
               pagerContent += ' | ';
             }
             if (hasMore) {
@@ -137,7 +137,9 @@ var report_grid_sortdir = '';
             div.loading=false;
 
             // execute callback it there is one
-            if (div.settings.callback !== "") window[div.settings.callback]();
+            if (div.settings.callback !== "") {
+              window[div.settings.callback]();
+            }
           }
       );
     };
@@ -167,13 +169,17 @@ var report_grid_sortdir = '';
         result += '<a class="action-button"'+onclick+href+'>'+action.caption+'</a>';
       });
       return result;
-    }
+    };
     
     mergeParamsIntoTemplate = function(params, template) {
       var regex;
       $.each(params, function(param) {
         regex = new RegExp('\\{'+param+'\\}','g');
-        template = template.replace(regex, params[param]);
+        if (params[param]!==null) {
+          template = template.replace(regex, params[param]);
+        } else {
+          template = template.replace(regex, '');
+        }
       });
       // Also do some standard params from the settings, for various paths/urls
       regex = new RegExp('\\{rootFolder\\}','g');
@@ -183,7 +189,7 @@ var report_grid_sortdir = '';
       regex = new RegExp('\\{currentUrl\\}','g');
       template = template.replace(regex, div.settings.currentUrl);
       return template;
-    }
+    };
     
     return this.each(function() {
       this.settings = opts;
@@ -232,15 +238,17 @@ var report_grid_sortdir = '';
           div.loading = true;
           div.settings.offset -= div.settings.itemsPerPage;
           // Min offset is zero, shouldn't really happen.
-          if (div.settings.offset<0) {div.settings.offset=0;};
+          if (div.settings.offset<0) {div.settings.offset=0;}
           load(div);
         });
       }
 
       // execute callback it there is one
-      if (div.settings.callback !== "") window[div.settings.callback]();
+      if (div.settings.callback !== "") {
+        window[div.settings.callback]();
+      }
     });
-  }
+  };
 })(jQuery);
 
 /**
