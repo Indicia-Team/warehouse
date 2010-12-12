@@ -56,9 +56,10 @@ class Occurrence_Model extends ORM
     'occurrence_image:caption:3'=>'Image Caption 3',
     'occurrence_image:path:4'=>'Image Path 4',
     'occurrence_image:caption:4'=>'Image Caption 4',
-    // Also allow a field to be uploaded which defines the taxon list to look in when searching for species during a 
-    // csv upload
-    'fkFilter:taxa_taxon_list:taxon_list_id'=>'Taxon list to search in'
+    // Also allow a field to be uploaded which defines the taxon list to look in when searching for species during a csv upload
+    'fkFilter:taxa_taxon_list:taxon_list_id'=>'Taxon list to search in',
+    'survey_id' => 'Survey ID',
+    'website_id' => 'Website ID'
   );
 
   public function caption()
