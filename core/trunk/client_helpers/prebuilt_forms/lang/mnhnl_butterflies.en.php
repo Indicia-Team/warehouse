@@ -28,6 +28,8 @@ global $custom_terms;
  */
 $custom_terms = array(
 	'LANG_Edit' => 'Edit',
+	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
+	'LANG_All_Users' => 'all users',
 	'LANG_Add_Sample' => 'Add New Sample',
 	'LANG_Add_Sample_Single' => 'Add Single Occurrence',
 	'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
