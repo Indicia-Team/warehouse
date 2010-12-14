@@ -69,7 +69,7 @@ $custom_terms = array(
 	,'LANG_History_Title' => 'Ancienne identification'
 	,'LANG_Last_ID' => 'Dernière(s) identification(s)'
 	,'LANG_Display' => 'Afficher'
-	,'LANG_No_Determinations' => 'Aucun identifications enregistrées.'
+	,'LANG_No_Determinations' => 'Aucun identifications enregistrée.'
 	,'LANG_No_Comments' => 'Aucun commentaire enregistré.'
 	
 	,'LANG_Filter_Title' => 'Filtres'
