@@ -874,16 +874,25 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 ';
 
     data_entry_helper::$javascript .= "
-    // need to keep a track of the AJAX requests. JS is single threaded, so will only have one
-    // bit active at a time. When the abort is called, we know that there are no ajax success functions running.
+// We need to leave the AJAX calls for the search alone, but abort other focus-on calls,
+// so we put a dummy REMOVEABLEJSONP in the URL, and search on that. This is ignored by the service call itself.
 ajaxStack = [];
 abortAjax = function()
 {
+	jQuery('script').each(function(){
+		if(this.src.indexOf('REMOVEABLEJSONP')>0){
+			var test = this.src.match(/jsonp\d*/);
+			window[test] = function(){};
+			jQuery(this).remove();
+		}
+	});
+	// This deals with any non cross domain calls.
 	while(ajaxStack.length > 0){
 		var request = ajaxStack.shift();
-		request.abort();
+		if(!(typeof request == 'undefined')) request.abort();
 	}
 }
+
 
 alertIndiciaError = function(data){
 	var errorString = \"".lang::get('LANG_Indicia_Warehouse_Error')."\";
@@ -1085,7 +1094,7 @@ loadCollection = function(id, index){
 	// only need to reset the timeout on the first fetch as rest follow on quickly.
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/occurrence\" +
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-			\"&sample_id=\"+id+\"&deleted=f&callback=?\", function(flowerData) {
+			\"&sample_id=\"+id+\"&deleted=f&REMOVEABLEJSONP&callback=?\", function(flowerData) {
    		if(!(flowerData instanceof Array)){
    			alertIndiciaError(flowerData);
    		} else if (flowerData.length>0) {
@@ -1094,7 +1103,7 @@ loadCollection = function(id, index){
 			collection_preferred_object.flower_id = flowerData[0].id;
 			ajaxStack.push($.getJSON(\"".$svcUrl."/data/determination\" + 
 					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
-					\"&occurrence_id=\" + flowerData[0].id + \"&deleted=f&orderby=id&callback=?\", function(detData) {
+					\"&occurrence_id=\" + flowerData[0].id + \"&deleted=f&orderby=id&REMOVEABLEJSONP&callback=?\", function(detData) {
    				if(!(detData instanceof Array)){
    					alertIndiciaError(detData);
    				} else if (detData.length>0) {
@@ -1123,7 +1132,7 @@ loadCollection = function(id, index){
 				}}));
 			ajaxStack.push($.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
    					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   					\"&occurrence_id=\" + flowerData[0].id + \"&iso=".$language."&callback=?\", function(attrdata) {
+   					\"&occurrence_id=\" + flowerData[0].id + \"&iso=".$language."&REMOVEABLEJSONP&callback=?\", function(attrdata) {
 				if(!(attrdata instanceof Array)){
    					alertIndiciaError(attrdata);
    				} else if (attrdata.length>0) {
@@ -1139,7 +1148,7 @@ loadCollection = function(id, index){
 	}));
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&sample_id=\" + id + \"&callback=?\", function(attrdata) {
+   			\"&sample_id=\" + id + \"&REMOVEABLEJSONP&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		} else if (attrdata.length>0) {
@@ -1156,7 +1165,7 @@ loadCollection = function(id, index){
     }}}}}));
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" +id+
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-			\"&callback=?\", function(collectionData) {
+			\"&REMOVEABLEJSONP&callback=?\", function(collectionData) {
    		if(!(collectionData instanceof Array)){
    			alertIndiciaError(collectionData);
    		} else if (collectionData.length>0) {
@@ -1171,7 +1180,7 @@ loadCollection = function(id, index){
 	  		collection_preferred_object.collection_name = collectionData[0].location_name;
 	        ajaxStack.push($.getJSON(\"".$svcUrl."/data/location/\" +collectionData[0].location_id +
 					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-					\"&callback=?\", function(locationData) {
+					\"&REMOVEABLEJSONP&callback=?\", function(locationData) {
    				if(!(locationData instanceof Array)){
    					alertIndiciaError(locationData);
    				} else if (locationData.length>0) {
@@ -1193,7 +1202,7 @@ loadCollection = function(id, index){
 			}));
 	        ajaxStack.push($.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
    					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   					\"&location_id=\" + collectionData[0].location_id + \"&iso=".$language."&callback=?\", function(attrdata) {
+   					\"&location_id=\" + collectionData[0].location_id + \"&iso=".$language."&REMOVEABLEJSONP&callback=?\", function(attrdata) {
 				if(!(attrdata instanceof Array)){
    					alertIndiciaError(attrdata);
    				} else if (attrdata.length>0) {
@@ -1209,7 +1218,7 @@ loadCollection = function(id, index){
 	// we want to tag end of row pictuure, so we need to keep track of its position in list.
 	collection_preferred_object.insects = [];
 	ajaxStack.push(jQuery.ajax({
-		url: \"".$svcUrl."/data/sample?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?&parent_id=\"+id,
+		url: \"".$svcUrl."/data/sample?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&REMOVEABLEJSONP&callback=?&parent_id=\"+id,
 		dataType: 'json',
 		myIndex: index,
 		success: function(sessiondata) {
@@ -1221,7 +1230,7 @@ loadCollection = function(id, index){
 			for (var i=0;i<sessiondata.length;i++)
 				sessList.push(sessiondata[i].id);
 				ajaxStack.push(jQuery.ajax({
-					url: \"".$svcUrl."/data/occurrence?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&deleted=f&orderby=id&callback=?&query=\"+escape(JSON.stringify({'in': ['sample_id', sessList]})),
+					url: \"".$svcUrl."/data/occurrence?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&deleted=f&orderby=id&REMOVEABLEJSONP&callback=?&query=\"+escape(JSON.stringify({'in': ['sample_id', sessList]})),
 					dataType: 'json',
 					myIndex: this.myIndex,
 					success: function(insectData) {
@@ -1255,7 +1264,7 @@ loadCollection = function(id, index){
 							ajaxStack.push(jQuery.ajax({
 								url: \"".$svcUrl."/data/determination\" + 
 					    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + 
-					    			\"&occurrence_id=\" + insectData[j].id + \"&deleted=f&orderby=id&callback=?\",
+					    			\"&occurrence_id=\" + insectData[j].id + \"&deleted=f&orderby=id&REMOVEABLEJSONP&callback=?\",
 								dataType: 'json',
 								myID: insectData[j].id,
 								success: function(detData) {
@@ -2293,7 +2302,7 @@ loadSampleAttributes = function(keyValue){
     jQuery('#fo-insect-start-time,#fo-insect-end-time,#fo-insect-sky,#fo-insect-temp,#fo-insect-wind,#fo-insect-shade').empty();
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&sample_id=\" + keyValue + \"&callback=?\", function(attrdata) {
+   			\"&sample_id=\" + keyValue + \"&REMOVEABLEJSONP&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		} else if (attrdata.length>0) {
@@ -2332,7 +2341,7 @@ loadOccurrenceAttributes = function(keyValue){
     jQuery('#focus-flower-type').empty();
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&occurrence_id=\" + keyValue + \"&iso=".$language."&callback=?\", function(attrdata) {
+   			\"&occurrence_id=\" + keyValue + \"&iso=".$language."&REMOVEABLEJSONP&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		} else if (attrdata.length>0) {
@@ -2348,7 +2357,7 @@ loadLocationAttributes = function(keyValue){
     jQuery('#focus-habitat').empty();
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/location_attribute_value\"  +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&location_id=\" + keyValue + \"&iso=".$language."&callback=?\", function(attrdata) {
+   			\"&location_id=\" + keyValue + \"&iso=".$language."&REMOVEABLEJSONP&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		} else if (attrdata.length>0) {
@@ -2388,7 +2397,7 @@ loadImage = function(imageTable, key, keyValue, target, imageRatio, callback, pr
         myImgCallback: imgCallback,
         url: \"".$svcUrl."/data/\" + imageTable +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
+   			\"&\" + key + \"=\" + keyValue + \"&REMOVEABLEJSONP&callback=?\", 
         success: function(imageData) {
 		  if(!(imageData instanceof Array)){
    			alertIndiciaError(imageData);
@@ -2413,7 +2422,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 	jQuery('.taxa_list').empty();
     ajaxStack.push(jQuery.ajax({ 
         type: \"GET\", 
-        url: \"".$svcUrl."/data/determination?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&reset_timeout=true&orderby=id&callback=?&occurrence_id=\" + keyValue,
+        url: \"".$svcUrl."/data/determination?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&reset_timeout=true&orderby=id&REMOVEABLEJSONP&callback=?&occurrence_id=\" + keyValue,
         myCurrentID: currentID,
         myHistoryID: historyID,
         myCallback: callback,
@@ -2544,7 +2553,7 @@ loadComments = function(keyValue, block, table, key, blockClass, bodyClass, rese
         type: \"GET\",
         url: \"".$svcUrl."/data/\" + table + \"?mode=json&view=list\" +
         	(reset_timeout ? \"&reset_timeout=true\" : \"\") + \"&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&\" + key + \"=\" + keyValue + \"&callback=?\", 
+   			\"&\" + key + \"=\" + keyValue + \"&REMOVEABLEJSONP&callback=?\", 
         myBlock: block,
         myBlockClass: blockClass,
         myBodyClass: bodyClass,
@@ -2574,7 +2583,7 @@ loadComments = function(keyValue, block, table, key, blockClass, bodyClass, rese
 collectionProcessing = function(keyValue, expert){
     ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&sample_id=\" + keyValue + \"&callback=?\", function(attrdata) {
+   			\"&sample_id=\" + keyValue + \"&REMOVEABLEJSONP&callback=?\", function(attrdata) {
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		} else if (attrdata.length>0) {
@@ -2603,13 +2612,13 @@ loadInsectAddnInfo = function(keyValue, collectionIndex){
 	// fetch all the occurrences of the sessions.
     ajaxStack.push($.getJSON(\"".$svcUrl."/data/occurrence/\" + keyValue +
    			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&callback=?\", function(occData) {
+   			\"&REMOVEABLEJSONP&callback=?\", function(occData) {
    		if(!(occData instanceof Array)){
    			alertIndiciaError(occData);
    		} else if (occData.length > 0) {
             ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" + occData[0].sample_id +
    					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   					\"&callback=?\", function(smpData) {
+   					\"&REMOVEABLEJSONP&callback=?\", function(smpData) {
    				if(!(smpData instanceof Array)){
    					alertIndiciaError(smpData);
    				} else if (smpData.length > 0) {
@@ -2628,7 +2637,7 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
     loadOccurrenceAttributes(keyValue);
     ajaxStack.push($.getJSON(\"".$svcUrl."/data/occurrence/\" + keyValue +
    			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   			\"&callback=?\", function(occData) {
+   			\"&REMOVEABLEJSONP&callback=?\", function(occData) {
    		if(!(occData instanceof Array)){
    			alertIndiciaError(occData);
    		} else if (occData.length > 0) {
@@ -2636,7 +2645,7 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
 			collectionProcessing(occData[0].sample_id, ".(user_access('IForm n'.$node->nid.' flower expert') ? "true" : "false").");
             ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" + occData[0].sample_id +
    					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-   					\"&callback=?\", function(collection) {
+   					\"&REMOVEABLEJSONP&callback=?\", function(collection) {
    				if(!(collection instanceof Array)){
    					alertIndiciaError(collection);
    				} else if (collection.length > 0) {
