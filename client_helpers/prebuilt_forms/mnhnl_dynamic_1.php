@@ -1269,7 +1269,11 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
     else
       // provide a default in case the form settings were saved in an old version of the form
       $reportName = 'reports_for_prebuilt_forms/simple_sample_list_1';
-    $r = data_entry_helper::report_grid(array(
+    if(method_exists(get_called_class(), 'getSampleListGridPreamble'))
+      $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
+    else
+      $r = '';
+    $r .= data_entry_helper::report_grid(array(
       'id' => 'samples-grid',
       'dataSource' => $reportName,
       'mode' => 'report',

@@ -775,6 +775,13 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
 <div class="displayTransDateContainer"><b>'.lang::get('Date').'</b>:<span class="displayDateDetails"></span></div></div>';
     return $r;
   }
+
+  protected static function getSampleListGridPreamble() {
+    global $user;
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess($node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    return $r;
+  }
+  
   /**
    * Handles the construction of a submission array from a set of form values.
    * @param array $values Associative array of form data values. 
