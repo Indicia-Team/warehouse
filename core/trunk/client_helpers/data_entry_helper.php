@@ -1202,8 +1202,10 @@ class data_entry_helper extends helper_config {
   * <li><b>width</b><br/>
   * </li>
   * <li><b>initial_lat</b><br/>
+  * Latitude of the centre of the initially displayed map, using WGS84.
   * </li>
   * <li><b>initial_long</b><br/>
+  * Longitude of the centre of the initially displayed map, using WGS84.
   * </li>
   * <li><b>initial_zoom</b><br/>
   * </li>
@@ -1248,8 +1250,12 @@ class data_entry_helper extends helper_config {
   * <li><b>geomId</b><br/>
   * </li>
   * <li><b>clickedSrefPrecisionMin</b><br/>
+  * Specify the minimum precision allowed when clicking on the map to get a grid square. If not set then the grid square selected will increase to its maximum
+  * size as the map is zoomed out. E.g. specify 4 for a 1km British National Grid square.
   * </li>
   * <li><b>clickedSrefPrecisionMax</b><br/>
+  * Specify the maximum precision allowed when clicking on the map to get a grid square. If not set then the grid square selected will decrease to its minimum
+  * size as the map is zoomed in. E.g. specify 4 for a 1km British National Grid square.
   * </li>
   * <li><b>msgGeorefSelectPlace</b><br/>
   * </li>
@@ -2809,8 +2815,8 @@ class data_entry_helper extends helper_config {
     $taxaLoaded = array();
     foreach ($taxalist as $taxon)
       $taxaLoaded[] = $taxon['id'];
-    // If there are any extra taxa to add to the list, get their details
-    if(self::$entity_to_load) {
+    // If there are any extra taxa to add to the list from the lookup list/add rows feature, get their details
+    if(self::$entity_to_load && !empty($options['lookupListId'])) {
       // copy the options array so we can modify it
       $extraTaxonOptions = array_merge(array(), $options);
       // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
@@ -2862,8 +2868,6 @@ class data_entry_helper extends helper_config {
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array()        
     ), $options);
-    
-    $options['extraParams']['orderby'] = 'taxon';
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))
       $options['extraParams']['preferred'] = 't';
@@ -4325,10 +4329,10 @@ if (errors.length>0) {
     $include_if_any_data = $include_if_any_data || (isset($arr['rowInclusionCheck']) && $arr['rowInclusionCheck']=='hasData');
     // Species checklist entries take the following format
     // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occAttr:<occurrence_attribute_id>[:<occurrence_attribute_value_id>]
-	// or
-	// sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence:comment
-	// or
-	// sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // or
+    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence:comment
+    // or
+    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
@@ -4376,7 +4380,7 @@ if (errors.length>0) {
   private static function wrap_species_checklist_record_present($record, $include_if_any_data) {
     // as we are working on a copy of the record, discard the ID so it is easy to check if there is any other data for the row.
     unset($record['id']);
-    return ($include_if_any_data && implode('',$record)!='') ||       // inclusion of record is detected from having a value in any cell
+    return ($include_if_any_data && implode('',$record)!='' && preg_match("/^[0]*$/", implode('',array($record)))) ||       // inclusion of record is detected from having a non-zero value in any cell
       (!$include_if_any_data && array_key_exists('present', $record)); // inclusion of record detected from the presence checkbox
   }
   
@@ -4859,7 +4863,6 @@ $('.ui-state-default').live('mouseout', function() {
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
         'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."Proj4js.js", self::$js_path."Proj4defs.js")),
         'addrowtogrid' => array('javascript' => array(self::$js_path."addRowToGrid.js")),
-        'indiciaMap' => array('deps' =>array('jquery', 'openlayers'), 'javascript' => array(self::$js_path."jquery.indiciaMap.js")),
         'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
         'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),
@@ -5368,10 +5371,18 @@ $('.ui-state-default').live('mouseout', function() {
           if (!array_key_exists('orderby', $options['extraParams'])) {
             $dataSvcParams = $dataSvcParams + array('orderby'=>'sort_order');
           }
+          // control for lookup list can be overriden in function call options
           if(array_key_exists('lookUpListCtrl', $options)){
             $ctrl = $options['lookUpListCtrl'];
           } else {
-            $ctrl = 'select';
+            // or specified by the attribute in survey details
+            if (isset($item['control_type']) && 
+              ($item['control_type']=='autocomplete' || $item['control_type']=='checkbox_group'
+              || $item['control_type']=='listbox' || $item['control_type']=='radio_group' || $item['control_type']=='select')) {
+              $ctrl = $item['control_type'];
+            } else {
+              $ctrl = 'select';
+            }
           }
           if(array_key_exists('lookUpKey', $options)){
             $lookUpKey = $options['lookUpKey'];
