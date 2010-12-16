@@ -292,8 +292,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
         // If posting a supermodel, are the details of the supermodel the same as for the previous CSV row? If so, we can link to that
         // record rather than create a new supermodel record.
         $updatedPreviousCsvSupermodelDetails=$this->checkForSameSupermodel($saveArray);
-        // Save the record
+        // Clear the model, so nothing else from the previous row carries over.
         $this->model->clear();
+        // Save the record
         $this->model->set_submission_data($saveArray, true);
         if (($id = $this->model->submit()) == null) {
           // Record has errors - now embedded in model, so dump them into the error file
@@ -338,6 +339,9 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     if (isset($submissionStruct['superModels'])) {
       // loop through the supermodels
       foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
+        // meaning models do not get shared across rows - we always generate a new meaning ID.
+        if ($modelName=='taxon_meaning' || $modelName=='meaning') 
+          continue;
         $sm = ORM::factory($modelName);
         $smAttrsPrefix = isset($sm->attrs_field_prefix) ? $sm->attrs_field_prefix : null;
         // look for data in that supermodel and build something we can use for comparison. We must capture both normal and custom attributes.

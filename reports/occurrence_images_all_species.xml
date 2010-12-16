@@ -26,6 +26,7 @@
   WHERE lttl.taxon_list_id = #taxon_list_id#
   AND o.record_status NOT IN ('I','T')
   AND s.deleted = false
+  AND oi.external_details IS NULL
   #order_by#
   </query>
   <order_bys>
