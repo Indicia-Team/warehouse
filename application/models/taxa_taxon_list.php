@@ -187,7 +187,6 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $syn['taxa_taxon_list:preferred'] = 'f';
         // taxon meaning Id cannot be copied from the submission, since for new data it is generated when saved
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
-        kohana::log('debug', 'post array: '.print_r($syn, true));
         $sub = $this->wrap($syn);
         // Don't resubmit the meaning record, again we can't rely on the order of the supermodels in the list
         foreach($sub['superModels'] as $idx => $supermodel) {
