@@ -455,7 +455,7 @@ class ORM extends ORM_Core {
   private function createParentRecords() {
     // Iterate through supermodels, calling their submit methods with subarrays
     if (array_key_exists('superModels', $this->submission)) {
-      foreach ($this->submission['superModels'] as $a) {
+      foreach ($this->submission['superModels'] as &$a) {
         // Establish the right model - either an existing one or create a new one
         $id = array_key_exists('id', $a['model']['fields']) ? $a['model']['fields']['id']['value'] : null;
         if ($id) {
@@ -470,6 +470,9 @@ class ORM extends ORM_Core {
         // copy up the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
+        // copy the submission back so we pick up updated foreign keys that have been looked up. E.g. if submitting a taxa taxon list, and the 
+        // taxon supermodel has an fk lookup, we need to keep it so that it gets copied into common names and synonyms
+        $a['model'] = $m->submission;
         if ($result) {
           $this->submission['fields'][$a['fkId']]['value'] = $result;
         } else {
@@ -605,12 +608,17 @@ class ORM extends ORM_Core {
       $result=$this->db->get();
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
-          $fieldname = $fieldPrefix.$this->attrs_field_prefix.':'.$row->id;
-          // map to the exact name of the field if it is available
-          if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
-          $this->errors[$fieldname]='Please specify a value for the '.$row->caption;
-          kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, true));
-          $r=false;
+          // There is a required attr which we don't have a value for the submission for. But if posting an existing occurrence, the
+          // value may already exist in the db, so only validate any submitted blank attributes which will be in the empties array and
+          // skip any attributes that were not in the submission.
+          if (!empty($this->submission['fields']['id']['value']) || isset($empties[$fieldname])) {
+            $fieldname = $fieldPrefix.$this->attrs_field_prefix.':'.$row->id;
+            // map to the exact name of the field if it is available
+            if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
+            $this->errors[$fieldname]='Please specify a value for the '.$row->caption;
+            kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, true));
+            $r=false;
+          }
         }
       }
     }
@@ -767,8 +775,8 @@ class ORM extends ORM_Core {
       case 'D':
       case 'V':
         // Date
-        if (!empty($value['value'])) {
-          $vd=vague_date::string_to_vague_date($value['value']);
+        if (!empty($value)) {
+          $vd=vague_date::string_to_vague_date($value);
           $attrValueModel->date_start_value = $vd['start'];
           $attrValueModel->date_end_value = $vd['end'];
           $attrValueModel->date_type_value = $vd['type'];

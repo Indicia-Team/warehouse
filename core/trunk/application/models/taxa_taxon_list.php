@@ -168,6 +168,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $this->copy_shared_fields_from_submission('taxa_taxon_list', $this->submission['fields'], $syn, array(
             'description', 'parent', 'taxonomic_sort_order', 'allow_data_entry', 'taxon_list_id'        
         ));
+
         // Next do the data in the taxon supermodel - we have to search for it rather than rely on it being in a particular position in the list
         foreach($this->submission['superModels'] as $supermodel) {
           if ($supermodel['model']['id']=='taxon') {
@@ -186,6 +187,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
         $syn['taxa_taxon_list:preferred'] = 'f';
         // taxon meaning Id cannot be copied from the submission, since for new data it is generated when saved
         $syn['taxa_taxon_list:taxon_meaning_id'] = $this->taxon_meaning_id;
+        kohana::log('debug', 'post array: '.print_r($syn, true));
         $sub = $this->wrap($syn);
         // Don't resubmit the meaning record, again we can't rely on the order of the supermodels in the list
         foreach($sub['superModels'] as $idx => $supermodel) {
@@ -225,7 +227,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   protected function copy_shared_fields_from_submission($modelName, $source, &$saveArray, $fields) {
     foreach ($fields as $field) {
       if (isset($source[$field])) {
-        $saveArray["$modelName:$field"]=$source[$field]['value'];
+        $saveArray["$modelName:$field"]=is_array($source[$field]) ? $source[$field]['value'] : $source[$field];
       }
     }
   }
