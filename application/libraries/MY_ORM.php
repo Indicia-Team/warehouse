@@ -612,7 +612,7 @@ class ORM extends ORM_Core {
           // value may already exist in the db, so only validate any submitted blank attributes which will be in the empties array and
           // skip any attributes that were not in the submission.
           $fieldname = $fieldPrefix.$this->attrs_field_prefix.':'.$row->id;
-          if (!empty($this->submission['fields']['id']['value']) || isset($empties[$fieldname])) {            
+          if (empty($this->submission['fields']['id']['value']) || isset($empties[$fieldname])) {            
             // map to the exact name of the field if it is available
             if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
             $this->errors[$fieldname]='Please specify a value for the '.$row->caption;
