@@ -486,7 +486,8 @@ class data_entry_helper extends helper_config {
   public static function checkbox($options) {
     $options = self::check_options($options);
     $default = isset($options['default']) ? $options['default'] : '';
-    $options['checked'] = ($default=='on' || $default == 1 || $default == '1' || $default=='t') ? ' checked="checked"' : '';
+    $value = self::check_default_value($options['fieldname'], $default);
+    $options['checked'] = ($value=='on' || $value == 1 || $value == '1' || $value=='t') ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
     return self::apply_template($options['template'], $options);
   }
@@ -3463,7 +3464,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $error="";
     if (self::$validation_errors!==null) {
       if (array_key_exists('fieldname', $options)) {
-        $error = self::check_errors($options['fieldname'], false);
+        $error = self::check_errors($options['fieldname'], true);
       }
     }
     // Add a hint to the control if there is an error and this option is set
@@ -3534,7 +3535,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     // Add a message to the control if there is an error and this option is set
     if (in_array('message', $options['validation_mode'])) {
-      $r .= $error;
+      $r .=  self::apply_error_template($error, $options['fieldname']);
     }
 
     //Add suffix
@@ -4951,7 +4952,6 @@ $('.ui-state-default').live('mouseout', function() {
    */
   public static function check_errors($fieldname, $plaintext=false)
   {
-    global $indicia_templates;
     $error='';
     if (self::$validation_errors!==null) {
        if (array_key_exists($fieldname, self::$validation_errors)) {
@@ -4978,13 +4978,21 @@ $('.ui-state-default').live('mouseout', function() {
       if ($plaintext) {
         return $error;
       } else {
-        $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
-        $template = str_replace('{for}', $fieldname, $template);
-        return str_replace('{error}', lang::get($error), $template);
+        return self::apply_error_template($error, $fieldname);
       }
     } else {
       return '';
     }
+  }
+  
+  /**
+   * Method to format a control error message inside a templated span.
+   */ 
+  private static function apply_error_template($error, $fieldname) {
+    global $indicia_templates;
+    $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
+    $template = str_replace('{for}', $fieldname, $template);
+    return str_replace('{error}', lang::get($error), $template);
   }
 
   /**
