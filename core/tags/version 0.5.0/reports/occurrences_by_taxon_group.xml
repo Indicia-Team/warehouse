@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Occurrences by Taxon Group" description="Lists taxon groups and the number of occurrences of species within them.">
+      <query>
+      SELECT tg.title as taxongroup, count(o.id) as count FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id
+      JOIN taxa t ON ttl.taxon_id = t.id
+      JOIN taxon_groups tg ON t.taxon_group_id = tg.id
+      GROUP BY taxongroup
+      </query>
+      <order_bys>
+            <order_by>taxongroup ASC</order_by>
+      </order_bys>
+      <columns>
+            <column name="taxongroup" display="Taxon Group" style="background-color: #e7e7e7;" />
+            <column name="count" display="Total no. of Occurrences" />
+      </columns>
+</report>
