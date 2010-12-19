@@ -28,6 +28,6 @@ defined('SYSPATH') or die('No direct script access.');
  */
 $config['version'] = '0.5.0';
 $config['release_date']  = '2010-12-19';
-$config['repository'] = 'http://indicia.googlecode.com/svn/core/tags/version_0_5_0';
+$config['repository'] = 'https://indicia.googlecode.com/svn/core/tags/version 0.5.0';
 
 ?>
