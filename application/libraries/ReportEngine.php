@@ -256,27 +256,35 @@ class ReportEngine {
       $this->mergeQuery();
       $this->executeQuery();
       $data = $this->response->result_array(FALSE);
-      $columns = $this->reportReader->getColumns();
-      $this->post_process($data, $columns);
+      $this->prepareColumns();
+      $this->post_process($data);
       return array(
-        'columns'=>$columns,
+        'columns'=>$this->columns,
         'data'=>$data
       );
     }
   }
-
+  
+  /**
+   * Obtain the set of columns from the report reader on demand, so it is only called once.
+   */
+  private function prepareColumns() {
+    if (!isset($this->columns)) {
+      $this->columns = $this->reportReader->getColumns();
+    }    
+  }
   /**
    * Takes the data and columns lists, and carries out any post query processing.
    * This includes vague date processing, and any other defined by the
    * report reader.
    */
-  private function post_process(&$data, &$columns) {
-  	$this->merge_attribute_data($data, $columns, $this->providedParams);
+  private function post_process(&$data) {
+  	$this->merge_attribute_data($data, $this->providedParams);
 
   	$vagueDateProcessing = $this->getVagueDateProcessing();
   	$downloadProcessing = $this->getDownloadDetails();
   	if($vagueDateProcessing) {
-	  	$this->add_vague_dates($data, $columns);
+	  	$this->add_vague_dates($data);
   	}
   	if($downloadProcessing->mode == 'INITIAL' || $downloadProcessing->mode == 'CONFIRM' ||$downloadProcessing->mode == 'FINAL') {
 	  	$this->setDownloaded($data, $downloadProcessing);
@@ -306,9 +314,9 @@ class ReportEngine {
    * Takes the data and columns lists, and looks for a vague date column set.
    * If one is found, inserts a new column for the processed date string.
    */
-  private function add_vague_dates(&$data, &$columns) {
-    $col_sets=array();
-    $cols = array_keys($columns);
+  private function add_vague_dates(&$data) {
+    $col_sets=array();    
+    $cols = array_keys($this->columns);
     // First find the additional plaintext columns we need to add
     for ($i=0; $i<count($cols); $i++) {
       if (substr(($cols[$i]), -10)=='date_start') {
@@ -317,7 +325,7 @@ class ReportEngine {
         if (in_array($prefix."date_end", $cols) && in_array($prefix."date_type", $cols)) {
           array_push($col_sets, $prefix);
           if (!in_array($prefix.'date', $cols)) {
-            $columns[$prefix.'date'] = array(
+            $this->columns[$prefix.'date'] = array(
               'display'=>'',
               'class'=>'',
               'style'=>''
@@ -325,17 +333,17 @@ class ReportEngine {
           }
           // Hide the internal vague date columns, unless the report explicitly asks for them (in which case
           // autodef will not be true).
-          if (!array_key_exists('autodef', $columns[$prefix.'date_start']) ||
-              $columns[$prefix.'date_start']['autodef']==true) {
-            $columns[$prefix.'date_start']['visible']='false';
+          if (!array_key_exists('autodef', $this->columns[$prefix.'date_start']) ||
+              $this->columns[$prefix.'date_start']['autodef']==true) {
+            $this->columns[$prefix.'date_start']['visible']='false';
           }
-          if (!array_key_exists('autodef', $columns[$prefix.'date_end']) ||
-              $columns[$prefix.'date_end']['autodef']==true) {
-            $columns[$prefix.'date_end']['visible']='false';
+          if (!array_key_exists('autodef', $this->columns[$prefix.'date_end']) ||
+              $this->columns[$prefix.'date_end']['autodef']==true) {
+            $this->columns[$prefix.'date_end']['visible']='false';
           }
-          if (!array_key_exists('autodef', $columns[$prefix.'date_type']) ||
-              $columns[$prefix.'date_type']['autodef']==true) {
-            $columns[$prefix.'date_type']['visible']='false';
+          if (!array_key_exists('autodef', $this->columns[$prefix.'date_type']) ||
+              $this->columns[$prefix.'date_type']['autodef']==true) {
+            $this->columns[$prefix.'date_type']['visible']='false';
           }
         }
       }
@@ -355,7 +363,7 @@ class ReportEngine {
     }
   }
 
-  public function merge_attribute_data(&$data, &$columns, $providedParams)
+  public function merge_attribute_data(&$data, $providedParams)
   {
   	/* attributes are extra pieces of information associated with data rows. These can have multiple values within each field,
   	 * so do not lend themselves to being fetched by a extended join within the original SQL query.
@@ -387,11 +395,11 @@ class ReportEngine {
   	  			switch ($row["data_type"]) {
               		case 'D':
 		            case 'V':
-		              	$columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-		              	$columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-		              	$columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+		              	$this->columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+		              	$this->columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+		              	$this->columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
 		              	if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
-		              		$columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
+		              		$this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
 		              	}
 			        	for ($r=0; $r<count($data); $r++) {
 				        	$data[$r][$newColName.'_date_start'] = '';
@@ -406,7 +414,7 @@ class ReportEngine {
         				$newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
                		  	// allow follow through so Lookup follows normal format of a singular field.
 		            default:
-		              	$columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
+		              	$this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
 			        	for ($r=0; $r<count($data); $r++) {
 			        		$data[$r][$newColName] = $multiValue ? array() : '';
 			        	}
@@ -639,6 +647,7 @@ class ReportEngine {
     else
       $order_by=$this->reportReader->getOrderClause();
     if ($order_by) {
+      $order_by = $this->checkOrderByForVagueDate($order_by);
       // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
       $count=0;
       $query = preg_replace("/#order_by#/",  "ORDER BY $order_by", $query, -1, $count);
@@ -651,6 +660,34 @@ class ReportEngine {
     if ($this->offset)
       $query .= ' OFFSET '.$this->offset;
     $this->query = $query;
+  }
+  
+  /**
+   * If sorting on the date column (the extra column added by vague date processing) then
+   * switch the sort order back to use date_start.
+   */
+  private function checkOrderByForVagueDate($order_by) {
+    if ($this->getVagueDateProcessing()) {      
+      $tokens = explode(' ', $order_by);
+      $this->prepareColumns();
+      if (count($tokens)>0) {
+        $sortfield = $tokens[0];
+        $cols = array_keys($this->columns);
+        // First find the additional plaintext columns we need to add
+        for ($i=0; $i<count($cols); $i++) {
+          if (substr(($cols[$i]), -10)=='date_start') {
+            $prefix=substr($cols[$i], 0, strlen($cols[$i])-10);
+            if ($sortfield==$prefix.'date') {
+              // switch sort to date start
+              $tokens[0]=$cols[$i];
+              $order_by=implode(' ', $tokens);
+              break; // from loop
+            }
+          }
+        }
+      }
+    }
+    return $order_by;
   }
 
   private function executeQuery()
