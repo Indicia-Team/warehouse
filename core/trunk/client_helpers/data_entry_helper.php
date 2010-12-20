@@ -1567,6 +1567,11 @@ class data_entry_helper extends helper_config {
   * option array are automatically added to the grid after any columns specified in the columns option array.
   * Therefore the default state for a report_grid control is to include all the report, view or table columns
   * in their default state, since the columns array will be empty.</li>
+  * <li><b>headers</b>
+  * Should a header row be included? Defaults to true.
+  * <li><b>galleryColCount</b>
+  * If set to a value greater than one, then each grid row will contain more than one record of data from the database, allowing
+  * a gallery style view to be built. Defaults to 1.
   * <li><b>autoParamsForm</b>
   * Defaults to true. If true, then if a report requires parameters, a parameters input form will be auto-generated
   * at the top of the grid. If set to false, then it is possible to manually build a parameters entry HTML form if you
@@ -1641,45 +1646,51 @@ class data_entry_helper extends helper_config {
     self::report_grid_get_columns($response, $options);
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
     $thClass = $options['thClass'];
-    $r .= "\n<table class=\"".$options['class']."\"><thead class=\"$thClass\"><tr>\n";
-    // build a URL with just the sort order bit missing, so it can be added for each table heading link
-    $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ?
-        $sortAndPageUrlParams['page']['name'].'='.$sortAndPageUrlParams['page']['value'].'&' :
-        ''
-    );
-    $sortdirval = $sortAndPageUrlParams['sortdir']['value'] ? strtolower($sortAndPageUrlParams['sortdir']['value']) : 'asc';
-    foreach ($options['columns'] as $field) {
-      if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
-        continue; // skip this column as marked invisible
-      // allow the display caption to be overriden in the column specification
-      $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
-      if (isset($field['fieldname'])) {
-        if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
-        $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
-        // reverse sort order if already sorted by this field in ascending dir
-        if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
-          $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
-        if (!isset($field['img']) || $field['img']!='true')
-          $caption = "<a href=\"$sortLink\" title=\"Sort by $caption\">$caption</a>";
-        // set a style for the sort order
-        $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
-        $orderStyle .= ' sortable';
-        $fieldId = ' id="' . $options['id'] . '-th-' . $field['orderby'] . '"';
-      } else {
-        $orderStyle = '';
-        $fieldId = '';
+    $r .= "\n<table class=\"".$options['class']."\">";
+    if ($options['headers']!==false) {
+      $r .= "\n<thead class=\"$thClass\"><tr>\n";
+      // build a URL with just the sort order bit missing, so it can be added for each table heading link
+      $sortUrl = $pageUrl . ($sortAndPageUrlParams['page']['value'] ?
+          $sortAndPageUrlParams['page']['name'].'='.$sortAndPageUrlParams['page']['value'].'&' :
+          ''
+      );
+      $sortdirval = $sortAndPageUrlParams['sortdir']['value'] ? strtolower($sortAndPageUrlParams['sortdir']['value']) : 'asc';
+      // Output the headers. Repeat if galleryColCount>1;
+      for ($i=0; $i<$options['galleryColCount']; $i++) {
+        foreach ($options['columns'] as $field) {
+          if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
+            continue; // skip this column as marked invisible
+          // allow the display caption to be overriden in the column specification
+          $caption = lang::get(empty($field['display']) ? $field['fieldname'] : $field['display']);
+          if (isset($field['fieldname'])) {
+            if (empty($field['orderby'])) $field['orderby']=$field['fieldname'];
+            $sortLink = $sortUrl.$sortAndPageUrlParams['orderby']['name'].'='.$field['orderby'];
+            // reverse sort order if already sorted by this field in ascending dir
+            if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
+              $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
+            if (!isset($field['img']) || $field['img']!='true')
+              $caption = "<a href=\"$sortLink\" title=\"Sort by $caption\">$caption</a>";
+            // set a style for the sort order
+            $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
+            $orderStyle .= ' sortable';
+            $fieldId = ' id="' . $options['id'] . '-th-' . $field['orderby'] . '"';
+          } else {
+            $orderStyle = '';
+            $fieldId = '';
+          }
+          $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
+        }
       }
-
-      $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
+      $r .= "</tr></thead>\n";
     }
-    $r .= "</tr></thead><tbody>\n";
+    $r .= "<tbody>\n";
     $rowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
     $currentUrl = self::get_reload_link_parts();
     $relpath = self::relative_client_helper_path();
     if (count($records)>0) {
-      foreach ($records as $row) {
+      foreach ($records as $rowIdx => $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
         if ($outputCount>=$options['itemsPerPage'])
           break;
@@ -1693,7 +1704,10 @@ class data_entry_helper extends helper_config {
         ));
         // set a unique id for the row if we know the identifying field.
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
-        $r .= "<tr $rowClass$rowId>";
+        if ($rowIdx % $options['galleryColCount']==0) {
+          $r .= "<tr $rowClass$rowId>";
+          $rowInProgress=true;
+        }
         foreach ($options['columns'] as $field) {
           $class='';
           if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
@@ -1713,11 +1727,17 @@ class data_entry_helper extends helper_config {
             $value = "<a href=\"$imagePath$value\" class=\"fancybox\"><img src=\"$imagePath"."thumb-$value\" /></a>";
           $r .= "<td$class>$value</td>\n";
         }
-        $r .= '</tr>';
+        if ($rowIdx % $options['galleryColCount']==$options['galleryColCount']-1) {
+          $rowInProgress=false;
+          $r .= '</tr>';
+        }
         $rowClass = empty($rowClass) ? ' class="'.$options['altRowClass'].'"' : '';
         $outputCount++;
       }
+      if ($rowInProgress)
+        $r .= '</tr>';
     }
+    
     $r .= "</tbody></table>\n";
     // Output pagination links
     $pagLinkUrl = $pageUrl . ($sortAndPageUrlParams['orderby']['value'] ? $sortAndPageUrlParams['orderby']['name'].'='.$sortAndPageUrlParams['orderby']['value'].'&' : '');
@@ -1752,6 +1772,7 @@ class data_entry_helper extends helper_config {
   rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
   imageFolder: '".self::get_uploaded_image_folder()."',
   currentUrl: '".$currentUrl['path']."',
+  galleryColCount: ".$options['galleryColCount'].",
   altRowClass: '".$options['altRowClass']."'";
     if (isset($orderby))
       self::$javascript .= ",
@@ -1994,6 +2015,8 @@ class data_entry_helper extends helper_config {
       'thClass' => 'ui-widget-header',
       'altRowClass' => 'odd',
       'columns' => array(),
+      'galleryColCount' => 1,
+      'headers' => true,
       'includeAllColumns' => true,
       'autoParamsForm' => true,
       'paramsOnly' => false,
@@ -4333,7 +4356,7 @@ if (errors.length>0) {
     // or
     // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence:comment
     // or
-    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId
+    // sc:<taxa_taxon_list_id>:[<occurrence_id>]:occurrence_image:fieldname:uniqueImageId    
     $records = array();
     $subModels = array();
     foreach ($arr as $key=>$value){
@@ -4346,7 +4369,7 @@ if (errors.length>0) {
           $records[$a[1]]['id'] = $a[2];
         }
       }
-    }    
+    }
     foreach ($records as $id => $record) {
       if (array_key_exists('id', $record) ||  // must always handle row if already present in the db
           self::wrap_species_checklist_record_present($record, $include_if_any_data)) {
@@ -4381,7 +4404,7 @@ if (errors.length>0) {
   private static function wrap_species_checklist_record_present($record, $include_if_any_data) {
     // as we are working on a copy of the record, discard the ID so it is easy to check if there is any other data for the row.
     unset($record['id']);
-    return ($include_if_any_data && implode('',$record)!='' && preg_match("/^[0]*$/", implode('',array($record)))) ||       // inclusion of record is detected from having a non-zero value in any cell
+    return ($include_if_any_data && implode('',$record)!='' && !preg_match("/^[0]*$/", implode('',array($record)))) ||       // inclusion of record is detected from having a non-zero value in any cell
       (!$include_if_any_data && array_key_exists('present', $record)); // inclusion of record detected from the presence checkbox
   }
   
@@ -4874,7 +4897,7 @@ $('.ui-state-default').live('mouseout', function() {
       	'json' => array('javascript' => array(self::$js_path."json2.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
         self::$js_path."jquery.treeview.edit.js")),
-        'googlemaps' => array('javascript' => array("http://maps.google.com/maps?file=api&amp;v=2&amp;key=".parent::$google_api_key)),
+        'googlemaps' => array('javascript' => array("http://maps.google.com/maps?file=api&amp;v=2&amp;sensor=false&amp;key=".parent::$google_api_key)),
         'multimap' => array('javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
         'google_search' => array('stylesheets' => array(),

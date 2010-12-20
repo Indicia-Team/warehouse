@@ -81,21 +81,24 @@ var report_grid_sortdir = '';
             var tbody = $(div).find('tbody');
             // clear current grid rows
             tbody.children().remove();
-            var row, rows = eval(response), rowclass='', count=0, hasMore=false, value;
+            var row, rows = eval(response), rowclass='', count=0, hasMore=false, value, rowInProgress=false, rowOutput;            
             $.each(rows, function(rowidx, row) {
-              count++;
               // We asked for one too many rows. If we got it, then we can add a next page button
-              if (div.settings.itemsPerPage !== null && count>div.settings.itemsPerPage) {
+              if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
                 hasMore = true;
               } else {
-                rowOutput = '<tr' + rowclass + '>';
+                // Initialise a new row, unless this is a gallery with multi-columns and not starting a new line
+                if ((rowidx % div.settings.galleryColCount)==0) {
+                  rowOutput = '<tr' + rowclass + '>';
+                  rowInProgress=true;
+                }
                 $.each(div.settings.columns, function(idx, col) {
                   if (col.visible!==false && col.visible!='false') {
                     // either template the output, or just use the content according to the fieldname
                     if (typeof col.template !== "undefined") {
-                      value = mergeParamsIntoTemplate(row, col.template);
+                      value = mergeParamsIntoTemplate(div, row, col.template);
                     } else if (typeof col.actions !== "undefined") {
-                      value = getActions(row, col.actions);
+                      value = getActions(div, row, col.actions);
                     } else {
                       value = row[col.fieldname];
                     }
@@ -107,13 +110,20 @@ var report_grid_sortdir = '';
                     rowOutput += '<td>' + value + '</td>';
                   }
                 });
-                // Build the data cells in order
-                rowOutput += '</tr>';
-                tbody.append(rowOutput);
-                tbody.find('a.fancybox').fancybox();
-                rowclass = (rowclass==='' ? ' class="'+div.settings.altRowClass + '"' : '');
+                if ((rowidx % div.settings.galleryColCount)==div.settings.galleryColCount-1) {
+                  rowOutput += '</tr>';
+                  tbody.append(rowOutput);
+                  rowInProgress=false;
+                  rowclass = (rowclass==='' ? ' class="'+div.settings.altRowClass + '"' : '');
+                }
               }
             });
+            if (rowInProgress) {
+              rowOutput += '</tr>';
+              tbody.append(rowOutput);
+            }
+            tbody.find('a.fancybox').fancybox();
+            
             // Set a class to indicate the sorted column
             $('#' + div.id + ' th').removeClass('asc');
             $('#' + div.id + ' th').removeClass('desc');
@@ -135,6 +145,7 @@ var report_grid_sortdir = '';
             }
             pager.append(pagerContent);
             div.loading=false;
+            setupPaginationClicks(div);
 
             // execute callback it there is one
             if (div.settings.callback !== "") {
@@ -144,11 +155,11 @@ var report_grid_sortdir = '';
       );
     };
     
-    getActions = function(row, actions) {
+    getActions = function(div, row, actions) {
       var result='', onclick='', href='', link;
       $.each(actions, function(idx, action) {
         if (typeof action.javascript != "undefined") {
-          onclick=' onclick="' + mergeParamsIntoTemplate(row, action.javascript) + '"';
+          onclick=' onclick="' + mergeParamsIntoTemplate(div, row, action.javascript) + '"';
         }
         if (typeof action.url != "undefined") {
           link = action.url.replace('{currentUrl}', window.location.href);
@@ -171,7 +182,7 @@ var report_grid_sortdir = '';
       return result;
     };
     
-    mergeParamsIntoTemplate = function(params, template) {
+    mergeParamsIntoTemplate = function(div, params, template) {
       var regex;
       $.each(params, function(param) {
         regex = new RegExp('\\{'+param+'\\}','g');
@@ -191,11 +202,34 @@ var report_grid_sortdir = '';
       return template;
     };
     
+    setupPaginationClicks = function(div) {
+      // Define pagination clicks.
+      if (div.settings.itemsPerPage!==null) {
+        $(div).find('.pager .next').click(function(e) {
+          e.preventDefault();
+          if (div.loading) {return;}
+          div.loading = true;
+          div.settings.offset += div.settings.itemsPerPage;
+          load(div);
+        });
+        
+        $(div).find('.pager .prev').click(function(e) {
+          e.preventDefault();
+          if (div.loading) {return;}
+          div.loading = true;
+          div.settings.offset -= div.settings.itemsPerPage;
+          // Min offset is zero, shouldn't really happen.
+          if (div.settings.offset<0) {div.settings.offset=0;}
+          load(div);
+        });
+      }
+    }
+    
     return this.each(function() {
       this.settings = opts;
       
       // Make this accessible inside functions
-      div=this;
+      var div=this;
       
       // Define clicks on column headers to apply sort 
       $(this).find('th.sortable').click(function(e) {
@@ -215,33 +249,12 @@ var report_grid_sortdir = '';
           div.settings.sortdir = 'ASC';
         }
         div.settings.orderby = colName;
-        // clear the grid content
-        $(this).find('tbody').children().remove();
         // Change sort to this column [DESC?]
         // reload the data
         load(div);
-      });
-      
-      // Define pagination clicks.
-      if (div.settings.itemsPerPage!==null) {
-        $(this).find('.pager .next').live('click', function(e) {
-          e.preventDefault();
-          if (div.loading) {return;}
-          div.loading = true;
-          div.settings.offset += div.settings.itemsPerPage;
-          load(div);
-        });
-        
-        $(this).find('.pager .prev').live('click', function(e) {
-          e.preventDefault();
-          if (div.loading) {return;}
-          div.loading = true;
-          div.settings.offset -= div.settings.itemsPerPage;
-          // Min offset is zero, shouldn't really happen.
-          if (div.settings.offset<0) {div.settings.offset=0;}
-          load(div);
-        });
-      }
+      });    
+
+      setupPaginationClicks(div);
 
       // execute callback it there is one
       if (div.settings.callback !== "") {

@@ -220,7 +220,7 @@ class iform_ad_hoc_cetaceans {
         'label'=>lang::get('Species'),
         'listId'=>$args['species_list_id'],
         'columns'=>1,
-        'checkboxCol'=>false,
+        'rowInclusionCheck'=>'hasData',
         'occAttrs'=> array($args['abundance_attr_id']),
         'extraParams'=>$readAuth + array('view'=>'detail','orderby'=>'taxonomic_sort_order'),
         'survey_id'=>$args['survey_id'],
@@ -294,6 +294,7 @@ class iform_ad_hoc_cetaceans {
     $options['maxZoom'] = 9;
     // Switch to degrees and decimal minutes for lat long.
     $options['latLongFormat'] = 'DM';
+    $options['tabDiv'] = 'place';
     $r .= data_entry_helper::map_panel($options, $olOptions);
     // Now, add some JavaScript to show or hide the map. Show it for when the sighting was from the shore.
     // Hide it for boat based sightings as we want a GPS coordinate in this case. The JavaScript looks for the 
