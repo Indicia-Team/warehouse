@@ -45,6 +45,10 @@ class Website_Controller extends Gridview_Base_Controller
 
     $this->pagetitle = "Websites";
     $this->model = ORM::factory('website');
+    // because the website id is the pk, we need a modified version of the general authorisation filter
+    $this->auth_filter = $this->gen_auth_filter;
+    if (isset($this->auth_filter['field']) && $this->auth_filter['field']=='website_id')
+      $this->auth_filter['field']='id';
   }
     
   /**
@@ -56,11 +60,17 @@ class Website_Controller extends Gridview_Base_Controller
     $r['password2']=$r['website:password'];
     return $r;  
   }
-
-  public function page_authorised ()
-  {
-    return $this->auth->logged_in('CoreAdmin');
+  
+  /**
+   * If trying to edit an existing website record, ensure the user has rights to this website.
+   */
+  public function record_authorised ($id) {
+    if (!is_null($id) AND !is_null($this->auth_filter)) {
+      return (in_array($id, $this->auth_filter['values']));
+    }
+    return true;
   }
+
 }
 
 ?>

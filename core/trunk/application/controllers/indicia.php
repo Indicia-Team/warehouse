@@ -86,7 +86,8 @@ class Indicia_Controller extends Template_Controller {
         ),
         'Admin' => array
         (          
-		      'Triggers & Notifications' => 'trigger'
+          'Triggers & Notifications' => 'trigger',
+          'Websites'=>'website'
         ),
         'Logged in as '.$_SESSION['auth_user']->username => array
         (
@@ -97,7 +98,6 @@ class Indicia_Controller extends Template_Controller {
       if($this->auth->logged_in('CoreAdmin')) {
         $menu['Admin'] = array_merge($menu['Admin'], array(
             'Users'=>'user',
-            'Websites'=>'website',
             'Languages'=>'language',
             'Titles'=>'title',
             'Taxon Relations'=>'taxon_relation_type'
