@@ -49,7 +49,8 @@ class iform_report_grid {
         'name' => 'param_presets',
         'caption' => 'Preset Parameter Values',
         'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
-            'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6.',
+            'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
+            'user ID from the CMS logged in user.',
         'type' => 'textarea',
         'required' => false
       ), array(
@@ -107,6 +108,10 @@ class iform_report_grid {
       foreach ($presetList as $param) {
         $tokens = explode('=', $param);
         if (count($tokens)==2) {
+          // perform any replacements on the preset values
+          if ($tokens[1]=='{user_id}') {
+            $tokens[1]=$user->uid;
+          }
           $presets[$tokens[0]]=$tokens[1];
         } else {
           $r .= '<div class="page-notice ui-widget ui-widget-content ui-corner-all ui-state-error">' .
