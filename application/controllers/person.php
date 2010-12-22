@@ -44,20 +44,28 @@ class Person_Controller extends Gridview_Base_Controller {
 
     $this->flag_warning = null;
     if(!is_null($this->gen_auth_filter)){
-      $users_websites=ORM::factory('users_website')->where('site_role_id IS NOT ', null)->in('website_id', $this->gen_auth_filter['values'])->find_all();
-      $person_id_values = array();
-      foreach($users_websites as $users_website) {
-        // not that only a Core Admin person can modify a person with Core Admin rights.
-        $user=ORM::factory('user')->where('id', $users_website->user_id)->where('core_role_id IS ', null)->find();
-        if($user->loaded)
-          $person_id_values[] = $user->person_id;
+      // If not core admin, then you can only edit a person if they have a role on one of your websites that you administerou creqate
+      $list = $this->db
+          ->select('users.person_id')
+          ->from('users')
+          ->join('users_websites','users_websites.user_id','users.id')
+          ->where('users_websites.site_role_id IS NOT ', null) 
+          ->where('users.core_role_id IS ', null)
+          ->in('users_websites.website_id', $this->gen_auth_filter['values'])
+          ->get();
+      foreach ($list as $user) {
+        $person_id_values[] = $user->person_id;
       }
-      $people=ORM::factory('person')->where('created_by_id', $_SESSION['auth_user']->id)->find_all();
-      foreach($people as $person) {
-        // not that only a Core Admin person can modify a person with Core Admin rights.
-        $user=ORM::factory('user')->where('person_id', $person->id)->where('core_role_id IS NOT ', null)->find();
-        if(!$user->loaded)
-          $person_id_values[] = $person->id;
+      // Also let you edit people that you created unless they have been promoted to core admin
+      $list = $this->db
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id', 'LEFT')
+          ->where('people.created_by_id', $_SESSION['auth_user']->id)
+          ->where('users.core_role_id IS ', null)          
+          ->get();
+      foreach ($list as $person) {
+        $person_id_values[] = $person->id;
       }
       $this->auth_filter = array('field' => 'id', 'values' => $person_id_values);
     }
