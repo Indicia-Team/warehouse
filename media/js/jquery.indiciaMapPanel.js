@@ -578,22 +578,30 @@
   
           onClick: function(e) {
             div.settings.lastclick = e.xy;
+            var params={
+                REQUEST: "GetFeatureInfo",
+                EXCEPTIONS: "application/vnd.ogc.se_xml",
+                VERSION: "1.1.0",
+                STYLES: '',
+                BBOX: div.map.getExtent().toBBOX(),
+                X: e.xy.x,
+                Y: e.xy.y,
+                INFO_FORMAT: 'application/vnd.ogc.gml',
+                LAYERS: clickableLayerNames,
+                QUERY_LAYERS: clickableLayerNames,
+                WIDTH: div.map.size.w,
+                HEIGHT: div.map.size.h,
+                SRS: div.map.projection
+            };
+            if (div.settings.clickableLayers[0].params.CQL_FILTER!==undefined) {
+              if (div.settings.clickableLayers.length>1) {
+                alert('Multiple layers are clickable with filters defined. This is not supported at present');
+                exit;
+              }            
+              params.CQL_FILTER = div.settings.clickableLayers[0].params.CQL_FILTER;
+            }
             this.protocol.read({
-              params: {
-                  REQUEST: "GetFeatureInfo",
-                  EXCEPTIONS: "application/vnd.ogc.se_xml",
-                  VERSION: "1.1.0",
-                  STYLES: '',
-                  BBOX: div.map.getExtent().toBBOX(),
-                  X: e.xy.x,
-                  Y: e.xy.y,
-                  INFO_FORMAT: 'application/vnd.ogc.gml',
-                  LAYERS: clickableLayerNames,
-                  QUERY_LAYERS: clickableLayerNames,
-                  WIDTH: div.map.size.w,
-                  HEIGHT: div.map.size.h,
-                  SRS: div.map.projection
-              },
+              params: params,
               callback: this.onResponse,
               scope: this
             });
