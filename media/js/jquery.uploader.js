@@ -87,7 +87,7 @@
             .replace(/\{filename\}/g, file.caption)
             .replace(/\{filesize\}/g, 'Uploaded')
             .replace(/\{imagewidth\}/g, div.settings.imageWidth);
-        $('#' + div.id.replace(/:/g,'\\:') + ' #filelist').append(existing);
+        $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(existing);
         var thumbnailfilepath = div.settings.finalImageFolder + 'med-' + file.path;
         var origfilepath = div.settings.finalImageFolder + file.path;
         $('#' + uniqueId + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
@@ -107,7 +107,7 @@
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
       this.uploader.bind('FilesAdded', function(up, files) {
         // Find any files over the upload limit
-        existingCount = $('#filelist').children().length;
+        existingCount = $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').children().length;
         extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
         if (extras.length!==0) {
           alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
@@ -121,7 +121,7 @@
             // We are not resizing, and the file is too big for the Indicia server. So display a warning.
             alert(div.settings.msgFileTooBig);
           } else {
-            $('#filelist').append(div.settings.file_box_initial_file_infoTemplate.replace('{id}', file.id)
+            $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace('{id}', file.id)
                 .replace(/\{filename\}/g, file.name)
                 .replace(/\{filesize\}/g, plupload.formatSize(file.size))
                 .replace(/\{imagewidth\}/g, div.settings.imageWidth)
@@ -214,7 +214,7 @@ $.fn.uploader.defaults = {
   maxFileCount : 4,
   existingFiles : [],
   buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
-  file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div id="filelist"></div>' +
+  file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div class="filelist"></div>' +
                  '{uploadStartBtn}</fieldset>',
   file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all">{filename} ({filesize})</div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div><div class="progress-percent"></div></div><span class="photo-wrapper"></span></div>',
   file_box_uploaded_imageTemplate : '<a class="fancybox" href="{origfilepath}"><img src="{thumbnailfilepath}" width="{imagewidth}"/></a>' +
