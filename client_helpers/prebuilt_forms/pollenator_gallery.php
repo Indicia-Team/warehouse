@@ -1210,7 +1210,7 @@ loadCollection = function(id, index){
 						if (attrdata[i].id){
 							switch(parseInt(attrdata[i].location_attribute_id)){
 								case ".$args['habitat_attr_id'].":
-									jQuery('<span>'+attrdata[i].value+' / </span>').appendTo('#collection-habitat');
+									if(attrdata[i].raw_value > 0) jQuery('<span>'+attrdata[i].value+' / </span>').appendTo('#collection-habitat');
 									break;
   			}}}}}));
 		}
@@ -2366,7 +2366,7 @@ loadLocationAttributes = function(keyValue){
 				if (attrdata[i].id){
 					switch(parseInt(attrdata[i].location_attribute_id)){
 						case ".$args['habitat_attr_id'].":
-							habitat_string = (habitat_string == '' ? attrdata[i].value : (habitat_string + ' | ' + attrdata[i].value));
+							if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? attrdata[i].value : (habitat_string + ' | ' + attrdata[i].value));
 							break;
 			}}}
 			jQuery('<span>'+habitat_string+'</span>').appendTo('#focus-habitat');

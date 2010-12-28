@@ -759,6 +759,23 @@ class ORM extends ORM_Core {
   }
   
   protected function createAttributeRecord($attrId, $valueId, $value) {
+    // There are particular circumstances when $value is actually an array: when a attribute is multi value,
+    // AND has yet to be created, AND is passed in as multiple ***Attr:<n>[] POST variables. This should only happen when
+    // the attribute has yet to be created, as after this point the $valueID is filled in and that specific attribute POST variable
+    // is no longer multivalue - only one value is stored per attribute value record, though more than one record may exist
+    // for a given attribute. There may be others with th same <n> without a $valueID.
+    if (is_array($value)){
+      if (is_null($valueId)) {
+        $retVal = true;
+        foreach($value as $singlevalue) { // recurse over array.
+          $retVal = createAttributeRecord($attrId, $valueId, $singlevalue) && $retVal;
+        }
+        return $retVal;	
+      } else {
+        $this->errors['general']='INTERNAL ERROR: multiple values passed in for '.$this->object_name.' '.$valueId;
+        return false;
+      }
+    }
     // Create a attribute value, loading the existing value id if it exists
     $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
     
