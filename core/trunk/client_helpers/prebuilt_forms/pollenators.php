@@ -2371,7 +2371,9 @@ $('#cc-5-complete-collection').click(function(){
 data_entry_helper::$javascript .= "
 // 
 loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, prefix, reset_timeout){
-	// First rename, to be safe. Then add [] to multiple choice checkboxes.
+	// first need to remove any hidden multiselect checkbox unclick fields
+	jQuery(formsel).find('[name^='+prefix+'\\:]').filter('.multiselect').remove();
+	// rename, to be safe. Then add [] to multiple choice checkboxes.
 	jQuery(formsel).find('[name^='+prefix+'\\:]').each(function(){
 		var name = jQuery(this).attr('name').split(':');
 		if(name[1].indexOf('[]') > 0) name[1] = name[1].substr(0, name[1].indexOf('[]'));
@@ -2406,9 +2408,12 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 							.filter('[value='+attrdata[i].raw_value+']')
 							.attr('checked', 'checked');
 					} else if(multicheckboxes.length > 0){ // individually named
-						multicheckboxes.filter('[value='+attrdata[i].raw_value+']')
+						multicheckboxes = multicheckboxes.filter('[value='+attrdata[i].raw_value+']')
 							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id)
 							.attr('checked', 'checked');
+						multicheckboxes.each(function(){
+							jQuery('<input type=\"hidden\" value=\"0\" >').attr('name', jQuery(this).attr('name')).insertBefore(this);
+						});
 					} else if(boolcheckbox.length > 0){ // has extra hidden field to force zero if unchecked.
 						jQuery(this.myFormsel).find('[name='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+'],[name^='+prefix+'\\:'+attrdata[i][this.myAttributeKey]+':]')
 							.attr('name', prefix+':'+attrdata[i][this.myAttributeKey]+':'+attrdata[i].id);
