@@ -728,6 +728,8 @@ class data_entry_helper extends helper_config {
       'maxUploadSize' => self::convert_to_bytes(isset(parent::$maxUploadSize) ? parent::$maxUploadSize : '4M'),
       'codeGenerated' => 'all'
     );
+    if (isset(self::$final_image_folder_thumbs)) 
+      $defaults['finalImageFolderThumbs'] = dirname($_SERVER['PHP_SELF']) . '/' . self::relative_client_helper_path() . self::$final_image_folder_thumbs;
     $browser = self::get_browser_info();
     // Flash doesn't seem to work on IE6.
     if ($browser['name']=='msie' && $browser['version']<7)
@@ -811,8 +813,7 @@ class data_entry_helper extends helper_config {
     if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
       return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     else {
-      $relpath = self::relative_client_helper_path();
-      return dirname($_SERVER['PHP_SELF']) . '/' . $final_image_folder;
+      return dirname($_SERVER['PHP_SELF']) . '/' . self::relative_client_helper_path() . self::$final_image_folder;
     }      
   }
 
@@ -1510,6 +1511,18 @@ class data_entry_helper extends helper_config {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
     return self::check_or_radio_group($options, 'radio');
   }
+  
+  /**
+   * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the 
+   * report_grid method.
+   */
+  public static function report_download_link($options) {
+    $currentParamValues = self::get_report_grid_current_param_values($options);
+    $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
+    $extraParams = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
+    $options['linkOnly']=true;
+    return '<a href="'.data_entry_helper::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv">'.lang::get('Download this report').'</a>';
+  }
 
   /**
   * <p>Outputs a grid that loads the content of a report or Indicia table.</p>
@@ -1612,20 +1625,11 @@ class data_entry_helper extends helper_config {
     $options = self::get_report_grid_options($options);
     // Output a div to keep the grid and pager together
     $r = '<div id="'.$options['id'].'">';
-    // Work out the names and current values of the params we expect in the report request URL for sort and pagination
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
-    $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
-    // set the limit to one higher than we need, so the extra row can trigger the pagination next link
-    $extraParams = '&limit='.($options['itemsPerPage']+1).'&wantColumns=1&wantParameters=1';
-    $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
-
-    // Add in the sort parameters
-    foreach ($sortAndPageUrlParams as $param => $content) {
-      if ($content['value']!=null) {
-        if ($param != 'page')
-          $extraParams .= '&' . $param .'='. $content['value'];
-      }
-    }
+    $extraParams = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
+    // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
+    // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
+    // parameters form if needed, else the report data. 
     $response = self::get_report_data($options, $extraParams);
     if (isset($response['error'])) return $response['error'];
     if (isset($response['parameterRequest'])) {
@@ -1716,7 +1720,7 @@ class data_entry_helper extends helper_config {
             $value = self::get_report_grid_actions($field['actions'],$row);
             $class=' class="actions"';
           } elseif (isset($field['template'])) {
-            $value = self::mergeParamsIntoTemplate($row, $field['template'], true);
+            $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true);
           }
           else {
             $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
@@ -1784,6 +1788,30 @@ class data_entry_helper extends helper_config {
       self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
 });\n";
     return $r;
+  }
+  
+  /**
+   * Generates the extra URL parameters that need to be appended to a report service call request, in order to 
+   * include the sorting and pagination parameters.
+   * @param array @options Options array sent to the report.
+   * @param array @sortAndPageUrlParams Paging and sorting info returned from a call to get_report_grid_sort_page_url_params.
+   * @return string Snippet of URL containing the required URL parameters.
+   */
+  private static function get_report_sorting_paging_params($options, $sortAndPageUrlParams) {
+    // Work out the names and current values of the params we expect in the report request URL for sort and pagination    
+    $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
+    // set the limit to one higher than we need, so the extra row can trigger the pagination next link
+    $extraParams = '&limit='.($options['itemsPerPage']+1).'&wantColumns=1&wantParameters=1';
+    $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
+
+    // Add in the sort parameters
+    foreach ($sortAndPageUrlParams as $param => $content) {
+      if ($content['value']!=null) {
+        if ($param != 'page')
+          $extraParams .= '&' . $param .'='. $content['value'];
+      }
+    }
+    return $extraParams;
   }
 
   /**
@@ -1865,7 +1893,7 @@ class data_entry_helper extends helper_config {
         // ignore any parameters that are going to be in the grid parameters form
         if (substr($key,0,6)!='param-')
           $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
-      }      
+      }
       foreach($response['parameterRequest'] as $key=>$info) {
         // Skip parameters if we have been asked to ignore them
         if (isset($options['ignoreParams']) && in_array($key, $options['ignoreParams'])) continue;
@@ -1881,14 +1909,16 @@ class data_entry_helper extends helper_config {
         if ($info['datatype']=='lookup' && isset($info['population_call'])) {
           // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
           $popOpts = explode(':', $info['population_call']);
-          // @todo Support report calls to populate the lookup
           $ctrlOptions = array_merge($ctrlOptions, array(
-            'table'=>$popOpts[1],
             'valueField'=>$popOpts[2],
             'captionField'=>$popOpts[3],
             'blankText'=>'<'.lang::get('please select').'>',
             'extraParams'=>$options['readAuth']
           ));
+          if ($popOpts[0]=='direct') 
+            $ctrlOptions['table']=$popOpts[1];
+          else
+            $ctrlOptions['report']=$popOpts[1];
           $r .= data_entry_helper::select($ctrlOptions);
         } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
           // Convert the lookup values into an associative array
@@ -1904,12 +1934,14 @@ class data_entry_helper extends helper_config {
             'lookupValues' => $lookupsAssoc
           ));
           $r .= data_entry_helper::select($ctrlOptions);
+        } elseif ($info['datatype']=='date') {
+          $r .= data_entry_helper::date_picker($ctrlOptions);
         } else {
           $r .= data_entry_helper::text_input($ctrlOptions);
         }
       }
       if ($options['completeParamsForm']==true) {
-        $r .= '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'"/>'."\n";
+        $r .= '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'."\n";
         $r .= "</fieldset></form>\n";
       }
       return $r;
@@ -2025,6 +2057,7 @@ class data_entry_helper extends helper_config {
       'callback' => '',
       'paramsFormButtonCaption' => 'Run Report'
     ), $options);
+    if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     return $options;
   }
 
@@ -2057,20 +2090,21 @@ class data_entry_helper extends helper_config {
    * @return Array Associative array of parameters.
    */
   private static function get_report_grid_current_param_values($options) {
-    // Are there any parameters embedded in the URL?
-    $paramKey = 'param-' . (isset($options['id']) ? $options['id'] : '').'-';
     $params = array();
+    // get defaults first
+    if (isset($options['paramDefaults'])) {
+      foreach ($options['paramDefaults'] as $key=>$value) {        
+        // We have found a parameter, so put it in the request to the report service        
+        $params[$key]=$value;
+      }
+    }
+    // Are there any parameters embedded in the URL, e.g. after submitting the params form?
+    $paramKey = 'param-' . (isset($options['id']) ? $options['id'] : '').'-';
     foreach ($_GET as $key=>$value) {
       if (substr($key, 0, strlen($paramKey))==$paramKey) {
         // We have found a parameter, so put it in the request to the report service
         $param = substr($key, strlen($paramKey));
         $params[$param]=$value;
-      }
-    }
-    if (isset($options['paramDefaults'])) {
-      foreach ($options['paramDefaults'] as $key=>$value) {        
-        // We have found a parameter, so put it in the request to the report service        
-        $params[$key]=$value;
       }
     }
     return $params;
@@ -3522,15 +3556,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
     }
 
-    // Build an array of all the possible tags we could replace in the template.
-    $replaceTags=array();
-    $replaceValues=array();
-    foreach (array_keys($options) as $option) {
-      if (!is_array($options[$option])) {
-        array_push($replaceTags, '{'.$option.'}');
-        array_push($replaceValues, $options[$option]);
-      }
-    }
     // If options contain a help text, output it at the end if that is the preferred position
     $r = self::get_help_text($options, 'before');
     //Add prefix
@@ -3550,7 +3575,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       );
     }
     // Output the main control
-    $r .= str_replace($replaceTags, $replaceValues, $indicia_templates[$template]);
+    $r .= self::apply_replacements_to_template($indicia_templates[$template], $options);
 
     // Add an error icon to the control if there is an error and this option is set
     if ($error && in_array('icon', $options['validation_mode'])) {
@@ -3569,18 +3594,36 @@ $('div#$escaped_divId').indiciaTreeBrowser({
 
     return $r;
   }
+  
+  /**
+   * Takes a template string (e.g. <div id="{id}">) and replaces the tokens with the equivalent values looked up from the $options array.
+   */ 
+  private static function apply_replacements_to_template($template, $options) {
+    // Build an array of all the possible tags we could replace in the template.
+    $replaceTags=array();
+    $replaceValues=array();
+    foreach (array_keys($options) as $option) {
+      if (!is_array($options[$option])) {
+        array_push($replaceTags, '{'.$option.'}');
+        array_push($replaceValues, $options[$option]);
+      }
+    }
+    return str_replace($replaceTags, $replaceValues, $template);
+  }
 
   /**
    * Returns templated help text for a control, but only if the position matches the $helpTextPos value, and
    * the $options array contains a helpText entry.
    * @param array $options Control's options array
    * @param string $pos Either before or after. Defines the position that is being requested.
-   * @return string Templated help text, or nothinbg.
+   * @return string Templated help text, or nothing.
    */
   private static function get_help_text($options, $pos) {
-    if (array_key_exists('helpText', $options) && self::$helpTextPos == $pos) {
+    if (array_key_exists('helpText', $options) && !empty($options['helpText']) && self::$helpTextPos == $pos) {
       return str_replace('{helpText}', $options['helpText'], self::apply_static_template('helpText', $options));
-    }
+    } else
+      return '';
+    
   }
 
  /**
@@ -3608,7 +3651,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       //no template specified
       $r = $indicia_templates[$name];
     }
-    return $r;
+    return self::apply_replacements_to_template($r, $options);
   }
 
   /**
@@ -3621,9 +3664,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * $useTemplateAsIs is set to true.
    * @param boolean $useTemplateAsIs If true then the template parameter contains the actual
    * template text, otherwise it is the name of a template in the $indicia_templates array. Default false.
+   * @param boolean $allowHtml If true then HTML is emitted as is from the parameter values inserted into the template,
+   * otherwise they are escaped.
    * @return string HTML for the item label
    */
-  private static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false) {
+  private static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false, $allowHtml=false) {
     global $indicia_templates;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -3632,7 +3677,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       if (!is_array($value)) {
         array_push($replaceTags, '{'.$param.'}');
         // allow sep to have <br/>
-        $value = $param == 'sep' ? $value : htmlSpecialChars($value);
+        $value = ($param == 'sep' || $allowHtml) ? $value : htmlSpecialChars($value);
         // HTML attributes get automatically wrapped
         if (in_array($param, self::$html_attributes) && !empty($value))
           $value = " $param=\"$value\"";
@@ -3755,8 +3800,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * used by all accesses to the DB.
    */
   public static function get_population_data($options) {
-    $url = parent::$base_url."index.php/services/data";
-    $request = "$url/".$options['table']."?mode=json";    
+    if (isset($options['report']))
+      $serviceCall = 'report/requestReport?report='.$options['report'].'.xml&reportSource=local&mode=json&';
+    elseif (isset($options['table']))
+      $serviceCall = 'data/'.$options['table'].'?mode=json&';
+    $request = parent::$base_url."index.php/services/$serviceCall";
     if (array_key_exists('extraParams', $options)) {
       // make a copy of the extra params
       $params = array_merge($options['extraParams']);
@@ -3782,7 +3830,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $request .= '&'.self::array_to_query_string($options['extraParams']);
     } else
       $cacheOpts = array();
-    $cacheOpts['table'] = $options['table'];
+    if (isset($options['report']))
+      $cacheOpts['report'] = $options['report'];
+    else
+      $cacheOpts['table'] = $options['table'];
     $cacheOpts['indicia_website_id'] = self::$website_id;
     /* If present 'auth_token' and 'nonce' are ignored as these are session dependant. */
     if (array_key_exists('auth_token', $cacheOpts)) {
@@ -4145,6 +4196,7 @@ if (errors.length>0) {
       $tabs .= "<li id=\"$tabId\"><a href=\"$link\" rel=\"address:/$address\"><span>$caption</span></a></li>";
     }
     $options['tabs'] = $tabs;
+    $options['suffixTemplate']="nosuffix";
     return self::apply_template('tab_header', $options);
   }
 
@@ -4301,16 +4353,19 @@ if (errors.length>0) {
         
         // submission succeeded. So we also need to move the images to the final location
         foreach ($images as $image) {
-          if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
-            // Final location is the Warehouse
-            // @todo Set PERSIST_AUTH false if last file
-            $success = self::send_file_to_warehouse($image['path'], true);
-          } else {
-            $success = rename($interim_image_folder.$image['path'], $final_image_folder.$image['path']);
-          }
-          if ($success!==true) {
-            return array('error' => lang::get('submit ok but file transfer failed').
-                "<br/>$success");
+          // no need to resend an existing image.
+          if (!isset($image['id']) || empty($image['id'])) {
+            if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse') {
+              // Final location is the Warehouse
+              // @todo Set PERSIST_AUTH false if last file
+              $success = self::send_file_to_warehouse($image['path'], true);
+            } else {
+              $success = rename($interim_image_folder.$image['path'], $final_image_folder.$image['path']);
+            }
+            if ($success!==true) {
+              return array('error' => lang::get('submit ok but file transfer failed').
+                  "<br/>$success");
+            }
           }
         }
       }
@@ -5013,6 +5068,7 @@ $('.ui-state-default').live('mouseout', function() {
    */ 
   private static function apply_error_template($error, $fieldname) {
     global $indicia_templates;
+    if (empty($error)) return '';
     $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
     $template = str_replace('{for}', $fieldname, $template);
     return str_replace('{error}', lang::get($error), $template);
@@ -5651,10 +5707,8 @@ $('.ui-state-default').live('mouseout', function() {
    * mode (direct or report) and readAuth entries. Pass linkOnly=true to return just a link to the report data
    * rather than the data.
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
-   * @param boolean $linkOnly Set this to true to return a URL link for the report only, rather than actually accessing the
-   * report and returning the data.
    */
-  public static function get_report_data($options, $extra='', $linkOnly = false) {
+  public static function get_report_data($options, $extra='') {
     if ($options['mode']=='report') {
       $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
     } elseif ($options['mode']=='direct') {
