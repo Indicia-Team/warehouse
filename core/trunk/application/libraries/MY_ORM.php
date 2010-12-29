@@ -768,7 +768,7 @@ class ORM extends ORM_Core {
       if (is_null($valueId)) {
         $retVal = true;
         foreach($value as $singlevalue) { // recurse over array.
-          $retVal = createAttributeRecord($attrId, $valueId, $singlevalue) && $retVal;
+          $retVal = $this->createAttributeRecord($attrId, $valueId, $singlevalue) && $retVal;
         }
         return $retVal;	
       } else {
