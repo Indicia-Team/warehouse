@@ -669,14 +669,15 @@ $.fn.resetPanel = function(){
 		jQuery(this).filter('#cc-1-collection-details').find('[name=sample\\:id],[name=location\\:id]').val('').attr('disabled', 'disabled');
 		jQuery(this).find('[name=location_image\\:id],[name=occurrence\\:id],[name=determination\\:id],[name=occurrence_image\\:id]').val('').attr('disabled', 'disabled');
 		jQuery(this).find('[name=sample\\:date]:hidden').val('2010-01-01');		
-        jQuery(this).find('input[name=locations_website\\:website_id]').removeAttr('disabled');
-        jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').each(function(){
+		jQuery(this).find('input[name=locations_website\\:website_id]').removeAttr('disabled');
+		jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').filter('.multiselect').remove();
+		jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').each(function(){
 			var name = jQuery(this).attr('name').split(':');
 			if(name[1].indexOf('[]') > 0) name[1] = name[1].substr(0, name[1].indexOf('[]'));
 			jQuery(this).attr('name', name[0]+':'+name[1]);
 		});
 		jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').filter(':checkbox').removeAttr('checked').each(function(){
-			var myName = jQuery(this).attr('name').split(':');
+			var name = jQuery(this).attr('name').split(':');
 			var similar = jQuery('[name='+name[0]+'\\:'+name[1]+'],[name='+name[0]+'\\:'+name[1]+'\\[\\]]').filter(':checkbox');
 			if(similar.length > 1)
 				jQuery(this).attr('name', name[0]+':'+name[1]+'[]');
