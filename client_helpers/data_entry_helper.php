@@ -1537,6 +1537,7 @@ class data_entry_helper extends helper_config {
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    */
   public static function report_download_link($options) {
+    $options = self::get_report_grid_options($options);
     $options['itemsPerPage'] = 10000; // a reasonable maximum
     $currentParamValues = self::get_report_grid_current_param_values($options);
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
@@ -4448,9 +4449,9 @@ if (errors.length>0) {
       }
     }
     foreach ($records as $id => $record) {
-      if (array_key_exists('id', $record) ||  // must always handle row if already present in the db
-          self::wrap_species_checklist_record_present($record, $include_if_any_data)) {
-        if (!self::wrap_species_checklist_record_present($record, $include_if_any_data)) {
+      $present = self::wrap_species_checklist_record_present($record, $include_if_any_data);      
+      if (array_key_exists('id', $record) || $present) { // must always handle row if already present in the db
+        if (!$present) {
           // checkboxes do not appear if not checked. If uncheck, delete record.
           $record['deleted'] = 't';
         }
@@ -4481,7 +4482,8 @@ if (errors.length>0) {
   private static function wrap_species_checklist_record_present($record, $include_if_any_data) {
     // as we are working on a copy of the record, discard the ID so it is easy to check if there is any other data for the row.
     unset($record['id']);
-    return ($include_if_any_data && implode('',$record)!='' && !preg_match("/^[0]*$/", implode('',array($record)))) ||       // inclusion of record is detected from having a non-zero value in any cell
+    $recordData=implode('',$record);
+    return ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
       (!$include_if_any_data && array_key_exists('present', $record)); // inclusion of record detected from the presence checkbox
   }
   
