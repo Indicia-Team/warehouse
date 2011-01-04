@@ -89,8 +89,6 @@
         // Set the default view to show something triple the size of the grid square
         div.map.zoomToExtent(bounds);
       }
-//      layer.destroyFeatures(features.slice(1));
-
     }
 
     /*
@@ -247,7 +245,7 @@
             "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
               // store value in saved field?
               if (data.length>0) {
-                _showWktFeature(div, data[0].centroid_geom, div.map.editLayer, null);
+                _showWktFeature(div, data[0].boundary_geom || data[0].centroid_geom, div.map.editLayer, null);
               }
             }
           );
@@ -626,6 +624,74 @@
         div.map.addControl(infoCtrl);
         infoCtrl.activate();      
       }
+      
+      if (div.settings.locationLayerName) {
+        var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', { 
+            layers: div.settings.locationLayerName, 
+            transparent: true 
+          }, { 
+            singleTile: true, 
+            isBaseLayer: false, 
+            sphericalMercator: true, 
+            opacity: div.settings.fillOpacity/2
+        });
+        div.settings.layers.push(layer);
+        div.map.addLayers([layer]);
+        
+        var infoCtrl = new OpenLayers.Control({
+          activate: function() {
+            var handlerOptions = {
+              'single': true,
+              'double': false,
+              'pixelTolerance': 0,
+              'stopSingle': false,
+              'stopDouble': false
+            };
+            this.handler = new OpenLayers.Handler.Click(this, {
+              'click': this.onClick
+            }, handlerOptions);
+            this.protocol = new OpenLayers.Protocol.HTTP({
+              url: div.settings.indiciaGeoSvc + 'wms',
+              format: new OpenLayers.Format.WMSGetFeatureInfo()
+            });
+            OpenLayers.Control.prototype.activate.call(this);
+          },
+  
+          onClick: function(e) {
+            div.settings.lastclick = e.xy;
+            var params={
+                REQUEST: "GetFeatureInfo",
+                EXCEPTIONS: "application/vnd.ogc.se_xml",
+                VERSION: "1.1.0",
+                STYLES: '',
+                BBOX: div.map.getExtent().toBBOX(),
+                X: e.xy.x,
+                Y: e.xy.y,
+                INFO_FORMAT: 'application/vnd.ogc.gml',
+                LAYERS: div.settings.locationLayerName,
+                QUERY_LAYERS: div.settings.locationLayerName,
+                WIDTH: div.map.size.w,
+                HEIGHT: div.map.size.h,
+                SRS: div.map.projection
+            };
+            this.protocol.read({
+              params: params,
+              callback: this.onResponse,
+              scope: this
+            });
+          },
+  
+          onResponse: function(response) {
+            if (response.features.length>0) {
+              $('#imp-location').val(response.features[0].data.id);
+              $('#imp-location\\:name').val(response.features[0].data.name);
+            }
+          }
+        });
+
+        div.map.addControl(infoCtrl);
+        infoCtrl.activate();      
+      }
 
       // Add a layer switcher if there are multiple layers
       if ((this.settings.presetLayers.length + this.settings.layers.length + this.settings.tilecacheLayers.length) > 1) {
@@ -672,6 +738,7 @@ $.fn.indiciaMapPanel.defaults = {
     clickableLayersOutputFn: format_getinfo_gml,
     clickableLayersOutputDiv: '',
     clickableLayersOutputColumns: [],
+    locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
     controls: [],
     editLayer: true,
     editLayerName: 'Selection layer',
@@ -719,7 +786,7 @@ $.fn.indiciaMapPanel.defaults = {
      * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
 	// Additional options for OpenLayers.Feature.Vector.style on the search layer.
     fillColorSearch: '#ee0000',
-    fillOpacitySearch: 0,
+    fillOpacitySearch: 0.5,
     strokeColorSearch: '#ee0000',
     
     // Are we using the OpenLayers defaults, or are they all provided?
