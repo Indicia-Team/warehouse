@@ -83,12 +83,19 @@
       var existing, uniqueId;
       $.each(div.settings.existingFiles, function(i, file) {
         uniqueId = file.path.split('.')[0];
+        uniqueId = uniqueId.replace(/[^a-zA-Z0-9]+/g,'');
         existing = div.settings.file_box_initial_file_infoTemplate.replace('{id}', uniqueId)
             .replace(/\{filename\}/g, file.caption)
             .replace(/\{filesize\}/g, 'Uploaded')
             .replace(/\{imagewidth\}/g, div.settings.imageWidth);
         $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(existing);
-        var thumbnailfilepath = div.settings.finalImageFolder + 'med-' + file.path;
+        if (div.settings.finalImageFolderThumbs===undefined) {
+          // default thumbnail location if Indicia in charge of images
+          var thumbnailfilepath = div.settings.finalImageFolder + 'med-' + file.path;
+        } else {
+          // overridden thumbnail location
+          var thumbnailfilepath = div.settings.finalImageFolderThumbs + file.path;
+        }
         var origfilepath = div.settings.finalImageFolder + file.path;
         $('#' + uniqueId + ' .photo-wrapper').append(div.settings.file_box_uploaded_imageTemplate
               .replace(/\{id\}/g, uniqueId)
@@ -107,7 +114,7 @@
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
       this.uploader.bind('FilesAdded', function(up, files) {
         // Find any files over the upload limit
-        existingCount = $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').children().length;
+        var existingCount = $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').children().length;
         extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
         if (extras.length!==0) {
           alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
@@ -143,6 +150,15 @@
       this.uploader.bind('UploadProgress', function(up, file) {
         $('#' + file.id + ' .progress-bar').progressbar ('option', 'value', file.percent);
         $('#' + file.id + ' .progress-percent').html(file.percent + '% Uploaded...');
+      });
+      
+      this.uploader.bind('Error', function(up, error) {
+        if (error.code==-600) {
+          alert('The file you are trying to upload is too big to be uploaded. Try opening it in a photo editor and resizing it to a smaller size before attempting the upload again.');
+        } else {
+          alert(error.message);
+        }
+        $('#' + error.file.id).remove();
       });
       
       // On upload completion, check for errors, and show the uploaded file if OK.

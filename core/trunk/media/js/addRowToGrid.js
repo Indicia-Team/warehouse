@@ -171,9 +171,9 @@ $('.add-image-link').live('click', function(evt) {
     destinationFolder : destinationFolder,
     swfAndXapFolder : swfAndXapFolder,
     jsPath : jsPath,
-    buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
+    buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>123',
     table : table,
-    maxUploadSize : '4M'    
+    maxUploadSize : '4M'
   });
   $(evt.target).hide();
 });
