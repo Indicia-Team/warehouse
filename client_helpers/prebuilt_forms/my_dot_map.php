@@ -345,7 +345,10 @@ class iform_my_dot_map {
       $species[] = empty($record['lt4_taxon']) ? $record['lt7_taxon'] : $record['lt4_taxon'];
       $survey = $record['lt8_title'];
     }
-    $species = implode(',',$species);
+    $last=array_pop($species);
+    $species = implode(', ',$species);
+    $species.= (empty($species) ? '' : ' ' . lang::get('and') . ' ') . $last;
+    
     for ($i = 1; $i<=3; $i++) {
       $args['wms_dist_'.$i.'_title'] = str_replace(array('{species}','{survey}'), array($species, $survey), $args['wms_dist_'.$i.'_title']);
     }
@@ -380,13 +383,15 @@ class iform_my_dot_map {
         foreach($occurrence as $record) {
           $filterValue = $record[$filterMappings[$args["wms_dist_$layerId"."_filter_against"]]];
           if (!in_array($filterValue, $handled)) {
-            $filter .= ($filter==='' ? '' : ' AND ') . "$filterField=$filterValue";
+            $filter .= ($filter==='' ? '' : ' OR ') . "$filterField=$filterValue";
             $handled[] = $filterValue;
           }
         }
       }
       // force a filter on the website ID.
-      $filter .= ($filter==='' ? '' : ' AND ') . "website_id=".$args['website_id'];     
+      if ($filter!=='') 
+        $filter = "($filter) AND ";
+      $filter .= "website_id=".$args['website_id'];     
       // Get the url, either the external one specified, or our internally registered GeoServer
       $url = $args["wms_dist_$layerId"."_internal"] ? data_entry_helper::$geoserver_url.'wms' : $args["wms_dist_$layerId"."_url"];
       // Get the style if there is one selected

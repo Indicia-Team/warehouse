@@ -79,7 +79,8 @@ class iform_distribution_map_1 {
           'description' => 'Set this flag to show a map of all species occurrences rather than just one species',
           'type' => 'boolean',
           'default' => false,
-          'group' => 'Distribution Layer'
+          'group' => 'Distribution Layer',
+          'required'=>false
         ),
         array(
           'name' => 'click_on_occurrences_mode',
