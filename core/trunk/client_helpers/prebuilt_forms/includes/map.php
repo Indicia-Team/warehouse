@@ -218,6 +218,11 @@ function iform_map_get_map_options($args, $readAuth) {
   if ($msgGeorefSelectPlace!='LANG_Georef_SelectPlace') $options['msgGeorefSelectPlace'] = $msgGeorefSelectPlace;
   $msgGeorefNothingFound = lang::get('LANG_Georef_NothingFound');
   if ($msgGeorefNothingFound!='LANG_Georef_NothingFound') $options['msgGeorefNothingFound'] = $msgGeorefNothingFound;
+  // if in Drupal, and IForm proxy is installed, then use this path as OpenLayers proxy
+  if (defined('DRUPAL_BOOTSTRAP_CONFIGURATION') && module_exists('iform_proxy')) {
+    global $base_url;
+    $options['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
+  }
   return $options;
 }
 

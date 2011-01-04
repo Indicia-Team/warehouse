@@ -50,7 +50,16 @@ class iform_report_grid {
         'caption' => 'Preset Parameter Values',
         'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
             'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
-            'user ID from the CMS logged in user.',
+            'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Preset Parameter Values can not be overridden by the user.',
+        'type' => 'textarea',
+        'required' => false
+      ), array(
+        'name' => 'param_defaults',
+        'caption' => 'Default Parameter Values',
+        'description' => 'To provide default values for any report parameter which allow the report to run initially but can be overridden, enter each parameter into this '.
+            'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
+            'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Unlike preset parameter values, parameters referred '.
+            'to by default parameter values are displayed in the parameters form and can therefore be changed by the user.',
         'type' => 'textarea',
         'required' => false
       ), array(
@@ -60,6 +69,15 @@ class iform_report_grid {
         'type' => 'textarea',
         'required' => false
       ), array(
+        'name' => 'gallery_col_count',
+        'caption' => 'Gallery Column Count',
+        'description' => ' If set to a value greater than one, then each grid row will contain more than one record of data from the database, allowing '.
+            ' a gallery style view to be built.',
+        'type' => 'int',
+        'required' => false,
+        'default' => 1
+      ),
+      array(
         'name' => 'refresh_timer',
         'caption' => 'Automatic reload seconds',
         'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
@@ -99,26 +117,14 @@ class iform_report_grid {
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    global $indicia_templates;
+    // put each param control in a div, which makes it easier to layout with CSS
+    $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container">';
+    $indicia_templates['suffix']='</div>';
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-    global $user;
     $r = '';
-    $presets = array();
-    if ($args['param_presets'] != ''){
-      $presetList = explode("\n", $args['param_presets']);
-      foreach ($presetList as $param) {
-        $tokens = explode('=', $param);
-        if (count($tokens)==2) {
-          // perform any replacements on the preset values
-          if ($tokens[1]=='{user_id}') {
-            $tokens[1]=$user->uid;
-          }
-          $presets[$tokens[0]]=$tokens[1];
-        } else {
-          $r .= '<div class="page-notice ui-widget ui-widget-content ui-corner-all ui-state-error">' .
-              'Some of the preset parameters defined for this page are not of the form param=value.</div>';
-        }
-      }
-    }
+    $presets = self::get_initial_vals('param_presets', $args);
+    $defaults = self::get_initial_vals('param_defaults', $args);
     // default columns behaviour is to just include anything returned by the report
     $columns = array();
     // this can be overridden
@@ -134,19 +140,51 @@ class iform_report_grid {
       'columns' => $columns,
       'itemsPerPage' => $args['items_per_page'],
       'autoParamsForm' => $args['auto_params_form'],
-      'extraParams' => $presets
+      'extraParams' => $presets,
+      'paramDefaults' => $defaults,
+      'galleryColCount' => isset($args['gallery_col_count']) ? $args['gallery_col_count'] : 1,
+      'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true
     );
-    // Add a download link
-    $r .= '<a href="'.data_entry_helper::get_report_data(array_merge($reportOptions, array('linkOnly'=>true))). '&mode=csv">Download this report</a>';
+    // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams 
+    $r .= '<br/>'.data_entry_helper::report_download_link($reportOptions);
     // now the grid
-    $r .= data_entry_helper::report_grid($reportOptions);
-	// Set up a page refresh for dynamic update of the report at set intervals
-	if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
+    $r .= '<br/>'.data_entry_helper::report_grid($reportOptions);
+    // Set up a page refresh for dynamic update of the report at set intervals
+    if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
       if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
-	    data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
-	  else
-	    data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
-	}
+        data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
+      else
+        data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
+    }
+    return $r;
+  }
+  
+  /**
+   * Private method to read either the preset or default param values from the config form parameters. Returns an associative
+   * array.
+   */
+  private static function get_initial_vals($type, $args) {
+    global $user; 
+    $r = array();
+    if ($args['param_presets'] != ''){
+      $params = explode("\n", $args[$type]);
+      foreach ($params as $param) {
+        if (!empty($param)) {
+          $tokens = explode('=', $param);
+          if (count($tokens)==2) {
+            // perform any replacements on the intiial values
+            if ($tokens[1]=='{user_id}') {
+              $tokens[1]=$user->uid;
+            } else if ($tokens[1]=='{username}') {
+              $tokens[1]=$user->name;
+            }
+            $r[$tokens[0]]=trim($tokens[1]);
+          } else {
+            throw new Exception('Some of the preset or default parameters defined for this page are not of the form param=value.');
+          }
+        }
+      }
+    }
     return $r;
   }
 

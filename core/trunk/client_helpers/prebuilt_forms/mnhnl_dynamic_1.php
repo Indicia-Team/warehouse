@@ -35,11 +35,6 @@ class iform_mnhnl_dynamic_1 {
 
   // A list of the taxon ids we are loading
   private static $occurrenceIds = array();
-  
-  /**
-   * @var Flag indicating if a location control is present, so we can add the location layer to the map.
-   */ 
-  private static $want_location_layer = false;
 
   protected static $auth = array();
   
@@ -85,6 +80,7 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'For Wizard or Tabs interfaces, check this option to show a progress summary above the controls.',
           'type'=>'boolean',
           'default' => false,
+          'required' => false,
           'group' => 'User Interface'
         ),
         array(
@@ -93,6 +89,7 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'If the survey requests an email address, it is sent implicitly for logged in users. Check this box to show it explicitly.',
           'type'=>'boolean',
           'default' => false,
+          'required' => false,
           'group' => 'User Interface'
         ),
         array(
@@ -101,6 +98,7 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'If the survey requests first name and last name, these are ignored for logged in users where user id is sent instead. Check this box to show these fields.',
           'type'=>'boolean',
           'default' => false,
+          'required' => false,
           'group' => 'User Interface'
         ),
         array(
@@ -110,6 +108,7 @@ class iform_mnhnl_dynamic_1 {
               'clicking on the map if this box is ticked.',
           'type'=>'boolean',
           'default' => true,
+          'required' => false,
           'group' => 'User Interface'
         ),
         array(
@@ -174,6 +173,7 @@ class iform_mnhnl_dynamic_1 {
               'the default of displaying a grid of the user\'s data which they can add to.',
           'type'=>'boolean',
           'default' => false,
+          'required' => false,
           'group' => 'User Interface'
         ),    
         array(
@@ -193,6 +193,7 @@ class iform_mnhnl_dynamic_1 {
               'Only applies to the Tabs interface style.',
           'type'=>'boolean',
           'default' => false,
+          'required' => false,
           'group' => 'User Interface'
         ),        
         array(
@@ -230,6 +231,7 @@ class iform_mnhnl_dynamic_1 {
           'description' => 'When using a species grid with the ability to add new rows, the autocomplete control by default shows just the searched taxon name in the drop down. '.
               'Set this to include both the latin and common names, with the searched one first. This also controls the label when adding a new taxon row into the grid.',
           'type' => 'boolean',
+          'required' => false,
           'group' => 'Species'
         ),
         array(
@@ -238,6 +240,7 @@ class iform_mnhnl_dynamic_1 {
           'description' => 'When using a species grid with the ability to add new rows, the autocomplete control by default shows just the searched taxon name in the drop down. '.
               'Set this to include the taxon group title.  This also controls the label when adding a new taxon row into the grid.',
           'type' => 'boolean',
+          'required' => false,
           'group' => 'Species'
         ),
         array(
@@ -245,6 +248,7 @@ class iform_mnhnl_dynamic_1 {
           'caption'=>'Occurrence Comment',
           'description'=>'Should an input box be present for a comment against each occurrence?',
           'type'=>'boolean',
+          'required' => false,
           'default'=>false,
           'group'=>'Species'
         ),
@@ -253,6 +257,7 @@ class iform_mnhnl_dynamic_1 {
           'caption'=>'Occurrence Images',
           'description'=>'Should occurrences allow images to be uploaded?',
           'type'=>'boolean',
+          'required' => false,
           'default'=>false,
           'group'=>'Species'
         ),
@@ -335,6 +340,7 @@ class iform_mnhnl_dynamic_1 {
           'caption'=>'Include Location Tools',
           'description'=>'Include a tab for the allocation of locations when displaying the initial grid.',
           'type'=>'boolean',
+          'required' => false,
           'default' => false,
           'group' => 'User Interface'
         )		
@@ -490,7 +496,7 @@ class iform_mnhnl_dynamic_1 {
         foreach($entity[0] as $key => $value){
           data_entry_helper::$entity_to_load['sample:'.$key] = $value;
         }
-        data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db is not WKT, which is assumed by all the code.
+        data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db in geom is not WKT, which is assumed by all the code.
         data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
       }	
     }
@@ -551,15 +557,16 @@ class iform_mnhnl_dynamic_1 {
         }
       }
       elseif ((strcasecmp($attribute['caption'], 'first name')==0 ||
-               strcasecmp($attribute['caption'], 'last name')==0 ||
-               strcasecmp($attribute['caption'], 'surname')==0) && $logged_in) {
-         if ($args['nameShow'] != true)
-          {// name attributes are not displayed
-             $attribute['handled']=true;
-          }
+          strcasecmp($attribute['caption'], 'last name')==0 ||
+          strcasecmp($attribute['caption'], 'surname')==0) && $logged_in) {
+        if ($args['nameShow'] != true) {  
+          // name attributes are not displayed because we have the users login
+          $attribute['handled']=true;
+        }
       }
-      
-      if (isset($attribute['value'])) {
+      // If we have a value for one of the user login attributes then we need to output this value. BUT, for existing data
+      // we must not overwrite the user who created the record.
+      if (isset($attribute['value']) && $mode != MODE_EXISTING) {
         $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
       }
     }
@@ -619,61 +626,7 @@ class iform_mnhnl_dynamic_1 {
       $r .= data_entry_helper::dump_remaining_errors();
     }   
     $r .= "</form>";
-        
-    // may need to keep following code for location change functionality
-    // @todo Why is this not in the data entry helper, and is it really needed?
-    if (self::$want_location_layer) {
-      data_entry_helper::$onload_javascript .= "
     
-locationChange = function(obj){
-  locationLayer.destroyFeatures();
-  if(obj.value != ''){
-    jQuery.getJSON(\"".$svcUrl."\" + \"/data/location/\"+obj.value +
-      \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
-      \"&callback=?\", function(data) {
-        if (data.length>0) {
-          var parser = new OpenLayers.Format.WKT();
-          for (var i=0;i<data.length;i++) {
-            if(data[i].centroid_geom){
-              feature = parser.read(data[i].centroid_geom);
-              centre = feature.geometry.getCentroid();
-              centrefeature = new OpenLayers.Feature.Vector(centre, {}, {label: data[i].name});
-              locationLayer.addFeatures([feature, centrefeature]); 
-            }
-            if (data[i].boundary_geom){
-              feature = parser.read(data[i].boundary_geom);
-              feature.style = {strokeColor: \"Blue\",
-                  strokeWidth: 2,
-                  label: (data[i].centroid_geom ? \"\" : data[i].name)};
-                  locationLayer.addFeatures([feature]);
-            }
-          }
-          var extent=locationLayer.getDataExtent();
-          if (extent!==null) {
-            locationLayer.map.zoomToExtent(extent);
-          }
-        }
-		  }
-    );
-  }
-};
-jQuery('#imp-location').unbind('change');
-jQuery('#imp-location').change(function(){
-	locationChange(this);
-});
-
-var updatePlaceTabHandler = function(event, ui) { 
-  if (ui.panel.id=='place') {
-    // upload location & sref initial values into map.
-    jQuery('#imp-location').change();
-    jQuery('#imp-sref').change();
-    jQuery('#controls').unbind('tabsshow', updatePlaceTabHandler);
-  }
-}
-jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
-
-";
-    }
     $r .= self::link_species_popups($args);
     return $r;
   }
@@ -695,7 +648,7 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
         else
           throw new Exception('The link species popups form argument contains an invalid value');
         // insert a save button into the fancyboxed fieldset, since the normal close X looks like it cancels changes
-        data_entry_helper::$javascript .= "$('#$fieldset').append('<input type=\"button\" value=\"Save\" onclick=\"$.fancybox.close();\" ?>');\n";
+        data_entry_helper::$javascript .= "$('#$fieldset').append('<input type=\"button\" value=\"".lang::get('Close')."\" onclick=\"$.fancybox.close();\" ?>');\n";
         // create an empty link that we can fire to fancybox the popup fieldset
         $r .= "<a href=\"#$fieldset\" id=\"click-$fieldset\"></a>\n";
         // add a hidden div to the page so we can put the popup fieldset into it when not popped up
@@ -817,23 +770,11 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
       iform_map_get_map_options($args, $auth['read']),
       $options
     );
+    if (isset(data_entry_helper::$entity_to_load['sample:geom'])) {
+      $options['initialFeatureWkt'] = data_entry_helper::$entity_to_load['sample:wkt'];
+    }
     if ($args['interface']!=='one_page')
       $options['tabDiv'] = $tabalias;
-    if (self::$want_location_layer) {
-      $options['layers'][] = 'locationLayer';    
-      // Create vector layers to display a selected location onto   
-      $options['setupJs'] = "
-  locStyleMap = new OpenLayers.StyleMap({
-                  \"default\": new OpenLayers.Style({
-                      fillColor: \"Green\",
-                      strokeColor: \"Black\",
-                      fillOpacity: 0.3,
-                      strokeWidth: 1
-                    })
-    });
-  locationLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Location_Layer")."\",
-                                      {styleMap: locStyleMap});\n";
-    }
     $olOptions = iform_map_get_ol_options($args);
     return data_entry_helper::map_panel($options, $olOptions);
   }
@@ -1051,7 +992,6 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
    * Get the location control as an autocomplete.
    */
   private static function get_control_locationautocomplete($auth, $args, $tabalias, $options) {
-    self::$want_location_layer = true;
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',
@@ -1064,7 +1004,6 @@ jQuery('#controls').bind('tabsshow', updatePlaceTabHandler);
    * Get the location control as a select dropdown.
    */
   private static function get_control_locationselect($auth, $args, $tabalias, $options) {
-    self::$want_location_layer = true;
     $location_list_args=array_merge(array(
         'label'=>lang::get('LANG_Location_Label'),
         'view'=>'detail',

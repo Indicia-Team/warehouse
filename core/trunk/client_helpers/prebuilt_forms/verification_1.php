@@ -53,9 +53,18 @@ class iform_verification_1 {
         'caption'=>'Fixed Parameters',
         'description'=>'Provide a comma separated list '.
             'of <parameter_name>=<parameter_value> pairs to define fixed values for parameters that the report requires. '.
-            'E.g. "survey=12,taxon=53". Any parameteres ommitted from this list will be requested from the user when the verification page is viewed.',
+            'E.g. "survey=12,taxon=53". Any parameters ommitted from this list will be requested from the user when the verification page is viewed.',
         'type'=>'textarea',
         'required'=>false
+      ), array(
+        'name' => 'param_defaults',
+        'caption' => 'Default Parameter Values',
+        'description' => 'To provide default values for any report parameter which allow the report to run initially but can be overridden, enter each parameter into this '.
+            'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
+            'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Unlike fixed parameter values, parameters referred '.
+            'to by default parameter values are displayed in the parameters form and can therefore be changed by the user.',
+        'type' => 'textarea',
+        'required' => false
       ), array(
         'name' => 'columns_config',
         'caption' => 'Columns Configuration JSON',
@@ -179,8 +188,11 @@ class iform_verification_1 {
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
-    global $user;
-	$indicia_user_id=self::get_indicia_user_id($args);
+    global $user, $indicia_templates;
+    // put each param control in a div, which makes it easier to layout with CSS
+    $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container">';
+    $indicia_templates['suffix']='</div>';
+    $indicia_user_id=self::get_indicia_user_id($args);
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $r = '';
     if ($_POST) {
@@ -245,6 +257,14 @@ class iform_verification_1 {
       $val = trim($keyvals[1]);
       $extraParams[$key] = $val;
     }
+    // plus defaults which are not fixed
+    $params = explode( "\n", $args['param_defaults']);
+    foreach ($params as $param){
+      $keyvals = explode("=", $param);
+      $key = trim($keyvals[0]);
+      $val = trim($keyvals[1]);
+      $paramDefaults[$key] = $val;
+    }
     $actions = array();
     if ($args['send_for_verification']) {
       // store authorisation details as a global in js, since some of the JavaScript needs to be able to access Indicia data
@@ -267,7 +287,6 @@ class iform_verification_1 {
     // this can be overridden
     if (isset($args['columns_config']) && !empty($args['columns_config']))
       $columns = array_merge(json_decode($args['columns_config'], true), $columns);
-
     $r .= data_entry_helper::report_grid(array(
       'id' => 'verification-grid',
       'dataSource' => $args['report_name'],
@@ -277,7 +296,8 @@ class iform_verification_1 {
       'rowId' => 'occurrence_id',
       'itemsPerPage' =>10,
       'autoParamsForm' => $args['auto_params_form'],
-      'extraParams' => $extraParams
+      'extraParams' => $extraParams,
+      'paramDefaults' => $paramDefaults
     ));
     // Put in a blank form, which lets JavaScript set the values and post the data.
     $r .= '
