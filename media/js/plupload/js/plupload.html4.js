@@ -12,6 +12,17 @@
 // JSLint defined globals
 /*global plupload:false, window:false */
 
+/**
+ * Form submit handler that prevents the user clicking save during an upload
+ */
+checkSubmitInProgress = function () {
+  if ($('.file-box .progress').length!==0) {
+    alert('Please wait till your images have finished uploading before submitting the form.');
+    return false;
+  }
+  return true;
+};
+
 (function(plupload) {
 	/**
 	 * HTML4 implementation. This runtime has no special features it uses an form that posts files into an hidden iframe.
@@ -31,7 +42,7 @@
 			return {
 				multipart: true
 			};
-		},
+		},    
 
 		/**
 		 * Initializes the upload runtime.
@@ -166,20 +177,24 @@
 
 						// Reset action and target
 						/// JVB changed this to fix bug where it is not reset if the action or target is null
-						if (form.tmpAction) {
-							form.setAttribute('action', form.tmpAction);
-						}
-            else {
-              form.removeAttribute('action');
-            }
+            // check globally to make sure we are the last upload in progress before resetting form.
+            if ($('.file-box .progress').length===0) {
+              if (form.tmpAction) {
+                form.setAttribute('action', form.tmpAction);
+              }
+              else {
+                form.removeAttribute('action');
+              }
 
-						if (form.tmpTarget) {
-							form.setAttribute('target', form.tmpTarget);
-						}
-            else {
-              form.removeAttribute('target');
-            }
-					
+              if (form.tmpTarget) {
+                form.setAttribute('target', form.tmpTarget);
+              }
+              else {
+                form.removeAttribute('target');
+              }
+              $("form").unbind('submit', checkSubmitInProgress);
+              delete form.tmpAction;
+            }					
 					}
 				});
 
@@ -310,18 +325,20 @@
 				// Set input element name attribute which allows it to be submitted
 				file.input.setAttribute('name', up.settings.file_data_name);
 
-				// Store action
-				form.tmpAction = form.getAttribute("action");
-				form.setAttribute("action", plupload.buildUrl(up.settings.url, {name : file.target_name || file.name}));
-
-				// Store Target
-				form.tmpTarget = form.getAttribute("target");
-				form.setAttribute("target", iframe.name);
-
+				// Store action and target if there are no in progress uploads - check globally as there could be a grid full of upload plugins.
+        if (typeof form.tmpAction=="undefined") {
+          form.tmpAction = form.getAttribute("action");
+          form.tmpTarget = form.getAttribute("target");
+          $("form").bind('submit', checkSubmitInProgress);
+        }
+        form.setAttribute("action", plupload.buildUrl(up.settings.url, {name : file.target_name || file.name}));
+        form.setAttribute("target", iframe.name);
+        
 				// set current file
-				this.currentfile = file;
-
+				this.currentfile = file;        
 				form.submit();
+        // prevent the form submitting manually
+        form.removeAttribute('action');                
 			});
 
 			// Remove files
