@@ -5089,6 +5089,8 @@ $('.ui-state-default').live('mouseout', function() {
    * Method to format a control error message inside a templated span.
    */ 
   private static function apply_error_template($error, $fieldname) {
+    if (empty($error)) 
+      return '';
     global $indicia_templates;
     if (empty($error)) return '';
     $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
