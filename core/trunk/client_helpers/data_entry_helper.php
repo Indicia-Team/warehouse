@@ -1232,6 +1232,26 @@ class data_entry_helper extends helper_config {
   * </li>
   * <li><b>layers</b><br/>
   * </li>
+  * <li><b>clickableLayers</b><br/>
+  * If support for clicking on a layer to provide info on the clicked objects is required, set this to an array containing the JavaScript variable
+  * names for the OpenLayers WMS layer objects you have created for the clickable layers. 
+  * </li>
+  * <li><b>clickableLayerNames</b><br/>
+  * If support for clicking on a layer to provide info on the clicked objects is required, set this to an array containing the feature type names
+  * for each clickable layer. Each entry should have a 1:1 mapping to an entry in clickableLayers.
+  * </li>
+  * <li><b>clickableLayersOutputDiv</b><br/>
+  * 
+  * </li>
+  * <li><b>clickableLayersOutputColumns</b><br/>
+  * 
+  * </li>
+  * <li><b>locationLayerName</b><br/>
+  * If using a location select or autocomplete control, then set this to the name of a feature type exposed on GeoServer which contains the id, name and boundary
+  * geometry of each location that can be selected. Then when the user clicks on the map the system is able to automatically populate the locations control with the 
+  * clicked on location. Ensure that the feature type is styled on GeoServer to appear as required, though it will be added to the map with semi-transparency. To use
+  * this feature ensure that a proxy is set, e.g. by using the Indicia Proxy module in Drupal.
+  * </li>
   * <li><b>controls</b><br/>
   * </li>
   * <li><b>editLayer</b><br/>
@@ -1514,11 +1534,14 @@ class data_entry_helper extends helper_config {
   
   /**
    * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the 
-   * report_grid method.
+   * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    */
   public static function report_download_link($options) {
+    $options['itemsPerPage'] = 10000; // a reasonable maximum
     $currentParamValues = self::get_report_grid_current_param_values($options);
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
+    // don't want to paginate the download link
+    unset($sortAndPageUrlParams['page']);
     $extraParams = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
     $options['linkOnly']=true;
     return '<a href="'.data_entry_helper::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv">'.lang::get('Download this report').'</a>';
@@ -1613,7 +1636,6 @@ class data_entry_helper extends helper_config {
   * Caption of the button to run the report on the report parameters form. Defaults to Run Report. This caption
   * is localised when appropriate.
   * </ul>
-  * @todo Action column or other configurable links in grid
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
   * @todo For report mode, provide an AJAX/PHP button that can load the report from parameters
