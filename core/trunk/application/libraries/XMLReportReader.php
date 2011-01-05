@@ -464,21 +464,21 @@ class XMLReportReader_Core implements ReportReader
   	} else {
   		$tableKey = 'lt'.$this->nextTableIndex.".".$tableKey;
   	}
-	if($parentKey == ''){
-  		$parentKey = 'lt'.$this->tableIndex.".".(inflector::singular($tablename)).'_id';
+    if($parentKey == ''){
+      $parentKey = 'lt'.$this->tableIndex.".".(inflector::singular($tablename)).'_id';
   	} else { // force the link as this table has foreign key to parent table, standard naming convention.
-		$parentKey = 'lt'.$this->tableIndex.".".$parentKey;
+      $parentKey = 'lt'.$this->tableIndex.".".$parentKey;
   	}
-	$this->tables[$this->nextTableIndex] = array(
+    $this->tables[$this->nextTableIndex] = array(
           'tablename' => $tablename,
   	   	  'parent' => $this->tableIndex,
-	      'parentKey' => $parentKey,
+          'parentKey' => $parentKey,
           'tableKey' => $tableKey,
        	  'join' => $join,
-		  'attributes' => '',
+          'attributes' => '',
           'where' => $where,
        	  'columns' => array());
-	$this->tableIndex=$this->nextTableIndex;
+    $this->tableIndex=$this->nextTableIndex;
     $this->nextTableIndex++;
   }
 
@@ -486,21 +486,24 @@ class XMLReportReader_Core implements ReportReader
   {
     $found = false;
     for($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
-    	if($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
-    		$found = true;
-    		if($func != '') {
-    			$this->tables[$this->tableIndex]['columns'][$r]['func'] = $func;
-    		}
-    	}
+      if($this->tables[$this->tableIndex]['columns'][$r]['name'] == $name) {
+        $found = true;
+        if($func != '') {
+          $this->tables[$this->tableIndex]['columns'][$r]['func'] = $func;
+        }
+      }
     }
-    if(!$found){
-		$this->tables[$this->tableIndex]['columns'][] = array(
-    	      'name' => $name,
-        	  'func' => $func);
-    	if($display == '') {
-			$display = $this->tables[$this->tableIndex]['tablename']." ".$name;
-	    }
+    if (!$found) {
+      $this->tables[$this->tableIndex]['columns'][] = array(
+            'name' => $name,
+            'func' => $func);
+      if($display == '') {
+        $display = $this->tables[$this->tableIndex]['tablename']." ".$name;
+      }
     }
+    // force visible if the column is already declared as visible. This prevents the id field from being forced to hidden if explicitly included.
+    if (isset($this->columns['lt'.$this->tableIndex."_".$name]['visible']) && $this->columns['lt'.$this->tableIndex."_".$name]['visible']=='true')
+      $visible = 'true';
     $this->mergeColumn('lt'.$this->tableIndex."_".$name, $display, $style, $class, $visible, $autodef);
   }
 
@@ -511,17 +514,17 @@ class XMLReportReader_Core implements ReportReader
     $tableKey = (inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
 
     $thisDefn = new stdClass;
-	$thisDefn->caption = 'caption';
-	$thisDefn->main_id = $tableKey; // main_id is the name of the column in the subquery holding the PK value of the parent table.
+    $thisDefn->caption = 'caption';
+    $thisDefn->main_id = $tableKey; // main_id is the name of the column in the subquery holding the PK value of the parent table.
    	$thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
-	$thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
+    $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
    	$thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = 'false';
    	$thisDefn->columnPrefix = 'merge_'.count($this->attributes);
 
-	if($display == ''){
-		$display = $tablename.' '.$name;
-	}
+    if($display == ''){
+      $display = $tablename.' '.$name;
+    }
 
     $thisDefn->query =  "SELECT ".$tableKey.", '".$display."' as caption, '' as id, 'T' as data_type, ".$name." as text_value, 't' as multi_value FROM ".$tablename.($where == '' ? '' : " WHERE ".$where);
     $this->attributes[] = $thisDefn;
@@ -532,10 +535,10 @@ class XMLReportReader_Core implements ReportReader
   private function setAttributes($where, $separator, $hideVagueDateFields)
   {
   	$thisDefn = new stdClass;
-	$thisDefn->caption = 'caption'; // caption is the name of the column in the subquery holding the attribute caption.
-	$thisDefn->main_id = 'main_id'; // main_id is the name of the column in the subquery holding the PK value of the parent table.
+    $thisDefn->caption = 'caption'; // caption is the name of the column in the subquery holding the attribute caption.
+    $thisDefn->main_id = 'main_id'; // main_id is the name of the column in the subquery holding the PK value of the parent table.
    	$thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
-	$thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
+    $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
    	$thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = $hideVagueDateFields;
    	$thisDefn->columnPrefix = 'attr_'.$this->tableIndex.'_';
