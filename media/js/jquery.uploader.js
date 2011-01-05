@@ -140,7 +140,7 @@
           if (div.settings.resizeWidth!==0 && div.settings.resizeHeight!==0) {
             $('#' + file.id + ' .progress-percent').html('Resizing...');
           } else {
-            $('#' + file.id + ' .progress-percent').html('0% Uploaded...');
+            $('#' + file.id + ' .progress-percent').html('<img style="display: inline; margin: 4px;" src="'+Drupal.settings.basePath +'sites/all/modules/iform/media/images/ajax-loader.gif" width="16" height="16" alt="In progress"/><span>Uploading...</span>');
           }
         });
         
@@ -149,7 +149,7 @@
       // As a file uploads, update the progress bar and percentage indicator
       this.uploader.bind('UploadProgress', function(up, file) {
         $('#' + file.id + ' .progress-bar').progressbar ('option', 'value', file.percent);
-        $('#' + file.id + ' .progress-percent').html(file.percent + '% Uploaded...');
+        $('#' + file.id + ' .progress-percent').html('<span>' + file.percent + '% Uploaded...</span>');
       });
       
       this.uploader.bind('Error', function(up, error) {

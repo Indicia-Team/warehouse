@@ -156,9 +156,8 @@ $('.add-image-link').live('click', function(evt) {
   imageRow += '</td></tr>';
   imageRow = $(imageRow);
   $($(evt.target).parent().parent()).after(imageRow);
-  imageRow.find('div').uploader({
+  var opts={
     caption : 'Files',
-    maxFileCount : '3',
     autoupload : '1',
     flickr : '',
     uploadSelectBtnCaption : 'Select file(s)',
@@ -170,11 +169,15 @@ $('.add-image-link').live('click', function(evt) {
     uploadScript : uploadScript,
     destinationFolder : destinationFolder,
     swfAndXapFolder : swfAndXapFolder,
-    jsPath : jsPath,
-    buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>123',
+    jsPath : jsPath,    
     table : table,
     maxUploadSize : '4M'
-  });
+  };
+  if (typeof buttonTemplate!="undefined") opts.buttonTemplate=buttonTemplate;
+  if (typeof file_boxTemplate!="undefined") opts.file_boxTemplate=file_boxTemplate;
+  if (typeof file_box_initial_file_infoTemplate!="undefined") opts.file_box_initial_file_infoTemplate=file_box_initial_file_infoTemplate;
+  if (typeof file_box_uploaded_imageTemplate!="undefined") opts.file_box_uploaded_imageTemplate=file_box_uploaded_imageTemplate;
+  imageRow.find('div').uploader(opts);
   $(evt.target).hide();
 });
 

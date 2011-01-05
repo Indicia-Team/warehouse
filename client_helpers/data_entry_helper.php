@@ -737,7 +737,7 @@ class data_entry_helper extends helper_config {
     if ($browser['name']=='chrome')
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('html5'));
     $options['id'] = $options['table']. (isset($options['id']) ? '-'.$options['id'] : '');
-    $containerId = 'container-'.$options['id'];
+    $containerId = 'container-'.$options['id'];    
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
     if ($indicia_templates['file_box_initial_file_info']!='')
@@ -1367,21 +1367,22 @@ class data_entry_helper extends helper_config {
       // This resource has a dependency on the googlemaps resource so has to be added afterwards.
       self::add_resource('indiciaMapPanel');
 
-      // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers
+      // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers, functions
       // and controls, not the string class names.
       $json_insert='';
-      if (array_key_exists('controls', $options)) {
-        $json_insert .= ',"controls":['.implode(',', $options['controls']).']';
-        unset($options['controls']);
+      $js_entities=array('controls', 'layers', 'clickableLayers');
+      foreach($js_entities as $entity) {
+        if (array_key_exists($entity, $options)) {
+          $json_insert .= ',"'.$entity.'":['.implode(',', $options[$entity]).']';
+          unset($options[$entity]);
+        }
       }
-      if (array_key_exists('layers', $options)) {
-        $json_insert .= ',"layers":['.implode(',', $options['layers']).']';
-        unset($options['layers']);
+      // Same for 'clickableLayersOutputFn' except it is not an array
+      if (array_key_exists('clickableLayersOutputFn', $options)) {
+        $json_insert .= ',"clickableLayersOutputFn":'.$options['clickableLayersOutputFn'];
+        unset($options['clickableLayersOutputFn']);
       }
-      if (array_key_exists('clickableLayers', $options)) {
-        $json_insert .= ',"clickableLayers":['.implode(',', $options['clickableLayers']).']';
-        unset($options['clickableLayers']);
-      }
+      
       // make a copy of the options to pass into JavaScript, with a few entries removed.
       $jsoptions = array_merge($options);
       unset($jsoptions['setupJs']);
@@ -2616,6 +2617,12 @@ class data_entry_helper extends helper_config {
       self::$javascript .= "destinationFolder = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder."';\n";
       self::$javascript .= "swfAndXapFolder = '".$relpath . "plupload/';\n";
       self::$javascript .= "jsPath = '".self::$js_path."';\n";
+      if ($indicia_templates['file_box']!='')
+        self::$javascript .= "file_boxTemplate = '".str_replace('"','\"', $indicia_templates['file_box'])."';\n";
+      if ($indicia_templates['file_box_initial_file_info']!='')
+        self::$javascript .= "file_box_initial_file_infoTemplate = '".str_replace('"','\"', $indicia_templates['file_box_initial_file_info'])."';\n";
+      if ($indicia_templates['file_box_uploaded_image']!='')
+        self::$javascript .= "file_box_uploaded_imageTemplate = '".str_replace('"','\"', $indicia_templates['file_box_uploaded_image'])."';\n";
     }
     $occAttrControls = array();
     $occAttrs = array();
@@ -2743,8 +2750,7 @@ class data_entry_helper extends helper_config {
             $totalCols = ($options['lookupListId'] ? 2 : 1) + 1 /*checkboxCol*/ + ($options['occurrenceImages'] ? 1 : 0) + count($occAttrControls);
             $rows[$rowIdx]='<td colspan="'.$totalCols.'">'.data_entry_helper::file_box(array(
               'table'=>"sc:$id:$existing_record_id:occurrence_image",
-              'label'=>lang::get('Upload your photos'),
-              'maxFileCount' => 3              
+              'label'=>lang::get('Upload your photos')
             )).'</td>';
             $rowIdx++;
           }          

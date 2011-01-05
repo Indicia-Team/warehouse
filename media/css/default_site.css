@@ -284,6 +284,10 @@ li.ui-state-error {
   width: 100%;
 }
 
+.progress  * {
+  vertical-align: middle;
+}
+
 .plupload input {
   cursor: pointer;
 }

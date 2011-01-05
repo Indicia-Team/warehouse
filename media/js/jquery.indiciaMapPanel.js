@@ -607,6 +607,9 @@
   
           onResponse: function(response) {
             if (div.settings.clickableLayersOutputMode=='popup') {
+              for (var i=0; i<div.map.popups.length; i++) {
+                div.map.removePopup(div.map.popups[i]);
+              }
               div.map.addPopup(new OpenLayers.Popup.FramedCloud(
                   "popup", 
                   div.map.getLonLatFromPixel(div.settings.lastclick),
