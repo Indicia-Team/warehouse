@@ -33,12 +33,13 @@
 		  <tabColumn name='recorder_names' />
           <attributes  separator='|' />
           <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE and #this#.record_status in ('C', 'V')" 
-          			 >
+          			 >          
 		    <subTable tablename='people' parentKey='determiner_id' join='LEFT' where="#this#.deleted = FALSE" >
 		      <subTable tablename='titles' join='LEFT' where="#this#.deleted = FALSE" >
 		        <tabColumn name='determiner' func="(#this#.title||' '||#parent#.first_name||' '||#parent#.surname)" display='Determiner' />
 		      </subTable>
 		    </subTable>
+            <tabColumn name='id' visible="true" />
             <tabColumn name='record_status' />
             <tabColumn name='confidential' />
             <tabColumn name='external_key' />
