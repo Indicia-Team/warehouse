@@ -58,13 +58,15 @@ class iform_basic_1 {
       	'name'=>'preferred',
         'caption'=>'Preferred species only?',
         'description'=>'Should the selection of species be limited to preferred names only?',
-        'type'=>'boolean'
+        'type'=>'boolean',
+        'required'=>false
       ),
       array(
       	'name'=>'tabs',
         'caption'=>'Use Tabbed Interface',
         'description'=>'If checked, then the page will be built using a tabbed interface style.',
-        'type'=>'boolean'
+        'type'=>'boolean',
+        'required'=>false
       )
     );
   }

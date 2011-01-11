@@ -30,6 +30,7 @@
 
 require_once('includes/map.php');
 require_once('includes/language_utils.php');
+require_once('includes/form_generation.php');
 
 class iform_mnhnl_dynamic_1 {
 
@@ -469,36 +470,18 @@ class iform_mnhnl_dynamic_1 {
     if ($mode == MODE_EXISTING) {
       data_entry_helper::$entity_to_load = array();
       // Displaying an existing sample. If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
-      // rather than a grid of occurrences then we must load the occurrence data.
+      // rather than a grid of occurrences then we must load the occurrence data to get the sample id.
       if ($loadedOccurrenceId && (!$loadedSampleId || !self::getGridMode($args))) {
-        // The URL has provided us with an occurrence ID, but we need to know the sample ID as well.      
-        $url = $svcUrl."/data/occurrence/$loadedOccurrenceId";
-        $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
-        $session = curl_init($url);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $entity = json_decode(curl_exec($session), true);
+        data_entry_helper::load_existing_record($auth['read'], 'occurrence', $loadedOccurrenceId);
         // Get the sample ID for the occurrence. This overwrites it if supply in GET but did not match the occurrence's sample
-        $loadedSampleId = $entity[0]['sample_id'];
-        if (!self::getGridMode($args)) {
-          // populate the entity to load with the single occurrence's data
-          foreach($entity[0] as $key => $value){
-            data_entry_helper::$entity_to_load['occurrence:'.$key] = $value;
-          }
+        $loadedSampleId = data_entry_helper::$entity_to_load['occurrence:sample_id'];
+        if (self::getGridMode($args)) {
+          // in grid mode, we only needed to load the occurrence to find out the sample id.
+          data_entry_helper::$entity_to_load=array();
         }
       }
-      if ($loadedSampleId){     
-        $url = $svcUrl.'/data/sample/'.$loadedSampleId;
-        $url .= "?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
-        $session = curl_init($url);
-        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-        $entity = json_decode(curl_exec($session), true);
-        // Build a list of the sample data.
-        foreach($entity[0] as $key => $value){
-          data_entry_helper::$entity_to_load['sample:'.$key] = $value;
-        }
-        data_entry_helper::$entity_to_load['sample:geom'] = ''; // value received from db in geom is not WKT, which is assumed by all the code.
-        data_entry_helper::$entity_to_load['sample:date'] = data_entry_helper::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
-      }	
+      if ($loadedSampleId)
+        data_entry_helper::load_existing_record($auth['read'], 'sample', $loadedSampleId);
     }
     // atributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
     $attributes = data_entry_helper::getAttributes(array(
@@ -642,9 +625,9 @@ class iform_mnhnl_dynamic_1 {
       foreach ($popups as $popup) {
         $tokens = explode("|", $popup);
         if (count($tokens)==2) 
-          $fieldset = self::get_fieldset_id($tokens[1]);
+          $fieldset = get_fieldset_id($tokens[1]);
         else if (count($tokens)==3) 
-          $fieldset = self::get_fieldset_id($tokens[1],$tokens[2]);
+          $fieldset = get_fieldset_id($tokens[1],$tokens[2]);
         else
           throw new Exception('The link species popups form argument contains an invalid value');
         // insert a save button into the fancyboxed fieldset, since the normal close X looks like it cancels changes
@@ -698,7 +681,7 @@ class iform_mnhnl_dynamic_1 {
           if (method_exists(get_called_class(), $method)) 
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
           elseif (trim($component)==='[*]')
-            $html .= self::get_attribute_html($attributes, $args, $defAttrOptions, $tab);
+            $html .= get_attribute_html($attributes, $args, $defAttrOptions, $tab);
           else          
             $html .= "The form structure includes a control called $component which is not recognised.<br/>";
         }      
@@ -941,8 +924,8 @@ class iform_mnhnl_dynamic_1 {
       }
       $attributes = data_entry_helper::getAttributes($attrArgs);
       $defAttrOptions = array('extraParams'=>$auth['read']);
-      $r = self::get_attribute_html($attributes, $args, $defAttrOptions);
-	  if ($args['occurrence_comment'])
+      $r = get_attribute_html($attributes, $args, $defAttrOptions);
+      if ($args['occurrence_comment'])
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
           'label'=>lang::get('Record Comment')
@@ -952,10 +935,10 @@ class iform_mnhnl_dynamic_1 {
           'table'=>'occurrence_image',
           'label'=>lang::get('Upload your photos'),
         );
-        if ($args['interface']!=='one_page')
+      if ($args['interface']!=='one_page')
           $opts['tabDiv']=$tabalias;
-        $r .= data_entry_helper::file_box($opts);
-	  return $r;
+      $r .= data_entry_helper::file_box($opts);
+      return $r;
     } else 
       // in grid mode the attributes are embedded in the grid.
       return '';
@@ -1062,66 +1045,7 @@ class iform_mnhnl_dynamic_1 {
     }
     $r .= "</select><br/>\n";
   	return $r;
-  }
-
-  private static function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null) {
-  	$lastOuterBlock='';
-    $lastInnerBlock='';
-    $r = '';
-    foreach ($attributes as $attribute) {
-      // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
-      if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {
-        if (empty($outerFilter) && $lastOuterBlock!=$attribute['outer_structure_block']) {
-          if (!empty($lastInnerBlock)) {
-            $r .= '</fieldset>';
-          }
-          if (!empty($lastOuterBlock)) {
-            $r .= '</fieldset>';
-          }
-          if (!empty($attribute['outer_structure_block']))
-            $r .= '<fieldset id="'.self::get_fieldset_id($attribute['outer_structure_block']).
-                '"><legend>'.$attribute['outer_structure_block'].'</legend>';
-          if (!empty($attribute['inner_structure_block']))
-            $r .= '<fieldset id="'.self::get_fieldset_id($attribute['outer_structure_block'], $attribute['inner_structure_block']).
-                '"><legend>'.$attribute['inner_structure_block'].'</legend>';
-        }
-        elseif ($lastInnerBlock!=$attribute['inner_structure_block']) {
-          if (!empty($lastInnerBlock)) {
-            $r .= '</fieldset>';
-          }
-          if (!empty($attribute['inner_structure_block']))
-            $r .= '<fieldset id="'.self::get_fieldset_id($lastOuterBlock, $attribute['inner_structure_block']).
-                '"><legend>'.$attribute['inner_structure_block'].'</legend>';
-        }
-        $lastInnerBlock=$attribute['inner_structure_block'];
-        $lastOuterBlock=$attribute['outer_structure_block'];
-        $r .= data_entry_helper::outputAttribute($attribute, $defAttrOptions + self::getAttrValidation($attribute, $args));
-        $attribute['handled']=true;
-      }
-    }
-    if (!empty($lastInnerBlock)) {
-      $r .= '</fieldset>';
-    }
-    if (!empty($lastOuterBlock) && strcasecmp($outerFilter,$lastOuterBlock)!==0) {
-      $r .= '</fieldset>';
-    }
-    return $r;
-  }
-  
-  /**
-   * Internal function to build an id for a fieldset from the block nesting data. Giving them a unique id helps if 
-   * you want to do interesting things with JavaScript for example.
-   */
-  private static function get_fieldset_id($outerBlock, $innerBlock='') {
-    $parts = array('fieldset');
-    if (!empty($outerBlock)) $parts[]=$outerBlock;
-    if (!empty($innerBlock)) $parts[]=$innerBlock;
-    $r = implode('-', $parts);
-    // Make it lowercase and no whitespace
-    $r = strtolower(preg_replace('/\s+/', '-', $r));
-    return $r;
-  }
-   
+  }   
   
   /**
    * Handles the construction of a submission array from a set of form values.
@@ -1265,25 +1189,6 @@ class iform_mnhnl_dynamic_1 {
 	  $args['occurrence_comment'] == false; 
 	if (!isset($args['occurrence_images']))
 	  $args['occurrence_images'] == false; 
-  }
-
-/**
- * When attributes are fetched from the database the validation isn't passed through. In particular
- * validation isn't defined at a website/survey level yet, so validation may be specific to this form.
- * This allows the validation rules to be defined by a $args entry.
- */
-  private function getAttrValidation($attribute, $args) {
-    $rules = array();
-    $argRules = explode(';', $args['attributeValidation']);
-    foreach($argRules as $rule){
-      $rules[] = explode(',', $rule);
-    }
-    foreach($rules as $rule){
-      if($attribute['fieldname'] == $rule[0] || substr($attribute['fieldname'], 0, strlen($rule[0])+1) == $rule[0].':') {
-        return array('validation' => array_slice($rule, 1));
-      }
-    }
-    return array();
   }
 
   protected function getReportActions() {

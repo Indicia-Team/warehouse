@@ -108,17 +108,12 @@ class iform_distribution_map_1 {
           'group' => 'Click to Query Occurrences'
         ),
         array(
-          'name' => 'include_species_picker',
-          'caption' => 'Include species picker',
-          'description' => 'When Show all species is unchecked, use this setting to control the species picker that is available to the user.',
-          'type' => 'select',
-          'options' => array(
-            'none' => 'None',
-            'autocomplete' => 'Autocomplete',
-            'select' => 'Drop down'
-          ),
-          'default' => 'none',
-          'group' => 'Distribution Layer'
+          'name' => 'cql_filter',
+          'caption' => 'Distribution layer filter.',
+          'description' => 'Any additional filter to apply to the loaded data, using the CQL format. For example "record_status<>\'R\'"',
+          'type' => 'textarea',
+          'group' => 'Distribution Layer',
+          'required' => false
         ),
         array(
           'name' => 'require_go_button',
@@ -234,6 +229,8 @@ class iform_distribution_map_1 {
     data_entry_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
     if (!$args['show_all_species'])
       data_entry_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
+    if ($args['cql_filter']) 
+      data_entry_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
     data_entry_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
           '".$args['layer_title']."',
           '$url',

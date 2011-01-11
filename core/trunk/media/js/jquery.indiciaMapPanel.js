@@ -512,7 +512,9 @@
 
       // Centre the map
       var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
-      center.transform(div.map.displayProjection, div.map.projection);
+      if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
+        center.transform(div.map.displayProjection, div.map.projection);
+      }
       div.map.setCenter(center, this.settings.initial_zoom);
 
       if (this.settings.editLayer) {

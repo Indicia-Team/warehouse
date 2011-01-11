@@ -110,7 +110,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
       formatItem: formatter
     });
     ctrl.bind('result', handleSelectedTaxon);
-    ctrl.focus();    
+    setTimeout(function() { $('#' + ctrl.attr('id')).focus(); });
     // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
     if (scroll && ctrl.offset().top > $(window).scrollTop() + $(window).height() - 180) {
       var newTop = ctrl.offset().top - $(window).height() + 180;
