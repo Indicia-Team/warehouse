@@ -3818,6 +3818,31 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       rename($file.getmypid(),$file);
     }
   }
+  
+  /**
+   * Method which populates data_entry_helper::$entity_to_load with the values from an existing 
+   * record. Useful when reloading data to edit.
+   */
+  public static function load_existing_record($readAuth, $model, $id, $view='detail') {
+    $url = self::$base_url."index.php/services/data/$model/$id";
+    $url .= "?mode=json&view=$view&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce'];
+    $session = curl_init($url);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    $entity = json_decode(curl_exec($session), true);    
+    if (isset($entity['error'])) throw new Exception($entity['error']);
+    // populate the entity to load with the record data
+    foreach($entity[0] as $key => $value) {
+      self::$entity_to_load["$model:$key"] = $value;
+    }
+    if ($model=='sample') {
+      self::$entity_to_load['sample:geom'] = ''; // value received from db in geom is not WKT, which is assumed by all the code.
+      self::$entity_to_load['sample:date'] = self::$entity_to_load['sample:date_start']; // bit of a bodge to get around vague dates.
+    } elseif ($model=='occurrence') {
+      // prepare data to work in autocompletes
+      if (!empty(self::$entity_to_load['occurrence:taxon']) && empty(self::$entity_to_load['occurrence:taxa_taxon_list:taxon']))
+        self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon'] = self::$entity_to_load['occurrence:taxon'];    
+    }
+  }
 
   /**
    * Issue a post request to get the population data required for a control. Depends on the
@@ -4455,7 +4480,7 @@ if (errors.length>0) {
       }
     }
     foreach ($records as $id => $record) {
-      $present = self::wrap_species_checklist_record_present($record, $include_if_any_data);      
+      $present = self::wrap_species_checklist_record_present($record, $include_if_any_data);
       if (array_key_exists('id', $record) || $present) { // must always handle row if already present in the db
         if (!$present) {
           // checkboxes do not appear if not checked. If uncheck, delete record.
@@ -4571,7 +4596,7 @@ if (errors.length>0) {
           'fk' => 'occurrence_id'
       );
     }
-    return self::build_submission($values, $structure);
+    return submission_builder::build_submission($values, $structure);
   }
 
   /**
@@ -5325,6 +5350,7 @@ $('.ui-state-default').live('mouseout', function() {
         if(isset($item['id'])){
           $retVal[$item[$options['attrtable'].'_id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
           $retVal[$item[$options['attrtable'].'_id']]['default'] = $item['raw_value'];
+          $retVal[$item[$options['attrtable'].'_id']]['displayValue'] = $item['value'];
         }
       }
     }
