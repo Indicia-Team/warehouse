@@ -271,7 +271,7 @@ class ReportEngine {
   private function prepareColumns() {
     if (!isset($this->columns)) {
       $this->columns = $this->reportReader->getColumns();
-    }    
+    }
   }
   /**
    * Takes the data and columns lists, and carries out any post query processing.
