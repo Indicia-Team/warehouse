@@ -318,7 +318,7 @@ class iform_mnhnl_dynamic_1 {
           'caption'=>'Allowed Spatial Ref Systems',      
           'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
           'type'=>'string',
-          'group'=>'Map'
+          'group'=>'Other Map Settings'
         ),
         array(
           'name'=>'survey_id',

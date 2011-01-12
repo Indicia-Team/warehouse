@@ -126,7 +126,15 @@ function iform_map_get_map_parameters() {
       'type' => 'textarea',
       'group'=>'Advanced Base Map Layers',
       'required'=>false
-    )
+    ),
+    array(
+      'name' => 'indicia_wms_layers',
+      'caption' => 'WMS layers from GeoServer',
+      'description' => 'List of WMS feature type names, one per line, which are installed on the GeoServer and are to be added to the map as overlays.',
+      'type' => 'textarea',
+      'group'=>'Other Map Settings',
+      'required'=>false
+    ),
 
   );
 
@@ -212,6 +220,10 @@ function iform_map_get_map_options($args, $readAuth) {
   // Also add any tilecaches they have defined
   if ($args['tile_cache_layers']) {
     $options['tilecacheLayers'] = json_decode($args['tile_cache_layers'], true);
+  }
+  // And any indicia Wms layers from the GeoServer
+  if ($args['indicia_wms_layers']) {
+    $options['indiciaWMSLayers'] = explode("\n", $args['indicia_wms_layers']);
   }
   // And pass through any translation strings, only if they exist
   $msgGeorefSelectPlace = lang::get('LANG_Georef_SelectPlace');
