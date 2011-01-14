@@ -13,6 +13,18 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  */
 
+ /**
+ * Form submit handler that prevents the user clicking save during an upload
+ */
+checkSubmitInProgress = function () {
+  if ($('.file-box .progress').length!==0) {
+    alert('Please wait till your images have finished uploading before submitting the form.');
+    return false;
+  }
+  return true;
+};
+
+ 
 /**
 * Class: uploader
 * A jQuery plugin that provides an upload box for multiple images.
@@ -54,7 +66,7 @@
           .replace('{uploadStartBtn}', uploadStartBtn)
       );
       // Set up a resize object if required
-      var resize = (this.settings.resizeWidth!==0 && this.settings.resizeHeight!==0) ?
+      var resize = (this.settings.resizeWidth!==0 || this.settings.resizeHeight!==0) ?
           { width: this.settings.resizeWidth, height: this.settings.resizeHeight, quality: this.settings.resizeQuality } : null;
       this.uploader = new plupload.Uploader({
         runtimes : this.settings.runtimes,
@@ -113,6 +125,7 @@
       
       // Add a box to indicate a file that is added to the list to upload, but not yet uploaded.
       this.uploader.bind('FilesAdded', function(up, files) {
+        $(div).parents('form').bind('submit', checkSubmitInProgress);
         // Find any files over the upload limit
         var existingCount = $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').children().length;
         extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
@@ -186,6 +199,10 @@
           );
           // Copy the path into the hidden path input. Watch colon escaping for jQuery selectors.
           $('#' + div.settings.table.replace(/:/g,'\\:') + '\\:path\\:' + file.id).val(file.name);
+        }
+        // reset the form handler if this is the last upload in progress
+        if ($('.file-box .progress').length===0) {
+          $("form").unbind('submit', checkSubmitInProgress);
         }
       });
       

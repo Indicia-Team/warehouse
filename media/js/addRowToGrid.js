@@ -149,7 +149,7 @@ $('.remove-row').live('click', function(e) {
 $('.add-image-link').live('click', function(evt) {
   evt.preventDefault();
   var table = evt.target.id.replace('add-images','sc') + ':occurrence_image';
-  var ctrlId='container-'+table;
+  var ctrlId='container-'+table+'-'+Math.floor((Math.random())*0x10000);
   var colspan = $($(evt.target).parent().parent()).children().length;
   var imageRow = '<tr class="image-row"><td colspan="' + colspan + '">';
   imageRow += '<div class="file-box" id="' + ctrlId + '"></div>';
@@ -164,15 +164,19 @@ $('.add-image-link').live('click', function(evt) {
     startUploadBtnCaption : 'Start upload',
     msgUploadError : 'An error occurred uploading the file.',
     msgFileTooBig : 'The image file cannot be uploaded because it is larger than the maximum file size allowed.',
-    runtimes : 'html5,gears,browserplus,html4',
+    runtimes : 'html5,silverlight,flash,gears,browserplus,html4',
     imagewidth : '250',
-    uploadScript : uploadScript,
-    destinationFolder : destinationFolder,
-    swfAndXapFolder : swfAndXapFolder,
-    jsPath : jsPath,    
+    uploadScript : uploadSettings.uploadScript,
+    destinationFolder : uploadSettings.destinationFolder,
+    swfAndXapFolder : uploadSettings.swfAndXapFolder,
+    jsPath : uploadSettings.jsPath,    
     table : table,
-    maxUploadSize : '4M'
+    maxUploadSize : '4M',
+    container: ctrlId
   };
+  if (typeof uploadSettings.resizeWidth!="undefined") opts.resizeWidth=uploadSettings.resizeWidth;
+  if (typeof uploadSettings.resizeHeight!="undefined") opts.resizeHeight=uploadSettings.resizeHeight;
+  if (typeof uploadSettings.resizeQuality!="undefined") opts.resizeQuality=uploadSettings.resizeQuality;
   if (typeof buttonTemplate!="undefined") opts.buttonTemplate=buttonTemplate;
   if (typeof file_boxTemplate!="undefined") opts.file_boxTemplate=file_boxTemplate;
   if (typeof file_box_initial_file_infoTemplate!="undefined") opts.file_box_initial_file_infoTemplate=file_box_initial_file_infoTemplate;
