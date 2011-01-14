@@ -721,7 +721,7 @@ class data_entry_helper extends helper_config {
       'uploadScript' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . 'upload.php',
       'destinationFolder' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
-      'swfAndXapFolder' => $relpath . 'plupload/',
+      'swfAndXapFolder' => dirname($_SERVER['PHP_SELF']) . '/' .$relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
@@ -2586,6 +2586,14 @@ class data_entry_helper extends helper_config {
   * <li><b>occurrenceImages</b><br/>
   * Optional. If set to true, then images can be uploaded for each occurrence row. Currently not supported for 
   * multi-column grids.</li>
+  * <li><b>resizeWidth</b><br/>
+  * If set, then the image files will be resized before upload using this as the maximum pixels width.
+  * </li>
+  * <li><b>resizeHeight</b><br/>
+  * If set, then the image files will be resized before upload using this as the maximum pixels height.
+  * </li>
+  * <li><b>resizeQuality</b><br/>
+  * Defines the quality of the resize operation (from 1 to 100). Has no effect unless either resizeWidth or resizeHeight are non-zero.
   * <li><b>colWidths</b><br/>
   * Optional. Array containing percentage values for each visible column's width, with blank entries for columns that are not specified. If the array is shorter
   * than the actual number of columns then the remaining columns use the default width determined by the browser.</li>
@@ -2613,10 +2621,21 @@ class data_entry_helper extends helper_config {
       // store some globals that we need later when creating uploaders
       $relpath = self::relative_client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      self::$javascript .= "uploadScript = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "upload.php';\n";
-      self::$javascript .= "destinationFolder = '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder."';\n";
-      self::$javascript .= "swfAndXapFolder = '".$relpath . "plupload/';\n";
-      self::$javascript .= "jsPath = '".self::$js_path."';\n";
+      self::$javascript .= "uploadSettings = {\n";      
+      self::$javascript .= "  uploadScript: '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "upload.php',\n";
+      self::$javascript .= "  destinationFolder: '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder."',\n";
+      self::$javascript .= "  swfAndXapFolder: '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "plupload/',\n";
+      self::$javascript .= "  jsPath: '".self::$js_path."'";
+      if (isset($options['resizeWidth'])) {
+        self::$javascript .= ",\n  resizeWidth: ".$options['resizeWidth'];
+      }
+      if (isset($options['resizeHeight'])) {
+        self::$javascript .= ",\n  resizeHeight: ".$options['resizeHeight'];
+      }
+      if (isset($options['resizeQuality'])) {
+        self::$javascript .= ",\n  resizeQuality: ".$options['resizeQuality'];
+      }
+      self::$javascript .= "\n}\n";
       if ($indicia_templates['file_box']!='')
         self::$javascript .= "file_boxTemplate = '".str_replace('"','\"', $indicia_templates['file_box'])."';\n";
       if ($indicia_templates['file_box_initial_file_info']!='')
@@ -5022,7 +5041,7 @@ $('.ui-state-default').live('mouseout', function() {
         'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
         'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.validate.js')),
         'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
-            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js', self::$js_path.'/plupload/js/plupload.html4.js')),
+            self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.min.js')),
         'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(self::$js_path.'jqplot/jquery.jqplot.min.js','[IE]'.self::$js_path.'jqplot/excanvas.min.js')),
         'jqplot_bar' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.barRenderer.min.js')),
         'jqplot_pie' => array('javascript' => array(self::$js_path.'jqplot/plugins/jqplot.pieRenderer.min.js')),
