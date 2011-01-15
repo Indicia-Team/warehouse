@@ -309,7 +309,9 @@ $.extend($.validator, {
 			function delegate(event) {
 				var validator = $.data(this[0].form, "validator"),
 					eventType = "on" + event.type.replace(/^validate/, "");
-				if (validator.settings[eventType]) { validator.settings[eventType].call(validator, this[0] ); }
+        if (typeof validator != "undefined") {
+				  if (validator.settings[eventType]) { validator.settings[eventType].call(validator, this[0] ); }
+        }
 			}
 			$(this.currentForm)
 				.validateDelegate(":text, :password, :file, select, textarea", "focusin focusout keyup", delegate)

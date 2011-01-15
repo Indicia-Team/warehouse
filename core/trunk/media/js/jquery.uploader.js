@@ -150,11 +150,11 @@ checkSubmitInProgress = function () {
             file.name=plupload.guid() + '.jpg';
           }
           $('#' + file.id + ' .progress-percent').progressbar ({value: 0});
-          if (div.settings.resizeWidth!==0 && div.settings.resizeHeight!==0) {
-            $('#' + file.id + ' .progress-percent').html('Resizing...');
-          } else {
-            $('#' + file.id + ' .progress-percent').html('<img style="display: inline; margin: 4px;" src="'+Drupal.settings.basePath +'sites/all/modules/iform/media/images/ajax-loader.gif" width="16" height="16" alt="In progress"/><span>Uploading...</span>');
+          var msg='Resizing...';
+          if (div.settings.resizeWidth===0 || div.settings.resizeHeight===0 || typeof div.uploader.features.jpgresize == "undefined") {
+            msg='Uploading...';
           }
+          $('#' + file.id + ' .progress-percent').html('<img style="display: inline; margin: 4px;" src="'+Drupal.settings.basePath +'sites/all/modules/iform/media/images/ajax-loader.gif" width="16" height="16" alt="In progress"/><span>'+msg+'</span>');
         });
         
       });
