@@ -127,16 +127,21 @@ $('.remove-row').live('click', function(e) {
   // @todo unbind all event handlers
   var row = $(e.target.parentNode);
   if (row.next().find('.file-box').length>0) {
-    row.next().remove();
+    // hide the row containing the uploader, since removing it causes plupload errors
+    row.next().css('display','none');
   }
   if (row.hasClass('added-row')) {
     row.remove();
   } else {
-    // This was a pre-existing occurrence so we can't just delete the row from the grid.
+    // This was a pre-existing occurrence so we can't just delete the row from the grid. Grey it out
     row.css('opacity',0.25);
-    row.attr('disabled','disabled');  
-    // Append an input marking this occurrence as deleted to the table
+    // Use the presence checkbox to remove the taxon, even if the checkbox is hidden.
     row.find('.scPresence').attr('checked',false);
+    // Hide the checkbox so this can't be undone
+    row.find('.scPresence').css('display','none');
+    // disable or remove all other active controls from the row.
+    row.find('*:not(.scPresence)').attr('disabled','disabled');
+    row.find('a').remove();
   }
 });
 
