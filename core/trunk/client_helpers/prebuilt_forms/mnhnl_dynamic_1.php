@@ -429,7 +429,7 @@ class iform_mnhnl_dynamic_1 {
         $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
         $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
       }
-      $r .= "<div id=\"sampleList\">".self::getSampleListGrid($args, $node, $auth, $attributes)."</div>";
+      $r .= "<div id=\"sampleList\">".call_user_func(array(get_called_class(), 'getSampleListGrid'), $args, $node, $auth, $attributes)."</div>";
       if($args['includeLocTools'] && iform_loctools_checkaccess($node,'admin')){
         $r .= '
   <div id="setLocations">
@@ -1110,7 +1110,7 @@ class iform_mnhnl_dynamic_1 {
   /**
    * When viewing the list of samples for this user, get the grid to insert into the page.
    */
-  private static function getSampleListGrid($args, $node, $auth, $attributes) {
+  protected static function getSampleListGrid($args, $node, $auth, $attributes) {
     global $user;
     // get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
