@@ -244,6 +244,80 @@ deleteSurvey = function(sampleID){
     return array('mnhnl_butterflies.css');
   }
 
+  /**
+   * When viewing the list of samples for this user, get the grid to insert into the page.
+   */
+  protected static function getSampleListGrid($args, $node, $auth, $attributes) {
+  	global $user;
+    // get the CMS User ID attribute so we can filter the grid to this user
+    foreach($attributes as $attrId => $attr) {
+      if (strcasecmp($attr['caption'],'CMS User ID')==0) {
+        $userIdAttr = $attrId;
+        break;
+      }
+    }
+    foreach($attributes as $attrId => $attr) {
+      if (strcasecmp($attr['caption'],'CMS Username')==0) {
+        $userNameAttr = $attrId;
+        break;
+      }
+    }
+    foreach($attributes as $attrId => $attr) {
+      if (strcasecmp($attr['caption'],'Observer')==0) {
+        $observerAttr = $attrId;
+        break;
+      }
+    }
+    if ($user->uid===0) {
+      // Return a login link that takes you back to this form when done.
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+    }
+    if (!isset($userIdAttr)) {
+      return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
+          'be tagged against their creator.');
+    }
+    if (!isset($userNameAttr)) {
+      return lang::get('This form must be used with a survey that has the CMS User Name attribute associated with it so records can '.
+          'be tagged against their creator.');
+    }
+    if (!isset($observerAttr)) {
+      return lang::get('This form must be used with a survey that has the Observer attribute associated with it so records can '.
+          'be tagged against their Observer.');
+    }
+    if (isset($args['grid_report']))
+      $reportName = $args['grid_report'];
+    else
+      // provide a default in case the form settings were saved in an old version of the form
+      $reportName = 'reports_for_prebuilt_forms/mnhnl_butterflies';
+    $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
+    $r .= data_entry_helper::report_grid(array(
+      'id' => 'samples-grid',
+      'dataSource' => $reportName,
+      'mode' => 'report',
+      'readAuth' => $auth['read'],
+      'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
+      'itemsPerPage' =>10,
+      'autoParamsForm' => true,
+      'extraParams' => array(
+        'survey_id'=>$args['survey_id'], 
+        'userID_attr_id'=>$userIdAttr,
+        'userID'=>(iform_loctools_checkaccess($node,'superuser') ? -1 :  $user->uid), // use -1 if superuser - non logged in will not get this far.
+        'userName_attr_id'=>$userNameAttr,
+        'userName'=>($user->name),
+        'observer_attr_id'=>$observerAttr
+    )
+    ));	
+    $r .= '<form>';    
+    if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Grid').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample&gridmode')).'\'">';
+    } else {
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
+    }
+    $r .= '</form>';
+    return $r;
+  }
+
   /* data_entry_helper::$entity_to_load holds the data to store, but comes in three flavours:
    * empty: brand new, no data
    * sample_id specified: editing existing record, only holds the top level sample data.
