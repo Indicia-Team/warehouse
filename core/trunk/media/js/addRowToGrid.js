@@ -149,7 +149,6 @@ $('.remove-row').live('click', function(e) {
  * Click handler for the add image link that is displayed alongside each occurrence row in the grid once 
  * it has been linked to a taxon. Adds a row to the grid specifically to contain a file uploader for images
  * linked to that occurrence.
- * @todo Check why flash and silverlight are not working in the grid, and re-instate in the runtimes if possible
  */
 $('.add-image-link').live('click', function(evt) {
   evt.preventDefault();
