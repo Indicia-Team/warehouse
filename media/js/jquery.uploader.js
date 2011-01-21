@@ -79,6 +79,7 @@ checkSubmitInProgress = function () {
         filters : [
           {title : "Image files", extensions : "jpg,gif,png,jpeg"}
         ],
+        chunk_size: '1MB',
         // limit the max file size to the Indicia limit, unless it is first resized.
         max_file_size : resize ? '10mb' : plupload.formatSize(this.settings.maxUploadSize)
       });
