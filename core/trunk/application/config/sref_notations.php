@@ -30,6 +30,7 @@ defined('SYSPATH') or die('No direct script access.');
 $config['sref_notations'] = array
 (
   'osgb'=>'British National Grid',
+  'osie'=>'Irish Grid (TM75)',
   '4326'=>'Latitude and Longitude (WGS84)',
 );
 
