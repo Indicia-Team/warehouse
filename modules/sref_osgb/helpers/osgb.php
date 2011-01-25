@@ -109,6 +109,8 @@ class osgb {
 		$point = explode(' ',$points[0]);
 		$easting = $point[0];
 		$northing = $point[1];
+    if ($easting < 0 || $easting > 700000 || $northing < 0 || $northing > 1300000)
+				throw new Exception('wkt_to_sref translation is outside range of grid.');
 		if ($precision===null) {
 			// find the distance in metres from point 2 to point 1 (assuming a square is passed).
 			// This is the accuracy of the polygon.
