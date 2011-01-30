@@ -1717,6 +1717,8 @@ class data_entry_helper extends helper_config {
     $imagePath = self::get_uploaded_image_folder();
     $currentUrl = self::get_reload_link_parts();
     $relpath = self::relative_client_helper_path();
+    $rootFolder = dirname($_SERVER['PHP_SELF']);
+    if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
     if (count($records)>0) {
       foreach ($records as $rowIdx => $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
@@ -1724,7 +1726,7 @@ class data_entry_helper extends helper_config {
           break;
         // Put some extra useful paths into the row data, so it can be used in the templating
         $row = array_merge($row, array(
-            'rootFolder'=>dirname($_SERVER['PHP_SELF']) . '/',
+            'rootFolder'=>$rootFolder,
             'imageFolder'=>$imagePath,
             // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
             // the url is being rewritten.
@@ -1797,7 +1799,7 @@ class data_entry_helper extends helper_config {
   extraParams: ".json_encode($options['extraParams']).",
   callback: '".$options['callback']."',
   url: '".parent::$base_url."',
-  rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
+  rootFolder: '".$rootFolder."/',
   imageFolder: '".self::get_uploaded_image_folder()."',
   currentUrl: '".$currentUrl['path']."',
   galleryColCount: ".$options['galleryColCount'].",
