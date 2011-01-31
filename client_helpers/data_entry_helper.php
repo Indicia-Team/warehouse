@@ -718,10 +718,10 @@ class data_entry_helper extends helper_config {
       'runtimes' => array('html5','silverlight','flash','gears','browserplus','html4'),
       'autoupload' => true,
       'imagewidth' => 250,
-      'uploadScript' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . 'upload.php',
-      'destinationFolder' => dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder,
+      'uploadScript' => self::getRootFolder() . $relpath . 'upload.php',
+      'destinationFolder' => self::getRootFolder() . $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
-      'swfAndXapFolder' => dirname($_SERVER['PHP_SELF']) . '/' .$relpath . 'plupload/',
+      'swfAndXapFolder' => self::getRootFolder() .$relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
@@ -729,7 +729,7 @@ class data_entry_helper extends helper_config {
       'codeGenerated' => 'all'
     );
     if (isset(self::$final_image_folder_thumbs)) 
-      $defaults['finalImageFolderThumbs'] = dirname($_SERVER['PHP_SELF']) . '/' . self::relative_client_helper_path() . self::$final_image_folder_thumbs;
+      $defaults['finalImageFolderThumbs'] = self::getRootFolder() . self::relative_client_helper_path() . self::$final_image_folder_thumbs;
     $browser = self::get_browser_info();
     // Flash doesn't seem to work on IE6.
     if ($browser['name']=='msie' && $browser['version']<7)
@@ -813,7 +813,7 @@ class data_entry_helper extends helper_config {
     if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
       return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     else {
-      return dirname($_SERVER['PHP_SELF']) . '/' . self::relative_client_helper_path() . self::$final_image_folder;
+      return self::getRootFolder() . self::relative_client_helper_path() . self::$final_image_folder;
     }      
   }
 
@@ -882,7 +882,7 @@ class data_entry_helper extends helper_config {
     // If the lookup service driver uses cross domain JavaScript, this setting provides
     // a path to a simple PHP proxy script on the server.
     self::$javascript .= "$.fn.indiciaMapPanel.georeferenceLookupSettings.proxy='".
-        dirname($_SERVER['PHP_SELF']) . '/' . self::relative_client_helper_path() . "proxy.php';\n\n";
+        self::getRootFolder() . self::relative_client_helper_path() . "proxy.php';\n\n";
     return self::apply_template('georeference_lookup', $options);
   }
 
@@ -1716,9 +1716,7 @@ class data_entry_helper extends helper_config {
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
     $currentUrl = self::get_reload_link_parts();
-    $relpath = self::relative_client_helper_path();
-    $rootFolder = dirname($_SERVER['PHP_SELF']);
-    if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
+    $relpath = self::relative_client_helper_path();    
     if (count($records)>0) {
       foreach ($records as $rowIdx => $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
@@ -1726,7 +1724,7 @@ class data_entry_helper extends helper_config {
           break;
         // Put some extra useful paths into the row data, so it can be used in the templating
         $row = array_merge($row, array(
-            'rootFolder'=>$rootFolder,
+            'rootFolder'=>self::getRootFolder(),
             'imageFolder'=>$imagePath,
             // allow the current URL to be replaced into an action link. We extract url parameters from the url, not $_GET, in case
             // the url is being rewritten.
@@ -1799,7 +1797,7 @@ class data_entry_helper extends helper_config {
   extraParams: ".json_encode($options['extraParams']).",
   callback: '".$options['callback']."',
   url: '".parent::$base_url."',
-  rootFolder: '".$rootFolder."/',
+  rootFolder: '".self::getRootFolder()."',
   imageFolder: '".self::get_uploaded_image_folder()."',
   currentUrl: '".$currentUrl['path']."',
   galleryColCount: ".$options['galleryColCount'].",
@@ -1814,6 +1812,15 @@ class data_entry_helper extends helper_config {
       self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
 });\n";
     return $r;
+  }
+  
+  /**
+  * Internal function to find the path to the root of the site, including the trailing slash.
+  */  
+  private static function getRootFolder() {
+    $rootFolder = dirname($_SERVER['PHP_SELF']);
+    if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
+    return $rootFolder;
   }
   
   /**
@@ -2624,9 +2631,9 @@ class data_entry_helper extends helper_config {
       $relpath = self::relative_client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
       self::$javascript .= "uploadSettings = {\n";      
-      self::$javascript .= "  uploadScript: '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "upload.php',\n";
-      self::$javascript .= "  destinationFolder: '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . $interim_image_folder."',\n";
-      self::$javascript .= "  swfAndXapFolder: '".dirname($_SERVER['PHP_SELF']) . '/' . $relpath . "plupload/',\n";
+      self::$javascript .= "  uploadScript: '".self::getRootFolder() . $relpath . "upload.php',\n";
+      self::$javascript .= "  destinationFolder: '".self::getRootFolder() . $relpath . $interim_image_folder."',\n";
+      self::$javascript .= "  swfAndXapFolder: '".self::getRootFolder() . $relpath . "plupload/',\n";
       self::$javascript .= "  jsPath: '".self::$js_path."'";
       if (isset($options['resizeWidth'])) {
         self::$javascript .= ",\n  resizeWidth: ".$options['resizeWidth'];
