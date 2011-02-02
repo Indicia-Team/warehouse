@@ -2872,7 +2872,7 @@ class data_entry_helper extends helper_config {
         }
       }
     }
-    return count($occurrenceIds);
+    return $occurrenceIds;
   }
 
   /**
