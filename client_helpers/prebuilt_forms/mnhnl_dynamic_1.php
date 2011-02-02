@@ -35,7 +35,7 @@ require_once('includes/form_generation.php');
 class iform_mnhnl_dynamic_1 {
 
   // A list of the taxon ids we are loading
-  private static $occurrenceIds = array();
+  protected static $occurrenceIds = array();
 
   protected static $auth = array();
   
@@ -617,7 +617,7 @@ class iform_mnhnl_dynamic_1 {
   /** 
    * Implement the link_species_popups parameter. This hides any identified blocks and pops them up when a certain species is entered.
    */
-  private static function link_species_popups($args) {
+  protected static function link_species_popups($args) {
     $r='';
     if (isset($args['link_species_popups']) && !empty($args['link_species_popups'])) {
       data_entry_helper::add_resource('fancybox');
@@ -649,7 +649,7 @@ class iform_mnhnl_dynamic_1 {
     return $r;
   }
   
-  private static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
+  protected static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
     $defAttrOptions = array('extraParams'=>$auth['read']);
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
@@ -696,7 +696,7 @@ class iform_mnhnl_dynamic_1 {
   /**
    * Finds the list of tab names that are going to be required by the custom attributes.
    */
-  private static function get_attribute_tabs(&$attributes) {
+  protected static function get_attribute_tabs(&$attributes) {
     $r = array();
     foreach($attributes as &$attribute) {
       // Assign any ungrouped attributes to a block called Other Information 
@@ -713,7 +713,7 @@ class iform_mnhnl_dynamic_1 {
    * Finds the list of all tab names that are going to be required, either by the form
    * structure, or by custom attributes.
    */
-  private static function get_all_tabs($structure, $attrTabs) {
+  protected static function get_all_tabs($structure, $attrTabs) {
     $structureArr = explode("\r\n", $structure);
     $structureTabs = array();
     foreach ($structureArr as $component) {
@@ -748,7 +748,7 @@ class iform_mnhnl_dynamic_1 {
   /** 
    * Get the map control.
    */
-  private static function get_control_map($auth, $args, $tabalias, $options) {
+  protected static function get_control_map($auth, $args, $tabalias, $options) {
     $options = array_merge(
       iform_map_get_map_options($args, $auth['read']),
       $options
@@ -765,7 +765,7 @@ class iform_mnhnl_dynamic_1 {
   /**
    * Get the control for species input, either a grid or a single species input control.
    */
-  private static function get_control_species($auth, $args, $tabalias, $options) {
+  protected static function get_control_species($auth, $args, $tabalias, $options) {
     $extraParams = $auth['read'];
     if ($args['species_names_filter']=='preferred') {
       $extraParams += array('preferred' => 't');
@@ -773,7 +773,7 @@ class iform_mnhnl_dynamic_1 {
     if ($args['species_names_filter']=='language') {
       $extraParams += array('language' => iform_lang_iso_639_2($user->lang));
     }  
-    if (self::getGridMode($args)) {      
+    if (call_user_func(array(get_called_class(), 'getGridMode'), $args)) {      
       // multiple species being input via a grid      
       $species_ctrl_opts=array_merge(array(
           'listId'=>$args['list_id'],
@@ -796,7 +796,7 @@ class iform_mnhnl_dynamic_1 {
       return '<input type="hidden" value="true" name="gridmode" />'.
           data_entry_helper::species_checklist($species_ctrl_opts);
     }
-    else {      
+    else {
       // A single species entry control of some kind
       if (count(self::$occurrenceIds)==1)
         // output a hidden input to contain the occurrence id
@@ -835,7 +835,7 @@ class iform_mnhnl_dynamic_1 {
    * Build a PHP function  to format the species added to the grid according to the form parameters
    * autocomplete_include_both_names and autocomplete_include_taxon_group.
    */
-  private static function build_grid_autocomplete_function($args) {
+  protected static function build_grid_autocomplete_function($args) {
     global $indicia_templates;  
     // always include the searched name
     $fn = "function(item) { \n".
@@ -867,7 +867,7 @@ class iform_mnhnl_dynamic_1 {
    * Build a JavaScript function  to format the autocomplete item list according to the form parameters
    * autocomplete_include_both_names and autocomplete_include_taxon_group.
    */
-  private static function build_grid_taxon_label_function($args) {
+  protected static function build_grid_taxon_label_function($args) {
     global $indicia_templates;  
     // always include the searched name
     $php = '$r="";'."\n".
@@ -908,7 +908,7 @@ class iform_mnhnl_dynamic_1 {
    * Get the block of custom attributes at the species (occurrence) level
    */
   private static function get_control_speciesattributes($auth, $args, $tabalias, $options) {
-    if (!self::getGridMode($args)) {  
+    if (!(call_user_func(array(get_called_class(), 'getGridMode'), $args))) {  
       // Add any dynamically generated controls
       $attrArgs = array(
          'valuetable'=>'occurrence_attribute_value',
@@ -1076,7 +1076,7 @@ class iform_mnhnl_dynamic_1 {
   /**
    * Convert the unstructured textarea of default values into a structured array.
    */
-  private static function parse_defaults(&$args) {
+  protected static function parse_defaults(&$args) {
     $result=array();
     if (isset($args['defaults'])) {
       $defaults = explode("\n", $args['defaults']);
@@ -1091,7 +1091,7 @@ class iform_mnhnl_dynamic_1 {
   /**
    * Returns true if this form should be displaying a multipled occurrence entry grid.
    */
-  private static function getGridMode($args) {
+  protected static function getGridMode($args) {
     // if loading an existing sample and we are allowed to display a grid or single species selector
     if ($args['multiple_occurrence_mode']=='either') {
       // Either we are in grid mode because we were instructed to externally, or because the form is reloading
@@ -1166,7 +1166,7 @@ class iform_mnhnl_dynamic_1 {
    * parameters unless the Edit and Save button is clicked. So, apply some defaults to keep those old forms
    * working.
    */
-  private function getArgDefaults(&$args) {
+  protected function getArgDefaults(&$args) {
      if (!isset($args['structure']) || empty($args['structure']))
       $args['structure'] = "=Species=\r\n".
               "?Please enter the species you saw and any other information about them.?\r\n".
