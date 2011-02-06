@@ -29,7 +29,7 @@
     function _enableMMLandranger() {
       // Don't do this if the MM script is not linked up properly, otherwise we get a JS
       // exception and the other scripts stop running
-      if (typeof MMDataResolver != "undefined") {
+      if (typeof MMDataResolver !== "undefined") {
         var landrangerData = 904;
         var prefs = MMDataResolver.getDataPreferences(MM_WORLD_MAP);
 
@@ -432,7 +432,10 @@
       olOptions.maxExtent = new OpenLayers.Bounds(olOptions.maxExtent[0], olOptions.maxExtent[1],
             olOptions.maxExtent[2], olOptions.maxExtent[3]);
     }
-
+    // set the image path otherwise Drupal js optimisation can move the script relative to the images.
+    if (!OpenLayers.ImgPath && opts.jsPath) {
+      OpenLayers.ImgPath=opts.jsPath + 'img/';
+    }
     return this.each(function() {
       this.settings = opts;
 

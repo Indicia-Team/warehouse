@@ -1323,7 +1323,8 @@ class data_entry_helper extends helper_config {
           'class'=>'',
           'width'=>600,
           'height'=>470,
-          'presetLayers'=>$presetLayers
+          'presetLayers'=>$presetLayers,
+          'jsPath'=>self::getRootFolder().self::$js_path
       ), $options);
       // When using tilecache layers, the open layers defaults cannot be used. The caller must take control of openlayers settings
       if (isset($options['tilecacheLayers'])) {
