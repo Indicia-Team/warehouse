@@ -1581,9 +1581,11 @@ class data_entry_helper extends helper_config {
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
   *      values for caption, url, urlParams, class and javascript. The javascript, url and urlParams values can all use the
   *      field names from the report in braces as substitutions, for example {id} is replaced by the value of the field
-  *      called id in the respective row. In addition, the url can use {currentUrl} to represent the current page's URL,
-  *      {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
-  *      {imageFolder} for the image upload folder.
+  *      called id in the respective row. For the javascript, any single quotes in the substituted values are escaped with a 
+  *      backslash so you can embed the substituted value in a function call which uses single quote delimiters for strings. E.g.
+  *      alert('{site_name}') for site name Merry's Woods would be substituted to create the JavaScript alert('Merry\'s Woods').
+  *      In addition, the url can use {currentUrl} to represent the current page's URL, {rootFolder} to represent the folder on 
+  *      the server that the current PHP page is running from, and {imageFolder} for the image upload folder.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *  of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
@@ -2041,7 +2043,12 @@ class data_entry_helper extends helper_config {
         $href='';
       }
       if (isset($action['javascript'])) {
-        $onclick=' onclick="'.self::mergeParamsIntoTemplate($row,$action['javascript'],true).'"';
+        // escape any single quotes in the javascript so it can be kepy valid.
+        $rowCopy = array_merge($row);
+        foreach ($rowCopy as $field=>&$value) {
+          $value = str_replace("t","tt",$value);
+        }
+        $onclick=' onclick="'.self::mergeParamsIntoTemplate($rowCopy,$action['javascript'],true).'"';
       } else {
         $onclick = '';
       }
