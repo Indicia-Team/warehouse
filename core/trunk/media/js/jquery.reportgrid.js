@@ -159,7 +159,11 @@ var report_grid_sortdir = '';
       var result='', onclick, href;
       $.each(actions, function(idx, action) {
         if (typeof action.javascript != "undefined") {
-          onclick=' onclick="' + mergeParamsIntoTemplate(div, row, action.javascript) + '"';
+          var rowCopy = row;
+          $.each(rowCopy, function(idx) {
+            rowCopy[idx] = rowCopy[idx].replace(/'/g,"\\'");
+          });
+          onclick=' onclick="' + mergeParamsIntoTemplate(div, rowCopy, action.javascript) + '"';
         } else {
           onclick='';
         }
