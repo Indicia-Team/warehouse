@@ -2046,7 +2046,7 @@ class data_entry_helper extends helper_config {
         // escape any single quotes in the javascript so it can be kepy valid.
         $rowCopy = array_merge($row);
         foreach ($rowCopy as $field=>&$value) {
-          $value = str_replace("t","tt",$value);
+          $value = str_replace("'","\\'",$value);
         }
         $onclick=' onclick="'.self::mergeParamsIntoTemplate($rowCopy,$action['javascript'],true).'"';
       } else {
