@@ -167,5 +167,5 @@ foreach ($values['attributes'] as $attr) {
  </div> 
  <?php endif; ?>
  </div>
- <?php echo html::form_buttons($id!=null); ?>
+ <?php echo html::form_buttons($id!=null, false, false); ?>
  

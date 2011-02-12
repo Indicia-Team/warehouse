@@ -233,5 +233,5 @@ echo $values['comments'];
 <div id="images">
 </div>
 </div>
-<?php echo html::form_buttons(html::initial_value($values, 'occurrence:id')!=null); ?>
+<?php echo html::form_buttons(html::initial_value($values, 'occurrence:id')!=null, false, false); ?>
 </form>

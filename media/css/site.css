@@ -196,6 +196,12 @@ fieldset.button-set {
 	border: none !important;
 }
 
+fieldset.button-set label, fieldset.button-set select {
+  width: auto !important;
+  vertical-align: middle;
+  margin: 0 0.5em;
+}
+
 .page-notice {
   margin-bottom: 1em;
   padding: 0.3em;

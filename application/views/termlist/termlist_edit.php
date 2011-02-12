@@ -98,7 +98,7 @@ if ($parent_id != null) : ?>
 </ol>
 </fieldset>
 <?php
-echo html::form_buttons(html::initial_value($values, 'termlist:id')!=null && html::initial_value($values, 'termlist:id')!='');  
+echo html::form_buttons(html::initial_value($values, 'termlist:id')!=null && html::initial_value($values, 'termlist:id')!='', false, false);  
 echo html::error_message($model->getError('deleted')); 
 ?>
 </form>

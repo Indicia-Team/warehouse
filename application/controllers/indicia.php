@@ -262,10 +262,10 @@ class Indicia_Controller extends Template_Controller {
   public function save()
   {
     if (!$this->page_authorised()) {
-	  $this->session->set_flash('flash_error', "You appear to be attempting to edit a page you do not have rights to.");
-	  $this->redirectToIndex();
-	}
-	elseif ($_POST['submit']=='Cancel') {
+      $this->session->set_flash('flash_error', "You appear to be attempting to edit a page you do not have rights to.");
+      $this->redirectToIndex();
+    }
+    elseif ($_POST['submit']=='Cancel') {      
       $this->redirectToIndex();
     } else {
       // Are we editing an existing record? If so, load it.
@@ -370,6 +370,9 @@ class Indicia_Controller extends Template_Controller {
    * @access private   
    */
   private function redirectToIndex() {
+    // What to do next setting needs to be kept between sessions as it persists after the redirect, so 
+    // we can repopulate the select on data entry forms with the previuos value
+    if (isset($_POST['what-next'])) $_SESSION['what-next'] = $_POST['what-next'];
     if(isset($_POST['return_url'])) {
       url::redirect($_POST['return_url']);
     } else {
@@ -446,7 +449,12 @@ class Indicia_Controller extends Template_Controller {
    * (i.e. the controller's index page) but can be forced elsewhere by overriding this method.
    */
   protected function get_return_page() {
-    return $this->model->object_name;
+    $r = $this->model->object_name;
+    if (isset($_POST['what-next'])) {
+      if ($_POST['what-next']=='add') $r .= '/create';      
+    }
+    return $r;
+    
   }
 
   /**

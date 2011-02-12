@@ -228,11 +228,17 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    * Override the default return page behaviour so that after saving a term you
    * are returned to the list of terms on the sub-tab of the list.
    */
-  protected function get_return_page() {
-    if (array_key_exists('termlists_term:termlist_id', $_POST))
-      // after saving a record, the list id to return to is in the POST data
+  protected function get_return_page() {    
+    if (array_key_exists('termlists_term:termlist_id', $_POST)) {
+      // after saving a record, the list id to return to is in the POST data    
+      // user may select to continue adding new terms
+      if (isset($_POST['what-next'])) {
+        if ($_POST['what-next']=='add')
+          return 'termlists_term/create/'.$_POST['termlists_term:termlist_id'];      
+      }
+      // or just return to the list page
       return "termlist/edit/".$_POST['termlists_term:termlist_id']."?tab=terms";
-    elseif (array_key_exists('termlists_term:termlist_id', $_GET))
+    } elseif (array_key_exists('termlists_term:termlist_id', $_GET))
       // after uploading records, the list id is in the URL get parameters
       return "termlist/edit/".$_GET['termlists_term:termlist_id']."?tab=terms";
     else

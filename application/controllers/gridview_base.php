@@ -459,7 +459,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     } else {
       unlink($errorFile);
       $this->session->set_flash('flash_info', "The upload was successful. $count records were uploaded.");
-      url::redirect($this->get_return_page());
+      $this->redirectToIndex();
     }
   }
   

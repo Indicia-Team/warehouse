@@ -251,8 +251,9 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   }
   
   protected function get_return_page() {
-    if (array_key_exists('survey_id', $_POST)) {
-      return 'attribute_by_survey/'.$_POST['survey_id'].'?type='.$this->type;      
+    $surveyPostKey = $this->type.'_attributes_website:restrict_to_survey_id';
+    if (isset($_POST[$surveyPostKey])) {
+      return 'attribute_by_survey/'.$_POST[$surveyPostKey].'?type='.$this->type;      
     } else {
       // If $_POST data not available, then just return to the survey list. Shouldn't really happen.
       return 'survey';

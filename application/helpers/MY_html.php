@@ -63,10 +63,10 @@ class html extends html_Core {
            } else {       
              $caption = self::leadingCaps("$prefix $fieldname").$captionSuffix;
            }      
-           $r .= self::model_field_option($field, $caption, $selected);
+           $r .= self::model_field_option($field, $caption, $selected, $model->object_name);
 		 }
        } else {
-         $r .= self::model_field_option($field, $caption, $selected);
+         $r .= self::model_field_option($field, $caption, $selected, $model->object_name);
        }
      }
 	 return $r;
@@ -76,8 +76,15 @@ class html extends html_Core {
    * Private method to build a single select option for the model field options. 
    * Option is selected if selected=caption (case insensitive).
    */
-  private static function model_field_option($field, $caption, $selected) {
+  private static function model_field_option($field, $caption, $selected, $modelName) {
     $selHtml = (strcasecmp($caption,$selected)==0) ? ' selected="selected"' : '';
+    // look in the translation settings to see if this column name needs overriding
+    $langKey = "$modelName.$caption";
+    $trans = kohana::lang($langKey);
+    // Only update the caption if this actually did anything
+    if ($trans != $langKey) {
+      $caption=$trans;
+    }
     return '<option value="'.self::specialchars($field)."\"$selHtml>".self::specialchars($caption).'</option>';
   }
 
@@ -135,17 +142,32 @@ class html extends html_Core {
     * 
     * @param boolean $allowDelete If true, then a delete button is included in the output.
     * @param boolean $readOnly If true, then the only button is a form cancel button.
+    * @param boolean $allowUserSelectNextPage If true then then a select control is output which lets the user define
+    * whether to continue adding records on the add new page or to return the index page for the current model.
     */
-   public static function form_buttons($allowDelete, $readOnly=false) {      
+   public static function form_buttons($allowDelete, $readOnly=false, $allowUserSelectNextPage=true) {      
      $r = '<fieldset class="button-set">'."\n";
      if ($readOnly) {
        $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.cancel').'" class="ui-corner-all ui-state-default button" />'."\n";
        
      } else {
-     $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.save').'" class="ui-corner-all ui-state-default button ui-priority-primary" />'."\n"; 
+       $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.save').'" class="ui-corner-all ui-state-default button ui-priority-primary" />'."\n"; 
        $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.cancel').'" class="ui-corner-all ui-state-default button" />'."\n";
        if ($allowDelete) {
          $r .= '<input type="submit" name="submit" value="'.kohana::lang('misc.delete').'" onclick="if (!confirm(\''.kohana::lang('misc.confirm_delete').'\')) {return false;}" class="ui-corner-all ui-state-default button" />'."\n";
+       }
+       // add a drop down to select action after submit clicked. Needs to remember its previous setting from the session, 
+       // since we normally arrive here after a redirect.
+       if (isset($_SESSION['what-next']) && $_SESSION['what-next']=='add') {
+         $selAdd = ' selected="selected"';
+         $selReturn='';
+       } else {
+         $selAdd = '';
+         $selReturn=' selected="selected"';
+       }
+       if ($allowUserSelectNextPage) {
+         $r .= '<label for="next-action">'.kohana::lang('misc.then').'</label>';
+         $r .= '<select id="what-next" name="what-next"><option value="return"'.$selReturn.'>go back to the list</option><option value="add"'.$selAdd.'>add new</option></select>';
        }
      }
      $r .= '</fieldset>';
