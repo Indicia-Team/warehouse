@@ -159,5 +159,5 @@ foreach ($other_data['controlTypes'] as $controlType) {
 </select>
 <?php
 echo $metadata;
-echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null);
+echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null, false, false);
 ?></form>

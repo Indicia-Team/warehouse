@@ -224,10 +224,16 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    * are returned to the list of taxa on the sub-tab of the list.
    */
   protected function get_return_page() {
-    if (array_key_exists('taxa_taxon_list:taxon_list_id', $_POST))
-      // after saving a record, the list id to return to is in the POST data
+    if (array_key_exists('taxa_taxon_list:taxon_list_id', $_POST)) {
+      // after saving a record, the list id to return to is in the POST data.
+      // user may select to continue adding new taxa
+      if (isset($_POST['what-next'])) {
+        if ($_POST['what-next']=='add')
+          return 'taxa_taxon_list/create/'.$_POST['taxa_taxon_list:taxon_list_id'];      
+      }
+      // or just return to the list page
       return "taxon_list/edit/".$_POST['taxa_taxon_list:taxon_list_id']."?tab=taxa";
-    elseif (array_key_exists('taxa_taxon_list:taxon_list_id', $_GET))
+    } elseif (array_key_exists('taxa_taxon_list:taxon_list_id', $_GET))
       // after uploading records, the list id is in the URL get parameters
       return "taxon_list/edit/".$_GET['taxa_taxon_list:taxon_list_id']."?tab=taxa";
     else

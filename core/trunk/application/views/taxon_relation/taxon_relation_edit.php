@@ -128,5 +128,5 @@ $(document).ready(function() {
 
 </ol>
 </fieldset>
-<?php echo html::form_buttons($id!=null); ?>
+<?php echo html::form_buttons($id!=null, false, false); ?>
 </form>

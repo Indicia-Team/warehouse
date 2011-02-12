@@ -48,7 +48,6 @@ echo data_entry_helper::sref_and_system(array(
 echo data_entry_helper::species_checklist(array(
     'listId'=>$config['species_checklist_taxon_list'],
     'lookupListId'=>$config['species_checklist_alt_list'],
-    'occAttrs'=>$config['species_checklist_occ_attributes'],
     'extraParams'=>$readAuth,
 	  'survey_id'=>$config['survey_id']
 ));
