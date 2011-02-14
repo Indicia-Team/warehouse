@@ -100,6 +100,7 @@ function get_fieldset_id($outerBlock, $innerBlock='') {
   if (!empty($outerBlock)) $parts[]=$outerBlock;
   if (!empty($innerBlock)) $parts[]=$innerBlock;
   $r = implode('-', $parts);
+  $r = substr($r, 0, 30);
   // Make it lowercase and no whitespace
   $r = strtolower(preg_replace('/\s+/', '-', $r));
   return $r;
