@@ -503,7 +503,7 @@
 
       div.map.addLayers(this.settings.layers);
 
-      // This hack fixes an IE8  bug where it won't display Google layers when switching using the Layer Switcher.
+      // This hack fixes an IE8 bug where it won't display Google layers when switching using the Layer Switcher.
       div.map.events.register('changebaselayer', null, function(e) {
         // trigger layer redraw by changing the map size
         div.style.height = (parseInt(div.style.height)-1) + 'px';
@@ -573,7 +573,7 @@
               'click': this.onClick
             }, handlerOptions);
             this.protocol = new OpenLayers.Protocol.HTTP({
-              url: div.settings.indiciaGeoSvc + 'wms',
+              url: div.settings.clickableLayers[0].url,
               format: new OpenLayers.Format.WMSGetFeatureInfo()
             });
             OpenLayers.Control.prototype.activate.call(this);
@@ -611,7 +611,7 @@
           },
   
           onResponse: function(response) {
-            if (div.settings.clickableLayersOutputMode=='popup') {
+            if (typeof div.settings.clickableLayersOutputDiv==="undefined") {
               for (var i=0; i<div.map.popups.length; i++) {
                 div.map.removePopup(div.map.popups[i]);
               }
@@ -856,7 +856,9 @@ function format_getinfo_gml(features, div) {
     var html='<table><thead><tr>';
     // use normal for (in) to get object properties
     for(var attr in features[0].attributes) {
-      if (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!=undefined) {
+      if (div.settings.clickableLayersOutputColumns.length===0) {
+        html += '<th>' + attr + '</th>';
+      } else if (div.settings.clickableLayersOutputColumns[attr]!=undefined) {
         html += '<th>' + div.settings.clickableLayersOutputColumns[attr] + '</th>';
       }
     };
