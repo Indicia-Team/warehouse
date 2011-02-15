@@ -24,54 +24,56 @@ defined('SYSPATH') or die('No direct script access.');
 
 class html extends html_Core {
 
-   /* Outputs an error message in a span, but only if there is something to output */
+ /**
+  * Outputs an error message in a span, but only if there is something to output 
+  */
   public static function error_message($message)
   {
     if ($message) echo '<br/><span class="form-notice ui-state-error ui-corner-all">'.$message.'</span>';
   }
 
-  /**
-   * Returns a list of columns as an list of <options> for inclusion in an HTML drop down,
-   * loading the columns from a model that are available to import data into
-   * (excluding the id and metadata).
-   * @param ORM $model
-   * @param string $default The text to display for the unselected "please select" item.
-   * @param string $selected The name of the initially selected field if there is one.
-   */
-   public static function model_field_options($model, $default, $selected='')
-   {
-     $r = '';
-     $skipped = array('id', 'created_by_id', 'created_on', 'updated_by_id', 'updated_on',
+ /**
+  * Returns a list of columns as an list of <options> for inclusion in an HTML drop down,
+  * loading the columns from a model that are available to import data into
+  * (excluding the id and metadata).
+  * @param ORM $model
+  * @param string $default The text to display for the unselected "please select" item.
+  * @param string $selected The name of the initially selected field if there is one.
+  */
+  public static function model_field_options($model, $default, $selected='')
+  {
+    $r = '';
+    $skipped = array('id', 'created_by_id', 'created_on', 'updated_by_id', 'updated_on',
         'fk_created_by', 'fk_updated_by', 'fk_meaning', 'fk_taxon_meaning', 'deleted', 'image_path');
-     if ($default) {
-       $r .= '<option>'.html::specialchars($default).'</option>';
-     }     
-     foreach ($model->getSubmittableFields(true) as $field=>$caption) {
-	   if (empty($caption)) {
-         list($prefix,$fieldname)=explode(':',$field);
-         // Skip the metadata fields
-         if (!in_array($fieldname, $skipped)) {
-           // make a clean looking caption         
-           if (substr($fieldname,0,3)=='fk_') {
-             $captionSuffix=' ('.kohana::lang('misc.lookup_existing_record').')';
-           } else {
-             $captionSuffix='';
-           }
-           $fieldname=str_replace(array('fk_','_id'), array('',''), $fieldname);
-           if ($prefix==$model->object_name || $prefix=="metaFields" || $prefix==substr($fieldname,0,strlen($prefix))) {
-             $caption = self::leadingCaps($fieldname).$captionSuffix;
-           } else {       
-             $caption = self::leadingCaps("$prefix $fieldname").$captionSuffix;
-           }      
-           $r .= self::model_field_option($field, $caption, $selected, $model->object_name);
-		 }
-       } else {
-         $r .= self::model_field_option($field, $caption, $selected, $model->object_name);
-       }
-     }
-	 return $r;
-   }
-   
+    if ($default) {
+      $r .= '<option>'.html::specialchars($default).'</option>';
+    }     
+    foreach ($model->getSubmittableFields(true) as $field=>$caption) {
+      if (empty($caption)) {
+        list($prefix,$fieldname)=explode(':',$field);
+        // Skip the metadata fields
+        if (!in_array($fieldname, $skipped)) {
+          // make a clean looking caption         
+          if (substr($fieldname,0,3)=='fk_') {
+            $captionSuffix=' ('.kohana::lang('misc.lookup_existing_record').')';
+          } else {
+            $captionSuffix='';
+          }
+          $fieldname=str_replace(array('fk_','_id'), array('',''), $fieldname);
+          if ($prefix==$model->object_name || $prefix=="metaFields" || $prefix==substr($fieldname,0,strlen($prefix))) {
+            $caption = self::leadingCaps($fieldname).$captionSuffix;
+          } else {       
+            $caption = self::leadingCaps("$prefix $fieldname").$captionSuffix;
+          }      
+          $r .= self::model_field_option($field, $caption, $selected, $model->object_name);
+        }
+      } else {
+        $r .= self::model_field_option($field, $caption, $selected, $model->object_name);
+      }
+    }
+    return $r;
+  }
+
   /**
    * Private method to build a single select option for the model field options. 
    * Option is selected if selected=caption (case insensitive).
