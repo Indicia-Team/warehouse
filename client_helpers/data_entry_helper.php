@@ -1231,21 +1231,25 @@ class data_entry_helper extends helper_config {
   * <li><b>indiciaWFSLayers</b><br/>
   * </li>
   * <li><b>layers</b><br/>
+  * An array of JavaScript variables which point to additional OpenLayers layer objects to add to the map. The JavaScript for creating these layers 
+  * can be added to data_entry_helper::$onload_javascript before calling the map_panel method.
   * </li>
   * <li><b>clickableLayers</b><br/>
   * If support for clicking on a layer to provide info on the clicked objects is required, set this to an array containing the JavaScript variable
-  * names for the OpenLayers WMS layer objects you have created for the clickable layers. 
-  * </li>
-  * <li><b>clickableLayerNames</b><br/>
-  * If support for clicking on a layer to provide info on the clicked objects is required, set this to an array containing the feature type names
-  * for each clickable layer. Each entry should have a 1:1 mapping to an entry in clickableLayers.
+  * names for the OpenLayers WMS layer objects you have created for the clickable layers. The JavaScript for creating these layers 
+  * can be added to data_entry_helper::$onload_javascript before calling the map_panel method and they can be the same layers as those referred to in 
+  * the layers parameter.
   * </li>
   * <li><b>clickableLayersOutputDiv</b><br/>
-  * 
+  * If this is set to the name of a div, then clicking on a clickable layer item outputs the details into this div rather than a popup.
   * </li>
   * <li><b>clickableLayersOutputColumns</b><br/>
-  * 
+  * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point. 
+  * If ommitted, then all columns are output using their original field names.
   * </li>
+  * <li><b>clickableLayersOutputFn</b><br/>
+  * To override the appearance of the output when clicking on the map, set this to a JavaScript function name which takes a list of
+  * features and the map div as parameters, then returns the HTML to output.
   * <li><b>locationLayerName</b><br/>
   * If using a location select or autocomplete control, then set this to the name of a feature type exposed on GeoServer which contains the id, name and boundary
   * geometry of each location that can be selected. Then when the user clicks on the map the system is able to automatically populate the locations control with the 
