@@ -53,9 +53,9 @@ var report_grid_sortdir = '';
           '&offset=' + div.settings.offset +
           '&callback=?';
       // Extract any parameters from the attached form
-      $('form#'+div.id+'-params input, form#'+div.id+'-params select').each(function(idx, input) {
+      $('form#'+div.settings.paramsFormId+'-params input, form#'+div.settings.paramsFormId+'-params select').each(function(idx, input) {
         if (input.type!=='submit') {
-          paramName = $(input).attr('name').replace('param-'+div.id+'-', '');
+          paramName = $(input).attr('name').replace('param-'+div.settings.paramsFormId+'-', '');
           request += '&' + paramName + '=' + $(input).attr('value');
         }
       });

@@ -39,13 +39,6 @@ class iform_report_grid {
         'description'=>'The name of the report file to load into the verification grid, excluding the .xml suffix.',
         'type'=>'string'
       ), array(
-        'name' => 'auto_params_form',
-        'caption' => 'Automatic Parameters Form',
-        'description'=>'If the report requires input parameters, shall an automatic form be generated to allow the user to '.
-            'specify those parameters?',
-        'type' => 'boolean',
-        'default' => true
-      ), array(
         'name' => 'param_presets',
         'caption' => 'Preset Parameter Values',
         'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
@@ -97,6 +90,19 @@ class iform_report_grid {
 		    'type' => 'int',
         'default' => 20,
         'required' => true
+      ),
+      array(
+        'name' => 'output',
+        'caption' => 'Output Mode',
+        'description' => 'Select what combination of the params form and report grid will be output. This can be used to develop a single page '.
+            'with several reports linked to the same parameters form, e.g. using the Drupal panels module.',
+		    'type' => 'select',
+        'required' => true,
+        'options' => array(
+          'default'=>'Include a parameters form and grid',
+          'form'=>'Parameters form only - the grid will be output elsewhere.',
+          'grid'=>'Grid only - the params form will be output elsewhere.',
+        )       
       )
     );
   }
@@ -118,6 +124,11 @@ class iform_report_grid {
    */
   public static function get_form($args, $node, $response) {
     global $indicia_templates;
+    // handle auto_params_form for backwards compatibility
+    if (empty($args['output_mode']) && !empty($args['auto_params_form'])) {
+      if (!$args['auto_params_form']) 
+        $args['output_mode']='grid';
+    }
     // put each param control in a div, which makes it easier to layout with CSS
     $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container">';
     $indicia_templates['suffix']='</div>';
@@ -139,18 +150,29 @@ class iform_report_grid {
       'readAuth' => $auth['read'],
       'columns' => $columns,
       'itemsPerPage' => $args['items_per_page'],
-      'autoParamsForm' => $args['auto_params_form'],
       'extraParams' => $presets,
       'paramDefaults' => $defaults,
       'galleryColCount' => isset($args['gallery_col_count']) ? $args['gallery_col_count'] : 1,
       'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true
     );
+    if (empty($args['output']) || $args['output']=='default') {
+      $reportOptions['autoParamsForm'] = true;
+      $reportOptions['id'] = 'report-grid';
+    } elseif ($args['output']=='form') {
+      $reportOptions['autoParamsForm'] = true;
+      $reportOptions['paramsOnly'] = true;
+      $reportOptions['id'] = 'params-form';
+    } else {
+      $reportOptions['autoParamsForm'] = false;
+      $reportOptions['id'] = $args['report_name'];
+      $reportOptions['paramsFormId'] = 'params-form';
+    }
     // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams 
     $r .= '<br/>'.data_entry_helper::report_download_link($reportOptions);
     // now the grid
     $r .= '<br/>'.data_entry_helper::report_grid($reportOptions);
     // Set up a page refresh for dynamic update of the report at set intervals
-    if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
+    if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection
       if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
         data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
       else
