@@ -649,7 +649,10 @@ class ORM extends ORM_Core {
    * supermodels are involved this may be overridden to include those also.
    *
    * When called with true, this will also add fk_ columns for any _id columns
-   * in the model.
+   * in the model unless the column refers to a model in the submission structure
+   * supermodels list. For example, when adding an occurrence via import, you supply
+   * the fields for the sample to create rather than a lookup value for the existing 
+   * samples.
    */
   public function getSubmittableFields($fk = false) {
     $fields = $this->getPrefixedColumnsArray($fk);
@@ -702,9 +705,13 @@ class ORM extends ORM_Core {
   protected function getPrefixedColumnsArray($fk=false) {
     $r = array();
     $prefix=$this->object_name;
+    $sub = $this->get_submission_structure();
     foreach ($this->table_columns as $column=>$type) {
       if ($fk && substr($column, -3) == "_id") {
-        $r["$prefix:fk_".substr($column, 0, -3)]='';
+        // don't include the fk link field if the submission is supposed to contain full data
+        // for the supermodel record rather than just a link
+        if (!isset($sub['superModels'][substr($column, 0, -3)]))
+          $r["$prefix:fk_".substr($column, 0, -3)]='';
       } else {
         $r["$prefix:$column"]='';
       }
