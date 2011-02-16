@@ -458,52 +458,7 @@ class report_helper extends helper_base {
         if (substr($key,0,6)!='param-')
           $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
       }
-      foreach($response['parameterRequest'] as $key=>$info) {
-        // Skip parameters if we have been asked to ignore them
-        if (isset($options['ignoreParams']) && in_array($key, $options['ignoreParams'])) continue;
-        $ctrlOptions = array(
-          'label' => $info['display'],
-          'helpText' => $info['description'],
-          'fieldname' => 'param-' . (isset($options['id']) ? $options['id'] : '')."-$key"
-        );
-        // If this parameter is in the URL or post data, put it in the control
-        if (isset($params[$key])) {
-          $ctrlOptions['default'] = $params[$key];
-        }
-        if ($info['datatype']=='lookup' && isset($info['population_call'])) {
-          // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
-          $popOpts = explode(':', $info['population_call']);
-          $ctrlOptions = array_merge($ctrlOptions, array(
-            'valueField'=>$popOpts[2],
-            'captionField'=>$popOpts[3],
-            'blankText'=>'<'.lang::get('please select').'>',
-            'extraParams'=>$options['readAuth']
-          ));
-          if ($popOpts[0]=='direct') 
-            $ctrlOptions['table']=$popOpts[1];
-          else
-            $ctrlOptions['report']=$popOpts[1];
-          $r .= data_entry_helper::select($ctrlOptions);
-        } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
-          // Convert the lookup values into an associative array
-          $lookups = explode(',', $info['lookup_values']);
-          $lookupsAssoc = array();
-          foreach($lookups as $lookup) {
-            $lookup = explode(':', $lookup);
-            $lookupsAssoc[$lookup[0]] = $lookup[1];
-          }
-
-          $ctrlOptions = array_merge($ctrlOptions, array(
-            'blankText'=>'<'.lang::get('please select').'>',
-            'lookupValues' => $lookupsAssoc
-          ));
-          $r .= data_entry_helper::select($ctrlOptions);
-        } elseif ($info['datatype']=='date') {
-          $r .= data_entry_helper::date_picker($ctrlOptions);
-        } else {
-          $r .= data_entry_helper::text_input($ctrlOptions);
-        }
-      }
+      $r .= self::build_params_form($response['parameterRequest']);      
       if ($options['completeParamsForm']==true) {
         $r .= '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'."\n";
         $r .= "</fieldset></form>\n";
