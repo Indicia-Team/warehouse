@@ -149,12 +149,16 @@ $indicia_templates = array(
   $('#{escapedId}').html('<option>Loading...</option>');
   $.getJSON('{request}&{filterField}='+$(this).val(), function(data){
     $('#{escapedId}').html('');
-    $('#{escapedId}').removeClass('ui-state-disabled');
-    $.each(data, function(i) {
-      $('#{escapedId}').append('<option value=\"'+this.{valueField}+'\">'+this.{captionField}+'</option>');
-    });
+    if (data.length>0) {
+      $('#{escapedId}').removeClass('ui-state-disabled');
+      $.each(data, function(i) {
+        $('#{escapedId}').append('<option value=\"'+this.{valueField}+'\">'+this.{captionField}+'</option>');
+      });
+    } else {
+      $('#{escapedId}').html('<option>{instruct}</option>');
+    }
   });
-}
+};
 jQuery('#{parentControlId}').change({fn});
 jQuery('#{parentControlId}').change();\n",
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
@@ -985,10 +989,13 @@ class data_entry_helper extends helper_base {
   * Optional. Number of lines to display in the listbox. Defaults to 3.</li>
   * <li><b>multiselect</b><br/>
   * Optional. Allow multi-select in the list box. Defaults to false.</li>
-  * <li><b>parentControlId</b><br/>
+  * <li><b>parentControlId}</b><br/>
   * Optional. Specifies a parent control for linked lists. If specified then this control is not
   * populated until the parent control's value is set. The parent control's value is used to
   * filter this control's options against the field specified by filterField.</li>
+  * <li><b>parentControlLabel</b><br/>
+  * Optional. Specifies the label of the parent control in a set of linked lists. This allows the child list
+  * to display information about selecting the parent first.</li>
   * <li><b>filterField</b><br/>
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
@@ -1710,6 +1717,9 @@ class data_entry_helper extends helper_base {
   * Optional. Specifies a parent control for linked lists. If specified then this control is not
   * populated until the parent control's value is set. The parent control's value is used to
   * filter this control's options against the field specified by filterField.</li>
+  * <li><b>parentControlLabel</b><br/>
+  * Optional. Specifies the label of the parent control in a set of linked lists. This allows the child list
+  * to display information about selecting the parent first.</li>  
   * <li><b>filterField</b><br/>
   * Optional. Specifies the field to filter this control's content against when using a parent
   * control value to set up linked lists. Defaults to parent_id though this is not active
@@ -3404,15 +3414,19 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // setup JavaScript to do the population when the parent control changes
     $parentControlId = str_replace(':','\\\\:',$options['parentControlId']);
     $escapedId = str_replace(':','\\\\:',$options['id']);
-    $fn = str_replace(':','',$options['id'])."_populate";
+    $fn = preg_replace("/[^A-Za-z0-9]/", "", $options['id'])."_populate";
     $url = parent::$base_url."index.php/services/data";
     $request = "$url/".$options['table']."?mode=json";
+    if (isset($options['parentControlLabel'])) 
+      $instruct = str_replace('{0}', $options['parentControlLabel'], lang::get('Please select a {0} first'));
+    else
+      $instruct = lang::get('Awaiting selection...');
     if (array_key_exists('extraParams', $options)) {
       $request .= '&'.self::array_to_query_string($options['extraParams']);
     }
     self::$javascript .= str_replace(
-        array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}'),
-        array($fn, $escapedId, $request,$options['filterField'],$options['valueField'],$options['captionField'],$parentControlId),
+        array('{fn}','{escapedId}','{request}','{filterField}','{valueField}','{captionField}','{parentControlId}', '{instruct}'),
+        array($fn, $escapedId, $request,$options['filterField'],$options['valueField'],$options['captionField'],$parentControlId, $instruct),
         $indicia_templates['linked_list_javascript']
     );
   }
@@ -4735,48 +4749,6 @@ $('.ui-state-default').live('mouseout', function() {
     }
 
     return $output; // str_replace("\n", "", $output);
-  }
-
-  /**
-   * Takes a file that has been uploaded to the client website upload folder, and moves it to the warehouse upload folder using the
-   * data services.
-   *
-   * @param string $path Path to the file to upload, relative to the interim image path folder (normally the
-   * client_helpers/upload folder.
-   * @param boolean $persist_auth Allows the write nonce to be preserved after sending the file, useful when several files
-   * are being uploaded.
-   * @return string Error message, or true if successful.
-   */
-  private static function send_file_to_warehouse($path, $persist_auth=false) {
-    $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-    $uploadpath = data_entry_helper::relative_client_helper_path() . $interim_image_folder;
-    $serviceUrl = parent::$base_url."/index.php/services/data/handle_media";
-    // This is used by the file box control which renames uploaded files using a guid system, so disable renaming on the server.
-    $postargs = array('name_is_guid' => 'true');
-    // attach authentication details
-    if (array_key_exists('auth_token', $_POST))
-      $postargs['auth_token'] = $_POST['auth_token'];
-    if (array_key_exists('nonce', $_POST))
-      $postargs['nonce'] = $_POST['nonce'];
-    if ($persist_auth)
-      $postargs['persist_auth'] = 'true';
-    $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));
-    $response = data_entry_helper::http_post($serviceUrl, $file_to_upload + $postargs);
-    $output = json_decode($response['output'], true);
-    $r = true; // default is success
-    if (is_array($output)) {
-      //an array signals an error
-      if (array_key_exists('error', $output)) {
-        // return the most detailed bit of error information
-        if (isset($output['errors']['media_upload']))
-          $r = $output['errors']['media_upload'];
-        else
-          $r = $output['error'];
-      }
-    }
-    //remove local copy
-    unlink(realpath($uploadpath.$path));
-    return $r;
   }
 
   /**

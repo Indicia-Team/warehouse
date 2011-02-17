@@ -52,9 +52,10 @@ class helper_base extends helper_config {
   public static $css_path = null;
 
   /**
-   * @var array List of resources that have already been dumped out, so we don't duplicate them.
+   * @var array List of resources that have already been dumped out, so we don't duplicate them. For example, if the 
+   * site template includes JQuery set $dumped_resources[]='jquery'.
    */
-  protected static $dumped_resources=array();
+  public static $dumped_resources=array();
   
   /**
    * @var string JavaScript text to be emitted after the data entry form. Each control that
@@ -271,16 +272,22 @@ class helper_base extends helper_config {
    * Returns the HTML required for a parameters form, e.g. the form defined for input of report parameters or the 
    * default values for a csv import.
    * @param array $formArray Associative array defining the form structure.
+   * @param array $options Associative array of options:
+   *   form: Definition of the form.
+   *   id: id of the report instance on the page if relevant, so that controls can be given unique ids.
+   *   readAuth: read authorisation.
+   *   field_name_prefix: optional prefix for form field names.
    */
-  public static function build_params_form($formArray) {
+  public static function build_params_form($options) {
     $r = '';
-    foreach($formArray as $key=>$info) {
+    $fieldPrefix = (isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '');
+    foreach($options['form'] as $key=>$info) {
       // Skip parameters if we have been asked to ignore them
       if (isset($options['ignoreParams']) && in_array($key, $options['ignoreParams'])) continue;
       $ctrlOptions = array(
         'label' => $info['display'],
         'helpText' => $info['description'],
-        'fieldname' => 'param-' . (isset($options['id']) ? $options['id'] : '')."-$key"
+        'fieldname' => $fieldPrefix.$key
       );
       // If this parameter is in the URL or post data, put it in the control
       if (isset($params[$key])) {
@@ -299,6 +306,13 @@ class helper_base extends helper_config {
           $ctrlOptions['table']=$popOpts[1];
         else
           $ctrlOptions['report']=$popOpts[1];
+        if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
+          $ctrlOptions = array_merge($ctrlOptions, array(
+            'parentControlId' => $fieldPrefix.$info['linked_to'],
+            'filterField' => $info['linked_filter_field'],
+            'parentControlLabel' => $options['form'][$info['linked_to']]['display']
+          ));
+        }
         $r .= data_entry_helper::select($ctrlOptions);
       } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
         // Convert the lookup values into an associative array
@@ -308,11 +322,10 @@ class helper_base extends helper_config {
           $lookup = explode(':', $lookup);
           $lookupsAssoc[$lookup[0]] = $lookup[1];
         }
-
         $ctrlOptions = array_merge($ctrlOptions, array(
           'blankText'=>'<'.lang::get('please select').'>',
           'lookupValues' => $lookupsAssoc
-        ));
+        ));        
         $r .= data_entry_helper::select($ctrlOptions);
       } elseif ($info['datatype']=='date') {
         $r .= data_entry_helper::date_picker($ctrlOptions);
@@ -321,6 +334,25 @@ class helper_base extends helper_config {
       }
     }
     return $r;
+  }
+  
+  /**
+   * Utility method that returns the parts required to build a link back to the current page.
+   * @return array Associative array containing path and params (itself a key/value paired associative array).
+   */
+  public static function get_reload_link_parts() {
+    $split = strpos($_SERVER['REQUEST_URI'], '?');
+    $gets = $split!==false ? explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) : array();
+    $getsAssoc = array();
+    foreach ($gets as $get) {
+      list($key, $value) = explode('=', $get);
+      $getsAssoc[$key] = $value;
+    }
+    $path = $split!==false ? substr($_SERVER['REQUEST_URI'], 0, $split) : $_SERVER['REQUEST_URI'];
+    return array(
+      'path'=>$path,
+      'params' => $getsAssoc
+    );
   }
 
   /**
@@ -373,6 +405,49 @@ class helper_base extends helper_config {
     return str_replace($replaceTags, $replaceValues, $template);
   }
 
+  /**
+   * Takes a file that has been uploaded to the client website upload folder, and moves it to the warehouse upload folder using the
+   * data services.
+   *
+   * @param string $path Path to the file to upload, relative to the interim image path folder (normally the
+   * client_helpers/upload folder.
+   * @param boolean $persist_auth Allows the write nonce to be preserved after sending the file, useful when several files
+   * are being uploaded.
+   * @param array readAuth Read authorisation tokens, if not supplied then the $_POST array should contain them.
+   * @return string Error message, or true if successful.
+   */
+  protected static function send_file_to_warehouse($path, $persist_auth=false, $readAuth = null) {
+    if ($readAuth==null) $readAuth=$_POST;
+    $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
+    $uploadpath = data_entry_helper::relative_client_helper_path() . $interim_image_folder;
+    $serviceUrl = parent::$base_url."/index.php/services/import/upload_csv";
+    // This is used by the file box control which renames uploaded files using a guid system, so disable renaming on the server.
+    $postargs = array('name_is_guid' => 'true');
+    // attach authentication details
+    if (array_key_exists('auth_token', $readAuth))
+      $postargs['auth_token'] = $readAuth['auth_token'];
+    if (array_key_exists('nonce', $readAuth))
+      $postargs['nonce'] = $readAuth['nonce'];
+    if ($persist_auth)
+      $postargs['persist_auth'] = 'true';
+    $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));
+    $response = data_entry_helper::http_post($serviceUrl, $file_to_upload + $postargs);
+    $output = json_decode($response['output'], true);
+    $r = true; // default is success
+    if (is_array($output)) {
+      //an array signals an error
+      if (array_key_exists('error', $output)) {
+        // return the most detailed bit of error information
+        if (isset($output['errors']['media_upload']))
+          $r = $output['errors']['media_upload'];
+        else
+          $r = $output['error'];
+      }
+    }
+    //remove local copy
+    unlink(realpath($uploadpath.$path));
+    return $r;
+  }
 
   
 }

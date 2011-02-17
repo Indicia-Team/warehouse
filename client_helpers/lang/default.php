@@ -66,6 +66,11 @@ $default_terms = array(
   'OSGB'=>'British National Grid',
   'OSIE'=>'Irish Grid',
   '4326'=>'WGS84 (decimal lat,long)',
-  '2169'=>'LUREF (x,y)'
+  '2169'=>'LUREF (x,y)',
+  
+  // import field name overrides which have a key of the form model.caption
+  'occurrence.Taxa Taxon List (lookup existing record)' => 'Species or taxon selected from existing list',
+  'occurrence.Sample Entered Sref' => 'Sample spatial reference',
+  'occurrence.Sample Entered Sref System' => 'Sample spatial reference system'
 );
 
