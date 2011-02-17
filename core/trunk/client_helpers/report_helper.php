@@ -436,6 +436,8 @@ class report_helper extends helper_base {
    * Private function that builds a parameters form according to a parameterRequest recieved
    * when calling a report. If the autoParamsForm is false then an empty string is returned.
    * @param $response
+   * @param $options
+   * @param $params
    * @return string HTML for the form.
    */
   private static function get_report_grid_parameters_form($response, $options, $params) {
@@ -458,7 +460,7 @@ class report_helper extends helper_base {
         if (substr($key,0,6)!='param-')
           $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
       }
-      $r .= self::build_params_form($response['parameterRequest']);      
+      $r .= self::build_params_form(array_merge(array('form'=>$response['parameterRequest'], 'field_name_prefix'=>'param'), $options));
       if ($options['completeParamsForm']==true) {
         $r .= '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'."\n";
         $r .= "</fieldset></form>\n";
@@ -534,25 +536,6 @@ class report_helper extends helper_base {
       $links[] = "<a class=\"action-button$class\"$href$onclick>".$action['caption'].'</a>';
     }
     return implode('<br/>', $links);
-  }
-
-  /**
-   * Utility method that returns the parts required to build a link back to the current page.
-   * @return array Associative array containing path and params (itself a key/value paired associative array).
-   */
-  public static function get_reload_link_parts() {
-    $split = strpos($_SERVER['REQUEST_URI'], '?');
-    $gets = $split!==false ? explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) : array();
-    $getsAssoc = array();
-    foreach ($gets as $get) {
-      list($key, $value) = explode('=', $get);
-      $getsAssoc[$key] = $value;
-    }
-    $path = $split!==false ? substr($_SERVER['REQUEST_URI'], 0, $split) : $_SERVER['REQUEST_URI'];
-    return array(
-      'path'=>$path,
-      'params' => $getsAssoc
-    );
   }
 
   private static function get_report_grid_options($options) {
