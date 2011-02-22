@@ -123,6 +123,7 @@ $config['modules'] = array
          MODPATH.'indicia_auth',          // Authentication
          MODPATH.'indicia_svc_base',      // Services
          MODPATH.'indicia_svc_data',      // Data services
+         MODPATH.'indicia_svc_import',    // Import services
          MODPATH.'indicia_svc_validation',// Validation services
          MODPATH.'indicia_svc_security',  // Security services
          MODPATH.'indicia_svc_spatial',   // Spatial services

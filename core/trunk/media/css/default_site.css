@@ -328,3 +328,11 @@ tr.odd {
 .add-image-select-species {
   font-style: italic;
 }
+
+.heading-option {
+  font-weight: bold;
+}
+
+.sub-option {
+  margin-left: 1em;
+}

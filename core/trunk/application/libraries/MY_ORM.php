@@ -653,21 +653,28 @@ class ORM extends ORM_Core {
    * supermodels list. For example, when adding an occurrence via import, you supply
    * the fields for the sample to create rather than a lookup value for the existing 
    * samples.
+   * @param boolean $fk
+   * @param integer $website_id If set then custom attributes are limited to those for this website.
+   * @param integer $survey_id If set then custom attributes are limited to those for this survey.
    */
-  public function getSubmittableFields($fk = false) {
+  public function getSubmittableFields($fk = false, $website_id=null, $survey_id=null) {
+    if ($website_id!==null) 
+      $this->identifiers['website_id']=$website_id;
+    if ($website_id!==null) 
+      $this->identifiers['survey_id']=$survey_id;
     $fields = $this->getPrefixedColumnsArray($fk);
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
       foreach ($struct['superModels'] as $super=>$content) {
-        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk));
+        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $website_id, $survey_id));
       }
     }
     if (array_key_exists('metaFields', $struct)) {
       foreach ($struct['metaFields'] as $metaField) {
         $fields["metaFields:$metaField"]='';
       }
-    }
-    if ($this->has_attributes) {
+    }    
+    if ($this->has_attributes) {    
       $this->setupDbToQueryAttributes();
       $result = $this->db->get();
       foreach($result as $row) {
