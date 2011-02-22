@@ -57,9 +57,7 @@ class Occurrence_Model extends ORM
     'occurrence_image:path:4'=>'Image Path 4',
     'occurrence_image:caption:4'=>'Image Caption 4',
     // Also allow a field to be uploaded which defines the taxon list to look in when searching for species during a csv upload
-    'fkFilter:taxa_taxon_list:taxon_list_id'=>'Taxon list to search in',
-    'survey_id' => 'Survey ID',
-    'website_id' => 'Website ID'
+    'fkFilter:taxa_taxon_list:taxon_list_id'=>'Species list to look for species naems in'
   );
 
   public function caption()
@@ -124,13 +122,42 @@ class Occurrence_Model extends ORM
  
   /**
   * Defines a submission structure for occurrences that lets samples be submitted at the same time, e.g. during CSV upload.
-  */   
+  */
   public function get_submission_structure() {
     return array(
         'model'=>$this->object_name,
         'superModels'=>array(
           'sample'=>array('fk' => 'sample_id')
         )     
+    );
+  }
+  
+    /**
+   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   */
+  public function fixed_values_form() {
+    return array(
+      'website_id' => array( 
+        'display'=>'Website', 
+        'description'=>'Select the website to import records into.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:website:id:title' 
+      ),
+      'survey_id' => array(
+        'display'=>'Survey', 
+        'description'=>'Select the survey to import records into.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:survey:id:title',
+        'linked_to'=>'website_id',
+        'linked_filter_field'=>'website_id'
+      ),
+      'sample:entered_sref_system' => array(
+        'display'=>'Spatial Ref. System', 
+        'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
+            'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.', 
+        'datatype'=>'lookup',
+        'lookup_values'=>'OSGB:OSGB - British National Grid'
+      ),
     );
   }
   

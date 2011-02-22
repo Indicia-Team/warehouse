@@ -87,8 +87,8 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       // parent list already has a link to a website, so we can't change it 
       $websites = $websites->in('id',$values['parent_website_id']);
     } else {
-	    if (!$this->auth->logged_in('CoreAdmin'))
-	      $websites = $websites->in('id',$this->auth_filter['values']);	    
+      if (!$this->auth->logged_in('CoreAdmin'))
+        $websites = $websites->in('id',$this->auth_filter['values']);
     }
     return array(
       'websites' => $websites->where('deleted','false')->orderby('title','asc')->find_all()

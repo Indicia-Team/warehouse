@@ -45,7 +45,9 @@ class import_helper extends helper_base {
    * </ul>
    */
   public static function importer($options) {
-    if (!isset($_POST['import_step'])) {
+    if (isset($_GET['total'])) {
+      return self::upload_result($options);
+    } elseif (!isset($_POST['import_step'])) {
       return self::import_settings_form($options);
     } elseif ($_POST['import_step']==1) {
       return self::upload_mappings_form($options);
@@ -91,22 +93,45 @@ class import_helper extends helper_base {
    * Outputs the form for mapping columns to the import fields.
    */
   private static function upload_mappings_form($options) {
-    // capture the settings form if there is one
+    if (!file_exists($_SESSION['uploaded_file']))
+      return lang::get('upload_not_available');
+    $filename=basename($_SESSION['uploaded_file']);
+    // capture the settings form if there is one, but only use the actually set values - others can be populated per row.
+    foreach ($_POST as $key => $value) {
+      if (empty($value)) {
+        unset($_POST[$key]);
+      }
+    } 
     if (isset($_POST['import_step']))
-      $_SESSION['upload_settings'] = $_POST;
+      $settings = json_encode($_POST);
     else 
-      $_SESSION['upload_settings'] = array();
+      $settings = '{}';    
+    // cache the mappings
+    $metadata = array('settings' => $settings);
+    $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
+    $response = self::http_post($request, $metadata);
+    if (!isset($response['output']) || $response['output'] != 'OK')
+      return "Could not upload the settings metadata. <br/>".print_r($response, true);
+      
     $request = parent::$base_url."index.php/services/import/get_import_fields/".$options['model'];
     $request .= '?'.self::array_to_query_string($options['readAuth']);
+    // include survey and website information in the request if available, as this limits the availability of custom attributes
+    if (!empty($_SESSION['upload_settings']['website_id']))
+      $request .= '&website_id='.$_SESSION['upload_settings']['website_id'];
+    if (!empty($_SESSION['upload_settings']['survey_id']))
+      $request .= '&survey_id='.$_SESSION['upload_settings']['survey_id'];
     $response = self::http_post($request, array());
     $fields = json_decode($response['output'], true);
+    // We are about to build the list of fields you can choose for the column mappings. Remove any which 
+    // we already have a value for in the settings.
+    $fields = array_diff_key($fields, $_SESSION['upload_settings']);    
     $options = self::model_field_options($options['model'], $fields);
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
     $reload = self::get_reload_link_parts();
     $reloadPath = $reload['path'];
     $r ="<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
-        '<p>Please map each column in the CSV file you are uploading to the associated attribute in the destination list.</p>'.
+        '<p>'.lang::get('column_mapping_instructions').'</p>'.
         '<table class="ui-widget ui-widget-content">'.
         '<thead class="ui-widget-header">'.
         '<tr><th>Column in CSV File</th><th>Maps to attribute</th></tr>'.
@@ -114,24 +139,95 @@ class import_helper extends helper_base {
         '<tbody>';
     foreach ($columns as $column) {
       $colFieldName = preg_replace('/[^A-Za-z0-9]/', '_', $column);
-      $r .= "<tr><td>$column</td><td><select name=\"$colFieldName\">$options</select></td></tr>\n";
+      $r .= "<tr><td>$column</td><td><select name=\"$colFieldName\" id=\"$colFieldName\">$options</select></td></tr>\n";
     }
     $r .= '</tbody>';
     $r .= '</table>';
     $r .= '<input type="hidden" name="import_step" value="2" />';
-    $r .= '<input type="submit" name="submit" value="'.lang::get('Next').'" class="ui-corner-all ui-state-default button" />';
+    $r .= '<input type="submit" name="submit" value="'.lang::get('Upload').'" class="ui-corner-all ui-state-default button" />';
     $r .= '</form>';
     return $r;
   }
-  
-  private static function run_upload($options) {
-    echo "Doing upload<br/>";
-    echo $_SESSION['uploaded_file'];
-    echo self::send_file_to_warehouse(basename($_SESSION['uploaded_file']), false, $options['readAuth']);
+
+  /**
+   * Display the page which outputs the upload progress bar. Adds JavaScript to the page which performs the chunked upload.
+   */
+  private static function run_upload($options) {    
+    if (!file_exists($_SESSION['uploaded_file']))
+      return lang::get('upload_not_available');
+    $filename=basename($_SESSION['uploaded_file']);
     // move file to server
-    // send mappings plus settings to server
+    self::send_file_to_warehouse($filename, false, $options['readAuth'], 'import/upload_csv');    
+    
+    $reload = self::get_reload_link_parts();
+    $reloadPath = $reload['path'];
+    
     // initiate local javascript to do the upload with a progress feedback
+    $r = '
+<div id="progress" class="ui-widget ui-widget-content ui-corner-all">
+<div id="progress-bar" style="width: 400"></div>
+<div id="progress-text">Preparing to upload.</div>
+';
+    // cache the mappings
+    $metadata = array('mappings' => json_encode($_POST));
+    $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
+    $response = self::http_post($request, $metadata);
+    if (!isset($response['output']) || $response['output'] != 'OK')
+      return "Could not upload the mappings metadata. <br/>".print_r($response, true);
+    
+    self::$onload_javascript .= "
+  /**
+  * Upload a single chunk of a file, by doing an AJAX get. If there is more, then on receiving the response upload the
+  * next chunk.
+  */
+  uploadChunk = function() {
+    var limit=10;
+    jQuery.getJSON('".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&uploaded_csv=$filename&model=".$options['model']."',
+      function(response) {
+        total = total + response.uploaded;
+        jQuery('#progress-text').html(total + ' records uploaded.');
+        $('#progress-bar').progressbar ('option', 'value', response.progress);
+        if (response.uploaded>=limit) {
+          uploadChunk();
+        } else {
+          jQuery('#progress-text').html('Upload complete.');
+          window.location = '$reloadPath?uploaded_csv=$filename&total='+total;
+        }
+      }
+    );  
+  };
+  
+  var total=0;
+  jQuery('#progress-bar').progressbar ({value: 0});
+  uploadChunk();
+  ";
+    return $r;
   }
+  
+  /**
+   * Displays the upload result page.
+   */
+  public static function upload_result($options) {
+    $request = parent::$base_url."index.php/services/import/get_upload_result?uploaded_csv=".$_GET['uploaded_csv'];
+    $request .= '&'.self::array_to_query_string($options['readAuth']);
+    $response = self::http_post($request, array());
+    
+    if (isset($response['output'])) {
+      $output = json_decode($response['output'], true);
+      if (!is_array($output) || !isset($output['problems']))
+        return 'An error occurred during the upload.<br/>'.print_r($response, true);
+    
+      if ($output['problems']!==0) {
+        $r = $output['problems'].' problems were detected during the import. <a href="'.$output['file'].'">Download the records that did not import.</a>';
+      } else {
+        $r = 'The upload was successful.';
+      }
+    } else {
+      return 'An error occurred during the upload.<br/>'.print_r($response, true);
+    }
+    return $r;
+  }
+  
   
  /**
   * Returns a list of columns as an list of <options> for inclusion in an HTML drop down,
@@ -146,9 +242,15 @@ class import_helper extends helper_base {
     $r = '<option>&lt;'.lang::get('Please select').'&gt;</option>';
     $skipped = array('id', 'created_by_id', 'created_on', 'updated_by_id', 'updated_on',
         'fk_created_by', 'fk_updated_by', 'fk_meaning', 'fk_taxon_meaning', 'deleted', 'image_path');
+    $heading='';
     foreach ($fields as $field=>$caption) {
-      if (empty($caption)) {
-        list($prefix,$fieldname)=explode(':',$field);
+      list($prefix,$fieldname)=explode(':',$field);
+      // If this is a new section of data, output a heading
+      if ($prefix!=$heading) {
+        $heading = $prefix;          
+        $r .= '<option class="heading-option">'.self::leadingCaps(lang::get($heading)).'</option>';
+      }
+      if (empty($caption)) {        
         // Skip the metadata fields
         if (!in_array($fieldname, $skipped)) {
           // make a clean looking caption
@@ -161,7 +263,7 @@ class import_helper extends helper_base {
           if ($prefix==$model || $prefix=="metaFields" || $prefix==substr($fieldname,0,strlen($prefix))) {
             $caption = self::leadingCaps($fieldname).$captionSuffix;
           } else {
-            $caption = self::leadingCaps("$prefix $fieldname").$captionSuffix;
+            $caption = self::leadingCaps("$fieldname").$captionSuffix;
           }
           $r .= self::model_field_option($field, $caption, $selected, $model);
         }
@@ -222,7 +324,7 @@ class import_helper extends helper_base {
     if ($trans != $langKey) {
       $caption=$trans;
     }
-    return '<option value="'.htmlspecialchars($field)."\"$selHtml>".htmlspecialchars($caption).'</option>';
+    return '<option class="sub-option" value="'.htmlspecialchars($field)."\"$selHtml>".htmlspecialchars($caption).'</option>';
   }
 
 }

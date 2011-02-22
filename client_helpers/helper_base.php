@@ -414,13 +414,16 @@ class helper_base extends helper_config {
    * @param boolean $persist_auth Allows the write nonce to be preserved after sending the file, useful when several files
    * are being uploaded.
    * @param array readAuth Read authorisation tokens, if not supplied then the $_POST array should contain them.
+   * @param string $service Path to the service URL used. Default is data/handle_media, but could be import/upload_csv.
    * @return string Error message, or true if successful.
    */
-  protected static function send_file_to_warehouse($path, $persist_auth=false, $readAuth = null) {
+  protected static function send_file_to_warehouse($path, $persist_auth=false, $readAuth = null, $service='data/handle_media') {
     if ($readAuth==null) $readAuth=$_POST;
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
     $uploadpath = data_entry_helper::relative_client_helper_path() . $interim_image_folder;
-    $serviceUrl = parent::$base_url."/index.php/services/import/upload_csv";
+    if (!file_exists($uploadpath.$path)) 
+      return "The file $uploadpath$path does not exist and cannot be uploaded to the Warehouse.";
+    $serviceUrl = parent::$base_url."index.php/services/".$service;
     // This is used by the file box control which renames uploaded files using a guid system, so disable renaming on the server.
     $postargs = array('name_is_guid' => 'true');
     // attach authentication details
@@ -430,8 +433,8 @@ class helper_base extends helper_config {
       $postargs['nonce'] = $readAuth['nonce'];
     if ($persist_auth)
       $postargs['persist_auth'] = 'true';
-    $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));
-    $response = data_entry_helper::http_post($serviceUrl, $file_to_upload + $postargs);
+    $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));    
+    $response = data_entry_helper::http_post($serviceUrl, $file_to_upload + $postargs);    
     $output = json_decode($response['output'], true);
     $r = true; // default is success
     if (is_array($output)) {

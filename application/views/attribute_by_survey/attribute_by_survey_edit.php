@@ -51,8 +51,8 @@ switch ($dataType) {
 <p>This page allows you to modify the settings of the <?php echo strtolower($other_data['name']); ?> attribute within the context of the
 <?php echo $other_data['survey']; ?> survey.</p>
 <form class="cmxform"
-	action="<?php echo url::site()."attribute_by_survey/save/1?type=".$_GET['type']; ?>"
-	method="post">
+  action="<?php echo url::site()."attribute_by_survey/save/1?type=".$_GET['type']; ?>"
+  method="post">
 <fieldset>
 <legend><?php echo $other_data['name']; ?> Attribute details</legend>
 <input type="hidden" name="<?php echo $this->type; ?>_attributes_website:id"

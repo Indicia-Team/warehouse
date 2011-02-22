@@ -22,7 +22,7 @@
  */
 
 ?>
-<div class="termlist">
+<div class="users">
 <?php echo $table ?>
 <br />
 <form action="<?php echo url::site(); ?>person/create_from_user">

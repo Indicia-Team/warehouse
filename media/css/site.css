@@ -374,3 +374,11 @@ explicitly removes inconsistencies between IE and FireFox */
   border-bottom: solid #555555 1px;
   padding: 0.2em;
 }
+
+.heading-option {
+  font-weight: bold;
+}
+
+.sub-option {
+  margin-left: 1em;
+}

@@ -187,7 +187,6 @@ class Location_Controller extends Gridview_Base_Controller {
         $this->setError('Upload file problem', 'Could not open '.$entry.' from Zip archive.');
         return;
       }
-      $view->onCompletePage = 'test.php';
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
       $this->template->content = $view;
@@ -321,7 +320,6 @@ class Location_Controller extends Gridview_Base_Controller {
         fclose($handle);
         dbase_close($dbasedb);
       }      kohana::log('debug', 'locations import done');
-      $view->onCompletePage = 'test.php';
       $view->model = $this->model;
       $view->controllerpath = $this->controllerpath;
       $this->template->content = $view;
