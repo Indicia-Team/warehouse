@@ -2969,7 +2969,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     }
     // add validation metadata to the control if specified, as long as control has a fieldname
     if (array_key_exists('fieldname', $options)) {
-      $options['class'] .= ' '.self::build_validation_class($options);
+      $validationClasses = self::build_validation_class($options);
+      $options['class'] .= ' '.$validationClasses;
     }
     // replace html attributes with their wrapped versions, e.g. a class becomes class="..."
     foreach (self::$html_attributes as $name => $attr) {
@@ -2986,7 +2987,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // Add a label only if specified in the options array. Link the label to the inputId if available,
     // otherwise the fieldname (as the fieldname control could be a hidden control).
     if (array_key_exists('label', $options)) {
-    	$r .= str_replace(
+      $r .= str_replace(
           array('{label}', '{id}', '{labelClass}'),
           array(
               $options['label'],
@@ -3008,8 +3009,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $r .=  self::apply_error_template($error, $options['fieldname']);
     }
 
-    //Add suffix
-    $r .= self::apply_static_template('suffix', $options);
+    // Add suffix
+    if (isset($validationClasses) && !empty($validationClasses) && strpos($validationClasses, 'required')!==false) {
+      $r .= self::apply_static_template('requiredsuffix', $options);
+    } else {
+      $r .= self::apply_static_template('suffix', $options);
+    }
 
     // If options contain a help text, output it at the end if that is the preferred position
     $r .= self::get_help_text($options, 'after');
