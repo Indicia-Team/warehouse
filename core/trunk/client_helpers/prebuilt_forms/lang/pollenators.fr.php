@@ -108,8 +108,8 @@ $custom_terms = array(
 	,'LANG_Confirm_Insect_Delete' => 'Êtes-vous sûr de vouloir supprimer cet insecte ?'
 	,'LANG_Delete_Insect' => "Supprimer l'insecte"
 	
-	,'LANG_Can_Complete_Msg' => "Vous avez identifié votre fleur et un nombre suffisant d'insectes, vous pouvez maintenant clôturer la collection"
-	,'LANG_Cant_Complete_Msg' => "Vous n'avez pas identifié la fleur, et/ou pas identifié un nombre suffisant d'insectes (50%), conditions indispensables pour clôturer votre collection."
+	,'LANG_Can_Complete_Msg' => "Vous avez identifié votre fleur et un pourcentage suffisant d'insectes, vous pouvez maintenant clôturer la collection"
+	,'LANG_Cant_Complete_Msg' => "Vous n'avez pas identifié la fleur, et/ou pas identifié un pourcentage suffisant d'insectes (50%), conditions indispensables pour clôturer votre collection."
 	,'LANG_Complete_Collection' => 'Clôturer la collection'
 	,'LANG_Trailer_Head' => 'Après clôture'
 	,'LANG_Trailer_Point_1' => "vous ne pourrez plus ajouter d'insectes à votre collection ; les avez-vous tous chargés ?"
