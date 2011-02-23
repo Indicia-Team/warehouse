@@ -241,7 +241,7 @@ class import_helper extends helper_base {
   * @param string $selected The name of the initially selected field if there is one.  
   */
   private static function model_field_options($model, $fields, $selected='') {
-    $r = '<option>&lt;'.lang::get('Please select').'&gt;</option>';
+    $r = '';
     $skipped = array('id', 'created_by_id', 'created_on', 'updated_by_id', 'updated_on',
         'fk_created_by', 'fk_updated_by', 'fk_meaning', 'fk_taxon_meaning', 'deleted', 'image_path');
     $heading='';
@@ -249,8 +249,9 @@ class import_helper extends helper_base {
       list($prefix,$fieldname)=explode(':',$field);
       // If this is a new section of data, output a heading
       if ($prefix!=$heading) {
-        $heading = $prefix;          
-        $r .= '<option class="heading-option">'.self::leadingCaps(lang::get($heading)).'</option>';
+        $heading = $prefix;
+        if (!empty($r)) $r .= '</optgroup>';
+        $r .= '<optgroup label="'.self::leadingCaps(lang::get($heading)).'">';
       }
       if (empty($caption)) {        
         // Skip the metadata fields
@@ -267,12 +268,13 @@ class import_helper extends helper_base {
           } else {
             $caption = self::leadingCaps("$fieldname").$captionSuffix;
           }
-          $r .= self::model_field_option($field, $caption, $selected, $model);
+          $r .= self::model_field_option($field, $caption, $selected);
         }
       } else {
-        $r .= self::model_field_option($field, $caption, $selected, $model);
+        $r .= self::model_field_option($field, $caption, $selected);
       }
     }
+    $r = '<option>&lt;'.lang::get('Please select').'&gt;</option>'.$r.'</optgroup>';
     return $r;
   }
   
@@ -317,13 +319,12 @@ class import_helper extends helper_base {
    * Private method to build a single select option for the model field options. 
    * Option is selected if selected=caption (case insensitive).
    */
-  private static function model_field_option($field, $caption, $selected, $modelName) {
+  private static function model_field_option($field, $caption, $selected) {
     $selHtml = (strcasecmp($caption,$selected)==0) ? ' selected="selected"' : '';
     // look in the translation settings to see if this column name needs overriding
-    $langKey = "$modelName.$caption";
-    $trans = lang::get($langKey);
+    $trans = lang::get("dd:$field");
     // Only update the caption if this actually did anything
-    if ($trans != $langKey) {
+    if ($trans != "dd:$field" ) {
       $caption=$trans;
     }
     return '<option class="sub-option" value="'.htmlspecialchars($field)."\"$selHtml>".htmlspecialchars($caption).'</option>';

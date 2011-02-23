@@ -51,6 +51,14 @@ class Sample_Model extends ORM_Tree
     'survey_id' => 'Survey ID',
     'website_id' => 'Website ID'
   );
+  // define underlying fields which the user would not normally see, e.g. so they can be hidden from selection
+  // during a csv import
+  protected $hidden_fields=array(
+    'geom',
+    'date_start',
+    'date_end',
+    'date_type'
+  );
 
   /**
   * Validate and save the data.

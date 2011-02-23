@@ -71,10 +71,11 @@ $default_terms = array(
   'column_mapping_instructions' => 'Please map each column in the CSV file you are uploading to the associated attribute in the destination list. Any you do not set '.
       'at this stage can be set on a row per row basis by including a column in the import file for this data.',
   'upload_not_available' => 'The uploaded file is no longer available. Please try uploading again.',
-  // import field name overrides which have a key of the form model.caption
-  'occurrence.Taxa Taxon List (lookup existing record)' => 'Species or taxon selected from existing list',
-  'occurrence.Sample Entered Sref' => 'Sample spatial reference',
-  'occurrence.Sample Entered Sref System' => 'Sample spatial reference system',
+  
+  // define the captions for fields in the data dictionary
+  'dd:occurrence:fk_taxa_taxon_list' => 'Species or taxon selected from existing list',
+  'dd:sample:entered_sref' => 'Sample spatial reference',
+  'dd:sample:entered_sref_system' => 'Sample spatial reference system',
   
   // and import model name/field name prefix overrides
   'smpAttr' => 'Sample Custom Attributes',

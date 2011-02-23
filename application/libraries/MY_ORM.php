@@ -436,7 +436,7 @@ class ORM extends ORM_Core {
           }
           $fkRecords = $fkRecords->find_all();
           if (count($fkRecords)<1) {
-            $this->errors[$a] = 'Could not find a '.ucwords($b['fkTable']).' by looking for "'.$b['fkSearchValue'].
+            $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
                 '" in the '.ucwords($b['fkSearchField']).' field.';
             $r=false;
           } else {
@@ -709,11 +709,13 @@ class ORM extends ORM_Core {
    *
    * @return array Prefixed columns.
    */
-  protected function getPrefixedColumnsArray($fk=false) {
+  protected function getPrefixedColumnsArray($fk=false, $skipHiddenFields=true) {
     $r = array();
     $prefix=$this->object_name;
     $sub = $this->get_submission_structure();
     foreach ($this->table_columns as $column=>$type) {
+      if ($skipHiddenFields && isset($this->hidden_fields) && in_array($column, $this->hidden_fields))
+        continue;
       if ($fk && substr($column, -3) == "_id") {
         // don't include the fk link field if the submission is supposed to contain full data
         // for the supermodel record rather than just a link
@@ -947,7 +949,8 @@ class ORM extends ORM_Core {
           'fkIdField' => "$fieldName"."_id",
           'fkTable' => $lookupAgainst,
           'fkSearchField' => $fkModel->search_field,
-          'fkSearchValue' => trim($value['value'])
+          'fkSearchValue' => trim($value['value']),
+          'readableTableName' => ucwords(preg_replace('/[\s_]+/', ' ', $fkTable))
         );
         // if the save array defines a filter against the lookup table then also store that. E.g.
         // a search in the taxa_taxon_list table may want to filter by the taxon list. This is done
