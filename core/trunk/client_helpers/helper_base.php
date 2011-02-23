@@ -29,6 +29,11 @@ require_once('helper_config.php');
 class helper_base extends helper_config {
 
   /**
+   * @var array Website ID, stored here to assist with caching.
+   */
+  protected static $website_id = null;
+
+  /**
    * @var Array List of resources that have been identified as required by the controls used. This defines the
    * JavaScript and stylesheets that must be added to the page. Each entry is an array containing stylesheets and javascript
    * sub-arrays. This has public access so the Drupal module can perform Drupal specific resource output.
@@ -39,7 +44,7 @@ class helper_base extends helper_config {
    * @var Array List of all available resources known. Each resource is named, and contains a sub array of
    * deps (dependencies), stylesheets and javascripts.
    */
-  private static $resource_list=null;
+  public static $resource_list=null;
   
   /**
    * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
@@ -277,6 +282,7 @@ class helper_base extends helper_config {
    *   id: id of the report instance on the page if relevant, so that controls can be given unique ids.
    *   readAuth: read authorisation.
    *   field_name_prefix: optional prefix for form field names.
+   *   defaults: associative array of default values
    */
   public static function build_params_form($options) {
     $r = '';
@@ -290,8 +296,8 @@ class helper_base extends helper_config {
         'fieldname' => $fieldPrefix.$key
       );
       // If this parameter is in the URL or post data, put it in the control
-      if (isset($params[$key])) {
-        $ctrlOptions['default'] = $params[$key];
+      if (isset($options['defaults'][$key])) {
+        $ctrlOptions['default'] = $options['defaults'][$key];
       }
       if ($info['datatype']=='lookup' && isset($info['population_call'])) {
         // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
@@ -452,6 +458,81 @@ class helper_base extends helper_config {
     return $r;
   }
 
+ /**
+  * Internal function to find the path to the root of the site, including the trailing slash.
+  */  
+  protected static function getRootFolder() {
+    $rootFolder = dirname($_SERVER['PHP_SELF']);
+    if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
+    return $rootFolder;
+  }
+  
+  /**
+  * Retrieves a token and inserts it into a data entry form which authenticates that the
+  * form was submitted by this website.
+  *
+  * @param string $website_id Indicia ID for the website.
+  * @param string $password Indicia password for the website.
+  */
+  public static function get_auth($website_id, $password) {
+    $postargs = "website_id=$website_id";
+    $response = self::http_post(parent::$base_url.'index.php/services/security/get_nonce', $postargs);
+    $nonce = $response['output'];
+    $result = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
+        'value="'.sha1("$nonce:$password").'" />'."\r\n";
+    $result .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
+        'value="'.$nonce.'" />'."\r\n";
+    return $result;
+  }
+
+  /**
+  * Retrieves a read token and passes it back as an array suitable to drop into the
+  * 'extraParams' options for an Ajax call.
+  *
+  * @param string $website_id Indicia ID for the website.
+  * @param string $password Indicia password for the website.
+  */
+  public static function get_read_auth($website_id, $password) {
+    self::$website_id = $website_id; /* Store this for use with data caching */
+    $postargs = "website_id=$website_id";
+    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
+    $nonce = $response['output'];
+    return array(
+        'auth_token' => sha1("$nonce:$password"),
+        'nonce' => $nonce
+    );
+  }
+
+/**
+  * Retrieves read and write nonce tokens from the warehouse.
+  * @param string $website_id Indicia ID for the website.
+  * @param string $password Indicia password for the website.
+  * @return Returns an array containing:
+  * 'read' => the read authorisation array,
+  * 'write' => the write authorisation input controls to insert into your form.
+  * 'writeTokens' => the write authorisation array, if needed as separate tokens rather than just placing in form.
+  */
+  public static function get_read_write_auth($website_id, $password) {
+    self::$website_id = $website_id; /* Store this for use with data caching */
+    $postargs = "website_id=$website_id";
+    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_write_nonces', $postargs);
+    $nonces = json_decode($response['output'], true);
+    $write = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
+        'value="'.sha1($nonces['write'].':'.$password).'" />'."\r\n";
+    $write .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
+        'value="'.$nonces['write'].'" />'."\r\n";
+    return array(
+      'write' => $write,
+      'read' => array(
+        'auth_token' => sha1($nonces['read'].':'.$password),
+        'nonce' => $nonces['read']
+      ),
+      'write_tokens' => array(
+        'auth_token' => sha1($nonces['write'].':'.$password),
+        'nonce' => $nonces['write']
+      ),
+    );
+  }
   
 }
 

@@ -393,6 +393,27 @@
     }
     
     /**
+     * Selecting a feature on a vector reporting layer displays a popup.
+     */
+    function onFeatureSelect(feature) {
+        selectedFeature = feature;
+        var content="";
+        $.each(feature.data, function(name, value) {
+          if (name.substr(0, 5)!=="date_") {
+            content += '<tr><td style="font-weight:bold;">' + name + '</td><td>' + value + '</td></tr>';
+          }
+
+        });
+        popup = new OpenLayers.Popup.FramedCloud("popup", 
+                                 feature.geometry.getBounds().getCenterLonLat(),
+                                 null,
+                                 "<table style='font-size:.8em'>" + content + "</table>",
+                                 null, true);
+        feature.popup = popup;
+        feature.layer.map.addPopup(popup);
+    }
+
+    /**
     * Some pre-configured layers that can be added to the map.
     */    
     function _getPresetLayers() {
@@ -502,6 +523,36 @@
       });
 
       div.map.addLayers(this.settings.layers);
+      
+      // check if any global reporting layers are defined by other reports on the page
+      if (typeof reportingRecords!=="undefined") {
+        $.each(reportingRecords, function(i, records) {
+          var layer = new OpenLayers.Layer.Vector('Report output '+i, {});
+          var features=new Array(records.length);
+          $.each(records, function(j, record) {
+            var geom=OpenLayers.Geometry.fromWKT(record[record.wktCol]);
+            delete record[record.wktCol];
+            delete record.wktCol;
+            features[j] = new OpenLayers.Feature.Vector(geom, record);
+          });
+          layer.addFeatures(features);
+          div.map.addLayer(layer);
+          div.map.zoomToExtent(layer.getDataExtent());
+          // create a control for selecting features and displaying popups
+          selectControl = new OpenLayers.Control.SelectFeature(layer,
+                {onSelect: onFeatureSelect});
+          div.map.addControl(selectControl);
+          selectControl.activate();
+        });            
+        
+      } else {
+        // Centre the map
+        var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
+        if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
+          center.transform(div.map.displayProjection, div.map.projection);
+        }
+        div.map.setCenter(center, this.settings.initial_zoom);
+      }
 
       // This hack fixes an IE8 bug where it won't display Google layers when switching using the Layer Switcher.
       div.map.events.register('changebaselayer', null, function(e) {
@@ -511,14 +562,7 @@
         tmp=div;
         // after half a second, reset the map size
         setTimeout("tmp.style.height = (parseInt(tmp.style.height) + 1) + 'px'", 500);
-      }); 
-
-      // Centre the map
-      var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
-      if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
-        center.transform(div.map.displayProjection, div.map.projection);
-      }
-      div.map.setCenter(center, this.settings.initial_zoom);
+      });
 
       if (this.settings.editLayer) {
         // Add an editable layer to the map

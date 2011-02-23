@@ -125,9 +125,9 @@ class iform_report_grid {
   public static function get_form($args, $node, $response) {
     global $indicia_templates;
     // handle auto_params_form for backwards compatibility
-    if (empty($args['output_mode']) && !empty($args['auto_params_form'])) {
+    if (empty($args['output']) && !empty($args['auto_params_form'])) {
       if (!$args['auto_params_form']) 
-        $args['output_mode']='grid';
+        $args['output']='grid';
     }
     // put each param control in a div, which makes it easier to layout with CSS
     $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container">';
