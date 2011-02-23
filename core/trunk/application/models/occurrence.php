@@ -55,9 +55,7 @@ class Occurrence_Model extends ORM
     'occurrence_image:path:3'=>'Image Path 3',
     'occurrence_image:caption:3'=>'Image Caption 3',
     'occurrence_image:path:4'=>'Image Path 4',
-    'occurrence_image:caption:4'=>'Image Caption 4',
-    // Also allow a field to be uploaded which defines the taxon list to look in when searching for species during a csv upload
-    'fkFilter:taxa_taxon_list:taxon_list_id'=>'Species list to look for species naems in'
+    'occurrence_image:caption:4'=>'Image Caption 4'    
   );
 
   public function caption()
@@ -136,6 +134,10 @@ class Occurrence_Model extends ORM
    * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
    */
   public function fixed_values_form() {
+    $srefs = array();
+    foreach (kohana::config('sref_notations.sref_notations') as $code=>$caption) {
+      $srefs[] = "$code:$caption";
+    }
     return array(
       'website_id' => array( 
         'display'=>'Website', 
@@ -156,8 +158,17 @@ class Occurrence_Model extends ORM
         'description'=>'Select the spatial reference system used in this import file. Note, if you have a file with a mix of spatial reference systems then you need a '.
             'column in the import file which is mapped to the Sample Spatial Reference System field containing the spatial reference system code.', 
         'datatype'=>'lookup',
-        'lookup_values'=>'OSGB:OSGB - British National Grid'
+        'lookup_values'=>implode(',', $srefs)
       ),
+      // Also allow a field to be defined which defines the taxon list to look in when searching for species during a csv upload
+      'fkFilter:taxa_taxon_list:taxon_list_id'=>array(
+        'display' => 'Species list',
+        'description'=>'Select the species checklist which will be used when attempting to match species names.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:taxon_list:id:title',
+        'linked_to'=>'website_id',
+        'linked_filter_field'=>'website_id'
+      )
     );
   }
   

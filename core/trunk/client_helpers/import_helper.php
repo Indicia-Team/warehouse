@@ -40,8 +40,8 @@ class import_helper extends helper_base {
    * Required. The name of the model data is being imported into.</li>
    * <li><b>existing_file</b><br/>
    * Optional. The full path on the server to an already uploaded file to import.</li>
-   * <li><b>readAuth</b><br/>
-   * Read authorisation tokens.</li>
+   * <li><b>auth</b><br/>
+   * Read and write authorisation tokens.</li>
    * </ul>
    */
   public static function importer($options) {
@@ -65,7 +65,7 @@ class import_helper extends helper_base {
     // by this time, we should always have an existing file
     if (empty($_SESSION['uploaded_file'])) throw new Exception('File to upload could not be found');
     $request = parent::$base_url."index.php/services/import/get_import_settings/".$options['model'];
-    $request .= '?'.self::array_to_query_string($options['readAuth']);
+    $request .= '?'.self::array_to_query_string($options['auth']['read']);
     $response = self::http_post($request, array());
     if (!empty($response['output'])) {
       // get the path back to the same page
@@ -77,7 +77,7 @@ class import_helper extends helper_base {
           "<fieldset><legend>Import Settings</legend>\n";
       $r .= self::build_params_form(array(
         'form' => json_decode($response['output'], true),
-        'readAuth' => $options['readAuth']
+        'readAuth' => $options['auth']['read']
       ));
       $r .= '<input type="hidden" name="import_step" value="1" />';
       $r .= '<input type="submit" name="submit" value="'.lang::get('Next').'" class="ui-corner-all ui-state-default button" />';
@@ -108,23 +108,24 @@ class import_helper extends helper_base {
       $settings = '{}';    
     // cache the mappings
     $metadata = array('settings' => $settings);
+    $post = array_merge($options['auth']['write_tokens'], $metadata);
     $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
-    $response = self::http_post($request, $metadata);
+    $response = self::http_post($request, $post);
     if (!isset($response['output']) || $response['output'] != 'OK')
       return "Could not upload the settings metadata. <br/>".print_r($response, true);
       
     $request = parent::$base_url."index.php/services/import/get_import_fields/".$options['model'];
-    $request .= '?'.self::array_to_query_string($options['readAuth']);
+    $request .= '?'.self::array_to_query_string($options['auth']['read']);
     // include survey and website information in the request if available, as this limits the availability of custom attributes
-    if (!empty($_SESSION['upload_settings']['website_id']))
-      $request .= '&website_id='.$_SESSION['upload_settings']['website_id'];
-    if (!empty($_SESSION['upload_settings']['survey_id']))
-      $request .= '&survey_id='.$_SESSION['upload_settings']['survey_id'];
+    if (!empty($_POST['website_id']))
+      $request .= '&website_id='.$_POST['website_id'];
+    if (!empty($_POST['survey_id']))
+      $request .= '&survey_id='.$_POST['survey_id'];
     $response = self::http_post($request, array());
     $fields = json_decode($response['output'], true);
     // We are about to build the list of fields you can choose for the column mappings. Remove any which 
     // we already have a value for in the settings.
-    $fields = array_diff_key($fields, $_SESSION['upload_settings']);    
+    $fields = array_diff_key($fields, $_POST);
     $options = self::model_field_options($options['model'], $fields);
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
@@ -157,7 +158,7 @@ class import_helper extends helper_base {
       return lang::get('upload_not_available');
     $filename=basename($_SESSION['uploaded_file']);
     // move file to server
-    self::send_file_to_warehouse($filename, false, $options['readAuth'], 'import/upload_csv');    
+    self::send_file_to_warehouse($filename, false, $options['auth']['read'], 'import/upload_csv');    
     
     $reload = self::get_reload_link_parts();
     $reloadPath = $reload['path'];
@@ -170,8 +171,9 @@ class import_helper extends helper_base {
 ';
     // cache the mappings
     $metadata = array('mappings' => json_encode($_POST));
+    $post = array_merge($options['auth']['write_tokens'], $metadata);
     $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
-    $response = self::http_post($request, $metadata);
+    $response = self::http_post($request, $post);
     if (!isset($response['output']) || $response['output'] != 'OK')
       return "Could not upload the mappings metadata. <br/>".print_r($response, true);
     
@@ -209,7 +211,7 @@ class import_helper extends helper_base {
    */
   public static function upload_result($options) {
     $request = parent::$base_url."index.php/services/import/get_upload_result?uploaded_csv=".$_GET['uploaded_csv'];
-    $request .= '&'.self::array_to_query_string($options['readAuth']);
+    $request .= '&'.self::array_to_query_string($options['auth']['read']);
     $response = self::http_post($request, array());
     
     if (isset($response['output'])) {

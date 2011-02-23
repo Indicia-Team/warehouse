@@ -36,6 +36,7 @@ class Import_Controller extends Service_Base_Controller {
    * @return string JSON Parameters form details for this model, or empty string if no parameters form required.
    */
   public function get_import_settings($model) {
+    $this->authenticate('read');
     $model = ORM::factory($model);
     if (method_exists($model, 'fixed_values_form')) {      
       echo json_encode($model->fixed_values_form());      
@@ -49,6 +50,7 @@ class Import_Controller extends Service_Base_Controller {
    * @return string JSON listing the fields that can be imported.
    */
   public function get_import_fields($model) {
+    $this->authenticate('read');
     $model = ORM::factory($model);
     $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
     $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
@@ -101,6 +103,7 @@ class Import_Controller extends Service_Base_Controller {
    * is called by the JavaScript code responsible for a chunked upload, before the upload actually starts.
    */
   public function cache_upload_metadata() {
+    $this->authenticate();
     $metadata = array_merge($_POST);
     if (isset($metadata['mappings']))
       $metadata['mappings']=json_decode($metadata['mappings'], true);
@@ -132,6 +135,7 @@ class Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
+    $this->authenticate();
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->_get_metadata($_GET['uploaded_csv']);
     // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
@@ -215,6 +219,26 @@ class Import_Controller extends Service_Base_Controller {
       echo "{uploaded:$count,progress:$progress}";      
       $cache->set(basename($csvTempFile).'previousSupermodels', $this->previousCsvSupermodel);      
     }
+  }
+  
+  
+  /**
+   * Display the end result of an upload. Either displayed at the end of a non-AJAX upload, or redirected
+   * to directly by the AJAX code that is performing a chunked upload when the upload completes.
+   * Requires a get parameter for the uploaded_csv filename.
+   * @return string JSON containing the problems cound and error file name.
+   */
+  public function get_upload_result() {
+    $this->authenticate('read');
+    $metadataFile = str_replace('.csv','-metadata.txt', $_GET['uploaded_csv']);    
+    $errorFile = str_replace('.csv','-errors.csv',$_GET['uploaded_csv']);
+    $metadata = $this->_get_metadata($_GET['uploaded_csv']);
+    echo json_encode(array('problems'=>$metadata['errorCount'], 'file' => url::base().'upload/'.basename($errorFile)));
+    // clean up the uploaded file and mapping file, but not the error file as we will make it downloadable.
+    if (file_exists(DOCROOT . "upload/" . $_GET['uploaded_csv']))
+      unlink(DOCROOT . "upload/" . $_GET['uploaded_csv']);
+    if (file_exists(DOCROOT . "upload/" . $metadataFile))
+      unlink(DOCROOT . "upload/" . $metadataFile);
   }
   
   /**
@@ -310,24 +334,6 @@ class Import_Controller extends Service_Base_Controller {
       fputcsv($errorHandle, $headers);
     }
     return $errorHandle;
-  }
-  
-  /**
-   * Display the end result of an upload. Either displayed at the end of a non-AJAX upload, or redirected
-   * to directly by the AJAX code that is performing a chunked upload when the upload completes.
-   * Requires a get parameter for the uploaded_csv filename.
-   * @return string JSON containing the problems cound and error file name.
-   */
-  public function get_upload_result() {    
-    $metadataFile = str_replace('.csv','-metadata.txt', $_GET['uploaded_csv']);    
-    $errorFile = str_replace('.csv','-errors.csv',$_GET['uploaded_csv']);
-    $metadata = $this->_get_metadata($_GET['uploaded_csv']);
-    echo json_encode(array('problems'=>$metadata['errorCount'], 'file' => url::base().'upload/'.basename($errorFile)));
-    // clean up the uploaded file and mapping file, but not the error file as we will make it downloadable.
-    if (file_exists(DOCROOT . "upload/" . $_GET['uploaded_csv']))
-      unlink(DOCROOT . "upload/" . $_GET['uploaded_csv']);
-    if (file_exists(DOCROOT . "upload/" . $metadataFile))
-      unlink(DOCROOT . "upload/" . $metadataFile);
   }
 
 }
