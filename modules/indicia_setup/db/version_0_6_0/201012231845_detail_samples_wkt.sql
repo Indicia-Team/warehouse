@@ -9,6 +9,3 @@ CREATE OR REPLACE VIEW detail_samples AS
    JOIN users u ON u.id = s.updated_by_id
   WHERE s.deleted = false;
 
-ALTER TABLE detail_samples OWNER TO indicia_user;
-GRANT SELECT ON TABLE detail_samples TO indicia_report_user;
-GRANT ALL ON TABLE detail_samples TO indicia_user;
