@@ -2253,7 +2253,7 @@ $('#cc-4-valid-photo-button').click(function(){
 	jQuery('#cc-5').showPanel();
 	var numInsects = jQuery('#cc-4-photo-reel').find('.thumb').length - 1; // ignore blank
 	var numUnidentified = jQuery('#cc-4-photo-reel').find('.thumb-text').length;
-	if(jQuery('#id-flower-later').attr('checked') != '' || numInsects==0 || (numUnidentified/numInsects > (1-(".$args['percent_insects']."/100.0)))){
+	if(jQuery('#id-flower-later').attr('checked') != '' || (numInsects>0 && (numUnidentified/numInsects > (1-(".$args['percent_insects']."/100.0))))){
 		jQuery('#cc-5-good').hide();
 		jQuery('#cc-5-bad').show();
 		jQuery('#cc-5-complete-collection').hide();

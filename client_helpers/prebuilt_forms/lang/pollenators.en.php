@@ -106,8 +106,8 @@ $custom_terms = array(
 	,'LANG_Invalid_Location' => 'The format given for this Lat/Long combination is invalid'
 	,'LANG_Session_Error' => "An internal error has occurred. There does not seem to be a session attached to this collection."
 	
-	,'LANG_Can_Complete_Msg' => 'You have identified the Flower and a sufficient number of insects, so you may now close the collection'
-	,'LANG_Cant_Complete_Msg' => 'You have either: not identified the Flower, AND/OR not identified a sufficient number of insects. You will need to correct this before you can close the collection.'
+	,'LANG_Can_Complete_Msg' => 'You have identified the Flower and a sufficient percentage of insects, so you may now close the collection'
+	,'LANG_Cant_Complete_Msg' => 'You have either: not identified the Flower, AND/OR not identified a sufficient percentage of insects. You will need to correct this before you can close the collection.'
 	,'LANG_Complete_Collection' => 'Complete Collection'
 	,'LANG_Trailer_Head' => 'After closing this collection'
 	,'LANG_Trailer_Point_1' => "you can no longer add to this collection's list of insects: are you sure there are no more?"
