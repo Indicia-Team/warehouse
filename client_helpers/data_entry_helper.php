@@ -283,11 +283,6 @@ class data_entry_helper extends helper_base {
   private static $displayed_errors=array();
 
   /**
-   * @var array Website ID, stored here to assist with caching.
-   */
-  private static $website_id = null;
-
-  /**
    * @var array Name of the form which has been set up for jQuery validation, if any.
    */
   public static $validated_form_id = null;
@@ -4214,74 +4209,6 @@ $onload_javascript
       $r .= '<br/>';
     }
     return $r;
-  }
-
-
-  /**
-  * Retrieves a token and inserts it into a data entry form which authenticates that the
-  * form was submitted by this website.
-  *
-  * @param string $website_id Indicia ID for the website.
-  * @param string $password Indicia password for the website.
-  */
-  public static function get_auth($website_id, $password) {
-    $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'index.php/services/security/get_nonce', $postargs);
-    $nonce = $response['output'];
-    $result = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
-        'value="'.sha1("$nonce:$password").'" />'."\r\n";
-    $result .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
-        'value="'.$nonce.'" />'."\r\n";
-    return $result;
-  }
-
-  /**
-  * Retrieves a read token and passes it back as an array suitable to drop into the
-  * 'extraParams' options for an Ajax call.
-  *
-  * @param string $website_id Indicia ID for the website.
-  * @param string $password Indicia password for the website.
-  */
-  public static function get_read_auth($website_id, $password) {
-    self::$website_id = $website_id; /* Store this for use with data caching */
-    $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_nonce', $postargs);
-    $nonce = $response['output'];
-    return array(
-        'auth_token' => sha1("$nonce:$password"),
-        'nonce' => $nonce
-    );
-  }
-
-/**
-  * Retrieves read and write nonce tokens from the warehouse.
-  * @param string $website_id Indicia ID for the website.
-  * @param string $password Indicia password for the website.
-  * @return Returns an array containing:
-  * 'read' => the read authorisation array,
-  * 'write' => the write authorisation input controls to insert into your form.
-  * 'writeTokens' => the write authorisation array, if needed as separate tokens rather than just placing in form.
-  */
-  public static function get_read_write_auth($website_id, $password) {
-    self::$website_id = $website_id; /* Store this for use with data caching */
-    $postargs = "website_id=$website_id";
-    $response = self::http_post(parent::$base_url.'index.php/services/security/get_read_write_nonces', $postargs);
-    $nonces = json_decode($response['output'], true);
-    $write = '<input id="auth_token" name="auth_token" type="hidden" class="hidden" ' .
-        'value="'.sha1($nonces['write'].':'.$password).'" />'."\r\n";
-    $write .= '<input id="nonce" name="nonce" type="hidden" class="hidden" ' .
-        'value="'.$nonces['write'].'" />'."\r\n";
-    return array(
-      'write' => $write,
-      'read' => array(
-        'auth_token' => sha1($nonces['read'].':'.$password),
-        'nonce' => $nonces['read']
-      ),
-      'write_tokens' => array(
-        'auth_token' => sha1($nonces['write'].':'.$password),
-        'nonce' => $nonces['write']
-      ),
-    );
   }
 
   /**

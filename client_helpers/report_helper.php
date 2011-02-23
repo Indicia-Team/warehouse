@@ -318,11 +318,64 @@ class report_helper extends helper_base {
   }
   
   /**
+   * WORK IN PROGRESS.
+   * Function to output a report onto a map rather than a grid.
+   */
+  public static function report_map($options) {
+    $options = self::get_report_grid_options($options);
+    $r = '<div id="'.$options['id'].'">';
+    // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
+    // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
+    // parameters form if needed, else the report data. 
+    $response = self::get_report_data($options, $extraParams);
+    if (isset($response['error'])) return $response['error'];
+    if (isset($response['parameterRequest'])) {
+      $currentParamValues = self::get_report_grid_current_param_values($options);
+      $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+      // if we have a complete set of parameters in the URL, we can re-run the report to get the data
+      if (count($currentParamValues)==count($response['parameterRequest'])) {
+        $response = self::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
+        if (isset($response['error'])) return $response['error'];
+        $records = $response['records'];
+      }
+    } else {
+      $records = $response['records'];
+    }
+    // find the geom column
+    foreach($response['columns'] as $col=>$cfg) {
+      if ($cfg['mappable']=='true') {
+        $wktCol = $col;
+        break;
+      }
+    }
+    if (!isset($wktCol))
+      return lang::get("The report does not contain any mappable data");
+    $r = "
+// create a global to hold the list of reporting records, unless already exists if another report on the page.
+if (typeof reportingRecords==='undefined') {
+  reportingRecords = [];
+}
+// create an array unique to this report's output
+reportingRecords.push([]);
+function addDistPoint(record, wktCol) {
+  // identify the wkt column
+  record['wktCol'] = wktCol;
+  reportingRecords[reportingRecords.length-1].push(record);
+}\n";
+    foreach ($records as $record) {
+      $r .= "addDistPoint(".json_encode($record).", '".$wktCol."');\n";
+    }
+    report_helper::$javascript.=$r;
+    return '';
+  }
+  
+  /**
    * Method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
    * @param array $options Options array for the control. Can contain a dataSource (report or table/view name),
    * mode (direct or report) and readAuth entries. Pass linkOnly=true to return just a link to the report data
    * rather than the data.
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
+   * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array. 
    */
   public static function get_report_data($options, $extra='') {
     if ($options['mode']=='report') {
@@ -460,7 +513,7 @@ class report_helper extends helper_base {
         if (substr($key,0,6)!='param-')
           $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
       }
-      $r .= self::build_params_form(array_merge(array('form'=>$response['parameterRequest'], 'field_name_prefix'=>'param'), $options));
+      $r .= self::build_params_form(array_merge(array('form'=>$response['parameterRequest'], 'field_name_prefix'=>'param', 'defaults'=>$params), $options));
       if ($options['completeParamsForm']==true) {
         $r .= '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'."\n";
         $r .= "</fieldset></form>\n";
