@@ -42,10 +42,10 @@ function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=nu
         }
         if (!empty($attribute['outer_structure_block']))
           $r .= '<fieldset id="'.get_fieldset_id($attribute['outer_structure_block']).
-              '"><legend>'.$attribute['outer_structure_block'].'</legend>';
+              '"><legend>'.lang::get($attribute['outer_structure_block']).'</legend>';
         if (!empty($attribute['inner_structure_block']))
           $r .= '<fieldset id="'.get_fieldset_id($attribute['outer_structure_block'], $attribute['inner_structure_block']).
-              '"><legend>'.$attribute['inner_structure_block'].'</legend>';
+              '"><legend>'.lang::get($attribute['inner_structure_block']).'</legend>';
       }
       elseif ($lastInnerBlock!=$attribute['inner_structure_block']) {
         if (!empty($lastInnerBlock)) {
@@ -53,7 +53,7 @@ function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=nu
         }
         if (!empty($attribute['inner_structure_block']))
           $r .= '<fieldset id="'.get_fieldset_id($lastOuterBlock, $attribute['inner_structure_block']).
-              '"><legend>'.$attribute['inner_structure_block'].'</legend>';
+              '"><legend>'.lang::get($attribute['inner_structure_block']).'</legend>';
       }
       $lastInnerBlock=$attribute['inner_structure_block'];
       $lastOuterBlock=$attribute['outer_structure_block'];

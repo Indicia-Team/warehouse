@@ -59,7 +59,8 @@ class Location_Model extends ORM_Tree {
       'deleted',
       'centroid_geom',
       'boundary_geom',
-      'location_type_id'
+      'location_type_id',
+      'comment'
     );
     return parent::validate($array, $save);
   }

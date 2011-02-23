@@ -467,7 +467,7 @@ class iform_mnhnl_dynamic_1 {
       return $r;
     }
     
-    if ($mode == MODE_EXISTING) {
+    if ($mode == MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { // only load if not in error situation
       data_entry_helper::$entity_to_load = array();
       // Displaying an existing sample. If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
       // rather than a grid of occurrences then we must load the occurrence data to get the sample id.
