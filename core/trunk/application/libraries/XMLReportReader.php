@@ -86,6 +86,7 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('visible'),
                     $reader->getAttribute('img'),
                     $reader->getAttribute('orderby'),
+                    $reader->getAttribute('mappable'),
                     false
                 );
                 break;
@@ -412,7 +413,7 @@ class XMLReportReader_Core implements ReportReader
     }
   }
 
-  private function mergeColumn($name, $display = '', $style = '', $class='', $visible='', $img='', $orderby='', $autodef=true)
+  private function mergeColumn($name, $display = '', $style = '', $class='', $visible='', $img='', $orderby='', $mappable='false', $autodef=true)
   {
     if (array_key_exists($name, $this->columns))
     {
@@ -422,10 +423,11 @@ class XMLReportReader_Core implements ReportReader
       if ($visible == 'false' || $this->columns[$name]['visible'] == 'false') $this->columns[$name]['visible'] = 'false';
       if ($img == 'true' || $this->columns[$name]['img'] == 'true') $this->columns[$name]['img'] = 'true';
       if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
+      if ($this->columns[$name]['mappable'] == 'true' || $mappable == 'true') $this->columns[$name]['mappable'] = 'true';
       if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
     }
     else
-    {
+    {    
       $this->columns[$name] = array(
           'display' => $display,
           'style' => $style,
@@ -433,6 +435,7 @@ class XMLReportReader_Core implements ReportReader
           'visible' => $visible == '' ? 'true' : $visible,
           'img' => $img == '' ? 'false' : $img,
           'orderby' => $orderby,
+          'mappable' => $mappable,
           'autodef' => $autodef);
     }
   }
@@ -504,7 +507,7 @@ class XMLReportReader_Core implements ReportReader
     // force visible if the column is already declared as visible. This prevents the id field from being forced to hidden if explicitly included.
     if (isset($this->columns['lt'.$this->tableIndex."_".$name]['visible']) && $this->columns['lt'.$this->tableIndex."_".$name]['visible']=='true')
       $visible = 'true';
-    $this->mergeColumn('lt'.$this->tableIndex."_".$name, $display, $style, $class, $visible, $autodef);
+    $this->mergeColumn('lt'.$this->tableIndex."_".$name, $display, $style, $class, $visible, 'false', $autodef);
   }
 
   private function setMergeTabColumn($name, $tablename, $separator, $where = '', $display = '')
