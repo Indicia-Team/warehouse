@@ -1,4 +1,4 @@
-#legend {
+#layers {
   float: right; 
   width: 300px; 
   border: dotted 1px;
@@ -6,7 +6,29 @@
   padding: 0.5em;
 }
 
-#legend img {
+#layers img {
   margin: 0px;
   border: none;
+  margin-right: 1em;
+}
+
+#layers ul li {
+  list-style: none;
+  background: none;
+}
+
+#layers ul li * {
+  vertical-align: middle;
+}
+
+#layers ul li div {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: none 1px;
+  margin-right: 1em;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
 }

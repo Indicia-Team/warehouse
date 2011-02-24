@@ -14,12 +14,16 @@
  */
 
 /**
+ * Add functions to this array for them to be called when the map initialises.
+ */ 
+mapInitialisationHooks = [];
+
+/**
 * Class: indiciaMapPanel
 * JavaScript & OpenLayers based map implementation class for Indicia data entry forms.
 * This code file supports read only maps. A separate plugin will then run on top of this to provide editing support
 * and can be used in a chainable way. Likewise, another plugin will provide support for finding places.
 */
-
 
 (function($) {
   $.fn.indiciaMapPanel = function(options, olOptions) {
@@ -759,6 +763,10 @@
         });
       }
       _bindControls(this);
+      // call any post initialisation hooks
+      $.each(mapInitialisationHooks, function(i, fn) {
+        fn(div);
+      });
     });
 
   };
