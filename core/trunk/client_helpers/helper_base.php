@@ -78,7 +78,41 @@ class helper_base extends helper_config {
    */
   public static $onload_javascript = '';
   
-    /**
+  /**
+   * List of methods used to report a validation failure. Options are message, message, hint, icon, colour, inline.
+   * The inline option specifies that the message should appear on the same line as the control.
+   * Otherwise it goes on the next line, indented by the label width. Because in many cases, controls
+   * on an Indicia form occupy the full available width, it is often more appropriate to place error
+   * messages on the next line so this is the default behaviour.
+   * @var array
+   */
+  public static $validation_mode=array('message', 'colour');
+
+  /**
+   * @var string Helptext positioning. Determines where the information is displayed when helpText is defined for a control.
+   * Options are before, after.
+   */
+  public static $helpTextPos='after';
+
+  /**
+   * @var array List of all error messages returned from an attempt to save.
+   */
+  public static $validation_errors=null;
+  
+  /**
+   * @var Array of default validation rules to apply to the controls on the form if the
+   * built in client side validation is used (with the jQuery validation plugin). This array
+   * can be replaced if required.
+   * @todo This array could be auto-populated with validation rules for a survey's fields from the
+   * Warehouse.
+   */
+  public static $default_validation_rules = array(
+    'sample:date'=>array('required', 'dateISO'),
+    'sample:entered_sref'=>array('required'),
+    'occurrence:taxa_taxon_list_id'=>array('required')
+  );
+  
+  /**
    * Array of html attributes. When replacing items in a template, these get automatically wrapped. E.g.
    * a template replacement for the class will be converted to class="value". The key is the parameter name,
    * and the value is the html attribute it will be wrapped into.
@@ -199,6 +233,48 @@ class helper_base extends helper_config {
       );
     }
     return self::$resource_list;
+  }
+  
+  /**
+   * Returns a span containing any validation errors active on the form for the
+   * control with the supplied ID.
+   *
+   * @param string $fieldname Fieldname of the control to retrieve errors for.
+   * @param boolean $plaintext Set to true to return just the error text, otherwise it is wrapped in a span.
+   */
+  public static function check_errors($fieldname, $plaintext=false)
+  {
+    $error='';
+    if (self::$validation_errors!==null) {
+       if (array_key_exists($fieldname, self::$validation_errors)) {
+         $errorKey = $fieldname;
+       } elseif (substr($fieldname, -4)=='date') {
+          // For date fields, we also include the type, start and end validation problems
+          if (array_key_exists($fieldname.'_start', self::$validation_errors)) {
+            $errorKey = $fieldname.'_start';
+          }
+          if (array_key_exists($fieldname.'_end', self::$validation_errors)) {
+            $errorKey = $fieldname.'_end';
+          }
+          if (array_key_exists($fieldname.'_type', self::$validation_errors)) {
+            $errorKey = $fieldname.'_type';
+          }
+       }
+       if (isset($errorKey)) {
+         $error = self::$validation_errors[$errorKey];
+         // Track errors that were displayed, so we can tell the user about any others.
+         self::$displayed_errors[] = $error;
+       }
+    }
+    if ($error!='') {
+      if ($plaintext) {
+        return $error;
+      } else {
+        return self::apply_error_template($error, $fieldname);
+      }
+    } else {
+      return '';
+    }
   }
   
   /**
@@ -427,7 +503,7 @@ class helper_base extends helper_config {
   protected static function send_file_to_warehouse($path, $persist_auth=false, $readAuth = null, $service='data/handle_media') {
     if ($readAuth==null) $readAuth=$_POST;
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-    $uploadpath = data_entry_helper::relative_client_helper_path() . $interim_image_folder;
+    $uploadpath = self::relative_client_helper_path() . $interim_image_folder;
     if (!file_exists($uploadpath.$path)) 
       return "The file $uploadpath$path does not exist and cannot be uploaded to the Warehouse.";
     $serviceUrl = parent::$base_url."index.php/services/".$service;
@@ -441,7 +517,7 @@ class helper_base extends helper_config {
     if ($persist_auth)
       $postargs['persist_auth'] = 'true';
     $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));    
-    $response = data_entry_helper::http_post($serviceUrl, $file_to_upload + $postargs);    
+    $response = self::http_post($serviceUrl, $file_to_upload + $postargs);    
     $output = json_decode($response['output'], true);
     $r = true; // default is success
     if (is_array($output)) {
@@ -632,6 +708,227 @@ $onload_javascript
    */
   protected static function setup_additional_js() {
     // no implementation
+  }
+  
+  /**
+   * Internal method to build a control from its options array and its template. Outputs the
+   * prefix template, a label (if in the options), a control, the control's errors and a
+   * suffix template.
+   *
+   * @param string $template Name of the control template, from the global $indicia_templates variable.
+   * @param array $options Options array containing the control replacement values for the templates.
+   * Options can contain a setting for prefixTemplate or suffixTemplate to override the standard templates.
+   */
+  protected static function apply_template($template, $options) {
+    global $indicia_templates;
+    // Don't need the extraParams - they are just for service communication.
+    $options['extraParams']=null;
+    // Set default validation error output mode
+    if (!array_key_exists('validation_mode', $options)) {
+      $options['validation_mode']=self::$validation_mode;
+    }
+    // Decide if the main control has an error. If so, highlight with the error class and set it's title.
+    $error="";
+    if (self::$validation_errors!==null) {
+      if (array_key_exists('fieldname', $options)) {
+        $error = self::check_errors($options['fieldname'], true);
+      }
+    }
+    // Add a hint to the control if there is an error and this option is set
+    if ($error && in_array('hint', $options['validation_mode'])) {
+      $options['title'] = 'title="'.$error.'"';
+    } else {
+      $options['title'] = '';
+    }
+    if (!array_key_exists('class', $options)) {
+      $options['class']='';
+    }
+    if (!array_key_exists('disabled', $options)) {
+      $options['disabled']='';
+    }
+    // Add an error class to colour the control if there is an error and this option is set
+    if ($error && in_array('colour', $options['validation_mode'])) {
+      $options['class'] .= ' ui-state-error';
+      if (array_key_exists('outerClass', $options)) {
+        $options['outerClass'] .= ' ui-state-error';
+      } else {
+        $options['outerClass'] = 'ui-state-error';
+      }
+    }
+    // add validation metadata to the control if specified, as long as control has a fieldname
+    if (array_key_exists('fieldname', $options)) {
+      $validationClasses = self::build_validation_class($options);
+      $options['class'] .= ' '.$validationClasses;
+    }
+    // replace html attributes with their wrapped versions, e.g. a class becomes class="..."
+    foreach (self::$html_attributes as $name => $attr) {
+      if (!empty($options[$name])) {
+        $options[$name]=' '.$attr.'="'.$options[$name].'"';
+      }
+    }
+
+    // If options contain a help text, output it at the end if that is the preferred position
+    $r = self::get_help_text($options, 'before');
+    //Add prefix
+    $r .= self::apply_static_template('prefix', $options);
+
+    // Add a label only if specified in the options array. Link the label to the inputId if available,
+    // otherwise the fieldname (as the fieldname control could be a hidden control).
+    if (array_key_exists('label', $options)) {
+      $r .= str_replace(
+          array('{label}', '{id}', '{labelClass}'),
+          array(
+              $options['label'],
+              array_key_exists('inputId', $options) ? $options['inputId'] : $options['id'],
+              array_key_exists('labelClass', $options) ? ' class="'.$options['labelClass'].'"' : '',
+          ),
+          $indicia_templates['label']
+      );
+    }
+    // Output the main control
+    $r .= self::apply_replacements_to_template($indicia_templates[$template], $options);
+
+    // Add an error icon to the control if there is an error and this option is set
+    if ($error && in_array('icon', $options['validation_mode'])) {
+      $r .= $indicia_templates['validation_icon'];
+    }
+    // Add a message to the control if there is an error and this option is set
+    if (in_array('message', $options['validation_mode'])) {
+      $r .=  self::apply_error_template($error, $options['fieldname']);
+    }
+
+    // Add suffix
+    if (isset($validationClasses) && !empty($validationClasses) && strpos($validationClasses, 'required')!==false) {
+      $r .= self::apply_static_template('requiredsuffix', $options);
+    } else {
+      $r .= self::apply_static_template('suffix', $options);
+    }
+
+    // If options contain a help text, output it at the end if that is the preferred position
+    $r .= self::get_help_text($options, 'after');
+
+    return $r;
+  }
+  
+  
+  
+    /**
+   * Converts the validation rules in an options array into a string that can be used as the control class,
+   * to trigger the jQuery validation plugin.
+   * @param $options. For validation to be applied should contain a validation entry, containing a single
+   * validation string or an array of strings.
+   * @return string The validation rules formatted as a class.
+   */
+  protected static function build_validation_class($options) {
+    global $custom_terms;
+    $rules = (array_key_exists('validation', $options) ? $options['validation'] : array());
+    if (!is_array($rules)) $rules = array($rules);
+    if (array_key_exists($options['fieldname'], self::$default_validation_rules)) {
+      $rules = array_merge($rules, self::$default_validation_rules[$options['fieldname']]);
+    }
+    // Build internationalised validation messages for jQuery to use, if the fields have internationalisation strings specified
+    foreach ($rules as $rule) {
+      if (isset($custom_terms) && array_key_exists($options['fieldname'], $custom_terms))
+        self::$validation_messages[$options['fieldname']][$rule] = sprintf(lang::get("validation_$rule"),
+          lang::get($options['fieldname']));
+    }
+    // Convert these rules into jQuery format.
+    return self::convert_to_jquery_val_metadata($rules);
+  }
+  
+  /**
+   * Returns templated help text for a control, but only if the position matches the $helpTextPos value, and
+   * the $options array contains a helpText entry.
+   * @param array $options Control's options array
+   * @param string $pos Either before or after. Defines the position that is being requested.
+   * @return string Templated help text, or nothing.
+   */
+  protected static function get_help_text($options, $pos) {
+    if (array_key_exists('helpText', $options) && !empty($options['helpText']) && self::$helpTextPos == $pos) {
+      return str_replace('{helpText}', $options['helpText'], self::apply_static_template('helpText', $options));
+    } else
+      return '';
+  }
+  
+  /**
+   * Takes a template string (e.g. <div id="{id}">) and replaces the tokens with the equivalent values looked up from the $options array.
+   */ 
+  protected static function apply_replacements_to_template($template, $options) {
+    // Build an array of all the possible tags we could replace in the template.
+    $replaceTags=array();
+    $replaceValues=array();
+    foreach (array_keys($options) as $option) {
+      if (!is_array($options[$option])) {
+        array_push($replaceTags, '{'.$option.'}');
+        array_push($replaceValues, $options[$option]);
+      }
+    }
+    return str_replace($replaceTags, $replaceValues, $template);
+  }
+  
+   /**
+  * Takes a list of validation rules in Kohana/Indicia format, and converts them to the jQuery validation
+  * plugin metadata format.
+  * @param array $rules List of validation rules to be converted.
+  * @return string Validation metadata classes to add to the input element.
+  * @todo Implement a more complete list of validation rules.
+  */
+  protected static function convert_to_jquery_val_metadata($rules) {
+    $converted = array();
+    foreach ($rules as $rule) {
+      // Detect the rules that can simply be passed through
+      if    ($rule=='required'
+          || $rule=='dateISO'
+          || $rule=='email'
+          || $rule=='url'
+          || $rule=='time') {
+        $converted[] = $rule;
+       } else if ($rule=='digit') {
+         $converted[] = 'digits';
+       }
+       // Now any rules which need parsing or convertion
+    }
+    return implode(' ', $converted);
+  }
+  
+   /**
+  * Returns a static template which is either a default template or one
+  * specified in the options
+  * @param string $name The static template type. e.g. prefix or suffix.
+  * @param array $options Array of options which may contain a template name.
+  * @return string Template value.
+  */
+  protected static function apply_static_template($name, $options) {
+    global $indicia_templates;
+    $key = $name .'Template';
+    $r = '';
+
+    if (array_key_exists($key, $options)) {
+      //a template has been specified
+      if (array_key_exists($options[$key], $indicia_templates))
+        //the specified template exists
+        $r = $indicia_templates[$options[$key]];
+      else
+        $r = $indicia_templates[$name] .
+        '<span class="ui-state-error">Code error: suffix template '.$options[$key].' not in list of known templates.</span>';
+    } else {
+      //no template specified
+      $r = $indicia_templates[$name];
+    }
+    return self::apply_replacements_to_template($r, $options);
+  }
+  
+  /**
+   * Method to format a control error message inside a templated span.
+   */ 
+  private static function apply_error_template($error, $fieldname) {
+    if (empty($error)) 
+      return '';
+    global $indicia_templates;
+    if (empty($error)) return '';
+    $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
+    $template = str_replace('{for}', $fieldname, $template);
+    return str_replace('{error}', lang::get($error), $template);
   }
   
 }
