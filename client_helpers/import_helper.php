@@ -48,12 +48,25 @@ class import_helper extends helper_base {
     if (isset($_GET['total'])) {
       return self::upload_result($options);
     } elseif (!isset($_POST['import_step'])) {
-      return self::import_settings_form($options);
+      if (count($_FILES)==1)      
+        return self::import_settings_form($options);
+      else
+        return self::upload_form($options);
     } elseif ($_POST['import_step']==1) {
       return self::upload_mappings_form($options);
     } elseif ($_POST['import_step']==2) {
       return self::run_upload($options);
     }
+  }
+  
+  private static function upload_form($options) {
+    $reload = data_entry_helper::get_reload_link_parts();
+    
+    $r = '<form action="'.$reload['path'].'" method="post" enctype="multipart/form-data">';
+    $r .= '<label for="id">'.lang::get('Select file to upload').'</label>';
+    $r .= '<input type="file" name="upload" id="upload"/>';
+    $r .= '<input type="Submit" value="'.lang::get('Upload').'"></form>';
+    return $r;
   }
   
   /**
@@ -62,6 +75,7 @@ class import_helper extends helper_base {
   private static function import_settings_form($options) {
     $r = '';
     $_SESSION['uploaded_file'] = self::get_uploaded_file($options);
+    
     // by this time, we should always have an existing file
     if (empty($_SESSION['uploaded_file'])) throw new Exception('File to upload could not be found');
     $request = parent::$base_url."index.php/services/import/get_import_settings/".$options['model'];
@@ -153,7 +167,8 @@ class import_helper extends helper_base {
   /**
    * Display the page which outputs the upload progress bar. Adds JavaScript to the page which performs the chunked upload.
    */
-  private static function run_upload($options) {    
+  private static function run_upload($options) {
+    self::add_resource('jquery_ui');
     if (!file_exists($_SESSION['uploaded_file']))
       return lang::get('upload_not_available');
     $filename=basename($_SESSION['uploaded_file']);
