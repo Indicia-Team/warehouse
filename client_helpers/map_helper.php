@@ -1,4 +1,4 @@
-<?php
+a<?php
 
 /**
  * Indicia, the OPAL Online Recording Toolkit.
@@ -22,7 +22,7 @@
 
 require_once('helper_base.php');
  
-class helper_base extends helper_config {
+class map_helper extends helper_base {
  
   /**
   * Outputs a map panel.
@@ -265,5 +265,80 @@ class helper_base extends helper_config {
       
       return self::apply_template('map_panel', $options);
     }
+  }
+  
+ /**
+  * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
+  * Has the following possible options:
+  * <ul><li><b>id</b><br/>
+  * </li>
+  * <li><b>includeIcons</b><br/>
+  * </li>
+  * <li><b>includeSelectors</b><br/>
+  * </li>
+  * <li><b>includeHiddenLayers</b><br/>
+  * </li>
+  * <li><b>layerTypes</b><br/>
+  * </li>
+  * </ul>
+  */
+  public static function layer_list($options) {
+    $options = array_merge(array(
+      'id' => 'layers',
+      'includeIcons' => true,
+      'includeSelectors' => false,
+      'includeHiddenLayers' => false,
+      'layerTypes' => array('base','overlay')
+    ), $options);
+    $r .= '<div id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all"><ul>';
+    $r .= '</ul></div>';  
+    self::$javascript .= "function getLayerHtml_".$options['id']."(layer, div) {\n  ";
+    if (!$options['includeHiddenLayers']) 
+      self::$javascript .= "if (!layer.visibility) {return '';}\n  ";
+    if (!in_array('base', $options['layerTypes']))
+      self::$javascript .= "if (layer.isBaseLayer) {return '';}\n  ";
+    if (!in_array('overlay', $options['layerTypes']))
+      self::$javascript .= "if (!layer.isBaseLayer) {return '';}\n  ";
+    self::$javascript .= "var layerHtml = '<li id=\"'+layer.id.replace(/\./g,'-')+'\">';\n  ";
+    if ($options['includeIcons']) 
+      // @todo support base layers and WFS layers
+      self::$javascript .= "if (layer.isBaseLayer) {
+    layerHtml += '<img src=\"".self::getRootFolder() . self::relative_client_helper_path()."../media/images/map.png\" width=\"16\" height=\"16\"/>';
+  } else if (layer instanceof OpenLayers.Layer.WMS) {
+    layerHtml += '<img src=\"' + div.settings.indiciaGeoSvc + 'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
+      '&STYLES='+layer.params.STYLES +'\" alt=\"'+layer.name+'\"/>';
+  } else if (layer instanceof OpenLayers.Layer.Vector) {
+    var style=layer.styleMap.styles.default.defaultStyle;
+    layerHtml += '<div style=\"border: solid 1px ' + style.strokeColor +'; background-color: ' + style.fillColor + '\"> </div>';
+  } else {
+    layerHtml += '<div></div>';
+  }\n";
+    self::$javascript .= "  layerHtml += layer.name;
+  return layerHtml;
+}
+    
+function refreshLayers_".$options['id']."(div) {
+  $('#".$options['id']." ul li').remove();
+  $.each(div.map.layers, function(i, layer) {
+    $('#".$options['id']." ul').append(getLayerHtml_".$options['id']."(layer, div));
+  });    
+}
+
+mapInitialisationHooks.push(function(div) { 
+  refreshLayers_".$options['id']."(div);
+  div.map.events.register('addlayer', div.map, function(object, element) {
+    refreshLayers_".$options['id']."(div);
+  });
+  div.map.events.register('changelayer', div.map, function(object, element) {
+    refreshLayers_".$options['id']."(div)
+  });
+  div.map.events.register('removelayer', div.map, function(object, element) {
+    $('#'+object.layer.id.replace(/\./g,'-')).remove();
+  });
+  var l = new OpenLayers.Layer.Vector('test');
+  div.map.addLayer(l);
+  div.map.removeLayer(l);
+});\n";
+    return $r;
   }
 }

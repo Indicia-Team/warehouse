@@ -44,7 +44,7 @@ p.inline-error {
 }
 
 .validation-icon {
-	display:-moz-inline-stack;
+  display:-moz-inline-stack;
   display:inline-block;
   zoom:1;
   *display:inline;

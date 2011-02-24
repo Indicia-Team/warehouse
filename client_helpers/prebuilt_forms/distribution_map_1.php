@@ -170,8 +170,9 @@ class iform_distribution_map_1 {
    * @return Form HTML.
    */
   public static function get_form($args) {
+    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
     global $user;
-    $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    $readAuth = map_helper::get_read_auth($args['website_id'], $args['password']);
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
@@ -223,15 +224,15 @@ class iform_distribution_map_1 {
       $taxonRecords = data_entry_helper::get_population_data($fetchOpts);
     }
 
-    $url = data_entry_helper::$geoserver_url.'wms';
+    $url = map_helper::$geoserver_url.'wms';
     // Get the style if there is one selected
     $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
-    data_entry_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
+    map_helper::$onload_javascript .= "\n    var filter='website_id=".$args['website_id']."';";
     if (!$args['show_all_species'])
-      data_entry_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
+      map_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
     if ($args['cql_filter']) 
-      data_entry_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
-    data_entry_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
+      map_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
+    map_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
           '".$args['layer_title']."',
           '$url',
           {layers: '".$args["wms_feature_type"]."', transparent: true, CQL_FILTER: filter $style},
@@ -265,12 +266,10 @@ class iform_distribution_map_1 {
       $layerTitle = lang::get('All species occurrences');
     else
       $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
-    $r .= '<div id="legend" class="ui-widget ui-widget-content ui-corner-all">';
-    $r .= '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER='.$args['wms_feature_type'].'&Format=image/jpeg'.
-        '&STYLE='.$args["wms_style"].'" alt=""/>'.$layerTitle.'</div>';
-    $r .= '</div>';
+    $r .= map_helper::layer_list(array(
+    ));
     // output a map    
-    $r .= data_entry_helper::map_panel($options, $olOptions);
+    $r .= map_helper::map_panel($options, $olOptions);
     // add an empty div for the output of getinfo requests
     if (isset($args['click_on_occurrences_mode']) && $args['click_on_occurrences_mode']=='div') {
       $r .= '<div id="getinfo-output"></div>';
@@ -278,9 +277,9 @@ class iform_distribution_map_1 {
     // Set up a page refresh for dynamic update of the map at set intervals
     if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_int prevents injection
       if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
-        data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
+        map_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
       else
-        data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
+        map_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
     }
     return $r;
   }
