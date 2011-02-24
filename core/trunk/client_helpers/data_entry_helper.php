@@ -214,18 +214,19 @@ jQuery('#{parentControlId}').change();\n",
 class data_entry_helper extends helper_base {
 
   /**
-   * @var array When reloading a form, this can be populated with the list of values to load into the controls. E.g. set it to the
+   * When reloading a form, this can be populated with the list of values to load into the controls. E.g. set it to the
    * content of $_POST after submitting a form that needs to reload.
+   * @var array 
    */
   public static $entity_to_load=null;
 
   /**
-   * @var array List of methods used to report a validation failure. Options are
-   * message, message, hint, icon, colour, inline.
+   * List of methods used to report a validation failure. Options are message, message, hint, icon, colour, inline.
    * The inline option specifies that the message should appear on the same line as the control.
    * Otherwise it goes on the next line, indented by the label width. Because in many cases, controls
    * on an Indicia form occupy the full available width, it is often more appropriate to place error
    * messages on the next line so this is the default behaviour.
+   * @var array
    */
   public static $validation_mode=array('message', 'colour');
 
@@ -1130,18 +1131,18 @@ class data_entry_helper extends helper_base {
   * The map panel can be augmented by adding any of the following controls which automatically link themselves
   * to the map:
   * <ul>
-  * <li>{@link sref_textbox()}</ul>
-  * </ul>{@link sref_system_select()}</ul>
-  * </ul>{@link sref_and_system()}</ul>
-  * </ul>{@link georeference_lookup()}</ul>
-  * </ul>{@link location_select()}</ul>
-  * </ul>{@link location_autocomplete()}</li>
-  * </ul>{@link postcode_textbox()}</li>
+  * <li>{@link sref_textbox()}</li>
+  * <li>{@link sref_system_select()}</li>
+  * <li>{@link sref_and_system()}</li>
+  * <li>{@link georeference_lookup()}</li>
+  * <li>{@link location_select()}</li>
+  * <li>{@link location_autocomplete()}</li>
+  * <li>{@link postcode_textbox()}</li>
   * </ul>
   *
   * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
   * Has the following possible options:
-  * <li><b>indiciaSvc</b><br/>
+  * <ul><li><b>indiciaSvc</b><br/>
   * </li>
   * <li><b>indiciaGeoSvc</b><br/>
   * </li>
@@ -4011,47 +4012,12 @@ if (errors.length>0) {
   public static function build_submission($values, $structure) {
     return submission_builder::build_submission($values, $structure);
   }
-
+ 
   /**
-   * This method allows JavaScript and CSS links to be created and placed in the <head> of the
-   * HTML file rather than using dump_javascript which must be called after the form is built.
-   * The advantage of dump_javascript is that it intelligently builds the required links
-   * depending on what is on your form. dump_header is not intelligent because the form is not
-   * built yet, but placing links in the header leads to cleaner code which validates better.
-   * @param $resources List of resources to include in the header. The available options are described
-   * in the documentation for the add_resource method. The default for this is jquery_ui and defaultStylesheet.
-   *
-   * @return string Text to place in the head section of the html file.
+   * Override a base class method to allow validation js to be output when the rest of the js is dumped.
    */
-  public static function dump_header($resources=null) {
-    if (!$resources) {
-      $resources = array('jquery_ui',  'defaultStylesheet');
-    }
-    foreach ($resources as $resource) {
-      self::add_resource($resource);
-    }
-    // place a css class on the body if JavaScript enabled. And output the resources
-    return self::internal_dump_javascript('$("body").addClass("js");', '', '', self::$required_resources);
-  }
-
-  /**
-  * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
-  * page which uses the data entry helper so output all JavaScript required by previous calls.
-  *
-  * @return string JavaScript to insert into the page for all the controls added to the page so far.
-  *
-  * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
-  */
-  public static function dump_javascript() {
-    // Add the default stylesheet to the end of the list, so it has highest CSS priority
-    if (self::$default_styles) self::add_resource('defaultStylesheet');
-    self::setup_jquery_validation_js();    
-    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, self::$required_resources);
-    // ensure scripted JS does not output again if recalled.
-    self::$javascript = "";
-    self::$late_javascript = "";
-    self::$onload_javascript = "";
-    return $dump;
+  protected static function setup_additional_js() {
+    self::setup_jquery_validation_js();
   }
   
   /**
@@ -4088,55 +4054,7 @@ if (errors.length>0) {
     }
   }
 
-  /**
-   * Internal implementation of the dump_javascript method which takes the javascript and resources list
-   * as flexible parameters, rather that using the globals.
-   * @access private
-   */
-  private static function internal_dump_javascript($javascript, $late_javascript, $onload_javascript, $resources) {
-    $libraries = '';
-    $stylesheets = '';
-    if (isset($resources)) {
-      $resourceList = self::get_resources();
-      foreach ($resources as $resource)
-      {
-        if (!in_array($resource, self::$dumped_resources)) {
-          if (isset($resourceList[$resource]['stylesheets'])) {
-            foreach ($resourceList[$resource]['stylesheets'] as $s) {
-              $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
-            }
-          }
-          if (isset($resourceList[$resource]['javascript'])) {
-            foreach ($resourceList[$resource]['javascript'] as $j) {
-              // look out for a condition that this script is IE only.
-              if (substr($j, 0, 4)=='[IE]')
-                $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
-              else
-                $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
-            }
-          }
-          // Record the resource as being dumped, so we don't do it again.
-          array_push(self::$dumped_resources, $resource);
-        }
-      }
-    }
-    if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
-      $script = "<script type='text/javascript'>/* <![CDATA[ */
-jQuery(document).ready(function() {
-$javascript
-$late_javascript
-});\n";
-      if (!empty($onload_javascript)) {
-        $script .= "window.onload = function() {
-$onload_javascript
-};\n";
-      }
-      $script .= "/* ]]> */</script>";
-    } else {
-      $script='';
-    }
-    return $stylesheets.$libraries.$script;
-  }
+  
 
   /**
   * Takes a response from a call to forward_post_to() and outputs any errors from it onto the screen.

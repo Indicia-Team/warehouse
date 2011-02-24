@@ -285,6 +285,7 @@ class helper_base extends helper_config {
    *   defaults: associative array of default values
    */
   public static function build_params_form($options) {
+    require_once('data_entry_helper.php');
     $r = '';
     $fieldPrefix = (isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '');
     foreach($options['form'] as $key=>$info) {
@@ -532,6 +533,105 @@ class helper_base extends helper_config {
         'nonce' => $nonces['write']
       ),
     );
+  }
+  
+  /**
+   * This method allows JavaScript and CSS links to be created and placed in the <head> of the
+   * HTML file rather than using dump_javascript which must be called after the form is built.
+   * The advantage of dump_javascript is that it intelligently builds the required links
+   * depending on what is on your form. dump_header is not intelligent because the form is not
+   * built yet, but placing links in the header leads to cleaner code which validates better.
+   * @param $resources List of resources to include in the header. The available options are described
+   * in the documentation for the add_resource method. The default for this is jquery_ui and defaultStylesheet.
+   *
+   * @return string Text to place in the head section of the html file.
+   */
+  public static function dump_header($resources=null) {
+    if (!$resources) {
+      $resources = array('jquery_ui',  'defaultStylesheet');
+    }
+    foreach ($resources as $resource) {
+      self::add_resource($resource);
+    }
+    // place a css class on the body if JavaScript enabled. And output the resources
+    return self::internal_dump_javascript('$("body").addClass("js");', '', '', self::$required_resources);
+  }
+  
+  /**
+  * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
+  * page which uses the data entry helper so output all JavaScript required by previous calls.
+  *
+  * @return string JavaScript to insert into the page for all the controls added to the page so far.
+  *
+  * @link http://code.google.com/p/indicia/wiki/TutorialBuildingBasicPage#Build_a_data_entry_page
+  */
+  public static function dump_javascript() {
+    // Add the default stylesheet to the end of the list, so it has highest CSS priority
+    if (self::$default_styles) self::add_resource('defaultStylesheet');
+    self::setup_additional_js();    
+    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, self::$required_resources);
+    // ensure scripted JS does not output again if recalled.
+    self::$javascript = "";
+    self::$late_javascript = "";
+    self::$onload_javascript = "";
+    return $dump;
+  }
+  
+  /**
+   * Internal implementation of the dump_javascript method which takes the javascript and resources list
+   * as flexible parameters, rather that using the globals.
+   * @access private
+   */
+  protected static function internal_dump_javascript($javascript, $late_javascript, $onload_javascript, $resources) {
+    $libraries = '';
+    $stylesheets = '';
+    if (isset($resources)) {
+      $resourceList = self::get_resources();
+      foreach ($resources as $resource)
+      {
+        if (!in_array($resource, self::$dumped_resources)) {
+          if (isset($resourceList[$resource]['stylesheets'])) {
+            foreach ($resourceList[$resource]['stylesheets'] as $s) {
+              $stylesheets .= "<link rel='stylesheet' type='text/css' href='$s' />\n";
+            }
+          }
+          if (isset($resourceList[$resource]['javascript'])) {
+            foreach ($resourceList[$resource]['javascript'] as $j) {
+              // look out for a condition that this script is IE only.
+              if (substr($j, 0, 4)=='[IE]')
+                $libraries .= "<!--[if IE]><script type=\"text/javascript\" src=\"".substr($j, 4)."\"></script><![endif]-->\n";
+              else
+                $libraries .= "<script type=\"text/javascript\" src=\"$j\"></script>\n";
+            }
+          }
+          // Record the resource as being dumped, so we don't do it again.
+          array_push(self::$dumped_resources, $resource);
+        }
+      }
+    }
+    if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
+      $script = "<script type='text/javascript'>/* <![CDATA[ */
+jQuery(document).ready(function() {
+$javascript
+$late_javascript
+});\n";
+      if (!empty($onload_javascript)) {
+        $script .= "window.onload = function() {
+$onload_javascript
+};\n";
+      }
+      $script .= "/* ]]> */</script>";
+    } else {
+      $script='';
+    }
+    return $stylesheets.$libraries.$script;
+  }
+  
+  /**
+   * Method stub to allow the subclasses to add additional javascript at the end of form preparation.
+   */
+  protected static function setup_additional_js() {
+    // no implementation
   }
   
 }

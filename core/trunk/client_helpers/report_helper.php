@@ -100,7 +100,7 @@ class report_helper extends helper_base {
   * )
   * </li>
   * <li><b>rowId</b>
-  * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the <tr> elements have their id attributes
+  * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the &lt;tr&gt; elements have their id attributes
   * set to row + this field value, e.g. row37.</li>
   * <li><b>IncludeAllColumns</b>
   * Defaults to true. If true, then any columns in the report, view or table which are not in the columns

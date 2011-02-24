@@ -74,8 +74,8 @@ $default_terms = array(
   
   // define the captions for fields in the data dictionary
   'dd:occurrence:fk_taxa_taxon_list' => 'Species or taxon selected from existing list',
-  'dd:sample:entered_sref' => 'Sample spatial reference',
-  'dd:sample:entered_sref_system' => 'Sample spatial reference system',
+  'dd:sample:entered_sref' => 'Grid ref or other spatial ref',
+  'dd:sample:entered_sref_system' => 'Spatial reference system',
   
   // and import model name/field name prefix overrides
   'smpAttr' => 'Sample Custom Attributes',
