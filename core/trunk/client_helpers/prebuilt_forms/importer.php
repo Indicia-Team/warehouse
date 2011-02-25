@@ -72,10 +72,11 @@ class iform_importer {
       $model = $_GET['type'];
     } else
       $model = $args['model'];
-    return import_helper::importer(array(
+    $r = import_helper::importer(array(
       'model' => $model,
       'auth' => $auth  
     ));
+    return $r;
   }
 
 }

@@ -63,7 +63,7 @@ class import_helper extends helper_base {
     $reload = data_entry_helper::get_reload_link_parts();
     
     $r = '<form action="'.$reload['path'].'" method="post" enctype="multipart/form-data">';
-    $r .= '<label for="id">'.lang::get('Select file to upload').'</label>';
+    $r .= '<label for="id">'.lang::get('Select file to upload').':</label>';
     $r .= '<input type="file" name="upload" id="upload"/>';
     $r .= '<input type="Submit" value="'.lang::get('Upload').'"></form>';
     return $r;
@@ -85,8 +85,7 @@ class import_helper extends helper_base {
       // get the path back to the same page
       $reload = self::get_reload_link_parts();
       $reloadPath = $reload['path'];
-      $r = '<div class="page-notice ui-state-highlight ui-corner-all">Before proceeding with the import, please specify '.
-          "the following settings that will apply to every record in the import file.</div>\n".
+      $r = '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('import_settings_instructions')."</div>\n".
           "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
           "<fieldset><legend>Import Settings</legend>\n";
       $r .= self::build_params_form(array(
@@ -109,6 +108,7 @@ class import_helper extends helper_base {
   private static function upload_mappings_form($options) {
     if (!file_exists($_SESSION['uploaded_file']))
       return lang::get('upload_not_available');
+    self::add_resource('jquery_ui');
     $filename=basename($_SESSION['uploaded_file']);
     // capture the settings form if there is one, but only use the actually set values - others can be populated per row.
     foreach ($_POST as $key => $value) {
@@ -137,17 +137,32 @@ class import_helper extends helper_base {
       $request .= '&survey_id='.$_POST['survey_id'];
     $response = self::http_post($request, array());
     $fields = json_decode($response['output'], true);
+    $request = str_replace('get_import_fields', 'get_required_fields', $request);
+    $response = self::http_post($request, array());
+    $required_fields = json_decode($response['output'], true);
     // We are about to build the list of fields you can choose for the column mappings. Remove any which 
     // we already have a value for in the settings.
     $fields = array_diff_key($fields, $_POST);
+    // only use the required fields that are available for selection - the rest are handled somehow else
+    
     $options = self::model_field_options($options['model'], $fields);
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
     $reload = self::get_reload_link_parts();
     $reloadPath = $reload['path'];
-    $r ="<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
+    $required_fields = array_intersect($required_fields, array_keys($fields));
+    foreach ($required_fields as $idx => $field) {
+      if (!empty($_POST['website_id']) && preg_match('/:fk_website$/', $field)) {
+        unset($required_fields[$idx]);
+      }
+      if (!empty($_POST['survey_id']) && preg_match('/:fk_survey$/', $field)) {
+        unset($required_fields[$idx]);
+      }
+    }
+    
+    $r .="<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
         '<p>'.lang::get('column_mapping_instructions').'</p>'.
-        '<table class="ui-widget ui-widget-content">'.
+        '<div class="ui-helper-clearfix"><table style="width: 58%; float: left;" class="ui-widget ui-widget-content">'.
         '<thead class="ui-widget-header">'.
         '<tr><th>Column in CSV File</th><th>Maps to attribute</th></tr>'.
         '</thead>'.
@@ -158,9 +173,44 @@ class import_helper extends helper_base {
     }
     $r .= '</tbody>';
     $r .= '</table>';
+    $r .= '<div id="dynamic-instructions" style="float: right; width: 40%;"><span id="required-instruct">The following fields must be matched before you can continue:</span><br/><ul></ul></div></div>';
     $r .= '<input type="hidden" name="import_step" value="2" />';
-    $r .= '<input type="submit" name="submit" value="'.lang::get('Upload').'" class="ui-corner-all ui-state-default button" />';
+    $r .= '<input type="submit" name="submit" id="submit" value="'.lang::get('Upload').'" class="ui-corner-all ui-state-default button" />';
     $r .= '</form>';
+    self::$javascript .= "function update_required_fields() {
+      // copy the list of required fields
+      var fields = $.extend(true, {}, required_fields);
+      $('#dynamic-instructions li').remove();
+      // strip out the ones we have already allocated
+      $.each($('#entry_form select'), function(i, select) {
+        delete fields[select.value];
+      });
+      var output = '';
+      $.each(fields, function(field, caption) {
+        output += '<li>'+caption+'</li>';
+      });
+      if (output==='') {
+        $('#required-instruct').css('display', 'none');
+        $('#submit').attr('disabled', false);
+      } else {
+        $('#required-instruct').css('display', 'inline');
+        $('#submit').attr('disabled', true);
+      }
+      $('#dynamic-instructions ul').html(output);
+}\n";
+    self::$javascript .= "required_fields={};\n";
+    foreach ($required_fields as $field) {
+      $caption = $fields[$field];
+      if (empty($caption)) {
+        $tokens = explode(':', $field);
+        $fieldname = $tokens[count($tokens)-1];
+        $caption = lang::get(str_replace(array('fk_', 'id_'), '', self::leadingCaps($fieldname)));
+      }
+      $caption = self::translate_field($field, $caption);
+      self::$javascript .= "required_fields['$field']='$caption';\n";
+    }
+    self::$javascript .= "update_required_fields();\n";
+    self::$javascript .= "$('#entry_form select').change(function() {update_required_fields();});\n";
     return $r;
   }
 
@@ -268,7 +318,7 @@ class import_helper extends helper_base {
         if (!empty($r)) $r .= '</optgroup>';
         $r .= '<optgroup label="'.self::leadingCaps(lang::get($heading)).'">';
       }
-      if (empty($caption)) {        
+      if (empty($caption)) {
         // Skip the metadata fields
         if (!in_array($fieldname, $skipped)) {
           // make a clean looking caption
@@ -336,13 +386,23 @@ class import_helper extends helper_base {
    */
   private static function model_field_option($field, $caption, $selected) {
     $selHtml = (strcasecmp($caption,$selected)==0) ? ' selected="selected"' : '';
+    $caption = self::translate_field($field, $caption);
+    return '<option class="sub-option" value="'.htmlspecialchars($field)."\"$selHtml>".htmlspecialchars($caption).'</option>';
+  }
+  
+  /**
+   * Provides optional translation of field captions by looking for a translation code dd:model:fieldname. If not 
+   * found returns the original caption.
+   */
+  private static function translate_field($field, $caption) {
     // look in the translation settings to see if this column name needs overriding
     $trans = lang::get("dd:$field");
     // Only update the caption if this actually did anything
     if ($trans != "dd:$field" ) {
-      $caption=$trans;
+      return $trans;
+    } else {
+      return $caption;
     }
-    return '<option class="sub-option" value="'.htmlspecialchars($field)."\"$selHtml>".htmlspecialchars($caption).'</option>';
   }
 
 }
