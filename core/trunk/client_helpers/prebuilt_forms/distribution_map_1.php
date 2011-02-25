@@ -267,6 +267,8 @@ class iform_distribution_map_1 {
     else
       $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
     $r .= map_helper::layer_list(array(
+      'includeSwitchers' => true,
+      'includeHiddenLayers' => true
     ));
     // output a map    
     $r .= map_helper::map_panel($options, $olOptions);

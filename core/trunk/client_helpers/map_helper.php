@@ -268,6 +268,10 @@ class map_helper extends helper_base {
   }
   
  /**
+  * Outputs a map layer list panel which automatically integrates with the map_panel added to the same page. The list by default will 
+  * behave like a map legend, showing an icon and caption for each visible layer, but can be configured to show all hidden layers 
+  * and display a checkbox or radio button alongside each item, making it into a layer switcher panel.
+  *
   * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
   * Has the following possible options:
   * <ul><li><b>id</b><br/>
@@ -286,12 +290,12 @@ class map_helper extends helper_base {
     $options = array_merge(array(
       'id' => 'layers',
       'includeIcons' => true,
-      'includeSelectors' => false,
+      'includeSwitcher' => false,
       'includeHiddenLayers' => false,
       'layerTypes' => array('base','overlay')
     ), $options);
     $r .= '<div id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all"><ul>';
-    $r .= '</ul></div>';  
+    $r .= '</ul></div>';    
     self::$javascript .= "function getLayerHtml_".$options['id']."(layer, div) {\n  ";
     if (!$options['includeHiddenLayers']) 
       self::$javascript .= "if (!layer.visibility) {return '';}\n  ";
@@ -300,6 +304,20 @@ class map_helper extends helper_base {
     if (!in_array('overlay', $options['layerTypes']))
       self::$javascript .= "if (!layer.isBaseLayer) {return '';}\n  ";
     self::$javascript .= "var layerHtml = '<li id=\"'+layer.id.replace(/\./g,'-')+'\">';\n  ";
+    if ($options['includeSwitchers']) {
+      self::$javascript .= "
+  if (!layer.displayInLayerSwitcher) { return ''; }
+  var type='', name='';
+  if (layer.isBaseLayer) {
+    type='radio';
+    name='base-".$options['id']."';
+  } else {
+    type='checkbox';
+    name='base-'+layer.id.replace(/\./g,'-');
+  }
+  var checked = layer.visibility ? ' checked=\"checked\"' : '';
+  layerHtml += '<input type=\"' + type + '\" name=\"' + name + '\" class=\"layer-switcher\" id=\"switch-'+layer.id.replace(/\./g,'-')+'\" ' + checked + '/>';\n  ";
+    }
     if ($options['includeIcons']) 
       // @todo support base layers and WFS layers
       self::$javascript .= "if (layer.isBaseLayer) {
@@ -308,7 +326,7 @@ class map_helper extends helper_base {
     layerHtml += '<img src=\"' + div.settings.indiciaGeoSvc + 'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
       '&STYLES='+layer.params.STYLES +'\" alt=\"'+layer.name+'\"/>';
   } else if (layer instanceof OpenLayers.Layer.Vector) {
-    var style=layer.styleMap.styles.default.defaultStyle;
+    var style=layer.styleMap.styles['default']['defaultStyle'];
     layerHtml += '<div style=\"border: solid 1px ' + style.strokeColor +'; background-color: ' + style.fillColor + '\"> </div>';
   } else {
     layerHtml += '<div></div>';
@@ -330,7 +348,12 @@ mapInitialisationHooks.push(function(div) {
     refreshLayers_".$options['id']."(div);
   });
   div.map.events.register('changelayer', div.map, function(object, element) {
-    refreshLayers_".$options['id']."(div)
+    if (!object.layer.isBaseLayer) {
+      refreshLayers_".$options['id']."(div);
+    }
+  });
+  div.map.events.register('changebaselayer', div.map, function(object, element) {
+    refreshLayers_".$options['id']."(div);
   });
   div.map.events.register('removelayer', div.map, function(object, element) {
     $('#'+object.layer.id.replace(/\./g,'-')).remove();
@@ -338,7 +361,27 @@ mapInitialisationHooks.push(function(div) {
   var l = new OpenLayers.Layer.Vector('test');
   div.map.addLayer(l);
   div.map.removeLayer(l);
-});\n";
+  ";
+    if ($options['includeSwitchers']) {
+      self::$javascript .= "  var map=div.map;
+  $('.layer-switcher').live('click', function() {
+    var id = this.id.replace(/^switch-/, '').replace(/-/g, '.');
+    var visible=this.checked;
+    $.each(map.layers, function(i, layer) {
+      if (layer.id==id) {
+        if (layer.isBaseLayer) {
+          if (visible) { map.setBaseLayer(layer); }
+        } else {
+          layer.setVisibility(visible);
+        }
+      }
+    });
+    
+  });";    
+    
+    }
+    self::$javascript .= "});\n";
     return $r;
   }
+  
 }
