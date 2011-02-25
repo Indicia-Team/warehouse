@@ -123,6 +123,8 @@ class iform_report_grid {
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    require_once drupal_get_path('module', 'iform').'/client_helpers/report_helper.php';
+    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
     global $indicia_templates;
     // handle auto_params_form for backwards compatibility
     if (empty($args['output']) && !empty($args['auto_params_form'])) {
@@ -132,7 +134,7 @@ class iform_report_grid {
     // put each param control in a div, which makes it easier to layout with CSS
     $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container">';
     $indicia_templates['suffix']='</div>';
-    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $r = '';
     $presets = self::get_initial_vals('param_presets', $args);
     $defaults = self::get_initial_vals('param_defaults', $args);
@@ -168,15 +170,22 @@ class iform_report_grid {
       $reportOptions['paramsFormId'] = 'params-form';
     }
     // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams 
-    $r .= '<br/>'.data_entry_helper::report_download_link($reportOptions);
+    $r .= '<br/>'.report_helper::report_download_link($reportOptions);
     // now the grid
-    $r .= '<br/>'.data_entry_helper::report_grid($reportOptions);
+    $r .= '<br/>'.report_helper::report_map($reportOptions);
+    $r .= map_helper::map_panel(array(
+      'width'=>600,
+      'height'=>600,
+      'readAuth'=>$auth['read'],
+      'presetLayers' => array('google_physical'),
+      'editLayer' => false
+    ));
     // Set up a page refresh for dynamic update of the report at set intervals
     if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection
       if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
-        data_entry_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
+        report_helper::$javascript .= "setTimeout('window.location=\"".$args['load_on_refresh']."\";', ".$args['refresh_timer']."*1000 );\n";
       else
-        data_entry_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
+        report_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
     }
     return $r;
   }

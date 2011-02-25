@@ -68,8 +68,10 @@ $default_terms = array(
   '4326'=>'WGS84 (decimal lat,long)',
   '2169'=>'LUREF (x,y)',
   
-  'column_mapping_instructions' => 'Please map each column in the CSV file you are uploading to the associated attribute in the destination list. Any you do not set '.
-      'at this stage can be set on a row per row basis by including a column in the import file for this data.',
+  'import_settings_instructions' => 'Before proceeding with the import, please specify the following settings that will apply to every record in the import file. '.
+      'Any settings that you do not specify here can be supplied in the import file on a row by row basis by mapping the setting to the appropriate column in the '.
+      'next step.',      
+  'column_mapping_instructions' => 'Please map each column in the CSV file you are uploading to the associated attribute in the destination list.',
   'upload_not_available' => 'The uploaded file is no longer available. Please try uploading again.',
   
   // define the captions for fields in the data dictionary
