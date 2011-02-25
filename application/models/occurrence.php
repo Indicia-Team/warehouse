@@ -64,6 +64,7 @@ class Occurrence_Model extends ORM
   }
 
   public function validate(Validation $array, $save = false) {
+  kohana::log('debug', 'validating start');
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
@@ -91,6 +92,7 @@ class Occurrence_Model extends ORM
        	$save = false;
       }
     }
+    kohana::log('debug', 'validating');
     return parent::validate($array, $save);
   }
 

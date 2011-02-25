@@ -627,8 +627,10 @@ class ORM extends ORM_Core {
   
   /** 
    * Prepares the db object query builder to query the list of custom attributes for this model.
+   * @param boolean $required Optional. Set to true to only return required attributes (requires 
+   * the website and survey identifier to be set).
    */
-  protected function setupDbToQueryAttributes() {
+  protected function setupDbToQueryAttributes($required = false) {
     $attr_entity = $this->object_name.'_attribute';
     $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
     $this->db->from($attr_entity.'s');
@@ -640,6 +642,9 @@ class ORM extends ORM_Core {
         $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
       if ($this->identifiers['survey_id'])
         $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
+      if ($required) {
+        $this->db->like($attr_entity.'s_websites.validation_rules', '%required%');
+      }
     }
   }
 
@@ -683,6 +688,43 @@ class ORM extends ORM_Core {
       }
     }
     $fields = array_merge($fields, $this->additional_csv_fields);
+    return $fields;
+  }
+  
+  public function getRequiredFields($fk = false, $website_id=null, $survey_id=null) {
+    if ($website_id!==null) 
+      $this->identifiers['website_id']=$website_id;
+    if ($website_id!==null) 
+      $this->identifiers['survey_id']=$survey_id;
+    $sub = $this->get_submission_structure();
+    $arr = new Validation(array('id'=>1));
+    $this->validate($arr, false);
+    $fields = array();  
+    foreach ($arr->errors() as $column=>$error) {
+      if ($error=='required') {
+        if ($fk && substr($column, -3) == "_id") {
+          // don't include the fk link field if the submission is supposed to contain full data
+          // for the supermodel record rather than just a link
+          if (!isset($sub['superModels'][substr($column, 0, -3)]))
+            $fields[] = $this->object_name.":fk_".substr($column, 0, -3);
+        } else {
+          $fields[] = $this->object_name.":$column";
+        }
+      }
+    }
+    if ($this->has_attributes) {    
+      $this->setupDbToQueryAttributes(true);
+      $result = $this->db->get();
+      foreach($result as $row) {
+        $fields[] = $this->attrs_field_prefix.':'.$row->id;
+      }
+    }
+    
+    if (array_key_exists('superModels', $sub)) {
+      foreach ($sub['superModels'] as $super=>$content) {
+        $fields = array_merge($fields, ORM::factory($super)->getRequiredFields($website_id, $survey_id));
+      }
+    }
     return $fields;
   }
 

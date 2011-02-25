@@ -273,12 +273,6 @@ class data_entry_helper extends helper_base {
   public static $validation_messages = array();
 
   /**
-   * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the
-   * list, allowing our CSS to override other stuff.
-   */
-  private static $default_styles = false;
-
-  /**
    * @var Array List of fields that are to be stored in a cookie and reloaded the next time a form is accessed. These
    * are populated by implementing a hook function called indicia_define_remembered_fields which calls set_remembered_fields.
    */

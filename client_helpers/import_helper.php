@@ -140,27 +140,19 @@ class import_helper extends helper_base {
     $request = str_replace('get_import_fields', 'get_required_fields', $request);
     $response = self::http_post($request, array());
     $required_fields = json_decode($response['output'], true);
-    // We are about to build the list of fields you can choose for the column mappings. Remove any which 
-    // we already have a value for in the settings.
-    $fields = array_diff_key($fields, $_POST);
-    // only use the required fields that are available for selection - the rest are handled somehow else
-    
-    $options = self::model_field_options($options['model'], $fields);
+    $fields = array_diff_key($fields, $_POST);    
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
     $reload = self::get_reload_link_parts();
     $reloadPath = $reload['path'];
+    // only use the required fields that are available for selection - the rest are handled somehow else    
     $required_fields = array_intersect($required_fields, array_keys($fields));
-    foreach ($required_fields as $idx => $field) {
-      if (!empty($_POST['website_id']) && preg_match('/:fk_website$/', $field)) {
-        unset($required_fields[$idx]);
-      }
-      if (!empty($_POST['survey_id']) && preg_match('/:fk_survey$/', $field)) {
-        unset($required_fields[$idx]);
-      }
-    }
     
-    $r .="<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
+    self::clear_website_survey_fields($fields);
+    self::clear_website_survey_fields($required_fields);
+    $options = self::model_field_options($options['model'], $fields);
+    
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
         '<p>'.lang::get('column_mapping_instructions').'</p>'.
         '<div class="ui-helper-clearfix"><table style="width: 58%; float: left;" class="ui-widget ui-widget-content">'.
         '<thead class="ui-widget-header">'.
@@ -212,6 +204,21 @@ class import_helper extends helper_base {
     self::$javascript .= "update_required_fields();\n";
     self::$javascript .= "$('#entry_form select').change(function() {update_required_fields();});\n";
     return $r;
+  }
+  
+  /**
+   * Takes an array of fields, and removes the website ID or survey ID fields within the arrays if
+   * the website and/or survey id are set in the $_POST data (which contains the settings).
+   */
+  private static function clear_website_survey_fields(&$array) {
+    foreach ($array as $idx => $field) {
+      if (!empty($_POST['website_id']) && (preg_match('/:fk_website$/', $idx) || preg_match('/:fk_website$/', $field))) {
+        unset($array[$idx]);
+      }
+      if (!empty($_POST['survey_id']) && (preg_match('/:fk_survey$/', $idx) || preg_match('/:fk_survey$/', $field))) {
+        unset($array[$idx]);
+      }
+    }
   }
 
   /**
