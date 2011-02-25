@@ -382,3 +382,7 @@ explicitly removes inconsistencies between IE and FireFox */
 .sub-option {
   margin-left: 1em;
 }
+
+li {
+  list-style-position: inside;
+}

@@ -26,15 +26,14 @@
  */
  
 require_once(DOCROOT.'client_helpers/import_helper.php');
-require_once(DOCROOT.'client_helpers/data_entry_helper.php');
-$auth = data_entry_helper::get_read_write_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+$auth = import_helper::get_read_write_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 
 echo import_helper::importer(array(
   'model' => $this->controllerpath,
   'auth' => $auth  
 ));
 
-echo data_entry_helper::dump_javascript();
+echo import_helper::dump_javascript();
 
 ?>
 

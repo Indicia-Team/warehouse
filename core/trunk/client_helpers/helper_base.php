@@ -113,6 +113,12 @@ class helper_base extends helper_config {
   );
   
   /**
+   * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the
+   * list, allowing our CSS to override other stuff.
+   */
+  protected static $default_styles = false;
+  
+  /**
    * Array of html attributes. When replacing items in a template, these get automatically wrapped. E.g.
    * a template replacement for the class will be converted to class="value". The key is the parameter name,
    * and the value is the html attribute it will be wrapped into.

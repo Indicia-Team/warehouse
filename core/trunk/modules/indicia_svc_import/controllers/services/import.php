@@ -58,6 +58,24 @@ class Import_Controller extends Service_Base_Controller {
   }
   
   /**
+   * Controller function that returns the list of required fields for a model.
+   * Accepts optional $_GET parameters for the website_id and survey_id, which limit the available
+   * custom attribute fields as appropriate.
+   * @return string JSON listing the fields that are required.
+   */
+  public function get_required_fields($model) {
+    $this->authenticate('read');
+    $model = ORM::factory($model);
+    $website_id = empty($_GET['website_id']) ? null : $_GET['website_id'];
+    $survey_id = empty($_GET['survey_id']) ? null : $_GET['survey_id'];
+    $fields = $model->getRequiredFields(true, $website_id, $survey_id);
+    foreach ($fields as &$field) {
+      $field = preg_replace('/:date_type$/', ':date', $field);
+    }
+    echo json_encode($fields);
+  }
+  
+  /**
    * Handle uploaded files in the $_FILES array by moving them to the upload folder. The current time is prefixed to the 
    * name to make it unique.
    */
@@ -135,7 +153,6 @@ class Import_Controller extends Service_Base_Controller {
    * Requires a $_GET parameter for uploaded_csv - the uploaded file name.
    */
   public function upload() {
-    $this->authenticate();
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     $metadata = $this->_get_metadata($_GET['uploaded_csv']);
     // Check if details of the last supermodel (e.g. sample for an occurrence) are in the cache from a previous iteration of 
