@@ -341,6 +341,9 @@ class report_helper extends helper_base {
     } else {
       $records = $response['records'];
     }
+    
+    if (!isset($response['records']))
+      return $r;
     // find the geom column
     foreach($response['columns'] as $col=>$cfg) {
       if ($cfg['mappable']=='true') {
@@ -348,25 +351,59 @@ class report_helper extends helper_base {
         break;
       }
     }
+  
     if (!isset($wktCol))
-      return lang::get("The report does not contain any mappable data");
-    $r = "
-// create a global to hold the list of reporting records, unless already exists if another report on the page.
-if (typeof reportingRecords==='undefined') {
-  reportingRecords = [];
-}
-// create an array unique to this report's output
-reportingRecords.push([]);
-function addDistPoint(record, wktCol) {
-  // identify the wkt column
-  record['wktCol'] = wktCol;
-  reportingRecords[reportingRecords.length-1].push(record);
-}\n";
-    foreach ($records as $record) {
-      $r .= "addDistPoint(".json_encode($record).", '".$wktCol."');\n";
+      $r .= "<p>".lang::get("The report does not contain any mappable data")."</p>";
+
+    report_helper::$javascript.= "
+/**
+ * Selecting a feature on a vector reporting layer displays a popup.
+ */
+onFeatureSelect = function(feature) {
+  selectedFeature = feature;
+  var content='';
+  $.each(feature.data, function(name, value) {
+    if (name.substr(0, 5)!=='date_') {
+      content += '<tr><td style=\"font-weight:bold;\">' + name + '</td><td>' + value + '</td></tr>';
     }
-    report_helper::$javascript.=$r;
-    return '';
+  });
+  popup = new OpenLayers.Popup.FramedCloud('popup', 
+                           feature.geometry.getBounds().getCenterLonLat(),
+                           null,
+                           '<table style=\"font-size:.8em\">' + content + '</table>',
+                           null, true);
+  feature.popup = popup;
+  feature.layer.map.addPopup(popup);
+};
+    
+function addDistPoint(features, record, wktCol) {
+  var geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+  delete record[wktCol];
+  features.push(new OpenLayers.Feature.Vector(geom, record));
+}\n\n";
+  report_helper::$javascript.= "
+mapInitialisationHooks.push(function(div) { 
+  var layer = new OpenLayers.Layer.Vector('Report output');
+  features = [];\n";
+  foreach ($records as $record) {
+    report_helper::$javascript.= "  addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
+  }
+  report_helper::$javascript.= "  layer.addFeatures(features);
+  div.map.addLayer(layer);
+  div.map.zoomToExtent(layer.getDataExtent());
+  // create a control for selecting features and displaying popups
+  var selectControl = new OpenLayers.Control.SelectFeature(layer,
+    {clickout: true, toggle: false,
+                        multiple: false, hover: false,
+                        toggleKey: \"ctrlKey\", // ctrl key removes from selection
+                        multipleKey: \"shiftKey\", // shift key adds to selection
+                        box: true, onSelect: onFeatureSelect
+});
+  div.map.addControl(selectControl);
+
+  selectControl.activate();
+});\n";
+    return $r;
   }
   
   /**
