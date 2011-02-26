@@ -257,12 +257,6 @@ class data_entry_helper extends helper_base {
   public static $interim_image_expiry=14400;
 
   /**
-   * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
-   * remaining ones at the end.
-   */
-  private static $displayed_errors=array();
-
-  /**
    * @var array Name of the form which has been set up for jQuery validation, if any.
    */
   public static $validated_form_id = null;
@@ -1091,7 +1085,7 @@ class data_entry_helper extends helper_base {
   * @deprecated Use map_helper::map_panel instead.
   */
   public static function map_panel($options, $olOptions=null) {
-    require_once('map_panel.php');
+    require_once('map_helper.php');
     return map_helper::map_panel($options, $olOptions);
   }
 
