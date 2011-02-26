@@ -128,6 +128,12 @@ class helper_base extends helper_config {
     'outerClass' => 'class',
     'selected' => 'selected'
   );
+  
+  /**
+   * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
+   * remaining ones at the end.
+   */
+  protected static $displayed_errors=array();
 
   /**
    * Method to link up the external css or js files associated with a set of code.
