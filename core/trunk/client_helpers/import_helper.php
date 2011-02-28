@@ -64,8 +64,8 @@ class import_helper extends helper_base {
   
   private static function upload_form($options) {
     $reload = data_entry_helper::get_reload_link_parts();
-    
-    $r = '<form action="'.$reload['path'].'" method="post" enctype="multipart/form-data">';
+    $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
+    $r = '<form action="'.$reloadpath.'" method="post" enctype="multipart/form-data">';
     $r .= '<label for="id">'.lang::get('Select file to upload').':</label>';
     $r .= '<input type="file" name="upload" id="upload"/>';
     $r .= '<input type="Submit" value="'.lang::get('Upload').'"></form>';
@@ -86,10 +86,10 @@ class import_helper extends helper_base {
     $response = self::http_post($request, array());
     if (!empty($response['output'])) {
       // get the path back to the same page
-      $reload = self::get_reload_link_parts();
-      $reloadPath = $reload['path'];
+      $reload = data_entry_helper::get_reload_link_parts();
+      $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
       $r = '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('import_settings_instructions')."</div>\n".
-          "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
+          "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
           "<fieldset><legend>Import Settings</legend>\n";
       $formArray = json_decode($response['output'], true);
       if (isset($options['presetSettings']) && !count(array_intersect_key($options['presetSettings'], $formArray)))
@@ -155,8 +155,8 @@ class import_helper extends helper_base {
     $fields = array_diff_key($fields, $_POST);    
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
-    $reload = self::get_reload_link_parts();
-    $reloadPath = $reload['path'];
+    $reload = data_entry_helper::get_reload_link_parts();
+    $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     // only use the required fields that are available for selection - the rest are handled somehow else    
     $required_fields = array_intersect($required_fields, array_keys($fields));
     
@@ -164,7 +164,7 @@ class import_helper extends helper_base {
     self::clear_website_survey_fields($required_fields);
     $options = self::model_field_options($options['model'], $fields);
     
-    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
+    $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
         '<p>'.lang::get('column_mapping_instructions').'</p>'.
         '<div class="ui-helper-clearfix"><table style="width: 58%; float: left;" class="ui-widget ui-widget-content">'.
         '<thead class="ui-widget-header">'.
@@ -244,8 +244,9 @@ class import_helper extends helper_base {
     // move file to server
     self::send_file_to_warehouse($filename, false, $options['auth']['read'], 'import/upload_csv');    
     
-    $reload = self::get_reload_link_parts();
-    $reloadPath = $reload['path'];
+    $reload = data_entry_helper::get_reload_link_parts();
+    $reload['params']['uploaded_csv']=$filename;
+    $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     
     // initiate local javascript to do the upload with a progress feedback
     $r = '
@@ -277,7 +278,7 @@ class import_helper extends helper_base {
           uploadChunk();
         } else {
           jQuery('#progress-text').html('Upload complete.');
-          window.location = '$reloadPath?uploaded_csv=$filename&total='+total;
+          window.location = '$reloadpath&total='+total;
         }
       }
     );  
