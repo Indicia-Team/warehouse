@@ -40,7 +40,8 @@ class iform_importer {
         'type'=>'select',
         'options'=>array(
           'url' => 'Use setting in URL (&type=...)',
-          'occurrence' => 'Species Occurrences'
+          'occurrence' => 'Species Occurrences',
+          'location' => 'Locations'
         ),
         'required'=>true
       ),
