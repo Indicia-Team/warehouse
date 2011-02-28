@@ -43,6 +43,13 @@ class iform_importer {
           'occurrence' => 'Species Occurrences'
         ),
         'required'=>true
+      ),
+      array(
+        'name'=>'presetSettings',
+        'caption'=>'Preset Settings',
+        'description'=>'Provide a list of predetermined settings which the user does not need to specify, one on each line in the form name=value.',
+        'type'=>'textarea',
+        'required'=>false
       )
     );
   }
@@ -72,9 +79,23 @@ class iform_importer {
       $model = $_GET['type'];
     } else
       $model = $args['model'];
+    if (isset($args['presetSettings'])) {
+      $presets = array();
+      $presetLines = explode("\n", $args['presetSettings']);
+      foreach ($presetLines as $preset) {
+        $preset = explode('=', $preset);
+        // skip any invalid data for the presets
+        if (count($preset)==2)
+          $presets[$preset[0]]=$preset[1];
+      }
+      $presets = array_merge(array('website_id'=>$args['website_id'], 'password'=>$args['password']), $presets);
+    } else {
+      $presets = array('website_id'=>$args['website_id'], 'password'=>$args['password']);
+    }
     $r = import_helper::importer(array(
       'model' => $model,
-      'auth' => $auth  
+      'auth' => $auth,
+      'presetSettings' => $presets
     ));
     return $r;
   }

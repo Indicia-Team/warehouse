@@ -364,13 +364,33 @@ class helper_base extends helper_config {
   /**
    * Returns the HTML required for a parameters form, e.g. the form defined for input of report parameters or the 
    * default values for a csv import.
-   * @param array $formArray Associative array defining the form structure.
-   * @param array $options Associative array of options:
-   *   form: Definition of the form.
-   *   id: id of the report instance on the page if relevant, so that controls can be given unique ids.
-   *   readAuth: read authorisation.
-   *   field_name_prefix: optional prefix for form field names.
-   *   defaults: associative array of default values
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>form</b><br/>
+   * Associative array defining the form structure. The structure is the same as described for <em>fixed_values_form</em> in a Warehouse model.
+   * @link http://code.google.com/p/indicia/wiki/SampleModelPage.
+   * </li>
+   * <li><b>id</b><br/>
+   * When used for report output, id of the report instance on the page if relevant, so that controls can be given unique ids.
+   * </li>
+   * <li><b>form</b><br/>
+   * Associative array defining the form content.
+   * </li>
+   * <li><b>readAuth</b><br/>
+   * Read authorisation array.
+   * </li>
+   * <li><b>field_name_prefix</b><br/>
+   * Optional prefix for form field names.
+   * </li>
+   * <li><b>defaults</b><br/>
+   * Associative array of default values for each form element.
+   * </li>
+   * <li><b>ignoreParams</b><br/>
+   * An optional array of parameter names for parameters that should be skipped in the form output despite being in the form definition.
+   * </li>
+   * <li><b>presetParams</b><br/>
+   * Optional array of param names and values that have a fixed value and are therefore output only as a hidden control.
+   * </li>
+   * </ul>
    */
   public static function build_params_form($options) {
     require_once('data_entry_helper.php');
@@ -388,7 +408,9 @@ class helper_base extends helper_config {
       if (isset($options['defaults'][$key])) {
         $ctrlOptions['default'] = $options['defaults'][$key];
       }
-      if ($info['datatype']=='lookup' && isset($info['population_call'])) {
+      if (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
+        $r .= "<input type=\"hidden\" name=\"$key\" value=\"".$options['presetParams'][$key]."\" />\n";
+      } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
         // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
         $popOpts = explode(':', $info['population_call']);
         $ctrlOptions = array_merge($ctrlOptions, array(
@@ -402,11 +424,20 @@ class helper_base extends helper_config {
         else
           $ctrlOptions['report']=$popOpts[1];
         if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
-          $ctrlOptions = array_merge($ctrlOptions, array(
-            'parentControlId' => $fieldPrefix.$info['linked_to'],
-            'filterField' => $info['linked_filter_field'],
-            'parentControlLabel' => $options['form'][$info['linked_to']]['display']
-          ));
+          if (isset($options['presetParams']) && array_key_exists($info['linked_to'], $options['presetParams'])) {
+            // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the 
+            // population call for this control
+            $ctrlOptions = array_merge($ctrlOptions, array(
+              'extraParams' => array_merge($ctrlOptions['extraParams'], array($info['linked_filter_field']=>$options['presetParams'][$info['linked_to']]))
+            ));
+          } else {
+            // otherwise link the 2 controls
+            $ctrlOptions = array_merge($ctrlOptions, array(
+              'parentControlId' => $fieldPrefix.$info['linked_to'],
+              'filterField' => $info['linked_filter_field'],
+              'parentControlLabel' => $options['form'][$info['linked_to']]['display']
+            ));
+          }
         }
         $r .= data_entry_helper::select($ctrlOptions);
       } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {

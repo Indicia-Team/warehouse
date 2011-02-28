@@ -42,6 +42,9 @@ class import_helper extends helper_base {
    * Optional. The full path on the server to an already uploaded file to import.</li>
    * <li><b>auth</b><br/>
    * Read and write authorisation tokens.</li>
+   * <li><b>presetSettings</b><br/>
+   * Optional associative array of any preset values for the import settings. Any settings which have a presetSetting specified
+   * will be ommitted from the settings form.</li>
    * </ul>
    */
   public static function importer($options) {
@@ -88,18 +91,27 @@ class import_helper extends helper_base {
       $r = '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('import_settings_instructions')."</div>\n".
           "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\" class=\"iform\">\n".
           "<fieldset><legend>Import Settings</legend>\n";
-      $r .= self::build_params_form(array(
-        'form' => json_decode($response['output'], true),
+      $formArray = json_decode($response['output'], true);
+      if (isset($options['presetSettings']) && !count(array_intersect_key($options['presetSettings'], $formArray)))
+        // all settings have a preset value, so no need for the settings form. Skip to the next step
+        return self::upload_mappings_form($options);
+      $formOptions = array(
+        'form' => $formArray,
         'readAuth' => $options['auth']['read']
-      ));
+      );
+      if (isset($options['presetSettings'])) {
+        // skip parts of the form we have a preset value for
+        $formOptions['presetParams'] = $options['presetSettings'];
+      }
+      $r .= self::build_params_form($formOptions);
       $r .= '<input type="hidden" name="import_step" value="1" />';
       $r .= '<input type="submit" name="submit" value="'.lang::get('Next').'" class="ui-corner-all ui-state-default button" />';
       $r .= '</fieldset></form>';      
+      return $r;
     } else {
       // No settings form, so output the mappings form instead which is the next step.
-      $r = self::upload_mappings_form($options);
+      return self::upload_mappings_form($options);
     }
-    return $r;
   }
   
   /**
