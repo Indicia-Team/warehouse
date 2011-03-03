@@ -42,9 +42,14 @@ class Trigger_Action_Model extends ORM {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('trigger_id', 'required');
-    $array->add_rules('type', 'required');    
-    $values = $array->as_array();    
+    $array->add_rules('type', 'required');
+    $values = $array->as_array();
     $this->unvalidatedFields = array('param1','param2');
+    // for email notifications, param 3 is a comma separated list of emails.
+    if ($values['type']=='E') {
+      $array->add_rules('param3', 'email_list');
+    } else 
+      $this->unvalidatedFields[] = 'param3';
     return parent::validate($array, $save);
   }
 }

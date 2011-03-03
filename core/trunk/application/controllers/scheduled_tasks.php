@@ -80,7 +80,7 @@ class Scheduled_Tasks_Controller extends Controller {
         $parsedData = $this->parseData($data);               
         echo count($data['content']['data']). " records found<br/>";
         $actions = $this->db
-            ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, users.default_digest_mode, people.email_address, users.core_role_id')
+            ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
             ->from('trigger_actions, users')            
             ->join('people', 'people.id', 'users.person_id')
             ->where(array(
@@ -107,7 +107,7 @@ class Scheduled_Tasks_Controller extends Controller {
           if ($action->core_role_id==1) {
             // core admin can see any data            
             $allowedData = $parsedData['websiteRecordData'];
-          } else {              
+          } else {
             $allowedData = array();
             foreach ($userWebsites as $allowedWebsite) {              
               if (isset($parsedData['websiteRecordData'][$allowedWebsite->website_id]))
@@ -121,7 +121,8 @@ class Scheduled_Tasks_Controller extends Controller {
               'data' => "'".json_encode(array('headings'=>$parsedData['headingData'], 'data' => $allowedData))."'",
               'user_id' => $action->param1,
               // use digest mode the user selected for this notification, or their default if not specific
-              'digest_mode' => "'" . ($action->param2===null ? $action->default_digest_mode : $action->param2) . "'"
+              'digest_mode' => "'" . ($action->param2===null ? $action->default_digest_mode : $action->param2) . "'",
+              'cc' => "'" . $action->param3 . "'"
             ));
           }
         }        
@@ -144,7 +145,7 @@ class Scheduled_Tasks_Controller extends Controller {
     
     // Get a list of the notifications to send, ordered by user so we can construct each email
     $notifications = $this->db
-      ->select('id, source, source_type, data, user_id')
+      ->select('id, source, source_type, data, user_id, cc')
       ->from('notifications')      
       ->where('acknowledged',"'f'")
       ->in('notifications.digest_mode', $digestTypes)
@@ -158,21 +159,23 @@ class Scheduled_Tasks_Controller extends Controller {
       if ($currentUserId!=$notification->user_id) {        
         if ($currentUserId) {
           // send current email data
-          $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent);
+          $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $notification->cc);
           $notificationIds = array();
         }
         $currentUserId = $notification->user_id;
+        $cc = $notification->cc;
         $emailContent = kohana::lang('misc.notification_intro', kohana::config('email.server_name')) . '<br/><br/>';
       }      
       $emailContent .= self::unparseData($notification->data);
     }
+    // make sure we send the email to the last person in the list
     if ($currentUserId!==null) {
       // send current email data      
-      $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent);
+      $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $cc);
     }    
   }
   
-  private function sendEmail($notificationIds, $swift, $userId, $emailContent) {
+  private function sendEmail($notificationIds, $swift, $userId, $emailContent, $cc) {
     // Use a transaction to allow us to prevent the email sending and marking of notification as done
     // getting out of step
     $this->db->begin();
@@ -198,9 +201,13 @@ class Scheduled_Tasks_Controller extends Controller {
       foreach($userResults as $user) {
         $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
                                      'text/html');
-        $recipients = new Swift_RecipientList();            
-        $recipients->addTo($user->email_address);            
-        // send the email            
+        $recipients = new Swift_RecipientList();
+        $recipients->addTo($user->email_address);
+        $cc = explode(',',$cc);
+        foreach ($cc as $ccEmail) {
+          $recipients->addCc(trim($ccEmail));
+        }
+        // send the email
         $swift->send($message, $recipients, $email_config['address']);
       }
     } catch (Exception $e) {

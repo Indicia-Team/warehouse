@@ -21,6 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+if (isset($_POST))
+  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <form class="iform" action="<?php echo url::site(); ?>trigger_action/save" method="post">
 <fieldset>
@@ -40,6 +42,13 @@ echo data_entry_helper::radio_group(array(
     'helpText' => 'Please specify how frequently you would like to receive email notifications for this trigger?',
     'lookupValues' => array('N'=>'No emails', 'I'=>'Immediate', 'D'=>'Daily', 'W'=>'Weekly'),
     'sep' => '<br/>'
+));
+echo data_entry_helper::textarea(array(
+  'label' => 'Copy email to',
+  'helpText'=>'Provide a comma separated list of email addresses to copy this notification to.',
+  'labelClass' => 'align-top',
+  'fieldname' => 'trigger_action:param3',
+  'default' => html::initial_value($values, 'trigger_action:param3'),
 ));
 ?>
 </fieldset>
