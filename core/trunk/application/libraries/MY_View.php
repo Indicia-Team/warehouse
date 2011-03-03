@@ -94,7 +94,7 @@ jQuery(document).ready(function() {
     if ($tabs = $cache->get($cacheId)) {
       return $tabs;
     } else {
-    $tabs = array();
+      $tabs = array();
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
