@@ -386,3 +386,16 @@ explicitly removes inconsistencies between IE and FireFox */
 li {
   list-style-position: inside;
 }
+
+.log-message {
+  font-weight: bold;
+  margin: 0.25em 1em 0 0;
+}
+
+.log-line {
+  margin-left: 2em;
+}
+
+.log-error {
+  color: red;
+}
