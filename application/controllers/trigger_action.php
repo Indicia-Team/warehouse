@@ -54,14 +54,14 @@ class Trigger_Action_Controller extends Gridview_Base_Controller {
   /**
    * Provide default values for a new notification.
    */
-  protected function getDefaults() { 
+  protected function getDefaults() {
     return array(
       // for a trigger action, param1 should be the user id.
       'trigger_action:param1' => $_SESSION['auth_user']->id,
       'trigger_action:param2' => 'D',
       'trigger_action:trigger_id' => $this->uri->last_segment()
     );
-  } 
+  }
   
   /** 
   * Override the edit method, since we are passed a trigger id, whereas we need to edit the

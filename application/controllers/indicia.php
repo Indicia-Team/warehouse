@@ -153,7 +153,7 @@ class Indicia_Controller extends Template_Controller {
       'values'=>$values,
       'other_data'=>$other
     )); 
-	  $this->defineEditBreadcrumbs();
+    $this->defineEditBreadcrumbs();
   }
   
   /**
@@ -388,6 +388,8 @@ class Indicia_Controller extends Template_Controller {
     $page_errors=$this->model->getPageErrors();
     if (count($page_errors)!=0) {
       $this->session->set_flash('flash_error', implode('<br/>',$page_errors));
+    } else {
+      $this->session->set_flash('flash_error', 'The record could not be saved.');
     }
     $values = $this->getDefaults();
     $values = array_merge($values, $_POST);

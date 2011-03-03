@@ -87,6 +87,9 @@ $lang = array (
   'name' => array (
     'required' => 'The name is required.',
   ),
+  'param3' => Array(
+    'email_list' => 'The list of emails supplied is not valid.',
+  ),
   'password' => Array (
     'required' => 'The password cannot be blank.',
     'length' => 'The password must be between 7 and 30 letters in length.',

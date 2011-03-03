@@ -14,7 +14,7 @@ $config['zip_extract_directory'] = DOCROOT.'extract';
 /**
  * Enable or disable directory creation.
  */
-$config['create_directories'] = FALSE;
+$config['create_directories'] = TRUE;
 
 /**
  * Remove spaces from uploaded filenames.

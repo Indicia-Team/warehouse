@@ -178,6 +178,20 @@ class Valid extends valid_Core {
   {
     return $value <= $max[0];
   }
+  
+  /**
+   * Validates that a value is a list of comma separated emails.
+   * @param string $value Value to validate
+   */
+  public static function email_list($value) {
+    $emails = explode(',', $value);
+    foreach ($emails as $email) {
+      if (!self::email(trim($email))) {
+        return false;
+      }
+    }
+    return true;
+  }
 
 
 }
