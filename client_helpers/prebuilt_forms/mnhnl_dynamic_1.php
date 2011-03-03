@@ -41,6 +41,8 @@ class iform_mnhnl_dynamic_1 {
   
   protected static $mode;
   
+  protected static $node;
+  
   /* TODO
    *  
    *   Survey List
@@ -166,7 +168,16 @@ class iform_mnhnl_dynamic_1 {
           'type'=>'textarea',
           'required' => false,
           'group' => 'User Interface'
-        ),    
+        ),
+        array(
+          'name'=>'attribute_termlist_language_filter',
+          'caption'=>'Attribute Termlist Language filter',
+          'description'=>'Enable filtering of termlists for attributes using the iso language.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
         array(
           'name'=>'no_grid',
           'caption'=>'Skip initial grid of data',
@@ -372,7 +383,8 @@ class iform_mnhnl_dynamic_1 {
     global $user;
     $logged_in = $user->uid>0;
     $r = '';
-
+    self::$node = $node;
+    
     // Get authorisation tokens to update and read from the Warehouse.
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $svcUrl = data_entry_helper::$base_url.'/index.php/services';
@@ -493,7 +505,6 @@ class iform_mnhnl_dynamic_1 {
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
     ));
-    
     // Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
     $reloadPath = $reload['path'];
@@ -651,6 +662,8 @@ class iform_mnhnl_dynamic_1 {
   
   protected static function get_tab_html($tabs, $auth, $args, $attributes, $hiddens) {
     $defAttrOptions = array('extraParams'=>$auth['read']);
+    if(isset($args['attribute_termlist_language_filter']) && $args['attribute_termlist_language_filter'])
+        $defAttrOptions['language'] = iform_lang_iso_639_2($args['language']);
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
       // get a machine readable alias for the heading
@@ -680,9 +693,10 @@ class iform_mnhnl_dynamic_1 {
           }
           if (method_exists(get_called_class(), $method)) 
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
-          elseif (trim($component)==='[*]')
+          elseif (trim($component)==='[*]'){
+            $defAttrOptions = array_merge($defAttrOptions, $options);
             $html .= get_attribute_html($attributes, $args, $defAttrOptions, $tab);
-          else          
+          } else          
             $html .= "The form structure includes a control called $component which is not recognised.<br/>";
         }      
       }
@@ -788,8 +802,8 @@ class iform_mnhnl_dynamic_1 {
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
       if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
       
-      self::build_grid_taxon_label_function($args);
-      self::build_grid_autocomplete_function($args);
+      call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
+      call_user_func(array(get_called_class(), 'build_grid_autocomplete_function'), $args);
       
       // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
       // then output the grid control
@@ -1189,6 +1203,8 @@ class iform_mnhnl_dynamic_1 {
 	  $args['occurrence_comment'] == false; 
 	if (!isset($args['occurrence_images']))
 	  $args['occurrence_images'] == false; 
+	if (!isset($args['attribute_termlist_language_filter']))
+	  $args['attribute_termlist_language_filter'] == false; 
   }
 
   protected function getReportActions() {

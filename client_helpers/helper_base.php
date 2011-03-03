@@ -511,7 +511,7 @@ class helper_base extends helper_config {
    * otherwise they are escaped.
    * @return string HTML for the item label
    */
-  protected static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false, $allowHtml=false) {
+  public static function mergeParamsIntoTemplate($params, $template, $useTemplateAsIs=false, $allowHtml=false) {
     global $indicia_templates;
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -762,7 +762,7 @@ $onload_javascript
    * @param array $options Options array containing the control replacement values for the templates.
    * Options can contain a setting for prefixTemplate or suffixTemplate to override the standard templates.
    */
-  protected static function apply_template($template, $options) {
+  public static function apply_template($template, $options) {
     global $indicia_templates;
     // Don't need the extraParams - they are just for service communication.
     $options['extraParams']=null;
