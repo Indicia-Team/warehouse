@@ -53,13 +53,14 @@ jQuery(document).ready(function() {
 </script>";
       $prefix = "<div id=\"tabs\"><ul>\n";
       $suffix = "</div>\n";
+      $args = $this->get_args();
       foreach ($tabs as $tab=>$controller) {
         if ($controller==$this->viewname)
           // this is the default page
           $path="#main";
         else {
           // a plugin page
-          $path=url::site().$controller;
+          $path=url::site()."$controller$args";
         }
         $prefix .= '<li><a href="'.$path.'" title="'.$tab.'"><span>'.$tab."</span></a></li>\n";
         $suffix .= '<div id="'.str_replace(' ','_', $tab).'"></div>';
@@ -69,6 +70,18 @@ jQuery(document).ready(function() {
       $output = "$js$prefix$output$suffix";
     }
     return $output;
+  }
+  
+  /**
+   * Work out the current argument list so they can be passed through to the tab. E.g. the current record ID.
+   */
+  private function get_args() {
+    $uri = URI::instance();
+    if ($uri->total_arguments()) 
+      $args = '/'.implode('/', $uri->argument_array());
+    else
+      $args = '';
+    return $args;
   }
   
   /** 
