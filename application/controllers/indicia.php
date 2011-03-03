@@ -60,6 +60,24 @@ class Indicia_Controller extends Template_Controller {
 
     if($this->page_authorised())
     {
+      $menu = self::get_menu();
+      $this->template->menu = $menu;
+    } else
+      $this->template->menu = array();
+  }
+  
+  /**
+   * Method which builds the main menu. Has a default structure which can be modified by plugin modules.
+   * @return array Menu structure
+   */
+  protected function get_menu() {
+    // use caching, so things don't slow down if there are lots of plugins which extend the menu. Caching must be per
+    // user as they will have different access rights.
+    $cacheId = 'indicia-menu-'.$_SESSION['auth_user']->id;
+    $cache = Cache::instance();
+    if ($cached = $cache->get($cacheId)) {
+      return $cached;
+    } else {
       $menu = array
       (
         'Home' => array(),
@@ -103,9 +121,19 @@ class Indicia_Controller extends Template_Controller {
             'Taxon Relations'=>'taxon_relation_type'
         ));
       }
-      $this->template->menu = $menu;
-    } else
-      $this->template->menu = array();
+      // Now look for any modules which extend the menu
+      foreach (Kohana::config('config.modules') as $path) {
+        $plugin = basename($path);
+        if (file_exists("$path/plugins/$plugin.php")) {
+          require_once("$path/plugins/$plugin.php");
+          if (function_exists($plugin.'_alter_menu')) {
+            $menu = call_user_func($plugin.'_alter_menu', $menu);
+          }
+        }
+      }
+      $cache->set($cacheId, $menu); 
+    }
+    return $menu;
   }
   
   /**
