@@ -1820,13 +1820,16 @@ class data_entry_helper extends helper_base {
             $existing_value = $attributes[$attrId]['default'];
           } else
             $existing_value = '';
-          // inject the field name into the control HTML
+            // inject the field name into the control HTML
           $oc = str_replace('{fieldname}', $ctrlId, $control);
           if (!empty($existing_value)) {
             // For select controls, specify which option is selected from the existing value
             if (substr($oc, 0, 7)=='<select') {			  
               $oc = str_replace('value="'.$existing_value.'"',
                   'value="'.$existing_value.'" selected="selected"', $oc);			  
+            } else if(strpos($oc, 'checkbox') !== false) {
+              if($existing_value=="1")
+                $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);			  
             } else {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
             }			
