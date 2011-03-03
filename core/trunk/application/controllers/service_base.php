@@ -84,7 +84,7 @@ class Service_Base_Controller extends Controller {
         // Find the parts of each file name, which is the cache entry ID, then the mode.
         $tokens = explode('~', basename($path));
         // check this cached nonce is for the correct read or write operation.
-        if ($mode = $tokens[1]) {
+        if ($mode == $tokens[1]) {
           $id = $this->cache->get($tokens[0]);
           if ($id>0) {
             // normal state, the ID is positive, which means we are authenticating a remote website
