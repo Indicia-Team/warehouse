@@ -64,14 +64,18 @@ if (count($notifications)!==0) : ?>
 <?php
   foreach($notifications as $notification) {
     echo "<h2>Notifications from $notification->source</h2>";
-    $struct = json_decode($notification->data, true);    
+    $struct = json_decode($notification->data, true);
     echo "<table><thead>\n<tr><th>";
     echo implode('</th><th>', $struct['headings']);
-    echo "</th></tr>\n</thead>\n<tbody>\n";
-    foreach ($struct['data'] as $record) {            
-      echo '<tr><td>';
-      echo implode('</td><td>', $record);
-      echo "</td><td></tr>\n";
+    echo "</th></tr>\n</thead>\n";
+    foreach ($struct['data'] as $recordGroup) {
+      echo "<tbody>\n";
+      foreach ($recordGroup as $record) {
+        echo '<tr><td>';
+        echo implode('</td><td>', $record);
+        echo "</td><td></tr>\n";
+      }
+      echo "</tbody>\n";
     }
     echo "</tbody>\n</table>\n";
   }
