@@ -96,7 +96,7 @@ if (in_array('valid_decimal', $enable_list)) : ?>
 	<li id="li_valid_decimal"><label class="narrow" for="valid_decimal">Formatted
 	Decimal</label><?php echo form::checkbox('valid_decimal', TRUE, isset($model->valid_decimal) AND ($model->valid_decimal == 't'), 'class="vnarrow" ' ) ?><input
 		class="narrow" id="valid_dec_format" name="valid_dec_format"
-		value="<?php echo html::specialchars($model->valid_dec_format); ?>"
+		value="<?php echo html::specialchars($model->valid_dec_format); ?>" />
 		<?php echo html::error_message($model->getError('valid_decimal')); ?>
 	</li>
 <?php endif; 
@@ -104,7 +104,7 @@ if (in_array('valid_regex', $enable_list)) : ?>
 	<li id="li_valid_regex"><label class="narrow" for="valid_regex">Regular
 	Expression</label><?php echo form::checkbox('valid_regex', TRUE, isset($model->valid_regex) AND ($model->valid_regex == 't'), 'class="vnarrow" ' ) ?><input
 		class="narrow" id="valid_regex_format" name="valid_regex_format"
-		value="<?php echo html::specialchars($model->valid_regex_format); ?>"
+		value="<?php echo html::specialchars($model->valid_regex_format); ?>" />
 		<?php echo html::error_message($model->getError('valid_regex')); ?>
 	</li>
 <?php endif; 
@@ -112,7 +112,7 @@ if (in_array('valid_min', $enable_list)) : ?>
 	<li id="li_valid_min"><label class="narrow" for="valid_min">Minimum
 	value</label><?php echo form::checkbox('valid_min', TRUE, isset($model->valid_min) AND ($model->valid_min == 't'), 'class="vnarrow" ' ) ?><input
 		class="narrow" id="valid_min_value" name="valid_min_value"
-		value="<?php echo html::specialchars($model->valid_min_value); ?>"
+		value="<?php echo html::specialchars($model->valid_min_value); ?>" />
 		<?php echo html::error_message($model->getError('valid_min')); ?>
 	</li>
 <?php endif; 
@@ -120,7 +120,7 @@ if (in_array('valid_max', $enable_list)) : ?>
 	<li id="li_valid_max"><label class="narrow" for="valid_max">Maximum
 	value</label><?php echo form::checkbox('valid_max', TRUE, isset($model->valid_max) AND ($model->valid_max == 't'), 'class="vnarrow" ' ) ?><input
 		class="narrow" id="valid_max_value" name="valid_max_value"
-		value="<?php echo html::specialchars($model->valid_max_value); ?>"
+		value="<?php echo html::specialchars($model->valid_max_value); ?>" />
 		<?php echo html::error_message($model->getError('valid_max')); ?>
 	</li>
 <?php endif; 

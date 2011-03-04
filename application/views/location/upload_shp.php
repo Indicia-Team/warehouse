@@ -60,8 +60,8 @@ foreach ($columns as $col):
   echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
   $i++;  ?>
     <td><?php echo $col['name']; ?></td>
-    <td><input type='radio' <?php echo 'value="'.$col['name'].'" name="name">'; ?></input></td>
-    <td><input type='radio' <?php echo 'value="'.$col['name'].'" name="parent">'; ?></input></td>
+    <td><input type="radio" <?php echo 'value="'.$col['name'].'" name="name">'; ?>/></td>
+    <td><input type="radio" <?php echo 'value="'.$col['name'].'" name="parent">'; ?>/></td>
   </tr>
 <?php endforeach; ?>
 </tbody>

@@ -24,5 +24,5 @@
 
 ?>
 <error>
-  <message><?php echo $message ?>
+  <message><?php echo $message ?></message>
 </error>
