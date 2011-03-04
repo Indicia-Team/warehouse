@@ -15,7 +15,7 @@ if ($error!=null) {
           id="host"
           name="host"
           maxlength="255"
-          value="<?php echo html::specialchars($host); ?>"
+          value="<?php echo html::specialchars($host); ?>" />
       </li>
 
       <!-- DB port -->
@@ -25,7 +25,7 @@ if ($error!=null) {
           id="port"
           name="port"
           maxlength="6"
-          value="<?php echo html::specialchars($port); ?>"
+          value="<?php echo html::specialchars($port); ?>" />
       </li>
 
       <!-- DB name -->
@@ -35,7 +35,7 @@ if ($error!=null) {
           id="database"
           name="database"
           maxlength="255"
-          value="<?php echo html::specialchars($database); ?>"
+          value="<?php echo html::specialchars($database); ?>" />
       </li>
 
       <!-- DB schema -->
@@ -45,7 +45,7 @@ if ($error!=null) {
           id="schema"
           name="schema"
           maxlength="255"
-          value="<?php echo html::specialchars($schema); ?>"
+          value="<?php echo html::specialchars($schema); ?>" />
       </li>
 
       <!-- DB user -->
@@ -55,7 +55,7 @@ if ($error!=null) {
           id="dbuser"
           name="dbuser"
           maxlength="255"
-          value="<?php echo html::specialchars($user); ?>"
+          value="<?php echo html::specialchars($user); ?>" />
       </li>
 
       <!-- DB password -->
@@ -65,7 +65,7 @@ if ($error!=null) {
           id="dbpassword"
           name="dbpassword"
           maxlength="255"
-          value="<?php echo html::specialchars($password); ?>"
+          value="<?php echo html::specialchars($password); ?>" />
       </li>
 
       <!-- DB user for reports -->
@@ -75,7 +75,7 @@ if ($error!=null) {
           id="reportuser"
           name="reportuser"
           maxlength="255"
-          value="<?php echo html::specialchars($reportuser); ?>"
+          value="<?php echo html::specialchars($reportuser); ?>" />
       </li>
 
       <!-- DB password for reports -->
@@ -85,7 +85,7 @@ if ($error!=null) {
           id="reportpassword"
           name="reportpassword"
           maxlength="255"
-          value="<?php echo html::specialchars($reportpassword); ?>"
+          value="<?php echo html::specialchars($reportpassword); ?>" />
       </li>
   </ol>
 </fieldset>

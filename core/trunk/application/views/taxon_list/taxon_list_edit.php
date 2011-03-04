@@ -73,9 +73,8 @@ if ($parent_id != null) : ?>
 </li>
 <li>
 <label for="website">Owned by</label>
-<select id="website_id" name="taxon_list:website_id" 
+<select id="website_id" name="taxon_list:website_id" <?php echo $disabled; ?>>
 <?php 
-echo $disabled;
 if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
   $website_id=$values['parent_website_id']; 
 } else {
