@@ -442,6 +442,7 @@ echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null
 <?php } ?>
 </form>
 </div>
+</div>
 <?php } ?>
 <?php if ($id != null && $values['table'] != null) : ?>
   <div id="subtaxa">

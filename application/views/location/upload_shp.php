@@ -21,9 +21,9 @@
  * @link 	http://code.google.com/p/indicia/
  */
 ?>
-<?php echo form::open($controllerpath.'/upload_shp2', array('class'=>'cmxform')); ?>
-<input type='checkbox' name="boundary" >Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).</input><br/>
-<input type='checkbox' name="use_parent" >Select the checkbox if the locations are associated with a parent location.</input><br/>
+<form action="<?php echo $controllerpath.'/upload_shp2'; ?>" method="post" class="cmxform">
+<input type='checkbox' name="boundary"/>Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).<br/>
+<input type='checkbox' name="use_parent"/>Select the checkbox if the locations are associated with a parent location.<br/>
 <label for='SRID' class='wide' >SRID used in Shapefile</label>
 <select id='SRID' name='srid' >
   <option value="27700">EPSG:27700 British National Grid</option>
@@ -55,10 +55,9 @@
 </thead>
 <tbody>
 <?php $i=0;
-foreach ($columns as $col):
-  echo '<tr class="';
-  echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">';
-  $i++;  ?>
+foreach ($columns as $col): ?>
+  <tr class="<?php echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">'; ?>">
+  <?php $i++; ?>
     <td><?php echo $col['name']; ?></td>
     <td><input type="radio" <?php echo 'value="'.$col['name'].'" name="name">'; ?>/></td>
     <td><input type="radio" <?php echo 'value="'.$col['name'].'" name="parent">'; ?>/></td>
@@ -68,7 +67,6 @@ foreach ($columns as $col):
 </table>
 <input type="Submit" value="Upload Data" id="upload-button" />
 <br/>
-</div>
 <?php
 // We stick these at the bottom so that all the other things will be parsed first
 foreach ($this->input->post() as $a => $b) {

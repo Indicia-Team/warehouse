@@ -104,7 +104,7 @@ class Indicia_Controller extends Template_Controller {
         ),
         'Admin' => array
         (          
-          'Triggers & Notifications' => 'trigger',
+          'Triggers &amp; Notifications' => 'trigger',
           'Websites'=>'website'
         ),
         'Logged in as '.$_SESSION['auth_user']->username => array

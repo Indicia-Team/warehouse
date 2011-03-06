@@ -201,9 +201,9 @@ $(document).ready(function() {
 Website/Survey Allocation</legend>
 <?php
 if (!is_null($this->auth_filter))
-$websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
+  $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
 else
-$websites = ORM::factory('website')->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
+  $websites = ORM::factory('website')->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
 foreach ($websites as $website) {
   $webrec = ORM::factory($other_data['webrec_entity'])->where(array($values['webrec_key'] => $model->id,
                             'website_id' => $website->id,

@@ -37,6 +37,4 @@ echo import_helper::dump_javascript();
 
 ?>
 
-</fieldset>
-</form>
 

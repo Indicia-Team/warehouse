@@ -41,10 +41,10 @@ class config_test {
       self::check_php_version($result, $problems_only);
       self::check_postgres($result, $problems_only);
       self::check_curl($result, $problems_only);
-	  self::check_gd2($result, $problems_only);
+      self::check_gd2($result, $problems_only);
       self::check_dBase($result, $problems_only);
       self::check_zip($result, $problems_only);
-	  self::check_dir_permissions($result, $problems_only);
+      self::check_dir_permissions($result, $problems_only);
       self::check_helper($result, $problems_only);
       self::check_email($result, $problems_only);
       // Check db must be the last one
@@ -333,26 +333,18 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
           'the installation settings to be stored correctly',
           'the installation settings cannot be stored');
-      self::check_dir_permission($readonly,  $good_dirs, $bad_dirs, 'database tables',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db/indicia_tables.sql',
-          'the database table objects can be installed',
-          'the database table objects cannot be installed');
-      self::check_dir_permission($readonly,  $good_dirs, $bad_dirs, 'database sequences',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db/indicia_sequences.sql',
-          'the database sequence objects can be installed',
-          'the database sequence objects cannot be installed');
-      self::check_dir_permission($readonly,  $good_dirs, $bad_dirs, 'database views',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db/indicia_views.sql',
-          'the database view objects can be installed',
-          'the database view objects cannot be installed');
-      self::check_dir_permission($readonly,  $good_dirs, $bad_dirs, 'data',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db/indicia_data.sql',
-          'the database initial data can be installed',
-          'the database initial data cannot be installed');
+      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'database update folders',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
+          'the database upgrades can be tracked',
+          'the database upgrades cannot be tracked');
       self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',
           'the settings for the data entry helper classes cannot be stored');
+      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'demo',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/demo',
+          'the settings for the demo configuration to be stored',
+          'the settings for the demo configuration classes cannot be stored');
 
       if (count($good_dirs)>0 && !$problems_only) {
         array_push($messages, array(

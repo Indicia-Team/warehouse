@@ -1,4 +1,3 @@
-<?xml version='1.0' encoding='utf-8'?>
 <?php
 
 /**
@@ -21,8 +20,8 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
-?>
+echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <error>
-  <message><?php echo $message ?></message>
-</error>
+  <message>$message</message>
+</error>";
+?>

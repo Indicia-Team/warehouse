@@ -37,7 +37,6 @@ if ($id) : ?>
 <li>
 <label for="image">Image:</label>
 <?php echo html::sized_image(html::initial_value($values, 'occurrence_image:path'), 'med'); ?>
-</a>
 </li>
 <?php endif; ?>
 <li>

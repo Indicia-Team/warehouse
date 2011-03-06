@@ -168,4 +168,5 @@ foreach ($values['attributes'] as $attr) {
  <?php endif; ?>
  </div>
  <?php echo html::form_buttons($id!=null, false, false); ?>
+</form>
  
