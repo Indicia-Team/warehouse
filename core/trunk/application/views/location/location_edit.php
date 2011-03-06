@@ -201,6 +201,7 @@ foreach ($values['attributes'] as $attr) {
 </div>
 <div id="images">
 </div>
+</div>
 <?php 
 endif;
 echo html::form_buttons(html::initial_value($values, 'location:id')!=null);

@@ -160,4 +160,4 @@ foreach ($other_data['controlTypes'] as $controlType) {
 <?php
 echo $metadata;
 echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null, false, false);
-?></form>
+?></fieldset></form>

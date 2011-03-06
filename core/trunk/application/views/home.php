@@ -82,3 +82,4 @@ if (count($notifications)!==0) : ?>
 
 endif;
 ?>
+</div>

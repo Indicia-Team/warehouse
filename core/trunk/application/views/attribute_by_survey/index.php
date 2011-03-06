@@ -177,8 +177,9 @@ $(document).ready(function() {
 	if ($('li.attribute-' + attrId).length!==0) {
 	  alert('This attribute already exists for the survey.');
 	} else {
-      var existingAttrs = {<?php 
-        // the JavaScript needs a list of attribute captions
+      var existingAttrs = <?php
+        echo "{";
+        // the JavaScript needs a list of attribute captions\
         $idx = 0;
         foreach ($existingAttrs as $attr) {
           echo '"id'.$attr->id.'":"'.$attr->caption.'"';
@@ -187,7 +188,8 @@ $(document).ready(function() {
           }
           $idx++;
         }
-      ?>};
+        echo "}";
+      ?>;
     
       $('#controls').append('<li id="attribute-'+attrId+'" style="border-color: red" '+
             'class="attribute-'+attrId+' draggable-control ui-widget ui-widget-content ui-corner-all ui-helper-clearfix">' +

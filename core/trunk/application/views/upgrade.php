@@ -24,8 +24,8 @@
 ?>
 <?php if ($db_version!=$app_version || isset($error)) : ?>
 <div class="page-notice ui-state-error ui-corner-all"><p><strong>The upgrade failed.</strong></p>
-<?php if ($db_version!=$app_version) echo "<p>Database version and application version do not match.</p>"; ?> 
-<?php if (isset($error)) echo "<p>The error was described as:<br/>$error<br/>Please refer to the application log files for more information.</p>"; ?></div>
+<?php if ($db_version!=$app_version  && !isset($error)) echo "<p>Database version and application version do not match.</p>"; ?>
+<?php if (isset($error)) echo "<p>An error occurred during the upgrade.</p><p>The error was described as:<br/>$error<br/>Please refer to the application log files for more information.</p>"; ?></div>
 <?php else: ?>
 <div class="page-notice ui-state-highlight ui-corner-all">Your system has been upgraded to version <?php echo $app_version; ?>.
 </div>
