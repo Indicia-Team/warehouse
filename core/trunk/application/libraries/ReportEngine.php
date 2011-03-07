@@ -57,7 +57,7 @@ class ReportEngine {
   private $providedParams;
   private $localReportDir;
   private $cache;
-  const rowsPerUpdate = 10;
+  const rowsPerUpdate = 50;
 
   public function __construct()
   {
@@ -351,8 +351,9 @@ class ReportEngine {
 
     // Now we have identified the vague date columns to add, create data columns with the processed date
     // strings.
+    $dataCount = count($data); // invariant
     for ($i=0; $i<count($col_sets); $i++) {
-      for ($r=0; $r<count($data); $r++) {
+      for ($r=0; $r<$dataCount; $r++) {
         $row=$data[$r];
         $data[$r][$col_sets[$i].'date'] = vague_date::vague_date_to_string(array(
           $row[$col_sets[$i].'date_start'],
@@ -365,6 +366,7 @@ class ReportEngine {
 
   public function merge_attribute_data(&$data, $providedParams)
   {
+  	$dataCount = count($data); // invariant
   	/* attributes are extra pieces of information associated with data rows. These can have multiple values within each field,
   	 * so do not lend themselves to being fetched by a extended join within the original SQL query.
   	 */
@@ -401,7 +403,7 @@ class ReportEngine {
 		              	if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
 		              		$this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
 		              	}
-			        	for ($r=0; $r<count($data); $r++) {
+			        	for ($r=0; $r<$dataCount; $r++) {
 				        	$data[$r][$newColName.'_date_start'] = '';
 				        	$data[$r][$newColName.'_date_end'] = '';
 			        		$data[$r][$newColName.'_date_type'] = '';
@@ -415,7 +417,7 @@ class ReportEngine {
                		  	// allow follow through so Lookup follows normal format of a singular field.
 		            default:
 		              	$this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
-			        	for ($r=0; $r<count($data); $r++) {
+			        	for ($r=0; $r<$dataCount; $r++) {
 			        		$data[$r][$newColName] = $multiValue ? array() : '';
 			        	}
 		              	break;
@@ -430,7 +432,7 @@ class ReportEngine {
       			$index[$attrData[$r][$attributeDefn->main_id]] = $r;
       		}
       	}
-  	  	for ($r=0; $r<count($data); $r++) {
+  	  	for ($r=0; $r<$dataCount; $r++) {
   	  		if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
   	  			continue;
   	  		}
@@ -470,7 +472,7 @@ class ReportEngine {
   	  			$rowIndex++;
   	  		}
       	}
-  	  	for ($r=0; $r<count($data); $r++) {
+  	  	for ($r=0; $r<$dataCount; $r++) {
   	  		foreach($newColumns as $newCol){
   	  			$column = $newCol['column'];
    	  			if($newCol['multi_value'] == true && is_array($data[$r][$column])){
