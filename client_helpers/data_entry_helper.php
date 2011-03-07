@@ -3789,7 +3789,7 @@ $('.ui-state-default').live('mouseout', function() {
     $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
     if (!is_dir($cacheFolder)) {
       $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a missing directory. This will result in slow form loading performance.</li>';
-      } elseif (!is_writeable($cacheFolder)) {
+    } elseif (!is_writeable($cacheFolder)) {
       $r .= '<li class="ui-state-error">The cache path setting in helper_config.php points to a read only directory (' . $cacheFolder . '). This will result in slow form loading performance.</li>';
     } elseif ($fullInfo) {
         $r .= '<li>Success: Cache directory is present and writeable.</li>';

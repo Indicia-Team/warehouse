@@ -64,14 +64,16 @@ class iform_form_name {
   
   /**
    * Handles the construction of a submission array from a set of form values.
+   * For example, the following represents a submission structure for a simple
+   * sample and 1 occurrence submission
+   * return data_entry_helper::build_sample_occurrence_submission($values);
    * @param array $values Associative array of form data values. 
    * @param array $args iform parameters. 
    * @return array Submission structure.
    * @todo: Implement this method
    */
   public static function get_submission($values, $args) {
-    // The following represents a submission structure for a simple sample and 1 occurrence submission
-    // return data_entry_helper::build_sample_occurrence_submission($values);     
+        
   }  
   
   
