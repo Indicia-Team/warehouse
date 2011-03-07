@@ -3957,11 +3957,17 @@ $('.ui-state-default').live('mouseout', function() {
   */
   public static function outputAttribute($item, $options=array()) {
     $options = array_merge(array(
-	    'extraParams' => array()
-	  ), $options);
+      'extraParams' => array()
+    ), $options);
     $attrOptions = array(
         'fieldname'=>$item['fieldname'],
         'disabled'=>'');
+    if (isset($item['validation_rules'])) {
+      $validation = explode("\n", $item['validation_rules']);
+      $attrOptions['class'] = self::build_validation_class(array('validation'=>$validation));
+      if (in_array('required',$validation)) 
+        $attrOptions['suffixTemplate'] = 'requiredsuffix';
+    }
     if (isset($item['caption']))
       $attrOptions['label']=$item['caption'];
     $attrOptions = array_merge($attrOptions, $options);

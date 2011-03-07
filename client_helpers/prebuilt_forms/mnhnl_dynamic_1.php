@@ -13,18 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Client
+ * @package    Client
  * @subpackage PrebuiltForms
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link 	http://code.google.com/p/indicia/
+ * @author    Indicia Team
+ * @license    http://www.gnu.org/licenses/gpl.html GPL 3.0
+ * @link     http://code.google.com/p/indicia/
  */
 
 /**
  * Prebuilt Indicia data entry form.
  * NB has Drupal specific code. Relies on presence of IForm loctools and IForm Proxy.
  * 
- * @package	Client
+ * @package    Client
  * @subpackage PrebuiltForms
  */
 
@@ -97,8 +97,19 @@ class iform_mnhnl_dynamic_1 {
         ),
         array(
           'name'=>'nameShow',
-          'caption'=>'Show first name and last name fields even if logged in',
-          'description'=>'If the survey requests first name and last name, these are ignored for logged in users where user id is sent instead. Check this box to show these fields.',
+          'caption'=>'Show user profile fields even if logged in',
+          'description'=>'If the survey requests first name and last name or any field which matches a field in the users profile, these are hidden for logged in '.
+              'users where they are populated if the data is available in the profile and user id is sent instead. Check this box to show these fields.',
+          'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'copyFromProfile',
+          'caption'=>'Copy field values from user profile',
+          'description'=>'If logged in, copy any matching fields from the user\'s profile into the fields with matching names in the sample data. This currently works for fields '.
+              'defined in the Drupal Profile module.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
@@ -123,17 +134,17 @@ class iform_mnhnl_dynamic_1 {
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
-				"&nbsp;&nbsp;<strong>[species_attributes]</strong> - any custom attributes for the occurrence, if not using the grid<br/>".
-				"&nbsp;&nbsp;<strong>[date]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[map]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[location name]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[location autocomplete]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[location select]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[place search]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[recorder names]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[record status]</strong><br/>".
-				"&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
+                "&nbsp;&nbsp;<strong>[species_attributes]</strong> - any custom attributes for the occurrence, if not using the grid<br/>".
+                "&nbsp;&nbsp;<strong>[date]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[map]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[location name]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[location autocomplete]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[location select]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[place search]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[recorder names]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[record status]</strong><br/>".
+                "&nbsp;&nbsp;<strong>[sample comment]</strong>. <br/>".
             "<strong>@option=value</strong> on the line(s) following any control allows you to override one of the options passed to the control. The options ".
         "available depend on the control. For example @label=Abundance would set the untranslated label of a control to Abundance. Where the ".
         "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"]. ".
@@ -182,7 +193,8 @@ class iform_mnhnl_dynamic_1 {
           'name'=>'no_grid',
           'caption'=>'Skip initial grid of data',
           'description'=>'If checked, then when initially loading the form the data entry form is immediately displayed, as opposed to '.
-              'the default of displaying a grid of the user\'s data which they can add to.',
+              'the default of displaying a grid of the user\'s data which they can add to. By ticking this box, it is possible to use this form '.
+              'for data entry by anonymous users though they cannot then list the data they have entered.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
@@ -355,7 +367,7 @@ class iform_mnhnl_dynamic_1 {
           'required' => false,
           'default' => false,
           'group' => 'User Interface'
-        )		
+        )        
       )
     );
     return $retVal;
@@ -370,7 +382,7 @@ class iform_mnhnl_dynamic_1 {
         'defined for the selected survey';  
   }
   
-/**
+  /**
    * Return the generated form output.
    * @return Form HTML.
    */
@@ -382,7 +394,6 @@ class iform_mnhnl_dynamic_1 {
     self::getArgDefaults($args);
     global $user;
     $logged_in = $user->uid>0;
-    $r = '';
     self::$node = $node;
     
     // Get authorisation tokens to update and read from the Warehouse.
@@ -393,7 +404,7 @@ class iform_mnhnl_dynamic_1 {
     $mode = (isset($args['no_grid']) && $args['no_grid']) 
         ? MODE_NEW_SAMPLE // default mode when no_grid set to true - display new sample
         : MODE_GRID; // default mode when no grid set to false - display grid of existing data
-    			// mode MODE_EXISTING: display existing sample
+                // mode MODE_EXISTING: display existing sample
     $loadedSampleId = null;
     $loadedOccurrenceId = null;
     if ($_POST) {
@@ -406,8 +417,8 @@ class iform_mnhnl_dynamic_1 {
           }
         }
       } else if(!is_null(data_entry_helper::$entity_to_load)){
-	      $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
-    	} // else valid save, so go back to gridview: default mode 0
+          $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
+        } // else valid save, so go back to gridview: default mode 0
     }
     if (array_key_exists('sample_id', $_GET)){
       $mode = MODE_EXISTING;
@@ -425,6 +436,7 @@ class iform_mnhnl_dynamic_1 {
     // default mode  MODE_GRID : display grid of the samples to add a new one 
     // or edit an existing one.
     if($mode ==  MODE_GRID) {
+      $r = '';
       $attributes = data_entry_helper::getAttributes(array(
         'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
@@ -497,7 +509,7 @@ class iform_mnhnl_dynamic_1 {
     }
     // atributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
     $attributes = data_entry_helper::getAttributes(array(
-    	'id' => data_entry_helper::$entity_to_load['sample:id']
+        'id' => data_entry_helper::$entity_to_load['sample:id']
        ,'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
        ,'key'=>'sample_id'
@@ -514,24 +526,36 @@ class iform_mnhnl_dynamic_1 {
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
           "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
-      $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";	
+      $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";    
     }
     if (isset(data_entry_helper::$entity_to_load['occurrence:id'])) {
-      $hiddens .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";	
+      $hiddens .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";    
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
     $arr = explode("\r\n", $args['structure']);
     if (!in_array('[record status]', $arr)) {
       $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C'; 
-      $hiddens .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"$value\" />\n";	
+      $hiddens .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"$value\" />\n";    
     }
     
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
+
     // If logged in, output some hidden data about the user
+    if (function_exists('profile_load_profile')) {
+      profile_load_profile($user);
+    }
     foreach($attributes as &$attribute) {
-      if (strcasecmp($attribute['caption'], 'cms user id')==0) {
+      $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
+      if (isset($user->$attrPropName)) {
+        $attribute['default'] = $user->$attrPropName;
+        if ($args['nameShow'] != true) {
+          // profile attributes are not displayed as the user is logged in
+          $attribute['handled']=true;
+        }
+      }
+      elseif (strcasecmp($attribute['caption'], 'cms user id')==0) {
         if ($logged_in) $attribute['value'] = $user->uid;
         $attribute['handled']=true; // user id attribute is never displayed
       }
@@ -600,13 +624,13 @@ class iform_mnhnl_dynamic_1 {
         $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
       }
       $r .= $tabContent;    
-      // Add any buttons required at the bottom of the tab
+      // Add any buttons required at the bottom of the tab   
       if ($args['interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
           'divId'=>'controls',
-          'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabs)-1) ? 'last' : 'middle')
+          'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabHtml)-1) ? 'last' : 'middle')
         ));        
-      } elseif ($pageIdx==count($tabs)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
+      } elseif ($pageIdx==count($tabHtml)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
         // last part of a non wizard interface must insert a save button, unless it is tabbed interface with save button beneath all pages 
         $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";      
       $pageIdx++;
@@ -689,7 +713,7 @@ class iform_mnhnl_dynamic_1 {
             $option = explode('=',substr($tabContent[$i],1));
             $options[$option[0]]=json_decode($option[1]);
             // if not json then need to use option value as it is
-            if ($options[$option[0]]=='') $options[$option[0]]=$option[1];			
+            if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
           }
           if (method_exists(get_called_class(), $method)) 
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
@@ -731,7 +755,7 @@ class iform_mnhnl_dynamic_1 {
     $structureArr = explode("\r\n", $structure);
     $structureTabs = array();
     foreach ($structureArr as $component) {
-      if (preg_match('/^=[A-Za-z0-9 \-\*]+=$/', trim($component), $matches)===1) {
+      if (preg_match('/^=[A-Za-z0-9 \-\*\?]+=$/', trim($component), $matches)===1) {
         $currentTab = substr($matches[0], 1, -1);
         $structureTabs[$currentTab] = array();
       } else {
@@ -965,7 +989,7 @@ class iform_mnhnl_dynamic_1 {
     return data_entry_helper::date_picker(array_merge(array(
       'label'=>lang::get('LANG_Date'),
       'fieldname'=>'sample:date',
-		  'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
+          'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
     ), $options));
   }
   
@@ -1025,9 +1049,9 @@ class iform_mnhnl_dynamic_1 {
    */
   private static function get_control_placesearch($auth, $args, $tabalias, $options) {
     return data_entry_helper::georeference_lookup(array_merge(
-	  iform_map_get_georef_options($args),
-	  $options
-	));
+      iform_map_get_georef_options($args),
+      $options
+    ));
   }
 
    /**
@@ -1058,7 +1082,7 @@ class iform_mnhnl_dynamic_1 {
       $r .= '>'.lang::get('LANG_Record_Status_'.$value).'</option>';
     }
     $r .= "</select><br/>\n";
-  	return $r;
+      return $r;
   }   
   
   /**
@@ -1097,7 +1121,7 @@ class iform_mnhnl_dynamic_1 {
       foreach($defaults as $default) {
         $tokens = explode('=', $default);
         $result[trim($tokens[0])] = trim($tokens[1]);
-      }	  
+      }      
     }  
     $args['defaults']=$result;
   }
@@ -1163,7 +1187,7 @@ class iform_mnhnl_dynamic_1 {
         'userID_attr_id'=>$userIdAttr,
         'userID'=>$user->uid
       )
-    ));	
+    ));    
     $r .= '<form>';    
     if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
       $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';
@@ -1200,9 +1224,9 @@ class iform_mnhnl_dynamic_1 {
               "[*]\r\n".
               "=*=";
     if (!isset($args['occurrence_comment']))
-	  $args['occurrence_comment'] == false; 
-	if (!isset($args['occurrence_images']))
-	  $args['occurrence_images'] == false; 
+      $args['occurrence_comment'] == false; 
+    if (!isset($args['occurrence_images']))
+      $args['occurrence_images'] == false; 
 	if (!isset($args['attribute_termlist_language_filter']))
 	  $args['attribute_termlist_language_filter'] == false; 
   }
