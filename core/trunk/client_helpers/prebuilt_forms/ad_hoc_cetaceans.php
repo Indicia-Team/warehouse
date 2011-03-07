@@ -236,7 +236,7 @@ class iform_ad_hoc_cetaceans {
         '<img alt="{taxon}" src="'.data_entry_helper::$base_url.'upload/med-{image_path}" width="250"/></a>'.
         '<div>{taxon}</div></div>'.
         '<div class="taxon-desc"><ul><li>\'.str_replace("\n", "</li><li>","{description_in_list}").\'</li></ul>'.
-        '<a href="http://www.marine-life.org.uk/northeastcetaceans/?q=\'.
+        '<a href="http://www.northeastcetaceans.org.uk/?q=\'.
         strtolower(str_replace(array(" ", "\\\'"), array("-", ""), "{taxon}")).
         \'" target="_blank" class="ui-state-default ui-corner-all indicia-button">'.lang::get('More Info').'...</a></div>\';';
     // Template the taxon label cell
