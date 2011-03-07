@@ -458,14 +458,9 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       $r .= data_entry_helper::dump_remaining_errors();
     }   
     $r .= "</form>";
-    if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
-      $url = self::$svcUrl."/data/sample?parent_id=".data_entry_helper::$entity_to_load['sample:id'];
-      $url .= "&mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']['nonce'];
-      $session = curl_init($url);
-      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-      $entity = json_decode(curl_exec($session), true);    
-      if (isset($entity['error'])) throw new Exception($entity['error']);
-      data_entry_helper::$javascript .= "
+    // Because the SSLayer may be defined at map creation (as defined by the user interface argument, we have to define the
+    // layer even if it is not used - ie no subsamples yet (eg when creating a new supersample)
+    data_entry_helper::$javascript .= "
 // Create a vector layer to display the subsample locations
 // the default edit layer is used for the supersample
 SSStyleMap = new OpenLayers.StyleMap({
@@ -474,14 +469,19 @@ SSStyleMap = new OpenLayers.StyleMap({
                     strokeColor: \"Black\",
                     fillOpacity: 0.2,
                     strokeWidth: 1
-                  })
-  });
-SSLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Subsample_Layer")."\",
-                                    {styleMap: SSStyleMap});
+                  })});
+SSLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Subsample_Layer")."\", {styleMap: SSStyleMap});
 SSparser = new OpenLayers.Format.WKT();
 ";
+    if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
+      $url = self::$svcUrl."/data/sample?parent_id=".data_entry_helper::$entity_to_load['sample:id'];
+      $url .= "&mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']['nonce'];
+      $session = curl_init($url);
+      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+      $entity = json_decode(curl_exec($session), true);    
+      if (isset($entity['error'])) throw new Exception($entity['error']);
       foreach($entity as $SS){
-      data_entry_helper::$javascript .= "
+        data_entry_helper::$javascript .= "
 SSfeature = SSparser.read('".$SS['wkt']."');
 SSLayer.addFeatures([SSfeature]);
 ";
