@@ -336,3 +336,41 @@ tr.odd {
 .sub-option {
   margin-left: 1em;
 }
+
+.layer-list {
+  width: 300px;
+  border: dotted 1px;
+  line-height: 20px;
+  padding: 0.5em;
+}
+
+.layer-list img {
+  margin: 0px;
+  border: none;
+  margin-right: 1em;
+}
+
+.layer-list input {
+  margin-right: 1em;
+}
+
+.layer-list ul li {
+  list-style: none;
+  background: none;
+}
+
+.layer-list ul li * {
+  vertical-align: middle;
+}
+
+.layer-list ul li div {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: none 1px;
+  margin-right: 1em;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+}

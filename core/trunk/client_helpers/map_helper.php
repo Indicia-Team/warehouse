@@ -278,7 +278,7 @@ class map_helper extends helper_base {
   * </li>
   * <li><b>includeIcons</b><br/>
   * </li>
-  * <li><b>includeSelectors</b><br/>
+  * <li><b>includeSwitchers/b><br/>
   * </li>
   * <li><b>includeHiddenLayers</b><br/>
   * </li>
@@ -290,13 +290,14 @@ class map_helper extends helper_base {
     $options = array_merge(array(
       'id' => 'layers',
       'includeIcons' => true,
-      'includeSwitcher' => false,
+      'includeSwitchers' => false,
       'includeHiddenLayers' => false,
       'layerTypes' => array('base','overlay')
     ), $options);
-    $r .= '<div id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all"><ul>';
-    $r .= '</ul></div>';    
-    self::$javascript .= "function getLayerHtml_".$options['id']."(layer, div) {\n  ";
+    $r .= '<div class="layer-list" id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all"><ul>';
+    $r .= '</ul></div>';
+    $funcSuffix = str_replace('-','_',$options['id']);
+    self::$javascript .= "function getLayerHtml_$funcSuffix(layer, div) {\n  ";
     if (!$options['includeHiddenLayers']) 
       self::$javascript .= "if (!layer.visibility) {return '';}\n  ";
     if (!in_array('base', $options['layerTypes']))
@@ -335,25 +336,25 @@ class map_helper extends helper_base {
   return layerHtml;
 }
     
-function refreshLayers_".$options['id']."(div) {
+function refreshLayers_$funcSuffix(div) {
   $('#".$options['id']." ul li').remove();
   $.each(div.map.layers, function(i, layer) {
-    $('#".$options['id']." ul').append(getLayerHtml_".$options['id']."(layer, div));
+    $('#".$options['id']." ul').append(getLayerHtml_$funcSuffix(layer, div));
   });    
 }
 
 mapInitialisationHooks.push(function(div) { 
-  refreshLayers_".$options['id']."(div);
+  refreshLayers_$funcSuffix(div);
   div.map.events.register('addlayer', div.map, function(object, element) {
-    refreshLayers_".$options['id']."(div);
+    refreshLayers_$funcSuffix(div);
   });
   div.map.events.register('changelayer', div.map, function(object, element) {
     if (!object.layer.isBaseLayer) {
-      refreshLayers_".$options['id']."(div);
+      refreshLayers_$funcSuffix(div);
     }
   });
   div.map.events.register('changebaselayer', div.map, function(object, element) {
-    refreshLayers_".$options['id']."(div);
+    refreshLayers_$funcSuffix(div);
   });
   div.map.events.register('removelayer', div.map, function(object, element) {
     $('#'+object.layer.id.replace(/\./g,'-')).remove();
