@@ -172,14 +172,7 @@ class iform_report_grid {
     // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams 
     $r .= '<br/>'.report_helper::report_download_link($reportOptions);
     // now the grid
-    $r .= '<br/>'.report_helper::report_map($reportOptions);
-    $r .= map_helper::map_panel(array(
-      'width'=>600,
-      'height'=>600,
-      'readAuth'=>$auth['read'],
-      'presetLayers' => array('google_physical'),
-      'editLayer' => false
-    ));
+    $r .= '<br/>'.report_helper::report_grid($reportOptions);
     // Set up a page refresh for dynamic update of the report at set intervals
     if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection
       if (isset($args['load_on_refresh']) && !empty($args['load_on_refresh']))
