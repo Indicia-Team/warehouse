@@ -430,6 +430,9 @@ class data_entry_helper extends helper_base {
   * <li><b>itemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each item in the control.</li>
+  * <li><b>captionTemplate</b><br/>
+  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+  * with each database field represented as {fieldname}.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the group of checkboxes.
@@ -454,19 +457,26 @@ class data_entry_helper extends helper_base {
   * Optional. CSS class names to add to the control.</li>
   * <li><b>allowFuture</b><br/>
   * Optional. If true, then future dates are allowed. Default is false.</li>
+  * <li><b>dateFormat</b><br/>
+  * Optional. Allows the date format string to be set, which must match a date format that can be parsed by the JavaScript Date object. 
+  * Default is dd/mm/yy.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the date picker control.
   */
   public static function date_picker() {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'default'));
-
+    $options = array_merge(array(
+      'dateFormat'=>'dd/mm/yy'
+    ), $options);
     self::add_resource('jquery_ui');
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Don't set js up for the datepicker in the clonable row for the species checklist grid 
     if ($escaped_id!='{fieldname}') {
       self::$javascript .= "jQuery('#$escaped_id').datepicker({
-    dateFormat : 'yy-mm-dd',
+    dateFormat : '".$options['dateFormat']."',
+    changeMonth: true,
+    changeYear: true,
     constrainInput: false";
       // Filter out future dates
       if (!array_key_exists('allow_future', $options) || $options['allow_future']==false) {
@@ -485,11 +495,11 @@ class data_entry_helper extends helper_base {
     if (!array_key_exists('default', $options) || $options['default']=='') {
       $options['default']=lang::get('click here');
     }
-	// Check for the special default value of today
-	if (isset($options['default']) ) {
-	  if ($options['default']=='today')
-	    $options['default'] = date('Y-m-d');
-	}
+  // Check for the special default value of today
+  if (isset($options['default']) ) {
+    if ($options['default']=='today')
+      $options['default'] = date('Y-m-d');
+  }
 
     // Enforce a class on the control called date
     if (!array_key_exists('class', $options)) {
@@ -962,6 +972,9 @@ class data_entry_helper extends helper_base {
   * <li><b>itemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each item in the control.</li>
+  * <li><b>captionTemplate</b><br/>
+  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+  * with each database field represented as {fieldname}.</li>
   * <li><b>selectedItemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the selected item in the control.</li></ul>
@@ -1198,6 +1211,9 @@ class data_entry_helper extends helper_base {
   * <li><b>itemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each item in the control.</li>
+  * <li><b>captionTemplate</b><br/>
+  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+  * with each database field represented as {fieldname}.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the group of radio buttons.
@@ -1454,6 +1470,9 @@ class data_entry_helper extends helper_base {
   * <li><b>itemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each item in the control.</li>
+  * <li><b>captionTemplate</b><br/>
+  * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
+  * with each database field represented as {fieldname}.</li>  
   * <li><b>selectedItemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the selected item in the control.</li></ul>
@@ -2892,7 +2911,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $options['items'] = '';
       self::init_linked_lists($options);
     } else {
-      $lookupValues = self::get_list_data_from_options($options);
+      $lookupItems = self::get_list_items_from_options($options);
       $opts = "";
       if (array_key_exists('blankText', $options)) {
         $opts .= str_replace(
@@ -2901,11 +2920,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
             $indicia_templates[$options['itemTemplate']]
         );
       }
-      foreach ($lookupValues as $key => $value){
-        $item['selected'] = (isset($options['default']) && $options['default'] == $key) ? 'selected' : '';
-        $item['value'] = $key;
-        $item['caption'] = $value;
-        $opts .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);
+      foreach ($lookupItems as $value => $template){
+        $item['selected'] = (isset($options['default']) && $options['default'] == $value) ? 'selected' : '';
+        $opts .= self::mergeParamsIntoTemplate($item, $template, true);
       }
       $options['items'] = $opts;
     }
@@ -2922,24 +2939,40 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   * @param array $options Options array for the control.
   * @return array Associative array of the lookup values and captions.
   */
-  private static function get_list_data_from_options($options) {
+  private static function get_list_items_from_options($options) {
+    $r = array();
+    global $indicia_templates;
     if (isset($options['lookupValues'])) {
-      // lookup values are provided
-      $lookupValues = $options['lookupValues'];
+      // lookup values are provided, so run these through the item template
+      foreach ($options['lookupValues'] as $key=>$value) {
+        $r[] = str_replace(
+            array('{value}', '{caption}'),
+            array($key, $value),
+            $indicia_templates[$options['itemTemplate']]
+        );
+      }
     } else {
       // lookup values need to be obtained from the database
       $response = self::get_population_data($options);
       $lookupValues = array();
       if (!array_key_exists('error', $response)) {
-        foreach ($response as $item) {
-          if (array_key_exists($options['captionField'], $item) &&
-              array_key_exists($options['valueField'], $item)) {
-            $lookupValues[$item[$options['valueField']]] = $item[$options['captionField']];
+        foreach ($response as $record) {
+          if (array_key_exists($options['valueField'], $record)) {
+            if (isset($options['captionTemplate'])) 
+              $caption = self::mergeParamsIntoTemplate($record, $options['captionTemplate']);
+            else
+              $caption = $record[$options['captionField']];
+            $item = str_replace(
+                array('{value}', '{caption}'),
+                array($record[$options['valueField']], $caption),
+                $indicia_templates[$options['itemTemplate']]
+            );
+            $r[$record[$options['valueField']]] = $item;
           }
         }
       }
     }
-    return $lookupValues;
+    return $r;
   }
 
  /**
@@ -2991,13 +3024,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     } else {
       $itemClass='';
     }    
-    $lookupValues = self::get_list_data_from_options($options);
+    $lookupItems = self::get_list_items_from_options($options);
     $items = "";
     $idx = 0;
-    foreach ($lookupValues as $value => $caption){
-      $idx++;
+    foreach ($lookupItems as $value => $template) {
       $item = array_merge(
-        $options,        
+        $options,
         array(
           'disabled' => isset($options['disabled']) ?  $options['disabled'] : '',
           'checked' => (isset($options['default']) && $options['default'] == $value) ? 'checked="checked" ' : '',
@@ -3007,9 +3039,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           'class' => $itemClass,
           'itemId' => $options['fieldname'].':'.$idx
         )
-      );      
-      $items .= self::mergeParamsIntoTemplate($item, $options['itemTemplate']);      
-    }    
+      ); 
+      $items .= self::mergeParamsIntoTemplate($item, $template, true);
+      $idx++;
+    }
     $options['items']=$items;
     // We don't want to output for="" in the top label, as it is not directly associated to a button
     $lblTemplate = $indicia_templates['label'];

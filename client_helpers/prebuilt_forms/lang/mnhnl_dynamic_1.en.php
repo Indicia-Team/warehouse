@@ -64,8 +64,7 @@ $custom_terms = array(
 	'LANG_Record_Status_C' => 'Completed',
 	'LANG_Record_Status_V' => 'Verified', // NB not used
 	'LANG_Image_Label' => 'Upload Image',
-	'LANG_Save' => 'Save',
-
+	'LANG_Save' => 'Save',  
 	'validation_required' => 'Please enter a value for this field'
 
 );

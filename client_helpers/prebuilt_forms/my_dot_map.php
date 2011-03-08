@@ -281,6 +281,7 @@ class iform_my_dot_map {
    */
   public static function get_form($args) {
     global $user;
+    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
@@ -296,26 +297,19 @@ class iform_my_dot_map {
       );
       // @todo Error handling on the response
       $occurrence = data_entry_helper::get_report_data($fetchOpts);
-      $legend = '';
       self::prepare_layer_titles($args, $occurrence);
       // Add the 3 distribution layers if present. Reverse the order so 1st layer is topmost
       $layerName = self::build_distribution_layer(3, $args, $occurrence);
       if ($layerName) {
-	          $options['layers'][] = $layerName;
-	          $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/jpeg'.
-	              '&STYLE='.$args["wms_dist_3_style"].'" alt=""/>'.$args["wms_dist_3_title"].'</div>'.$legend;
+        $options['layers'][] = $layerName;
       }
       $layerName = self::build_distribution_layer(2, $args, $occurrence);
       if ($layerName) {
         $options['layers'][] = $layerName;
-        $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/jpeg'.
-            '&STYLE='.$args["wms_dist_2_style"].'" alt=""/>'.$args["wms_dist_2_title"].'</div>'.$legend;
       }
       $layerName = self::build_distribution_layer(1, $args, $occurrence);            
       if ($layerName) {        
         $options['layers'][] = $layerName;
-        $legend = '<div><img src="'.data_entry_helper::$geoserver_url.'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=detail_occurrences&Format=image/png'.
-              '&STYLE='.$args["wms_dist_1_style"].'" alt=""/>'.$args["wms_dist_1_title"].'</div>'.$legend;
       }
       if ($layerName) $options['layers'][] = $layerName;
       // This is not a map used for input
@@ -328,9 +322,17 @@ class iform_my_dot_map {
       }
 
       $r .= "</tbody></table>\n";
-      $r .= '<div id="legend" class="ui-widget ui-widget-content ui-corner-all">'.$legend.'</div>';
     }
-    $r .= data_entry_helper::map_panel($options, $olOptions);
+    $r .= '<div>';
+    $r .= map_helper::layer_list(array(
+      'id'=>'legend',
+      'includeSwitchers' => false,
+      'includeHiddenLayers' => false,
+      'includeIcons' => true,
+      'layerTypes' => array('overlay')
+    ));
+    $r .= map_helper::map_panel($options, $olOptions);
+    $r .= '</div>';
     return $r;
   }
 

@@ -325,7 +325,7 @@ class map_helper extends helper_base {
     layerHtml += '<img src=\"".self::getRootFolder() . self::relative_client_helper_path()."../media/images/map.png\" width=\"16\" height=\"16\"/>';
   } else if (layer instanceof OpenLayers.Layer.WMS) {
     layerHtml += '<img src=\"' + div.settings.indiciaGeoSvc + 'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
-      '&STYLES='+layer.params.STYLES +'\" alt=\"'+layer.name+'\"/>';
+      '&STYLE='+layer.params.STYLES +'\" alt=\"'+layer.name+'\"/>';
   } else if (layer instanceof OpenLayers.Layer.Vector) {
     var style=layer.styleMap.styles['default']['defaultStyle'];
     layerHtml += '<div style=\"border: solid 1px ' + style.strokeColor +'; background-color: ' + style.fillColor + '\"> </div>';
