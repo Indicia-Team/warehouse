@@ -455,6 +455,8 @@ class helper_base extends helper_config {
         $r .= data_entry_helper::select($ctrlOptions);
       } elseif ($info['datatype']=='date') {
         $r .= data_entry_helper::date_picker($ctrlOptions);
+      } elseif ($info['datatype']=='geometry') {
+        $r .= 'draw on map<br/>';
       } else {
         $r .= data_entry_helper::text_input($ctrlOptions);
       }

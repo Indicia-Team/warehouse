@@ -123,83 +123,6 @@ mapInitialisationHooks = [];
      * bound to them to associate them with the map.
      */
     function _bindControls(div) {
-      if (div.settings.editLayer) {
-        // Setup a click event handler for the map
-        OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
-          defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
-          initialize: function(options)
-          {
-            this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
-            OpenLayers.Control.prototype.initialize.apply(this, arguments);
-            this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
-          },
-
-          trigger: function(e)
-          {
-            var lonlat = div.map.getLonLatFromViewPortPx(new
-              OpenLayers.Pixel(e.xy.x , e.xy.y));          
-            // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-            var precision, metres = div.map.getScale()/200;
-            // now round to find appropriate square size
-            if (metres<30) {
-              precision=8;
-            } else if (metres<300) {
-              precision=6;
-            } else if (metres<3000) {
-              precision=4;
-            } else {
-              precision=2;
-            }
-            // enforce precision limits if specifid in the settings
-            if (div.settings.clickedSrefPrecisionMin!=='') {
-            precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
-            }
-            if (div.settings.clickedSrefPrecisionMax!=='') {
-              precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
-            }
-            var sref, wkt, outputSystem = _getSystem();
-            if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
-              // no transform required
-              if (div.map.getUnits()=='m') {
-              // in metres, so we can round (no need for sub-metre precision)
-                sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
-              } else {
-                sref = lonlat.lat + ', ' + lonlat.lon;
-              }
-              if (outputSystem != '900913') {
-                lonlat.transform(div.map.projection, div.indiciaProjection);
-              }
-              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-              _setClickPoint({
-                'sref' : sref,
-                'wkt' : wkt
-              }, div);
-            } else {
-              if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-                // Indicia expects the WKT in 900913 (it's internal format)
-                lonlat.transform(div.map.projection, div.indiciaProjection);
-              }
-              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-              $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
-                      "?wkt=" + wkt +
-                      "&system=" + outputSystem +
-                      "&precision=" + precision +
-                      "&output=" + div.settings.latLongFormat +
-                      "&callback=?", function(data)
-                {
-                  _setClickPoint(data, div);
-                }
-              );
-            }
-          }          
-        });
-
-        // Add the click control to the map.
-        var click = new OpenLayers.Control.Click();
-        div.map.addControl(click);
-        click.activate();
-        div.map.editLayer.clickControl = click;
-      }
       
       // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefId).change(function() {
@@ -460,6 +383,11 @@ mapInitialisationHooks = [];
       
       // Create a projection to represent data in the Indicia db
       div.indiciaProjection = new OpenLayers.Projection('EPSG:900913');
+      olOptions.controls = [
+            new OpenLayers.Control.Navigation(),
+            new OpenLayers.Control.ArgParser(),
+            new OpenLayers.Control.Attribution()
+      ];
 
       // Constructs the map      
       div.map = new OpenLayers.Map($(this)[0], olOptions);
@@ -704,10 +632,122 @@ mapInitialisationHooks = [];
         div.map.addControl(infoCtrl);
         infoCtrl.activate();      
       }
+      var toolbarControls = [];
+      if (div.settings.editLayer && div.settings.clickForSpatialRef) {
+        // Setup a click event handler for the map
+        OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
+          defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
+          initialize: function(options)
+          {            
+            this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
+            OpenLayers.Control.prototype.initialize.apply(this, arguments);
+            this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
+          },
 
-      // Add a layer switcher if there are multiple layers
-      if ((this.settings.presetLayers.length + this.settings.layers.length + this.settings.tilecacheLayers.length) > 1) {
-        div.map.addControl(new OpenLayers.Control.LayerSwitcher());
+          trigger: function(e)
+          {
+            var lonlat = div.map.getLonLatFromViewPortPx(new
+              OpenLayers.Pixel(e.xy.x , e.xy.y));
+            // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+            var precision, metres = div.map.getScale()/200;
+            // now round to find appropriate square size
+            if (metres<30) {
+              precision=8;
+            } else if (metres<300) {
+              precision=6;
+            } else if (metres<3000) {
+              precision=4;
+            } else {
+              precision=2;
+            }
+            // enforce precision limits if specifid in the settings
+            if (div.settings.clickedSrefPrecisionMin!=='') {
+            precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+            }
+            if (div.settings.clickedSrefPrecisionMax!=='') {
+              precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+            }
+            var sref, wkt, outputSystem = _getSystem();
+            if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
+              // no transform required
+              if (div.map.getUnits()=='m') {
+              // in metres, so we can round (no need for sub-metre precision)
+                sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
+              } else {
+                sref = lonlat.lat + ', ' + lonlat.lon;
+              }
+              if (outputSystem != '900913') {
+                lonlat.transform(div.map.projection, div.indiciaProjection);
+              }
+              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+              _setClickPoint({
+                'sref' : sref,
+                'wkt' : wkt
+              }, div);
+            } else {
+              if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+                // Indicia expects the WKT in 900913 (it's internal format)
+                lonlat.transform(div.map.projection, div.indiciaProjection);
+              }
+              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+              $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
+                      "?wkt=" + wkt +
+                      "&system=" + outputSystem +
+                      "&precision=" + precision +
+                      "&output=" + div.settings.latLongFormat +
+                      "&callback=?", function(data)
+                {
+                  _setClickPoint(data, div);
+                }
+              );
+            }
+          }
+        });
+
+        // Add the click control to the map.
+        var click = new OpenLayers.Control.Click({'displayClass':'olControlNavigation'});
+        toolbarControls.push(click);
+        div.map.editLayer.clickControl = click;
+      }
+      $.each(div.settings.standardControls, function(i, ctrl) {
+        // Add a layer switcher if there are multiple layers
+        if (ctrl=='layerSwitcher' &&
+            (div.settings.presetLayers.length + div.settings.layers.length + div.settings.tilecacheLayers.length) > 1) {
+          div.map.addControl(new OpenLayers.Control.LayerSwitcher());
+        } else if (ctrl=='drawPolygon' && div.settings.editLayer) {
+          toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
+              OpenLayers.Handler.Polygon,
+              {'displayClass': 'olControlDrawFeaturePolygon'}));
+        } else if (ctrl=='drawLine' && div.settings.editLayer) {
+          toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
+              OpenLayers.Handler.Path,
+              {'displayClass': 'olControlDrawFeaturePath'}));
+        } else if (ctrl=='drawPoint' && div.settings.editLayer) {
+          toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
+              OpenLayers.Handler.Point,
+              {'displayClass': 'olControlDrawFeaturePoint'}));
+        } else if (ctrl=='zoomBox') {
+          toolbarControls.push(new OpenLayers.Control.ZoomBox());
+        } else if (ctrl=='panZoom') {
+          toolbarControls.push(new OpenLayers.Control.PanZoom());
+        } else if (ctrl=='panZoomBar') {
+          toolbarControls.push(new OpenLayers.Control.PanZoomBar());
+        }
+
+      });
+      if (toolbarControls.length>0) {
+        if (div.settings.toolbarDiv=='none') {
+          $.each(toolbarControls, function(i, ctrl) {
+            div.map.addControl(ctrl);
+          });
+        } else if (toolbarControls.length>0) {
+          var toolbar = new OpenLayers.Control.Panel({
+             displayClass: 'olControlEditingToolbar',
+             defaultControl: toolbarControls[0]
+          });
+          toolbar.addControls(toolbarControls);
+          div.map.addControl(toolbar);
+        }
       }
 
       // Disable the scroll wheel from zooming if required
@@ -756,7 +796,10 @@ $.fn.indiciaMapPanel.defaults = {
     clickableLayersOutputColumns: [],
     locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
     controls: [],
+    standardControls: ['layerSwitcher','panZoom'],
+    toolbarDiv: 'none', // none, map or div ID
     editLayer: true,
+    clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
     searchLayer: false, // determines whether we have a separate layer for the display of location searches, eg georeferencing. Defaults to editLayer.

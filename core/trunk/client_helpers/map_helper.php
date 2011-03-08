@@ -109,6 +109,10 @@ class map_helper extends helper_base {
   * </li>
   * <li><b>editLayerName</b><br/>
   * </li>
+  * <li><b>standardControls</b>
+  * An array of predefined controls that are added to the map. Select from layerSwitcher, drawPolygon,
+  *    drawLine, drawPoint, zoomBox, panZoom, panZoomBar. Default is layerSwitcher and panZoom.
+  * </li>
   * <li><b>initialFeatureWkt</b><br/>
   * </li>
   * <li><b>defaultSystem</b><br/>
@@ -339,7 +343,9 @@ class map_helper extends helper_base {
 function refreshLayers_$funcSuffix(div) {
   $('#".$options['id']." ul li').remove();
   $.each(div.map.layers, function(i, layer) {
-    $('#".$options['id']." ul').append(getLayerHtml_$funcSuffix(layer, div));
+    if (layer.displayInLayerSwitcher) {
+      $('#".$options['id']." ul').append(getLayerHtml_$funcSuffix(layer, div));
+    }
   });    
 }
 
