@@ -97,7 +97,7 @@ class iform_report_map {
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
     // This is not a map used for input
-    $options['editLayer'] = false;
+    $options['editLayer'] = true;
     if ($args['layer_picker']!='none') {
       $picker = array(
         'id'=>'map-layer-picker',
@@ -118,7 +118,8 @@ class iform_report_map {
       if ($args['legend']=='before')
         $r .= map_helper::layer_list($legend);
     }
-    // output a map
+    // output a map with the toolbar buttons added onto the map itself
+    $options['toolbarDiv']='map';
     $r .= map_helper::map_panel($options, $olOptions);
     if ($args['layer_picker']=='after')
       $r .= map_helper::layer_list($picker);
