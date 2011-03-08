@@ -76,6 +76,7 @@ function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=nu
  * This allows the validation rules to be defined by a $args entry.
  */
 function get_attr_validation($attribute, $args) {
+  $retVal = array();
   if (!empty($args['attributeValidation'])) {
     $rules = array();
     $argRules = explode(';', $args['attributeValidation']);
@@ -84,11 +85,16 @@ function get_attr_validation($attribute, $args) {
     }
     foreach($rules as $rule){
       if($attribute['fieldname'] == $rule[0] || substr($attribute['fieldname'], 0, strlen($rule[0])+1) == $rule[0].':') {
-        return array('validation' => array_slice($rule, 1));
+        // But only do if no parameter given as rule:param - eg min:-40, these have to be treated as attribute validation rules.
+        // It is much easier to deal with these elsewhere.
+        for($i=1; $i<count($rule); $i++)
+          if(strpos($rule[$i], ':') === false) $retVal[] = $rule[$i];
       }
     }
+    if(count($retVal) > 0)
+      return array('validation' => $retVal);
   }
-  return array();
+  return $retVal;
 }
 
 /**
