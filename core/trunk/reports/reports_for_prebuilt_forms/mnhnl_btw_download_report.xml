@@ -17,6 +17,7 @@
       			NOT EXISTS (select o.id from occurrences o, samples sc
   								where o.sample_id = sc.id
   								and sc.parent_id = #this#.id
+  								and sc.deleted = FALSE
   								and o.deleted = FALSE
   								and o.downloaded_flag = 'N'::bpchar))" > // for FINAL and CONFIRM downloads, ensure all occurrences in a survey have been initially downloaded, ie assume checked 
 		  <subTable tablename="locations" where="#this#.deleted = FALSE" >
