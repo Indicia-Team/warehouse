@@ -34,12 +34,12 @@
 		    <tabColumn name='entered_sref' display='Spatial Reference'/>
 		    <tabColumn name='entered_sref_system'  display='SRef System'/>
             <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" >
-				<subTable tablename='taxa_taxon_lists' where="#this#.deleted = FALSE" >
-		      		<subTable tablename='taxa' where="#this#.deleted = FALSE" >
+				<subTable tablename='taxa_taxon_lists' >
+		      		<subTable tablename='taxa' >
 		    	    	<tabColumn name='taxon' display='Entered Species'/>
 		      		</subTable>
-					<subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.deleted = FALSE AND #this#.preferred = TRUE" >
-		      			<subTable tablename='taxa' where="#this#.deleted = FALSE" >
+					<subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE" >
+		      			<subTable tablename='taxa' >
 		    	    		<tabColumn name='taxon' display='Preferred Species'/>
 		      			</subTable>
 		    		</subTable>
