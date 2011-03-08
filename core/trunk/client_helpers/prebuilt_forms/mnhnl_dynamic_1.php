@@ -134,7 +134,7 @@ class iform_mnhnl_dynamic_1 {
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
-                "&nbsp;&nbsp;<strong>[species_attributes]</strong> - any custom attributes for the occurrence, if not using the grid<br/>".
+                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid<br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
@@ -251,7 +251,7 @@ class iform_mnhnl_dynamic_1 {
         ),
         array(
           'name' => 'species_include_both_names',
-          'caption' => 'Include both names in species autocomplete and added rows',
+          'caption' => 'Include both names in species controls and added rows',
           'description' => 'When using a species grid with the ability to add new rows, the autocomplete control by default shows just the searched taxon name in the drop down. '.
               'Set this to include both the latin and common names, with the searched one first. This also controls the label when adding a new taxon row into the grid.',
           'type' => 'boolean',
@@ -543,16 +543,18 @@ class iform_mnhnl_dynamic_1 {
       data_entry_helper::enable_validation('entry_form');
 
     // If logged in, output some hidden data about the user
-    if (function_exists('profile_load_profile')) {
-      profile_load_profile($user);
+    if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {
+      self::profile_load_all_profile($user);
     }
     foreach($attributes as &$attribute) {
       $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
-      if (isset($user->$attrPropName)) {
-        $attribute['default'] = $user->$attrPropName;
-        if ($args['nameShow'] != true) {
+      if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true && isset($user->$attrPropName)) {
+        if ($args['nameShow'] == true) 
+          $attribute['default'] = $user->$attrPropName;
+        else {
           // profile attributes are not displayed as the user is logged in
           $attribute['handled']=true;
+          $attribute['value'] = $user->$attrPropName;
         }
       }
       elseif (strcasecmp($attribute['caption'], 'cms user id')==0) {
@@ -690,6 +692,9 @@ class iform_mnhnl_dynamic_1 {
         $defAttrOptions['language'] = iform_lang_iso_639_2($args['language']);
     $tabHtml = array();
     foreach ($tabs as $tab=>$tabContent) {
+      // keep track on if the tab actually has real content, so we can avoid floating instructions if all the controls 
+      // were removed by user profile integration for example.
+      $hasControls = false;
       // get a machine readable alias for the heading
       $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $html = '';
@@ -715,16 +720,20 @@ class iform_mnhnl_dynamic_1 {
             // if not json then need to use option value as it is
             if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
           }
-          if (method_exists(get_called_class(), $method)) 
+          if (method_exists(get_called_class(), $method)) { 
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
-          elseif (trim($component)==='[*]'){
+            $hasControls = true;
+          } elseif (trim($component)==='[*]'){
             $defAttrOptions = array_merge($defAttrOptions, $options);
-            $html .= get_attribute_html($attributes, $args, $defAttrOptions, $tab);
+            $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab);
+            if (!empty($attrHtml))
+              $hasControls = true;
+            $html .= $attrHtml;
           } else          
             $html .= "The form structure includes a control called $component which is not recognised.<br/>";
         }      
       }
-      if (!empty($html)) {
+      if (!empty($html) && $hasControls) {
         $tabHtml[$tab] = $html;
       }
     }
@@ -737,12 +746,14 @@ class iform_mnhnl_dynamic_1 {
   protected static function get_attribute_tabs(&$attributes) {
     $r = array();
     foreach($attributes as &$attribute) {
-      // Assign any ungrouped attributes to a block called Other Information 
-      if (empty($attribute['outer_structure_block'])) 
-        $attribute['outer_structure_block']='Other Information';
-      if (!array_key_exists($attribute['outer_structure_block'], $r))
-        // Create a tab for this structure block and mark it with [*] so the content goes in
-        $r[$attribute['outer_structure_block']] = array("[*]");
+      if (!isset($attribute['handled']) || $attribute['handled']!=true) {
+        // Assign any ungrouped attributes to a block called Other Information 
+        if (empty($attribute['outer_structure_block'])) 
+          $attribute['outer_structure_block']='Other Information';
+        if (!array_key_exists($attribute['outer_structure_block'], $r))
+          // Create a tab for this structure block and mark it with [*] so the content goes in
+          $r[$attribute['outer_structure_block']] = array("[*]");
+      }
     }
     return $r;
   }
@@ -777,8 +788,9 @@ class iform_mnhnl_dynamic_1 {
     foreach($structureTabs as $tab => $tabContent) {
       if ($tab=='*') 
         $allTabs += $attrTabs;
-      else
+      else {
         $allTabs[$tab] = $tabContent;
+      }
     }
     return $allTabs;
   }
@@ -821,7 +833,7 @@ class iform_mnhnl_dynamic_1 {
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
           'occurrenceImages'=>$args['occurrence_images'],
-          'PHPtaxonLabel' => true          
+          'PHPtaxonLabel' => true
       ), $options);
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
       if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
@@ -853,13 +865,23 @@ class iform_mnhnl_dynamic_1 {
           'table'=>'taxa_taxon_list',
           'captionField'=>'taxon',
           'valueField'=>'id',
-          'columns'=>2,          
+          'columns'=>2,
           'parentField'=>'parent_id',
-          'extraParams'=>$extraParams
+          'extraParams'=>$extraParams,
+          'blankText'=>'Please select'
       ), $options);
+      global $indicia_templates;
+      if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
+        if ($args['species_names_filter']=='all')
+          $indicia_templates['species_caption'] = '{taxon}';
+        elseif ($args['species_names_filter']=='language')
+          $indicia_templates['species_caption'] = '{taxon} - {preferred_name}';
+        else
+          $indicia_templates['species_caption'] = '{taxon} - {common}';
+        $species_ctrl_opts['captionTemplate'] = 'species_caption';
+      }
       if ($args['species_ctrl']=='tree_browser') {
         // change the node template to include images
-        global $indicia_templates;
         $indicia_templates['tree_browser_node']='<div>'.
             '<img src="'.data_entry_helper::$base_url.'/upload/thumb-{image_path}" alt="Image of {caption}" width="80" /></div>'.
             '<span>{caption}</span>';
@@ -1236,6 +1258,24 @@ class iform_mnhnl_dynamic_1 {
         array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
   }
   
+  /**
+   * Variant on the profile modules profile_load_profile, that also gets empty profile values. 
+   */
+  private static function profile_load_all_profile(&$user) {
+    // don't do anything unless in Drupal, with the profile module enabled, and the user logged in.
+    if ($user->uid>0 && function_exists('profile_load_profile')) {
+      $result = db_query('SELECT f.name, f.type, v.value FROM {profile_fields} f LEFT JOIN {profile_values} v ON f.fid = v.fid AND uid = %d', $user->uid);
+      while ($field = db_fetch_object($result)) {
+        if (empty($user->{$field->name})) {
+          if (empty($field->value)) 
+            $user->{$field->name} = '';
+          else
+            $user->{$field->name} = _profile_field_serialize($field->type) ? unserialize($field->value) : $field->value;
+        }
+      }
+    }
+  }
+  
 }
 
 /**
@@ -1267,5 +1307,5 @@ function get_called_class() {
     }
     while ($matches[1] == 'parent'  && $matches[1]);
     return $matches[1];
-}
+  } 
 } 

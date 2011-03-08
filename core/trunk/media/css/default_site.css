@@ -37,6 +37,10 @@
 	margin-left: 1em;
 }
 
+.deh-required {
+  color: red;
+}
+
 p.inline-error {
   margin-left: 160px;	
   margin-bottom: -0.8em;
@@ -246,7 +250,9 @@ li.ui-state-error {
 }
 
 .control-box {
-  display: inline-block;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
 }
 
 .control-box span {
@@ -255,8 +261,8 @@ li.ui-state-error {
 }
 
 .tree-browser {
-	padding: 0.5em;
-	display:inline-block;
+  padding: 0.5em;
+  display:inline-block;
   zoom:1;
   *display:inline;
   min-width: 400px;

@@ -1,3 +1,75 @@
+function setupButtons(tabs, index) {
+  var wizList = $("#" + tabs.attr('id') + "-wiz-prog");
+  var wizLis = $("li", wizList);
+  var prevLi = $(".wiz-selected", wizList);
+  
+  prevLi.removeClass('wiz-selected');
+  
+    // declare local scope, so accessible in nested functions
+  var tabsvar = tabs;
+      
+  // update classes on the arrow bodyy
+  $(wizLis[index*2]).addClass('wiz-selected');
+  $(wizLis[index*2]).removeClass('wiz-enabled');
+  $(wizLis[index*2]).removeClass('wiz-disabled');
+  // update classes on the arrow header
+  $(wizLis[index*2+1]).addClass('wiz-selected');
+  $(wizLis[index*2+1]).removeClass('wiz-enabled');
+  $(wizLis[index*2+1]).removeClass('wiz-disabled');
+
+  var nextLi = $(".wiz-disabled:first", wizList);
+  $.merge(nextLi, nextLi.next());
+  var enabledLis = $($.merge( $.merge([],prevLi), nextLi));
+
+  enabledLis.click(function(e){
+    var wizList = $(this).parent();
+    var tabs = wizList.parent();
+    // first, validate
+    var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
+    var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select')
+    if (!tabinputs.valid()) {
+      return;
+    }
+    var wizLis = wizList.children("li");
+    var index = wizLis.index($(this));
+    
+    //transfer the click to the tab anchor
+    var tabAnchor = $("ul.ui-tabs-nav a", tabs)[index/2]; // /2 because there is an arrow header li after every li
+    $(tabAnchor).click();
+  });
+  enabledLis.addClass('wiz-enabled');
+  enabledLis.hover(
+    function()
+    {
+      $(this).addClass('wiz-hover');
+      $(this).next().addClass('wiz-hover');
+    },
+    function(){
+      $(this).removeClass('wiz-hover');
+      $(this).next().removeClass('wiz-hover');
+    }
+  );
+  if (nextLi.length===0) {
+    // got to the end of thw wizard, so (re)bind an event for clicking the submit in the progress
+    $('.wiz-complete').unbind('click');
+    $('.wiz-complete').click(function() {
+      var wizList = $(this).parent();
+      var tabs = wizList.parent();
+      // first, validate
+      var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
+      var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select')
+      if (!tabinputs.valid()) {
+        return;
+      }
+      // submit the form
+      var form = $(this).parents('form:first');
+      form.submit();
+    });
+    $('.wiz-complete').addClass('wiz-enabled');
+  }
+}
+
+
 function wizardProgressIndicator(options) {
   var defaults = {
     divId: 'controls',
@@ -5,7 +77,7 @@ function wizardProgressIndicator(options) {
     a: [],
     equalWidth: true,
     start: 0,
-    completionStep: 'Survey submitted'
+    completionStep: 'Submit Record'
   };
 
   var o = $.extend({}, defaults, options);
@@ -53,45 +125,9 @@ function wizardProgressIndicator(options) {
   //the selected tab is given class wiz-selected and has wiz-disabled/enabled removed.
   //once a tab has been visited it is given class wiz-enabled and it gets hover and click events.
   $("#" + o.divId).bind('tabsselect', function(event, ui){
-    var tabs = $(this);
-    var wizList = $("#" + tabs.attr('id') + "-wiz-prog");
-    var wizLis = $("li", wizList);
-    var prevLi = $(".wiz-selected", wizList);
-    
-    prevLi.removeClass('wiz-selected');
-    prevLi.addClass('wiz-enabled');
-    prevLi.click(function(e){
-      //transfer the click to the tab anchor
-      var wizList = $(this).parent();
-      var wizLis = wizList.children("li");
-      var index = wizLis.index($(this));
-      var tabs = wizList.parent();
-      var tabAnchor = $("ul.ui-tabs-nav a", tabs)[index/2]; // /2 because there is an arrow header li after every li
-      $(tabAnchor).click();
-    });
-
-    prevLi.hover(
-      function()
-      {
-        $(this).addClass('wiz-hover');
-        $(this).next().addClass('wiz-hover');
-      },
-      function(){
-        $(this).removeClass('wiz-hover');
-        $(this).next().removeClass('wiz-hover');
-      }
-    );
-        
-    // update classes on the arrow bodyy
-    $(wizLis[ui.index*2]).addClass('wiz-selected');
-    $(wizLis[ui.index*2]).removeClass('wiz-enabled');
-    $(wizLis[ui.index*2]).removeClass('wiz-disabled');
-    // update classes on the arrow header
-    $(wizLis[ui.index*2+1]).addClass('wiz-selected');
-    $(wizLis[ui.index*2+1]).removeClass('wiz-enabled');
-    $(wizLis[ui.index*2+1]).removeClass('wiz-disabled');
-  })
-
+    setupButtons($(this), ui.index);
+  });
+  setupButtons($("#" + o.divId), 0);
 }
 
 /**

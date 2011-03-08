@@ -88,3 +88,8 @@
   display: block;
   overflow: hidden;
 }
+
+.wiz-enabled {
+  cursor: pointer;
+  opacity: 1 !important;
+}

@@ -107,7 +107,7 @@ class helper_base extends helper_config {
    * Warehouse.
    */
   public static $default_validation_rules = array(
-    'sample:date'=>array('required', 'dateISO'),
+    'sample:date'=>array('required','date'),
     'sample:entered_sref'=>array('required'),
     'occurrence:taxa_taxon_list_id'=>array('required')
   );
@@ -922,6 +922,7 @@ $onload_javascript
       // Detect the rules that can simply be passed through
       if    ($rule=='required'
           || $rule=='dateISO'
+          || $rule=='date'
           || $rule=='email'
           || $rule=='url'
           || $rule=='time') {
@@ -929,7 +930,7 @@ $onload_javascript
        } else if ($rule=='digit') {
          $converted[] = 'digits';
        }
-       // Now any rules which need parsing or convertion
+       // Now any rules which need parsing or conversion
     }
     return implode(' ', $converted);
   }
