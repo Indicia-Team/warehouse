@@ -112,7 +112,7 @@ class iform_mnhnl_citizen_science_1 {
           'description'=>'The Indicia ID for the species list that species can be selected from.',
           'type'=>'int',
           'group'=>'Misc'
-        ),  	    
+        ),
         array(
           'name'=>'survey_id',
           'caption'=>'Survey ID',
@@ -215,7 +215,7 @@ class iform_mnhnl_citizen_science_1 {
         $filter = array('external_key' => $_GET['taxon_external_key']);
       $species = data_entry_helper::get_population_data(array(
         'table'=>'taxa_taxon_list',
-        'extraParams' => $readAuth + $filter + array('taxon_list_id' => $args['list_id'], 'view' => 'detail')
+        'extraParams' => $readAuth + $filter + array('taxon_list_id' => $args['list_id'], 'view' => 'detail', 'preferred' => 't')
       ));
       // we need only one result, but there could be more than one picture, therefore multiple rows
       $uniqueMeaning=false;
@@ -403,8 +403,8 @@ class iform_mnhnl_citizen_science_1 {
         'label'=>lang::get('Date'),
         'fieldname'=>'sample:date'
     ));
-    
-    
+
+
     $r .= data_entry_helper::file_box(array(
         'caption' => 'Upload your photos',
         'resizeWidth' => 1024,
@@ -414,7 +414,7 @@ class iform_mnhnl_citizen_science_1 {
         // reduce the number of runtimes, because flash and silverlight don't seem reliable on this form.
         'runtimes' => array('html5','gears','browserplus','html4')
     ));
-    
+
 
     // Dynamically create a control for the abundance, unless overridden for this species
     if (isset($species) && count($species)>0 && trim($args['abundance_overrides'])!=='') {
