@@ -63,7 +63,7 @@ class import_helper extends helper_base {
   }
   
   private static function upload_form($options) {
-    $reload = data_entry_helper::get_reload_link_parts();
+    $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     $r = '<form action="'.$reloadpath.'" method="post" enctype="multipart/form-data">';
     $r .= '<label for="id">'.lang::get('Select file to upload').':</label>';
@@ -86,12 +86,14 @@ class import_helper extends helper_base {
     $response = self::http_post($request, array());
     if (!empty($response['output'])) {
       // get the path back to the same page
-      $reload = data_entry_helper::get_reload_link_parts();
+      $reload = self::get_reload_link_parts();
       $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
       $r = '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get('import_settings_instructions')."</div>\n".
           "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
           "<fieldset><legend>Import Settings</legend>\n";
       $formArray = json_decode($response['output'], true);
+      if (!is_array($formArray))
+        return "Could not upload file. Please check that the indicia_svc_import module is enabled on the Warehouse.<br/>".print_r($formArray, true);
       if (isset($options['presetSettings']) && !count(array_intersect_key($options['presetSettings'], $formArray)))
         // all settings have a preset value, so no need for the settings form. Skip to the next step
         return self::upload_mappings_form($options);
@@ -155,7 +157,7 @@ class import_helper extends helper_base {
     $fields = array_diff_key($fields, $_POST);    
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
-    $reload = data_entry_helper::get_reload_link_parts();
+    $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     // only use the required fields that are available for selection - the rest are handled somehow else    
     $required_fields = array_intersect($required_fields, array_keys($fields));
@@ -242,9 +244,9 @@ class import_helper extends helper_base {
       return lang::get('upload_not_available');
     $filename=basename($_SESSION['uploaded_file']);
     // move file to server
-    self::send_file_to_warehouse($filename, false, $options['auth']['read'], 'import/upload_csv');    
+    self::send_file_to_warehouse($filename, false, $options['auth']['write_tokens'], 'import/upload_csv');    
     
-    $reload = data_entry_helper::get_reload_link_parts();
+    $reload = self::get_reload_link_parts();
     $reload['params']['uploaded_csv']=$filename;
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     

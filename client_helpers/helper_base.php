@@ -202,7 +202,7 @@ class helper_base extends helper_config {
       }
       if (!isset($indicia_theme_path)) {
         // Use default theme path if page does not specify it's own.
-        $indicia_theme_path="$base/media/themes";
+        $indicia_theme_path=preg_replace('/css\/$/','themes/', self::$css_path);
       }
 
       self::$resource_list = array (
@@ -214,7 +214,7 @@ class helper_base extends helper_config {
         'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
-        'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path/$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
+        'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
         'jquery_ui_fr' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path."jquery.ui.datepicker-fr.js")),
         'json' => array('javascript' => array(self::$js_path."json2.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
@@ -470,7 +470,10 @@ class helper_base extends helper_config {
    */
   public static function get_reload_link_parts() {
     $split = strpos($_SERVER['REQUEST_URI'], '?');
-    $gets = $split!==false ? explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) : array();
+    // convert the query parameters into an array
+    $gets = ($split!==false && strlen($_SERVER['REQUEST_URI']) > $split+1) ? 
+        explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) : 
+        array();
     $getsAssoc = array();
     foreach ($gets as $get) {
       list($key, $value) = explode('=', $get);
