@@ -57,8 +57,9 @@ class report_helper extends helper_base {
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>id</b><br/>
-  * Optional unique identifier for the grid. This is required if there is more than one grid on a single
-  * web page to allow separation of the page and sort $_GET parameters in the URLs generated.</li>
+  * Optional unique identifier for the grid's container div. This is required if there is more than
+  * one grid on a single web page to allow separation of the page and sort $_GET parameters in the URLs
+  * generated.</li>
   * <li><b>paramsFormId</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
   * parameters form from a different report. This will only work when all parameters required by this report are covered by the other report's
@@ -135,7 +136,7 @@ class report_helper extends helper_base {
   * which the user does not need to be asked about.</li>
   * <li><b>completeParamsForm</b>
   * Defaults to true. If false, the control HTML is returned for the params form without being wrapped in a <form> and
-  * without the Run Report button.</li>
+  * without the Run Report button, allowing it to be embedded into another form.</li>
   * <li><b>paramsFormButtonCaption</b>
   * Caption of the button to run the report on the report parameters form. Defaults to Run Report. This caption
   * is localised when appropriate.
@@ -317,13 +318,64 @@ class report_helper extends helper_base {
     return $r;
   }
   
-  /**
-   * WORK IN PROGRESS.
-   * Function to output a report onto a map rather than a grid.
+ /**
+  * Function to output a report onto a map rather than a grid.
+  * Because there are many options for the map, this method does not generate the
+  * map itself, rather it sends the output of the report onto a map_panel output
+  * elsewhere on the page. Like the report_grid, this can output a parameters
+  * form or can be set to use the parameters form from another output report (e.g.
+  * another call to report_grid, allowing both a grid and map of the same data
+  * to be generated). The report definition must contain a single column which is
+  * configured as a mappable column or the report must specify a parameterised
+  * CQL query to draw the map using WMS.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>id</b><br/>
+  * Optional unique identifier for the report. This is required if there is more than
+  * one different report (grid, chart or map) on a single web page to allow separation
+  * of the page and sort $_GET parameters in the URLs
+  * generated.</li>
+  * <li><b>paramsFormId</b><br/>
+  * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
+  * parameters form from a different report. This will only work when all parameters required by this report are covered by the other report's
+  * parameters form.</li>
+  * <li><b>mode</b><br/>
+  * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
+  * <li><b>readAuth</b><br/>
+  * Read authorisation tokens.</li>
+  * <li><b>dataSource</b><br/>
+  * Name of the report file or table/view.</li>
+  * <li><b>autoParamsForm</b>
+  * Defaults to true. If true, then if a report requires parameters, a parameters input form will be auto-generated
+  * at the top of the grid. If set to false, then it is possible to manually build a parameters entry HTML form if you
+  * follow the following guidelines. First, you need to specify the id option for the report grid, so that your
+  * grid has a reproducable id. Next, the form you want associated with the grid must itself have the same id, but with
+  * the addition of params on the end. E.g. if the call to report_grid specifies the option 'id' to be 'my-grid' then
+  * the parameters form must be called 'my-grid-params'. Finally the input controls which define each parameter must have
+  * the name 'param-id-' followed by the actual parameter name, replacing id with the grid id. So, in our example,
+  * a parameter called survey will need an input or select control with the name attribute set to 'param-my-grid-survey'.
+  * The submit button for the form should have the method set to "get" and should post back to the same page.
+  * As a final alternative, if parameters are required by the report but some can be hard coded then
+  * those may be added to the extraParams array.</li>
+  * <li><b>paramDefaults</b>
+  * Optional associative array of parameter default values.</li>
+  * <li><b>paramsOnly</b>
+  * Defaults to false. If true, then this method will only return the parameters form, not the grid content. autoParamsForm
+  * is ignored if this flag is set.</li>
+  * <li><b>ignoreParams</b>
+  * Array that can be set to a list of the report parameter names that should not be included in the parameters form. Useful
+  * when using paramsOnly=true to display a parameters entry form, but the system has default values for some of the parameters
+  * which the user does not need to be asked about.</li>
+  * <li><b>completeParamsForm</b>
+  * Defaults to true. If false, the control HTML is returned for the params form without being wrapped in a <form> and
+  * without the Run Report button, allowing it to be embedded into another form.</li>
+  * <li><b>paramsFormButtonCaption</b>
+  * Caption of the button to run the report on the report parameters form. Defaults to Run Report. This caption
+  * is localised when appropriate.
+  * </ul>
    */
   public static function report_map($options) {
     $options = self::get_report_grid_options($options);
-    $r = '<div id="'.$options['id'].'">';
     // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
     // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
     // parameters form if needed, else the report data. 
@@ -382,7 +434,7 @@ function addDistPoint(features, record, wktCol) {
   features.push(new OpenLayers.Feature.Vector(geom, record));
 }\n\n";
   report_helper::$javascript.= "
-mapInitialisationHooks.push(function(div) { 
+mapInitialisationHooks.push(function(div) {
   var layer = new OpenLayers.Layer.Vector('Report output');
   features = [];\n";
   foreach ($records as $record) {
