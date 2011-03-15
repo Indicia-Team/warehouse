@@ -14,6 +14,12 @@
  */
 
 /**
+ * Add functions to this array for them to be called when the map settings are
+ * available, allowing any setting to be overridden..
+ */
+mapSettingsHooks = [];
+
+/**
  * Add functions to this array for them to be called when the map initialises.
  */ 
 mapInitialisationHooks = [];
@@ -348,6 +354,10 @@ mapInitialisationHooks = [];
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
     var opts = $.extend({}, $.fn.indiciaMapPanel.defaults, options);
+    // call any hooks that update the settings
+    $.each(mapSettingsHooks, function(i, fn) {
+      fn(opts);
+    });
     if (opts.useOlDefaults) {
       olOptions = $.extend({}, $.fn.indiciaMapPanel.openLayersDefaults, olOptions);
     }
@@ -703,51 +713,53 @@ mapInitialisationHooks = [];
             }
           }
         });
-
-        // Add the click control to the map.
-        var click = new OpenLayers.Control.Click({'displayClass':'olControlNavigation'});
-        toolbarControls.push(click);
-        div.map.editLayer.clickControl = click;
       }
+      // specify a class to align edit buttons left if they are on a toolbar somewhere other than 
+      // the map.
+      var align = (div.settings.toolbarDiv=='map') ? '' : 'left ';
       $.each(div.settings.standardControls, function(i, ctrl) {
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher' &&
             (div.settings.presetLayers.length + div.settings.layers.length + div.settings.tilecacheLayers.length) > 1) {
           div.map.addControl(new OpenLayers.Control.LayerSwitcher());
+        }  else if (ctrl=='zoomBox') {
+          div.map.addControl(new OpenLayers.Control.ZoomBox());
+        } else if (ctrl=='panZoom') {
+          div.map.addControl(new OpenLayers.Control.PanZoom());
+        } else if (ctrl=='panZoomBar') {
+          div.map.addControl(new OpenLayers.Control.PanZoomBar());
         } else if (ctrl=='drawPolygon' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Polygon,
-              {'displayClass': 'olControlDrawFeaturePolygon'}));
+              {'displayClass': align + 'olControlDrawFeaturePolygon'}));
         } else if (ctrl=='drawLine' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Path,
-              {'displayClass': 'olControlDrawFeaturePath'}));
+              {'displayClass': align + 'olControlDrawFeaturePath'}));
         } else if (ctrl=='drawPoint' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
-              {'displayClass': 'olControlDrawFeaturePoint'}));
-        } else if (ctrl=='zoomBox') {
-          toolbarControls.push(new OpenLayers.Control.ZoomBox());
-        } else if (ctrl=='panZoom') {
-          toolbarControls.push(new OpenLayers.Control.PanZoom());
-        } else if (ctrl=='panZoomBar') {
-          toolbarControls.push(new OpenLayers.Control.PanZoomBar());
+              {'displayClass': align + 'olControlDrawFeaturePoint'}));
         }
-
       });
+      var click = new OpenLayers.Control.Click({'displayClass':align + 'olControlNavigation'});
+      div.map.editLayer.clickControl = click;
       if (toolbarControls.length>0) {
-        if (div.settings.toolbarDiv=='none') {
-          $.each(toolbarControls, function(i, ctrl) {
-            div.map.addControl(ctrl);
-          });
-        } else if (toolbarControls.length>0) {
-          var toolbar = new OpenLayers.Control.Panel({
-             displayClass: 'olControlEditingToolbar',
-             defaultControl: toolbarControls[0]
-          });
-          toolbar.addControls(toolbarControls);
-          div.map.addControl(toolbar);
+        // Add the click control to the toolbar alongside the other controls.
+        toolbarControls.push(click);
+        var toolbarOpts = {
+           displayClass: 'olControlEditingToolbar',
+           defaultControl: toolbarControls[0]
+        };
+        if (div.settings.toolbarDiv!='map') {
+          toolbarOpts.div = document.getElementById(div.settings.toolbarDiv);
         }
+        var toolbar = new OpenLayers.Control.Panel(toolbarOpts);
+        toolbar.addControls(toolbarControls);
+        div.map.addControl(toolbar);
+      } else {
+        // no other selectable controls, so no need for a click button on toolbar
+        div.map.addControl(click);
       }
 
       // Disable the scroll wheel from zooming if required
@@ -797,7 +809,7 @@ $.fn.indiciaMapPanel.defaults = {
     locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
-    toolbarDiv: 'none', // none, map or div ID
+    toolbarDiv: 'map', // map or div ID
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     editLayerName: 'Selection layer',

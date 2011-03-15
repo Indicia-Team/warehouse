@@ -37,7 +37,13 @@ class map_helper extends helper_base {
   * <li>{@link location_autocomplete()}</li>
   * <li>{@link postcode_textbox()}</li>
   * </ul>
-  *
+  * To run JavaScript at the end of map initialisation, add a function to the global array
+  * called mapInitialisationHooks. Code cannot access the map at any previous point because
+  * maps may not be initialised when the page loads, e.g. if the map initialisation is
+  * delayed until the tab it is on is shown.
+  * To run JavaScript which updates any of the map settings, add a function to the
+  * mapSettingsHooks global array. For example this is used to configure the map by report
+  * parameters panels which need certain tools on the map.
   * @param array $options Associative array of options to pass to the jQuery.indiciaMapPanel plugin.
   * Has the following possible options:
   * <ul><li><b>indiciaSvc</b><br/>

@@ -362,8 +362,9 @@ class helper_base extends helper_config {
   }
   
   /**
-   * Returns the HTML required for a parameters form, e.g. the form defined for input of report parameters or the 
-   * default values for a csv import.
+   * Parameters forms are a quick way of specifying a simple form used to specify the input
+   * parameters for a process. Returns the HTML required for a parameters form, e.g. the form
+   * defined for input of report parameters or the default values for a csv import.
    * @param array $options Options array with the following possibilities:<ul>
    * <li><b>form</b><br/>
    * Associative array defining the form structure. The structure is the same as described for <em>fixed_values_form</em> in a Warehouse model.
@@ -397,6 +398,7 @@ class helper_base extends helper_config {
     $r = '';
     $fieldPrefix = (isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '');
     foreach($options['form'] as $key=>$info) {
+      unset($tools);
       // Skip parameters if we have been asked to ignore them
       if (isset($options['ignoreParams']) && in_array($key, $options['ignoreParams'])) continue;
       $ctrlOptions = array(
@@ -456,10 +458,51 @@ class helper_base extends helper_config {
       } elseif ($info['datatype']=='date') {
         $r .= data_entry_helper::date_picker($ctrlOptions);
       } elseif ($info['datatype']=='geometry') {
-        $r .= 'draw on map<br/>';
+        $tools = array('Polygon','Line','Point');
+      } elseif ($info['datatype']=='polygon') {
+        $tools = array('Polygon');
+      } elseif ($info['datatype']=='line') {
+        $tools = array('Line');
+      } elseif ($info['datatype']=='point') {
+        $tools = array('Point');
       } else {
         $r .= data_entry_helper::text_input($ctrlOptions);
       }
+    }
+    // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
+    if (isset($tools)) {
+      $r .= '<label>'.$ctrlOptions['label'].':</label>';
+      $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
+      '<div id="map-tools" class="olControlEditingToolbar left"></div></div><br/>';
+      $r .= '<input type="hidden" name="'.$ctrlOptions['fieldname'].'" class="hidden-wkt" />';
+      // Output some JavaScript to setup a toolbar for the map drawing tools. Also JS
+      // to handle getting the polygons from the edit layer into the report parameter
+      // when run report is clicked.
+      data_entry_helper::$javascript .= "
+$.fn.indiciaMapPanel.defaults.toolbarDiv='map-tools';
+mapInitialisationHooks.push(function(div) {
+  // keep a global reference to the map, so we can get it later when Run Report is clicked
+  mapDiv = div;
+});
+$('#run-report').click(function(evt) {
+  featuresWkt = [];
+  if (mapDiv.map.editLayer.features.length===0) {
+    evt.preventDefault();
+    alert('Please supply a search area for the report.');
+  }
+  $.each(mapDiv.map.editLayer.features, function(i, feature) {
+    featuresWkt.push(feature.geometry.toString());
+  });
+  $('.hidden-wkt').val(featuresWkt.join('|'));
+});
+var add_map_tools = function(opts) {\n";
+      foreach ($tools as $tool) {
+        data_entry_helper::$javascript .= "opts.standardControls.push('draw$tool');\n";
+      }
+      data_entry_helper::$javascript .= "
+}
+mapSettingsHooks.push(add_map_tools)
+";
     }
     return $r;
   }
