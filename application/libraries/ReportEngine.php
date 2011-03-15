@@ -194,9 +194,9 @@ class ReportEngine {
       Kohana::log('debug', "Listing local reports in report directory ".$this->localReportDir.".");
       $reportList = Array();
       // All we do here is return the list of titles - don't bother interrogating the reports
-      $dh = opendir($this->localReportDir);
+      $dh = opendir(DOCROOT . $this->localReportDir);
       while ($file = readdir($dh))  {
-        if ($file != '..' && $file != '.' && is_file($this->localReportDir.'/'.$file))
+        if ($file != '..' && $file != '.' && is_file(DOCROOT . $this->localReportDir.'/'.$file))
         {
           $reportList[] = array('name' => $file);
         }
@@ -207,7 +207,7 @@ class ReportEngine {
       Kohana::log('debug', "Listing local reports in report directory ".$this->localReportDir.".");
 
       $reportList = Array();
-      $handle = opendir($this->localReportDir);
+      $handle = opendir(DOCROOT . $this->localReportDir);
       while ($file = readdir($handle))
       {
         $a = explode('.', $file);
@@ -533,15 +533,15 @@ class ReportEngine {
 
   private function fetchLocalReport($request)
   {
-    if (is_dir($this->localReportDir) ||
-      is_file($this->localReportDir.'/'.$request))
+    if (is_dir(DOCROOT . $this->localReportDir) ||
+      is_file(DOCROOT . $this->localReportDir.'/'.$request))
       {
-        $this->report = $this->localReportDir.'/'.$request;
+        $this->report = DOCROOT . $this->localReportDir.'/'.$request;
         Kohana::log('debug', "Setting local report ".$this->report.".");
       }
       else
       {
-        Kohana::log('error', "Unable to find report $request in ".$this->localReportDir.".");
+        Kohana::log('error', "Unable to find report $request in ". DOCROOT . $this->localReportDir.".");
         // Throw an error - something has gone wrong
         // TODO
       }
@@ -555,7 +555,7 @@ class ReportEngine {
   private function fetchProvidedReport($request)
   {
     // $request here stores the report itself - we save it to a temporary place.
-    $uploadDir = $this->localReportDir.'/tmp/';
+    $uploadDir = DOCROOT . $this->localReportDir.'/tmp/';
     if (is_dir($uploadDir))
     {
       $fname = time();
