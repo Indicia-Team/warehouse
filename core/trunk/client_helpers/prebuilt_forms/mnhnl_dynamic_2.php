@@ -404,7 +404,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       }
     }
     self::set_attribute_default_block($attributes);
-    $tabs = self::get_all_tabs($args['supersample_structure']);
+    $tabs = self::get_all_tabs($args['supersample_structure'], array());
     $r .= "<div id=\"controls\">\n";
     // Build a list of the tabs that actually have content
     $tabHtml = self::get_tab_html($tabs, self::$auth, $args, $attributes, $hiddens);
@@ -544,7 +544,7 @@ SSLayer.addFeatures([SSfeature]);
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
     self::set_attribute_default_block($attributes);
-    $tabs = self::get_all_tabs($args['occurrence_structure']);
+    $tabs = self::get_all_tabs($args['occurrence_structure'], array());
     $r .= "<div id=\"controls\">\n";
     // Build a list of the tabs that actually have content
     $tabHtml = self::get_tab_html($tabs, self::$auth, $args, $attributes, $hiddens);
@@ -651,9 +651,9 @@ SSLayer.addFeatures([SSfeature]);
   
   /**
    * Finds the list of all tab names that are going to be required by the form structure.
-   * custom attributes are not used, as noted above.
+   * custom attributes are not used, as noted above. Need the dummy argument to match prototype in dynamic 1
    */
-  protected static function get_all_tabs($structure) {
+  protected static function get_all_tabs($structure, $attrTabs) {
     $structureArr = explode("\r\n", $structure);
     $structureTabs = array();
     foreach ($structureArr as $component) {
@@ -679,7 +679,6 @@ SSLayer.addFeatures([SSfeature]);
   
 // link_species_popups defined in Dynamic_1
 // get_tab_html defined in Dynamic_1
-// get_all_tabs defined in Dynamic_1
 
 // get_control_map defined in Dynamic_1
 // get_control_species defined in Dynamic_1
