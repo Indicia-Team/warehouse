@@ -160,7 +160,8 @@ jQuery(replacement).insertBefore(existing).val(existing.val());
 existing.remove();
 ";
       }
-      data_entry_helper::$javascript .= "jQuery('#sample\\\\:date').datepicker( \"option\", \"minDate\", new Date(2010, 4 - 1, 1) );
+      data_entry_helper::$javascript .= "
+// jQuery('#sample\\\\:date').datepicker( \"option\", \"minDate\", new Date(2010, 4 - 1, 1) );
 Date.prototype.getMonthName = function() {
 var m = ['".lang::get('January')."','".lang::get('February')."','".lang::get('March')."',
 '".lang::get('April')."','".lang::get('May')."','".lang::get('June')."',
@@ -244,6 +245,102 @@ deleteSurvey = function(sampleID){
     return array('mnhnl_butterflies.css');
   }
 
+  protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
+    if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'));
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Observer')==0) {
+        $ObserverIdAttr = $attrId;
+        break;
+      }
+    if (!isset($ObserverIdAttr))
+      return lang::get('This form must be used with a survey that has the Observer attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'MNHNL Month')==0) {
+        $MonthIdAttr = $attrId;
+        break;
+      }
+    if (!isset($MonthIdAttr))
+      return lang::get('This form must be used with a survey that has the MNHNL Month attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Number In Month')==0) {
+        $NumInMonthIdAttr = $attrId;
+        break;
+      }
+    if (!isset($NumInMonthIdAttr))
+      return lang::get('This form must be used with a survey that has the Number In Month attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Start Time')==0) {
+        $StartTimeIdAttr = $attrId;
+        break;
+      }
+    if (!isset($StartTimeIdAttr))
+      return lang::get('This form must be used with a survey that has the Start Time attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'End Time')==0) {
+        $EndTimeIdAttr = $attrId;
+        break;
+      }
+    if (!isset($EndTimeIdAttr))
+      return lang::get('This form must be used with a survey that has the End Time attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Temperature')==0) {
+        $TempIdAttr = $attrId;
+        break;
+      }
+    if (!isset($TempIdAttr))
+      return lang::get('This form must be used with a survey that has the Temperature attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Wind Force')==0) {
+        $WindIdAttr = $attrId;
+        break;
+      }
+    if (!isset($WindIdAttr))
+      return lang::get('This form must be used with a survey that has the Wind Force attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Cloud Cover')==0) {
+        $CloudIdAttr = $attrId;
+        break;
+      }
+    if (!isset($CloudIdAttr))
+      return lang::get('This form must be used with a survey that has the Cloud Cover attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Habitat Type')==0) {
+        $HabitatIdAttr = $attrId;
+        break;
+      }
+    if (!isset($HabitatIdAttr))
+      return lang::get('This form must be used with a survey that has the Habitat Type attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'Survey Reliability')==0) {
+        $ReliabilityIdAttr = $attrId;
+        break;
+      }
+    if (!isset($ReliabilityIdAttr))
+      return lang::get('This form must be used with a survey that has the Survey Reliability attribute associated with it.');
+
+    return  '<div id="downloads" >
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_grid.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+      <p>'.lang::get('LANG_Grid_Based_Data_Download').'</p>
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.'}\' />
+      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Grid_Download_Button').'">
+    </form>
+	<form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_section.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv">
+      <p>'.lang::get('LANG_Section_Based_Data_Download').'</p>
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
+      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Section_Download_Button').'">
+    </form>
+  </div>';
+	
+  }
   /**
    * When viewing the list of samples for this user, get the grid to insert into the page.
    */
@@ -251,23 +348,24 @@ deleteSurvey = function(sampleID){
   	global $user;
     // get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
-      if (strcasecmp($attr['caption'],'CMS User ID')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'CMS User ID')==0) {
         $userIdAttr = $attrId;
         break;
       }
     }
     foreach($attributes as $attrId => $attr) {
-      if (strcasecmp($attr['caption'],'CMS Username')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'CMS Username')==0) {
         $userNameAttr = $attrId;
         break;
       }
     }
     foreach($attributes as $attrId => $attr) {
-      if (strcasecmp($attr['caption'],'Observer')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'Observer')==0) {
         $observerAttr = $attrId;
         break;
       }
     }
+
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
@@ -288,7 +386,7 @@ deleteSurvey = function(sampleID){
       $reportName = $args['grid_report'];
     else
       // provide a default in case the form settings were saved in an old version of the form
-      $reportName = 'reports_for_prebuilt_forms/mnhnl_butterflies';
+      $reportName = 'reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies';
     $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
     $r .= data_entry_helper::report_grid(array(
       'id' => 'samples-grid',
@@ -513,10 +611,10 @@ jQuery('#transectgrid_taxa_taxon_list_id').change(function(){
             $session = curl_init($url);
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             $ATTRentities = json_decode(curl_exec($session), true);
-            foreach($ATTRentities as $ATTRentity){
-              	data_entry_helper::$javascript .= "
-build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".($ATTRentity['id']).",".($ATTRentity['raw_value']).");";
-            }
+//            foreach($ATTRentities as $ATTRentity){
+//              	data_entry_helper::$javascript .= "
+//build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".($ATTRentity['id']).",".($ATTRentity['raw_value']).");";
+//            }
           }
         }
       }
