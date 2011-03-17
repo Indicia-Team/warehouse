@@ -28,6 +28,18 @@
  * @subpackage PrebuiltForms
  */
 class iform_basic_2 {
+
+  /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_basic_2_definition() {
+    return array(
+      'title'=>'Basic 2 - species, date, place',
+      'category' => 'Training/Testing forms',      
+      'description'=>'A second very simple form designed to illustrate the prebuilt form development and setup process.'
+    );
+  }
   
   /**
    * Get the list of parameters for this form.
@@ -49,15 +61,7 @@ class iform_basic_2 {
       )
     );
   }
-  
-  /** 
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'Basic 2 - species, date, place';  
-  }
-  
+
   /**
    * Return the generated form output.
    * @return Form HTML.

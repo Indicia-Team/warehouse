@@ -30,6 +30,20 @@
  */
 class iform_form_name {
   
+  /** 
+   * Return the form metadata. Note the title of this method includes the name of the form file. This ensures
+   * that if inheritance is used in the forms, subclassed forms don't return their parent's form definition.
+   * @return array The definition of the form.
+   */
+  public static function get_<form_name>_definition() {
+    return array(
+      'title'=>'<form title>',
+      'category' => '<category title>',
+      'helpLink'=>'<optional help URL>',
+      'description'=>'<description>'
+    );
+  }
+  
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -37,15 +51,6 @@ class iform_form_name {
    */
   public static function get_parameters() {   
      
-  }
-  
-  /** 
-   * Return the form title.
-   * @return string The title of the form.
-   * @todo: Implement this method
-   */
-  public static function get_title() {
-    return '<form title>';  
   }
   
   /**

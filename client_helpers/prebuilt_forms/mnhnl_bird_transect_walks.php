@@ -59,6 +59,19 @@ class iform_mnhnl_bird_transect_walks {
    * centroid is the buffer surrounding the transect.
    * boundary are the points defining the start and end of the walk.
    */
+   
+  /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_mnhnl_bird_transect_walks_definition() {
+    return array(
+      'title'=>'Bird Transect Walks',
+      'category' => 'Forms for specific surveying methods',
+      'description'=>'For input of bird records captured during repeated transect walks. Developed for the COBIMO project in Luxembourg.'
+    );
+  }
+  
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -236,14 +249,6 @@ class iform_mnhnl_bird_transect_walks {
 	    'default' => 'occurrence',
       )
     ));
-  }
-
-  /**
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'MNHNL Bird Transect Walks';
   }
 
   public static function get_perms($nid) {

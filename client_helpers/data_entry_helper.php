@@ -58,8 +58,7 @@ $indicia_templates = array(
   'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
   'check_or_radio_group' => '<div{class}>{items}</div>',
-  'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
-  'check_or_radio_group_container' => '<div {class} >{group}</div>',
+  'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',  
   'map_panel' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
     "/* ]]> */</script>",
@@ -255,11 +254,6 @@ class data_entry_helper extends helper_base {
    * @var integer On average, every 1 in $cache_chance_expire times the Warehouse is called for data which is
    */
   public static $interim_image_expiry=14400;
-
-  /**
-   * @var array Name of the form which has been set up for jQuery validation, if any.
-   */
-  public static $validated_form_id = null;
 
   /**
    * @var array List of messages defined to pass to the validation plugin.
@@ -2510,19 +2504,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     return $r;
   }
 
- /**
-  * Call the enable_validation method to turn on client-side validation for any controls with
-  * validation rules defined. 
-  * To specify validation on each control, set the control's options array
-  * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
-  * validation format. For example, 'validation' => array('required', 'email').
-  * @param string @form_id Id of the form the validation is being attached to.
-  */
-  public static function enable_validation($form_id) {
-    self::$validated_form_id = $form_id;
-    self::add_resource('validation');
-  }
-
   /**
    * Removes any data entry values persisted into the $_SESSION by Indicia.
    *
@@ -2945,7 +2926,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (isset($options['lookupValues'])) {
       // lookup values are provided, so run these through the item template
       foreach ($options['lookupValues'] as $key=>$value) {
-        $r[] = str_replace(
+        $r[$value] = str_replace(
             array('{value}', '{caption}'),
             array($key, $value),
             $indicia_templates[$options['itemTemplate']]
@@ -3012,11 +2993,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'sep' => '',
         'template' => 'check_or_radio_group',
         'itemTemplate' => 'check_or_radio_group_item',
-        'containerTemplate' => 'check_or_radio_group_container',
-        'class' => 'control-box'
       ),
       $options
     );
+    // class picks up a default of blank, so we can't use array_merge to overwrite it
+    if (!$options['class']) $options['class']='control-box';
     // We want to apply validation to the inner items, not the outer control
     if (array_key_exists('validation', $options)) {
       $itemClass = self::build_validation_class($options);
@@ -3031,10 +3012,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       $item = array_merge(
         $options,
         array(
-          'disabled' => isset($options['disabled']) ?  $options['disabled'] : '',
-          'checked' => (isset($options['default']) && $options['default'] == $value) ? 'checked="checked" ' : '',
+          'disabled' => isset($options['disabled']) ? $options['disabled'] : '',
+          'checked' => (isset($options['default']) && $options['default'] === $value) ? 'checked="checked" ' : '',
           'type' => $type,
-          'caption' => $caption,
           'value' => $value,
           'class' => $itemClass,
           'itemId' => $options['fieldname'].':'.$idx
@@ -3050,16 +3030,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $r = self::apply_template($options['template'], $options);    
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
-    if (array_key_exists('containerClass', $options)) {
-      $containerOpts = array(
-              'group' => $r,
-              'class' => $options['containerClass']
-            );
-      if(array_key_exists('suffixTemplate', $options)) {
-      	$containerOpts['suffixTemplate'] = $options['suffixTemplate'];
-      }
-      $r = self::apply_template($options['containerTemplate'], $containerOpts);
-    }
     return $r;
   }
 
@@ -3587,13 +3557,16 @@ if (errors.length>0) {
           $(element).removeClass('ui-state-error');
         },
         invalidHandler: function(form, validator) {
-          if (typeof(tabs)!=='undefined') {
+          var tabselected=false;
+          jQuery.each(validator.errorMap, function(ctrlId, error) {
             // select the tab containing the first error control
-            jQuery.each(validator.errorMap, function(ctrlId, error) {
+            if (!tabselected && typeof(tabs)!=='undefined') {
               tabs.tabs('select',$('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.ui-tabs-panel')[0].id);
-              return false; // only do the first error
-            });
-          }
+              tabselected = true;
+            }
+            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('fieldset').removeClass('collapsed');
+            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.fieldset-wrapper').show();
+          });
         },
         messages: ".json_encode(self::$validation_messages)."
       });\n";
@@ -3925,7 +3898,6 @@ $('.ui-state-default').live('mouseout', function() {
     $options = array_merge(
       array(
         'sep' => '',
-        'containerTemplate' => 'check_or_radio_group_container',
         'class' => 'control-box'
       ),
       $options
@@ -3955,19 +3927,8 @@ $('.ui-state-default').live('mouseout', function() {
     $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate);
     $r = self::apply_template('check_or_radio_group', $options);
     // reset the old template
-    $indicia_templates['label'] = $lblTemplate;
-    if (array_key_exists('containerClass', $options)) {
-      $containerOpts = array(
-              'group' => $r,
-              'class' => $options['containerClass']
-            );
-      if(array_key_exists('suffixTemplate', $options)) {
-      	$containerOpts['suffixTemplate'] = $options['suffixTemplate'];
-      }
-      $r = self::apply_template($options['containerTemplate'], $containerOpts);
-    }
+    $indicia_templates['label'] = $lblTemplate;    
     return $r;
-
   }
 
   /**
@@ -4029,9 +3990,6 @@ $('.ui-state-default').live('mouseout', function() {
           // in the optional attribute record.
           // If using this to generate a filter, need also to use checkboxes.          
             $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
-            if(array_key_exists('containerClass', $options)){
-              $attrOptions['containerClass'] = $options['containerClass'];
-            }
             if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='radio') {
               $output = self::boolean_attribute('radio', $attrOptions);
             } elseif(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox_group') {
@@ -4053,9 +4011,6 @@ $('.ui-state-default').live('mouseout', function() {
             $attrOptions = $attrOptions + array('blankText' => '');
           }
           $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
-          if(array_key_exists('containerClass', $options)){
-            $attrOptions['containerClass'] = $options['containerClass'];
-          }
           $dataSvcParams = array('termlist_id' => $item['termlist_id'], 'view' => 'detail');
           if (array_key_exists('language', $options)) {
             $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);

@@ -31,6 +31,19 @@ require_once('includes/language_utils.php');
  */
 class iform_distribution_map_1 {
 
+  /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_distribution_map_1_definition() {
+    return array(
+      'title'=>'Distribution Map 1',
+      'category' => 'Reporting',      
+      'description'=>'Outputs a distribution map using Indicia data from GeoServer. Can output a map for a single species '.
+          'or all data from a website. Also features clicking on the data points to see details.'
+    );
+  }
+
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -154,15 +167,6 @@ class iform_distribution_map_1 {
         )  
       )
     );
-  }
-
-  /**
-   * Return the form title.
-   * @return string The title of the form.
-   * @todo: Implement this method
-   */
-  public static function get_title() {
-    return 'Distribution map 1';
   }
 
   /**

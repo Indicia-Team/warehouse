@@ -44,6 +44,23 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
   protected static $svcUrl;
   protected static $currentUrl;
   protected static $gridmode;
+  
+   /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_mnhnl_dynamic_2_definition() {
+    return array(
+      'title'=>'MNHNL Dynamic 2 - dynamically generated form for entry of a series of ad-hoc occurrences',
+      'category' => 'General Purpose Data Entry Forms',
+      'helpLink'=>'http://code.google.com/p/indicia/wiki/TutorialDynamicForm',
+      'description'=>'A data entry form that is dynamically generated from the survey\'s attributes. The form lets the user create '.
+          'a series of occurrences by clicking on the map to set the location of each one then entering details. Data entered in a '.
+          'single session in this way is joined using a simple sample hierarchy (so the top level sample encapsulates all data for the '.
+          'session.'
+    );
+  }
+  
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -146,15 +163,6 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       )
     );
     return $retVal;
-  }
-  
-  /** 
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'MNHNL Dynamic 2 - form that dynamically generates a supersample/sample/occurrence(species) tree from the attributes '.
-        'defined for the selected survey';  
   }
   
 /**
