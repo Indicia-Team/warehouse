@@ -72,6 +72,7 @@ label {
 input, select, textarea {
   vertical-align: top;
   margin: 4px 0 4px 0;
+  display: inline !important; 
 }
 
 a {
@@ -79,31 +80,31 @@ a {
 }
 
 .control-width-0 {
-	width: 25px;
+	width: 25px !important;
 }
 
 .control-width-1 {
-	width: 50px;
+	width: 50px !important;
 }
 
 .control-width-2 {
-	width: 100px;
+	width: 100px !important;
 }
 
 .control-width-3 {
-	width: 150px;
+	width: 150px !important;
 }
 
 .control-width-4 {
-	width: 200px;
+	width: 200px !important;
 }
 
 .control-width-5 {
-	width: 300px;
+	width: 300px !important;
 }
 
 .control-width-6 {
-  width: 500px;
+  width: 500px !important;
 }
 
 .auto {
@@ -260,6 +261,11 @@ li.ui-state-error {
   margin-top: 2px;
 }
 
+.control-box span  * {
+  margin-left: 1em;
+  vertical-align: middle;
+}
+
 .tree-browser {
   padding: 0.5em;
   display:inline-block;
@@ -283,7 +289,8 @@ li.ui-state-error {
 .helpText {
   color:gray;
   font-size:80%;
-  margin:0 0 0.4em 160px;
+  margin:-4px 0 8px 164px;
+  line-height: 1em;
 }
 
 .progress {

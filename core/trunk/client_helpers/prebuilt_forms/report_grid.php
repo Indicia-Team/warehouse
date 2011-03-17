@@ -29,6 +29,20 @@ require_once('includes/report.php');
  * @subpackage PrebuiltForms
  */
 class iform_report_grid {
+
+  /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_report_grid_definition() {
+    return array(
+      'title'=>'Report Grid',
+      'category' => 'Reporting',
+      'description'=>'Outputs a grid of data loaded from an Indicia report. Can automatically include the report parameters form required for the '.
+          'generation of the report.'
+    );
+  }
+  
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -56,14 +70,6 @@ class iform_report_grid {
         )
       )
     );
-  }
-
-  /**
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'Report grid - a simple grid report';
   }
 
   /**

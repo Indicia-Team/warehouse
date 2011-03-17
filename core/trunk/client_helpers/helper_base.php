@@ -87,6 +87,11 @@ class helper_base extends helper_config {
    * @var array
    */
   public static $validation_mode=array('message', 'colour');
+  
+  /**
+   * @var array Name of the form which has been set up for jQuery validation, if any.
+   */
+  public static $validated_form_id = null;
 
   /**
    * @var string Helptext positioning. Determines where the information is displayed when helpText is defined for a control.
@@ -901,9 +906,20 @@ $onload_javascript
     return $r;
   }
   
+ /**
+  * Call the enable_validation method to turn on client-side validation for any controls with
+  * validation rules defined. 
+  * To specify validation on each control, set the control's options array
+  * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
+  * validation format. For example, 'validation' => array('required', 'email').
+  * @param string @form_id Id of the form the validation is being attached to.
+  */
+  public static function enable_validation($form_id) {
+    self::$validated_form_id = $form_id;
+    self::add_resource('validation');
+  }
   
-  
-    /**
+ /**
    * Converts the validation rules in an options array into a string that can be used as the control class,
    * to trigger the jQuery validation plugin.
    * @param $options. For validation to be applied should contain a validation entry, containing a single

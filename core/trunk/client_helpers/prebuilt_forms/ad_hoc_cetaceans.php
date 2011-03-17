@@ -32,6 +32,19 @@ require_once('includes/user.php');
  * @todo Rename the form class to iform_...
  */
 class iform_ad_hoc_cetaceans {
+
+  /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_ad_hoc_cetaceans_definition() {
+    return array(
+      'title'=>'Ad-hoc cetacean records',
+      'category' => 'Forms for specific surveying methods',
+      'description'=>'A form designed for input of ad-hoc records of cetaceans or other marine wildlife. '.
+          'Records can be entered via a map if the sighting was from the shore, or via GPS coordinates for sightings at sea.'
+    );
+  }
   
   /**
    * Get the list of parameters for this form.
@@ -133,15 +146,6 @@ class iform_ad_hoc_cetaceans {
         ),
 	    )
     );
-  }
-  
-  /** 
-   * Return the form title.
-   * @return string The title of the form.
-   * @todo: Implement this method
-   */
-  public static function get_title() {
-    return 'Ad-hoc cetacean records';  
   }
   
   /**

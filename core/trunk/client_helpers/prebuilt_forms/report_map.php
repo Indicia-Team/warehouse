@@ -31,6 +31,20 @@ require_once('includes/map.php');
  * @subpackage PrebuiltForms
  */
 class iform_report_map {
+
+  /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_report_map_definition() {
+    return array(
+      'title'=>'Report Map',
+      'category' => 'Reporting',
+      'description'=>'Outputs data from a report onto a map. To work, the report must include a column containing spatial data. '.
+          'Can automatically include the report parameters form required for the generation of the report.'
+    );
+  }
+  
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
@@ -70,14 +84,6 @@ class iform_report_map {
         )
       )
     );
-  }
-
-  /**
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'Report map - outputs report data onto a map';
   }
 
   /**

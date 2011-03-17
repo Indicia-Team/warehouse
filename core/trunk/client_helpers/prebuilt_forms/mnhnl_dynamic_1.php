@@ -43,6 +43,21 @@ class iform_mnhnl_dynamic_1 {
   
   protected static $node;
   
+  /** 
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_mnhnl_dynamic_1_definition() {
+    return array(
+      'title'=>'MNHNL Dynamic 1 - dynamically generated data entry form',
+      'category' => 'General Purpose Data Entry Forms',
+      'helpLink'=>'http://code.google.com/p/indicia/wiki/TutorialDynamicForm',
+      'description'=>'A data entry form with an optional grid listing the user\'s records so forms can be reloaded for editing. Can be used for '.
+          'entry of a single occurrence, ticking species off a checklist, or entering species into a grid. The attributes on the form are dynamically '.
+          'generated from the survey setup on the Indicia Warehouse.'
+    );
+  }
+  
   /* TODO
    *  
    *   Survey List
@@ -371,15 +386,6 @@ class iform_mnhnl_dynamic_1 {
       )
     );
     return $retVal;
-  }
-  
-  /** 
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'MNHNL Dynamic 1 - form that dynamically generates a species checklist card from the attributes '.
-        'defined for the selected survey';  
   }
   
   /**

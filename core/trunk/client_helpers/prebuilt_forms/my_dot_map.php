@@ -368,8 +368,8 @@ class iform_my_dot_map {
     // create a mapping from the field names that we can filter to the fields in the occurrence list report
     $filterMappings = array(
       'taxon_meaning_id' => 'lt2_taxon_meaning_id',
-   	  'external_key' => 'lt4_external_key',
-   	  'survey_id' => 'lt8_id',
+      'external_key' => 'lt4_external_key',
+      'survey_id' => 'lt8_id',
       'sample_id' => 'lt0_id'
     );
     $filter = '';
