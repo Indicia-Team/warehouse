@@ -455,6 +455,11 @@ class iform_mnhnl_dynamic_1 {
       if($args['includeLocTools'] && iform_loctools_checkaccess($node,'admin')){
         $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
       }
+      if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
+        $extraTabs = call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), false, $auth['read'], $args, $attributes);
+        if(is_array($extraTabs))
+        	$tabs = $tabs + $extraTabs;
+      }
       if(count($tabs) > 1){
         $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
         $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
@@ -490,6 +495,9 @@ class iform_mnhnl_dynamic_1 {
       <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
     </form>
   </div>";
+      }
+      if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
+        $r .= call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), true, $auth['read'], $args, $attributes);
       }
       if(count($tabs)>1){ // close tabs div if present
         $r .= "</div>";

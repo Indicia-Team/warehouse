@@ -3844,6 +3844,7 @@ $('.ui-state-default').live('mouseout', function() {
       $itemId=$item['id'];
       unset($item['id']);
       $item['fieldname']=$options['fieldprefix'].':'.$itemId.($item['multi_value'] == 't' ? '[]' : '');
+      $item['untranslatedCaption']=$item['caption'];
       $item['caption']=lang::get($item['caption']);
       $item['default'] = self::attributes_get_default($item);
       $retVal[$itemId] = $item;

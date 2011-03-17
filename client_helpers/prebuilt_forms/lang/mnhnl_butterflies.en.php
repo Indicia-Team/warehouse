@@ -33,6 +33,11 @@ $custom_terms = array(
 	'LANG_Add_Sample' => 'Add New Sample',
 	'LANG_Add_Sample_Single' => 'Add Single Occurrence',
 	'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
+	'LANG_Download' => 'Reports',
+	'LANG_Grid_Based_Data_Download' => 'The Grid Report provides details of the data entered in the Grids.',
+	'LANG_Grid_Download_Button' => 'Download Grid report',
+	'LANG_Section_Based_Data_Download' => 'The Section Report provides details of the data entered in the Section based tab.',
+	'LANG_Section_Download_Button' => 'Download Section report',
 
 	'LANG_Tab_aboutyou' => 'About You',      
 	'LANG_Tab_Instructions_aboutyou' => '<strong>About You</strong><br/>Please tell us about yourself first.',
