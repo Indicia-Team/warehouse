@@ -46,6 +46,19 @@ class Upgrade_Model extends Model
       if (1 == version_compare('0.2.3', $old_version) ) {
         $old_version='0.2.3';
       }
+      $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'indicia', $old_version);
+      // need to look for any module with a db folder, then read its system version and apply the updates.
+      foreach (Kohana::config('config.modules') as $path) {
+        // skip the indicia_setup module db files since they are for the main app
+        if (basename($path)!=='indicia_setup' && file_exists("$path/db/")) {
+          $old_version = $system->getVersion(basename($path));
+          $this->applyUpdateScripts("$path/", basename($path), $old_version);
+        }
+      }
+      // @todo set_new_version for diff modules
+    }
+
+    private function applyUpdateScripts($baseDir, $appName, $old_version) {
       try
       {
         $currentVersionNumbers = explode('.', $old_version);
@@ -60,14 +73,14 @@ class Upgrade_Model extends Model
             $updatedTo = implode('.', $currentVersionNumbers);
             kohana::log('debug', "Method ran for $version_name");
           }
-          if (file_exists($this->base_dir . "/modules/indicia_setup/db/" . $version_name)) {
+          if (file_exists($baseDir . "db/" . $version_name)) {
             // start transaction for each folder full of scripts
             $this->begin();
             // we have a folder containing scripts
-            $this->execute_sql_scripts($version_name);
+            $this->execute_sql_scripts($baseDir, $version_name);
             $updatedTo = implode('.', $currentVersionNumbers);
             // update the version number of the db since we succeeded
-            $this->set_new_version($updatedTo);
+            $this->set_new_version($updatedTo, $appName);
             // commit transaction
             $this->commit();
             kohana::log('debug', "Scripts ran for $version_name");
@@ -80,7 +93,7 @@ class Upgrade_Model extends Model
           while ($level>=0 && $stuffToDo==false) {
             $currentVersionNumbers[$level]++;
             $version_name = 'version_'.implode('_', $currentVersionNumbers);
-            if (file_exists($this->base_dir . "/modules/indicia_setup/db/" . $version_name) || (method_exists($this, $version_name))) 
+            if (file_exists($baseDir . "db/" . $version_name) || (method_exists($this, $version_name)))
               $stuffToDo = true;            
             else {
               // Couldn't find anything of this version name. Move up a level (e.g. we have searched 0.2.5 and found nothing, so try 0.3.0)            
@@ -90,9 +103,10 @@ class Upgrade_Model extends Model
           }        
         }
         // update system table entry to new version
-        kohana::log('debug', "Upgrade completed to $updatedTo");        
-        
-        kohana::log('debug', "Upgrade committed");        
+        if (isset($updatedTo)) {
+          kohana::log('debug', "Upgrade completed to $updatedTo");
+          kohana::log('debug', "Upgrade committed");
+        }
       }
       catch(Exception $e)
       {
@@ -134,9 +148,9 @@ class Upgrade_Model extends Model
      *
      * @param array $new_version  New version number
      */
-    private function set_new_version( $new_version )
+    private function set_new_version($new_version, $appName)
     {
-        $this->db->query("UPDATE system SET version='$new_version'");
+        $this->db->query("UPDATE system SET version='$new_version' WHERE name='$appName'");
     }
     
     /**
@@ -176,12 +190,13 @@ class Upgrade_Model extends Model
     /**
      * execute all sql srips from the upgrade folder
      *
-     * @param string $upgrade_folder folder name
+     * @param string $baseDir directory to the module folder updgrades are in.
+     * @param string $upgrade_folder folder version name
      */
-    public function execute_sql_scripts($upgrade_folder)
+    public function execute_sql_scripts($baseDir, $upgrade_folder)
     {
       $file_name = array();
-      $full_upgrade_folder = $this->base_dir . "/modules/indicia_setup/db/" . $upgrade_folder;
+      $full_upgrade_folder = $baseDir . "db/" . $upgrade_folder;
       
       // get last executed sql file name
       $orig_last_executed_file = $this->get_last_executed_sql_file_name($full_upgrade_folder);
@@ -216,6 +231,10 @@ class Upgrade_Model extends Model
               throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
             }
             kohana::log('debug', "Upgrading file $name");
+            // @todo Look into why utf8 files do not run without conversion to ascii.
+            if (!utf8::is_ascii($_db_file)) {
+              $_db_file = utf8::strip_non_ascii($_db_file);
+            }
             kohana::log('debug', $_db_file);
             $result = $this->db->query($_db_file);
             $last_executed_file = $name;

@@ -31,27 +31,26 @@
 class System_Model extends Model
 {
     /**
-     * @var object $system_data
+     * @var array $system_data
      */
     private $system_data;
 
     public function __construct()
     {
         parent::__construct();
-
-        $result = $this->db->query('SELECT * FROM "system" ORDER BY id DESC LIMIT 1');
-
-        $this->system_data = $result[0];
     }
 
     /**
      * get indicia version
-     *
+     * @param string $name Name of the module or application to check the version for
      * @return string
      */
-    public function getVersion()
+    public function getVersion($name='Indicia')
     {
-        return $this->system_data->version;
+      $this->getSystemData($name);
+      if (isset($this->system_data[$name]))
+        $data = $this->system_data[$name];
+      return isset($data) ? $data->version : '0.0.0';
     }
     
     /**
@@ -59,9 +58,24 @@ class System_Model extends Model
      *
      * @return string
      */
-    public function getLastScheduledTaskCheck()
+    public function getLastScheduledTaskCheck($name='Indicia')
     {
-        return $this->system_data->last_scheduled_task_check;
+      $this->getSystemData($name);
+      if (isset($this->system_data[$name]))
+        $data = $this->system_data[$name];
+      return isset($data) ? $data->last_scheduled_task_check : 0;
+    }
+
+    /**
+     * Load on demand for records from the system table.
+     * @param <type> $name
+     */
+    private function getSystemData($name) {
+      if (!isset($system_data[$name])) {
+        $result = $this->db->query("SELECT * FROM \"system\" WHERE name='$name' LIMIT 1");
+        if (count($result)>0)
+          $this->system_data[$name] = $result[0];
+      }
     }
 }
 
