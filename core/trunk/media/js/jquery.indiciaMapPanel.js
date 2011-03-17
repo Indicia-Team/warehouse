@@ -757,9 +757,11 @@ mapInitialisationHooks = [];
         var toolbar = new OpenLayers.Control.Panel(toolbarOpts);
         toolbar.addControls(toolbarControls);
         div.map.addControl(toolbar);
+        // as these all appear on the toolbar, don't need to worry about activating individual controls, as user will pick which one they want.
       } else {
         // no other selectable controls, so no need for a click button on toolbar
         div.map.addControl(click);
+        click.activate();
       }
 
       // Disable the scroll wheel from zooming if required
