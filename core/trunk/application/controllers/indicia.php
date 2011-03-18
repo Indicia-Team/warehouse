@@ -356,15 +356,23 @@ class Indicia_Controller extends Template_Controller {
       $view->metadata          = $this->GetMetadataView(  $this->model );
       $this->template->title   = $this->GetEditPageTitle( $this->model, $pagetitle );
       $view->model             = $this->model;
+      $view->tabs              = $this->getTabs($name);
 
       foreach ($viewArgs as $arg => $val) {
         $view->set($arg, $val);
       }
       $this->template->content = $view;
-	} catch (Exception $e) {
-	  error::log_error("Problem displaying view $name", $e);
-	  throw $e;
-	}
+    } catch (Exception $e) {
+      error::log_error("Problem displaying view $name", $e);
+      throw $e;
+    }
+  }
+  
+  /**
+   * Overrideable function which allows a controller to declare the different tabs it exposes for each view.
+   */
+  protected function getTabs($name) {
+    return array();
   }
 
   /**

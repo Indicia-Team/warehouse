@@ -73,7 +73,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
   }
   
   /**
-   *  Setup the default values to use when loading this controller to edit an existing image.   
+   * Setup the default values to use when loading this controller to edit an existing image.   
    */
   protected function getModelValues() {    
     $r = parent::getModelValues();
@@ -81,7 +81,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
     // preferred taxa in taxon list, so when you save it knows where to go back to.
     $ttl = ORM::Factory('taxa_taxon_list')->where(array(
       'taxon_meaning_id' => $this->model->taxon_meaning_id,
-      'preferred' => 'true'      
+      'preferred' => 'true'
     ))->find();
     $r['taxa_taxon_list:id'] = $ttl->id;
     return $r;

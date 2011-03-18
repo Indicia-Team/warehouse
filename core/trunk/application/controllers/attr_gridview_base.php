@@ -146,7 +146,7 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     $other = $this->prepareOtherViewData($values);            
     $mn = 'custom_attribute';      
     $this->setView($mn."/".$mn."_edit", $this->model->caption(), array(
-    	'values'=>$values,
+      'values'=>$values,
       'other_data'=>$other
     ));
     // Setup breadcrumbs

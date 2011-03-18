@@ -91,20 +91,22 @@ jQuery(document).ready(function() {
     // use caching, so things don't slow down if there are lots of plugins
     $cacheId = 'tabs-'.$this->viewname;
     $cache = Cache::instance();
-    if ($tabs = $cache->get($cacheId)) {
+    if (false && $tabs = $cache->get($cacheId)) { /*************************CACHING DISABLED******************/
       return $tabs;
     } else {
+      // $this->tabs is set to the default tabs for the view - excluding module extensions.
       $tabs = array();
+      if (isset($this->tabs)) {
+        $this->extend_tabs($tabs, $this->tabs);
+      }
+      // now look for modules which plugin to add a tab.
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
           require_once("$path/plugins/$plugin.php");
           if (function_exists($plugin.'_extend_ui')) {
             $extends = call_user_func($plugin.'_extend_ui');
-            foreach ($extends as $extend) {
-              if ($extend['type']=='tab' && $extend['view']==$this->viewname)
-                $tabs[$extend['title']]=$extend['controller'];
-            }
+            $this->extend_tabs($tabs, $extends);
           }
         }
       }
@@ -112,6 +114,20 @@ jQuery(document).ready(function() {
       $cache->set($cacheId, $tabs);
       return $tabs;
     }    
+  }
+  
+  /**
+   * Takes a list of tabs and adds new tabs to them according to the supplied list of extensions.
+   */
+  protected function extend_tabs(&$tabs, $extends) {
+    $uri = URI::instance();    
+    foreach ($extends as $extend) {
+      // if on a new record, skip tabs that are disallowed for new.
+      if (isset($extend['actions']) && !in_array($uri->segment(2), $extend['actions'])) 
+        continue;
+      if ((!isset($extend['type']) || $extend['type']=='tab') && (!isset($extend['view']) || $extend['view']==$this->viewname))
+        $tabs[$extend['title']]=$extend['controller'];
+    }
   }
   
   /**

@@ -107,16 +107,10 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    * and the synonyms/common names plus the list of images.
    */
   protected function getModelValues() {
-    $r = parent::getModelValues();    
-
-    $child_grid_html = $this->get_child_grid($this->model->id, 
-       $this->uri->argument(3) || 1, // page number
-       4 // limit
-    );
+    $r = parent::getModelValues();
     
     // Add items to view
     $r = array_merge($r, array(
-      'table' => $child_grid_html,
       'metaFields:synonyms' => $this->formatScientificSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
       'metaFields:commonNames' => $this->formatCommonSynonomy(
@@ -149,7 +143,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   }
 
   /**
-   *  Auxilliary function for handling Ajax requests from the edit method child taxa
+   *  Auxilliary function for handling AJAX requests from the edit method child taxa
    *  gridview component.
    */
   public function edit_gv($id,$page_no)
@@ -158,19 +152,38 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     return $this->get_child_grid($id,$page_no);
   }
   
+  public function children($id) {
+    $child_grid_html = $this->get_child_grid(
+      $id, 
+      $this->uri->argument(3) || 1, // page number
+      !(count($_GET)>0)
+    );
+    if (count($_GET)>0) {
+      $this->auto_render=false;
+      return '123';// $child_grid_html;
+    } else      
+      $this->setView('taxa_taxon_list/taxa_taxon_list_children', '', array(
+        'values' => array(
+          'grid' => $child_grid_html,
+          'id' => $id,
+          'taxon_list_id' => ORM::Factory('taxa_taxon_list', $id)->taxon_list_id
+        )
+      ));
+  }
+  
   /**
    * Returns the HTML required for the grid of children of this taxon entry.
    * 
    * @return string HTML for the grid.
    * @access private  
    */
-  private function get_child_grid($id,$page_no)
+  private function get_child_grid($id,$page_no,$forceFullGrid=false)
   {
     $gridmodel = ORM::factory('gv_taxon_lists_taxon');
 
     $child_grid =	Gridview_Controller::factory(
         $gridmodel,
-        $page_no,        
+        $page_no,
         4
     );
     $child_grid->base_filter = $this->base_filter;
@@ -179,7 +192,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $child_grid->actionColumns = array(
       'edit' => 'taxa_taxon_list/edit/£id£'
     );
-    return $child_grid->display();
+    if (isset($_GET['type'])) return 'got type';
+    return $child_grid->display($forceFullGrid);
   }
 
   /**
@@ -284,6 +298,23 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       }
     }
     return $syn;
+  }
+  
+  /**
+   * Return a list of the tabs to display for this controller's actions.
+   */
+  protected function getTabs($name) {
+    return array(array(
+      'controller' => 'taxon_image',
+      'title' => 'Images',
+      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
+      'actions'=>array('edit','create')
+    ), array(
+      'views'=>'taxa_taxon_list/taxa_taxon_list_edit', 
+      'controller' => 'taxa_taxon_list/children',
+      'title' => 'Child Taxa',
+      'actions'=>array('edit','create')
+    ));
   }
 
 }
