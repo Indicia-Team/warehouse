@@ -4,7 +4,7 @@ class Indicia
 {
     public static function init()
     {
-        set_error_handler(array('Indicia', 'indicia_error_handler'));
+      set_error_handler(array('Indicia', 'indicia_error_handler'));
     }
 
     /**
