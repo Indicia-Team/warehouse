@@ -46,7 +46,7 @@ class Upgrade_Model extends Model
       if (1 == version_compare('0.2.3', $old_version) ) {
         $old_version='0.2.3';
       }
-      $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'indicia', $old_version);
+      $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version);
       // need to look for any module with a db folder, then read its system version and apply the updates.
       foreach (Kohana::config('config.modules') as $path) {
         // skip the indicia_setup module db files since they are for the main app
@@ -150,7 +150,12 @@ class Upgrade_Model extends Model
      */
     private function set_new_version($new_version, $appName)
     {
-        $this->db->query("UPDATE system SET version='$new_version' WHERE name='$appName'");
+      $query = $this->db->query("UPDATE system SET version='$new_version' WHERE name='$appName'");
+      // Because pgsql does not handle UPDATE or INSERT etc, do this manually if a new record is required.
+      if ($query->count()===0) {
+        $this->db->query("INSERT INTO system (version, name, repository, release_date) ".
+            "VALUES('$new_version', '$appName', 'Not specified', now())");
+      }
     }
     
     /**
