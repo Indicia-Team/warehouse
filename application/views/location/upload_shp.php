@@ -22,6 +22,7 @@
  */
 ?>
 <form action="<?php echo $controllerpath.'/upload_shp2'; ?>" method="post" class="cmxform">
+<fieldset>
 <input type='checkbox' name="boundary"/>Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).<br/>
 <input type='checkbox' name="use_parent"/>Select the checkbox if the locations are associated with a parent location.<br/>
 <label for='SRID' class='wide' >SRID used in Shapefile</label>
@@ -32,7 +33,7 @@
   <option value="2169">EPSG:2169 Luxembourg 1930</option>
 </select><br/>
 <label for='SRID' class='wide' >Default Website to attach any new locations to</label>
-<select id='SRID' name='website_id' >
+<select id='website_id' name='website_id' >
 <?php
   if (!is_null($this->gen_auth_filter))
     $websites = ORM::factory('website')->in('id',$this->gen_auth_filter['values'])->orderby('title','asc')->find_all();
@@ -46,8 +47,8 @@
 
 <label for='prepend'>Optional text to prepend to field identified below to create location name in database</label>
 <input id='prepend' name="prepend" /><br />
-<input type='hidden' name='uploaded_zip' <?php echo 'value="'.$_SESSION['uploaded_zip'].'"'; ?>><br/>
-<input type='hidden' name='extracted_basefile' <?php echo 'value="'.$_SESSION['extracted_basefile'].'"'; ?>><br/>
+<input type='hidden' name='uploaded_zip' <?php echo 'value="'.$_SESSION['uploaded_zip'].'"'; ?>/><br/>
+<input type='hidden' name='extracted_basefile' <?php echo 'value="'.$_SESSION['extracted_basefile'].'"'; ?>/><br/>
 <p>Please indicate which column in the DBF file should be used to identify the name of the location.</p>
 <table class="ui-widget ui-widget-content">
 <thead class="ui-widget-header">
@@ -56,22 +57,23 @@
 <tbody>
 <?php $i=0;
 foreach ($columns as $col): ?>
-  <tr class="<?php echo ($i % 2 == 0) ? 'evenRow">' : 'oddRow">'; ?>">
+  <tr class="<?php echo ($i % 2 == 0) ? 'evenRow' : 'oddRow'; ?>">
   <?php $i++; ?>
     <td><?php echo $col['name']; ?></td>
-    <td><input type="radio" <?php echo 'value="'.$col['name'].'" name="name">'; ?>/></td>
-    <td><input type="radio" <?php echo 'value="'.$col['name'].'" name="parent">'; ?>/></td>
+    <td><input type="radio" value="<?php echo $col['name']; ?>" name="name" /></td>
+    <td><input type="radio" value="<?php echo $col['name']; ?>" name="parent" /></td>
   </tr>
 <?php endforeach; ?>
 </tbody>
 </table>
-<input type="Submit" value="Upload Data" id="upload-button" />
+<input type="submit" value="Upload Data" id="upload-button" />
 <br/>
 <?php
 // We stick these at the bottom so that all the other things will be parsed first
 foreach ($this->input->post() as $a => $b) {
-  print form::hidden($a, $b);
+  echo "<input type=\"radio\" value=\"$b\" name=\"$a\" />";
 }
 ?>
+</fieldset>
 </form>
 

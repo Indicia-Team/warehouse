@@ -65,6 +65,7 @@ echo html::stylesheet(
 <?php echo html::stylesheet(array('media/css/menus',),array('screen',)); ?>
 
 <script type="text/javascript">
+/*<![CDATA[*/
   jQuery(document).ready(function() {
     jQuery('ul.sf-menu').superfish();
     // Implement hover over highlighting on buttons, even for AJAX loaded content by using live events
@@ -84,6 +85,7 @@ echo html::stylesheet(
       return false;
     });
   });
+/*]]>*/
 </script>
 <!-- END: jquery/superfish init -->
 
