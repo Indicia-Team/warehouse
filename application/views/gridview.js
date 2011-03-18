@@ -139,7 +139,7 @@ $(document).ready(function(){
         $(this).removeClass('gvColAsc');
         $(this).addClass('gvColDesc');
       } else {
-        sort.remove(h);
+        sort.unshift(h,'asc');
         $(this).removeClass('gvColDesc');
         $(this).addClass('gvCol');
       }

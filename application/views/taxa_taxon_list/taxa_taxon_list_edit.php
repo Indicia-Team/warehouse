@@ -272,11 +272,6 @@ echo html::error_message($model->getError('deleted'));
   <ul>
     <li><a href="#details"><span>Taxon Details</span></a></li>
 <?php if ($id != null) : ?>
-    <li><a href="<?php echo url::site()."taxon_image/$id" ?>" title="images"><span>Images</span></a></li>
-<?php if ($values['table'] != null) : ?>
-    <li><a href="#subtaxa"><span>Child Taxa</span></a></li>
-<?php 
-endif; ?>
     <li><a href="<?php echo url::site()."taxon_relation/$id" ?>" title="relations"><span>Relationships</span></a></li>
     <li><a href="#lumpandsplit"><span>Lumping and Splitting</span></a></li>
 <?php 
@@ -444,13 +439,4 @@ echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null
 </div>
 </div>
 <?php } ?>
-<?php if ($id != null && $values['table'] != null) : ?>
-  <div id="subtaxa">
-  <?php echo $values['table']; ?>
-  <form class="cmxform" action="<?php echo url::site(); ?>taxa_taxon_list/create/<?php echo html::initial_value($values, 'taxa_taxon_list:taxon_list_id') ?>" method="post">
-    <input type="hidden" name="taxa_taxon_list:parent_id" value=<?php echo html::initial_value($values, 'taxa_taxon_list:id') ?> />
-    <input type="submit" value="New Child Taxon" class="ui-corner-all ui-state-default button" />
-  </form>
-  </div>
-<?php endif; ?>
 
