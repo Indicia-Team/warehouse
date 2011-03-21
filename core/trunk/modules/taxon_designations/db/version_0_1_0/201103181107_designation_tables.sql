@@ -1,4 +1,4 @@
--- Table: taxon_designations
+﻿-- Table: taxon_designations
 
 -- DROP TABLE taxon_designations;
 
@@ -9,10 +9,12 @@ CREATE TABLE taxon_designations
   code character varying(50), -- Identifier of the taxon designation.
   abbreviation character varying(50), -- Abbreviated name of the taxon designation.
   description character varying, -- Description of the taxon designation.
+  category_id integer, -- Identifies the category of the designation. Foreign key to the termlists_terms table.
   created_on timestamp without time zone NOT NULL,
   created_by_id integer NOT NULL,
   updated_on timestamp without time zone NOT NULL,
   updated_by_id integer NOT NULL,
+  deleted boolean NOT NULL default false,
   CONSTRAINT pk_taxon_designations PRIMARY KEY (id),
   CONSTRAINT fk_taxon_designation_creator FOREIGN KEY (created_by_id)
       REFERENCES users (id) MATCH SIMPLE
@@ -29,7 +31,8 @@ COMMENT ON COLUMN taxon_designations.title IS 'Full name given for the taxon des
 COMMENT ON COLUMN taxon_designations.code IS 'Identifier of the taxon designation.';
 COMMENT ON COLUMN taxon_designations.abbreviation IS 'Abbreviated name of the taxon designation.';
 COMMENT ON COLUMN taxon_designations.description IS 'Description of the taxon designation.';
-
+COMMENT ON COLUMN taxon_designations.category_id IS 'Identifies the category of the designation. Foreign key to the termlists_terms table.';
+COMMENT ON COLUMN taxon_designations.deleted IS 'Identifies if the termlist has been marked as deleted.';
 
 
 
@@ -50,6 +53,7 @@ CREATE TABLE taxa_taxon_designations
   start_date date, -- Date the designation became applicable to the taxon.
   source character varying(200), -- Description of the source of this designation.
   geographical_constraint character varying(200), -- Description of the geographical constraints regarding this designation for the taxon.
+  deleted boolean NOT NULL default false,
   CONSTRAINT pk_taxa_taxon_designations PRIMARY KEY (id),
   CONSTRAINT fk_taxa_taxon_designation_creator FOREIGN KEY (created_by_id)
       REFERENCES users (id) MATCH SIMPLE
@@ -73,6 +77,7 @@ COMMENT ON COLUMN taxa_taxon_designations.taxon_designation_id IS 'Foreign key t
 COMMENT ON COLUMN taxa_taxon_designations.start_date IS 'Date the designation became applicable to the taxon.';
 COMMENT ON COLUMN taxa_taxon_designations.source IS 'Description of the source of this designation.';
 COMMENT ON COLUMN taxa_taxon_designations.geographical_constraint IS 'Description of the geographical constraints regarding this designation for the taxon.';
+COMMENT ON COLUMN taxa_taxon_designations.deleted IS 'Identifies if the termlist has been marked as deleted.';
 
 
 -- Index: fki_taxa_taxon_designation_taxa
