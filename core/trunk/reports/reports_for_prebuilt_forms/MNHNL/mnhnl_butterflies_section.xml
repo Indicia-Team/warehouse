@@ -15,7 +15,7 @@
   		tnumber.term as number_in_month,
   		sav4.text_value as start_time,
   		sav5.text_value as end_time,
-  		sav6.int_value as temperature,
+  		sav6.float_value as temperature,
   		twind.term as wind,
   		tcloud.term as cloud,
   		s.comment as comment,
@@ -56,8 +56,8 @@
   LEFT JOIN detail_termlists_terms tnumber ON tnumber.id=sav3.int_value
   LEFT JOIN detail_termlists_terms twind ON twind.id=sav7.int_value
   LEFT JOIN detail_termlists_terms tcloud ON tcloud.id=sav8.int_value
-  LEFT JOIN detail_termlists_terms thabitat ON thabitat.id=sav9.int_value
-  LEFT JOIN detail_termlists_terms treliability ON treliability.id=sav10.int_value
+  LEFT JOIN detail_termlists_terms thabitat ON thabitat.meaning_id=sav9.int_value
+  LEFT JOIN detail_termlists_terms treliability ON treliability.meaning_id=sav10.int_value
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
   #order_by#
   </query>

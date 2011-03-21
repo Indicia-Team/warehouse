@@ -86,7 +86,13 @@ class Report_Controller extends Data_Service_Base_Controller {
           break;
         default : $extension='txt';
       }
-      header('Content-Disposition: attachment; filename="download.'.$extension.'"');
+      if (array_key_exists('filename', $_GET))
+        $downloadfilename = $_GET['filename'];
+      elseif (array_key_exists('filename', $_POST))
+        $downloadfilename = $_POST['filename'];
+      else
+        $downloadfilename='download';
+      header('Content-Disposition: attachment; filename="'.$downloadfilename.'.'.$extension.'"');
       if ($mode=='csv') {
         // prepend a byte order marker, so Excel recognises the CSV file as UTF8
         echo chr(hexdec('EF')) . chr(hexdec('BB')) . chr(hexdec('BF'));
