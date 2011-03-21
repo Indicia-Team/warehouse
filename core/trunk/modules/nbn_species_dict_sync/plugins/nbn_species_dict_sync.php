@@ -14,20 +14,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Modules
- * @subpackage nbn_species_dict_sync
+ * @package	NBN Species Dict Sync
+ * @subpackage Plugins
  * @author	Indicia Team
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
 
+/**
+ * User interface extensions for the various NBN Sync tab.
+ * @return array UI Extension details
+ */
 function nbn_species_dict_sync_extend_ui() {
   return array(array(
-    'view'=>'taxon_list/taxon_list_edit', 
-    'type'=>'tab',  
-    'controller'=>'nbn_sync', 
-    'title'=>'NBN Species Dict Sync'
-  ));
+      'view'=>'taxon_list/taxon_list_edit',
+      'type'=>'tab',
+      'controller'=>'nbn_species_dict_sync/taxon_lists',
+      'title'=>'NBN Species Dict Sync'
+    ),
+    array(
+      'view'=>'taxon_group/index',
+      'type'=>'tab',
+      'controller'=>'nbn_species_dict_sync/taxon_groups',
+      'title'=>'NBN Sync'
+    ),
+    array(
+      'view'=>'taxon_designation/index',
+      'type'=>'tab',
+      'controller'=>'nbn_species_dict_sync/taxon_designations',
+      'title'=>'NBN Sync'
+    )
+  );
 }
 
 ?>
