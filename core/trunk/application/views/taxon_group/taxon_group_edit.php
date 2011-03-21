@@ -33,6 +33,11 @@
 <input id="title" name="taxon_group:title" value="<?php echo html::initial_value($values, 'taxon_group:title'); ?>" />
 <?php echo html::error_message($model->getError('taxon_group:title')); ?>
 </li>
+<li>
+<label for="title">External key</label>
+<input id="title" name="taxon_group:external_key" value="<?php echo html::initial_value($values, 'taxon_group:external_key'); ?>" />
+<?php echo html::error_message($model->getError('taxon_group:external_key')); ?>
+</li>
 </ol>
 </fieldset>
 <?php 
