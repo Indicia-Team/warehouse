@@ -91,7 +91,7 @@ jQuery(document).ready(function() {
     // use caching, so things don't slow down if there are lots of plugins
     $cacheId = 'tabs-'.$this->viewname;
     $cache = Cache::instance();
-    if (false && $tabs = $cache->get($cacheId)) { /*************************CACHING DISABLED******************/
+    if ($tabs = $cache->get($cacheId)) { 
       return $tabs;
     } else {
       // $this->tabs is set to the default tabs for the view - excluding module extensions.
