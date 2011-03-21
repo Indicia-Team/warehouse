@@ -119,12 +119,8 @@ class iform_change_identification {
     foreach($attributes as $attr) {
       
       $r .= "<tr><td><strong>".$attr['caption']."</strong></td><td>".$attr['displayValue']."</td></tr>\n";
-    }
-    //foreach ($attributes as $a
-    //$defAttrOptions = array('extraParams'=>$auth['read']);
-    //$r .= self::get_attribute_html($attributes, $args, $defAttrOptions);    
-    
-	  $extraParams = $auth['read'] + array('taxon_list_id' => $args['list_id']);
+    }    
+    $extraParams = $auth['read'] + array('taxon_list_id' => $args['list_id']);
     if ($args['preferred']) {
       $extraParams += array('preferred' => 't');
     }
@@ -156,49 +152,5 @@ class iform_change_identification {
   public static function get_submission($values, $args) {
     return submission_builder::build_submission($values, array('model'=>'occurrence'));
   }  
-  
-  private static function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null) {
-  	$lastOuterBlock='';
-    $lastInnerBlock='';
-    $r = '';
-    foreach ($attributes as $attribute) {
-      // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
-      if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {
-        if (empty($outerFilter) && $lastOuterBlock!=$attribute['outer_structure_block']) {
-          if (!empty($lastInnerBlock)) {
-            $r .= '</fieldset>';
-          }
-          if (!empty($lastOuterBlock)) {
-            $r .= '</fieldset>';
-          }
-          if (!empty($attribute['outer_structure_block']))
-            $r .= '<fieldset id="'.self::get_fieldset_id($attribute['outer_structure_block']).
-                '"><legend>'.$attribute['outer_structure_block'].'</legend>';
-          if (!empty($attribute['inner_structure_block']))
-            $r .= '<fieldset id="'.self::get_fieldset_id($attribute['outer_structure_block'], $attribute['inner_structure_block']).
-                '"><legend>'.$attribute['inner_structure_block'].'</legend>';
-        }
-        elseif ($lastInnerBlock!=$attribute['inner_structure_block']) {
-          if (!empty($lastInnerBlock)) {
-            $r .= '</fieldset>';
-          }
-          if (!empty($attribute['inner_structure_block']))
-            $r .= '<fieldset id="'.self::get_fieldset_id($lastOuterBlock, $attribute['inner_structure_block']).
-                '"><legend>'.$attribute['inner_structure_block'].'</legend>';
-        }
-        $lastInnerBlock=$attribute['inner_structure_block'];
-        $lastOuterBlock=$attribute['outer_structure_block'];
-        $r .= data_entry_helper::outputAttribute($attribute, $defAttrOptions + get_attr_validation($attribute, $args));
-        $attribute['handled']=true;
-      }
-    }
-    if (!empty($lastInnerBlock)) {
-      $r .= '</fieldset>';
-    }
-    if (!empty($lastOuterBlock) && strcasecmp($outerFilter,$lastOuterBlock)!==0) {
-      $r .= '</fieldset>';
-    }
-    return $r;
-  } 
   
 }
