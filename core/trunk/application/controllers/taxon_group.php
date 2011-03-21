@@ -34,7 +34,6 @@ class Taxon_Group_Controller extends Gridview_Base_Controller {
       'title'=>'');
     $this->pagetitle = "Taxon Groups";
     $this->session = Session::instance();
-    $this->model = ORM::factory('taxon_group');
   }
 
 }

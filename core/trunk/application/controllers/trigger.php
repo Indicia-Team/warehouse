@@ -41,7 +41,6 @@ class Trigger_Controller extends Gridview_Base_Controller {
       'created_by_name'=>'Owner'
     );
     $this->pagetitle = "Triggers";
-    $this->model = ORM::factory('trigger');
     $this->base_filter['private_for_user_id'] = array(null, $_SESSION['auth_user']->id);
   }
   

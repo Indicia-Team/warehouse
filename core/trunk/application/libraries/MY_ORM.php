@@ -48,6 +48,54 @@ class ORM extends ORM_Core {
    * Does the model have custom attributes? Defaults to false.
    */
   protected $has_attributes = false;
+  
+  /**
+   * Constructor allows plugins to modify the data model.
+   */
+  public function __construct($id = NULL)
+  {
+    // use caching, so things don't slow down if there are lots of plugins. the object_name does not 
+    // exist yet as we haven't called the parent construct, so we build our own.
+    $object_name = strtolower(substr(get_class($this), 0, -6));
+    $cacheId = 'orm-'.$object_name;
+    $cache = Cache::instance();
+    $ormRelations = $cache->get($cacheId);
+    if ($ormRelations === null) {
+      // now look for modules which plugin to tweak the orm relationships.
+      foreach (Kohana::config('config.modules') as $path) {      
+        $plugin = basename($path);
+        if (file_exists("$path/plugins/$plugin.php")) {
+          require_once("$path/plugins/$plugin.php");
+          if (function_exists($plugin.'_extend_orm')) {
+            $extends = call_user_func($plugin.'_extend_orm');
+            if (isset($extends[$object_name])) {
+              if (isset($extends[$object_name]['has_one']))
+                $this->has_one = array_merge($this->has_one, $extends[$object_name]['has_one']);
+              if (isset($extends[$object_name]['has_many']))
+                $this->has_many = array_merge($this->has_many, $extends[$object_name]['has_many']);
+              if (isset($extends[$object_name]['belongs_to']))
+                $this->belongs_to = array_merge($this->belongs_to, $extends[$object_name]['belongs_to']);
+              if (isset($extends[$object_name]['has_and_belongs_to_many']))
+                $this->has_and_belongs_to_many = array_merge($this->has_and_belongs_to_many, $extends[$object_name]['has_and_belongs_to_many']);
+            }
+          }
+        }
+      }
+      $cacheArray = array(
+        'has_one' => $this->has_one,
+        'has_many' => $this->has_many,
+        'belongs_to' => $this->belongs_to,
+        'has_and_belongs_to_many' => $this->has_and_belongs_to_many
+      );
+      $cache->set($cacheId, $cacheArray);
+    } else {
+      $this->has_one = $ormRelations['has_one'];
+      $this->has_many = $ormRelations['has_many'];
+      $this->belongs_to = $ormRelations['belongs_to'];
+      $this->has_and_belongs_to_many = $ormRelations['has_and_belongs_to_many'];
+    }
+    parent::__construct($id);
+  }
 
   /**
    * Override load_values to add in a vague date field. Also strips out any custom attribute values which don't go into this model.

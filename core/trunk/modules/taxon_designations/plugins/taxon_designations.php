@@ -42,4 +42,13 @@ function taxon_designations_alter_menu($menu) {
   return $menu;
 }
 
+/**
+ * Hook to ORM enable the relationship between taxon designations and taxa from the taxon end.
+ */
+function taxon_designations_extend_orm() {
+  return array('taxon'=>array(
+    'has_and_belongs_to_many'=>array('taxon_designations')
+  ));
+}
+
 ?>

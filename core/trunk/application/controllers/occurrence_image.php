@@ -36,8 +36,7 @@ class Occurrence_image_Controller extends Gridview_Base_Controller
       'caption'=>'',
       'path'=>'Image'    
     );
-    $this->pagetitle = "Images";    
-    $this->model = ORM::factory('occurrence_image');
+    $this->pagetitle = "Images";
   }
 
   /**

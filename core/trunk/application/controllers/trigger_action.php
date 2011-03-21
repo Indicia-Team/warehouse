@@ -40,7 +40,6 @@ class Trigger_Action_Controller extends Gridview_Base_Controller {
       'description'=>'',
       'created_by_name'=>'Owner');
     $this->pagetitle = "Subscriptions";
-    $this->model = ORM::factory('trigger_action');
   }
   
   /**

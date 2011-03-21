@@ -44,7 +44,6 @@ class Website_Controller extends Gridview_Base_Controller
     );
 
     $this->pagetitle = "Websites";
-    $this->model = ORM::factory('website');
     // because the website id is the pk, we need a modified version of the general authorisation filter
     $this->auth_filter = $this->gen_auth_filter;
     if (isset($this->auth_filter['field']) && $this->auth_filter['field']=='website_id')

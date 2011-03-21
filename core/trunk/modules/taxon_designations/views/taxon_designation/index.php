@@ -23,7 +23,7 @@
 
 ?>
 <div class="taxon_designation">
-<?php echo $table ?>
+<?php echo $table; ?>
 <br/>
 <form action="<?php echo url::site().'taxon_designation/create'; ?>" method="post">
 <input type="submit" value="New taxon_designation" class="ui-corner-all ui-state-default button" />

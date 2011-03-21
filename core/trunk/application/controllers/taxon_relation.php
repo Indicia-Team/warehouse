@@ -37,8 +37,7 @@ class Taxon_relation_Controller extends Gridview_Base_Controller
       'term'=>'',
       'other_taxon'=>''
     );
-    $this->pagetitle = "Relationships";    
-    $this->model = ORM::factory('taxon_relation');
+    $this->pagetitle = "Relationships";
   }
 
   /**

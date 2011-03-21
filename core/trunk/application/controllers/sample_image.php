@@ -36,8 +36,7 @@ class sample_image_Controller extends Gridview_Base_Controller
       'caption'=>'',
       'path'=>'Image'    
     );
-    $this->pagetitle = "Images";    
-    $this->model = ORM::factory('sample_image');
+    $this->pagetitle = "Images";
   }
 
   /**

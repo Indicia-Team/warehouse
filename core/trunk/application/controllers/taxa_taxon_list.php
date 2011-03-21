@@ -44,8 +44,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'taxon_group'=>'Taxon Group',
       'language'=>'',    
     );
-    $this->pagetitle = "Species";    
-    $this->model = ORM::factory('taxa_taxon_list');
+    $this->pagetitle = "Species";
   }
   
   /**
