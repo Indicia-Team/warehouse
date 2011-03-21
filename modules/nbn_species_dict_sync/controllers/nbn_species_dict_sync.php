@@ -177,6 +177,15 @@ class Nbn_species_dict_sync_Controller extends Controller {
     $message .= "The synchronisation operation failed. More information is in the log.";
     $messageType="error";
   }
+  
+  /**
+   * Provide a controller path for the content of the NBN Syncg tab for taxon lists.
+   */
+  public function taxon_lists() {
+    $view = new View('nbn_species_dict_sync/taxon_list');
+    $this->template = $view;
+    $this->template->render(true);
+  }
 
 
 }

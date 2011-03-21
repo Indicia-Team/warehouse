@@ -21,16 +21,6 @@
  * @link 	http://code.google.com/p/indicia/
  */
 ?>
-<script type="text/javascript">
-  $(document).ready(function(){
-    var $tabs=$("#tabs").tabs();
-    var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
-    if (initTab!='') {
-      $tabs.tabs('select', '#' + initTab);
-    }
-  });
-</script>
-
 <?php
 $id = html::initial_value($values, 'taxon_list:id');
 $parent_id = html::initial_value($values, 'taxon_list:parent_id');
@@ -42,14 +32,6 @@ if ($parent_id != null) : ?>
 </a>
 </h1>
 <?php endif; ?>
-<div id="tabs">
-  <ul>
-    <li><a href="#details"><span>List Details</span></a></li>
-<?php if ($id != null) : ?>
-    <li><a href="<?php echo url::site().'taxa_taxon_list/'.$id; ?>" title="taxa"><span>Taxa</span></a></li>
-    <li><a href="#sublists"><span>Child Lists</span></a></li>
-<?php endif; ?>
-  </ul>
 <div id="details">
 <?php if ($this->get_read_only($values)) : ?>
 <div class="page-notice ui-state-highlight ui-corner-all">You do not have the required privileges to edit this record.</div>
@@ -102,7 +84,6 @@ if ($parent_id != null && array_key_exists('parent_website_id', $values) && $val
 ?>
 </form>
 </div>
-<div id="taxa"></div>
 <?php if ($id != '' && $values['table'] != null) : ?>
   <div id="sublists">
   <h2> Sublists </h2>

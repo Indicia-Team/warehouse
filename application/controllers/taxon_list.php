@@ -151,5 +151,17 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       !$this->auth->logged_in('CoreAdmin') && 
       !html::initial_value($values, 'taxon_list:website_id'));
   }
+  
+  /**
+   * Return a list of the tabs to display for this controller's actions.
+   */
+  protected function getTabs($name) {
+    return array(array(
+      'controller' => 'taxa_taxon_list',
+      'title' => 'Taxa',
+      'views'=>'taxon_list',
+      'actions'=>array('edit')
+    ));
+  }
 }
 ?>
