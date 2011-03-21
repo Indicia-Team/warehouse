@@ -1845,8 +1845,11 @@ class data_entry_helper extends helper_base {
                 $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);			  
             } else {
               $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
-            }			
-            $error = self::check_errors("occAttr:$attrId");
+            }
+            $error = self::check_errors("sc:$id::occAttr:$attrId");
+            if (!$error) 
+              // double check in case there is an error against the whole column
+              $error = self::check_errors("occAttr:$attrId");
             if ($error) {
               $oc = str_replace("class='", "class='ui-state-error ", $oc);
               $oc .= $error;
