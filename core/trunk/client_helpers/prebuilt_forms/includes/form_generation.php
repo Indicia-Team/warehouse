@@ -24,9 +24,15 @@
  * List of methods that can be used for a prebuilt form control generation.
  * @package Client
  * @subpackage PrebuiltForms.
+ * @param array $attributes
+ * @param array $args
+ * @param array $defAttrOptions
+ * @param array $outerFilter
+ * @param array $blockOptions Associative array of control names that have non-default options. Each entry
+ * is keyed by the control name and has an array of the options and values to override.
  */
 
-function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null) {
+function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null, $blockOptions=null) {
   $lastOuterBlock='';
   $lastInnerBlock='';
   $r = '';
@@ -57,7 +63,11 @@ function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=nu
       }
       $lastInnerBlock=$attribute['inner_structure_block'];
       $lastOuterBlock=$attribute['outer_structure_block'];
-      $r .= data_entry_helper::outputAttribute($attribute, $defAttrOptions + get_attr_validation($attribute, $args));
+      $options = $defAttrOptions + get_attr_validation($attribute, $args);
+      if (isset($blockOptions[$attribute['fieldname']])) {
+        $options = array_merge($options, $blockOptions[$attribute['fieldname']]);
+      }
+      $r .= data_entry_helper::outputAttribute($attribute, $options);
       $attribute['handled']=true;
     }
   }

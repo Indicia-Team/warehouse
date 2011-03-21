@@ -165,7 +165,9 @@ class iform_mnhnl_dynamic_1 {
         "option value is an array, use valid JSON to encode the value. For example an array of strings could be passed as @occAttrClasses=[\"class1\",\"class2\"]. ".
         "Other common options include helpText (set to a piece of additional text to display alongside the control) and class (to add css ".
         "classes to the control such as control-width-3). <br/>".
-        "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab.<br/>".
+        "<strong>[*]</strong> is used to make a placeholder for putting any custom attributes that should be inserted into the current tab. When this option is ".
+        "used, you can change any of the control options for an individual custom attribute control by putting @control|option=value on the subsequent line(s). ".
+        "For example, if a control is for smpAttr:4 then you can update it's label by specifying @smpAttr:4|label=New Label on the line after the [*].<br/>".
             "<strong>?help text?</strong> is used to define help text to add to the tab, e.g. ?Enter the name of the site.?",
           'type'=>'textarea',
           'default' => "=Species=\r\n".
@@ -723,7 +725,7 @@ class iform_mnhnl_dynamic_1 {
           $helpText = substr(trim($component), 1, -1);
           $html .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</p>";
         } elseif (preg_match('/\A\[[^�]*\]\z/', trim($component))===1) {
-          // Component surrounded by [] so represents a control
+          // Component surrounded by [] so represents a control or control block
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
           // Anything following the component that starts with @ is an option to pass to the control
           $options = array();
@@ -738,8 +740,18 @@ class iform_mnhnl_dynamic_1 {
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
             $hasControls = true;
           } elseif (trim($component)==='[*]'){
+            // this outputs any custom attributes that remain for this tab. The custom attributes can be configured in the 
+            // settings text using something like @smpAttr:4|label=My label. The next bit of code parses these out into an 
+            // array used when building the html.
+            $blockOptions = array();
+            foreach ($options as $option => $value) {
+              // split the id of the option into the control name and option name.
+              $optionId = explode('|', $option);
+              if (!isset($blockOptions[$optionId[0]])) $blockOptions[$optionId[0]]=array();
+              $blockOptions[$optionId[0]][$optionId[1]] = $value;
+            }
             $defAttrOptions = array_merge($defAttrOptions, $options);
-            $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab);
+            $attrHtml = get_attribute_html($attributes, $args, $defAttrOptions, $tab, $blockOptions);
             if (!empty($attrHtml))
               $hasControls = true;
             $html .= $attrHtml;
