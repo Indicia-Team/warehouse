@@ -35,13 +35,23 @@ class Nbn_species_dict_sync_Controller extends Controller {
     $this->template->render(true);
   }
 
+  /**
+   * Controller method for synching taxon groups with the Species Dictionary.
+   */   
   public function taxon_groups_sync() {
-       /*$query1 = '<TaxonReportingCategoryListRequest xmlns="http://www.nbnws.net/TaxonReportingCategory" registrationKey="5c3c4776db01a696885c0721055f9bacd7f10ec9">'.
-          '</TaxonReportingCategoryListRequest>';
-      $response = $client->call('GetTaxonReportingCategoryList', $query1);
-       */
-    $messageType='error';
-    $message = 'not implemented';
+    require DOCROOT.'modules/nbn_species_dict_sync/lib/nusoap.php';
+    $client = new nusoap_client('http://www.nbnws.net/ws_3_5/GatewayWebService?wsdl', true);
+    $query1 = '<TaxonReportingCategoryListRequest xmlns="http://www.nbnws.net/TaxonReportingCategory" registrationKey="5c3c4776db01a696885c0721055f9bacd7f10ec9">'.
+        '</TaxonReportingCategoryListRequest>';
+    $response = $client->call('GetTaxonReportingCategoryList', $query1);
+    kohana::log('debug', $response);
+    $error = $client->getError();
+    if ($error) {
+      $this->error($error, $message, $messageType);
+    } else {
+      $this->sync_taxon_groups($response['TaxonReportingCategoryList']['TaxonReportingCategory']);
+      $message = "Synchronisation completed OK";
+    }
     if (request::is_ajax()) {
       echo $message;
     } else {
@@ -49,7 +59,45 @@ class Nbn_species_dict_sync_Controller extends Controller {
       $this->session->set_flash("flash_$messageType", $message);
       url::redirect('taxon_group?tab=NBN_Sync');
     }
-
+  }
+  
+  /**
+   * Actually performs the task of synching the response from the Species Dictionary web services into the taxon_groups table.
+   */
+  private function sync_taxon_groups($list) {
+    $this->db = new Database('default');
+    $groups = $this->db->select('id', 'title', 'external_key')
+            ->from('taxon_groups')
+            ->where('external_key is not null')
+            ->get();
+    $existing = array();
+    // get an array of the taxon groups in the db, so we don't keep hitting db
+    foreach ($groups as $group) {
+      $existing[$group->external_key]=array($group->id,$group->title);
+    }
+    // loop through the taxon reporting categories from the web service
+    foreach ($list as $trc) {
+      unset($groupModel);
+      if (array_key_exists($trc['!taxonReportingCategoryKey'], $existing)) {
+        // got an existing one in the db. Check the title is correct.
+        if ($existing[$trc['!taxonReportingCategoryKey']][1]!=$trc['!']) {
+          // title needs an update
+          $groupModel = ORM::Factory('taxon_group', $existing[$trc['!taxonReportingCategoryKey']][0]);                
+        }
+        // the else case here means the taxon group exists and is up to date. 
+      } else {
+        // need a new record
+       $groupModel = ORM::Factory('taxon_group');
+      }
+      if (isset($groupModel)) {
+        $values = array(
+          'external_key' => $trc['!taxonReportingCategoryKey'],
+          'title' => $trc['!']
+        );
+        $groupModel->set_submission_data($values);
+        $groupModel->submit(false);
+      }      
+    }
   }
 
   /**
@@ -153,7 +201,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
         $currentCatId = $catDone[$catName];
       }
       foreach ($category['DesignationList']['Designation'] as $designation) {
-        // link to existing model if there is already a reacord for this designation key
+        // link to existing model if there is already a record for this designation key
         if (array_key_exists($designation['key'], $existing))
           $desModel = ORM::Factory('taxon_designation', $existing[$designation['key']]);
         else
@@ -169,24 +217,88 @@ class Nbn_species_dict_sync_Controller extends Controller {
         // @todo Do we need to check for errors?
       }
     }
-
   }
   
   private function error($error, &$message, &$messageType) {
-    kohana::log('error', "NBN Taxon Reporting Category Sync failed.\n$error");
+    kohana::log('error', "NBN Dictionary Sync failed.\n$error");
     $message .= "The synchronisation operation failed. More information is in the log.";
     $messageType="error";
   }
   
   /**
-   * Provide a controller path for the content of the NBN Syncg tab for taxon lists.
+   * Provide a controller path for the content of the NBN Sync tab for taxon lists.
    */
-  public function taxon_lists() {
+  public function taxon_lists($id) {
     $view = new View('nbn_species_dict_sync/taxon_list');
+    $view->taxon_list_id=$id;
     $this->template = $view;
     $this->template->render(true);
   }
+  
+  public function taxon_list_sync($id) {
+    kohana::log('debug', 'in sync method');
+    $message="Synchronising.";
+    $messageType="info";
+    require DOCROOT.'modules/nbn_species_dict_sync/lib/nusoap.php';
+    try {
+      $client = new nusoap_client('http://www.nbnws.net/ws_3_5/GatewayWebService?wsdl', true);
+      $query1 = '<tax:SpeciesListRequest xmlns:tax1="http://www.nbnws.net/TaxonReportingCategory" '.
+          'xmlns:tax="http://www.nbnws.net/Taxon" registrationKey="5c3c4776db01a696885c0721055f9bacd7f10ec9">'.
+          '<tax1:TaxonReportingCategoryKey>NHMSYS0000080067</tax1:TaxonReportingCategoryKey>'.
+          '</tax:SpeciesListRequest>';
+      
+      $response = $client->call('GetSpeciesList', $query1);
+      kohana::log('debug', 'got response');
+      $error = $client->getError();
+      if ($error) {
+        kohana::log('debug', 'got error '.$error);
+        $this->error($error, $message, $messageType);
+      } else {
+        $this->sync_species($response['SpeciesList']['Species'], $id);
+        $message = "Synchronisation completed OK";
+      }
+    }
+    catch(Exception $e) {
+      $this->error($e->getMessage(), $message, $messageType);
+    }
+    echo $message;
+  }
 
+  /**
+   * Method that takes the output of the NBN Web services species list request
+   * and ensures that the data is all in the taxa_taxon_list part of the database.
+   * @param array $list
+   * @param int $list_id
+   */
+  private function sync_species($list, $list_id) {
+    kohana::log('debug', 'synching list');
+    $this->db = new Database('default');
+    $species_list = $this->db->select('id', 'external_key')
+            ->from('list_taxa_taxon_lists')
+            ->where('taxon_list_id', $list_id)
+            ->get();
+    $existing = array();
+    // get an array of the species in the db, so we don't keep hitting db
+    foreach ($species_list as $species) {
+      $existing[$species->external_key]=$species->id;
+    }    
+    foreach ($list as $species) {    
+      kohana::log('debug', $species['!taxonVersionKey']);
+      // link to existing model if there is already a record for this taxon version key
+      if (array_key_exists($species['!taxonVersionKey'], $existing))
+        $speciesModel = ORM::Factory('taxa_taxon_list', $existing[$species['!taxonVersionKey']]);
+      else
+        $speciesModel = ORM::Factory('taxa_taxon_list');
+      $values = array(
+        'taxon:taxon' => $species['ScientificName'],
+        'taxon:fk_language' => 'lat',
+        'taxon:external_key' => $species['!taxonVersionKey']
+      );
+      $speciesModel->set_submission_data($values);
+      $speciesModel->submit(false);      
+    }
+
+  }
 
 }
 

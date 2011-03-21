@@ -51,6 +51,9 @@ $lang = array (
   'entered_sref_system' => Array (
     'sref_system' => 'The spatial reference system is not a valid EPSG or notation code.',
   ),
+  'external_key' => Array (
+    'length' => 'The external key field can be up to 50 characters long.',
+  ),
   'first_name' => Array (
     'required' => 'The first name cannot be blank.',
     'length' => 'The first name must be between 1 and 30 letters.',
