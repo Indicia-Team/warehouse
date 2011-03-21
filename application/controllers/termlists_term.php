@@ -42,8 +42,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
       'term'=>'',
       'language'=>'',
       );
-    $this->pagetitle = "Terms";    
-    $this->model = ORM::factory('termlists_term');
+    $this->pagetitle = "Terms";
   }
   
   /**

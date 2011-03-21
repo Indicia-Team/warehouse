@@ -41,7 +41,6 @@ class Taxon_Relation_Type_Controller extends Gridview_Base_Controller {
       'reverse_term'=>'',
       'relation_code'=>'');
     $this->pagetitle = "Taxon Relation Types";
-    $this->model = ORM::factory('taxon_relation_type');
   }  
 
   public function record_authorised($id)

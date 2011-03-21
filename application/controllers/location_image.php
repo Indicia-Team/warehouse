@@ -36,8 +36,7 @@ class location_image_Controller extends Gridview_Base_Controller
       'caption'=>'',
       'path'=>'Image'    
     );
-    $this->pagetitle = "Images";    
-    $this->model = ORM::factory('location_image');
+    $this->pagetitle = "Images";
   }
 
   /**

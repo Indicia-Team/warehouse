@@ -39,7 +39,6 @@ class Title_Controller extends Gridview_Base_Controller {
       'title'=>''
       );
     $this->pagetitle = "Titles";
-    $this->model = ORM::factory('title');
   }  
 
   public function record_authorised($id)

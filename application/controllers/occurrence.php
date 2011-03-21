@@ -35,7 +35,6 @@ class Occurrence_controller extends Gridview_Base_Controller {
   {
     parent::__construct('occurrence', 'gv_occurrence', 'occurrence/index');
     $this->pagetitle = 'Occurrences';
-    $this->model = ORM::factory('occurrence');
     $this->actionColumns = array
     (
       'Edit Occ' => 'occurrence/edit/£id£',

@@ -36,7 +36,6 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       'title'=>'',
       'description'=>'');
     $this->pagetitle = "Species lists";
-    $this->model = ORM::factory('taxon_list');
     $this->auth_filter = $this->gen_auth_filter;
   }
   

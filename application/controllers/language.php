@@ -39,7 +39,6 @@ class Language_Controller extends Gridview_Base_Controller {
       'iso'=>'',
       'language'=>'');
     $this->pagetitle = "Languages";
-    $this->model = ORM::factory('language');
   }  
 
   public function record_authorised($id)
