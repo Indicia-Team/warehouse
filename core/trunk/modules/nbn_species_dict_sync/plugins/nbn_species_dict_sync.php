@@ -30,19 +30,22 @@ function nbn_species_dict_sync_extend_ui() {
       'view'=>'taxon_list/taxon_list_edit',
       'type'=>'tab',
       'controller'=>'nbn_species_dict_sync/taxon_lists',
-      'title'=>'NBN Species Dict Sync'
+      'title'=>'NBN Species Dict Sync',
+      'actions'=>array('edit')
     ),
     array(
       'view'=>'taxon_group/index',
       'type'=>'tab',
       'controller'=>'nbn_species_dict_sync/taxon_groups',
-      'title'=>'NBN Sync'
+      'title'=>'NBN Sync',
+      'actions'=>array('edit')
     ),
     array(
       'view'=>'taxon_designation/index',
       'type'=>'tab',
       'controller'=>'nbn_species_dict_sync/taxon_designations',
-      'title'=>'NBN Sync'
+      'title'=>'NBN Sync',
+      'actions'=>array('edit')
     )
   );
 }
