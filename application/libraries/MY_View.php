@@ -88,8 +88,9 @@ jQuery(document).ready(function() {
    * Retrieve the list of tabs for the current view.
    */
   protected function get_tabs() {
+    $uri = URI::instance();  
     // use caching, so things don't slow down if there are lots of plugins
-    $cacheId = 'tabs-'.$this->viewname;
+    $cacheId = 'tabs-'.$this->viewname.'-'.$uri->segment(2);
     $cache = Cache::instance();
     if ($tabs = $cache->get($cacheId)) { 
       return $tabs;
@@ -120,7 +121,7 @@ jQuery(document).ready(function() {
    * Takes a list of tabs and adds new tabs to them according to the supplied list of extensions.
    */
   protected function extend_tabs(&$tabs, $extends) {
-    $uri = URI::instance();    
+    $uri = URI::instance();
     foreach ($extends as $extend) {
       // if on a new record, skip tabs that are disallowed for new.
       if (isset($extend['actions']) && !in_array($uri->segment(2), $extend['actions'])) 
