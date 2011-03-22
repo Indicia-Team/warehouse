@@ -145,7 +145,7 @@ class iform_mnhnl_dynamic_1 {
           'caption'=>'Form Structure',
           'description'=>'Define the structure of the form. Each component goes on a new line and is nested inside the previous component where appropriate. The following types of '.
             "component can be specified. <br/>".
-            "<strong>=tab name=</strong> is used to specify the name of a tab. (Alpha-numeric characters only)<br/>".
+            "<strong>=tab/page name=</strong> is used to specify the name of a tab or wizard page. (Alpha-numeric characters only)<br/>".
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
@@ -650,13 +650,13 @@ class iform_mnhnl_dynamic_1 {
         ));        
       } elseif ($pageIdx==count($tabHtml)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages']))
         // last part of a non wizard interface must insert a save button, unless it is tabbed interface with save button beneath all pages 
-        $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";      
+        $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" id=\"save-button\" value=\"".lang::get('LANG_Save')."\" />\n";      
       $pageIdx++;
       $r .= "</div>\n";      
     }
     $r .= "</div>\n";
     if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) {
-      $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
+      $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" id=\"save-button\" value=\"".lang::get('LANG_Save')."\" />\n";
     }
     if(!empty(data_entry_helper::$validation_errors)){
       $r .= data_entry_helper::dump_remaining_errors();
