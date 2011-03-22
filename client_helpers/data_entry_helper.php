@@ -1724,8 +1724,8 @@ class data_entry_helper extends helper_base {
           'at the same time has having the occurrenceImages option enabled.');
     self::add_resource('json');
     self::add_resource('autocomplete');
-	  if ($options['occurrenceImages']) {
-	    self::add_resource('plupload');
+    if ($options['occurrenceImages']) {
+      self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
       $relpath = self::relative_client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
@@ -1916,7 +1916,11 @@ class data_entry_helper extends helper_base {
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
             " formatter);\r\n";
       }
-      return $grid;
+      // If options contain a help text, output it at the end if that is the preferred position
+      $r = self::get_help_text($options, 'before');
+      $r = $grid;
+      $r .= self::get_help_text($options, 'after');
+      return $r;
     } else {
       return $taxalist['error'];
     }
