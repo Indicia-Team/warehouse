@@ -393,9 +393,9 @@ class ORM extends ORM_Core {
       }
       if (kohana::config('config.log_threshold')=='4') {
         kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
-        if (!$return) kohana::log('debug', kohana::debug($this->getAllErrors()));
       }
     }
+    if (!$return) kohana::log('debug', kohana::debug($this->getAllErrors()));
     return $return;
   }
 
