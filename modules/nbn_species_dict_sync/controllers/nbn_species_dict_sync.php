@@ -235,27 +235,57 @@ class Nbn_species_dict_sync_Controller extends Controller {
     $this->template->render(true);
   }
   
+  /**
+   * Version of list syn using a taxonomy search
+   *
   public function taxon_list_sync($id) {
+    $this->db = new Database('default');
     kohana::log('debug', 'in sync method');
     $message="Synchronising.";
     $messageType="info";
     require DOCROOT.'modules/nbn_species_dict_sync/lib/nusoap.php';
     try {
+      $filter='ab';
       $client = new nusoap_client('http://www.nbnws.net/ws_3_5/GatewayWebService?wsdl', true);
-      $query1 = '<tax:SpeciesListRequest xmlns:tax1="http://www.nbnws.net/TaxonReportingCategory" '.
-          'xmlns:tax="http://www.nbnws.net/Taxon" registrationKey="5c3c4776db01a696885c0721055f9bacd7f10ec9">'.
-          '<tax1:TaxonReportingCategoryKey>NHMSYS0000080067</tax1:TaxonReportingCategoryKey>'.
-          '</tax:SpeciesListRequest>';
-      
+      $query1 = '<tax:TaxonomySearchRequest xmlns:tax="http://www.nbnws.net/Taxon/Taxonomy" registrationKey="5c3c4776db01a696885c0721055f9bacd7f10ec9">'.
+         "<tax:SearchTerm>ab</tax:SearchTerm>".
+      '</tax:TaxonomySearchRequest>';
       $response = $client->call('GetSpeciesList', $query1);
-      kohana::log('debug', 'got response');
-      $error = $client->getError();
-      if ($error) {
-        kohana::log('debug', 'got error '.$error);
-        $this->error($error, $message, $messageType);
-      } else {
-        $this->sync_species($response['SpeciesList']['Species'], $id);
-        $message = "Synchronisation completed OK";
+      kohana::log('debug', print_r($response, true));
+    } catch(Exception $e) {
+      $this->error($e->getMessage(), $message, $messageType);
+    }
+    echo $message;
+ }*/
+  
+  public function taxon_list_sync($id) {
+    $this->db = new Database('default');
+    kohana::log('debug', 'in sync method');
+    $message="Synchronising.";
+    $messageType="info";
+    require DOCROOT.'modules/nbn_species_dict_sync/lib/nusoap.php';
+    try {
+      $groups = $this->db->select('id, external_key')
+          ->from('taxon_groups')
+          ->where('external_key is not null')
+          ->limit(1)
+          ->get();
+      foreach ($groups as $group) {
+        kohana::log('debug', 'doing group '.$group->external_key);
+        $client = new nusoap_client('http://www.nbnws.net/ws_3_5/GatewayWebService?wsdl', true);
+        $query1 = '<tax:SpeciesListRequest xmlns:tax1="http://www.nbnws.net/TaxonReportingCategory" '.
+            'xmlns:tax="http://www.nbnws.net/Taxon" registrationKey="5c3c4776db01a696885c0721055f9bacd7f10ec9">'.
+            '<tax1:TaxonReportingCategoryKey>'.$group->external_key.'</tax1:TaxonReportingCategoryKey>'.
+            '</tax:SpeciesListRequest>';
+        $response = $client->call('GetSpeciesList', $query1);
+        $error = $client->getError();
+        if ($error) {
+          kohana::log('debug', 'got error '.$error);
+          $this->error($error, $message, $messageType);
+        } else {
+          $this->sync_species($response['SpeciesList']['Species'], $id, $group->id);
+          $message = "Synchronisation completed OK";
+        }
       }
     }
     catch(Exception $e) {
@@ -269,10 +299,10 @@ class Nbn_species_dict_sync_Controller extends Controller {
    * and ensures that the data is all in the taxa_taxon_list part of the database.
    * @param array $list
    * @param int $list_id
+   * @param int $taxon_group_id
    */
-  private function sync_species($list, $list_id) {
+  private function sync_species($list, $list_id, $taxon_group_id) {
     kohana::log('debug', 'synching list');
-    $this->db = new Database('default');
     $species_list = $this->db->select('id', 'external_key')
             ->from('list_taxa_taxon_lists')
             ->where('taxon_list_id', $list_id)
@@ -281,23 +311,76 @@ class Nbn_species_dict_sync_Controller extends Controller {
     // get an array of the species in the db, so we don't keep hitting db
     foreach ($species_list as $species) {
       $existing[$species->external_key]=$species->id;
-    }    
-    foreach ($list as $species) {    
-      kohana::log('debug', $species['!taxonVersionKey']);
-      // link to existing model if there is already a record for this taxon version key
-      if (array_key_exists($species['!taxonVersionKey'], $existing))
-        $speciesModel = ORM::Factory('taxa_taxon_list', $existing[$species['!taxonVersionKey']]);
-      else
-        $speciesModel = ORM::Factory('taxa_taxon_list');
-      $values = array(
-        'taxon:taxon' => $species['ScientificName'],
-        'taxon:fk_language' => 'lat',
-        'taxon:external_key' => $species['!taxonVersionKey']
-      );
-      $speciesModel->set_submission_data($values);
-      $speciesModel->submit(false);      
     }
+    foreach ($list as $species) {
+      kohana::log('debug', 'found:'.$species['!taxonVersionKey']);
+      // link to existing model if there is already a record for this taxon version key
+      if (array_key_exists($species['!taxonVersionKey'], $existing)) {
+        $speciesModel = ORM::Factory('taxa_taxon_list', $existing[$species['!taxonVersionKey']]);
+        kohana::log('debug', 'using existing model for '.$species['!taxonVersionKey']);
+      } else {
+        $speciesModel = ORM::Factory('taxa_taxon_list');
+        kohana::log('debug', 'using new model for '.$species['!taxonVersionKey']);
+      }
+      $this->taxonomySearch($species['!taxonVersionKey'], $list_id, $taxon_group_id, $speciesModel);  
+    }
+    
+  }
 
+  private function taxonomySearch($tvk, $list_id, $taxon_group_id, $speciesModel) {
+    kohana::log('debug', 'taxonomySearch '.$tvk);
+    $client = new nusoap_client('http://www.nbnws.net/ws_3_5/GatewayWebService?wsdl', true);
+    $query1 = '<tax:TaxonomySearchRequest xmlns:tax="http://www.nbnws.net/Taxon/Taxonomy" xmlns:tax1="http://www.nbnws.net/Taxon" registrationKey="5c3c4776db01a696885c0721055f9bacd7f10ec9">'.
+        "<tax1:TaxonVersionKey>$tvk</tax1:TaxonVersionKey>".
+        '</tax:TaxonomySearchRequest>';
+    $response = $client->call('GetTaxonomySearch', $query1);
+    $error = $client->getError();
+    if ($error) throw new Exception($error);
+    $taxon = $response['Taxa']['Taxon'];
+    $values = array(
+      'taxa_taxon_list:taxon_list_id' => $list_id,
+      'taxa_taxon_list:preferred' => 't',
+      'taxon:taxon' => $taxon['TaxonName']['!'],
+      'taxon:fk_language' => 'lat',
+      'taxon:external_key' => $tvk,
+      'taxon:taxon_group_id' =>  $taxon_group_id
+    );
+    if (!empty($taxon['Authority']))
+      $values['taxon:authority'] = $taxon['Authority'];
+    if (isset($speciesModel->taxon_id)) {
+      kohana::log('debug', 'got taxon');
+      $values['taxon:id']=$speciesModel->taxon_id;
+    }
+    if (isset($speciesModel->taxon_meaning_id)) {
+      kohana::log('debug', 'got meaning');
+      $values['taxa_taxon_list:taxon_meaning_id']=$speciesModel->taxon_meaning_id;
+    }
+    $commonNames = array();
+    $synonyms = array();
+    kohana::log('debug', 'taxon:'.print_r($taxon, true));
+    if (!empty($taxon['SynonymList'])) {
+      // web service can return an array or a single item. To make it easier, we will convert to an array
+      if (isset($taxon['SynonymList']['Taxon']['TaxonName']))
+        $synonymSet = $taxon['SynonymList'];
+      else 
+        $synonymSet = $taxon['SynonymList']['Taxon'];
+      kohana::log('debug', 'synset:'.print_r($synonymSet, true));
+      foreach ($synonymSet as $synonym) {
+        kohana::log('debug', 'syn:'.print_r($synonym, true));
+        if ($synonym['TaxonName']['!isScientific']) {
+          $synAsString = $synonym['TaxonName']['!'];
+          if (!empty($synonym['Authority'])) $synAsString .= '|' . $synonym['Authority'];
+          $synonyms[] = $synAsString;
+        } else {
+          // We have to assume common names are english as we don't have any other info
+          $commonNames[] = $synonym['TaxonName']['!'] . '|eng'; 
+        }
+      }
+    }
+    $values['metaFields:commonNames'] = implode("\n", $commonNames);
+    $values['metaFields:synonyms'] = implode("\n", $synonyms);
+    $speciesModel->set_submission_data($values);
+    $speciesModel->submit(false);      
   }
 
 }
