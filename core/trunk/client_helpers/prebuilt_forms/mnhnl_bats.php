@@ -70,15 +70,18 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[location attributes]\r\n".
               "@lookUpListCtrl=radio_group\r\n".
               "@lookUpKey=meaning_id\r\n".
+              "@sep= \r\n".
               "[spatial reference]\r\n".
-              "@fieldname=>location:centroid_sref\r\n".
+              "@fieldname=location:centroid_sref\r\n".
               "[place search]\r\n".
               "[map]\r\n".
               "[location comment]\r\n".
               "[*]\r\n".
-             "=Conditions=\r\n".
+             "=Other Information=\r\n".
               "[date]\r\n".
+              "@dateFormat=yy-mm-dd\r\n".
               "[*]\r\n".
+              "@sep= \r\n".
               "@lookUpKey=meaning_id\r\n".
               "[sample comment]\r\n".
              "=Species=\r\n".
@@ -163,7 +166,8 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     $defAttrOptions = array_merge(
         array('extraParams' => array_merge($auth['read'], array('view'=>'detail')),
               'language' => iform_lang_iso_639_2($args['language'])),$options);
-    return get_attribute_html($locationAttributes, $args, $defAttrOptions);
+    $r = get_attribute_html($locationAttributes, $args, $defAttrOptions);
+    return $r;
   }
 
   /**
@@ -292,11 +296,12 @@ $.validator.messages.min = $.validator.format(\"".lang::get('validation_min')."\
 clearLocation = function(enableFields){
   var enableItems;
   var disableItems;
-  disableItems = '[name=location\\:id],[name=locations_website\\:website_id]'; //clearing the location so no ID, so disable 
+  disableItems = '[name=location\\:id]'; //clearing the location so no ID, so disable 
+  enableItems = '[name=locations_website\\:website_id]'; // but have to activate website record 
   if(!enableFields)
     disableItems = disableItems + ',[name=location\\:code],[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref,#imp-sref-system,#imp-geom';
   else
-    enableItems = '[name=location\\:code],[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref,#imp-sref-system,#imp-geom';
+    enableItems = enableItems + ',[name=location\\:code],[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref,#imp-sref-system,#imp-geom';
   jQuery(enableItems).removeAttr('disabled');
   jQuery(disableItems).attr('disabled',true);
   jQuery('[name=location\\:id],[name=location\\:code],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-system,#imp-geom').val('');
