@@ -2805,7 +2805,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('nonce', $cacheOpts)) {
       unset($cacheOpts['nonce']);
     }
-
     if (isset($_GET['nocache']) || (isset($options['nocache']) && $options['nocache'])) 
       $response = self::http_post($request, null);
     else {
@@ -2942,6 +2941,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     } else {
       // lookup values need to be obtained from the database
       $response = self::get_population_data($options);
+      // if the response is empty, and a language has been set, try again without the language but asking for the preferred values.
+      if(count($response)==0 && array_key_exists('iso', $options['extraParams'])){
+        unset($options['extraParams']['iso']);
+        $options['extraParams']['preferred']='t';
+        $response = self::get_population_data($options);
+      }
       $lookupValues = array();
       if (!array_key_exists('error', $response)) {
         foreach ($response as $record) {
@@ -3020,14 +3025,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         $options,
         array(
           'disabled' => isset($options['disabled']) ? $options['disabled'] : '',
-          'checked' => (isset($options['default']) && $options['default'] === $value) ? 'checked="checked" ' : '',
+          'checked' => (isset($options['default']) && $options['default'] == $value) ? ' checked="checked" ' : '', // cant use === as need to compare an int with a string representation
           'type' => $type,
           'value' => $value,
           'class' => $itemClass,
           'itemId' => $options['fieldname'].':'.$idx
         )
       ); 
-      $items .= self::mergeParamsIntoTemplate($item, $template, true);
+      $items .= self::mergeParamsIntoTemplate($item, $template, true, true);
       $idx++;
     }
     $options['items']=$items;
@@ -3568,7 +3573,7 @@ if (errors.length>0) {
           jQuery.each(validator.errorMap, function(ctrlId, error) {
             // select the tab containing the first error control
             if (!tabselected && typeof(tabs)!=='undefined') {
-              tabs.tabs('select',$('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.ui-tabs-panel')[0].id);
+              tabs.tabs('select',jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').filter('input,select').parents('.ui-tabs-panel')[0].id);
               tabselected = true;
             }
             $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('fieldset').removeClass('collapsed');

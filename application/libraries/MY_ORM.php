@@ -1099,6 +1099,73 @@ class ORM extends ORM_Core {
     $this->errors=array();
     $this->identifiers = array('website_id'=>null,'survey_id'=>null);
   }
+  
+ /**
+   * Override the ORM load_type method: modifies float behaviour.
+   * Loads a value according to the types defined by the column metadata.
+   *
+   * @param   string  column name
+   * @param   mixed   value to load
+   * @return  mixed
+   */
+  protected function load_type($column, $value)
+  {
+    $type = gettype($value);
+    if ($type == 'object' OR $type == 'array' OR ! isset($this->table_columns[$column]))
+      return $value;
+
+    // Load column data
+    $column = $this->table_columns[$column];
+
+    if ($value === NULL AND ! empty($column['null']))
+      return $value;
+
+    if ( ! empty($column['binary']) AND ! empty($column['exact']) AND (int) $column['length'] === 1)
+    {
+      // Use boolean for BINARY(1) fields
+      $column['type'] = 'boolean';
+    }
+
+    switch ($column['type'])
+    {
+      case 'int':
+        if ($value === '' AND ! empty($column['null']))
+        {
+          // Forms will only submit strings, so empty integer values must be null
+          $value = NULL;
+        }
+        elseif ((float) $value > PHP_INT_MAX)
+        {
+          // This number cannot be represented by a PHP integer, so we convert it to a string
+          $value = (string) $value;
+        }
+        else
+        {
+          $value = (int) $value;
+        }
+      break;
+      case 'float':
+        if ($value === '' AND ! empty($column['null']))
+        {
+          // Forms will only submit strings, so empty float values must be null
+          $value = NULL;
+        }
+        else
+        {
+          $value = (float) $value;
+        }
+        break;
+      case 'boolean':
+        $value = (bool) $value;
+      break;
+      case 'string':
+        $value = (string) $value;
+      break;
+    }
+
+    return $value;
+  }
+  
 }
 
 ?>
