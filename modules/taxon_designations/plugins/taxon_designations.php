@@ -29,7 +29,7 @@ function taxon_designations_extend_ui() {
   return array(array(
     'view'=>'taxa_taxon_list/taxa_taxon_list_edit', 
     'type'=>'tab',
-    'controller'=>'taxa_taxon_designation',
+    'controller'=>'taxa_taxon_designation/index',
     'title'=>'Designations'
   ));
 }
