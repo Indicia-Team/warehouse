@@ -7,7 +7,7 @@
   		s2.id as subsample_id,
   		o.id as occurrence_id,
   		sav0.text_value as encoded_by,
-  		s.location_name,
+  		rtrim(s.location_name, chr(160)) as location_name,
   		s.date_start,
   		s.date_end,
   		s.date_type,
