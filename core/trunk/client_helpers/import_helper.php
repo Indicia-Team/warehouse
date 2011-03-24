@@ -255,6 +255,7 @@ class import_helper extends helper_base {
 <div id="progress" class="ui-widget ui-widget-content ui-corner-all">
 <div id="progress-bar" style="width: 400"></div>
 <div id="progress-text">Preparing to upload.</div>
+</div>
 ';
     // cache the mappings
     $metadata = array('mappings' => json_encode($_POST));

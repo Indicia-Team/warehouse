@@ -26,6 +26,7 @@
  * @return array UI Extension details
  */
 function nbn_species_dict_sync_extend_ui() {
+  // tab on the taxon list edit page, allowing you to pull the Species Dictionary content into the list.
   return array(array(
       'view'=>'taxon_list/taxon_list_edit',
       'type'=>'tab',
@@ -33,19 +34,19 @@ function nbn_species_dict_sync_extend_ui() {
       'title'=>'NBN Species Dict Sync',
       'actions'=>array('edit')
     ),
+    // tab on the taxon groups index page, allowing you to pull the Species Dictionary reporting categories into the list.
     array(
       'view'=>'taxon_group/index',
       'type'=>'tab',
       'controller'=>'nbn_species_dict_sync/taxon_groups',
-      'title'=>'NBN Sync',
-      'actions'=>array('edit')
+      'title'=>'NBN Sync'
     ),
+    // tab on the taxon designations inedx page, allowing you to pull the Species Dictionary designations in.
     array(
       'view'=>'taxon_designation/index',
       'type'=>'tab',
       'controller'=>'nbn_species_dict_sync/taxon_designations',
-      'title'=>'NBN Sync',
-      'actions'=>array('edit')
+      'title'=>'NBN Sync'
     )
   );
 }
