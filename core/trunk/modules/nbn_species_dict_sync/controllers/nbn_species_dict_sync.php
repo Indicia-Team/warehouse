@@ -286,7 +286,9 @@ class Nbn_species_dict_sync_Controller extends Controller {
         'errors' => array(),
         'statusText' => 'Loading existing data from database',
         'mode' => isset($_GET['mode']) ? $_GET['mode'] : 'all',
-        'speciesIdx' => 0
+        'speciesIdx' => 0,
+        'groupIdx' => 0,
+        'groups' => array('dummy')
       );
       $cache->set($cacheId, json_encode($stateData));    
     } else {
@@ -298,6 +300,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
       switch ($stateData['state']) {
         case 0: 
           $this->loadExistingList($stateData);
+          // can skip loading taxon groups if just handling an existing list of taxa
           $stateData['state']=1;
           $stateData['statusText']='Loading taxon groups list from database';
           $cache->set($cacheId, json_encode($stateData));
@@ -345,6 +348,9 @@ class Nbn_species_dict_sync_Controller extends Controller {
    * Species Dictionary Reporting Categories data.
    */
   private function loadTaxonGroups(&$stateData) {
+    // when only loading data for existing taxa, no need for taxon groups to loop through
+    if ($stateData['mode']=='existing' || $stateData['mode']=='designations')
+      return;
     kohana::log('debug', 'loadTaxonGroups');
     $stateData['groups'] = $this->db->select('id, external_key')
           ->from('taxon_groups')
@@ -445,7 +451,8 @@ class Nbn_species_dict_sync_Controller extends Controller {
     }
     if (isset($speciesModel)) 
       $this->taxonomySearch($tvk, $speciesModel, $stateData);
-    $stateData['progress'] = 100 * (($stateData['speciesIdx'] / $total) + $stateData['groupIdx']) / count($stateData['groups']) ;
+    // calculate a percentage progress.
+    $stateData['progress'] = 100 * ($stateData['speciesIdx'] + $stateData['groupIdx']*$total) / (count($stateData['groups'])*$total);
   }
 
   /**
