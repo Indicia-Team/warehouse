@@ -73,6 +73,7 @@ and <a href="<?php echo url::site(); ?>taxon_group?tab=NBN_Sync">taxon groups</a
 <option value="all">Update all taxa</option>
 <option value="new">Fetch new taxa only</option>
 <option value="existing">Update only existing taxa</option>
+<option value="designations">Update only designations for existing taxa</option>
 </select>
 <input type="Submit" value="Synchronise" id="submit-sync" />
 </form>

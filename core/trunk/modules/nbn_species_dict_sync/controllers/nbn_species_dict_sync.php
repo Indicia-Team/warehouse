@@ -285,7 +285,8 @@ class Nbn_species_dict_sync_Controller extends Controller {
         'progress' => 0,
         'errors' => array(),
         'statusText' => 'Loading existing data from database',
-        'mode' => isset($_GET['mode']) ? $_GET['mode'] : 'all'
+        'mode' => isset($_GET['mode']) ? $_GET['mode'] : 'all',
+        'speciesIdx' => 0
       );
       $cache->set($cacheId, json_encode($stateData));    
     } else {
@@ -364,7 +365,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
       // have done the last group, so everything now complete.
       return true;
     // note we don't bother getting species list data from the web service if only updating the existing list.
-    if (isset($stateData['web_service_response']) || $stateData['mode']=='existing') {
+    if (isset($stateData['web_service_response']) || $stateData['mode']=='existing' || $stateData['mode']=='designations') {
       $this->processWebServiceResponse($stateData);
     } else {
       $this->getWebServiceResponse($stateData);
@@ -399,7 +400,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
    */
   private function processWebServiceResponse(&$stateData) {
     kohana::log('debug', 'processWebServiceResponse');
-    if ($stateData['mode']=='existing') {
+    if ($stateData['mode']=='existing' || $stateData['mode']=='designations') {
       // just use the existing list species data to pull in taxonomy info for. No need to look for new species.
       if ($stateData['speciesIdx']>=count($stateData['existing'])) {
         $stateData['complete']=true;
@@ -408,6 +409,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
       $tvks = array_keys($stateData['existing']);
       $tvk = $tvks[$stateData['speciesIdx']];
       $identifier = $tvk;
+      $total = count($stateData['existing']);
     } else {
       $list = $stateData['web_service_response']['SpeciesList']['Species'];
       if ($stateData['speciesIdx']>=count($list)) {
@@ -420,6 +422,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
       $species = $list[$stateData['speciesIdx']];
       $tvk = $species['!taxonVersionKey'];
       $identifier = $species['ScientificName'];
+      $total = count($list);
     }
     $stateData['speciesIdx'] = $stateData['speciesIdx']+1;
     kohana::log('debug', 'found:'.$tvk);
@@ -442,7 +445,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
     }
     if (isset($speciesModel)) 
       $this->taxonomySearch($tvk, $speciesModel, $stateData);
-    $stateData['progress'] = 100 * (($stateData['speciesIdx'] / count($list)) + $stateData['groupIdx']) / count($stateData['groups']) ;
+    $stateData['progress'] = 100 * (($stateData['speciesIdx'] / $total) + $stateData['groupIdx']) / count($stateData['groups']) ;
   }
 
   /**
@@ -465,59 +468,64 @@ class Nbn_species_dict_sync_Controller extends Controller {
       return;
     }
     $taxon = $response['Taxa']['Taxon'];
-    $values = array(
-      'taxa_taxon_list:taxon_list_id' => $stateData['list_id'],
-      'taxa_taxon_list:preferred' => 't',
-      'taxon:taxon' => $taxon['TaxonName']['!'],
-      'taxon:fk_language' => 'lat',
-      'taxon:external_key' => $tvk,
-      'taxon:taxon_group_id' =>  $stateData['groups'][$stateData['groupIdx']]['id']
-    );
-    if (!empty($taxon['Authority']))
-      $values['taxon:authority'] = utf8_encode($taxon['Authority']);
-    if ($speciesModel->loaded) {
-      kohana::log('debug', 'Using existing model '.$speciesModel->id);
-      $values['taxa_taxon_list:id']=$speciesModel->id;
-      $values['taxon:id']=$speciesModel->taxon_id;
-      $values['taxa_taxon_list:taxon_meaning_id']=$speciesModel->taxon_meaning_id;
-    }
-    $commonNames = array();
-    $synonyms = array();
-    
-    if (!empty($taxon['SynonymList'])) {
-      // web service can return an array or a single item. To make it easier, we will convert to an array
-      if (isset($taxon['SynonymList']['Taxon']['TaxonName']))
-        $synonymSet = $taxon['SynonymList'];
-      else 
-        $synonymSet = $taxon['SynonymList']['Taxon'];
-      foreach ($synonymSet as $synonym) {
-        if ($synonym['TaxonName']['!isScientific']) {
-          $synAuthority = isset($synonym['Authority']) ? $synonym['Authority'] : '';
-          $taxAuthority = isset($taxon['Authority']) ? $taxon['Authority'] : '';
-          if ($synonym['TaxonName']['!'] != $taxon['TaxonName']['!'] || $synAuthority != $taxAuthority) {
-            $synAsString = $synonym['TaxonName']['!'];
-            if (!empty($synonym['Authority'])) $synAsString .= '|' . $synonym['Authority'];
-            $synonyms[] = $synAsString;
+    if ($stateData['mode']!='designations') {
+      $values = array(
+        'taxa_taxon_list:taxon_list_id' => $stateData['list_id'],
+        'taxa_taxon_list:preferred' => 't',
+        'taxon:taxon' => $taxon['TaxonName']['!'],
+        'taxon:fk_language' => 'lat',
+        'taxon:external_key' => $tvk,
+        'taxon:taxon_group_id' =>  $stateData['groups'][$stateData['groupIdx']]['id']
+      );
+      if (!empty($taxon['Authority']))
+        $values['taxon:authority'] = utf8_encode($taxon['Authority']);
+      if ($speciesModel->loaded) {
+        kohana::log('debug', 'Using existing model '.$speciesModel->id);
+        $values['taxa_taxon_list:id']=$speciesModel->id;
+        $values['taxon:id']=$speciesModel->taxon_id;
+        $values['taxa_taxon_list:taxon_meaning_id']=$speciesModel->taxon_meaning_id;
+      }
+      $commonNames = array();
+      $synonyms = array();
+      
+      if (!empty($taxon['SynonymList'])) {
+        // web service can return an array or a single item. To make it easier, we will convert to an array
+        if (isset($taxon['SynonymList']['Taxon']['TaxonName']))
+          $synonymSet = $taxon['SynonymList'];
+        else 
+          $synonymSet = $taxon['SynonymList']['Taxon'];
+        foreach ($synonymSet as $synonym) {
+          if ($synonym['TaxonName']['!isScientific']) {
+            $synAuthority = isset($synonym['Authority']) ? $synonym['Authority'] : '';
+            $taxAuthority = isset($taxon['Authority']) ? $taxon['Authority'] : '';
+            if ($synonym['TaxonName']['!'] != $taxon['TaxonName']['!'] || $synAuthority != $taxAuthority) {
+              $synAsString = $synonym['TaxonName']['!'];
+              if (!empty($synonym['Authority'])) $synAsString .= '|' . $synonym['Authority'];
+              $synonyms[] = $synAsString;
+            }
+          } else {
+            // We have to assume common names are english as we don't have any other info
+            $commonNames[] = $synonym['TaxonName']['!'] . '|eng'; 
           }
-        } else {
-          // We have to assume common names are english as we don't have any other info
-          $commonNames[] = $synonym['TaxonName']['!'] . '|eng'; 
         }
       }
-    }
-    $values['metaFields:commonNames'] = utf8_encode(implode("\n", $commonNames));
-    $values['metaFields:synonyms'] = utf8_encode(implode("\n", $synonyms));
-    $speciesModel->set_submission_data($values);
-    try {
-      $id = $speciesModel->submit(false);
-    } catch (Exception $e) {
-      $stateData['errors'][] = "An error occurred inserting taxon ".$taxon['TaxonName']['!'].'. The error was: '.
-          $e->getMessage();
-    }
-    if (!$id) {
-      $stateData['errors'][] = "An error occurred inserting taxon ".$taxon['TaxonName']['!'].'. The error was: '.
-          implode(';', $speciesModel->getAllErrors());
-    }
+      $values['metaFields:commonNames'] = utf8_encode(implode("\n", $commonNames));
+      $values['metaFields:synonyms'] = utf8_encode(implode("\n", $synonyms));
+      $speciesModel->set_submission_data($values);
+      try {
+        $id = $speciesModel->submit(false);
+      } catch (Exception $e) {
+        $stateData['errors'][] = "An error occurred inserting taxon ".$taxon['TaxonName']['!'].'. The error was: '.
+            $e->getMessage();
+      }
+      if (!$id) {
+        $stateData['errors'][] = "An error occurred inserting taxon ".$taxon['TaxonName']['!'].'. The error was: '.
+            implode(';', $speciesModel->getAllErrors());
+      }
+    } elseif ($speciesModel->loaded)
+      // just linking designations to the existing taxon
+      $id = $speciesModel->id;
+      
     if ($id) 
       $this->attachDesignations($speciesModel, $taxon, $stateData);
     else {
