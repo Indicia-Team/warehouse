@@ -153,18 +153,27 @@ class import_helper extends helper_base {
     $fields = json_decode($response['output'], true);
     $request = str_replace('get_import_fields', 'get_required_fields', $request);
     $response = self::http_post($request, array());
-    $required_fields = json_decode($response['output'], true);
-    $fields = array_diff_key($fields, $_POST);    
+    $model_required_fields = json_decode($response['output'], true); 
+    $unlinked_fields = array_diff_key($fields, $_POST);
+    // also surpress any required fk_ fields (which would be looked up) if we have an id for the same field 
+    // in the available data
+    foreach ($unlinked_fields as $field => $value) {
+      if ((preg_match('/^fk_/', $field) ||
+          preg_match('/:fk_/', $field)) &&
+          array_key_exists(str_replace('fk_', '', $field).'_id', $_POST)) 
+        unset($unlinked_fields[$field]);
+    }
+    
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
     // only use the required fields that are available for selection - the rest are handled somehow else    
-    $required_fields = array_intersect($required_fields, array_keys($fields));
+    $unlinked_required_fields = array_intersect($model_required_fields, array_keys($unlinked_fields));
     
-    self::clear_website_survey_fields($fields);
-    self::clear_website_survey_fields($required_fields);
-    $options = self::model_field_options($options['model'], $fields);
+    self::clear_website_survey_fields($unlinked_fields);
+    self::clear_website_survey_fields($unlinked_required_fields);
+    $options = self::model_field_options($options['model'], $unlinked_fields);
     
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
         '<p>'.lang::get('column_mapping_instructions').'</p>'.
@@ -205,8 +214,8 @@ class import_helper extends helper_base {
       $('#dynamic-instructions ul').html(output);
 }\n";
     self::$javascript .= "required_fields={};\n";
-    foreach ($required_fields as $field) {
-      $caption = $fields[$field];
+    foreach ($unlinked_required_fields as $field) {
+      $caption = $unlinked_fields[$field];
       if (empty($caption)) {
         $tokens = explode(':', $field);
         $fieldname = $tokens[count($tokens)-1];
