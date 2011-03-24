@@ -417,7 +417,7 @@ class iform_mnhnl_dynamic_1 {
     $loadedOccurrenceId = null;
     if ($_POST) {
       if(!array_key_exists('website_id', $_POST)) { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrept the data by accident
-        if(iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnld1', $_POST)){
+        if(function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnld1', $_POST)){
           iform_loctools_deletelocations($node);
           foreach($_POST as $key => $value){
             $parts = explode(':', $key);
@@ -454,7 +454,7 @@ class iform_mnhnl_dynamic_1 {
        ,'survey_id'=>$args['survey_id']
       ));
       $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
-      if($args['includeLocTools'] && iform_loctools_checkaccess($node,'admin')){
+      if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
         $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
       }
       if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
@@ -467,7 +467,7 @@ class iform_mnhnl_dynamic_1 {
         $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
       }
       $r .= "<div id=\"sampleList\">".call_user_func(array(get_called_class(), 'getSampleListGrid'), $args, $node, $auth, $attributes)."</div>";
-      if($args['includeLocTools'] && iform_loctools_checkaccess($node,'admin')){
+      if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
         $r .= '
   <div id="setLocations">
     <form method="post">
