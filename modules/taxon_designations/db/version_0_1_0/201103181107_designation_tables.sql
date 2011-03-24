@@ -51,8 +51,8 @@ CREATE TABLE taxa_taxon_designations
   updated_on timestamp without time zone NOT NULL,
   updated_by_id integer NOT NULL,
   start_date date, -- Date the designation became applicable to the taxon.
-  source character varying(200), -- Description of the source of this designation.
-  geographical_constraint character varying(200), -- Description of the geographical constraints regarding this designation for the taxon.
+  source character varying, -- Description of the source of this designation.
+  geographical_constraint character varying, -- Description of the geographical constraints regarding this designation for the taxon.
   deleted boolean NOT NULL default false,
   CONSTRAINT pk_taxa_taxon_designations PRIMARY KEY (id),
   CONSTRAINT fk_taxa_taxon_designation_creator FOREIGN KEY (created_by_id)

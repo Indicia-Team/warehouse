@@ -335,6 +335,7 @@ class ORM extends ORM_Core {
 
   /**
    * Wraps the process of submission in a transaction.
+   * @return integer If successful, returns the id of the created/found record. If not, returns null - errors are embedded in the model.
    */
   public function submit() {
     Kohana::log('debug', 'Commencing new transaction.');

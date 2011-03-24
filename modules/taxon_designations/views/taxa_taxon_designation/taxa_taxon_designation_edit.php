@@ -33,7 +33,7 @@ if (isset($_POST))
 data_entry_helper::link_default_stylesheet();
 if (isset($values['taxa_taxon_designation:id'])) : ?>
   <input type="hidden" name="taxa_taxon_designation:id" value="<?php echo html::initial_value($values, 'taxa_taxon_designation:id'); ?>" />
-<? endif;
+<?php endif;
 echo data_entry_helper::select(array(
   'label' => 'Designation',
   'fieldname' => 'taxa_taxon_designation:taxon_designation_id',

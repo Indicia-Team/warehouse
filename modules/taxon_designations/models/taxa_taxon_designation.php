@@ -42,7 +42,6 @@ class Taxa_taxon_designation_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('taxon_id', 'required');
     $array->add_rules('taxon_designation_id', 'required');
-
     $this->unvalidatedFields = array('start_date', 'source', 'geographical_constraint', 'deleted');
     return parent::validate($array, $save);
   }
