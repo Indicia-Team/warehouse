@@ -285,11 +285,8 @@ class Nbn_species_dict_sync_Controller extends Controller {
         'progress' => 0,
         'errors' => array(),
         'statusText' => 'Loading existing data from database',
-        'options' => array()
+        'mode' => isset($_GET['mode']) ? $_GET['mode'] : 'all'
       );
-      if (isset($_GET['newOnly']) && $_GET['newOnly']=='true') {
-        $stateData['options'][]='newOnly';
-      }
       $cache->set($cacheId, json_encode($stateData));    
     } else {
       $task_id = $_GET['task_id'];
@@ -366,7 +363,8 @@ class Nbn_species_dict_sync_Controller extends Controller {
     if ($stateData['groupIdx']>=count($stateData['groups']))
       // have done the last group, so everything now complete.
       return true;
-    if (isset($stateData['web_service_response'])) {
+    // note we don't bother getting species list data from the web service if only updating the existing list.
+    if (isset($stateData['web_service_response']) || $stateData['mode']=='existing') {
       $this->processWebServiceResponse($stateData);
     } else {
       $this->getWebServiceResponse($stateData);
@@ -401,33 +399,49 @@ class Nbn_species_dict_sync_Controller extends Controller {
    */
   private function processWebServiceResponse(&$stateData) {
     kohana::log('debug', 'processWebServiceResponse');
-    $list = $stateData['web_service_response']['SpeciesList']['Species'];
-    if ($stateData['speciesIdx']>=count($list)) {
-      unset($stateData['web_service_response']);
-      $stateData['groupIdx'] = $stateData['groupIdx'] + 1;
-      $stateData['statusText']='Waiting for data from Species Dictionary';
-      $stateData['speciesIdx']=0;
-      return;
+    if ($stateData['mode']=='existing') {
+      // just use the existing list species data to pull in taxonomy info for. No need to look for new species.
+      if ($stateData['speciesIdx']>=count($stateData['existing'])) {
+        $stateData['complete']=true;
+        return;
+      }
+      $tvks = array_keys($stateData['existing']);
+      $tvk = $tvks[$stateData['speciesIdx']];
+      $identifier = $tvk;
+    } else {
+      $list = $stateData['web_service_response']['SpeciesList']['Species'];
+      if ($stateData['speciesIdx']>=count($list)) {
+        unset($stateData['web_service_response']);
+        $stateData['groupIdx'] = $stateData['groupIdx'] + 1;
+        $stateData['statusText']='Waiting for data from Species Dictionary';
+        $stateData['speciesIdx']=0;
+        return;
+      }
+      $species = $list[$stateData['speciesIdx']];
+      $tvk = $species['!taxonVersionKey'];
+      $identifier = $species['ScientificName'];
     }
-    $species = $list[$stateData['speciesIdx']];
     $stateData['speciesIdx'] = $stateData['speciesIdx']+1;
-    kohana::log('debug', 'found:'.$species['!taxonVersionKey']);
+    kohana::log('debug', 'found:'.$tvk);
     // link to existing model if there is already a record for this taxon version key
-    if (array_key_exists($species['!taxonVersionKey'], $stateData['existing'])) {
-      if (in_array('newOnly', $stateData['options'])) {
-        $stateData['statusText']='Skipping '.$species['ScientificName'];
-        kohana::log('debug', 'taxon already exists:'.$species['!taxonVersionKey']);
+    if (array_key_exists($tvk, $stateData['existing'])) {
+      if ($stateData['mode']=='new') {
+        $stateData['statusText']="Skipping $identifier";
+        kohana::log('debug', 'taxon already exists:'.$tvk);
+        // don't bother returning for each species in this case as the web service call overhead slows us down. Return every so often
+        // to prevent freezing.
+        if ($stateData['speciesIdx']/20 == round($stateData['speciesIdx']/20)) $this->processWebServiceResponse($stateData);
       }
       else {
-        $speciesModel = ORM::Factory('taxa_taxon_list', $stateData['existing'][$species['!taxonVersionKey']]);
-        kohana::log('debug', 'using existing model for '.$species['!taxonVersionKey']);
+        $speciesModel = ORM::Factory('taxa_taxon_list', $stateData['existing'][$tvk]);
+        kohana::log('debug', 'using existing model for '.$tvk);
       }
     } else {
       $speciesModel = ORM::Factory('taxa_taxon_list');
-      kohana::log('debug', 'using new model for '.$species['!taxonVersionKey']);
+      kohana::log('debug', 'using new model for '.$tvk);
     }
     if (isset($speciesModel)) 
-      $this->taxonomySearch($species['!taxonVersionKey'], $speciesModel, $stateData);
+      $this->taxonomySearch($tvk, $speciesModel, $stateData);
     $stateData['progress'] = 100 * (($stateData['speciesIdx'] / count($list)) + $stateData['groupIdx']) / count($stateData['groups']) ;
   }
 
