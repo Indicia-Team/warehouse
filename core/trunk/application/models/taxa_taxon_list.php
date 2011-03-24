@@ -289,4 +289,22 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'taxa_taxon_list:allow_data_entry' => 't'
     );  
   }
+  
+  /**
+   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   */
+  public function fixed_values_form() {
+    $srefs = array();
+    foreach (kohana::config('sref_notations.sref_notations') as $code=>$caption) {
+      $srefs[] = "$code:$caption";
+    }
+    return array(
+      'taxa_taxon_list:taxon_list_id' => array(
+        'display'=>'Taxon List', 
+        'description'=>'Select the taxon list to import records into.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:taxon_list:id:title'
+      ),
+    );
+  }
 }
