@@ -2932,7 +2932,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (isset($options['lookupValues'])) {
       // lookup values are provided, so run these through the item template
       foreach ($options['lookupValues'] as $key=>$value) {
-        $r[$value] = str_replace(
+        $r[$key] = str_replace(
             array('{value}', '{caption}'),
             array($key, $value),
             $indicia_templates[$options['itemTemplate']]
