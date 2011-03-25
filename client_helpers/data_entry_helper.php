@@ -433,6 +433,10 @@ class data_entry_helper extends helper_base {
   */
   public static function checkbox_group() {
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'sep', 'default'));
+    if (!isset($options['id']))
+      $options['id'] = $options['fieldname'];
+    if (substr($options['fieldname'],-2) !='[]')
+      $options['fieldname'] .= '[]';
     return self::check_or_radio_group($options, 'checkbox');
   }
 
@@ -2128,7 +2132,8 @@ class data_entry_helper extends helper_base {
       $occAttrs[$occAttrId] = $attrDef['caption'];
       // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
       $ctrlOptions = array(
-        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']),
+        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']) . 
+            (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
         'suffixTemplate' => 'nosuffix'
       ); 
@@ -3006,6 +3011,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'sep' => '',
         'template' => 'check_or_radio_group',
         'itemTemplate' => 'check_or_radio_group_item',
+        'id' => $options['fieldname']
       ),
       $options
     );
@@ -3030,7 +3036,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           'type' => $type,
           'value' => $value,
           'class' => $itemClass,
-          'itemId' => $options['fieldname'].':'.$idx
+          'itemId' => $options['id'].':'.$idx
         )
       ); 
       $items .= self::mergeParamsIntoTemplate($item, $template, true, true);
@@ -3970,15 +3976,18 @@ $('.ui-state-default').live('mouseout', function() {
     $attrOptions = array(
         'fieldname'=>$item['fieldname'],
         'disabled'=>'');
-    if (isset($item['validation_rules'])) {
-      $validation = explode("\n", $item['validation_rules']);
-      $attrOptions['class'] = self::build_validation_class(array('validation'=>$validation));
-      if (in_array('required',$validation)) 
-        $attrOptions['suffixTemplate'] = 'requiredsuffix';
-    }
     if (isset($item['caption']))
       $attrOptions['label']=$item['caption'];
     $attrOptions = array_merge($attrOptions, $options);
+    // build validation rule classes from the attribute data
+    if (isset($item['validation_rules'])) {
+      $validation = explode("\n", $item['validation_rules']);
+      // append the rules to any existing class string
+      $attrOptions['class'] = (isset($attrOptions['class']) ? $attrOptions['class'] .' ' : '') .
+          self::build_validation_class(array('validation'=>$validation));
+      if (in_array('required',$validation)) 
+        $attrOptions['suffixTemplate'] = 'requiredsuffix';
+    }
     if(isset($item['default']) && $item['default']!="") $attrOptions['default']= $item['default'];
     switch ($item['data_type']) {
         case 'Text':
