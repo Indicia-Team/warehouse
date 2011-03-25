@@ -200,11 +200,10 @@ $('#form-picker').change(function(evt) {
       if (!isset($fieldsets[$fieldset])) 
         $fieldsets[$fieldset]='';
       $fieldsets[$fieldset] .= data_entry_helper::$type($ctrlOpts);
-      
     }
     $r = '';
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
-    foreach($fieldsets as $fieldset=>$content) {      
+    foreach($fieldsets as $fieldset=>$content) { 
       $r .= "<fieldset class=\"$class\"><legend>$fieldset</legend>\n";
       $r .= $fieldsets[$fieldset];
       $r .= "\n</fieldset>\n";
