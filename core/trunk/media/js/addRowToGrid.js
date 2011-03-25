@@ -34,6 +34,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     $(taxonCell).attr('colSpan',1);
     var row=taxonCell.parentNode;
     $(taxonCell).parent().addClass('added-row');
+    $(taxonCell).parent().removeClass('scClonableRow');
     // Do we use a JavaScript fn, or a standard template, to format the species label?
     if ($.isFunction(formatter)) {
       $(taxonCell).html(formatter(data));
@@ -202,3 +203,36 @@ $('.hide-image-link').live('click', function(evt) {
     $(evt.target).html('show images');
   }
 });
+
+/**
+ * Method to assist with converting a control in the grid into a popup link. Example usage:
+ * jQuery(document).ready(function() {
+ *   ConvertControlsToPopup($('.scComment'), 'Comment', Drupal.settings.basePath + '/sites/all/modules/iform/media/images/nuvola/package_editors-22px.png');
+ * });
+ *
+ * function hook_species_checklist_new_row(data) {
+ *   var id='#sc:'+data.id+'::occurrence:comment';
+ *   id = id.replace(/:/g, '\\:');
+ *   ConvertControlsToPopup($(id), 'Comment', Drupal.settings.basePath + '/sites/all/modules/iform/media/images/nuvola/package_editors-22px.png');
+ * }
+*/
+function ConvertControlsToPopup(controls, label, icon) {
+  var identifier;
+  $.each(controls, function(i, input) {
+    if ($(input).parents('.scClonableRow').length===0) {
+      // make a unique id for the item which is jQuery safe.
+      identifier = input.id.replace(/:/g, '-');
+      $(input).after('<div style="display: none;" id="hide-' + identifier + '"><div id="anchor-' + identifier + '"></div></div>');
+      $(input).after('<a href="#anchor-' + identifier + '" id="click-' + identifier + '">' +
+          '<img src="' + icon + '" width="22" height="22" alt="Show ' + label + '" /></a>');
+      $('#anchor-' + identifier).append('<label>'+label+':</label><br/>');
+      $('#anchor-' + identifier).append(input);
+      $('#anchor-' + identifier).append('<br/><input type="button" value="Close" onclick="$.fancybox.close();" ?>');
+      // make sure the input shows, though at this stage it is in a hidden div. @todo This is a bit of a nasty hack, 
+      // would rather obay CSS precedence rules but !important is getting in the way.
+      $(input).css('cssText', 'display: inline !important');
+      $('#click-' + identifier).fancybox({titleShow: false, showCloseButton: false});
+    }
+  });
+  
+}
