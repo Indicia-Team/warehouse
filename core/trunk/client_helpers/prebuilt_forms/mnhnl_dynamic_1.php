@@ -1050,7 +1050,7 @@ class iform_mnhnl_dynamic_1 {
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
       $systems[$system] = lang::get($system);
-    }    
+    }
     return data_entry_helper::sref_and_system(array_merge(array(
       'label' => lang::get('LANG_SRef_Label'),
       'systems' => $systems

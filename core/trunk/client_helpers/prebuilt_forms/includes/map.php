@@ -190,9 +190,13 @@ function iform_map_get_map_options($args, $readAuth) {
   // read out the activated preset layers
   $presetLayers = array();
   if (!empty($args['preset_layers'])) {
-    foreach($args['preset_layers'] as $layer => $active) {
-      if ($active!==0) {
-        $presetLayers[] = $layer;
+    foreach($args['preset_layers'] as $key => $value) {
+      if (is_int($key)) {
+        // normally a checkbox group would just output an array
+        $presetLayers[] = $value;
+      } elseif ($value!==0) {
+        // but the Drupal version of the the parameters form (deprecated) leaves a strange array structure in the parameter value.
+        $presetLayers[] = $key;
       }
     }
   }

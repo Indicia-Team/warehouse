@@ -570,7 +570,7 @@ mapSettingsHooks.push(add_map_tools)
     $replaceTags=array();
     $replaceValues=array();
     foreach ($params as $param=>$value) {
-      if (is_string($value)) {
+      if (is_string($value) || empty($value)) {
         array_push($replaceTags, '{'.$param.'}');
         // allow sep to have <br/>
         $value = ($param == 'sep' || $allowHtml) ? $value : htmlSpecialChars($value);
@@ -965,7 +965,7 @@ $onload_javascript
     $replaceTags=array();
     $replaceValues=array();
     foreach (array_keys($options) as $option) {
-      if (is_string($options[$option])) {
+      if (is_string($options[$option]) || empty($options[$option])) {
         array_push($replaceTags, '{'.$option.'}');
         array_push($replaceValues, $options[$option]);
       }
@@ -978,12 +978,14 @@ $onload_javascript
   * plugin metadata format.
   * @param array $rules List of validation rules to be converted.
   * @return string Validation metadata classes to add to the input element.
-  * @todo Implement a more complete list of validation rules.
+  * @todo Implement a more complete list of validation rules. 
+  * @todo Suspect there is a versioning issue, because the minimum/maximum rule classes don't work. 
   */
   protected static function convert_to_jquery_val_metadata($rules) {
     $converted = array();
     foreach ($rules as $rule) {
       // Detect the rules that can simply be passed through
+      $rule = trim($rule);
       if    ($rule=='required'
           || $rule=='dateISO'
           || $rule=='date'
@@ -991,10 +993,16 @@ $onload_javascript
           || $rule=='url'
           || $rule=='time') {
         $converted[] = $rule;
-       } else if ($rule=='digit') {
-         $converted[] = 'digits';
-       }
-       // Now any rules which need parsing or conversion
+      // Now any rules which need parsing or conversion
+      } else if ($rule=='digit') {
+        $converted[] = 'digits';
+      // the next test uses a regexp named expression to find the digit in a maximum rule (maximum[10])
+      } elseif (preg_match('/maximum\[(?P<val>\d+)\]/', $rule, $matches)) {
+        $converted[] = '{maxValue:'.$matches['val'].'}';
+      // and again for minimum rules
+      } elseif (preg_match('/minimum\[(?P<val>\d+)\]/', $rule, $matches)) {
+        $converted[] = '{minValue:'.$matches['val'].'}';
+      }
     }
     return implode(' ', $converted);
   }
