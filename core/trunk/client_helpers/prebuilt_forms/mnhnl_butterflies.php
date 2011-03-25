@@ -618,10 +618,10 @@ jQuery('#transectgrid_taxa_taxon_list_id').change(function(){
             $session = curl_init($url);
             curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
             $ATTRentities = json_decode(curl_exec($session), true);
-//            foreach($ATTRentities as $ATTRentity){
-//              	data_entry_helper::$javascript .= "
-//build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".($ATTRentity['id']).",".($ATTRentity['raw_value']).");";
-//            }
+            foreach($ATTRentities as $ATTRentity){
+              data_entry_helper::$javascript .= "
+build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".($ATTRentity['id']).",".($ATTRentity['raw_value']).");";
+            }
           }
         }
       }
