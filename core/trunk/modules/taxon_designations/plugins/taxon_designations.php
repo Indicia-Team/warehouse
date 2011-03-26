@@ -51,4 +51,11 @@ function taxon_designations_extend_orm() {
   ));
 }
 
+function taxon_designations_extend_data_services() {
+  return array(
+    'taxon_designations'=>array(),
+    'taxa_taxon_designations'=>array()
+  );
+}
+
 ?>
