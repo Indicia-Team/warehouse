@@ -321,7 +321,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
             }
             else
             {
-              $data .= $value;
+              $data .= htmlspecialchars($value);
             }
           }
           $data .= '</'.$element.'>'.($indent?"\r\n":'');
