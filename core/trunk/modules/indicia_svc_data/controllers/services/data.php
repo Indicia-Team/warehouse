@@ -72,7 +72,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_relation',
       'taxon_group'
   );
-  
+
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
   // and website_id, so that we can work out whether access to a particular record is allowed.
   // There is a potential issues with this: We may want everyone to have complete access to a particular dataset
@@ -314,6 +314,45 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function sample_comment()
   {
     $this->handle_call('sample_comment');
+  }
+
+  /**
+   * Magic method which accepts data service calls for non-core entities that are
+   * handled by plugins. Checks to see if the any plugins expose a model which
+   * matches the requested entity and checks if the model is only read only
+   * then only read requests are accepted.
+   * Plugins can use the extend_data_services hook to declare their models to expose
+   * via data services.
+   * @link http://code.google.com/p/indicia/wiki/WarehousePluginArchitecture
+   * @param <type> $name
+   * @param <type> $arguments
+   */
+  public function __call($name, $arguments) {
+    // use caching, so things don't slow down if there are lots of plugins
+    $cacheId = 'extend-data-services';
+    $cache = Cache::instance();
+    $extensions = $cache->get($cacheId);
+    if (!$extensions) {
+      $extensions = array();
+      // now look for modules which plugin to add a data service extension.
+      foreach (Kohana::config('config.modules') as $path) {
+        $plugin = basename($path);
+        if (file_exists("$path/plugins/$plugin.php")) {
+          require_once("$path/plugins/$plugin.php");
+          if (function_exists($plugin.'_extend_data_services')) {
+            $moduleExtensions = call_user_func($plugin.'_extend_data_services');
+            $extensions = array_merge($extensions, $moduleExtensions);
+          }
+        }
+      }
+      $cache->set($cacheId, $extensions);
+    }
+    if (array_key_exists(inflector::plural($name), $extensions)) {
+      $this->extensionOpts = $extensions[inflector::plural($name)];
+      $this->handle_call($name);
+    } else {
+      echo "Unrecognised entity $name";
+    }
   }
 
   /**
@@ -785,9 +824,10 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   protected function check_update_access($entity, $s)
   {
-      if (!in_array($entity, $this->allow_updates)) {
+    if (!in_array($entity, $this->allow_updates) ||
+        (isset($extensionOpts['readOnly']) && $extensionsOpts['readOnly']===true)) {
       Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
-          throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
+      throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
     }
 
       if(array_key_exists('id', $s['fields']))
