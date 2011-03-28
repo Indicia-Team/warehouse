@@ -33,7 +33,6 @@ class Forgotten_Password_Controller extends Indicia_Controller {
 
   public function index()
   {
-    $email_config = Kohana::config('email');
 
     if ($this->auth->logged_in())
     {
@@ -51,53 +50,25 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       $post = new Validation($_POST);
       $post->pre_filter('trim', TRUE);
       $post->add_rules('UserID', 'required');
-      $user = ORM::factory('user', array('username' => $_POST['UserID']));
-      if ( ! $user->loaded )
-      {
-        $person = ORM::factory('person', array('email_address' => $_POST['UserID']));
-        if ( ! $person->loaded )
-        {
-          $this->template->content->error_message = 'Not a valid Username or Email address';
-          return;
-        }
-        $user = ORM::factory('user', array('person_id' => $person->id));
-        if ( ! $user->loaded )
-        {
-          $this->template->content->error_message = $_POST['UserID'].' is not a registered user';
-          return;
-        }
+      
+      $returned = $this->auth->user_and_person_by_username_or_email($_POST['UserID']);
+      if (array_key_exists('error_message', $returned)) {
+        $this->template->content->error_message = $returned['error_message'];
+        return;
       }
-      else
-      {
-        $person = ORM::factory('person', $user->person_id);
-      }
-      if ( is_null($user->core_role_id) )
+      $user = $returned['user'];
+      $person = $returned['person'];
+      if ( is_null($user->core_role_id) && ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all()===0)
       {
         $this->template->content->error_message = $_POST['UserID'].' does not have permission to log on to this website';
         return;
       }
-      $link_code = $this->auth->hash_password($user->username);
-      $user->__set('forgotten_password_key', $link_code);
-      $user->save();
-      try
-      {
-        $swift = email::connect();
-        $message = new Swift_Message($email_config['forgotten_passwd_title'],
-                                   View::factory('templates/forgotten_password_email')->set(array('server' => $email_config['server_name'], 'new_password_link' => '<a href="'.url::site().'new_password/email/'.$link_code.'">'.url::site().'new_password/email/'.$link_code.'</a>')),
-                                   'text/html');
-        $recipients = new Swift_RecipientList();
-        $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
-        $swift->send($message, $recipients, $email_config['address']);
-      }
-      catch (Swift_Exception $e)
-      {
-        kohana::log('error', "Error sending forgotten password: " . $e->getMessage());
-        throw new Kohana_User_Exception('swift.general_error', $e->getMessage());
-      }
-      kohana::log('info', "Forgotten password sent to $person->first_name $person->surname");
+      
+      $this->auth->send_forgotten_password_mail($user, $person);
+      
       $this->template->title = 'Email Sent';
       $this->template->content = new View('login/login_message');
-      $this->template->content->message = 'An email providing a link which will allow your password to be reset has been sent to the specified email address, or if a Username was provided, to the registered email address for that User.<br />';
+      $this->template->content->message = 'An email providing a link which will allow your password to be reset has been sent to the specified email address, or if a username was provided, to the registered email address for that user.<br />';
     }
   }
 

@@ -48,6 +48,7 @@ $indicia_templates = array(
   'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
       '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
   'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
+  'password_input' => '<input type="password" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
   'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
   'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
   'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
@@ -1100,6 +1101,29 @@ class data_entry_helper extends helper_base {
     return map_helper::map_panel($options, $olOptions);
   }
 
+ /**
+  * Helper function to output an HTML password input. For security reasons, this does not re-load existing values
+  * or display validation error messages and no default can be set.
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name by which the password will be passed to the authentication system.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the text input control.
+  */
+  public static function password_input() {
+    $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options = array_merge(array(
+      'default'=>''
+    ), $options);
+    return self::apply_template('password_input', $options);
+  }
+  
  /**
   * Helper function to output a textbox for determining a locality from an entered postcode.
   *

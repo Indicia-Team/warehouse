@@ -52,10 +52,12 @@
   <label for="password2">Repeat Password</label>
   <input tabindex="4" type = "password" name = "password2" id = "password2" value="<?php echo $password2; ?>" class="narrow" >
 </li>
+<?php if ( is_numeric($user_model->core_role_id) ) { ?>
 <li>
   <label for="remember_me" >Remember me</label>
   <input tabindex="5" type="checkbox" id="remember_me" name="remember_me" class="default" />
 </li>
+<?php } ?>
 </ol>
 </fieldset>
   <input tabindex="6" type = "submit" value = "Submit New Password" />

@@ -145,9 +145,17 @@ class New_Password_Controller extends Indicia_Controller {
     if ($userstatus and $personstatus) {
       $user->save();
       $person->save();
-      // with the password updated, login and jump to the home page
-      $this->auth->login($user->id, $password);
-      url::redirect(arr::remove('requested_page', $_SESSION));
+      // we need different paths for core users and web site users
+      if (is_null($user->core_role_id)) {
+        // just return a success confirmation, can't log them in as not a core user
+        $this->template->title = 'Password reset successfully';
+        $this->template->content = new View('login/login_message');
+        $this->template->content->message = 'Your indicia password has been reset and you can now use the new password to log in to your web site.<br />';
+      } else {
+        // with the password updated, login and jump to the home page
+        $this->auth->login($user->id, $password);
+        url::redirect(arr::remove('requested_page', $_SESSION));
+      }
 
     } else {
       // errors are now embedded in the model
