@@ -739,9 +739,13 @@ mapInitialisationHooks.push(function(div) {
     $params = array();
     // get defaults first
     if (isset($options['paramDefaults'])) {
-      foreach ($options['paramDefaults'] as $key=>$value) {        
-        // We have found a parameter, so put it in the request to the report service        
-        $params[$key]=$value;
+      foreach ($options['paramDefaults'] as $key=>$value) {
+        // trim data to ensure blank lines are not handled.
+        $key = trim($key);
+        $value = trim($value);
+        // We have found a parameter, so put it in the request to the report service
+        if (!empty($key) && !empty($value))
+          $params[$key]=$value;
       }
     }
     // Are there any parameters embedded in the URL, e.g. after submitting the params form?
