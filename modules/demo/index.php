@@ -113,6 +113,22 @@ These 2 demos need to be fixed and refined.
 <li><a href="test_treeview.php">Demonstration of 3 term based treeviews.</a></li>
 <li><a href="../../index.php/services/data/location?mode=xml&view=detail">List the locations as XML by calling the Data service</a></li>
 -->
+<li>
+<h2>Web-site User Control Demonstrations</h2>
+<ol>
+<li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="login_control.php">Web-site Login Control</a></div>
+<p>Designed to be used on client web-sites to allow site users to be authenticated by using their user credentials stored 
+on indicia core. It returns their user id and site role to the client web-site. This can then be used to control what the 
+user can do on the site and to associate any data submissions with the correct user id.
+View the source code in <a href="viewsource.php?file=login_control.php">login_control.php</a>.</p>
+</li>
+<li class="ui-widget-content ui-corner-all"><div class="ui-widget-header"><a href="forgotten_password_control.php">Web-site Forgotten Password Control</a></div>
+<p>Designed to be used on client web-sites to allow site users to reset the password for their user credentials stored 
+on indicia core. It triggers an email to their registered email address which contains a link to a reset password page on indicia core.
+View the source code in <a href="viewsource.php?file=forgotten_password_control.php">forgotten_password_control.php</a>.</p>
+</li>
+</ol>
+</li>
 </ol>
 </div>
 </body>

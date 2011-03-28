@@ -96,6 +96,8 @@ class Service_Base_Controller extends Controller {
           // calculate the auth token from the nonce and the password. Does it match the request's auth token?
           if (isset($password) && sha1("$nonce:$password")==$array['auth_token']) {
             Kohana::log('info', "Authentication successful.");
+            // cache website_password for subsequent use by controllers
+            $this->website_password = $password;
             $authentic=true;            
           }
           if ($authentic) {
@@ -178,6 +180,7 @@ class Service_Base_Controller extends Controller {
       }
       echo $a;
     }
+    kohana::log('debug', 'Service_Base_Controller::handle_error, '.print_r($e, true));
   }
 
 

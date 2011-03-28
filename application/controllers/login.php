@@ -70,8 +70,8 @@ class Login_Controller extends Indicia_Controller {
           } else {
             url::redirect($url);
             return;
-          }                  
-        } else {        
+          }
+        } else {
           $this->auth->logout(TRUE);
         }
       } else {

@@ -19,7 +19,9 @@ $allowed = array(
   'advanced_data_entry/map.php',
   'reports/accessing_report_data.php',
   'reports/report_1.php',
-  'reports/reports_and_charts.php'
+  'reports/reports_and_charts.php',
+  'login_control.php',
+  'forgotten_password_control.php',
 );
 
 if ($_GET['file']) {
