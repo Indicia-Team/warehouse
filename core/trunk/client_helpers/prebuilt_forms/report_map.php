@@ -113,6 +113,7 @@ class iform_report_map {
       );
       if ($args['layer_picker']=='before')
         $r .= map_helper::layer_list($picker);
+      $options['standardControls']=array('panZoom');
     }
     if ($args['legend']!='none') {
       $legend = array(
