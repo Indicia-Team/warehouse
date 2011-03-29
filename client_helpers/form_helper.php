@@ -193,6 +193,8 @@ $('#form-picker').change(function(evt) {
       // current form settings will overwrite the default
       if (isset($options['currentSettings']) && isset($options['currentSettings'][$control['name']]))
         $ctrlOpts['default'] = $options['currentSettings'][$control['name']];
+      else 
+        $ctrlOpts['default'] = '';
       if (!isset($control['required']) || $control['required']===true) {
         $ctrlOpts['class'] = 'required';
         $ctrlOpts['suffixTemplate'] = 'requiredsuffix';
