@@ -180,23 +180,24 @@ $('#form-picker').change(function(evt) {
       $ctrlOpts = array(
         'fieldname' => $control['name'],
         'label' => lang::get($control['caption']),
-        'sep' => '<br/>'
+        'sep' => '<br/>',
+        'class' => ''
       );
       if ($type=='text_input' || $type=='textarea') 
-        $ctrlOpts['class']='control-width-6';      
+        $ctrlOpts['class'] .= 'control-width-6 ';      
       if (isset($control['options']))
         $ctrlOpts['lookupValues'] = $control['options'];
       if (isset($control['description']))
         $ctrlOpts['helpText'] = $control['description'];
-      if (isset($control['default']))
-        $ctrlOpts['default'] = $control['default'];
       // current form settings will overwrite the default
       if (isset($options['currentSettings']) && isset($options['currentSettings'][$control['name']]))
         $ctrlOpts['default'] = $options['currentSettings'][$control['name']];
-      else 
+      elseif (isset($control['default']))
+        $ctrlOpts['default'] = $control['default'];
+      else
         $ctrlOpts['default'] = '';
       if (!isset($control['required']) || $control['required']===true) {
-        $ctrlOpts['class'] = 'required';
+        $ctrlOpts['class'] .= 'required ';
         $ctrlOpts['suffixTemplate'] = 'requiredsuffix';
       }
       if (!isset($fieldsets[$fieldset])) 

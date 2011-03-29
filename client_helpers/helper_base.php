@@ -570,7 +570,7 @@ mapSettingsHooks.push(add_map_tools)
     $replaceTags=array();
     $replaceValues=array();
     foreach ($params as $param=>$value) {
-      if (is_string($value) || empty($value)) {
+      if (!is_array($value) && !is_object($value)) {
         array_push($replaceTags, '{'.$param.'}');
         // allow sep to have <br/>
         $value = ($param == 'sep' || $allowHtml) ? $value : htmlSpecialChars($value);
@@ -965,7 +965,7 @@ $onload_javascript
     $replaceTags=array();
     $replaceValues=array();
     foreach (array_keys($options) as $option) {
-      if (is_string($options[$option]) || empty($options[$option])) {
+      if (!is_array($options[$option]) && !is_object($options[$option])) {
         array_push($replaceTags, '{'.$option.'}');
         array_push($replaceValues, $options[$option]);
       }
