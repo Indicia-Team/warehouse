@@ -379,7 +379,6 @@ class user_helper extends helper_base {
     $postargs = array(secure_msg::SEALED => $sealed, "auth_token" => $readAuth['auth_token'],
         "nonce" => $readAuth['nonce']);
     $response = self::http_post($url, $postargs);
-    print_r($response);
     // decrypt response
     $output = secure_msg::unseal_response($response['output'], $website_password);
      
