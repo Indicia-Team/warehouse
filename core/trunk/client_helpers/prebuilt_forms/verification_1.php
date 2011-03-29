@@ -240,7 +240,7 @@ class iform_verification_1 {
         $sub = data_entry_helper::wrap(array(
           'comment' => $comment,
           'occurrence_id' => $_POST['occurrence:id'],
-		  'created_by_id' => $indicia_user_id
+          'created_by_id' => $indicia_user_id
         ), 'occurrence_comment');
         $logResponse = data_entry_helper::forward_post_to('occurrence_comment', $sub, $loggingAuth['write_tokens']);
         if (!array_key_exists('success', $logResponse)) {
