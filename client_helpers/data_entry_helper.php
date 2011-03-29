@@ -1053,7 +1053,8 @@ class data_entry_helper extends helper_base {
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>presetLayers</b><br/>
   * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
-  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth', 'multimap_default', 'multimap_landranger'</li>
+  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth' (deprecated, use bing_aerial), 
+  * 'bing_aerial', 'bing_hybrid, 'bing_shaded', 'multimap_default', 'multimap_landranger'</li>
   * <li><b>edit</b><br/>
   * True or false to include the edit controls for picking spatial references.</li>
   * <li><b>locate</b><br/>

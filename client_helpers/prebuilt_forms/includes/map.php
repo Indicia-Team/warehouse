@@ -80,6 +80,9 @@ function iform_map_get_map_parameters() {
         'google_hybrid' => 'Google Hybrid',
         'google_satellite' => 'Google Satellite',
         'virtual_earth' => 'Microsoft Virtual Earth',
+        'bing_aerial' => 'Bing Aerial',
+        'bing_hybrid' => 'Bing Hybrid',
+        'bing_shaded' => 'Bing Shaded',
         'multimap_default' => 'Multimap',
         'multimap_landranger' => 'Multimap with OS Landranger'
       ),

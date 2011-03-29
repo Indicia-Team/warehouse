@@ -333,6 +333,9 @@ mapInitialisationHooks = [];
         openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true}); },
         nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true}); },
         virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
+        bing_aerial : function() { return new OpenLayers.Layer.VirtualEarth('Bing Aerial', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
+        bing_hybrid : function() { return new OpenLayers.Layer.VirtualEarth('Bing Hybrid', {'type': VEMapStyle.Hybrid, 'sphericalMercator': true}); },
+        bing_shaded : function() { return new OpenLayers.Layer.VirtualEarth('Bing Shaded', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
         multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
         multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
       };
