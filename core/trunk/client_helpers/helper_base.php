@@ -118,6 +118,11 @@ class helper_base extends helper_config {
   );
   
   /**
+   * @var array List of messages defined to pass to the validation plugin.
+   */
+  public static $validation_messages = array();
+  
+  /**
    * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the
    * list, allowing our CSS to override other stuff.
    */
