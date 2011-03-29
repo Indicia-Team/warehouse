@@ -175,7 +175,7 @@ class map_helper extends helper_base {
           $presetLayers[] = 'google_physical';
         }
         // Fallback as we don't need a key for this.
-        $presetLayers[] = 'virtual_earth';
+        $presetLayers[] = 'bing_aerial';
       }
       $options = array_merge(array(
           'indiciaSvc'=>self::$base_url,
@@ -220,6 +220,7 @@ class map_helper extends helper_base {
               self::add_resource('multimap');
               break;
             case 'virtual':
+            case 'bing':
               self::add_resource('virtualearth');
               break;
           }

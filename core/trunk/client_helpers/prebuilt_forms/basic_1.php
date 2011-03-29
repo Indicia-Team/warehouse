@@ -125,10 +125,10 @@ class iform_basic_1 {
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     $r .= "</div>\n";
     $r .= "<div id=\"place\">\n";
-    // for this form, use virtual earth and no geoplanet lookup, since then it requires no API keys so is a good
+    // for this form, use bing and no geoplanet lookup, since then it requires no API keys so is a good
     // quick demo of how things work.
     $r .= data_entry_helper::map(array(
-      'presetLayers' => array('virtual_earth'),
+      'presetLayers' => array('bing_aerial'),
       'locate' => false
     ));
     $r .= "</div>\n";    
