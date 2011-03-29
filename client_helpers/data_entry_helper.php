@@ -621,7 +621,7 @@ class data_entry_helper extends helper_base {
       'msgFileTooBig' => lang::get('file too big for warehouse'),
       'runtimes' => array('html5','silverlight','flash','gears','browserplus','html4'),
       'autoupload' => true,
-      'imagewidth' => 250,
+      'imageWidth' => 200,
       'uploadScript' => self::getRootFolder() . $relpath . 'upload.php',
       'destinationFolder' => self::getRootFolder() . $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
