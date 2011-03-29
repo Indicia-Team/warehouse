@@ -742,8 +742,10 @@ mapInitialisationHooks = [];
               {'displayClass': align + 'olControlDrawFeaturePoint'}));
         }
       });
-      var click = new OpenLayers.Control.Click({'displayClass':align + 'olControlNavigation'});
-      div.map.editLayer.clickControl = click;
+      if (div.settings.editLayer && div.settings.clickForSpatialRef) {
+        var click = new OpenLayers.Control.Click({'displayClass':align + 'olControlNavigation'});
+        div.map.editLayer.clickControl = click;
+      }
       if (toolbarControls.length>0) {
         // Add the click control to the toolbar alongside the other controls.
         toolbarControls.push(click);
