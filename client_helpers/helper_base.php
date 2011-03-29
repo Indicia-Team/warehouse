@@ -491,15 +491,29 @@ mapInitialisationHooks.push(function(div) {
   mapDiv = div;
 });
 $('#run-report').click(function(evt) {
-  featuresWkt = [];
+  var geoms=[], featureClass='', geom;
   if (mapDiv.map.editLayer.features.length===0) {
     evt.preventDefault();
     alert('Please supply a search area for the report.');
   }
   $.each(mapDiv.map.editLayer.features, function(i, feature) {
-    featuresWkt.push(feature.geometry.toString());
+    if (i===0) {
+      // grab the first feature's type
+      featureClass = feature.geometry.CLASS_NAME;
+    }
+    if (featureClass == feature.geometry.CLASS_NAME) {
+      // for subsequent features, ignore them unless the same type as the first
+      geoms.push(feature.geometry);
+    }
   });
-  $('.hidden-wkt').val(featuresWkt.join('|'));
+  if (featureClass === 'OpenLayers.Geometry.Polygon') {
+    geom = new OpenLayers.Geometry.MultiPolygon(geoms);
+  } else if (featureClass === 'OpenLayers.Geometry.LineString') {
+    geom = new OpenLayers.Geometry.MultiLineString(geoms);
+  } else if (featureClass === 'OpenLayers.Geometry.Point') {
+    geom = new OpenLayers.Geometry.MultiPoint(geoms);
+  }
+  $('.hidden-wkt').val(geom.toString());
 });
 var add_map_tools = function(opts) {\n";
       foreach ($tools as $tool) {

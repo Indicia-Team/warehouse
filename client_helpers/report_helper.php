@@ -444,6 +444,8 @@ mapInitialisationHooks.push(function(div) {
   div.map.addLayer(layer);
   if (layer.getDataExtent()!==null)
     div.map.zoomToExtent(layer.getDataExtent());
+  /*
+  @todo Implement clicking on vectors
   // create a control for selecting features and displaying popups
   var selectControl = new OpenLayers.Control.SelectFeature(layer,
     {clickout: true, toggle: false,
@@ -451,7 +453,9 @@ mapInitialisationHooks.push(function(div) {
                         toggleKey: \"ctrlKey\", // ctrl key removes from selection
                         multipleKey: \"shiftKey\", // shift key adds to selection
                         box: true, onSelect: onFeatureSelect
-});
+  });
+  */
+
   div.map.addControl(selectControl);
 
   selectControl.activate();
