@@ -454,11 +454,10 @@ mapInitialisationHooks.push(function(div) {
                         multipleKey: \"shiftKey\", // shift key adds to selection
                         box: true, onSelect: onFeatureSelect
   });
-  */
-
   div.map.addControl(selectControl);
-
   selectControl.activate();
+  */
+  
 });\n";
     return $r;
   }
