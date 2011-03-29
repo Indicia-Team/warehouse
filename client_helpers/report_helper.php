@@ -442,7 +442,8 @@ mapInitialisationHooks.push(function(div) {
   }
   report_helper::$javascript.= "  layer.addFeatures(features);
   div.map.addLayer(layer);
-  div.map.zoomToExtent(layer.getDataExtent());
+  if (layer.getDataExtent()!==null)
+    div.map.zoomToExtent(layer.getDataExtent());
   // create a control for selecting features and displaying popups
   var selectControl = new OpenLayers.Control.SelectFeature(layer,
     {clickout: true, toggle: false,
