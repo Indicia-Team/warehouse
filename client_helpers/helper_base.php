@@ -411,10 +411,11 @@ class helper_base extends helper_config {
         'helpText' => $info['description'],
         'fieldname' => $fieldPrefix.$key
       );
-      // If this parameter is in the URL or post data, put it in the control
-      if (isset($options['defaults'][$key])) {
+      // If this parameter is in the URL or post data, put it in the control instead of the original default
+      if (isset($options['defaults'][$key]))
         $ctrlOptions['default'] = $options['defaults'][$key];
-      }
+      elseif (isset($info['default'])) 
+        $ctrlOptions['default'] = $info['default'];
       if (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
         $r .= "<input type=\"hidden\" name=\"$key\" value=\"".$options['presetParams'][$key]."\" />\n";
       } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {

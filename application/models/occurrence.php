@@ -170,6 +170,13 @@ class Occurrence_Model extends ORM
         'population_call'=>'direct:taxon_list:id:title',
         'linked_to'=>'website_id',
         'linked_filter_field'=>'website_id'
+      ),
+      'occurrence:record_status' => array(
+        'display' => 'Record Status',
+        'description' => 'Select the initial status for imported records',
+        'datatype' => 'lookup',
+        'lookup_values' => 'C:Data entry complete/unverified,V:Verified,I:Data entry still in progress',
+        'default' => 'C'
       )
     );
   }
