@@ -748,7 +748,9 @@ mapInitialisationHooks = [];
       }
       if (toolbarControls.length>0) {
         // Add the click control to the toolbar alongside the other controls.
-        toolbarControls.push(click);
+        if (typeof click!=="undefined") {
+          toolbarControls.push(click);
+        }
         var toolbarOpts = {
            displayClass: 'olControlEditingToolbar',
            defaultControl: toolbarControls[0]
@@ -762,8 +764,10 @@ mapInitialisationHooks = [];
         // as these all appear on the toolbar, don't need to worry about activating individual controls, as user will pick which one they want.
       } else {
         // no other selectable controls, so no need for a click button on toolbar
-        div.map.addControl(click);
-        click.activate();
+        if (typeof click!=="undefined") {
+          div.map.addControl(click);
+          click.activate();
+        }
       }
 
       // Disable the scroll wheel from zooming if required
