@@ -26,7 +26,7 @@
   LEFT JOIN locations l ON l.id=s.location_id
   LEFT JOIN users u ON u.id=o.verified_by_id
   WHERE su.id=#survey#
-  AND o.record_status NOT IN ('I','T')
+  AND o.record_status NOT IN ('R','T')
   AND st_intersects(s.geom, st_geomfromtext('#searchArea#',900913))
   #order_by#
   </query>
@@ -35,7 +35,7 @@
   </order_bys>
   <params>
     <param name='survey' display='Survey' description='Select the survey to return data for' datatype='lookup'
-        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' emptyvalue="0" />
     <param name='searchArea' display='Report Search Area' datatype='geometry' />
   </params>
   <columns for="Occurrences List">
