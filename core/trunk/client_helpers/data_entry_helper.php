@@ -3025,6 +3025,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Internal method to output either a checkbox group or a radio group.
    */
   private static function check_or_radio_group($options, $type) {
+      watchdog('default', print_r($options['default'], true));
     global $indicia_templates;
     $options = array_merge(
       array(
@@ -3048,11 +3049,18 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $items = "";
     $idx = 0;
     foreach ($lookupItems as $value => $template) {
+      if (isset($options['default'])) {
+        if (is_array($options['default']))
+          $checked = in_array($value, $options['default']);
+        else
+          $checked = $options['default'] == $value;
+      } else
+        $checked=false;
       $item = array_merge(
         $options,
         array(
           'disabled' => isset($options['disabled']) ? $options['disabled'] : '',
-          'checked' => (isset($options['default']) && $options['default'] == $value) ? ' checked="checked" ' : '', // cant use === as need to compare an int with a string representation
+          'checked' => $checked ? ' checked="checked" ' : '', // cant use === as need to compare an int with a string representation
           'type' => $type,
           'value' => $value,
           'class' => $itemClass,
