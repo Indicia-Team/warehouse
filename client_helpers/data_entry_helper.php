@@ -257,11 +257,6 @@ class data_entry_helper extends helper_base {
   public static $interim_image_expiry=14400;
 
   /**
-   * @var array List of messages defined to pass to the validation plugin.
-   */
-  public static $validation_messages = array();
-
-  /**
    * @var Array List of fields that are to be stored in a cookie and reloaded the next time a form is accessed. These
    * are populated by implementing a hook function called indicia_define_remembered_fields which calls set_remembered_fields.
    */
