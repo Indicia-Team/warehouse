@@ -236,8 +236,12 @@ class iform_distribution_map_1 {
       map_helper::$onload_javascript .= "\n    filter += ' AND taxon_meaning_id=$meaningId';\n";
     if ($args['cql_filter']) 
       map_helper::$onload_javascript .= "\n    filter += ' AND(".str_replace("'","\'",$args['cql_filter']).")';\n";
+    if ($args['show_all_species'])
+      $layerTitle = lang::get('All species occurrences');
+    else
+      $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
     map_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
-          '".$args['layer_title']."',
+          '".$layerTitle."',
           '$url',
           {layers: '".$args["wms_feature_type"]."', transparent: true, CQL_FILTER: filter $style},
           {isBaseLayer: false, sphericalMercator: true, singleTile: true}
@@ -266,10 +270,6 @@ class iform_distribution_map_1 {
       $options['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
     }
     // output a legend
-    if ($args['show_all_species'])
-      $layerTitle = lang::get('All species occurrences');
-    else
-      $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
     $r .= map_helper::layer_list(array(
       'includeSwitchers' => true,
       'includeHiddenLayers' => true
