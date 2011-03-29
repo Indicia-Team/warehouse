@@ -645,8 +645,6 @@ class data_entry_helper extends helper_base {
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('flash'));
     if ($browser['name']=='chrome')
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('html5'));
-    $options['id'] = $options['table']. (isset($options['id']) ? '-'.$options['id'] : '');
-    $containerId = 'container-'.$options['id'];    
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
     if ($indicia_templates['file_box_initial_file_info']!='')
@@ -654,6 +652,8 @@ class data_entry_helper extends helper_base {
     if ($indicia_templates['file_box_uploaded_image']!='')
       $defaults['file_box_uploaded_imageTemplate'] = $indicia_templates['file_box_uploaded_image'];
     $options = array_merge($defaults, $options);
+    $options['id'] = $options['table'] .'-'. $options['id'];
+    $containerId = 'container-'.$options['id'];
 
     if ($options['codeGenerated']!='php') {
       // build the JavaScript including the required file links
