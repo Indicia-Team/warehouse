@@ -115,7 +115,8 @@ class iform_my_dot_map {
         array(
           'name' => 'wms_dist_1_opacity',
           'caption' => 'Opacity',
-          'description' => 'Opacity of layer 1, ranging from 0 (not visible) to 1 (fully opaque).',
+          'description' => 'Opacity of layer 1, ranging from 0 (not visible) to 1 (fully opaque). If you want to print this map using Internet Explorer 8 or earlier it is recommended '.
+             'that you set this to 1 otherwise the printout may not render correctly.',
           'type' => 'textfield',
           'group'=>'Distribution Layer 1',
           'required'=>false
@@ -186,7 +187,8 @@ class iform_my_dot_map {
         array(
           'name' => 'wms_dist_2_opacity',
           'caption' => 'Opacity',
-          'description' => 'Opacity of layer 2, ranging from 0 (not visible) to 1 (fully opaque).',
+          'description' => 'Opacity of layer 2, ranging from 0 (not visible) to 1 (fully opaque). If you want to print this map using Internet Explorer 8 or earlier it is recommended '.
+             'that you set this to 1 otherwise the printout may not render correctly.',
           'type' => 'textfield',
           'group'=>'Distribution Layer 2',
           'required'=>false
@@ -256,7 +258,8 @@ class iform_my_dot_map {
         array(
           'name' => 'wms_dist_3_opacity',
           'caption' => 'Opacity',
-          'description' => 'Opacity of layer 3, ranging from 0 (not visible) to 1 (fully opaque).',
+          'description' => 'Opacity of layer 3, ranging from 0 (not visible) to 1 (fully opaque). If you want to print this map using Internet Explorer 8 or earlier it is recommended '.
+             'that set this to 1 otherwise the printout may not render correctly.',
           'type' => 'textfield',
           'group'=>'Distribution Layer 3',
           'required'=>false
@@ -399,13 +402,18 @@ class iform_my_dot_map {
       // Get the style if there is one selected
       $style = $args["wms_dist_$layerId"."_style"] ? ", styles: '".$args["wms_dist_$layerId"."_style"]."'" : '';
       // and also the opacity
-      $opacity = $args["wms_dist_$layerId"."_opacity"] ? $args["wms_dist_$layerId"."_opacity"] : 0.5;
+      $opacity = $args["wms_dist_$layerId"."_opacity"] ? $args["wms_dist_$layerId"."_opacity"] : 1;
+      if ($opacity!=1) 
+        $opacity = " opacity: $opacity,";
+      else
+        // don't set opacity if not required as it messes up printing in IE<=8
+        $opacity = '';
       $filter = ', CQL_FILTER: "'.$filter.'"';
       data_entry_helper::$onload_javascript .= "var distLayer$layerId = new OpenLayers.Layer.WMS(
         '".str_replace("'", "\'", $args["wms_dist_$layerId"."_title"])."',
         '$url',
         {layers: '".$args["wms_dist_$layerId"."_layer"]."', transparent: true $filter $style},
-        {isBaseLayer: false, opacity: $opacity, sphericalMercator: true, singleTile: true}
+        {isBaseLayer: false,$opacity sphericalMercator: true, singleTile: true}
       );\n";
       return "distLayer$layerId";
     }
