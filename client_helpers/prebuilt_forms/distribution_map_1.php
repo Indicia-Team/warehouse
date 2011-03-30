@@ -129,14 +129,6 @@ class iform_distribution_map_1 {
           'required' => false
         ),
         array(
-          'name' => 'require_go_button',
-          'caption' => 'Require Go button click',
-          'description' => 'Provide a Go button for the user to click before loading the map for a selected species. Otherwise the map loads as soon as they input or select a value.',
-          'type' => 'boolean',
-          'default' => true,
-          'group' => 'Distribution Layer'
-        ),
-        array(
           'name' => 'taxon_list_id',
           'caption' => 'Taxon List ID',
           'description' => 'ID of the taxon list from which taxa are being selected.',
@@ -218,8 +210,8 @@ class iform_distribution_map_1 {
         $meaningId = $taxonIdentifier;
       // We still need to fetch the species record, to get its common name
       $fetchOpts = array(
-      'table' => 'taxa_taxon_list',
-      'extraParams' => $readAuth + array(
+        'table' => 'taxa_taxon_list',
+        'extraParams' => $readAuth + array(
         'view' => 'detail',
         'language_iso' => iform_lang_iso_639_2($user->lang),
         'taxon_meaning_id' => $meaningId

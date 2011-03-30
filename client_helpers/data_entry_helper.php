@@ -3025,7 +3025,6 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Internal method to output either a checkbox group or a radio group.
    */
   private static function check_or_radio_group($options, $type) {
-      watchdog('default', print_r($options['default'], true));
     global $indicia_templates;
     $options = array_merge(
       array(

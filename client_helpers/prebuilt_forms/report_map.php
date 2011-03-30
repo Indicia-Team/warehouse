@@ -113,6 +113,7 @@ class iform_report_map {
       );
       if ($args['layer_picker']=='before')
         $r .= map_helper::layer_list($picker);
+      // as we have a layer picker, we can drop the layerSwitcher from the OL map.
       $options['standardControls']=array('panZoom');
     }
     if ($args['legend']!='none') {
