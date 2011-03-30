@@ -46,6 +46,7 @@
 		    	</subTable>
             	<attributes separator='|' /> 
 		    	<tabColumn name='comment' />
+		    	<tabColumn name='id' visible='true' />
           	</subTable>    
           </subTable>    
       </table>
