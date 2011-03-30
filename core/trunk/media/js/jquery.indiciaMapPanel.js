@@ -806,7 +806,6 @@ $.fn.indiciaMapPanel.defaults = {
     initial_zoom: 5,
     scroll_wheel_zoom: true,
     proxy: '',
-    displayFormat: "image/png",
     presetLayers: [],
     tilecacheLayers: [],
     indiciaWMSLayers: {},
