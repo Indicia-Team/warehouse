@@ -172,9 +172,10 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   public function importer() {
     $this->SetView('importer', '', array('model'=>$this->controllerpath));
     $this->template->title=$this->pagetitle.' Import';
-    // Setup a breadcrumb
-    $this->page_breadcrumbs[] = html::anchor($this->model->object_name, $this->pagetitle);
-    $this->page_breadcrumbs[] = $this->pagetitle.' Import';
+    // Setup a breadcrumb as if we are in the edit page since this will give us the correct links upwards
+    $this->defineEditBreadcrumbs();
+    // but make it clear the bottom level breadcrumb is the importer
+    $this->page_breadcrumbs[count($this->page_breadcrumbs)-1] = kohana::lang('misc.model_import', $this->model->caption());
   }
   
   /**

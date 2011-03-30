@@ -40,6 +40,7 @@ $default_terms = array(
   'first name'=>'First Name',
   'lat long 4326'=>'Lat/Long (WGS84)',
   'loading'=>'Loading',
+  'metaFields'=>'Other Fields',
   'next step'=>'Next Step',
   'phone number'=>'Phone Number',
   'prev step'=>'Previous Step',

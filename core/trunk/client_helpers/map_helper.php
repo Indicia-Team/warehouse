@@ -372,9 +372,6 @@ mapInitialisationHooks.push(function(div) {
   div.map.events.register('removelayer', div.map, function(object, element) {
     $('#'+object.layer.id.replace(/\./g,'-')).remove();
   });
-  var l = new OpenLayers.Layer.Vector('test');
-  div.map.addLayer(l);
-  div.map.removeLayer(l);
   ";
     if ($options['includeSwitchers']) {
       self::$javascript .= "  var map=div.map;
