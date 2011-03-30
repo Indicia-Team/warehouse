@@ -54,10 +54,7 @@ class Sample_Model extends ORM_Tree
   // define underlying fields which the user would not normally see, e.g. so they can be hidden from selection
   // during a csv import
   protected $hidden_fields=array(
-    'geom',
-    'date_start',
-    'date_end',
-    'date_type'
+    'geom'
   );
 
   /**

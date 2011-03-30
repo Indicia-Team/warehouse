@@ -18,7 +18,8 @@ $lang = array
   'unsubscribe'=>'Unsubscribe',
   'notification_subject'=>'Messages from %s',
   'notification_intro'=>'Here are your latest messages from %s',
-  'then' => 'then'  
+  'then' => 'then',
+  'model_import' => '%s import'
 );
 
 ?>

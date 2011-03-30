@@ -34,6 +34,9 @@ class import_helper extends helper_base {
   /**
    * Outputs an import wizard. The csv file to be imported should be available in the $_POST data, unless
    * the existing_file option is specified.
+   * Additionally, if there are any preset values which apply to each row in the import data then you can 
+   * pass these to the importer in the $_POST data. For example, you could set taxa_taxon_list:taxon_list_id=3 in
+   * the $_POST data when importing species data to force it to go into list 3.
    *
    * @param array $options Options array with the following possibilities:<ul>
    * <li><b>model</b><br/>
@@ -108,6 +111,10 @@ class import_helper extends helper_base {
       $r .= self::build_params_form($formOptions);
       $r .= '<input type="hidden" name="import_step" value="1" />';
       $r .= '<input type="submit" name="submit" value="'.lang::get('Next').'" class="ui-corner-all ui-state-default button" />';
+      // copy any $_POST data into the form, as this would mean preset values that are provided by the form which the uploader
+      // was triggered from. E.g. if on a species checklist, this could be this checklists ID which the user does not need to pick.
+      foreach ($_POST as $key=>$value)
+        $r .= "<input type=\"hidden\" name=\"$key\" value=\"$value\" />\n";
       $r .= '</fieldset></form>';      
       return $r;
     } else {
@@ -130,10 +137,7 @@ class import_helper extends helper_base {
         unset($_POST[$key]);
       }
     } 
-    if (isset($_POST['import_step']))
-      $settings = json_encode($_POST);
-    else 
-      $settings = '{}';    
+    $settings = json_encode($_POST);
     // cache the mappings
     $metadata = array('settings' => $settings);
     $post = array_merge($options['auth']['write_tokens'], $metadata);
@@ -153,23 +157,17 @@ class import_helper extends helper_base {
     $fields = json_decode($response['output'], true);
     $request = str_replace('get_import_fields', 'get_required_fields', $request);
     $response = self::http_post($request, array());
-    $model_required_fields = json_decode($response['output'], true); 
-    $unlinked_fields = array_diff_key($fields, $_POST);
-    // also surpress any required fk_ fields (which would be looked up) if we have an id for the same field 
-    // in the available data
-    foreach ($unlinked_fields as $field => $value) {
-      if ((preg_match('/^fk_/', $field) ||
-          preg_match('/:fk_/', $field)) &&
-          array_key_exists(str_replace('fk_', '', $field).'_id', $_POST)) 
-        unset($unlinked_fields[$field]);
-    }
+    $model_required_fields = self::expand_ids_to_fks(json_decode($response['output'], true));
+    $preset_fields = self::expand_ids_to_fks(array_keys($_POST));
+    
+    $unlinked_fields = array_diff_key($fields, array_combine($preset_fields, $preset_fields));
+    // only use the required fields that are available for selection - the rest are handled somehow else
+    $unlinked_required_fields = array_intersect($model_required_fields, array_keys($unlinked_fields));
     
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
-    // only use the required fields that are available for selection - the rest are handled somehow else    
-    $unlinked_required_fields = array_intersect($model_required_fields, array_keys($unlinked_fields));
     
     self::clear_website_survey_fields($unlinked_fields);
     self::clear_website_survey_fields($unlinked_required_fields);
@@ -188,7 +186,8 @@ class import_helper extends helper_base {
     }
     $r .= '</tbody>';
     $r .= '</table>';
-    $r .= '<div id="dynamic-instructions" style="float: right; width: 40%;"><span id="required-instruct">The following fields must be matched before you can continue:</span><br/><ul></ul></div></div>';
+    $r .= '<div id="dynamic-instructions" style="float: right; width: 40%;"><span id="required-instruct">'.
+        lang::get('The following fields must be matched before you can continue').':</span><br/><ul></ul></div></div>';
     $r .= '<input type="hidden" name="import_step" value="2" />';
     $r .= '<input type="submit" name="submit" id="submit" value="'.lang::get('Upload').'" class="ui-corner-all ui-state-default button" />';
     $r .= '</form>';
@@ -196,10 +195,19 @@ class import_helper extends helper_base {
       // copy the list of required fields
       var fields = $.extend(true, {}, required_fields);
       $('#dynamic-instructions li').remove();
+      var sampleVagueDates = [];
       // strip out the ones we have already allocated
       $.each($('#entry_form select'), function(i, select) {
         delete fields[select.value];
+        // special case for vague dates - if we have a complete sample vague date, then can strike out the sample:date required field
+        if (select.value.substr(0,12)=='sample:date_') {
+          sampleVagueDates.push(select.value);
+        }
       });
+      if (sampleVagueDates.length==3) {
+        // got a full vague date, so can remove the required date field
+        delete fields['sample:date'];
+      }
       var output = '';
       $.each(fields, function(field, caption) {
         output += '<li>'+caption+'</li>';
@@ -219,7 +227,7 @@ class import_helper extends helper_base {
       if (empty($caption)) {
         $tokens = explode(':', $field);
         $fieldname = $tokens[count($tokens)-1];
-        $caption = lang::get(str_replace(array('fk_', 'id_'), '', self::leadingCaps($fieldname)));
+        $caption = lang::get(self::leadingCaps(str_replace(array('fk_', 'id_'), '',$fieldname)));
       }
       $caption = self::translate_field($field, $caption);
       self::$javascript .= "required_fields['$field']='$caption';\n";
@@ -227,6 +235,22 @@ class import_helper extends helper_base {
     self::$javascript .= "update_required_fields();\n";
     self::$javascript .= "$('#entry_form select').change(function() {update_required_fields();});\n";
     return $r;
+  }
+  
+  /**
+   * When an array (e.g. $_POST containing preset import values) has values with actual ids in it, we need to 
+   * convert these to fk_* so we can compare the array of preset data with other arrays of expected data.
+   */
+  private static function expand_ids_to_fks($arr) {
+    $ids = preg_grep('/_id$/', $arr);
+    foreach ($ids as &$id) {
+      $id = str_replace('_id', '', $id);
+      if (strpos($id, ':')===false)
+        $id = "fk_$id";
+      else
+        $id = str_replace(':', ':fk_', $id);
+    }
+    return array_merge($arr, $ids);
   }
   
   /**
@@ -306,7 +330,7 @@ class import_helper extends helper_base {
   /**
    * Displays the upload result page.
    */
-  public static function upload_result($options) {
+  private static function upload_result($options) {
     $request = parent::$base_url."index.php/services/import/get_upload_result?uploaded_csv=".$_GET['uploaded_csv'];
     $request .= '&'.self::array_to_query_string($options['auth']['read']);
     $response = self::http_post($request, array());
@@ -344,12 +368,7 @@ class import_helper extends helper_base {
     $heading='';
     foreach ($fields as $field=>$caption) {
       list($prefix,$fieldname)=explode(':',$field);
-      // If this is a new section of data, output a heading
-      if ($prefix!=$heading) {
-        $heading = $prefix;
-        if (!empty($r)) $r .= '</optgroup>';
-        $r .= '<optgroup label="'.self::leadingCaps(lang::get($heading)).'">';
-      }
+      unset($option);
       if (empty($caption)) {
         // Skip the metadata fields
         if (!in_array($fieldname, $skipped)) {
@@ -365,10 +384,20 @@ class import_helper extends helper_base {
           } else {
             $caption = self::leadingCaps("$fieldname").$captionSuffix;
           }
-          $r .= self::model_field_option($field, $caption, $selected);
+          $option = self::model_field_option($field, $caption, $selected);
         }
       } else {
-        $r .= self::model_field_option($field, $caption, $selected);
+        $option = self::model_field_option($field, $caption, $selected);
+      }
+      // if we have got an option for this field, add to the list
+      if (isset($option)) {
+        // first check if we need a new heading
+        if ($prefix!=$heading) {
+          $heading = $prefix;
+          if (!empty($r)) $r .= '</optgroup>';
+          $r .= '<optgroup label="'.self::leadingCaps(lang::get($heading)).'">';
+        }
+        $r .= $option;
       }
     }
     $r = '<option>&lt;'.lang::get('Please select').'&gt;</option>'.$r.'</optgroup>';
