@@ -158,7 +158,7 @@ function iform_report_get_report_options($args, $auth) {
 function _get_initial_vals($type, $args) {
   global $user;
   $r = array();
-  if ($args['param_presets'] != ''){
+  if ($args[$type] != ''){
     $params = explode("\n", $args[$type]);
     foreach ($params as $param) {
       if (!empty($param)) {
