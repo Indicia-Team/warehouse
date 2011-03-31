@@ -240,20 +240,27 @@ class report_helper extends helper_base {
           $rowInProgress=true;
         }
         foreach ($options['columns'] as $field) {
-          $class='';
+          $classes=array();
           if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row);
-            $class=' class="actions"';
+            $classes='actions';
           } elseif (isset($field['template'])) {
             $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true);
           }
           else {
             $value = isset($field['fieldname']) && isset($row[$field['fieldname']]) ? $row[$field['fieldname']] : '';
             // The verification_1 form depends on the tds in the grid having a class="data fieldname".
-            $class=' class="data '.$field['fieldname'].'"';
-          }          
+            $classes[]='data';
+            $classes[]=$field['fieldname'];
+          }
+          if (isset($field['class']))
+            $classes[] = $field['class'];
+          if (count($classes)>0)
+            $class = ' class="'.implode(' ', $classes).'"';
+          else
+            $class = '';
           if (isset($field['img']) && $field['img']=='true' && !empty($value))
             $value = "<a href=\"$imagePath$value\" class=\"fancybox\"><img src=\"$imagePath"."thumb-$value\" /></a>";
           $r .= "<td$class>$value</td>\n";
@@ -748,7 +755,7 @@ mapInitialisationHooks.push(function(div) {
         $key = trim($key);
         $value = trim($value);
         // We have found a parameter, so put it in the request to the report service
-        if (!empty($key) && !empty($value))
+        if (!empty($key))
           $params[$key]=$value;
       }
     }
