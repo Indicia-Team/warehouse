@@ -168,11 +168,22 @@ class iform_mnhnl_collaborators_1 {
   }
   
   /** 
+   * Return the form metadata.
+   * @return array The definition of the form.
+   */
+  public static function get_mnhnl_collaborators_1_definition() {
+    return array(
+      'title'=>self::get_title(),
+      'category' => 'MNHNL forms',      
+      'description'=>'MNHNL Collaborators 1 - form designed for collaboration projects.'
+    );
+  }
+  /** 
    * Return the form title.
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'MNHNL Collaborators 1 - form designed for collaboration projects';  
+    return 'MNHNL Collaborators 1';  
   }
   
 /**

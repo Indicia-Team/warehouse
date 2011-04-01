@@ -345,12 +345,24 @@ class iform_pollenator_gallery {
   	
   }
 
+  /** 
+   * Return the form metadata.
+   * @return array The definition of the form.
+   */
+  public static function get_pollenator_gallery_definition() {
+    return array(
+      'title'=>self::get_title(),
+      'category' => 'SPIPOLL forms',      
+      'description'=>'Pollenators: Gallery Filter and Focus on Collection, Insect and Flower.'
+    );
+  }
+
   /**
    * Return the form title.
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'Pollenators: Gallery Filter and Focus on Collection, Insect and Flower';
+    return 'Pollenators: Gallery';
   }
 
   public static function get_perms($nid) {

@@ -383,6 +383,18 @@ class iform_pollenators {
   	
   }
 
+  /** 
+   * Return the form metadata.
+   * @return array The definition of the form.
+   */
+  public static function get_pollenators_definition() {
+    return array(
+      'title'=>self::get_title(),
+      'category' => 'SPIPOLL forms',      
+      'description'=>'Pollenators: Data Entry.'
+    );
+  }
+
   /**
    * Return the form title.
    * @return string The title of the form.
