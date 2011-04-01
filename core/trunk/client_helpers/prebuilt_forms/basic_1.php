@@ -69,7 +69,7 @@ class iform_basic_1 {
         'valueField'=>'id',
         'captionField'=>'title'
       ),
-	  array(
+      array(
       	'fieldname'=>'preferred',
         'label'=>'Preferred species only?',
         'helpText'=>'Should the selection of species be limited to preferred names only?',
