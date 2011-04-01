@@ -210,6 +210,8 @@ mapInitialisationHooks = [];
       // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
       if (data.sref.indexOf(' ')!==-1) {
         var parts=data.sref.split(' ');
+        // part 1 may have a comma at the end, so remove
+        parts[0]=parts[0].split(',')[0];
         $('#'+opts.srefLatId).val(parts[0]);
         $('#'+opts.srefLongId).val(parts[1]);
       }
@@ -310,6 +312,12 @@ mapInitialisationHooks = [];
       var corner2xy = corner2.split(', ');
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
       _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
+      if(!div.settings.searchLayer){ // no separate search layer, so have just put it on the editLayer
+          $('#'+opts.srefId).val(ref);
+          $('#'+opts.srefLatId).val(refxy[0]);
+          $('#'+opts.srefLongId).val(refxy[1]);
+          $('#'+opts.geomId).val(dataref);
+      }
     }
 
     /**

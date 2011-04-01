@@ -166,11 +166,11 @@ jQuery('#{parentControlId}').change();\n",
   'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />',
   'sref_textbox_latlong' => '<label for="{idLat}">{labelLat}:</label>'.
-        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /><br />' .
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{defaultLat}" /><br />' .
         '<label for="{idLong}">{labelLong}:</label>'.
-        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" />' .
+        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{defaultLong}" />' .
         '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
-        '<input type="text" id="{id}" name="{fieldname}" style="display:none" value="{default}" />',
+        '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
   'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\">{content}</td>",
   'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\"{colspan}>{content}</td>",
   'helpText' => "\n<p class=\"helpText\">{helpText}</p>",
@@ -1636,12 +1636,19 @@ class data_entry_helper extends helper_base {
     $options = self::check_options($options);
     if ($options['splitLatLong']) {
       // Outputting separate lat and long fields, so we need a few more options
+      $parts = explode(' ',$options['default']);
+      $parts[0] = explode(',', $parts[0]);
       $options = array_merge(array(
+        'defaultLat' => $parts[0][0],
+        'defaultLong' => $parts[1],
+        'fieldnameLat' => $options['srefField'].':lat',
+        'fieldnameLong' => $options['srefField'].':long',
         'labelLat' => lang::get('Latitude'),
         'labelLong' => lang::get('Longitude'),
         'idLat'=>'imp-sref-lat',
         'idLong'=>'imp-sref-long'
       ), $options);
+      unset($options['label']);
       $r = self::apply_template('sref_textbox_latlong', $options);
     } else
       $r = self::apply_template('sref_textbox', $options);
