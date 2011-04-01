@@ -63,7 +63,7 @@ class iform_basic_1 {
       array(
       	'fieldname'=>'list_id',
         'label'=>'Species List',
-        'helpText'=>'The Indicia ID for the species list that species can be selected from.',
+        'helpText'=>'The species list that species can be selected from.',
         'type'=>'select',
         'table'=>'taxon_list',
         'valueField'=>'id',
