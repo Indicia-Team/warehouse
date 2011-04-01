@@ -245,7 +245,7 @@ class report_helper extends helper_base {
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
             $value = self::get_report_grid_actions($field['actions'],$row);
-            $classes='actions';
+            $classes[]='actions';
           } elseif (isset($field['template'])) {
             $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true);
           }

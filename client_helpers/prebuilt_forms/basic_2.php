@@ -48,17 +48,23 @@ class iform_basic_2 {
   public static function get_parameters() {    
     return array(
       array(
-      	'name'=>'survey_id',
-        'caption'=>'Survey ID',
-        'description'=>'The ID of the survey that data will be posted into.',
-        'type'=>'int'
-      ),
+          'name'=>'survey_id',
+          'caption'=>'Survey',
+          'description'=>'The survey that data will be posted into.',
+          'type'=>'select',
+          'table'=>'survey',
+          'captionField'=>'title',
+          'valueField'=>'id'
+        ),
       array(
-        'name'=>'taxon_list_id',
-        'caption'=>'Taxon List ID',
-        'description'=>'The ID of the taxon list that species can be selected from.',
-        'type'=>'int'
-      )
+      	'fieldname'=>'taxon_list_id',
+        'label'=>'Species List',
+        'helpText'=>'The species list that species can be selected from.',
+        'type'=>'select',
+        'table'=>'taxon_list',
+        'valueField'=>'id',
+        'captionField'=>'title'
+      ),
     );
   }
 

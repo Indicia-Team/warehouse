@@ -30,6 +30,20 @@ require_once('includes/form_generation.php');
  * @subpackage PrebuiltForms
  */
 class iform_change_identification {
+
+  /**
+   * Return the form metadata.
+   * @return string The definition of the form.
+   */
+  public static function get_change_identification_definition() {
+    return array(
+      'title'=>'Change identification of a record',
+      'category' => 'Utilities',
+      'description'=>'A form allowing updating of the identification of an existing record. The form should be accessed '.
+          'by calling the url with a parameter occurrence_id set to the ID of the occurrence being changed. Displays a summary '.
+          'of the record with a list of the sample and occurrence attributes and a control for changing the identification. '
+    );
+  }
   
   /**
    * Get the list of parameters for this form.
@@ -51,10 +65,13 @@ class iform_change_identification {
         )
       ),
       array(
-      	'name'=>'list_id',
-        'caption'=>'Species List ID',
-        'description'=>'The Indicia ID for the species list that species can be selected from.',
-        'type'=>'string'
+      	'fieldname'=>'list_id',
+        'label'=>'Species List',
+        'helpText'=>'The species list that species can be selected from.',
+        'type'=>'select',
+        'table'=>'taxon_list',
+        'valueField'=>'id',
+        'captionField'=>'title'
       ),
       array(
       	'name'=>'preferred',
@@ -64,14 +81,6 @@ class iform_change_identification {
         'required'=>false
       )
     );
-  }
-  
-  /** 
-   * Return the form title.
-   * @return string The title of the form.
-   */
-  public static function get_title() {
-    return 'Change identification - update the identification of an existing record.';  
   }
   
   /**
