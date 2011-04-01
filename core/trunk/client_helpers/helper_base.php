@@ -656,6 +656,7 @@ mapSettingsHooks.push(add_map_tools)
   */  
   protected static function getRootFolder() {
     $rootFolder = dirname($_SERVER['PHP_SELF']);
+    if ($rootFolder =='\\') $rootFolder = '/'; // if no directory, then on windows may just return a single backslash.
     if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
     return $rootFolder;
   }
