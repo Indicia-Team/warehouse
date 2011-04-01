@@ -156,15 +156,18 @@ $('#form-category-picker').change(function(evt) {
 $('#form-picker').change(function(evt) {
   $('#load-params').attr('disabled','');
   $('#form-params').html('');
-  var details='', def = prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()];
-  if (typeof def.description !== 'undefined') {
-    details += '<p>'+def.description+'</p>';
-  }
-  if (typeof def.helpLink !== 'undefined') {
-    details += '<p><a href=\"'+def.helpLink+'\" target=\"_blank\">".lang::get('Find out more...')."</a></p>';
-  }
-  if (details!=='') {
-    details = '<div class=\"ui-state-highlight ui-corner-all page-notice\">' + details + '</div>';
+  var details='';
+  if ($('#form-picker').val()!=='') {
+    def = prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()];
+    if (typeof def.description !== 'undefined') {
+      details += '<p>'+def.description+'</p>';
+    }
+    if (typeof def.helpLink !== 'undefined') {
+      details += '<p><a href=\"'+def.helpLink+'\" target=\"_blank\">".lang::get('Find out more...')."</a></p>';
+    }
+    if (details!=='') {
+      details = '<div class=\"ui-state-highlight ui-corner-all page-notice\">' + details + '</div>';
+    }
   }
   $('#form-def').hide().html(details).fadeIn();
 });
@@ -182,6 +185,7 @@ $('#load-params').click(function(evt) {
             password: $('#password').val()},
         function(data) {
           $('#form-params').hide().html(data).fadeIn();
+          Drupal.attachBehaviors();
         }
       );
     } else {

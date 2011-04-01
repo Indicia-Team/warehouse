@@ -312,20 +312,26 @@ class iform_mnhnl_dynamic_1 {
           'required' => false
         ),
         array(
-          'name'=>'list_id',
-          'caption'=>'Initial Species List ID',
-          'description'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
+          'fieldname'=>'list_id',
+          'label'=>'Initial Species List',
+          'helpText'=>'The Indicia ID for the species list that species can be selected from. This list is pre-populated '.
               'into the grid when doing grid based data entry.',
-          'type'=>'int',          
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title',
           'required'=>false,
           'group'=>'Species'
         ),
         array(
-          'name'=>'extra_list_id',
-          'caption'=>'Extra Species List ID',
-          'description'=>'The Indicia ID for the second species list that species can be selected from. This list is available for additional '.
+          'fieldname'=>'extra_list_id',
+          'label'=>'Extra Species List',
+          'helpText'=>'The Indicia ID for the second species list that species can be selected from. This list is available for additional '.
               'taxa being added to the grid when doing grid based data entry.',
-          'type'=>'int',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title',
           'required'=>false,
           'group'=>'Species'
         ),
@@ -362,9 +368,12 @@ class iform_mnhnl_dynamic_1 {
         ),
         array(
           'name'=>'survey_id',
-          'caption'=>'Survey ID',
-          'description'=>'The Indicia ID of the survey that data will be posted into.',
-          'type'=>'int'
+          'caption'=>'Survey',
+          'description'=>'The survey that data will be posted into.',
+          'type'=>'select',
+          'table'=>'survey',
+          'captionField'=>'title',
+          'valueField'=>'id'
         ),        
         array(
           'name'=>'defaults',
