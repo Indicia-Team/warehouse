@@ -48,11 +48,11 @@ class iform_basic_1 {
   public static function get_parameters() {   
     return array(      
       array(
-      	'name'=>'species_ctrl',
-        'caption'=>'Species Control Type',
-        'description'=>'The type of control that will be available to select a species.',
+      	'fieldname'=>'species_ctrl',
+        'label'=>'Species Control Type',
+        'helpText'=>'The type of control that will be available to select a species.',
         'type'=>'select',
-        'options' => array(
+        'lookupValues' => array(
           'autocomplete' => 'Autocomplete',
           'select' => 'Select',
           'listbox' => 'List box',
@@ -61,22 +61,25 @@ class iform_basic_1 {
         )
       ),
       array(
-      	'name'=>'list_id',
-        'caption'=>'Species List ID',
-        'description'=>'The Indicia ID for the species list that species can be selected from.',
-        'type'=>'string'
+      	'fieldname'=>'list_id',
+        'label'=>'Species List',
+        'helpText'=>'The Indicia ID for the species list that species can be selected from.',
+        'type'=>'select',
+        'table'=>'taxon_list',
+        'valueField'=>'id',
+        'captionField'=>'title'
       ),
 	  array(
-      	'name'=>'preferred',
-        'caption'=>'Preferred species only?',
-        'description'=>'Should the selection of species be limited to preferred names only?',
+      	'fieldname'=>'preferred',
+        'label'=>'Preferred species only?',
+        'helpText'=>'Should the selection of species be limited to preferred names only?',
         'type'=>'boolean',
         'required'=>false
       ),
       array(
-      	'name'=>'tabs',
-        'caption'=>'Use Tabbed Interface',
-        'description'=>'If checked, then the page will be built using a tabbed interface style.',
+      	'fieldname'=>'tabs',
+        'label'=>'Use Tabbed Interface',
+        'helpText'=>'If checked, then the page will be built using a tabbed interface style.',
         'type'=>'boolean',
         'required'=>false
       )
@@ -107,11 +110,11 @@ class iform_basic_1 {
     }   
     
     $r .= "<div id=\"species\">\n";
-	$extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
-	if ($args['preferred']) {
-	  $extraParams += array('preferred' => 't');
-	}
-  $species_list_args=array(
+    $extraParams = $readAuth + array('taxon_list_id' => $args['list_id']);
+    if ($args['preferred']) {
+      $extraParams += array('preferred' => 't');
+    }
+    $species_list_args=array(
         'label'=>'Species',
         'itemTemplate' => 'select_species',
         'fieldname'=>'occurrence:taxa_taxon_list_id',
@@ -120,17 +123,21 @@ class iform_basic_1 {
         'valueField'=>'id',
         'columns'=>2,
         'extraParams'=>$extraParams 
-    );    
+    );
     // Dynamically generate the species selection control required.        
     $r .= call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args);
     $r .= "</div>\n";
     $r .= "<div id=\"place\">\n";
     // for this form, use bing and no geoplanet lookup, since then it requires no API keys so is a good
     // quick demo of how things work.
-    $r .= data_entry_helper::map(array(
+    $mapOptions = array(
       'presetLayers' => array('bing_aerial'),
       'locate' => false
-    ));
+    );
+    if ($args['tabs']) {
+      $mapOptions['tabDiv']='place';
+    }
+    $r .= data_entry_helper::map($mapOptions);
     $r .= "</div>\n";    
     $r .= "<div id=\"other\">\n";
     $r .= data_entry_helper::date_picker(array(

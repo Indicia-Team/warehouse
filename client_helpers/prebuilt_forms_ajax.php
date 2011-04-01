@@ -24,8 +24,11 @@
  */
 require_once "form_helper.php";
 
+$readAuth = form_helper::get_read_auth($_POST['website_id'], $_POST['password']);
+
 echo form_helper::prebuilt_form_params_form(array(
   'form' => $_POST['form'],
+  'readAuth' => $readAuth,
   'expandFirst' => true
 ));
 

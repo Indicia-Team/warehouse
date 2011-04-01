@@ -36,10 +36,11 @@ class form_helper extends helper_base {
    * Outputs a pair of linked selects, for picking a prebuilt form from the library. The first select is for picking a form 
    * category and the second select is populated by AJAX for picking the actual form.
    * @param array $options Options array with the following possibilities:<ul>
-   * <li><b>default</b><br/>
+   * <li><b>form</b><br/>
    * Optional. The name of the form to select as a default value.</li>
-   * <li><b>includeOutputDivs</b><br/>
-   * Set to true to generate divs after the controls which will receive the form details and parameter controls when a form is selected.</li>
+   * <li><b>includeOutputDiv</b><br/>
+   * Set to true to generate a div after the controls which will receive the form parameter
+   * controls when a form is selected.</li>
    * </ul>
    */
   public static function prebuilt_form_picker($options) {
@@ -59,12 +60,12 @@ class form_helper extends helper_base {
           $definition = call_user_func(array('iform_'.$file_tokens[0], 'get_'.$file_tokens[0].'_definition'));
           $definition['title'] = lang::get($definition['title']);
           $forms[$definition['category']][$file_tokens[0]] = $definition;
-          if (isset($options['default']) && $file_tokens[0]==$options['default'])
+          if (isset($options['form']) && $file_tokens[0]==$options['form']) 
             $defaultCategory = $definition['category'];
         } elseif (is_callable(array('iform_'.$file_tokens[0], 'get_title'))) {
           $title = call_user_func(array('iform_'.$file_tokens[0], 'get_title'));
           $forms['Miscellaneous'][$file_tokens[0]] = array('title' => $title);
-          if (isset($options['default']) && $file_tokens[0]==$options['default'])
+          if (isset($options['form']) && $file_tokens[0]==$options['form'])
             $defaultCategory = 'Miscellaneous';
         }
         ob_end_clean();
@@ -89,6 +90,18 @@ class form_helper extends helper_base {
       $value = lang::get($value);
     }
     asort($categories);
+    $r .= data_entry_helper::text_input(array(
+      'label' => lang::get('Website ID'),
+      'fieldname' => 'website_id',
+      'helpText' => lang::get('Enter the ID of the website record on the Warehouse you are using.'),
+      'default' => isset($options['website_id']) ? $options['website_id'] : ''
+    ));
+    $r .= data_entry_helper::text_input(array(
+      'label' => lang::get('Password'),
+      'fieldname' => 'password',
+      'helpText' => lang::get('Enter the password for the website record on the Warehouse you are using.'),
+      'default' => isset($options['password']) ? $options['password'] : ''
+    ));
     $r .= data_entry_helper::select(array(
       'id' => 'form-category-picker',
       'label' => lang::get('Select Form Category'),
@@ -103,10 +116,22 @@ class form_helper extends helper_base {
       'label' => lang::get('Select Form'),
       'helpText' => lang::get('Select the Indicia form you want to use.'),
       'lookupValues' => $availableForms,
-      'default' => isset($options['default']) ? $options['default'] : ''
+      'default' => isset($options['form']) ? $options['form'] : ''
     ));
+    // div for the form instructions
+    $details = '';
+    if (isset($options['form'])) {
+      if (isset($forms[$defaultCategory][$options['form']]['description'])) {
+        $details .= '<p>'.$forms[$defaultCategory][$options['form']]['description'].'</p>';
+      }
+      if (isset($forms[$defaultCategory][$options['form']]['helpLink'])) {
+        $details = '<a href="'.$forms[$defaultCategory][$options['form']]['helpLink'].'">Find out more...</a>';
+      }
+      if ($details!=='') $details = "<div class=\"ui-state-highlight ui-corner-all page-notice\">$details</div>";
+    }
+    $r .= "<div id=\"form-def\">$details</div>\n";
+    $r .= '<input type="button" value="'.lang::get('Load Settings Form').'" id="load-params" disabled="disabled" />';
     if (isset($options['includeOutputDivs']) && $options['includeOutputDivs']) {
-      $r .= '<div id="form-def"></div>';
       $r .= '<div id="form-params"></div>';
     }
     self::add_form_picker_js($forms);
@@ -127,32 +152,42 @@ $('#form-category-picker').change(function(evt) {
   $('#form-picker').html(opts);
   $('#form-picker').change();
 });
+
 $('#form-picker').change(function(evt) {
-  var details = '';
-  if (typeof prebuilt_forms[$('#form-category-picker').attr('value')][evt.currentTarget.value] !== \"undefined\") {
-    var def = prebuilt_forms[$('#form-category-picker').attr('value')][evt.currentTarget.value];
-    if (typeof def.description !== 'undefined') {
-      details += '<p>'+def.description+'</p>';
-    }
-    if (typeof def.helpLink !== 'undefined') {
-      details += '<p><a href=\"'+def.helpLink+'\" target=\"_blank\">".lang::get('Find out more...')."</a></p>';
-    }
-    if (details!=='') {
-      details = '<div class=\"ui-state-highlight ui-corner-all page-notice\">' + details + '</div>';
-    }
-    // now use an Ajax request to get the form params
-    $.post(
-      '".self::getRootFolder() . self::relative_client_helper_path()."prebuilt_forms_ajax.php',
-      {form: evt.currentTarget.value},
-      function(data) {
-        $('#form-params').hide().html(data).fadeIn();
-        Drupal.attachBehaviors();
-      }
-    );
-  } else {
-    $('#form-params').hide();
+  $('#load-params').attr('disabled','');
+  $('#form-params').html('');
+  var details='', def = prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()];
+  if (typeof def.description !== 'undefined') {
+    details += '<p>'+def.description+'</p>';
   }
-  $('#form-def').hide().html(details).fadeIn();  
+  if (typeof def.helpLink !== 'undefined') {
+    details += '<p><a href=\"'+def.helpLink+'\" target=\"_blank\">".lang::get('Find out more...')."</a></p>';
+  }
+  if (details!=='') {
+    details = '<div class=\"ui-state-highlight ui-corner-all page-notice\">' + details + '</div>';
+  }
+  $('#form-def').hide().html(details).fadeIn();
+});
+
+$('#load-params').click(function(evt) {
+  if ($('#form-picker').val()==='' || $('#website_id').val()==='' || $('#form-picker').val()==='') {
+    alert('".lang::get('Please specify a website ID, password and select a form before proceeding.')."');
+  } else {
+    if (typeof prebuilt_forms[$('#form-category-picker').val()][$('#form-picker').val()] !== \"undefined\") {
+      // now use an Ajax request to get the form params
+      $.post(
+        '".self::getRootFolder() . self::relative_client_helper_path()."prebuilt_forms_ajax.php',
+        {form: $('#form-picker').val(),
+            website_id: $('#website_id').val(),
+            password: $('#password').val()},
+        function(data) {
+          $('#form-params').hide().html(data).fadeIn();
+        }
+      );
+    } else {
+      $('#form-params').hide();
+    }
+  }
 });\n";
   }
   
@@ -176,33 +211,26 @@ $('#form-picker').change(function(evt) {
     $fieldsets = array();
     foreach ($formparams as $control) {
       $fieldset = isset($control['group']) ? $control['group'] : 'Other IForm Parameters';
-      $type = self::map_type($control['type']);
-      $ctrlOpts = array(
-        'fieldname' => $control['name'],
-        'label' => lang::get($control['caption']),
+      // apply default options to the control
+      $ctrlOptions = array_merge(array(
         'sep' => '<br/>',
-        'class' => ''
-      );
-      if ($type=='text_input' || $type=='textarea') 
-        $ctrlOpts['class'] .= 'control-width-6 ';      
-      if (isset($control['options']))
-        $ctrlOpts['lookupValues'] = $control['options'];
-      if (isset($control['description']))
-        $ctrlOpts['helpText'] = $control['description'];
+        'class' => '',
+        'blankText'=>'<'.lang::get('please select').'>',
+        'extraParams' => array()
+      ), $control);
+      $type = self::map_type($control);
+
       // current form settings will overwrite the default
-      if (isset($options['currentSettings']) && isset($options['currentSettings'][$control['name']]))
-        $ctrlOpts['default'] = $options['currentSettings'][$control['name']];
-      elseif (isset($control['default']))
-        $ctrlOpts['default'] = $control['default'];
-      else
-        $ctrlOpts['default'] = '';
-      if (!isset($control['required']) || $control['required']===true) {
-        $ctrlOpts['class'] .= 'required ';
-        $ctrlOpts['suffixTemplate'] = 'requiredsuffix';
-      }
+      if (isset($options['currentSettings']) && isset($options['currentSettings'][$control['fieldname']]))
+        $ctrlOptions['default'] = $options['currentSettings'][$control['fieldname']];
+
+      $ctrlOptions['extraParams'] = array_merge($ctrlOptions['extraParams'], $options['readAuth']);
+      // standardise the control width unless specified already in the control options
+      if (strpos($ctrlOptions['class'], 'control-width')==false && $type != 'checkbox')
+        $ctrlOptions['class'] .= ' control-width-6';
       if (!isset($fieldsets[$fieldset])) 
         $fieldsets[$fieldset]='';
-      $fieldsets[$fieldset] .= data_entry_helper::$type($ctrlOpts);
+      $fieldsets[$fieldset] .= data_entry_helper::$type($ctrlOptions);
     }
     $r = '';
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
@@ -216,6 +244,37 @@ $('#form-picker').change(function(evt) {
     }
     return $r;
   }
+
+  /**
+   * Version 0.6 of Indicia converted from using a specific format for defining
+   * prebuilt form parameters forms to arrays which map directly onto the options
+   * for controls defined in the data entry helper. This makes the forms much more
+   * powerful with built in AJAX support etc. However, old forms need to have the
+   * control options mapped to the newer option names.
+   * @param array $controlList List of controls as defined by the prebuilt form.
+   * @return array List of modified controls.
+   */
+  private static function map_control_options($controlList) {
+    $mappings = array(
+        'name'=>'fieldname',
+        'caption'=>'label',
+        'options'=>'lookupValues',
+        'description'=>'helpText'
+    );
+    foreach ($controlList as &$options) {
+      foreach ($options as $option => $value) {
+        if (isset($mappings[$option])) {
+          $options[$mappings[$option]] = $value;
+          unset($options[$option]);
+        }
+      }
+      if (!isset($options['required']) || $options['required']===true) {
+        $options['class'] .= ' required';
+        $options['suffixTemplate'] = 'requiredsuffix';
+      }
+    }
+    return $controlList;
+  }
   
   /**
    * Maps control types in simple form definition arrays (e.g. parameter forms for prebuilt forms or reports)
@@ -223,7 +282,7 @@ $('#form-picker').change(function(evt) {
    * @param string $type Type name given for the control.
    * @return string Data_entry_helper control name.
    */
-  private static function map_type($type) {
+  private static function map_type($control) {
     $mapping = array(
         'textfield'=>'text_input', // in case there is any Drupal hangover code
         'string'=>'text_input',
@@ -233,8 +292,8 @@ $('#form-picker').change(function(evt) {
         'termlist'=>'text_input',
         'boolean'=>'checkbox',
         'list'=>'checkbox_group'
-    );
-    return array_key_exists($type, $mapping) ? $mapping[$type] : $type;
+      );
+    return array_key_exists($control['type'], $mapping) ? $mapping[$control['type']] : $control['type'];
   }
   
   /** 
@@ -248,43 +307,30 @@ $('#form-picker').change(function(evt) {
     // first some parameters that are always required to configure the website
     $params = array(
         array(
-          'name'=>'website_id',
-          'caption'=>'Website ID',
-          'description'=>'the id of the website that data will be posted into.',
-          'type'=>'string',
-          'group' => 'Website'
-        ),
-        array(
-          'name'=>'password',
-          'caption'=>'Website password',
-          'description'=>'the password of the website that data will be posted into.',
-          'type'=>'string',
-          'group' => 'Website'
-        ), 
-        array(
-          'name'=>'view_access_control',
-          'caption'=>'View access control',
-          'description'=>'if ticked, then a drupal permission is created for this form to allow you to specify which '.
+          'fieldname'=>'view_access_control',
+          'label'=>'View access control',
+          'helpText'=>'if ticked, then a drupal permission is created for this form to allow you to specify which '.
               'roles are able to view the form.',
-          'type'=>'boolean',
+          'type'=>'checkbox',
           'required'=>false
         )
     );
     // now get the specific parameters from the form
     if (!is_callable(array('iform_'.$form, 'get_parameters'))) 
       throw new Exception('Form does not implement the get_parameters method.');
-    $params = array_merge($params, call_user_func(array('iform_'.$form, 'get_parameters')));
+    $formParams = self::map_control_options(call_user_func(array('iform_'.$form, 'get_parameters')));
+    $params = array_merge($params, $formParams);
     // add in a standard parameter for specifying a redirection.
     array_push($params, 
       array(
-        'name'=>'redirect_on_success',
-        'caption'=>'Redirect to page after successful data entry',
-        'description'=>'the url of the page that will be navigated to after a successful data entry. '. 
+        'fieldname'=>'redirect_on_success',
+        'label'=>'Redirect to page after successful data entry',
+        'helpText'=>'the url of the page that will be navigated to after a successful data entry. '.
             'leave blank to just display a success message on the same page so further records can be entered. if the site is internationalised, '.
             'make sure that the page you want to go to has a url specified that is the same for all language versions. also ensure your site uses '.
             'a path prefix for the language negotiation (administer > site configuration > languages > configure). then, specify the url that you attached to the node '.
             'so that the language prefix is not included.',
-        'type'=>'string',
+        'type'=>'text_input',
         'required'=>false
       )
     );
