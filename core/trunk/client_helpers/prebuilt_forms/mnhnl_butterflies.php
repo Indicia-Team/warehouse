@@ -42,6 +42,17 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   protected static $locations;
   protected static $svcUrl;
   /** 
+   * Return the form metadata.
+   * @return array The definition of the form.
+   */
+  public static function get_mnhnl_butterflies_definition() {
+    return array(
+      'title'=>self::get_title(),
+      'category' => 'MNHNL forms',      
+      'description'=>'MNHNL Butterflies form. Inherits from Dynamic 1.'
+    );
+  }
+  /** 
    * Return the form title.
    * @return string The title of the form.
    */
