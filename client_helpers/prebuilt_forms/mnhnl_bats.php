@@ -45,6 +45,18 @@ require_once('mnhnl_dynamic_1.php');
 class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   
   /** 
+   * Return the form metadata.
+   * @return array The definition of the form.
+   */
+  public static function get_mnhnl_bats_definition() {
+    return array(
+      'title'=>self::get_title(),
+      'category' => 'MNHNL forms',      
+      'description'=>'MNHNL Winter Bats form. Inherits from Dynamic 1.'
+    );
+  }
+
+  /** 
    * Return the form title.
    * @return string The title of the form.
    */
@@ -65,6 +77,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
       if($param['name'] == 'structure'){
         $param['default'] =
              "=Site=\r\n".
+              "[custom JS]\r\n".
               "[location module]\r\n".
               "@extendNameAttribute=<TBD>\r\n".
               "[location attributes]\r\n".
@@ -146,7 +159,161 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     return $retVal;
   }
 
-    /**
+  /**
+   * Insert any custom JS for this form: this may be related to attributes, which are included
+   * as part of inherited generic code.
+   * Does not include any HTML.
+   */
+  protected static function get_control_customJS($auth, $args, $tabalias, $options) {
+    if(lang::get('validation_required')!='validation_required'){
+      if(lang::get('validation_required') != 'validation_required')
+        data_entry_helper::$javascript .= "
+$.validator.messages.required = \"".lang::get('validation_required')."\";";
+      if(lang::get('validation_max') != 'validation_max')
+        data_entry_helper::$javascript .= "
+$.validator.messages.max = $.validator.format(\"".lang::get('validation_max')."\");";
+      if(lang::get('validation_min') != 'validation_min')
+        data_entry_helper::$javascript .= "
+$.validator.messages.min = $.validator.format(\"".lang::get('validation_min')."\");";
+    }
+    data_entry_helper::$javascript .= "
+// possible clash with link_species_popups, so latter disabled.
+hook_species_checklist_new_row=function(rowData) {
+  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
+            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(mdata) {
+    if(mdata instanceof Array && mdata.length>0){
+      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list' +
+            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&taxon_meaning_id='+mdata[0].taxon_meaning_id+'&callback=?', function(data) {
+        var taxaList = '';
+        if(data instanceof Array && data.length>0){
+          for (var i=0;i<data.length;i++){
+            if(data[i].id != mdata[0].id){
+              if(data[i].preferred == 'f')
+                taxaList += (taxaList == '' ? '' : ', ')+data[i].taxon;
+              else
+                taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
+            }
+          }
+        }
+        jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('.extraCommonNames');
+      });
+    }});
+}
+checkRadioStatus = function(){
+  jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
+    if(this.checked)
+      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').addClass('required').removeAttr('readonly');
+    else
+      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').removeClass('required').val('').attr('readonly',true);
+  });
+};
+jQuery('[name^=locAttr]').filter(':radio').change(checkRadioStatus);
+checkRadioStatus();
+
+var other = jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]');
+other.next().remove(); // remove break
+other.prev().remove(); // remove legend
+other.remove(); // remove Other field, then bolt in after the other radio button.
+jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').parent().append(other);
+
+var other = jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]');
+other.next().remove(); // remove break
+other.prev().remove(); // remove legend
+other.remove(); // remove Other field, then bolt in after the other radio button.
+jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['entranceDefectiveTermID']."]').parent().append(other);
+
+var other = jQuery('[name=smpAttr\\:".$args['disturbanceCommentAttrID']."],[name^=smpAttr\\:".$args['disturbanceCommentAttrID']."\\:]');
+other.next().remove(); // remove break
+other.prev().remove(); // remove legend
+other.remove(); // remove Other field, then bolt in after the other radio button.
+jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['disturbanceOtherTermID']."]').parent().append(other);
+
+checkCheckStatus = function(){
+  jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['entranceDefectiveTermID']."]').each(function(){
+    if(this.checked) // note not setting the required flag.
+      jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]').removeAttr('readonly');
+    else
+      jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]').val('').attr('readonly',true);
+  });
+  jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['disturbanceOtherTermID']."]').each(function(){
+    if(this.checked)
+      jQuery('[name=smpAttr\\:".$args['disturbanceCommentAttrID']."],[name^=smpAttr\\:".$args['disturbanceCommentAttrID']."\\:]').addClass('required').removeAttr('readonly');
+    else
+      jQuery('[name=smpAttr\\:".$args['disturbanceCommentAttrID']."],[name^=smpAttr\\:".$args['disturbanceCommentAttrID']."\\:]').removeClass('required').val('').attr('readonly',true);
+  });
+  };
+jQuery('[name^=smpAttr]').filter(':checkbox').change(checkCheckStatus);
+checkCheckStatus();
+
+jQuery('#imp-sref-lat').next().remove();
+jQuery('#imp-sref-lat').prev().css('width', 'auto');
+jQuery('#imp-sref-long').prev().css('width', 'auto');
+checkSystemStatus = function(){
+  var srefSystem = jQuery('#imp-sref-system').val();
+  if(srefSystem == 4326){
+    jQuery('#imp-sref-lat').prev().empty().text('".lang::get('Latitude').":');
+    jQuery('#imp-sref-long').prev().empty().text('".lang::get('Longitude').":');
+  } else {
+    jQuery('#imp-sref-lat').prev().empty().text('".lang::get('X').":');
+    jQuery('#imp-sref-long').prev().empty().text('".lang::get('Y').":');
+  }
+};
+jQuery('#imp-sref-system').change(function(){
+  checkSystemStatus();
+  jQuery('#imp-sref').val('');
+  jQuery('#imp-sref-lat').val('');
+  jQuery('#imp-sref-long').val('');
+  jQuery('#imp-geom').val('');
+  if(jQuery('#map')[0].map) jQuery('#map')[0].map.editLayer.destroyFeatures();
+});
+checkSystemStatus();
+
+";
+    data_entry_helper::$late_javascript .= "
+$.validator.addMethod('no_observation', function(arg1, arg2){
+var numChecked = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').filter(':checkbox').filter('[checked=true]').length;
+var numFilledIn = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').not(':checkbox').filter('[value!=]').length;
+if(jQuery('[name='+jQuery(arg2).attr('name')+']').not(':hidden').filter('[checked=true]').length>0)
+ // is checked.
+ return(numChecked==0&&numFilledIn==0)
+else
+ return(numChecked>0||numFilledIn>0)
+},
+  \"".lang::get('validation_no_observation')."\");
+";
+    if (!empty($args['attributeValidation'])) {
+      $rules = array();
+      $argRules = explode(';', $args['attributeValidation']);
+      foreach($argRules as $rule){
+        $rules[] = explode(',', $rule);
+      }
+      foreach($rules as $rule)
+      // But only do if a parameter given as rule:param - eg min:-40
+        for($i=1; $i<count($rule); $i++)
+          if(strpos($rule[$i], ':') !== false){
+            $details = explode(':', $rule[$i]);
+            data_entry_helper::$late_javascript .= "
+jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').attr('".$details[0]."',".$details[1].");";
+          } else if($rule[$i]=='no_observation'){
+               data_entry_helper::$late_javascript .= "
+jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').filter(':checkbox').rules('add', {no_observation: true});";
+          }
+    }
+//    $url = data_entry_helper::$geoserver_url.'wms';
+//    // Get the style if there is one selected
+//    $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
+//    data_entry_helper::$javascript .= "\n    var filter='website_id=".$args['website_id']."';";
+//    data_entry_helper::$javascript .= "\n    var locLayer = new OpenLayers.Layer.WMS(
+//          'Selectable locations', // TBD from options?
+//          '$url',
+//          {layers: 'detail_locations', // TBD from options?
+//            transparent: true, CQL_FILTER: filter $style},
+//          {isBaseLayer: false, sphericalMercator: true, singleTile: true}
+//    );\n";
+    return '';
+  }
+  
+  /**
    * Get the block of custom attributes at the location level
    */
   protected static function get_control_locationattributes($auth, $args, $tabalias, $options) {
@@ -181,7 +348,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   }
   
   /**
-   * Get the location comment control
+   * Get the location module control
    */
   protected static function get_control_locationmodule($auth, $args, $tabalias, $options) {
     global $indicia_templates;
@@ -204,6 +371,8 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     // self::add_resource('json');
     $location_list_args=array_merge(array(
         'nocache'=>true,
+        'includeCodeSearch'=>false,
+        'includeCodeField'=>true,
         'CodeLabel'=>lang::get('LANG_Location_Code_Label'),
         'CodeBlankText'=>lang::get('LANG_Location_Code_Blank_Text'),
         'CodeFieldName'=>'dummy:location_code_DD',
@@ -230,6 +399,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     // investigate self::init_linked_lists($options);
     if (isset($responseRecords['error']))
       return $responseRecords['error'];
+    $attributeRecords = array();
     if (isset($options['extendNameAttribute'])){
       $attribute_list_args=array_merge(array(
         'nocache'=>true,
@@ -238,18 +408,14 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
         'table'=>'location_attribute_value'
       ), $options);
       $attributeResponse = data_entry_helper::get_population_data($attribute_list_args);
-      $attributeRecords = array();
       foreach ($attributeResponse as $record){
         $attributeRecords[$record['location_id']] = $record;
       }
     }
     $CodeOpts = '';
     $NameOpts = '';
-    $location_list_args['label']=$location_list_args['CodeLabel'];
-    $location_list_args['fieldname']=$location_list_args['CodeFieldName'];
-    $location_list_args['id']=$location_list_args['CodeID'];
     foreach ($responseRecords as $record){
-      if($record['code']!=''){
+      if($record['code']!='' && $location_list_args['includeCodeSearch']){
          $item = array('selected' => ((array_key_exists('location:id', data_entry_helper::$entity_to_load) &&
                                       intval(data_entry_helper::$entity_to_load['location:id'])==intval($record['id'])) ? 'selected' : ''),
                       'value' => $record['id'],
@@ -266,45 +432,37 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     }
     $r = '<fieldset><legend>'.lang::get('Existing Locations').'</legend><input type="hidden" id="imp-location" name="location:id" value="'.(array_key_exists('location:id', data_entry_helper::$entity_to_load) ? data_entry_helper::$entity_to_load['location:id'] : ''). '" >';
     if($CodeOpts != ''){
+      $location_list_args['label']=$location_list_args['CodeLabel'];
+      $location_list_args['fieldname']=$location_list_args['CodeFieldName'];
+      $location_list_args['id']=$location_list_args['CodeID'];
       $location_list_args['items'] = str_replace(array('{value}', '{caption}', '{selected}'),
           array('', htmlentities($location_list_args['CodeBlankText'])),
           $indicia_templates[$location_list_args['itemTemplate']]).$CodeOpts;
       $r .= data_entry_helper::apply_template($location_list_args['template'], $location_list_args);
     }
-    $location_list_args['label']=$location_list_args['NameLabel'];
-    $location_list_args['fieldname']=$location_list_args['NameFieldName'];
-    $location_list_args['id']=$location_list_args['NameID'];
     if($NameOpts != ''){
+      $location_list_args['label']=$location_list_args['NameLabel'];
+      $location_list_args['fieldname']=$location_list_args['NameFieldName'];
+      $location_list_args['id']=$location_list_args['NameID'];
       $location_list_args['items'] = str_replace(array('{value}', '{caption}', '{selected}'),
           array('', htmlentities($location_list_args['NameBlankText'])),
           $indicia_templates[$location_list_args['itemTemplate']]).$NameOpts;
       $r .= data_entry_helper::apply_template($location_list_args['template'], $location_list_args);
     }
     $isAdmin = user_access('IForm n'.$node->nid.' admin');
-    if(lang::get('validation_required')!='validation_required'){
-      if(lang::get('validation_required') != 'validation_required')
-        data_entry_helper::$javascript .= "
-$.validator.messages.required = \"".lang::get('validation_required')."\";";
-      if(lang::get('validation_max') != 'validation_max')
-        data_entry_helper::$javascript .= "
-$.validator.messages.max = $.validator.format(\"".lang::get('validation_max')."\");";
-      if(lang::get('validation_min') != 'validation_min')
-        data_entry_helper::$javascript .= "
-$.validator.messages.min = $.validator.format(\"".lang::get('validation_min')."\");";
-    }
     data_entry_helper::$javascript .= "
 clearLocation = function(enableFields){
   var enableItems;
   var disableItems;
-  disableItems = '[name=location\\:id]'; //clearing the location so no ID, so disable 
+  disableItems = '[name=location\\:id],[name=location\\:code]'; //clearing the location so no ID, so disable 
   enableItems = '[name=locations_website\\:website_id]'; // but have to activate website record 
   if(!enableFields)
-    disableItems = disableItems + ',[name=location\\:code],[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref,#imp-sref-system,#imp-geom';
+    disableItems = disableItems + ',[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom';
   else
-    enableItems = enableItems + ',[name=location\\:code],[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref,#imp-sref-system,#imp-geom';
+    enableItems = enableItems + ',[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom';
   jQuery(enableItems).removeAttr('disabled');
   jQuery(disableItems).attr('disabled',true);
-  jQuery('[name=location\\:id],[name=location\\:code],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-system,#imp-geom').val('');
+  jQuery('[name=location\\:id],[name=location\\:code],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom').val('');
   // first need to remove any hidden multiselect checkbox unclick fields
   jQuery('[name^=locAttr\\:]').filter('.multiselect').remove();
   // rename, to be safe, removing any [] at the end or any attribute value id
@@ -326,6 +484,8 @@ clearLocation = function(enableFields){
   // boolean checkboxes have extra field to force zero if unselected, but there are no attributes of that type in use for this form at the moment, so leave uncoded.
   jQuery('[name^=locAttr\\:]').filter(':checkbox').removeAttr('checked');
   jQuery('[name^=locAttr\\:]').filter(':text').val('');
+  checkSystemStatus();
+  checkRadioStatus();
 };
 loadLocation = function(myValue){
   clearLocation(".($isAdmin ? "true" : "false").");
@@ -339,9 +499,14 @@ loadLocation = function(myValue){
         jQuery('[name=location\\:code]').val(data[0].code);
         jQuery('[name=location\\:name]').val(data[0].name);
         jQuery('[name=location\\:comment]').val(data[0].comment);
-        jQuery('#imp-sref').val(data[0].centroid_sref);
         jQuery('#imp-sref-system').val(data[0].centroid_sref_system);
+        checkSystemStatus();
         jQuery('#imp-geom').val(data[0].centroid_geom);
+        jQuery('#imp-sref').val(data[0].centroid_sref);
+        var refxy = data[0].centroid_sref.split(' ');
+        var refx = refxy[0].split(',');
+        jQuery('#imp-sref-lat').val(refx[0]);
+        jQuery('#imp-sref-long').val(refxy[1]).change();
         jQuery('[name=locations_website\\:website_id]').attr('disabled');
       }
     });
@@ -370,6 +535,7 @@ loadLocation = function(myValue){
           }
         }
       }
+      checkRadioStatus();
     });
   }
 };
@@ -395,87 +561,7 @@ newLocation = function(){
 jQuery('#imp-location').change(function(){
   jQuery('#imp-location').removeAttr('disabled');
 });
-// possible clash with link_species_popups, so latter disabled.
-hook_species_checklist_new_row=function(rowData) {
-  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
-            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(mdata) {
-    if(mdata instanceof Array && mdata.length>0){
-      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list' +
-            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&taxon_meaning_id='+mdata[0].taxon_meaning_id+'&callback=?', function(data) {
-        var taxaList = '';
-        if(data instanceof Array && data.length>0){
-          for (var i=0;i<data.length;i++){
-            if(data[i].id != mdata[0].id){
-              if(data[i].preferred == 'f')
-                taxaList += (taxaList == '' ? '' : ', ')+data[i].taxon;
-              else
-                taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
-            }
-          }
-        }
-        jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('.extraCommonNames');
-      });
-    }});
-}
-// The following code assumes that radio buttons are used.
-checkRadioStatus = function(){
-  jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
-    if(this.checked)
-      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').addClass('required').removeAttr('readonly');
-    else
-      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').removeClass('required').val('').attr('readonly',true);
-  });
-};
-jQuery('[name^=locAttr]').filter(':radio').change(checkRadioStatus);
-checkRadioStatus();
-// The following code is actually to do with the sample attributes, but easiest to put it here.
-checkCheckStatus = function(){
-  jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['entranceDefectiveTermID']."]').each(function(){
-    if(this.checked) // note not setting the required flag.
-      jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]').removeAttr('readonly');
-    else
-      jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]').val('').attr('readonly',true);
-  });
-  jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['disturbanceOtherTermID']."]').each(function(){
-    if(this.checked)
-      jQuery('[name=smpAttr\\:".$args['disturbanceCommentAttrID']."],[name^=smpAttr\\:".$args['disturbanceCommentAttrID']."\\:]').addClass('required').removeAttr('readonly');
-    else
-      jQuery('[name=smpAttr\\:".$args['disturbanceCommentAttrID']."],[name^=smpAttr\\:".$args['disturbanceCommentAttrID']."\\:]').removeClass('required').val('').attr('readonly',true);
-  });
-  };
-jQuery('[name^=smpAttr]').filter(':checkbox').change(checkCheckStatus);
-checkCheckStatus();
 ";
-    data_entry_helper::$late_javascript .= "
-$.validator.addMethod('no_observation', function(arg1, arg2){
-var numChecked = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').filter(':checkbox').filter('[checked=true]').length;
-var numFilledIn = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').not(':checkbox').filter('[value!=]').length;
-if(jQuery('[name='+jQuery(arg2).attr('name')+']').not(':hidden').filter('[checked=true]').length>0)
- // is checked.
- return(numChecked==0&&numFilledIn==0)
-else
- return(numChecked>0||numFilledIn>0)
-},
-  \"".lang::get('validation_no_observation')."\");
-";
-    if (!empty($args['attributeValidation'])) {
-      $rules = array();
-      $argRules = explode(';', $args['attributeValidation']);
-      foreach($argRules as $rule){
-        $rules[] = explode(',', $rule);
-      }
-      foreach($rules as $rule)
-      // But only do if a parameter given as rule:param - eg min:-40
-        for($i=1; $i<count($rule); $i++)
-          if(strpos($rule[$i], ':') !== false){
-            $details = explode(':', $rule[$i]);
-            data_entry_helper::$late_javascript .= "
-jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').attr('".$details[0]."',".$details[1].");";
-          } else if($rule[$i]=='no_observation'){
-               data_entry_helper::$late_javascript .= "
-jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').filter(':checkbox').rules('add', {no_observation: true});";
-          }
-    }
 
     if(self::$mode == 1 )// newSample
         data_entry_helper::$javascript .= "
@@ -484,21 +570,10 @@ clearLocation(false);";
     $r .= '<input type="button" value="'.lang::get('Create New Location').'" onclick="newLocation();">'.
       '<input type="hidden" id="locations_website:website_id" name="locations_website:website_id" value="'.$args['website_id'].'" disabled="'.(array_key_exists('location:id', data_entry_helper::$entity_to_load) ? 'disabled' : ''). '" />'.
       '</fieldset>'.
-      '<label for="location:code">'.lang::get('LANG_Location_Code_Label').':</label>'.
-      '<input type="text" id="location:code" name="location:code" class="required" value="'.data_entry_helper::$entity_to_load['location:code'].'" /><span class="deh-required">*</span><br/>'.
       '<label for="location:name">'.lang::get('LANG_Location_Name_Label').':</label>'.
       '<input type="text" id="location:name" name="location:name" class="required" value="'.data_entry_helper::$entity_to_load['location:name'].'" /><span class="deh-required">*</span><br/>';
-//    $url = data_entry_helper::$geoserver_url.'wms';
-//    // Get the style if there is one selected
-//    $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
-//    data_entry_helper::$javascript .= "\n    var filter='website_id=".$args['website_id']."';";
-//    data_entry_helper::$javascript .= "\n    var locLayer = new OpenLayers.Layer.WMS(
-//          'Selectable locations', // TBD from options?
-//          '$url',
-//          {layers: 'detail_locations', // TBD from options?
-//            transparent: true, CQL_FILTER: filter $style},
-//          {isBaseLayer: false, sphericalMercator: true, singleTile: true}
-//    );\n";
+    if($location_list_args['includeCodeField'])
+      $r .= '<label for="location:code">'.lang::get('LANG_Location_Code_Label').':</label><input type="text" id="location:code" name="location:code" disabled="disabled" value="'.data_entry_helper::$entity_to_load['location:code'].'" /><br/>';
     
     return $r;
   }
