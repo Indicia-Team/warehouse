@@ -1061,6 +1061,8 @@ class data_entry_helper extends helper_base {
   * True or false to include the geolocate controls.</li>
   * <li><b>wkt</b><br/>
   * Well Known Text of a spatial object to add to the map at startup.</li>
+  * <li><b>tabDiv</b><br/>
+  * If the map is on a tab or wizard interface, specify the div the aap loads on.</li>
   * </ul>
   */
   public static function map() {
@@ -1084,6 +1086,7 @@ class data_entry_helper extends helper_base {
     }
     $mapPanelOptions = array('initialFeatureWkt' => $options['wkt']);
     if (array_key_exists('presetLayers', $options)) $mapPanelOptions['presetLayers'] = $options['presetLayers'];
+    if (array_key_exists('tabDiv', $options)) $mapPanelOptions['tabDiv'] = $options['tabDiv'];
     $r .= self::map_panel($mapPanelOptions);
     return $r;
   }
