@@ -96,7 +96,7 @@ class Valid extends valid_Core {
    */
   public static function valid_term($term, $id)
   {
-    $this->valid_term_or_taxon($term, $id,'termlist_id', 'term', 'gv_termlists_term');
+    self::valid_term_or_taxon($term, $id,'termlist_id', 'term', 'gv_termlists_term');
   }
 
   /**
@@ -105,7 +105,7 @@ class Valid extends valid_Core {
    */
   public static function valid_taxon($taxon, $id)
   {
-    $this->valid_term_or_taxon($taxon, $id, 'taxon_list_id', 'taxon', 'gv_taxon_lists_taxa');
+    self::valid_term_or_taxon($taxon, $id, 'taxon_list_id', 'taxon', 'gv_taxon_lists_taxa');
   }
 
   /**
