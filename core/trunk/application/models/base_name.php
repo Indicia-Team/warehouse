@@ -39,8 +39,10 @@ class Base_Name_Model extends ORM_Tree {
     {
       if (trim($line) == '')
         break;
+      $c = array();
       $b = preg_split("/(?<!\\\\ )\|/",$line);
-      call_user_func_array(array($this, $parser), array($b, &$arrNames));
+      foreach($b as $d) $c[] = trim($d);
+      call_user_func_array(array($this, $parser), array($c, &$arrNames));
     }
     return $arrNames;
   }
