@@ -928,7 +928,7 @@ class ORM extends ORM_Core {
     $this->set_metadata($attrValueModel);
 
     try {
-      $v=$attrValueModel->save();
+      $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()));
     } catch (Exception $e) {
         $v=false;
         $this->errors['general']=$e->getMessage();

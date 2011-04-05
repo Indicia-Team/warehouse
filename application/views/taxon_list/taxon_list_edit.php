@@ -84,14 +84,3 @@ if ($parent_id != null && array_key_exists('parent_website_id', $values) && $val
 ?>
 </form>
 </div>
-<?php if ($id != '' && $values['table'] != null) : ?>
-  <div id="sublists">
-  <h2> Sublists </h2>
-  <?php echo $values['table']; ?>
-  <form class="cmxform" action="<?php echo url::site(); ?>/taxon_list/create" method="post">
-  <input type="hidden" name="parent_id" value=<?php echo $id ?> />
-  <input type="hidden" name="website_id" value=<?php echo html::initial_value($values, 'taxon_list:website_id') ?> />
-  <input type="submit" value="New Sublist" />
-  </form>
-  </div>
-<?php endif; ?>

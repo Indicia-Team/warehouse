@@ -224,7 +224,7 @@ class Indicia_Controller extends Template_Controller {
    * Returns an array of all values from this model and its super models ready to be 
    * loaded into a form.   
    */
-  protected function getModelValues() {    
+  protected function getModelValues() {
     $struct = $this->model->get_submission_structure();
     // Get this model's values. If the structure needs a specified field prefix then use it, otherwise it will default to the model name.    
     $r = $this->model->getPrefixedValuesArray(

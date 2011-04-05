@@ -22,21 +22,20 @@
  */
 
 /**
- * Controller providing CRUD access to the images for an occurrence image
+ * Controller providing CRUD access to the images for an occurrence comment
  *
  * @package	Core
  * @subpackage Controllers
  */
-class Occurrence_image_Controller extends Gridview_Base_Controller
+class Occurrence_comment_Controller extends Gridview_Base_Controller
 {
-	public function __construct()
+  public function __construct()
   {
-    parent::__construct('occurrence_image', 'occurrence_image', 'occurrence_image/index');
+    parent::__construct('occurrence_comment', 'occurrence_comment', 'occurrence_comment/index');
     $this->columns = array(
-      'caption'=>'',
-      'path'=>'Image'
+      'comment' => '', 'updated_on' => ''
     );
-    $this->pagetitle = "Images";
+    $this->pagetitle = "Occurrence Comments";
   }
 
   /**
@@ -74,8 +73,7 @@ class Occurrence_image_Controller extends Gridview_Base_Controller
       // occurrence id is passed as first argument in URL when creating. But the image
       // gets linked by meaning, so fetch the meaning_id.
       $r['occurrence:id'] = $this->uri->argument(1);
-      $r['occurrence_image:occurrence_id'] = $this->uri->argument(1);
-      $r['occurrence_image:caption'] = kohana::lang('misc.new_image');
+      $r['occurrence_comment:occurrence_id'] = $this->uri->argument(1);
     }
     return $r;
   }
@@ -85,11 +83,28 @@ class Occurrence_image_Controller extends Gridview_Base_Controller
    * are returned to the occurence entry which has the image.
    */
   protected function get_return_page() {
-    if (array_key_exists('occurrence_image:occurrence_id', $_POST)) {
-      return "occurrence/edit/".$_POST['occurrence_image:occurrence_id']."?tab=images";
+    if (array_key_exists('occurrence_comment:occurrence_id', $_POST)) {
+      return "occurrence/edit/".$_POST['occurrence_comment:occurrence_id']."?tab=images";
     } else {
       return $this->model->object_name;
     }
+  }
+
+  /**
+   * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a taxon list
+   */
+  protected function defineEditBreadcrumbs() {
+    $this->page_breadcrumbs[] = html::anchor('occurrence', 'Occurrences');
+    if ($this->model->id) {
+      // editing an existing item, so our argument is the occurrence_image_id
+      $occurrence_id = $this->model->occurrence_id;
+    } else {
+      // creating a new one so our argument is the occurrence id
+      $occurrence_id = $this->uri->argument(1);
+    }
+    $occurrenceTitle = ORM::Factory('occurrence', $occurrence_id)->caption();
+    $this->page_breadcrumbs[] = html::anchor('occurrence/edit/'.$occurrence_id.'?tab=Comments', $occurrenceTitle);
+    $this->page_breadcrumbs[] = $this->model->caption();
   }
 
 }

@@ -21,19 +21,6 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-?>
-<script type="text/javascript">
-  $(document).ready(function(){
-    var $tabs=$("#tabs").tabs();
-    var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
-    if (initTab!='') {
-      $tabs.tabs('select', '#' + initTab);
-
-    }
-  });
-</script>
-
-<?php
 $id = html::initial_value($values, 'termlist:id');
 $parent_id = html::initial_value($values, 'termlist:parent_id');
 
@@ -44,14 +31,6 @@ if ($parent_id != null) : ?>
 </a>
 </h1>
 <?php endif; ?>
-<div id="tabs">
-  <ul>
-    <li><a href="#details"><span>List Details</span></a></li>
-<?php if ($id != null) : ?>
-    <li><a href="<?php echo url::site().'termlists_term/'.$id; ?>" title="terms"><span>Terms</span></a></li>
-    <li><a href="#sublists"><span>Child Lists</span></a></li>
-<?php endif; ?>
-  </ul>
 <div id="details">
 <form class="cmxform" action="<?php echo url::site().'termlist/save'; ?>" method="post">
 <?php echo $metadata ?>
@@ -102,17 +81,4 @@ echo html::form_buttons(html::initial_value($values, 'termlist:id')!=null && htm
 echo html::error_message($model->getError('deleted')); 
 ?>
 </form>
-</div>
-<div id="terms"></div>
-<?php if (isset($table)) : ?>
-  <div id="sublists">
-  <p>Child lists are lists which contain the same type of information as their parents, but only contain a subset of the terms.
-  For example, a child list can be used to customise a termlist to a specific set of terms for use on a website.</p>
-  <?php echo $table; ?>
-<form class="cmxform" action="<?php echo url::site(); ?>termlist/create" method="post">
-  <input type="hidden" name="parent_id" value=<?php echo $model->id; ?> />
-  <input type="submit" value="New Child List" />
-  </form>
-  </div>
-<?php endif; ?>
 </div>

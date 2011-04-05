@@ -180,7 +180,6 @@ class Service_Base_Controller extends Controller {
       }
       echo $a;
     }
-    kohana::log('debug', 'Service_Base_Controller::handle_error, '.print_r($e, true));
   }
 
 

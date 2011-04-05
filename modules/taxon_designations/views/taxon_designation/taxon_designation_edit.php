@@ -31,7 +31,7 @@ if (isset($_POST))
 data_entry_helper::link_default_stylesheet();
 if (isset($values['taxon_designation:id'])) : ?>
   <input type="hidden" name="taxon_designation:id" value="<?php echo html::initial_value($values, 'taxon_designation:id'); ?>" />
-<? endif;
+<?php endif;
 echo data_entry_helper::text_input(array(
   'label'=>'Title',
   'fieldname'=>'taxon_designation:title',

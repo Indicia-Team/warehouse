@@ -30,8 +30,10 @@ $config['_default'] = 'home';
 
 // Termlist
 $config['termlist'] = 'termlist/page/1';
+$config['termlist/([0-9]+)'] = 'termlist/page/1/$1';
 // Taxon list
 $config['taxon_list'] = 'taxon_list/page/1';
+$config['taxon_list/([0-9]+)'] = 'taxon_list/page/1/$1';
 // Website
 $config['website'] = 'website/page/1';
 // Survey
@@ -64,6 +66,7 @@ $config['location_attribute'] = 'location_attribute/page/1';
 // Entered Data
 $config['occurrence'] = 'occurrence/page/1';
 $config['occurrence_image/([0-9]+)'] = 'occurrence_image/page/1/$1';
+$config['occurrence_comment/([0-9]+)'] = 'occurrence_comment/page/1/$1';
 $config['sample'] = 'sample/page/1';
 $config['sample_image/([0-9]+)'] = 'sample_image/page/1/$1';
 // Title

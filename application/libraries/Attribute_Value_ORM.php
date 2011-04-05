@@ -64,14 +64,10 @@ abstract class Attribute_Value_ORM extends ORM {
         $array->add_rules('float_value', 'numeric');
         break;
       case 'D':
-        $array->add_rules('date_end_value', 'required');
-        $array->add_rules('date_type_value', 'required');
         $vf = 'date_start_value';
       break;
       case 'V':
         // Vague date - presumably already validated?
-        $array->add_rules('date_end_value', 'required');
-        $array->add_rules('date_type_value', 'required');
         $vf = 'date_start_value';
         break;
       case 'B':
@@ -85,8 +81,6 @@ abstract class Attribute_Value_ORM extends ORM {
       default:
         $vf = 'int_value';
       }
-      // Require the field with the value in
-      if ($vf != null) $array->add_rules($vf, 'required');
       // Now get the global custom attribute validation rules for the attribute
       if ($attr->validation_rules != '') {
         $rules = explode("\n", $attr->validation_rules);
@@ -107,6 +101,7 @@ abstract class Attribute_Value_ORM extends ORM {
           }
         }
       }
+      
     }
   }
 

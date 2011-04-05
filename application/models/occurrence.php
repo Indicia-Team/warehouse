@@ -58,13 +58,16 @@ class Occurrence_Model extends ORM
     'occurrence_image:caption:4'=>'Image Caption 4'    
   );
 
+  /**
+   * Returns a caption to identify this model instance.
+   * @todo This could be much better than just an id. Preferable configurable?
+   */ 
   public function caption()
   {
     return $this->id;
   }
 
   public function validate(Validation $array, $save = false) {
-  kohana::log('debug', 'validating start');
     $array->pre_filter('trim');
     $array->add_rules('sample_id', 'required');
     $array->add_rules('website_id', 'required');
@@ -82,17 +85,17 @@ class Occurrence_Model extends ORM
       'verified_by_id',
       'verified_on',
       'confidential',
-      'use_determination'
+      'use_determination',
+      'external_key'
     );
     if(array_key_exists('id', $fieldlist)) {
       $existingRecord = ORM::factory('occurrence', $fieldlist['id']);
       if($existingRecord->downloaded_flag == 'F'){
-      	// downloaded_flag set to 'F' - this record has been downloaded out of the system, so now read only.
+        // downloaded_flag set to 'F' - this record has been downloaded out of the system, so now read only.
         $this->errors['downloaded_flag']='Download flag set: record is now read only';
-       	$save = false;
+        $save = false;
       }
     }
-    kohana::log('debug', 'validating');
     return parent::validate($array, $save);
   }
 
