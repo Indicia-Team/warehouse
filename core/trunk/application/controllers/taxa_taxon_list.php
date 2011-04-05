@@ -42,22 +42,22 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'taxon'=>'',
       'authority'=>'',
       'taxon_group'=>'Taxon Group',
-      'language'=>'',    
+      'language'=>'',
     );
     $this->pagetitle = "Species";
   }
-  
+
   /**
    * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a taxon list
    */
-  protected function defineEditBreadcrumbs() { 
+  protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
     if ($this->model->id) {
       // editing an existing item, so our argument is the taxa in taxon list id
       $listId = $this->model->taxon_list_id;
     } else {
       // creating a new one so our argument is the taxon list id
-      $listId = $this->uri->argument(1);     
+      $listId = $this->uri->argument(1);
     }
     $listTitle = ORM::Factory('taxon_list', $listId)->title;
 	  $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$listId.'?tab=taxa', $listTitle);
@@ -84,14 +84,14 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->view->taxon_list_id = $taxon_list_id;
     $this->upload_csv_form->staticFields = array(
       'taxa_taxon_list:taxon_list_id' => $taxon_list_id
-    );    
+    );
     $this->upload_csv_form->returnPage = $taxon_list_id;
   }
 
   /**
    * Method to retrieve pages for the index grid of taxa_taxon_list entries from an AJAX
-   * pagination call. Overrides the base class behaviour to enforce a filter on the 
-   * taxon list id.   
+   * pagination call. Overrides the base class behaviour to enforce a filter on the
+   * taxon list id.
    */
   public function page_gv($page_no, $filter=null)
   {
@@ -101,13 +101,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   }
 
   /**
-   * Returns an array of all values from this model and its super models ready to be 
-   * loaded into a form. For this controller, we need to also setup the child taxon grid 
+   * Returns an array of all values from this model and its super models ready to be
+   * loaded into a form. For this controller, we need to also setup the child taxon grid
    * and the synonyms/common names plus the list of images.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    
+
     // Add items to view
     $r = array_merge($r, array(
       'metaFields:synonyms' => $this->formatScientificSynonomy(
@@ -115,14 +115,14 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'metaFields:commonNames' => $this->formatCommonSynonomy(
         $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id))
     ));
-    return $r;  
+    return $r;
   }
-  
+
   /**
-   *  Setup the default values to use when loading this controller to edit a new page.   
+   *  Setup the default values to use when loading this controller to edit a new page.
    */
-  protected function getDefaults() {    
-    $r = parent::getDefaults();    
+  protected function getDefaults() {
+    $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
       // List id is passed as first argument in URL when creating
       $r['taxa_taxon_list:taxon_list_id'] = $this->uri->argument(1);
@@ -132,13 +132,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       }
     } elseif ($this->uri->method(false)=='edit' || $this->uri->method(false)=='save') {
       if (array_key_exists('taxa_taxon_list:id', $_POST) && $_POST['taxa_taxon_list:id']) {
-        $r['table'] = $this->get_child_grid($_POST['taxa_taxon_list:id'],      
-          $this->uri->argument(3) || 1, // page number
+        $r['table'] = $this->get_child_grid($_POST['taxa_taxon_list:id'],
+          is_numeric($this->uri->argument(3)) ? $this->uri->argument(3) : 1, // page number
           1 // limit
         );
       }
     }
-    return $r;    
+    return $r;
   }
 
   /**
@@ -150,17 +150,17 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->auto_render=false;
     return $this->get_child_grid($id,$page_no);
   }
-  
+
   public function children($id) {
     $child_grid_html = $this->get_child_grid(
-      $id, 
-      $this->uri->argument(3) || 1, // page number
+      $id,
+      is_numeric($this->uri->argument(3)) ? $this->uri->argument(3) : 1, // page number
       !(count($_GET)>0)
     );
     if (count($_GET)>0) {
       $this->auto_render=false;
       return '123';// $child_grid_html;
-    } else      
+    } else
       $this->setView('taxa_taxon_list/taxa_taxon_list_children', '', array(
         'values' => array(
           'grid' => $child_grid_html,
@@ -169,12 +169,12 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
         )
       ));
   }
-  
+
   /**
    * Returns the HTML required for the grid of children of this taxon entry.
-   * 
+   *
    * @return string HTML for the grid.
-   * @access private  
+   * @access private
    */
   private function get_child_grid($id,$page_no,$forceFullGrid=false)
   {
@@ -197,7 +197,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
   /**
    * Reports if editing a taxon in taxon list is authorised.
-   * 
+   *
    * @param int $id Id of the taxa_taxon_list that is being checked, or null for a new record.
    */
   protected function record_authorised ($id)
@@ -207,12 +207,12 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       $list_id=$this->uri->argument(1);
     } else {
       $taxa = new Taxa_taxon_list_Model($id);
-      // The id should already exist, otherwise the user is attempting to create by passing 
+      // The id should already exist, otherwise the user is attempting to create by passing
       // a param to the edit function.
       if (!$taxa->loaded) {
         return false;
       } else {
-        $list_id=$taxa->taxon_list_id;        
+        $list_id=$taxa->taxon_list_id;
       }
     }
     return ($this->taxon_list_authorised($list_id));
@@ -242,7 +242,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       // user may select to continue adding new taxa
       if (isset($_POST['what-next'])) {
         if ($_POST['what-next']=='add')
-          return 'taxa_taxon_list/create/'.$_POST['taxa_taxon_list:taxon_list_id'];      
+          return 'taxa_taxon_list/create/'.$_POST['taxa_taxon_list:taxon_list_id'];
       }
       // or just return to the list page
       return "taxon_list/edit/".$_POST['taxa_taxon_list:taxon_list_id']."?tab=taxa";
@@ -253,12 +253,12 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       // last resort if we don't know the list, just show the whole lot of lists
       return "taxon_list";
   }
-  
+
   /**
    * Retrieves the value to display in the textarea for the scientific names.
-   * 
+   *
    * @return string Value for scientific names
-   * @access private   
+   * @access private
    */
   private function formatScientificSynonomy(ORM_Iterator $res)
   {
@@ -279,9 +279,9 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
   /**
    * Retrieves the value to display in the textarea for the common names.
-   * 
+   *
    * @return string Value for common names
-   * @access private   
+   * @access private
    */
   private function formatCommonSynonomy(ORM_Iterator $res)
   {
@@ -298,7 +298,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     }
     return $syn;
   }
-  
+
   /**
    * Return a list of the tabs to display for this controller's actions.
    */
@@ -309,7 +309,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
       'actions'=>array('edit')
     ), array(
-      'views'=>'taxa_taxon_list/taxa_taxon_list_edit', 
+      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
       'controller' => 'taxa_taxon_list/children',
       'title' => 'Child Taxa',
       'actions'=>array('edit')
