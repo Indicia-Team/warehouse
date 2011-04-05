@@ -31,7 +31,9 @@
 class Occurrence_comment_model extends ORM {
 
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence');
-
+  
+  protected $search_field = 'comment';
+  
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
@@ -47,5 +49,18 @@ class Occurrence_comment_model extends ORM {
     return parent::validate($array, $save);
 
   }
+  
+  /**
+   * Returns an abbreviated version of the comment to act as a caption
+   */
+  public function caption()
+  {
+    if (strlen($this->comment)>30) 
+      return substr($this->comment, 0, 30).'...';
+    else 
+      return $this->comment;
+  }
+  
+  
 
 }

@@ -41,6 +41,6 @@ $config['default'] = array
   'style'          => 'classic',
   'uri_segment'    => 3,
   'query_string'   => '',
-  'items_per_page' => 10,
+  'items_per_page' => 4,
   'auto_hide'      => FALSE,
 );

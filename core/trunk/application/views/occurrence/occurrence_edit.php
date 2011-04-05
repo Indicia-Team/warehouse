@@ -97,39 +97,32 @@ $(document).ready(function() {
 });
 </script>
 <form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">
-<div id="tabs">
-  <ul>
-    <li><a href="#details"><span>Occurrence Details</span></a></li>
-    <li><a href="#attrs"><span>Additional Attributes</span></a></li>
-    <li><a href="#comments"><span>Comments</span></a></li>
-    <?php if ($id != null) : 
-      ?><li><a href="<?php echo url::site()."occurrence_image/$id" ?>" title="images"><span>Images</span></a></li>
-    <?php endif; ?>
-  </ul>
-<div id="details">
-<?php echo $metadata; ?>
+<?php 
+echo $metadata; 
+$sample = $model->sample;
+?>
 <fieldset class="readonly">
 <legend>Sample information</legend>
 <ol>
 <li>
 <label>Survey:</label>
-<input readonly="readonly" type="text" value="<?php echo $model->sample->survey->title; ?>"/>
+<input readonly="readonly" type="text" value="<?php echo $sample->survey->title; ?>"/>
 </li>
 <li>
 <label>Date:</label>
-<input readonly="readonly" type="text" value="<?php echo $model->sample->date; ?>"/>
+<input readonly="readonly" type="text" value="<?php echo $sample->date; ?>"/>
 </li>
 <li>
 <label>Spatial reference:</label>
-<input readonly="readonly" type="text" value="<?php echo $model->sample->entered_sref; ?>"/>
+<input readonly="readonly" type="text" value="<?php echo $sample->entered_sref; ?>"/>
 </li>
 </ol>
 </fieldset>
 <fieldset>
 <?php
-print form::hidden('id', $id);
-print form::hidden('website_id', html::initial_value($values, 'occurrence:website_id'));
-print form::hidden('sample_id', html::initial_value($values, 'occurrence:sample_id'));
+print form::hidden('occurrence:id', $id);
+print form::hidden('occurrence:website_id', html::initial_value($values, 'occurrence:website_id'));
+print form::hidden('occurrence:sample_id', html::initial_value($values, 'occurrence:sample_id'));
 ?>
 <legend>Occurrence Details</legend>
 <ol>
@@ -146,7 +139,7 @@ $fname = $model->determiner_id ? $model->determiner->first_name : '';
 $sname = $model->determiner_id ? $model->determiner->surname : '';
 print form::input('determiner', $fname.' '.$sname);
 print form::hidden('occurrence:determiner_id', html::initial_value($values, 'occurrence:determiner_id'));
-echo html::error_message($model->getError('determiner_id')); ?>
+echo html::error_message($model->getError('occurrence:determiner_id')); ?>
 </li>
 <li>
 <label for='occurrence:confidential'>Confidential?:</label>
@@ -191,9 +184,7 @@ Downloaded on <?php echo html::initial_value($values, 'occurrence:downloaded_on'
 <?php endif; ?>
 </ol>
 </fieldset>
-</div>
-<div id="attrs">
- <fieldset>
+<fieldset>
  <legend>Survey Specific Attributes</legend>
  <ol>
  <?php
@@ -224,14 +215,7 @@ foreach ($values['attributes'] as $attr) {
  ?>
  </ol>
  </fieldset>
- </div>
-<div id="comments">
-<?php
-echo $values['comments'];
-?>
-</div>
-<div id="images">
-</div>
-</div>
+ 
 <?php echo html::form_buttons(html::initial_value($values, 'occurrence:id')!=null, false, false); ?>
 </form>
+

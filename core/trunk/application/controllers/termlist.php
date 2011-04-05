@@ -40,6 +40,36 @@ class Termlist_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Term lists";
     $this->auth_filter = $this->gen_auth_filter;
   }
+  
+  /** 
+   * Override the index page controller action to add filters for the parent list if viewing the child lists.
+   */
+  public function page($page_no, $filter=null) {
+    // This constructor normally has 1 argument which is the grid page. If there is a second argument
+    // then it is the parent list ID. 
+    if ($this->uri->total_arguments()>1) {
+      $this->base_filter=array('parent_id' => $this->uri->argument(2));
+    }
+    parent::page($page_no, $filter);
+    if ($this->uri->total_arguments()>1) {
+      $parent_id = $this->uri->argument(2);
+      $this->view->parent_id=$parent_id;
+    }
+  }
+  
+  /**
+   *  Setup the default values to use when loading this controller to edit a new page.
+   *  In this case, the parent_id and website_id are passed as $_POST data if creating 
+   *  a new sublist.   
+   */
+  protected function getDefaults() {
+    $r = parent::getDefaults();
+    if ($this->uri->method(false)=='create' && array_key_exists('parent_id', $_POST)) {
+      // Parent_id is passed in as POST params for a new record.
+      $r['termlist:parent_id'] = $_POST['parent_id'];
+    }   
+    return $r;    
+  }
 
   /**
    *  Auxilliary function for handling Ajax requests from the edit method gridview component.
@@ -63,45 +93,32 @@ class Termlist_Controller extends Gridview_Base_Controller {
   
   /**
    * Returns an array of all values from this model and its super models ready to be 
-   * loaded into a form. For this controller, we need to also setup the child taxon lists grid   
+   * loaded into a form.  
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    // Configure the grid
-    $grid =	Gridview_Controller::factory($this->model, 1, 4);
-    $grid->base_filter = array('deleted' => 'f', 'parent_id' => $this->model->id);
-    $grid->columns =  $this->columns;
-    $grid->actionColumns = array(
-      'edit' => 'termlist/edit/£id£'
-    );
-    $r['table'] = $grid->display();
     if ($this->model->parent_id) {
       $r['parent_website_id']=$this->model->parent->website_id;
     } 
     return $r;    
   }
-  
-  /**
-   *  Setup the default values to use when loading this controller to edit a new page.
-   *  In this case, the parent_id and website_id are passed as $_POST data if creating 
-   *  a new sublist.   
-   */
-  protected function getDefaults() {
-    $r = parent::getDefaults();
-    if ($this->uri->method(false)=='create' && array_key_exists('parent_id', $_POST)) {
-      // Parent_id and website_id are passed in as POST params for a new record.
-      $r['termlist:parent_id'] = $_POST['parent_id'];
-      $r['termlist:website_id'] = $_POST['website_id'];
-      $r['parent_website_id']=ORM::factory('termlist', $_POST['parent_id'])->website_id;
-    }   
-    return $r;    
-  }
 
-  protected function record_authorised ($id)
-  {
-    if (!is_null($id) AND !is_null($this->auth_filter))
+  /**
+   * Reports if editing a termlist is authorised based on the website id. If a new list,
+   * then the parent list's website is used to check authorisation.
+   * 
+   * @param int $id Id of the termlist that is being checked, or null for a new record.
+   */
+  protected function record_authorised($id)
+  {    
+    if (!$id && array_key_exists('parent_id', $_POST)) {
+      $idToCheck=$_POST['parent_id'];
+    } else {
+      $idToCheck=$id;
+    }    
+    if (!is_null($idToCheck) AND !is_null($this->auth_filter))
     {
-      $termlist=ORM::factory('termlist',$id);
+      $termlist = new Termlist_Model($idToCheck);
       return (in_array($termlist->website_id, $this->auth_filter['values']));
     }
     return true;
@@ -117,6 +134,32 @@ class Termlist_Controller extends Gridview_Base_Controller {
     } else {
       return $this->model->object_name;
     }
+  }
+  
+  /**
+   * Existing entries owned by warehouse are read only, unless you are core admin
+   */
+  protected function get_read_only($values) {
+    return (html::initial_value($values, 'termlist:id') && 
+      !$this->auth->logged_in('CoreAdmin') && 
+      !html::initial_value($values, 'termlist:website_id'));
+  }
+  
+  /**
+   * Return a list of the tabs to display for this controller's actions.
+   */
+  protected function getTabs($name) {
+    return array(array(
+      'controller' => 'termlists_term',
+      'title' => 'Terms',
+      'views'=>'termlist',
+      'actions'=>array('edit')
+    ), array(
+      'controller' => 'termlist',
+      'title' => 'Child lists',
+      'views'=>'termlist',
+      'actions'=>array('edit')
+    ));
   }
 }
 ?>

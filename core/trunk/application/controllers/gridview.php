@@ -116,15 +116,15 @@ class Gridview_Controller extends Controller {
     $offset = ($this->page -1) * $limit;
     $table = $lists->find_all($limit, $offset);  
     $pagination = new Pagination(array(
-      'style' => 'extended',      
+      'style' => 'extended',
       'uri_segment' => $this->uri_segment,
       'total_items' => $lists->count_last_query(),
       'auto_hide' => true
-    ));    
+    ));
     if ($this->input->get('type',null) == 'pager' && request::is_ajax()) {
       // request for just the pagination below the grid
-      $this->auto_render=false;    
-      echo $pagination; // This DOES need to be echoed        
+      $this->auto_render=false;
+      echo $pagination; // This DOES need to be echoed
     } else {    
       // Request for the grid. This could be an AJAX request for just the table body, or a 
       // normal request for the entire grid inc pagination.      

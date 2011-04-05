@@ -403,7 +403,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     else
     {
       $this->check_update_access($this->entity, $s);
-      $model = ORM::factory($this->entity);      
+      $model = ORM::factory($this->entity);
       $model->submission = $s;
       $result = $model->submit();
       $id = $model->id;

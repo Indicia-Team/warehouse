@@ -76,6 +76,7 @@ $lang = array (
     'digit' => 'This must be a valid whole number.',
     'maximum' => 'The value specified for this number is too high',
     'minimum' => 'The value specified for this number is too low',
+    'required' => 'The value is required.',
     'default' => 'The value must be a valid whole number.',
   ),
   'iso' => Array (

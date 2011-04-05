@@ -37,26 +37,23 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       'description'=>'');
     $this->pagetitle = "Species lists";
     $this->auth_filter = $this->gen_auth_filter;
+    $segments=$this->uri->segment_array();
   }
   
-  /**
-   * Returns an array of all values from this model and its super models ready to be 
-   * loaded into a form. For this controller, we need to also setup the child taxon lists grid   
+  /** 
+   * Override the index page controller action to add filters for the parent list if viewing the child lists.
    */
-  protected function getModelValues() {
-    $r = parent::getModelValues();
-    // Configure the grid
-    $grid =	Gridview_Controller::factory($this->model, 1, 4);
-    $grid->base_filter = array('deleted' => 'f', 'parent_id' => $this->model->id);
-    $grid->columns =  $this->columns;
-    $grid->actionColumns = array(
-      'edit' => 'taxon_list/edit/£id£'
-    );
-    $r['table'] = $grid->display();
-    if ($this->model->parent_id) {
-      $r['parent_website_id']=$this->model->parent->website_id;
-    } 
-    return $r;    
+  public function page($page_no, $filter=null) {
+    // This constructor normally has 1 argument which is the grid page. If there is a second argument
+    // then it is the parent list ID. 
+    if ($this->uri->total_arguments()>1) {
+      $this->base_filter=array('parent_id' => $this->uri->argument(2));
+    }
+    parent::page($page_no, $filter);
+    if ($this->uri->total_arguments()>1) {
+      $parent_id = $this->uri->argument(2);
+      $this->view->parent_id=$parent_id;
+    }
   }
   
   /**
@@ -67,11 +64,9 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   protected function getDefaults() {
     $r = parent::getDefaults();
     if ($this->uri->method(false)=='create' && array_key_exists('parent_id', $_POST)) {
-      // Parent_id and website_id are passed in as POST params for a new record.
+      // Parent_id is passed in as POST params for a new record.
       $r['taxon_list:parent_id'] = $_POST['parent_id'];
-      $r['taxon_list:website_id'] = $_POST['website_id'];
-      $r['parent_website_id']=ORM::factory('taxon_list', $_POST['parent_id'])->website_id;
-    }   
+    }
     return $r;    
   }
   
@@ -82,9 +77,9 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
   { 
     $websites = ORM::factory('website');
     $parent_id=html::initial_value($values, 'taxon_list:parent_id');    
-    if ($parent_id != null && array_key_exists('parent_website_id', $values) && $values['parent_website_id'] !== null) {
+    if ($parent_id != null) {
       // parent list already has a link to a website, so we can't change it 
-      $websites = $websites->in('id',$values['parent_website_id']);
+      $websites = $websites->in('id', ORM::factory('taxon_list', $parent_id)->website_id);
     } else {
       if (!$this->auth->logged_in('CoreAdmin'))
         $websites = $websites->in('id',$this->auth_filter['values']);
@@ -92,23 +87,6 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     return array(
       'websites' => $websites->where('deleted','false')->orderby('title','asc')->find_all()
     );
-  }
-
-  /**
-   * Auxilliary function for handling Ajax requests from the edit method child lists gridview component
-   */
-  public function edit_gv($id,$page_no) {
-    $this->auto_render=false;
-    $model = ORM::factory('taxon_list',$id);
-    $grid =	Gridview_Controller::factory($model, $page_no, 4);
-    $grid->base_filter = array('deleted' => 'f', 'parent_id' => $id);
-    $grid->columns = array_intersect_key($grid->columns, array(
-      'title'=>'',
-      'description'=>''));
-    $grid->actionColumns = array(
-      'edit' => 'taxon_list/edit/£id£'
-    );
-    return $grid->display();
   }
 
   /**
@@ -145,8 +123,10 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     }
   }
   
+  /**
+   * Existing entries owned by warehouse are read only, unless you are core admin
+   */
   protected function get_read_only($values) {
-    // existing entries owned by warehouse are read only, unless you are core admin
     return (html::initial_value($values, 'taxon_list:id') && 
       !$this->auth->logged_in('CoreAdmin') && 
       !html::initial_value($values, 'taxon_list:website_id'));
@@ -159,6 +139,11 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     return array(array(
       'controller' => 'taxa_taxon_list',
       'title' => 'Taxa',
+      'views'=>'taxon_list',
+      'actions'=>array('edit')
+    ), array(
+      'controller' => 'taxon_list',
+      'title' => 'Child lists',
       'views'=>'taxon_list',
       'actions'=>array('edit')
     ));

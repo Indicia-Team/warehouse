@@ -67,41 +67,45 @@ class Occurrence_controller extends Gridview_Base_Controller {
     }
   }
   
-/**
+  /**
    * Returns an array of all values from this model and its super models ready to be 
    * loaded into a form. For this controller, we need to also setup the grid of comments and
    * list of images.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $gridmodel = ORM::factory('occurrence_comment');
-    $grid = Gridview_Controller::factory(
-        $gridmodel,	
-        $this->uri->argument(3) || 1, // page number
-        4 // uri segment
-    );
-    $grid->base_filter = array('occurrence_id' => $this->model->id, 'deleted' => 'f');
-    $grid->columns = array('comment' => '', 'updated_on' => '');    
-    $r['comments']=$grid->display();
-    $r['images']=ORM::factory('occurrence_image')->where('occurrence_id', $this->model->id)->find_all();
     $this->loadAttributes($r);
     return $r;  
   }
-
-  public function edit_gv($id = null, $page_no)
-  {
-    $this->auto_render = false;
-    $gridmodel = ORM::factory('occurrence_comment');
-    $grid = Gridview_Controller::factory($gridmodel,	$page_no, 4);
-    $grid->base_filter = array('occurrence_id' => $id, 'deleted' => 'f');
-    $grid->columns = array('comment' => '', 'updated_on' => '');
-
-    return $grid->display();
+  
+  protected function getDefaults() {
+    $r = parent::getDefaults();
+    $this->loadAttributes($r);
+    return $r;
   }
-
+  
   public function save()
   {
     $_POST['confidential'] = isset($_POST['confidential']) ? 't' : 'f';
     parent::save();
+  }
+  
+  /**
+   * Return a list of the tabs to display for this controller's actions.
+   */
+  protected function getTabs($name) {
+    return array(
+      array(
+        'controller' => 'occurrence_comment',
+        'title' => 'Comments',
+        'views'=>'occurrence',
+        'actions'=>array('edit')
+      ), array(
+        'controller' => 'occurrence_image',
+        'title' => 'Images',
+        'views'=>'occurrence',
+        'actions'=>array('edit')
+      )
+    );
   }
 }

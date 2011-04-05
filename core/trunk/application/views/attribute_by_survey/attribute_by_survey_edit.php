@@ -141,9 +141,9 @@ echo data_entry_helper::outputAttribute(array(
     'caption' => 'Default value',
     'data_type' => $dataType,
     'fieldname' => 'default_value',
-	'id' => 'default_value',
+    'id' => 'default_value',
     'termlist_id' => $model->$attrModelName->termlist_id, 
-	'default' => $model->default_value),
+    'default' => $model->default_value),
   array(
     'extraParams' => $readAuth
   )
