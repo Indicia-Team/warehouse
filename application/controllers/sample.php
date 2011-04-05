@@ -74,12 +74,12 @@ class Sample_Controller extends Gridview_Base_Controller
    * Loads the list of occurrences for the sample into a grid.
    */
   private function loadOccurrences(&$r) {
-  	$occ_gridmodel = ORM::factory('gv_occurrence');
+    $occ_gridmodel = ORM::factory('gv_occurrence');
     $occ_grid = Gridview_Controller::factory(
         $occ_gridmodel,
-        $this->uri->argument(3) || 1, // page number,
+        is_numeric($this->uri->argument(3)) ? $this->uri->argument(3) : 1, // page number,
         4
-     );
+    );
     $occ_grid->base_filter = array('sample_id' => $this->model->id, 'deleted' => 'f');
     $occ_grid->columns = array('taxon' => '');
     $occ_grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
