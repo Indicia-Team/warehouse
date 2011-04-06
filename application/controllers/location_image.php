@@ -80,4 +80,21 @@ class location_image_Controller extends Gridview_Base_Controller
     }
   }
 
+  /**
+   * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a sample
+   */
+  protected function defineEditBreadcrumbs() {
+    $this->page_breadcrumbs[] = html::anchor('location', 'Locations');
+    if ($this->model->id) {
+      // editing an existing item
+      $locationId = $this->model->location_id;
+    } else {
+      // creating a new one so our argument is the location id
+      $locationId = $this->uri->argument(1);
+    }
+    $loc = ORM::factory('location', $locationId);
+    $this->page_breadcrumbs[] = html::anchor('location/edit/'.$locationId, $loc->caption());
+    $this->page_breadcrumbs[] = $this->model->caption();
+  }
+
 }

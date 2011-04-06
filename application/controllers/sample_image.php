@@ -80,4 +80,21 @@ class sample_image_Controller extends Gridview_Base_Controller
     }
   }
 
+  /**
+   * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a sample
+   */
+  protected function defineEditBreadcrumbs() {
+    $this->page_breadcrumbs[] = html::anchor('sample', 'Samples');
+    if ($this->model->id) {
+      // editing an existing item
+      $sampleId = $this->model->sample_id;
+    } else {
+      // creating a new one so our argument is the sample id
+      $sampleId = $this->uri->argument(1);
+    }
+    $sample = ORM::factory('sample', $sampleId);
+    $this->page_breadcrumbs[] = html::anchor('sample/edit/'.$sampleId, $sample->caption());
+    $this->page_breadcrumbs[] = $this->model->caption();
+  }
+
 }

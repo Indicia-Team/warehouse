@@ -37,11 +37,6 @@ $centroid_geom = html::initial_value($values, 'location:centroid_geom');
 <script type="text/javascript">
 
 jQuery(document).ready(function() {
-  var $tabs=$("#tabs").tabs();
-  var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
-  if (initTab!='') {
-    $tabs.tabs('select', '#' + initTab);
-  }
   init_map('<?php echo url::base(); ?>', <?php 
       if ($id && $boundary_geom) 
         echo "'$boundary_geom'"; 
@@ -85,14 +80,6 @@ jQuery(document).ready(function() {
 </script>
 <p>This page allows you to specify the details of a location.</p>
 <form class="cmxform" action="<?php echo url::site().'location/save'; ?>" method="post">
-<div id="tabs">
-  <ul>
-    <li><a href="#details"><span>Location Details</span></a></li>
-    <?php if ($id != null) :
-    ?><li><a href="#attrs"><span>Additional Attributes</span></a></li>
-    <li><a href="<?php echo url::site()."location_image/$id" ?>" title="images"><span>Images</span></a></li>
-    <?php endif; ?>
-  </ul>
 <div id="details">
 <?php echo $metadata; ?>
 <fieldset>
@@ -198,9 +185,6 @@ foreach ($values['attributes'] as $attr) {
  ?>
  </ol>
  </fieldset>
-</div>
-<div id="images">
-</div>
 </div>
 <?php 
 endif;

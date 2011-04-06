@@ -85,6 +85,11 @@ class Sample_Controller extends Gridview_Base_Controller
         'title' => 'Occurrences',
         'views'=>'sample',
         'actions'=>array('edit')
+      ), array(
+        'controller' => 'sample_image',
+        'title' => 'Images',
+        'views'=>'sample',
+        'actions'=>array('edit')
       )
     );
   }
