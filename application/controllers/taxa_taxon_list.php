@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
 /**
  * Controller providing CRUD access to the taxa that belong to a checklist.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
  */
 class Taxa_taxon_list_Controller extends Gridview_Base_Controller
@@ -60,8 +60,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       $listId = $this->uri->argument(1);
     }
     $listTitle = ORM::Factory('taxon_list', $listId)->title;
-	  $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$listId.'?tab=taxa', $listTitle);
-	  $this->page_breadcrumbs[] = $this->model->caption();
+    $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$listId.'?tab=taxa', $listTitle);
+    $this->page_breadcrumbs[] = $this->model->caption();
   }
 
   /**
@@ -159,7 +159,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     );
     if (count($_GET)>0) {
       $this->auto_render=false;
-      return '123';// $child_grid_html;
+      return $child_grid_html;
     } else
       $this->setView('taxa_taxon_list/taxa_taxon_list_children', '', array(
         'values' => array(
@@ -180,7 +180,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
   {
     $gridmodel = ORM::factory('gv_taxon_lists_taxon');
 
-    $child_grid =	Gridview_Controller::factory(
+    $child_grid =  Gridview_Controller::factory(
         $gridmodel,
         $page_no,
         4
@@ -269,7 +269,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       {
         $syn .= $synonym->taxon->taxon;
         if ($synonym->taxon->authority) {
-          $syn .=	" | ".$synonym->taxon->authority;
+          $syn .=  " | ".$synonym->taxon->authority;
         }
         $syn .= "\n";
       }
@@ -291,7 +291,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       if ($synonym->taxon->language->iso != "lat")
       {
         $syn .= $synonym->taxon->taxon;
-        $syn .=	($synonym->taxon->language_id != null) ?
+        $syn .=  ($synonym->taxon->language_id != null) ?
         " | ".$synonym->taxon->language->iso."\n" :
         '';
       }

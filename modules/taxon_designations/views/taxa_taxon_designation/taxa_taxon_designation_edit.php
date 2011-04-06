@@ -30,6 +30,7 @@ if (isset($_POST))
 <label for="taxon-name">Taxon Name:</label> <span id="taxon_name"><strong><?php echo $other_data['taxon_name']; ?></strong></span><br/>
 <input type="hidden" value="<?php echo html::initial_value($values, "taxa_taxon_designation:taxon_id"); ?>"
        name="taxa_taxon_designation:taxon_id"/>
+<input type="hidden" value="<?php echo $other_data["taxon_list_id"]; ?>" name="taxon_list_id" />
 <?php
 data_entry_helper::link_default_stylesheet();
 if (isset($values['taxa_taxon_designation:id'])) : ?>

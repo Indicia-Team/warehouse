@@ -25,7 +25,7 @@
 <div class="taxa_taxon_designation">
 <?php echo $table ?>
 <br/>
-<form action="<?php echo url::site()."taxa_taxon_designation/create/$taxon_id"; ?>" method="post">
+<form action="<?php echo url::site()."taxa_taxon_designation/create/$taxa_taxon_list_id"; ?>" method="post">
 <input type="submit" value="New designation" class="ui-corner-all ui-state-default button" />
 </form>
 </div>

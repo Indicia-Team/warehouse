@@ -57,7 +57,6 @@ class Indicia_Controller extends Template_Controller {
     $this->db = Database::instance();
     $this->auth = new Auth;
     $this->session = new Session;
-
     if($this->page_authorised())
     {
       $menu = self::get_menu();
