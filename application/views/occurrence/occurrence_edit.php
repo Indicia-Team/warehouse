@@ -30,11 +30,6 @@
 $id = html::initial_value($values, 'occurrence:id'); ?>
 <script type="text/javascript" >
 $(document).ready(function() {
-	var $tabs=$("#tabs").tabs();
-  var initTab='<?php echo array_key_exists('tab', $_GET) ? $_GET['tab'] : '' ?>';
-  if (initTab!='') {
-    $tabs.tabs('select', '#' + initTab);
-  }
   $("input#determiner").autocomplete("<?php echo url::site() ?>services/data/person", {
     minChars : 1,
     mustMatch : true,
