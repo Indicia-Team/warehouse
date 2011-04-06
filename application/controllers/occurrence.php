@@ -66,6 +66,18 @@ class Occurrence_controller extends Gridview_Base_Controller {
       $this->setView('occurrence/occurrence_edit', 'Occurrence');
     }
   }
+
+  /**
+   * Override the index page controller action to add filters for the parent sample if viewing the child occurrences.
+   */
+  public function page($page_no, $filter=null) {
+    // This constructor normally has 1 argument which is the grid page. If there is a second argument
+    // then it is the parent list ID.
+    if ($this->uri->total_arguments()>1) {
+      $this->base_filter=array('sample_id' => $this->uri->argument(2));
+    }
+    parent::page($page_no, $filter);
+  }
   
   /**
    * Returns an array of all values from this model and its super models ready to be 

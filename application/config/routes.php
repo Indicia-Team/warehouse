@@ -65,6 +65,7 @@ $config['location_attribute_by_survey/([0-9]+)'] = 'location_attribute_by_survey
 $config['location_attribute'] = 'location_attribute/page/1';
 // Entered Data
 $config['occurrence'] = 'occurrence/page/1';
+$config['occurrence/([0-9]+)'] = 'occurrence/page/1/$1';
 $config['occurrence_image/([0-9]+)'] = 'occurrence_image/page/1/$1';
 $config['occurrence_comment/([0-9]+)'] = 'occurrence_comment/page/1/$1';
 $config['sample'] = 'sample/page/1';

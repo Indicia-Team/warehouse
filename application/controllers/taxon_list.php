@@ -37,7 +37,6 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       'description'=>'');
     $this->pagetitle = "Species lists";
     $this->auth_filter = $this->gen_auth_filter;
-    $segments=$this->uri->segment_array();
   }
   
   /** 
@@ -50,6 +49,8 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
       $this->base_filter=array('parent_id' => $this->uri->argument(2));
     }
     parent::page($page_no, $filter);
+    // pass the parent id into the view, so the create list button can use it to autoset
+    // the parent of the new list.
     if ($this->uri->total_arguments()>1) {
       $parent_id = $this->uri->argument(2);
       $this->view->parent_id=$parent_id;
