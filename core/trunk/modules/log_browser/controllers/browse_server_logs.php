@@ -38,6 +38,8 @@ class Browse_server_logs_Controller extends Indicia_Controller {
         }
       }
     }
+    // put the most recent first
+    arsort($files);
     $this->template->title='Browse Server Logs';
     $this->template->content = new View('browse_server_logs');
     $this->template->content->files = $files;
