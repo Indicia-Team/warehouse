@@ -298,6 +298,20 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     }
     return $syn;
   }
+  
+  /**
+   * Controller action for the lumping and splitting tab.
+   */
+  public function lumping_splitting($id) {
+    $ttl = ORM::Factory('taxa_taxon_list', $id);
+    $this->setView('taxa_taxon_list/lumping_splitting', '', array(
+      'values' => array(
+        'taxa_taxon_list:id' => $id,
+        'taxa_taxon_list:taxon_list_id' => $ttl->taxon_list_id,
+        'taxon_meaning:id' => $ttl->taxon_meaning_id
+      )
+    ));
+  }
 
   /**
    * Return a list of the tabs to display for this controller's actions.
@@ -312,6 +326,16 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
       'controller' => 'taxa_taxon_list/children',
       'title' => 'Child Taxa',
+      'actions'=>array('edit')
+    ), array(
+      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
+      'controller' => 'taxon_relation',
+      'title' => 'Relations',
+      'actions'=>array('edit')
+    ), array(
+      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
+      'controller' => 'taxa_taxon_list/lumping_splitting',
+      'title' => 'Lumping & Splitting',
       'actions'=>array('edit')
     ));
   }

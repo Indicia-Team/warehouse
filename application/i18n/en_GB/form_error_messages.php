@@ -125,6 +125,10 @@ $lang = array (
     'default' => 'Invalid input.',
     'required' => 'The taxon list must be specified.',
   ),
+  'taxon_relation_type_id' => array (
+    'default' => 'Invalid input.',
+    'required' => 'The taxon relation_type must be specified.',
+  ),
   'taxa_taxon_list_id' => array (
     'default' => 'Invalid input.',
     'required' => 'The taxon must be specified.',
