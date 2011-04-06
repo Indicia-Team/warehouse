@@ -23,7 +23,12 @@
 
 /**
  * Controller class for the taxon designations plugin module list of designations
- * for a taxon.
+ * for a taxon. Calling modes:
+ * index - taxa_taxon_designation/1 where 1 is the taxa_taxon_list_id
+ * create - taxa_taxon_designation/create/1 where 1 is the taxa_taxon_list_id
+ * edit - taxa_taxon_designation/edit/1?taxa_taxon_list_id=2 where 1 is the taxa_taxon_designation_id and 2 is the taxa_taxon_list_id.
+ * Passing the taxa taxon list id like this allows the return page and breadcrumb to be set correctly, because the designation is 
+ * bound to a taxon which is not specific to a list.
  */
 class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
 
@@ -38,6 +43,11 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Taxon Designations";
     $this->model = ORM::factory('taxa_taxon_designation');
     $this->auth_filter = $this->gen_auth_filter;
+  }
+  
+  protected function get_action_columns() {
+    // taxa taxon list ID should be the first argument from the index view
+    return array('edit' => $this->controllerpath."/edit/£id£?taxa_taxon_list_id=".$this->uri->argument(1));
   }
 
   /**
@@ -54,7 +64,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     $ttl = ORM::Factory('taxa_taxon_list', $filter);
     $this->base_filter['taxa_taxon_list_id'] = $filter;
     parent::page($page_no, $filter);
-    $this->view->taxon_id = $ttl->taxon_id;
+    $this->view->taxa_taxon_list_id = $ttl->id;
   }
 
   /**
@@ -71,10 +81,17 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
       $designations[$row->id]=$row->title;
     }
     // also setup a taxon name
-    $taxon_name = ORM::Factory('taxon', $values['taxa_taxon_designation:taxon_id'])->caption();
+    $this->taxon_name = ORM::Factory('taxon', $values['taxa_taxon_designation:taxon_id'])->caption();
+    if ($this->uri->method(false)=='create') 
+      // Taxa taxon list id is passed as first argument in URL when creating
+      $ttl_id=$this->uri->argument(1);
+    else
+      $ttl_id = $_GET['taxa_taxon_list_id'];
+    $this->taxon_list_id = ORM::Factory('taxa_taxon_list', $ttl_id)->taxon_list_id;
     return array(
       'designations' => $designations,
-      'taxon_name' => $taxon_name
+      'taxon_name' => $this->taxon_name,
+      'taxon_list_id' => $this->taxon_list_id
     );
   }
 
@@ -84,10 +101,42 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
   protected function getDefaults() {
     $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
-      // Taxon id is passed as first argument in URL when creating
-      $r['taxa_taxon_designation:taxon_id'] = $this->uri->argument(1);
+      // Taxa taxon list id is passed as first argument in URL when creating
+      $ttl = ORM::Factory('taxa_taxon_list', $this->uri->argument(1));
+      $r['taxa_taxon_designation:taxon_id'] = $ttl->taxon_id;
     }
     return $r;
+  }
+  
+  /**
+   * After editing a taxon's designation, return to the designations tab of the taxon's edit page.
+   */
+  protected function get_return_page() {
+    $ttl = ORM::Factory('taxa_taxon_list')->where(array(
+        'taxon_id'=>$_POST['taxa_taxon_designation:taxon_id'],
+        'taxon_list_id' => $_POST['taxon_list_id']
+    ))->find();
+    return 'taxa_taxon_list/edit/'.$ttl->id.'?tab=Designations';
+  }
+  
+  /**
+   * Set the edit page breadcrumbs to link back through the species and checklist.
+   */
+  protected function defineEditBreadcrumbs() { 
+    $this->page_breadcrumbs[] = html::anchor('taxon_list', 'Species Lists');
+    $listTitle = ORM::Factory('taxon_list', $this->taxon_list_id)->title;
+    $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$this->taxon_list_id.'?tab=taxa', $listTitle);
+    if ($this->uri->method(false)=='create') {
+      $ttl_id = $this->uri->argument(1);
+    } else {
+      echo $this->taxon_list_id;
+      $ttl_id = ORM::Factory('taxa_taxon_list')->where(array(
+          'taxon_id' => $this->model->taxon_id,
+          'taxon_list_id' => $this->taxon_list_id
+      ))->find()->id;
+    }
+    $this->page_breadcrumbs[] = html::anchor('taxa_taxon_list/edit/'.$ttl_id.'?tab=Designations', $this->taxon_name);
+    $this->page_breadcrumbs[] = $this->model->caption();
   }
 
 }
