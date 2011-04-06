@@ -25,7 +25,7 @@
 <div class="termlist">
 <?php echo $table ?>
 <br/>
-<form action="<?php echo url::site().'taxon_relation_type/create'; ?>" method="post">
+<form action="<?php echo url::site().'taxon_relation/create/'.$this->uri->argument(1); ?>" method="post">
 <input type="submit" value="New Taxon Relation" />
 </form>
 </div>
