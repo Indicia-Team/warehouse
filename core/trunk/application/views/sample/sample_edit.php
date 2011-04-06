@@ -49,7 +49,7 @@ $id = html::initial_value($values, 'sample:id');
   <ul>
     <li><a href="#details"><span>Sample Details</span></a></li>
     <li><a href="#attrs"><span>Additional Attributes</span></a></li>
-  <?php if ($id!==null) : ?>  <li><a href="#occurrences"><span>Occurrences</span></a></li> 
+  <?php if ($id!==null) : ?>
     <li><a href="<?php echo url::site()."sample_image/$id" ?>" title="images"><span>Images</span></a></li>
   <?php endif;?></ul>
 <div id="details">
@@ -160,9 +160,6 @@ foreach ($values['attributes'] as $attr) {
  </fieldset>
  </div>
  <?php if ($id!==null) : ?>
- <div id="occurrences">
- <?php echo $values['occurrences']; ?>
- </div>
  <div id="images">
  </div> 
  <?php endif; ?>

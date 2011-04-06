@@ -46,7 +46,6 @@ class Sample_Controller extends Gridview_Base_Controller
 
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $this->loadOccurrences($r);
     $this->loadAttributes($r);
     $r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
     return $r;      
@@ -58,43 +57,12 @@ class Sample_Controller extends Gridview_Base_Controller
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    if (array_key_exists('sample:id', $_POST)) { 
-      $this->loadOccurrences($r);
-    }
     $this->loadAttributes($r);
-    if (array_key_exists('sample:survey_id', $_POST)) { 
-      $this->loadOccurrences($r);
+    if (array_key_exists('sample:survey_id', $_POST)) {
       $r['sample:survey_id'] = $_POST['sample:survey_id'];
       $r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
     }
     return $r;
-  }
-  
-  /** 
-   * Loads the list of occurrences for the sample into a grid.
-   */
-  private function loadOccurrences(&$r) {
-    $occ_gridmodel = ORM::factory('gv_occurrence');
-    $occ_grid = Gridview_Controller::factory(
-        $occ_gridmodel,
-        is_numeric($this->uri->argument(3)) ? $this->uri->argument(3) : 1, // page number,
-        4
-    );
-    $occ_grid->base_filter = array('sample_id' => $this->model->id, 'deleted' => 'f');
-    $occ_grid->columns = array('taxon' => '');
-    $occ_grid->actionColumns = array('edit' => 'occurrence/edit/£id£');
-    $r['occurrences'] = $occ_grid->display();
-  }
-
-  public function edit_gv($id = null, $page_no)
-  {
-    $this->auto_render = false;
-    $gridmodel = ORM::factory('gv_occurrence');
-    $grid = Gridview_Controller::factory($gridmodel, $page_no, 4);
-    $grid->base_filter = array('sample_id' => $id, 'deleted' => 'f');
-    $grid->columns = array('taxon' => '');
-
-    return $grid->display();
   }
 
   /**
@@ -105,5 +73,19 @@ class Sample_Controller extends Gridview_Base_Controller
     return array(
       'method_terms' => $this->get_termlist_terms('indicia:sample_methods')    
     );   
+  }
+
+  /**
+   * Return a list of the tabs to display for this controller's actions.
+   */
+  protected function getTabs($name) {
+    return array(
+      array(
+        'controller' => 'occurrence',
+        'title' => 'Occurrences',
+        'views'=>'sample',
+        'actions'=>array('edit')
+      )
+    );
   }
 }
