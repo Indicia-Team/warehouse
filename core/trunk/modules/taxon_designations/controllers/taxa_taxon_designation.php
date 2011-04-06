@@ -70,8 +70,11 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     foreach ($results as $row) {
       $designations[$row->id]=$row->title;
     }
+    // also setup a taxon name
+    $taxon_name = ORM::Factory('taxon', $values['taxa_taxon_designation:taxon_id'])->caption();
     return array(
-      'designations' => $designations
+      'designations' => $designations,
+      'taxon_name' => $taxon_name
     );
   }
 
