@@ -56,6 +56,10 @@ if (!array_key_exists('server_name', $current)) {
   <label for="server_name">Server name in emails</label>
   <input name="server_name" type="text" value="<?php echo $current['server_name']; ?>" />
 </li>
+<li>
+  <label for="test_email">Send test email to the following address</label>
+  <input name="test_email" type="text" value=""/>
+</li>
 </ol>
 </fieldset>
 <input type="Submit" name="save" value="Test and save" class="button ui-state-default ui-corner-all" />
