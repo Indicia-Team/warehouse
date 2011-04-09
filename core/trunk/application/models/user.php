@@ -106,7 +106,7 @@ class User_Model extends ORM {
    */
   public function postSubmit() {
     try {
-      $websites = ORM::factory('website')->find_all();
+      $websites = ORM::factory('website')->in_allowed_websites()->find_all();
       foreach ($websites as $website) {
         $users_websites = ORM::factory('users_website', array(
           'user_id' => $this->id,
