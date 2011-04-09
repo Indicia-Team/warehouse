@@ -910,7 +910,7 @@ $onload_javascript
       $r .= $indicia_templates['validation_icon'];
     }
     // Add a message to the control if there is an error and this option is set
-    if (in_array('message', $options['validation_mode'])) {
+    if ($error && in_array('message', $options['validation_mode'])) {
       $r .=  self::apply_error_template($error, $options['fieldname']);
     }
 
