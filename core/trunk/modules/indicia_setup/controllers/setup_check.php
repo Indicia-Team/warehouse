@@ -147,15 +147,13 @@ class Setup_Check_Controller extends Template_Controller {
           $_source_content = str_replace("*$field*", $value, $_source_content);
         }
         file_put_contents($dest, $_source_content);
-
         // Test the email config
         $swift = email::connect();
         $message = new Swift_Message('Setup test',
             Kohana::lang('setup.test_email_title'),            
             'text/html');
-        $person = ORM::factory('person', $_SESSION['auth_user']->person_id);
         $recipients = new Swift_RecipientList();
-        $recipients->addTo($person->email_address, $person->first_name.' '.$person->surname);
+        $recipients->addTo($_POST['test_email']);
         if ($swift->send($message, $recipients, $_POST['address'])==1) {
            $_source_content = str_replace("*test_result*", 'pass', $_source_content);
            file_put_contents($dest, $_source_content);
@@ -164,7 +162,7 @@ class Setup_Check_Controller extends Template_Controller {
           $this->error = Kohana::lang('setup.test_email_failed');
           $this->config_email();
         }
-      } catch (ErrorException $e) {
+      } catch (Exception $e) {
         // Swift mailer messages tend to have the error message as the last part, with each part colon separated.
         $msg = explode(':', $e->getMessage());
         $this->error = $msg[count($msg)-1];
