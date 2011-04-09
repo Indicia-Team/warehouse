@@ -112,9 +112,14 @@ class Indicia_Controller extends Template_Controller {
           'Logout'=>'logout'
         )
       );
-      if($this->auth->logged_in('CoreAdmin')) {
+      // Core admin can see all users plus web admins can see users of their own websites.
+      if ($this->auth->is_any_website_admin() || $this->auth->logged_in('CoreAdmin')) {
         $menu['Admin'] = array_merge($menu['Admin'], array(
             'Users'=>'user',
+        ));
+      }
+      if($this->auth->logged_in('CoreAdmin')) {
+        $menu['Admin'] = array_merge($menu['Admin'], array(
             'Languages'=>'language',
             'Titles'=>'title',
             'Taxon Relations'=>'taxon_relation_type'

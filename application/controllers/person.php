@@ -44,7 +44,8 @@ class Person_Controller extends Gridview_Base_Controller {
 
     $this->flag_warning = null;
     if(!is_null($this->gen_auth_filter)){
-      // If not core admin, then you can only edit a person if they have a role on one of your websites that you administerou creqate
+      // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
+      // you created the user
       $list = $this->db
           ->select('users.person_id')
           ->from('users')

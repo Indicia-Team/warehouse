@@ -38,6 +38,34 @@ class User_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Users";
     $this->model = new User_Model();
+    if(!is_null($this->gen_auth_filter)) {
+      // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
+      // you created the user
+      $user_id_values = array();
+      $list = $this->db
+          ->select('users.id')
+          ->from('users')
+          ->join('users_websites','users_websites.user_id','users.id')
+          ->where('users_websites.site_role_id IS NOT ', null)
+          ->where('users.core_role_id IS ', null)
+          ->in('users_websites.website_id', $this->gen_auth_filter['values'])
+          ->get();
+      foreach ($list as $user) {
+        $user_id_values[] = $user->id;
+      }
+      // Also let you edit users that you created unless they have been promoted to core admin
+      $list = $this->db
+          ->select('users.id')
+          ->from('users')
+          ->where('users.created_by_id', $_SESSION['auth_user']->id)
+          ->where('users.core_role_id IS ', null)
+          ->get();
+      foreach ($list as $user) {
+        $user_id_values[] = $user->id;
+      }
+      $this->auth_filter = array('field' => 'id', 'values' => $user_id_values);
+    }
+
   }
 
   /**
@@ -84,13 +112,13 @@ class User_Controller extends Gridview_Base_Controller {
       $this->access_denied();
     }
     else if ($id == null)
-        {
-         $this->setError('Invocation error: missing argument', 'You cannot edit user through edit_from_person() without an associated Person ID');
-        }
-        else
+    {
+      $this->setError('Invocation error: missing argument', 'You cannot edit user through edit_from_person() without an associated Person ID');
+    }
+    else
     {
       $this->model = new User_Model(array('person_id' => $id));
-        $websites = ORM::factory('website')->find_all();
+      $websites = ORM::Factory('website')->in_allowed_websites()->find_all();
       if ( $this->model->loaded ) {
         $this->setView('user/user_edit', 'User', array('password_field' => ''));
         foreach ($websites as $website) {
@@ -128,7 +156,7 @@ class User_Controller extends Gridview_Base_Controller {
         }
       }
     }
-	$this->defineEditBreadcrumbs();
+	  $this->defineEditBreadcrumbs();
   }
 
   protected function new_username($person)
@@ -164,21 +192,25 @@ class User_Controller extends Gridview_Base_Controller {
         array('password_field' => array_key_exists('password', $_POST) ? $this->password_fields($_POST['password'], $_POST['password2']) : ''));
 
     // copy the values of the websites into the users_websites array
-    $websites = ORM::factory('website')->find_all();
+    $websites = ORM::Factory('website')->in_allowed_websites()->find_all();
     foreach ($websites as $website) {
-      $this->model->users_websites[$website->id]=
-        array('id' => $website->id
-          ,'name' => 'website_'.$website->id
-          ,'title' => $website->title
-          ,'value' => (is_numeric($_POST['website_'.$website->id]) ? $_POST['website_'.$website->id] : NULL)
-        );
+      if (isset($_POST['website_'.$website->id])) {
+        $this->model->users_websites[$website->id]=
+          array('id' => $website->id
+            ,'name' => 'website_'.$website->id
+            ,'title' => $website->title
+            ,'value' => (is_numeric($_POST['website_'.$website->id]) ? $_POST['website_'.$website->id] : NULL)
+          );
+      }
     }
   }
 
-
+  /**
+   * Website admins and core admins area allowed view the users list.
+   */
   protected function page_authorised ()
   {
-    return $this->auth->logged_in('CoreAdmin');
+    return $this->auth->is_any_website_admin() || $this->auth->logged_in('CoreAdmin');
   }
 }
 

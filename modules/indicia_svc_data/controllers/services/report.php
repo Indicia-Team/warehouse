@@ -104,6 +104,29 @@ class Report_Controller extends Data_Service_Base_Controller {
     }
   }
 
+  public function report_list() {
+    $this->authenticate();
+    $path = DOCROOT . Kohana::config('indicia.localReportDir');
+    echo json_encode($this->internal_report_list($path));
+  }
+
+  public function internal_report_list($path) {
+    $files = array();
+    if (!is_dir($path))
+      throw new Exception("Failed to open reports folder");
+    $dir = opendir($path);
+    while (false !== ($file = readdir($dir))) {
+      if ($file != '.' && $file != '..' && $file != '.svn') {
+        if (is_dir($path . '/' . $file))
+          $files[$file] = $this->internal_report_list($path . '/' . $file);
+        else
+          $files[$file] = 'report';
+      }
+    }
+    closedir($dir);
+    return $files;
+  }
+
   /**
    * Actually perform the task of reading the records. Called by the base class handle_read
    * method when it is ready to receive the data. As well as the returned records array, sets
