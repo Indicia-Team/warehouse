@@ -41,29 +41,31 @@ class User_Controller extends Gridview_Base_Controller {
     if(!is_null($this->gen_auth_filter)) {
       // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
       // you created the user
-      $user_id_values = array();
+      $people_id_values = array();
       $list = $this->db
-          ->select('users.id')
-          ->from('users')
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id')
           ->join('users_websites','users_websites.user_id','users.id')
           ->where('users_websites.site_role_id IS NOT ', null)
           ->where('users.core_role_id IS ', null)
           ->in('users_websites.website_id', $this->gen_auth_filter['values'])
           ->get();
-      foreach ($list as $user) {
-        $user_id_values[] = $user->id;
+      foreach ($list as $item) {
+        $people_id_values[] = $item->id;
       }
-      // Also let you edit users that you created unless they have been promoted to core admin
+      // Also let you edit users that you created
       $list = $this->db
-          ->select('users.id')
-          ->from('users')
-          ->where('users.created_by_id', $_SESSION['auth_user']->id)
+          ->select('people.id')
+          ->from('people')
+          ->join('users', 'users.person_id', 'people.id', 'LEFT')
+          ->where('people.created_by_id', $_SESSION['auth_user']->id)
           ->where('users.core_role_id IS ', null)
           ->get();
-      foreach ($list as $user) {
-        $user_id_values[] = $user->id;
+      foreach ($list as $item) {
+        $people_id_values[] = $item->id;
       }
-      $this->auth_filter = array('field' => 'id', 'values' => $user_id_values);
+      $this->auth_filter = array('field' => 'person_id', 'values' => $people_id_values);
     }
 
   }
