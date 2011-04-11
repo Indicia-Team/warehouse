@@ -125,7 +125,7 @@ class form_helper extends helper_base {
         $details .= '<p>'.$forms[$defaultCategory][$options['form']]['description'].'</p>';
       }
       if (isset($forms[$defaultCategory][$options['form']]['helpLink'])) {
-        $details = '<a href="'.$forms[$defaultCategory][$options['form']]['helpLink'].'">Find out more...</a>';
+        $details .= '<p><a href="'.$forms[$defaultCategory][$options['form']]['helpLink'].'">Find out more...</a></p>';
       }
       if ($details!=='') $details = "<div class=\"ui-state-highlight ui-corner-all page-notice\">$details</div>";
     }
