@@ -732,7 +732,7 @@ class iform_mnhnl_dynamic_1 {
         if (preg_match('/\A\?[^�]*\?\z/', trim($component))===1) {
           // Component surrounded by ? so represents a help text
           $helpText = substr(trim($component), 1, -1);
-          $html .= '<p class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</p>";
+          $html .= '<div class="page-notice ui-state-highlight ui-corner-all">'.lang::get($helpText)."</div>";
         } elseif (preg_match('/\A\[[^�]*\]\z/', trim($component))===1) {
           // Component surrounded by [] so represents a control or control block
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
