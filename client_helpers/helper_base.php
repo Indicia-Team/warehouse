@@ -967,11 +967,12 @@ $onload_javascript
   /**
    * Returns templated help text for a control, but only if the position matches the $helpTextPos value, and
    * the $options array contains a helpText entry.
-   * @param array $options Control's options array
+   * @param array $options Control's options array. Can specify the class for the help text item using option helpTextClass.
    * @param string $pos Either before or after. Defines the position that is being requested.
    * @return string Templated help text, or nothing.
    */
   protected static function get_help_text($options, $pos) {
+    $options = array_merge(array('helpTextClass'=>'helpText'), $options);
     if (array_key_exists('helpText', $options) && !empty($options['helpText']) && self::$helpTextPos == $pos) {
       return str_replace('{helpText}', $options['helpText'], self::apply_static_template('helpText', $options));
     } else

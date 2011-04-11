@@ -213,6 +213,7 @@ $('#load-params').click(function(evt) {
     require_once('data_entry_helper.php');
     $formparams = self::get_form_parameters($options['form']);
     $fieldsets = array();
+    $r = '';
     foreach ($formparams as $control) {
       $fieldset = isset($control['group']) ? $control['group'] : 'Other IForm Parameters';
       // apply default options to the control
@@ -236,7 +237,6 @@ $('#load-params').click(function(evt) {
         $fieldsets[$fieldset]='';
       $fieldsets[$fieldset] .= data_entry_helper::$type($ctrlOptions);
     }
-    $r = '';
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
     foreach($fieldsets as $fieldset=>$content) { 
       $r .= "<fieldset class=\"$class\"><legend>$fieldset</legend>\n";
@@ -313,7 +313,7 @@ $('#load-params').click(function(evt) {
         array(
           'fieldname'=>'view_access_control',
           'label'=>'View access control',
-          'helpText'=>'if ticked, then a drupal permission is created for this form to allow you to specify which '.
+          'helpText'=>'If ticked, then a Drupal permission is created for this form to allow you to specify which '.
               'roles are able to view the form.',
           'type'=>'checkbox',
           'required'=>false
@@ -329,7 +329,7 @@ $('#load-params').click(function(evt) {
       array(
         'fieldname'=>'redirect_on_success',
         'label'=>'Redirect to page after successful data entry',
-        'helpText'=>'the url of the page that will be navigated to after a successful data entry. '.
+        'helpText'=>'The url of the page that will be navigated to after a successful data entry. '.
             'leave blank to just display a success message on the same page so further records can be entered. if the site is internationalised, '.
             'make sure that the page you want to go to has a url specified that is the same for all language versions. also ensure your site uses '.
             'a path prefix for the language negotiation (administer > site configuration > languages > configure). then, specify the url that you attached to the node '.
