@@ -129,19 +129,23 @@ class iform_distribution_map_1 {
           'required' => false
         ),
         array(
-          'name' => 'taxon_list_id',
-          'caption' => 'Taxon List ID',
-          'description' => 'ID of the taxon list from which taxa are being selected.',
-          'type' => 'int',
+          'fieldname'=>'taxon_list_id',
+          'label'=>'Species List',
+          'helpText'=>'The species list that species can be selected from.',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title',
           'group' => 'Distribution Layer'
         ),
         array(
-          'name' => 'external_key',
-          'caption' => 'External Key',
-          'description' => 'Check this box if the taxon is to be identified using the external key instead of the Meaning ID, either through the Taxon ID ' .
+          'fieldname' => 'external_key',
+          'label' => 'External Key',
+          'helpText' => 'Check this box if the taxon is to be identified using the external key instead of the Meaning ID, either through the Taxon ID ' .
               'box above or through the URL taxon parameter.',
-          'type' => 'boolean',
-          'group' => 'Distribution Layer'
+          'type' => 'checkbox',
+          'group' => 'Distribution Layer',
+          'required' => 'false'
         ), array(
           'name' => 'refresh_timer',
           'caption' => 'Automatic reload seconds',
