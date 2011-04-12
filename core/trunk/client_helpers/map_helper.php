@@ -185,7 +185,7 @@ class map_helper extends helper_base {
           'width'=>600,
           'height'=>470,
           'presetLayers'=>$presetLayers,
-          'jsPath'=>self::getRootFolder().self::$js_path
+          'jsPath'=>self::$js_path
       ), $options);
       // When using tilecache layers, the open layers defaults cannot be used. The caller must take control of openlayers settings
       if (isset($options['tilecacheLayers'])) {
