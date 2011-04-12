@@ -214,7 +214,9 @@ class helper_base extends helper_config {
         // Use default theme path if page does not specify it's own.
         $indicia_theme_path=preg_replace('/css\/$/','themes/', self::$css_path);
       }
-
+      // ensure a trailing path
+      if (substr($indicia_theme_path, -1)!=='/')
+        $indicia_theme_path .= '/';
       self::$resource_list = array (
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
         'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js")),
