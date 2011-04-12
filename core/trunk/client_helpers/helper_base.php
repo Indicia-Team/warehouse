@@ -48,11 +48,13 @@ class helper_base extends helper_config {
   
   /**
    * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
+   * This path should be a full path on the server (starting with '/' exluding the domain).
    */
   public static $js_path = null;
 
   /**
    * @var string Path to Indicia CSS folder. If not specified, then it is calculated from the Warehouse $base_url.
+   * This path should be a full path on the server (starting with '/' exluding the domain).
    */
   public static $css_path = null;
 
