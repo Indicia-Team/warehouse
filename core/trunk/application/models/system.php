@@ -72,7 +72,15 @@ class System_Model extends Model
      */
     private function getSystemData($name) {
       if (!isset($system_data[$name])) {
-        $result = $this->db->query("SELECT * FROM \"system\" WHERE name='$name' LIMIT 1");
+        // The following ensures that a blank name in the system table is treated as the system row for the indicia warehouse.
+        // Having a blank name should not really occur, but it does seem to in some update sequences. This won't matter after
+        // v0.6.
+        $this->db->update('system', array('name' => 'Indicia'), array('name' => ''));
+        $result = $this->db->select('*')
+            ->from('system')
+            ->where(array('name'=>"$name"))
+            ->limit(1)
+            ->get();
         if (count($result)>0)
           $this->system_data[$name] = $result[0];
       }
