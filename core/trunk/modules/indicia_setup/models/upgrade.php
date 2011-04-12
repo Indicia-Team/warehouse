@@ -31,6 +31,13 @@ class Upgrade_Model extends Model
      */
     public function run()
     {
+      $messages = array();
+      // upgrades cannot proceed without directory permissions being sorted, because otherwise we cannot write the ____*____ files which 
+      // track the last run script.
+      config_test::check_dir_permissions($messages, true);
+      if (count($messages)>0) {
+        throw new Exception ("You cannot upgrade at the moment until the directory permissions on the Warehouse are corrected.");
+      }
       $system = new System_Model();
       // version in the file system
       $new_version = kohana::config('version.version');
