@@ -273,6 +273,7 @@ $('#load-params').click(function(evt) {
         }
       }
       if (!isset($options['required']) || $options['required']===true) {
+        if (!isset($options['class'])) $options['class']='';
         $options['class'] .= ' required';
         $options['suffixTemplate'] = 'requiredsuffix';
       }
