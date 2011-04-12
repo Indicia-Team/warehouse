@@ -155,7 +155,8 @@ checkSubmitInProgress = function () {
           if (div.settings.resizeWidth===0 || div.settings.resizeHeight===0 || typeof div.uploader.features.jpgresize == "undefined") {
             msg='Uploading...';
           }
-          $('#' + file.id + ' .progress-percent').html('<img style="display: inline; margin: 4px;" src="'+Drupal.settings.basePath +'sites/all/modules/iform/media/images/ajax-loader.gif" width="16" height="16" alt="In progress"/><span>'+msg+'</span>');
+          var mediaPath = div.settings.jsPath.substr(0, div.settings.jsPath.length - 3);
+          $('#' + file.id + ' .progress-percent').html('<img style="display: inline; margin: 4px;" src="'+ mediaPath +'images/ajax-loader.gif" width="16" height="16" alt="In progress"/><span>'+msg+'</span>');
         });
         
       });
