@@ -395,9 +395,9 @@ var email_body_send_to_verifier = "'.str_replace(array("\r", "\n"), array('', '\
           '<form id="email" action="" method="post">'.
           '<fieldset>'.
           '<legend>Send a notification email to the recorder.</legend>'.
-          '<label>To: <input type="text" name="email_to" size="80" value="'. $email_attr[0]['value'] .'"></label><br />'.
-          '<label>Subject: <input type="text" name="email_subject" size="80" value="'. $subject .'"></label><br />'.
-          '<label>Body: <textarea name="email_content" rows="5" cols="80">'.$body.'</textarea></label><br />'.
+          '<label>To:</label><input type="text" name="email_to" size="80" value="'. $email_attr[0]['value'] .'"><br />'.
+          '<label>Subject:</label><input type="text" name="email_subject" size="80" value="'. $subject .'"><br />'.
+          '<label>Body:</label><textarea name="email_content" rows="5" cols="80">'.$body.'</textarea><br />'.
           '<input type="hidden" name="email" value="1">'.
           '<input type="button" value="Send Email" onclick="'.
           '$(\\\'form#email\\\').attr(\\\'action\\\', submit_to());'.
