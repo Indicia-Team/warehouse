@@ -149,9 +149,19 @@ echo $metadata;
 <textarea rows="3"  cols="40" id="list_description" name="taxa_taxon_list:description"><?php echo html::initial_value($values, 'taxa_taxon_list:description'); ?></textarea>
 </li>
 <li>
-<label for="external_key">External Key:</label>
+<label for="external_key">External Key:
+<span class="ui-state-highlight ui-widget-content ui-corner-all" title=
+"The external key can be used to provide the identifier of a taxon from an external system which was used to source this name. For example in the UK this field is typically used to store an NBN Taxon Version Key."
+>?</span></label>
 <input id="external_key" name="taxon:external_key" value="<?php echo html::initial_value($values, 'taxon:external_key'); ?>"/>
 <?php echo html::error_message($model->getError('taxon:external_key')); ?>
+</li>
+<li>
+<label for="taxon_meaning_id">Taxon Meaning ID:
+<span class="ui-state-highlight ui-widget-content ui-corner-all" title=
+"The taxon meaning ID is a number which uniquely identifies the underlying organism. If there are many names for an organism or the names are spread across several lists then all the names should share the same taxon meaning id. This makes it easy to pick up all records of a species when reporting or mapping. It is automatically assigned by the system and cannot be changed."
+>?</span></label>
+<span id="taxon_meaning_id" style="display: inline-block; margin: 4px"><?php echo html::initial_value($values, 'taxon_meaning:id'); ?></span>
 </li>
 <li>
 <input type="hidden" name="taxa_taxon_list:parent_id" value="<?php echo html::initial_value($values, 'taxa_taxon_list:parent_id'); ?>" />
