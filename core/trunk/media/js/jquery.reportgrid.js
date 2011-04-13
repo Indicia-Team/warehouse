@@ -161,7 +161,9 @@ var report_grid_sortdir = '';
         if (typeof action.javascript != "undefined") {
           var rowCopy = row;
           $.each(rowCopy, function(idx) {
-            rowCopy[idx] = rowCopy[idx].replace(/'/g,"\\'");
+            if (rowCopy[idx]!==null) {
+              rowCopy[idx] = rowCopy[idx].replace(/'/g,"\\'");
+            }
           });
           onclick=' onclick="' + mergeParamsIntoTemplate(div, rowCopy, action.javascript) + '"';
         } else {
