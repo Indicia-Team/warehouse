@@ -3588,52 +3588,6 @@ if (errors.length>0) {
   }
 
   /**
-   * Override a base class method to allow validation js to be output when the rest of the js is dumped.
-   */
-  protected static function setup_additional_js() {
-    self::setup_jquery_validation_js();
-  }
-
-  /**
-   * If required, setup jQuery validation. This JavaScript must be added at the end of form preparation otherwise we would
-   * not know all the control messages. It will normally be called by dump_javascript automatically, but is exposed here
-   * as a public method since the iform Drupal module does not call dump_javascript, but is responsible for adding JavaScript
-   * to the page via drupal_add_js.
-   */
-  public static function setup_jquery_validation_js() {
-    global $indicia_templates;
-    // In the following block, we set the validation plugin's error class to our template.
-    // We also define the error label to be wrapped in a <p> if it is on a newline.
-    if (self::$validated_form_id) {
-      self::$javascript .= "$('#".self::$validated_form_id."').validate({
-        errorClass: \"".$indicia_templates['error_class']."\",
-        ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
-        "highlight: function(element, errorClass) {
-          $(element).addClass('ui-state-error');
-        },
-        unhighlight: function(element, errorClass) {
-          $(element).removeClass('ui-state-error');
-        },
-        invalidHandler: function(form, validator) {
-          var tabselected=false;
-          jQuery.each(validator.errorMap, function(ctrlId, error) {
-            // select the tab containing the first error control
-            if (!tabselected && typeof(tabs)!=='undefined') {
-              tabs.tabs('select',jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').filter('input,select').parents('.ui-tabs-panel')[0].id);
-              tabselected = true;
-            }
-            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('fieldset').removeClass('collapsed');
-            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.fieldset-wrapper').show();
-          });
-        },
-        messages: ".json_encode(self::$validation_messages)."
-      });\n";
-    }
-  }
-
-
-
-  /**
   * Takes a response from a call to forward_post_to() and outputs any errors from it onto the screen.
   *
   * @param string $response Return value from a call to forward_post_to().

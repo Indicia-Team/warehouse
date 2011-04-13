@@ -765,7 +765,8 @@ mapSettingsHooks.push(add_map_tools)
   public static function dump_javascript() {
     // Add the default stylesheet to the end of the list, so it has highest CSS priority
     if (self::$default_styles) self::add_resource('defaultStylesheet');
-    self::setup_additional_js();    
+    // Jquery validation js has to be added at this late stage, because only then do we know all the messages required.
+    self::setup_jquery_validation_js();
     $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, self::$required_resources);
     // ensure scripted JS does not output again if recalled.
     self::$javascript = "";
@@ -823,12 +824,42 @@ $onload_javascript
     }
     return $stylesheets.$libraries.$script;
   }
-  
+
   /**
-   * Method stub to allow the subclasses to add additional javascript at the end of form preparation.
+   * If required, setup jQuery validation. This JavaScript must be added at the end of form preparation otherwise we would
+   * not know all the control messages. It will normally be called by dump_javascript automatically, but is exposed here
+   * as a public method since the iform Drupal module does not call dump_javascript, but is responsible for adding JavaScript
+   * to the page via drupal_add_js.
    */
-  protected static function setup_additional_js() {
-    // no implementation
+  public static function setup_jquery_validation_js() {
+    // In the following block, we set the validation plugin's error class to our template.
+    // We also define the error label to be wrapped in a <p> if it is on a newline.
+    if (self::$validated_form_id) {
+      global $indicia_templates;
+      self::$javascript .= "$('#".self::$validated_form_id."').validate({
+        errorClass: \"".$indicia_templates['error_class']."\",
+        ". (in_array('inline', self::$validation_mode) ? "\n      " : "errorElement: 'p',\n      ").
+        "highlight: function(element, errorClass) {
+          $(element).addClass('ui-state-error');
+        },
+        unhighlight: function(element, errorClass) {
+          $(element).removeClass('ui-state-error');
+        },
+        invalidHandler: function(form, validator) {
+          var tabselected=false;
+          jQuery.each(validator.errorMap, function(ctrlId, error) {
+            // select the tab containing the first error control
+            if (!tabselected && typeof(tabs)!=='undefined') {
+              tabs.tabs('select',jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').filter('input,select').parents('.ui-tabs-panel')[0].id);
+              tabselected = true;
+            }
+            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('fieldset').removeClass('collapsed');
+            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.fieldset-wrapper').show();
+          });
+        },
+        messages: ".json_encode(self::$validation_messages)."
+      });\n";
+    }
   }
   
   /**
