@@ -57,6 +57,7 @@ $default_terms = array(
   'validation_email' => 'Please enter a valid email address',
   'validation_url' => 'Please enter a valid URL',
   'validation_dateISO' => 'Please enter a valid date in yyyy-mm-dd format',
+  'validation_date' => 'Please enter a valid date in dd/mm/yyyy format',
 
   // Default labels for various database fields
   'occurrence:taxa_taxon_list_id' => 'Species',
