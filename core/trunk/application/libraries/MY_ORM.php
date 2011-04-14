@@ -948,7 +948,10 @@ class ORM extends ORM_Core {
       }
       return false;
     }
-    return true;
+
+    $attrValueModel->save();
+
+     return true;
   }
 
   /**
