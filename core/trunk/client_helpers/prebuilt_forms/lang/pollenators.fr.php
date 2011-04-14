@@ -71,6 +71,7 @@ $custom_terms = array(
 	,'Habitat' => "Type d'habitat "
 	,'Nearest House' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche (en mètres; par exemple '150')"
 	,'Nearest Hive' => "Distance approximative entre votre fleur et la ruche d'abeilles domestiques la plus proche (en mètres; par exemple '150')"
+	,'within50m' => "Présence dans un rayon de 50m d’une grande culture en fleur"
 	,'LANG_Validate_Flower' => 'VALIDER VOTRE STATION FLORALE'
 	,'LANG_Must_Provide_Pictures' => "Les photos de la fleur et de son environnement doivent être chargées"
 	,'LANG_Must_Provide_Location' => 'Localisez votre station florale'

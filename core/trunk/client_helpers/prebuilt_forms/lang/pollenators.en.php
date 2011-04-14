@@ -64,6 +64,7 @@ $custom_terms = array(
 	,'Flower Type' => "The Flower is"
 	,'Habitat' => "The habitat is"
 	,'Nearest House' => "Approximate distance between your flower and the nearest honeybee hive (metres)"
+	,'within50m' => "Presence within 50m of a great culture in bloom"
 	,'LANG_Validate_Flower' => 'Save this Floral Station'
 	,'LANG_Must_Provide_Pictures' => 'Pictures must be provided for the Flower and Environment'
 	,'LANG_Must_Provide_Location' => 'A location must be selected'

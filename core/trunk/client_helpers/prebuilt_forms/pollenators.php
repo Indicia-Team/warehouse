@@ -144,7 +144,14 @@ class iform_pollenators {
           'type'=>'int',
           'group'=>'Floral Station Attributes'
       ),
-            
+      array(
+          'name'=>'within50m_attr_id',
+          'caption'=>'within50m Attribute ID',      
+          'description'=>'Indicia ID for the location attribute that describes whether the location is within 50m of a grand culture.',
+          'type'=>'int',
+          'group'=>'Floral Station Attributes'
+      ),
+      
       array(
           'name'=>'start_time_attr_id',
           'caption'=>'Start Time Attribute ID',      
@@ -849,8 +856,8 @@ insertImage = function(path, target, ratio){
 }
 				    
 $('#cc-1').ajaxError(function(event, request, settings){
-	var insectURL = '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_insect_poll_dir'])."'+insectSess;
-	var flowerURL = '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['ID_tool_flower_poll_dir'])."'+flowerSess;
+	var insectURL = insectIDstruc.pollURL+insectIDstruc.pollFile;
+	var flowerURL = flowerIDstruc.pollURL+flowerIDstruc.pollFile;
 	if(settings.url != flowerURL && settings.url != insectURL){
 	   alert(\"".lang::get('ajax_error')."\");
 	}
@@ -858,7 +865,7 @@ $('#cc-1').ajaxError(function(event, request, settings){
  
 validateTime = function(name, formSel){
     var control = jQuery(formSel).find('[name='+name+'],[name^='+name+'\\:]');
-    if(control.val().match(/^(2[0-3]|[0,1][0-9]):[0-5][0-9]$/) == null) {
+    if(control.val().match(/^(2[0-3]|[0,1, ][0-9]):[0-5][0-9]$/) == null) {
         var label = $('<p/>')
 				.attr({'for': name})
 				.addClass('inline-error')
@@ -1086,7 +1093,8 @@ $('#cc-1-reinit-button').click(function() {
       <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
       '.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defNRAttrOptions))
- 	  .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], $defNRAttrOptions))
+      .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], $defNRAttrOptions))
+      .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['within50m_attr_id']], $defNRAttrOptions))
       .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['habitat_attr_id']], $checkOptions)).'
     </form>
     <div class="poll-break"></div>
@@ -1390,7 +1398,8 @@ validateStationPanel = function(){
 			jQuery('#cc-2-flower-identify [name=flower\\:taxon_extra_info]').val() == '' &&
 			jQuery('[name=flower\\:comment]').val() == '' &&
 			jQuery('[name=occAttr\\:".$args['flower_type_attr_id']."],[name^=occAttr\\:".$args['flower_type_attr_id']."\\:]').filter('[checked]').length == 0 &&
-    		jQuery('[name=locAttr\\:".$args['habitat_attr_id']."],[name^=locAttr\\:".$args['habitat_attr_id']."\\:]').filter('[checked]').length == 0 &&
+			jQuery('[name=locAttr\\:".$args['within50m_attr_id']."],[name^=locAttr\\:".$args['within50m_attr_id']."\\:]').filter('[checked]').length == 0 &&
+			jQuery('[name=locAttr\\:".$args['habitat_attr_id']."],[name^=locAttr\\:".$args['habitat_attr_id']."\\:]').filter('[checked]').length == 0 &&
     		jQuery('[name=locAttr\\:".$args['distance_attr_id']."],[name^=locAttr\\:".$args['distance_attr_id']."\\:]').val() == '') {
 		jQuery('#cc-2').foldPanel();
 		return true;
@@ -1414,6 +1423,7 @@ validateStationPanel = function(){
     }
 	if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
 	if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
+	if (!validateRadio('locAttr\\:".$args['within50m_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
 	if (!validateOptInt('locAttr\\:".$args['distance_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
    	if ( valid == false ) {
    		myScrollToError();
@@ -1505,6 +1515,7 @@ $('#cc-2-floral-station').ajaxForm({
 		}
 		if (!jQuery('form#cc-2-floral-station > input').valid()) { valid = false; }
 		if (!validateRadio('occAttr\\:".$args['flower_type_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
+		if (!validateRadio('locAttr\\:".$args['within50m_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
 		if (!validateOptInt('locAttr\\:".$args['distance_attr_id']."', 'form#cc-2-floral-station')) { valid = false; }
 		data[findID('location:centroid_sref', data)].value = jQuery('#imp-sref').val();
 		data[findID('location:centroid_geom', data)].value = jQuery('#imp-geom').val();
@@ -2525,7 +2536,7 @@ jQuery('#insect_taxa_list').empty();
 	
 jQuery.ajax({ 
     type: 'GET', 
-    url: \"".$svcUrl."\" + \"/report/requestReport?report=poll_my_collections.xml&reportSource=local&mode=json\" +
+    url: \"".$svcUrl."\" + \"/report/requestReport?report=reports_for_prebuilt_forms/poll_my_collections.xml&reportSource=local&mode=json\" +
 			\"&auth_token=".$readAuth['auth_token']."&reset_timeout=true&nonce=".$readAuth["nonce"]."\" + 
 			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", 
     dataType: 'json', 
