@@ -101,7 +101,12 @@ $custom_terms = array(
 	,'LANG_Delete_Insect' => 'Delete Insect'
 	
 	,'validation_required' => 'Please enter a value for this field'
-	,'validation_date' => 'Please enter a valid time (HH:MM)'
+	,'validation_time' => 'Please enter a valid time (HH:MM)'
+	,'validation_endtime_before_start' => 'The End Time must be after the Start Time'
+	,'validation_time_less_than_20' => 'Your session lasted less than 20 minutes. Please check the start and end times.'
+	,'validation_please_check' => 'Please Check'
+	,'validation_time_not_20' => 'Your session did not last 20 minutes: the Flash protocol requires an observation period of 20 minutes. Please check the start and end times.'
+	
 	,'ajax_error' => 'An error has occurred in the data transfer.'
 	,'validation_integer' => "Please provide a integer, leave blank if unknown."
 	,'LANG_Invalid_Location' => 'The format given for this Lat/Long combination is invalid'

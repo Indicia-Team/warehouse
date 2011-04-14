@@ -865,11 +865,11 @@ $('#cc-1').ajaxError(function(event, request, settings){
  
 validateTime = function(name, formSel){
     var control = jQuery(formSel).find('[name='+name+'],[name^='+name+'\\:]');
-    if(control.val().match(/^(2[0-3]|[0,1, ][0-9]):[0-5][0-9]$/) == null) {
+    if(control.val().match(/^(2[0-3]|[0,1]?[0-9]):[0-5][0-9]$/) == null) {
         var label = $('<p/>')
 				.attr({'for': name})
 				.addClass('inline-error')
-				.html('".lang::get('validation_date')."');
+				.html('".lang::get('validation_time')."');
 		label.insertBefore(control);
 		return false;
     }
@@ -1674,6 +1674,30 @@ populateSessionSelect = function(){
 			insectSessionSelect.val(insectSessionSelect.find('option').filter(':first').val());
   	});
 }
+compareTimes = function(nameStart, nameEnd, formSel){
+    var controlStart = jQuery(formSel).find('[name='+nameStart+'],[name^='+nameStart+'\\:]');
+    var controlEnd = jQuery(formSel).find('[name='+nameEnd+'],[name^='+nameEnd+'\\:]');
+    var valueStart = controlStart.val().split(':');
+    var valueEnd = controlEnd.val().split(':');
+    var minsDiff = (valueEnd[0]-valueStart[0])*60+(valueEnd[1]-valueStart[1]);
+    if(minsDiff < 0){
+        $('<p/>').attr({'for': nameEnd}).addClass('inline-error').html(\"".lang::get('validation_endtime_before_start')."\").insertBefore(controlEnd);
+		return false;
+    }
+    // The Flash selection is first, Long second for the protocol: So
+    var isFlashProtocol = jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."],[name^=smpAttr\\:".$args['protocol_attr_id']."\\:]').filter(':first').filter('[checked]').length >0;
+    if(!isFlashProtocol && minsDiff < 20){ // Long Protocol, session must not be less than 20mins
+        $('<p/>').attr({'for': nameStart}).addClass('inline-error').html(\"".lang::get('validation_time_less_than_20')."\").insertBefore(controlStart);
+        $('<p/>').attr({'for': nameEnd}).addClass('inline-error').html(\"".lang::get('validation_please_check')."\").insertBefore(controlEnd);
+		return false;
+    }
+    if(isFlashProtocol && minsDiff != 20){ // Flash Protocol, session must be exactly 20mins
+        $('<p/>').attr({'for': nameStart}).addClass('inline-error').html(\"".lang::get('validation_time_not_20')."\").insertBefore(controlStart);
+        $('<p/>').attr({'for': nameEnd}).addClass('inline-error').html(\"".lang::get('validation_please_check')."\").insertBefore(controlEnd);
+		return false;
+    }
+    return true;
+}
 
 validateAndSubmitOpenSessions = function(){
 	var valid = true;
@@ -1683,6 +1707,7 @@ validateAndSubmitOpenSessions = function(){
 	    if (!jQuery(this).children('input').valid()) { valid = false; }
    		if (!validateTime('smpAttr\\:".$args['start_time_attr_id']."', this)) { valid = false; }
    		if (!validateTime('smpAttr\\:".$args['end_time_attr_id']."', this)) { valid = false; }
+   		if (valid && !compareTimes('smpAttr\\:".$args['start_time_attr_id']."', 'smpAttr\\:".$args['end_time_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['sky_state_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['temperature_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['wind_attr_id']."', this)) { valid = false; }

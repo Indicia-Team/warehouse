@@ -119,7 +119,12 @@ $custom_terms = array(
 	,'LANG_Trailer_Point_4' => "vous pourrez créer une nouvelle collection"
 	
 	,'validation_required' => "Ce champ est obligatoire"
-	,'validation_date' => 'Entrez une heure valide (HH:MM)'
+	,'validation_time' => 'Entrez une heure valide (HH:MM)'
+	,'validation_endtime_before_start' => "L'Heure de fin doit être postérieure à l'heure de début"
+	,'validation_time_less_than_20' => "Votre session dure moins de 20 mn. Veuillez vérifier les heures de début et l'heure de fin de celle-ci"
+	,'validation_please_check' => 'Veuillez vérifier'
+	,'validation_time_not_20' => "Votre session dure plus ou moins de 20 mn alors que le protocole Flash requiert une durée d'observation de 20 minutes précisément. Veuillez vérifier les heures de début et de fin de votre session"
+	
 	,'ajax_error' => "Une erreur s'est produite dans le transfert de données."
 	,'validation_integer' => "Entrez un nombre entier, laissez en blanc si inconnu."
 	,'LANG_Invalid_Location' => "Le format donné pour ce Lat / Long combinaison n'est pas valide"
