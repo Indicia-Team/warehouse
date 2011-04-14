@@ -135,6 +135,7 @@ $lang = array (
   ),
   'text_value' => array (
     'regex' => 'The value is not of the correct format.',
+    'length' => 'The value is not of the correct length.',
     'default' => 'The value is not of the correct format.',
   ),
   'term' => array (
