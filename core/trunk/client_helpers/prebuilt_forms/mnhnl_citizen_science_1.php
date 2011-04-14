@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Client
+ * @package  Client
  * @subpackage PrebuiltForms
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
+ * @link    http://code.google.com/p/indicia/
  */
 
 require_once('includes/map.php');
@@ -28,7 +28,7 @@ require_once('includes/language_utils.php');
  * Prebuilt Indicia data entry form that presents taxon search box, date control, map picker,
  * survey selector and comment entry controls.
  *
- * @package	Client
+ * @package Client
  * @subpackage PrebuiltForms
  */
 class iform_mnhnl_citizen_science_1 {
@@ -79,11 +79,11 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'User Interface'
         ),
         array(
-        	'name'=>'preferred',
+          'name'=>'preferred',
           'caption'=>'Preferred species only?',
           'description'=>'Should the selection of species be limited to preferred names only?',
           'type'=>'boolean',
-  	      'group'=>'User Interface'
+          'group'=>'User Interface'
         ),
         array(
           'name'=>'abundance_ctrl',
@@ -98,12 +98,12 @@ class iform_mnhnl_citizen_science_1 {
           'group'=>'User Interface'
         ),
         array(
-		      'name'=>'abundance_overrides',
-		      'caption'=>'Abundance Overrides by Species',
-		      'description'=>'If a species should not use the default abundance attribute, list each species preferred name on a separate line, followed '.
-		          'by a colon then the attribute IDs, comma separated. This only works when loading the form with a preset species in the URL.',
-		      'type'=>'textarea',
-		      'group'=>'User Interface',
+          'name'=>'abundance_overrides',
+          'caption'=>'Abundance Overrides by Species',
+          'description'=>'If a species should not use the default abundance attribute, list each species preferred name on a separate line, followed '.
+              'by a colon then the attribute IDs, comma separated. This only works when loading the form with a preset species in the URL.',
+          'type'=>'textarea',
+          'group'=>'User Interface',
           'required'=>false
         ),
         array(
@@ -244,9 +244,9 @@ class iform_mnhnl_citizen_science_1 {
       if ($uniqueMeaning) {
         // now we have the meaning_id, we need to fetch the actual species in the chosen common name
         $speciesCommon = data_entry_helper::get_population_data(array(
-		        'table'=>'taxa_taxon_list',
-		        'extraParams' => $readAuth + array('taxon_meaning_id' => $uniqueMeaning,
-		            'language_iso' => iform_lang_iso_639_2($user->lang), 'view' => 'detail')
+            'table'=>'taxa_taxon_list',
+            'extraParams' => $readAuth + array('taxon_meaning_id' => $uniqueMeaning,
+                'language_iso' => iform_lang_iso_639_2($user->lang), 'view' => 'detail')
         ));
         $r .= '<div class="ui-widget ui-widget-content ui-corner-all page-notice ui-helper-clearfix">';
         $nameString = ($species[0]['language_iso']=='lat' ? '<em>' : '') . $species[0]['taxon'] . ($species[0]['language_iso']=='lat' ? '</em>' : '');
@@ -393,8 +393,8 @@ class iform_mnhnl_citizen_science_1 {
     }
     $r .= data_entry_helper::georeference_lookup(iform_map_get_georef_options($args));
     $r .= data_entry_helper::sref_and_system(array(
-	      'label' => lang::get('sample:entered_sref'),
-	      'systems' => $systems
+        'label' => lang::get('sample:entered_sref'),
+        'systems' => $systems
     ));
     // retrieve options for the IndiciaMapPanel, and optionally options for OpenLayers.
     $options = iform_map_get_map_options($args, $readAuth);
@@ -439,15 +439,15 @@ class iform_mnhnl_citizen_science_1 {
           if (trim($tokens[1])!=='') {
             $attrIds = explode(',',$tokens[1]);
             $attributes = data_entry_helper::getAttributes(array(
-			  'id' => null,
-			  'valuetable'=>'occurrence_attribute_value',
-			  'attrtable'=>'occurrence_attribute',
-			  'key'=>'occurrence_id',
-			  'fieldprefix'=>"occAttr",
-			  'extraParams'=>$readAuth + array('query' => urlencode(json_encode(array(
+                'id' => null,
+                'valuetable'=>'occurrence_attribute_value',
+                'attrtable'=>'occurrence_attribute',
+                'key'=>'occurrence_id',
+                'fieldprefix'=>"occAttr",
+                'extraParams'=>$readAuth + array('query' => urlencode(json_encode(array(
                   'in'=>array('id', $attrIds)
-              )))),
-			  'survey_id'=>$args['survey_id']
+                )))),
+              'survey_id'=>$args['survey_id']
             ));
             foreach ($attributes as $attribute) {
               $r .= data_entry_helper::outputAttribute($attribute, array('language' => iform_lang_iso_639_2($user->lang), 'booleanCtrl' => 'checkbox'));
@@ -460,7 +460,7 @@ class iform_mnhnl_citizen_science_1 {
     if (!empty($args['abundance_attr_id'])) {
       $abundance_args = array(
         'label'=>lang::get('abundance'),
-        'fieldname'=>'occAttr:' + $args['abundance_attr_id'],
+        'fieldname'=>'occAttr:'.$args['abundance_attr_id'],
         'table'=>'termlists_term',
         'captionField'=>'term',
         'valueField'=>'id',
