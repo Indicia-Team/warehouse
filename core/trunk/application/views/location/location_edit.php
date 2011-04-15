@@ -76,6 +76,8 @@ jQuery(document).ready(function() {
   jQuery("input#parent").result(function(event, data){
     jQuery("input#parent_id").attr('value', data.id);
   });
+  jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});    
+  jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
 </script>
 <p>This page allows you to specify the details of a location.</p>
