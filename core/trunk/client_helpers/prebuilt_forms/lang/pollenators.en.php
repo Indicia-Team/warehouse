@@ -106,6 +106,7 @@ $custom_terms = array(
 	,'validation_time_less_than_20' => 'Your session lasted less than 20 minutes. Please check the start and end times.'
 	,'validation_please_check' => 'Please Check'
 	,'validation_time_not_20' => 'Your session did not last 20 minutes: the Flash protocol requires an observation period of 20 minutes. Please check the start and end times.'
+	,'validation_session_date_error' => 'Your sessions are spread over a period exceeding three days. Please check the dates and times for your sessions.'
 	
 	,'ajax_error' => 'An error has occurred in the data transfer.'
 	,'validation_integer' => "Please provide a integer, leave blank if unknown."

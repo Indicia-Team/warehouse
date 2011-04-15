@@ -1698,14 +1698,33 @@ compareTimes = function(nameStart, nameEnd, formSel){
     }
     return true;
 }
+checkDate = function(name, formSel){
+  var control = jQuery(formSel).find('[name='+name+']');
+  var session = this;
+  var dateError = false;
+  var d2 = new Date(control.val());
+  var two_days=2*1000*60*61*24; // allows a bit of leaway
+  jQuery('.required').filter('[name=sample:date]').each(function(){
+    var d1 = new Date(jQuery(this).val());
+    if(Math.abs(d1.getTime()-d2.getTime()) > two_days){
+      dateError=true;
+    }
+  });
+  if(dateError){
+    $('<p/>').attr({'for': name}).addClass('inline-error').html(\"".lang::get('validation_session_date_error')."\").insertBefore(control);
+    return false;
+  };
+  return true;
+}
 
 validateAndSubmitOpenSessions = function(){
 	var valid = true;
 	// only check the visible forms as rest have already been validated successfully.
 	$('.poll-session-form:visible').each(function(i){
 		clearErrors(this);
-	    if (!jQuery(this).children('input').valid()) { valid = false; }
-   		if (!validateTime('smpAttr\\:".$args['start_time_attr_id']."', this)) { valid = false; }
+   		if (valid && !checkDate('sample\\:date', this)) { valid = false; }
+		if (!jQuery(this).children('input').valid()) { valid = false; }
+	    if (!validateTime('smpAttr\\:".$args['start_time_attr_id']."', this)) { valid = false; }
    		if (!validateTime('smpAttr\\:".$args['end_time_attr_id']."', this)) { valid = false; }
    		if (valid && !compareTimes('smpAttr\\:".$args['start_time_attr_id']."', 'smpAttr\\:".$args['end_time_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['sky_state_attr_id']."', this)) { valid = false; }

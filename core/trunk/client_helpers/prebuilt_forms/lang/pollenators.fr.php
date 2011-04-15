@@ -124,6 +124,7 @@ $custom_terms = array(
 	,'validation_time_less_than_20' => "Votre session dure moins de 20 mn. Veuillez vérifier les heures de début et l'heure de fin de celle-ci"
 	,'validation_please_check' => 'Veuillez vérifier'
 	,'validation_time_not_20' => "Votre session dure plus ou moins de 20 mn alors que le protocole Flash requiert une durée d'observation de 20 minutes précisément. Veuillez vérifier les heures de début et de fin de votre session"
+	,'validation_session_date_error' => "Vos sessions s'échelonnent sur une durée supérieure à 3 jours. Veuillez vérifier les dates et heures de vos sessions."
 	
 	,'ajax_error' => "Une erreur s'est produite dans le transfert de données."
 	,'validation_integer' => "Entrez un nombre entier, laissez en blanc si inconnu."
