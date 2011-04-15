@@ -89,6 +89,8 @@ $(document).ready(function() {
   $("input#taxon").result(function(event, data){
     $("input#taxa_taxon_list_id").attr('value', data.id);
   });
+  jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});    
+  jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
 </script>
 <form class="cmxform" action="<?php echo url::site().'occurrence/save' ?>" method="post">

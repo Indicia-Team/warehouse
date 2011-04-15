@@ -33,9 +33,9 @@ $id = html::initial_value($values, 'sample:id');
 <script type='text/javascript'>
 (function($){
   $(document).ready(function() {
-	  init_map('<?php echo url::base()."', '".html::initial_value($values, 'sample:geom'); ?>', 'entered_sref', 'entered_geom', true);
-    jQuery('.vague-date-picker').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});    
-    jQuery('.date-picker').datepicker({dateFormat : 'yy-mm-dd', constrainInput: false});
+    init_map('<?php echo url::base()."', '".html::initial_value($values, 'sample:geom'); ?>', 'entered_sref', 'entered_geom', true);
+    jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});    
+    jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
   });
 })(jQuery);
 </script>

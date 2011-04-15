@@ -35,7 +35,7 @@ $request=$report['content'];
 <script type='text/javascript'>
 (function($) {
   $(document).ready(function() {
-    $('.date').datepicker({dateFormat : 'yy-mm-dd', constrainInput: true});
+    $('.date').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: true});
   });
 })(jQuery);
 </script>
