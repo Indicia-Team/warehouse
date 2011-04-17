@@ -109,11 +109,7 @@ class User_Controller extends Gridview_Base_Controller {
    * driven by ther person id.
    */
   public function edit_from_person($id = NULL) {
-    if (!$this->page_authorised())
-    {
-      $this->access_denied();
-    }
-    else if ($id == null)
+    if ($id == null)
     {
       $this->setError('Invocation error: missing argument', 'You cannot edit user through edit_from_person() without an associated Person ID');
     }

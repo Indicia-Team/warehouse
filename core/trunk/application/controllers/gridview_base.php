@@ -55,10 +55,6 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * This is the main controller action method for the index page of the grid.
    */
   public function page($page_no, $filter=null) {
-    if ($this->page_authorised() == false) {
-      $this->access_denied();
-      return;
-    }
     $this->prepare_grid_view();
     $this->add_upload_csv_form();
     

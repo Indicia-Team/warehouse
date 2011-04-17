@@ -57,14 +57,7 @@ class Occurrence_controller extends Gridview_Base_Controller {
   */
   public function create()
   {
-    if (!$this->page_authorised())
-    {
-      $this->access_denied();
-    }
-    else
-    {
-      $this->setView('occurrence/occurrence_edit', 'Occurrence');
-    }
+    $this->setView('occurrence/occurrence_edit', 'Occurrence');
   }
 
   /**
@@ -119,5 +112,19 @@ class Occurrence_controller extends Gridview_Base_Controller {
         'actions'=>array('edit')
       )
     );
+  }
+
+  /**
+   * Check access to a occurrence when editing. The occurrence's website must be in the list
+   * of websites the user is authorised to administer.
+   */
+  protected function record_authorised ($id)
+  {
+    if (!is_null($id) AND !is_null($this->auth_filter))
+    {
+      $occ = new Occurrence_Model($id);
+      return (in_array($occ->website_id, $this->auth_filter['values']));
+    }
+    return true;
   }
 }

@@ -181,10 +181,6 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
   }
 
   public function page($page_no) {
-    if ($this->page_authorised() == false) {
-      $this->access_denied();
-      return;
-    }
     $grid =	Attr_Gridview_Controller::factory($this->gridmodel,
       $page_no,
       $this->pageNoUriSegment,

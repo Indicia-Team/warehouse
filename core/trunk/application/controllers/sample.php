@@ -93,4 +93,18 @@ class Sample_Controller extends Gridview_Base_Controller
       )
     );
   }
+
+  /**
+   * Check access to a sample when editing. The sample's website must be in the list
+   * of websites the user is authorised to administer.
+   */
+  protected function record_authorised ($id)
+  {
+    if (!is_null($id) AND !is_null($this->auth_filter))
+    {
+      $sample = ORM::factory('sample', $id);
+      return (in_array($sample->survey->website_id, $this->auth_filter['values']));
+    }
+    return true;
+  }
 }

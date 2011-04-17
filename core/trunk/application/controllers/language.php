@@ -41,7 +41,7 @@ class Language_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Languages";
   }  
 
-  public function record_authorised($id)
+  public function page_authorised()
   {
     return $this->auth->logged_in('CoreAdmin');
   }

@@ -29,6 +29,8 @@
  */
 class Attribute_By_Survey_Controller extends Indicia_Controller
 {
+  private $_survey=null;
+
   public function __construct()
   {
     parent::__construct();
@@ -49,15 +51,12 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     // get the survey id from the segments in the URI
     $segments=$this->uri->segment_array();
     $this->survey_id = $segments[2];
-    $this->survey = ORM::factory('survey', $this->survey_id);
-    $this->pagetitle = 'Attributes for '.$this->survey->title;
+    $this->pagetitle = 'Attributes for '.$this->getSurvey()->title;
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = $this->pagetitle;
     $this->template->content=new View('attribute_by_survey/index');
     $this->template->title=$this->pagetitle;
-    $filter = array('survey_id'=>$this->survey);;
-    if ($this->auth_filter) 
-      $filter = array_merge($filter, $this->auth_filter);
+    $filter = array('survey_id'=>$this->survey_id);
     $top_blocks = ORM::factory('form_structure_block')->
         where('parent_id',null)->
         where('type', strtoupper(substr($this->type,0,1)))->
@@ -269,4 +268,28 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     $this->page_breadcrumbs[] = html::anchor('/attribute_by_survey/'.$this->model->restrict_to_survey_id.'?type='.$this->type, 'Attributes for '.$survey->title);
     $this->page_breadcrumbs[] = $this->model->caption();
   }
+
+  /**
+   * Prevent users accessing other surveys if they are not core admin.
+   * @return boolean True if access granted.
+   */
+  protected function page_authorised() {
+    if (isset($this->auth_filter) && $this->auth_filter['field']=='website_id') {
+      $survey = $this->getSurvey();
+      return in_array($survey->website_id, $this->auth_filter['values']);
+    } else
+      return true;
+
+  }
+  
+  /**
+   * Lazy loading of the survey ORM object. Only want to do this once.
+   */
+  protected function getSurvey() {
+    if ($this->_survey===null)
+      $this->_survey = ORM::factory('survey', $this->survey_id);
+    return $this->_survey;
+  }
+
+
 }

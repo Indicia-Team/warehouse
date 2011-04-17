@@ -57,13 +57,20 @@ class Indicia_Controller extends Template_Controller {
     $this->db = Database::instance();
     $this->auth = new Auth;
     $this->session = new Session;
-    if($this->page_authorised())
-    {
-      $menu = self::get_menu();
-      $this->template->menu = $menu;
-    } else
-      $this->template->menu = array();
+    if ($this->auth->logged_in())
+      $this->template->menu = self::get_menu();;
   }
+
+  /**
+   * Overriding the render method gives us a single point to check that this page
+   * is authorised.
+   */
+  public function _render()
+	{
+    if(!$this->page_authorised())
+      $this->access_denied('page');
+		parent::_render();
+	}
   
   /**
    * Method which builds the main menu. Has a default structure which can be modified by plugin modules.
@@ -282,7 +289,7 @@ class Indicia_Controller extends Template_Controller {
    */   
   protected function page_authorised()
   {
-    return $this->auth->logged_in();
+    return ($this->uri->segment(1)=='login') || $this->auth->logged_in();
   }
   
   /**
@@ -443,9 +450,19 @@ class Indicia_Controller extends Template_Controller {
     $this->template->content->message = $message;
   }
 
-  protected function access_denied($level = 'records.')
+  /**
+   * Handle the event of an access denied error. Sets a flash message and redirects
+   * to the home page.
+   * @param string $level Level of page access being requested
+   */
+  protected function access_denied($level = 'records')
   {
-    $this->setError('Access Denied', 'You do not have sufficient permissions to access the '.$this->model->table_name.' '.$level);
+    if (isset($this->model))
+      $prefix = $this->model->table_name.' ';
+    else
+      $prefix = '';
+    $this->session->set_flash('flash_error', "You do not have sufficient permissions to access the $prefix$level.");
+    url::redirect('index.php');
   }
 
   /**
@@ -521,27 +538,24 @@ class Indicia_Controller extends Template_Controller {
   
   public function get_breadcrumbs()
   {
-    if ($this->page_authorised()) {
-      $breadcrumbHtml = '';
-      $breadcrumbList = array_merge(array(
-        html::anchor('', 'Home')
-      ), $this->page_breadcrumbs); 
-      while (current($breadcrumbList))
-      {
-        // Check if we have reached the last crumb
-        if(key($breadcrumbList) < (count($breadcrumbList)-1)) {
-          // If we haven't, add a breadcrumb separator
-          $breadcrumbHtml .= current($breadcrumbList).' >> ';
-        }
-        else {
-          // If we have, remove the anchor from the breadcrumb and make it bold
-          $breadcrumbHtml .= strip_tags(current($breadcrumbList));
-        }
-        next($breadcrumbList);
+    $breadcrumbHtml = '';
+    $breadcrumbList = array_merge(array(
+      html::anchor('', 'Home')
+    ), $this->page_breadcrumbs);
+    while (current($breadcrumbList))
+    {
+      // Check if we have reached the last crumb
+      if(key($breadcrumbList) < (count($breadcrumbList)-1)) {
+        // If we haven't, add a breadcrumb separator
+        $breadcrumbHtml .= current($breadcrumbList).' >> ';
       }
-      return $breadcrumbHtml;
-	} else
-	  return '';
+      else {
+        // If we have, remove the anchor from the breadcrumb and make it bold
+        $breadcrumbHtml .= strip_tags(current($breadcrumbList));
+      }
+      next($breadcrumbList);
+    }
+    return $breadcrumbHtml;
   }
 
 }
