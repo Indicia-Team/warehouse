@@ -37,6 +37,6 @@ class setup_check {
 
 }
 
-Event::add('system.pre_controller', array('setup_check', '_setup_check'));
+Event::add('system.routing', array('setup_check', '_setup_check'));
 
  ?>
