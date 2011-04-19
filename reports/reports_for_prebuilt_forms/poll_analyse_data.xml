@@ -1,0 +1,119 @@
+<report
+    title="Live Data"
+    description="Listes des insectes"
+>
+  <query>
+  select s.id as id,
+	l.name,
+	s.date_start,
+	s.date_end,
+	s.updated_on,
+	sav1.text_value as username,
+	sav2.text_value as email,
+	sav3.int_value as userid,
+	(CASE sav4.int_value WHEN 0 THEN 'Non' ELSE 'Oui' END) as complete,
+	sav5_t.term::text as protocol,
+	l.centroid_sref as sref,
+	li.path as location_image_path,
+	ARRAY(select t.term::text from location_attribute_values lav
+		LEFT JOIN (termlists_terms tt JOIN terms t ON t.id = tt.term_id AND t.language_id = #language_id#) ON tt.meaning_id = lav.int_value
+		WHERE lav.deleted = false and lav.location_id = l.id and lav.location_attribute_id = 1)::text as habitat,
+	lav1.int_value as nearesthive,
+	foi.path as flower_image_path,
+	(CASE WHEN fd.taxa_taxon_list_id IS NOT NULL THEN ft.taxon 
+		ELSE (ARRAY(select ft2.taxon FROM taxa_taxon_lists fttl2 INNER JOIN taxa ft2 ON fttl2.taxon_id = ft2.id WHERE fttl2.id = ANY (fd.taxa_taxon_list_id_list) ))::text END) as flowertaxon,
+	fd.taxon_extra_info as flower_extra_info,
+	oav1_t.term::text as flowertype,
+	session.date_start as session_date,
+	(CASE sav6.int_value WHEN 0 THEN 'Non' ELSE 'Oui' END) as shade,
+	sav7_t.term::text as wind,
+	sav8_t.term::text as temp,
+	sav9_t.term::text as sky,
+	sav10.text_value as endtime,
+	sav11.text_value as starttime,
+	ioi.path as insect_image_path,
+	(CASE WHEN id.taxa_taxon_list_id IS NOT NULL THEN it.taxon 
+		ELSE (ARRAY(select it2.taxon FROM taxa_taxon_lists ittl2 INNER JOIN taxa it2 ON ittl2.taxon_id = it2.id WHERE ittl2.id = ANY (id.taxa_taxon_list_id_list) ))::text END) as insecttaxon,
+	id.taxon_extra_info as insect_extra_info,	
+	(CASE oav2.int_value WHEN 0 THEN 'Non' ELSE 'Oui' END) as foraging,
+	oav3_t.term::text as numberinsects
+	from samples s
+	INNER JOIN locations l ON l.id = s.location_id and l.deleted = false
+	INNER JOIN location_images li ON l.id = li.location_id and li.deleted = false
+	LEFT JOIN sample_attribute_values sav1 ON sav1.sample_id = s.id AND sav1.sample_attribute_id = 19 AND sav1.deleted = false
+	LEFT JOIN sample_attribute_values sav2 ON sav2.sample_id = s.id AND sav2.sample_attribute_id = 8 AND sav2.deleted = false
+	LEFT JOIN sample_attribute_values sav3 ON sav3.sample_id = s.id AND sav3.sample_attribute_id = 18 AND sav3.deleted = false
+	LEFT JOIN sample_attribute_values sav4 ON sav4.sample_id = s.id AND sav4.sample_attribute_id = 20 AND sav4.deleted = false
+	LEFT JOIN sample_attribute_values sav5 ON sav5.deleted = false and sav5.sample_id = s.id and sav5.sample_attribute_id = 21
+		LEFT JOIN (termlists_terms sav5_tt JOIN terms sav5_t ON sav5_t.id = sav5_tt.term_id AND sav5_t.language_id = #language_id#) ON sav5_tt.meaning_id = sav5.int_value
+	LEFT JOIN location_attribute_values lav1 ON lav1.location_id = l.id AND lav1.location_attribute_id = 2 AND lav1.deleted = false
+	INNER JOIN occurrences fo ON fo.sample_id = s.id and fo.deleted = false 
+	INNER JOIN determinations fd ON fo.id = fd.occurrence_id and fd.deleted = false and fd.id = (select max(fd2.id) from determinations fd2 where fd2.occurrence_id = fo.id and fd2.deleted = false)
+	INNER JOIN occurrence_images foi ON fo.id = foi.occurrence_id and foi.deleted = false
+	LEFT JOIN taxa_taxon_lists fttl ON fd.taxa_taxon_list_id = fttl.id
+	LEFT JOIN taxa ft ON fttl.taxon_id = ft.id
+	LEFT JOIN occurrence_attribute_values oav1 ON oav1.deleted = false and oav1.occurrence_id = fo.id and oav1.occurrence_attribute_id = 3
+		LEFT JOIN (termlists_terms oav1_tt JOIN terms oav1_t ON oav1_t.id = oav1_tt.term_id AND oav1_t.language_id = #language_id#) ON oav1_tt.meaning_id = oav1.int_value
+	INNER JOIN samples session ON session.parent_id = s.id AND session.deleted = false
+	LEFT JOIN sample_attribute_values sav6 ON sav6.sample_id = session.id AND sav6.sample_attribute_id = 27 AND sav6.deleted = false
+	LEFT JOIN sample_attribute_values sav7 ON sav7.deleted = false and sav7.sample_id = session.id and sav7.sample_attribute_id = 26
+		LEFT JOIN (termlists_terms sav7_tt JOIN terms sav7_t ON sav7_t.id = sav7_tt.term_id AND sav7_t.language_id = #language_id#) ON sav7_tt.meaning_id = sav7.int_value
+	LEFT JOIN sample_attribute_values sav8 ON sav8.deleted = false and sav8.sample_id = session.id and sav8.sample_attribute_id = 25
+		LEFT JOIN (termlists_terms sav8_tt JOIN terms sav8_t ON sav8_t.id = sav8_tt.term_id AND sav8_t.language_id = #language_id#) ON sav8_tt.meaning_id = sav8.int_value
+	LEFT JOIN sample_attribute_values sav9 ON sav9.deleted = false and sav9.sample_id = session.id and sav9.sample_attribute_id = 24
+		LEFT JOIN (termlists_terms sav9_tt JOIN terms sav9_t ON sav9_t.id = sav9_tt.term_id AND sav9_t.language_id = #language_id#) ON sav9_tt.meaning_id = sav9.int_value
+	LEFT JOIN sample_attribute_values sav10 ON sav10.sample_id = session.id AND sav10.sample_attribute_id = 22 AND sav10.deleted = false
+	LEFT JOIN sample_attribute_values sav11 ON sav11.sample_id = session.id AND sav11.sample_attribute_id = 23 AND sav11.deleted = false
+	INNER JOIN occurrences io ON io.sample_id = session.id and io.deleted = false 
+	INNER JOIN determinations id ON io.id = id.occurrence_id and id.deleted = false and id.id = (select max(id2.id) from determinations id2 where id2.occurrence_id = io.id and id2.deleted = false)
+	INNER JOIN occurrence_images ioi ON io.id = ioi.occurrence_id and ioi.deleted = false
+	LEFT JOIN taxa_taxon_lists ittl ON id.taxa_taxon_list_id = ittl.id
+	LEFT JOIN taxa it ON ittl.taxon_id = it.id
+	LEFT JOIN occurrence_attribute_values oav2 ON oav2.occurrence_id = io.id AND oav2.occurrence_attribute_id = 5 AND oav2.deleted = false
+	LEFT JOIN occurrence_attribute_values oav3 ON oav3.deleted = false and oav3.occurrence_id = io.id and oav3.occurrence_attribute_id = 4
+		LEFT JOIN (termlists_terms oav3_tt JOIN terms oav3_t ON oav3_t.id = oav3_tt.term_id AND oav3_t.language_id = #language_id#) ON oav3_tt.meaning_id = oav3.int_value
+	WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
+	#order_by#
+  </query>
+  <order_bys>
+    <order_by>s.id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Sélectionnez le survey pour retourner des données' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='language_id' display='Language: ' description='Sélectionnez la langue pour renvoyer des données' datatype='lookup'
+        query='SELECT id, language as caption FROM languages' />
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='name' display='Nom' />
+    <column name='date_start' display='Date de début' />
+    <column name='date_end' display='fin' />
+    <column name='updated_on' display='updated' />
+    <column name='username' display='Username' />
+    <column name='email' display='Email' />
+    <column name='userid' display='UserID' />
+    <column name='complete' display='Complete' />
+    <column name='protocol' display='Protocol' />
+    <column name='sref' />
+    <column name='location_image_path' display='image de environment' />
+    <column name='habitat' display='Habitat' />
+    <column name='nearesthive' display='NearestHive' />
+    <column name='flower_image_path' display='image de la fleur' />
+    <column name='flowertaxon' display='taxons fleur' />
+    <column name='flower_extra_info' display='Fleur Précise' />
+    <column name='flowertype' display='FlowerType' />
+    <column name='session_date' display='Date de Session' />
+    <column name='shade' display='Fleur a lombre' />
+    <column name='wind' display='Vent' />
+    <column name='temp' display='Temperature' />
+    <column name='sky' display='Ciel' />
+    <column name='starttime' display='starttime' />
+    <column name='endtime' display='endtime' />
+    <column name='insect_image_path' display='image d`insecte' />
+    <column name='insecttaxon' display='Insecte' />
+    <column name='insect_extra_info' display='Insecte Précise' />
+    <column name='foraging' display='Foraging' />
+    <column name='numberinsects' display='Number Insects' />
+  </columns>
+</report>
