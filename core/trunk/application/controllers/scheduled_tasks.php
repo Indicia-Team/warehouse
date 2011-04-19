@@ -44,7 +44,8 @@ class Scheduled_Tasks_Controller extends Controller {
    * to run the scheduled tasks.
    */
   public function index() {
-    $this->last_run_date = ORM::Factory('system', 1)->getLastScheduledTaskCheck();    
+    $system = new System_Model();
+    $this->last_run_date = $system->getLastScheduledTaskCheck();    
     // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
     $currentTime = time();
     $this->checkTriggers();

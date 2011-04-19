@@ -21,9 +21,8 @@ class Upgrade_Model extends Model
 
     public function __construct()
     {
-        parent::__construct();
-
-        $this->base_dir = dirname(dirname(dirname(dirname(__file__))));
+      parent::__construct();
+      $this->base_dir = dirname(dirname(dirname(dirname(__file__))));
     }
 
     /**
@@ -157,7 +156,11 @@ class Upgrade_Model extends Model
      */
     private function set_new_version($new_version, $appName)
     {
-      $query = $this->db->query("UPDATE system SET version='$new_version' WHERE name='$appName'");
+      $sql = "UPDATE system SET version='$new_version' WHERE name='$appName'";
+      // App name may be empty for the Indicia system record due to upgrade sequence - won't be in future
+      if ($appName=='Indicia')
+        $sql .= " OR name=''";
+      $query = $this->db->query($sql);
       // Because pgsql does not handle UPDATE or INSERT etc, do this manually if a new record is required.
       if ($query->count()===0) {
         $this->db->query("INSERT INTO system (version, name, repository, release_date) ".
