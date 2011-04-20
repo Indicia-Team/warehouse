@@ -30,9 +30,9 @@
 ?>
 <div class="gvFilter">
 <form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
-Filter for
-<input type="text" name="filters" class="filterInput"/>
-in <select name="columns" class="filterSelect">
+<label for="filters" class="auto">Filter for</label>
+<input type="text" name="filters" id="filters" class="filterInput"/>
+<label for="columns" class="auto">in</label> <select name="columns" class="filterSelect" id="columns">
 <?php foreach ($columns as $name => $newname) {
   if (!$newname) $newname = $name;
   echo "<option value='".$name."'>".$newname."</option>";

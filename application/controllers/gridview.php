@@ -30,16 +30,19 @@
  * @subpackage Controllers
  */
 class Gridview_Controller extends Controller {
+
+  private $gridId = null;
   
   /** 
    * Factory method used for instantiation to ensure it is set up correctly.
    */
-  public static function factory($model,$page,$uri_segment){
+  public static function factory($model, $page, $uri_segment, $gridId=null){
     $gridview = new Gridview_Controller();
     $gridview->model = $model;
     $gridview->columns = array_combine(array_keys($model->table_columns), array_pad(array(), count($model->table_columns), null));
     $gridview->page = $page;    
     $gridview->uri_segment = $uri_segment;
+    $gridview->gridId = $gridId;
     $gridview->base_filter = null;
     $gridview->auth_filter = null;
     $gridview->actionColumns = array();
@@ -99,7 +102,7 @@ class Gridview_Controller extends Controller {
         // For id filters, use a WHERE filter for exact match
         if (isset($client_filter['id'])) {
           // only do an id filter if the provided text is numeric
-          if (preg_match('/^[0-9]$/', $client_filter['id']))
+          if (preg_match('/^[0-9]+$/', $client_filter['id']))
             $lists = $lists->where(array('id' => $client_filter['id']));
           else
             // a dummy filter to force return no records, since the user searched for text in a number.
@@ -114,7 +117,8 @@ class Gridview_Controller extends Controller {
     }    
     $limit = kohana::config('pagination.default.items_per_page');
     $offset = ($this->page -1) * $limit;
-    $table = $lists->find_all($limit, $offset);  
+    $table = $lists->find_all($limit, $offset);
+
     $pagination = new Pagination(array(
       'style' => 'extended',
       'uri_segment' => $this->uri_segment,
@@ -140,8 +144,8 @@ class Gridview_Controller extends Controller {
         $gridview = new View('gridview');
         // We are outputting the whole grid, pagination and all
         $gridview->body = $gridview_body;
-        // create a unique id for our grid
-        $id = md5(time().rand());
+        // create a unique id for our grid unless one is forced from outside
+        $id = $this->gridId ? $this->gridId : md5(time().rand());
         $gridview->id = $id;
         $gridview->pagination = $pagination;
         $gridview->columns = $this->columns;

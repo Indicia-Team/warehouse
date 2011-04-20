@@ -23,10 +23,20 @@ var filter = new HashArray();
 var sort = new HashArray();
 var queryString;
 
+function addSingleRecord(gridId, id) {
+  url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
+  buildQueryString(url);
+  queryString += '&columns=id&filters='+id;
+  $.ajax({url: queryString, success: function(data) {
+        $("#gridBody-" + gridId).append(data);
+  }});
+};
+
 /**
   * Refreshes everything - a shortcut
  */
-function refresh(gridId, url) {
+function refresh(gridId) {
+  url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
   buildQueryString(url);  
   refreshGrid(gridId);
   refreshPager(gridId);
@@ -67,9 +77,8 @@ function pagerLinks(){
     function(e) {
       e.preventDefault();
       // find the unique ID for this grid so we refresh the correct one.
-      var gridId = $(this).parent().parent().attr('id').split('-')[1];      
-      url = buildAjaxUrl($(this).attr('href'));       
-      refresh(gridId, url);      
+      var gridId = $(this).parent().parent().attr('id').split('-')[1];
+      refresh(gridId);      
     }
   );  
 };
@@ -149,9 +158,7 @@ $(document).ready(function(){
       $(this).addClass('gvColAsc');
     }
     var gridId = $(this).parent().parent().parent().attr('id').split('-')[1];
-    // Because the column header is not a link, we don't know the URL to go to. So we use the filterForm's action to get the URL.
-    url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
-    refresh(gridId, url);
+    refresh(gridId);
   });  
 
   // Filtration
@@ -160,10 +167,9 @@ $(document).ready(function(){
   $('.gvFilter form').live('submit', function(e) {
     e.preventDefault();
     // find the unique ID for this grid so we refresh the correct one.
-    var gridId = $(this).attr('id').split('-')[1];
-    url = buildAjaxUrl($(this).attr('action'));    
+    var gridId = $(this).attr('id').split('-')[1];    
     filter.clear();
     filter.unshift($('#filterForm-' + gridId + ' select').val(), $('#filterForm-' + gridId + ' input:first').val());
-    refresh(gridId, url);
+    refresh(gridId);
   });
 });

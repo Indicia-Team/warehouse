@@ -21,7 +21,45 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+if (isset($parent_id)) : ?>
+<script type="text/javascript">
+/*<![CDATA[*/
+add_parent_taxon = function() {
+  // ask the warehouse to copy the taxon from the parent list to the child list
+  $.post('<?php echo url::site('taxa_taxon_list/add_parent_taxon'); ?>', {
+      taxon_list_id: <?php echo $taxon_list_id; ?>,
+      taxa_taxon_list_id: $('#add-from-parent').val()
+    }, function(data, textStatus) {
+      if (isNaN(parseInt(data)))
+        // if text returned, it is a message to display
+        alert(data);
+      else
+        // if OK, it returns the new record ID. Add it to the grid.
+        addSingleRecord('taxa_taxon_list',data);
+    }
+  );
+}
+/*]]>*/
+</script>
+<?php
+endif;
+
+if (isset($parent_id)) {
+  require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+  $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+  echo data_entry_helper::autocomplete(array(
+    'label'=>'Add species',
+    'fieldname'=>'add-from-parent',
+    'helpText'=>'Search for taxa in the parent list to quickly add them into this list.',
+    'table' => 'taxa_taxon_list',
+    'captionField' => 'taxon',
+    'valueField' => 'id',
+    'extraParams' => $readAuth + array('taxon_list_id'=>$parent_id),
+    'afterControl' => '<input type="button" value="Add" onclick="add_parent_taxon();" />'
+  ));
+}
 ?>
+
 <div class="taxa_taxon_lists">
 <?php echo $table ?>
 <br/>
@@ -29,5 +67,15 @@
 <input type="submit" value="New taxon" class="ui-corner-all ui-state-default button" />
 </form>
 <br />
-<?php echo $upload_csv_form ?>
+<?php
+echo $upload_csv_form;
+if (isset($parent_id)) {
+  if (request::is_ajax()) {
+    // When viewing as an AJAX loaded tab, don't reload jQuery as it is already on the page.
+    data_entry_helper::$dumped_resources[] = 'jquery';
+  }
+  data_entry_helper::link_default_stylesheet();
+  echo data_entry_helper::dump_javascript(true);
+}
+?>
 </div>
