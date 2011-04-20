@@ -35,7 +35,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 
   public function __construct()
   {
-    parent::__construct('taxa_taxon_list', 'gv_taxon_lists_taxon', 'taxa_taxon_list/index');
+    parent::__construct('taxa_taxon_list', 'gv_taxon_lists_taxon', 'taxa_taxon_list/index', null, 'taxa_taxon_list');
     $this->base_filter['parent_id']=null;
     $this->base_filter['preferred']='t';
     $this->columns = array(
@@ -79,9 +79,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       return;
     }
     $this->base_filter['taxon_list_id'] = $taxon_list_id;
-    $this->pagetitle = "Species in ".ORM::factory('taxon_list',$taxon_list_id)->title;
+    $list = ORM::factory('taxon_list',$taxon_list_id);
+    $this->pagetitle = "Species in ".$list->title;
     parent::page($page_no);
     $this->view->taxon_list_id = $taxon_list_id;
+    if ($list->parent_id) {
+      $this->view->parent_id=$list->parent_id;
+    }
     $this->upload_csv_form->staticFields = array(
       'taxa_taxon_list:taxon_list_id' => $taxon_list_id
     );
@@ -109,11 +113,10 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $r = parent::getModelValues();
 
     // Add items to view
+    $all_names = $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id);
     $r = array_merge($r, array(
-      'metaFields:synonyms' => $this->formatScientificSynonomy(
-        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id)),
-      'metaFields:commonNames' => $this->formatCommonSynonomy(
-        $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id))
+      'metaFields:synonyms' => $this->formatScientificSynonomy($all_names),
+      'metaFields:commonNames' => $this->formatCommonSynonomy($all_names)
     ));
     return $r;
   }
@@ -338,6 +341,58 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'title' => 'Lumping & Splitting',
       'actions'=>array('edit')
     ));
+  }
+
+  /**
+   * AJAX controller method for the ability to add a taxon from a parent list into a child list.
+   * Takes the child (destination) taxon list id and the source taxa taxon list id as parameters
+   * in the $_POST data.
+   */
+  public function add_parent_taxon() {
+    // no template as this is for AJAX
+    $this->auto_render=false;
+    // get the selected name
+    $ttl = ORM::factory('taxa_taxon_list', $_POST['taxa_taxon_list_id']);
+    // find a list of the taxon ids for this meaning which are already in the list.
+    $existing = ORM::factory('taxa_taxon_list')->where(array(
+        'taxon_list_id'=>$_POST['taxon_list_id'],
+        'taxon_meaning_id'=>$ttl->taxon_meaning_id
+    ))->find_all();
+    $existingTaxa = array();
+    foreach($existing as $item)
+      $existingTaxa[] = $item->taxon_id;
+    // we must copy across all names for the taxon not just the selected one
+    $all_names = ORM::factory('taxa_taxon_list')->where(array(
+      'taxon_list_id' => $ttl->taxon_list_id,
+      'taxon_meaning_id' => $ttl->taxon_meaning_id
+    ))->find_all();
+    $existingCount = 0;
+    $newCount = 0;
+    // loop through the names
+
+    foreach($all_names as $name) {
+      $data = $name->as_array();
+      if (in_array($data['taxon_id'], $existingTaxa))
+        $existingCount++;
+      else {
+        unset($data['id']);
+        $data['taxon_list_id']=$_POST['taxon_list_id'];
+        // create a new model using the existing ttl data but a new list id
+        $newttl = ORM::factory('taxa_taxon_list');
+        $newttl->validate(new Validation($data), true);
+        // we want to return the id of the preferred taxon copied over
+        if ($newttl->preferred=='t')
+          $prefId = $newttl->id;
+        $newCount++;
+      }
+    }
+    if (isset($prefId))
+      echo $prefId;
+    elseif ($newCount===0)
+      echo 'The taxon already exists in the list.';
+    elseif ($newCount>0)
+      echo 'The taxon already exists in the list but some names were missing, so they have '.
+        'been copied across.';
   }
 
 }

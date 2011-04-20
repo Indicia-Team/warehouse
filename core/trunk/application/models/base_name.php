@@ -49,15 +49,23 @@ class Base_Name_Model extends ORM_Tree {
 
   /**
    * Retrieve the list of synonyms using a meaning id.
+   * @param string $meaning_field Name of the meaning field, either taxon_meaning_id or meaning_id.
+   * @param int $meaning_id Id value of the meaning to search for
+   * @param boolean $within_list Search within the current list only (true=default) or
+   * across all lists (false).
+   * @return ORM_Iterator List of synonyms
    */
-  public function getSynonomy($meaning_field, $meaning_id)
+  public function getSynonomy($meaning_field, $meaning_id, $within_list=true)
   {
-    return ORM::factory(inflector::singular($this->table_name))->where(
-      array(
+    $filters = array(
         'preferred' => 'f',
         'deleted' => 'f',
         $meaning_field => $meaning_id
-      ))->find_all();
+    );
+    if ($within_list)
+      $filters['taxon_list_id']=$this->taxon_list_id;
+    return ORM::factory(inflector::singular($this->table_name))->where(
+      $filters)->find_all();
   }
 
 }

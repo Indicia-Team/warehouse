@@ -32,16 +32,19 @@ defined('SYSPATH') or die('No direct script access.');
  */
 abstract class Gridview_Base_Controller extends Indicia_Controller {
 
+  private $gridId = null;
+
   /* Constructor. $modelname = name of the model for the grid.
    * $viewname = name of the view which contains the grid.
    * $controllerpath = path the controller from the controllers folder
    * $viewname and $controllerpath can be ommitted if the names are all the same.
    */
-  public function __construct($modelname, $gridmodelname=NULL, $viewname=NULL, $controllerpath=NULL) {
+  public function __construct($modelname, $gridmodelname=NULL, $viewname=NULL, $controllerpath=NULL, $gridId=NULL) {
     $this->model=ORM::factory($modelname);
     $this->gridmodelname=is_null($gridmodelname) ? $modelname : $gridmodelname;
     $this->viewname=is_null($viewname) ? $modelname : $viewname;
     $this->controllerpath=is_null($controllerpath) ? $modelname : $controllerpath;
+    $this->gridId = $gridId;
     $this->pageNoUriSegment = 3;
     $this->base_filter = array('deleted' => 'f');
     $this->auth_filter = null;
@@ -60,7 +63,8 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     
     $grid =  Gridview_Controller::factory($this->gridmodel,
         $page_no,
-        $this->pageNoUriSegment);
+        $this->pageNoUriSegment,
+        $this->gridId);
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
     $grid->columns = array_intersect_key($this->columns, $grid->columns);
@@ -115,7 +119,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   public function page_gv($page_no, $filter=null) {
     $this->prepare_grid_view();
     $this->auto_render = false;
-    $grid = Gridview_Controller::factory($this->gridmodel, $page_no, $this->pageNoUriSegment);
+    $grid = Gridview_Controller::factory($this->gridmodel, $page_no, $this->pageNoUriSegment, $this->gridId);
     $grid->base_filter = $this->base_filter;
     $grid->auth_filter = $this->auth_filter;
     $grid->columns = array_intersect_key($this->columns, $grid->columns);

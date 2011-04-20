@@ -948,6 +948,8 @@ $onload_javascript
     if ($error && in_array('message', $options['validation_mode'])) {
       $r .=  self::apply_error_template($error, $options['fieldname']);
     }
+    if (isset($options['afterControl']))
+      $r .= $options['afterControl'];
 
     // Add suffix
     if (isset($validationClasses) && !empty($validationClasses) && strpos($validationClasses, 'required')!==false) {
