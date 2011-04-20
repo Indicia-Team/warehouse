@@ -209,6 +209,11 @@ jQuery('#{parentControlId}').change();\n",
  * If you need to change the suffix for this control only, set this to refer to the name of an alternate template you
  * have added to the global $indicia_templates array. To change the suffix for all controls, you can update the value of
  * $indicia_templates['suffix'] before building the form.</li>
+ * <li><b>afterControl</b>
+ * Allows a piece of HTML to be specified which is inserted immediately after the control, before the suffix and
+ * helpText. Ideal for inserting buttons that are to be displayed alongside a control such as a Go button
+ * for a search box.
+ * </li>
  * </ul>
  *
  * @package	Client
