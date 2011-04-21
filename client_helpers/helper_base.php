@@ -358,8 +358,8 @@ class helper_base extends helper_config {
    */
   public static function relative_client_helper_path() {
     // get the paths to the client helper folder and php file folder as an array of tokens
-    $clientHelperFolder = explode(DIRECTORY_SEPARATOR, realpath(dirname(__FILE__)));
-    $currentPhpFileFolder = explode(DIRECTORY_SEPARATOR, realpath(dirname($_SERVER['SCRIPT_FILENAME'])));
+    $clientHelperFolder = explode(DIRECTORY_SEPARATOR, dirname(realpath(__FILE__)));
+    $currentPhpFileFolder = explode(DIRECTORY_SEPARATOR, dirname(realpath($_SERVER['SCRIPT_FILENAME'])));
     // Find the first part of the paths that is not the same
     for($i = 0; $i<min(count($currentPhpFileFolder), count($clientHelperFolder)); $i++) {
       if ($clientHelperFolder[$i] != $currentPhpFileFolder[$i]) {
