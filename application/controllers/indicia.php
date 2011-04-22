@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -66,11 +66,11 @@ class Indicia_Controller extends Template_Controller {
    * is authorised.
    */
   public function _render()
-	{
+  {
     if(!$this->page_authorised())
       $this->access_denied('page');
-		parent::_render();
-	}
+    parent::_render();
+  }
   
   /**
    * Method which builds the main menu. Has a default structure which can be modified by plugin modules.
@@ -84,61 +84,51 @@ class Indicia_Controller extends Template_Controller {
     if ($cached = $cache->get($cacheId)) {
       return $cached;
     } else {
-      $menu = array
-      (
-        'Home' => array(),
-        'Lookup Lists' => array
-        (
+      $menu = array ('Home' => array());
+      if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
+        $menu['Lookup Lists'] = array(
           'Species Lists'=>'taxon_list',
           'Taxon Groups'=>'taxon_group',
           'Term Lists'=>'termlist',
           'Locations'=>'location',
           'Surveys'=>'survey',
           'People'=>'person'
-        ),
-        'Custom Attributes' => array
-        (
+        );
+      if ($this->auth->has_any_website_access('admin') || $this->auth->logged_in('CoreAdmin'))
+        $menu['Custom Attributes'] = array(
           'Occurrence Attributes'=>'occurrence_attribute',
           'Sample Attributes'=>'sample_attribute',
           'Location Attributes'=>'location_attribute'
-        ),
-        'Entered Data' => array
-        (
+        );
+      if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
+        $menu['Entered Data'] = array(
           'Occurrences' => 'occurrence',
           'Samples' => 'sample',
           'Reports' => 'report'
-        ),
-        'Admin' => array
-        (          
-          'Triggers &amp; Notifications' => 'trigger',
-          'Websites'=>'website'
-        ),
-        'Logged in as '.$_SESSION['auth_user']->username => array
-        (
-          'Set New Password' => 'new_password',
-          'Logout'=>'logout'
-        )
-      );
-      // Core admin can see all users plus web admins can see users of their own websites.
-      if ($this->auth->is_any_website_admin() || $this->auth->logged_in('CoreAdmin')) {
-        $menu['Admin'] = array_merge($menu['Admin'], array(
-            'Users'=>'user',
-        ));
+        );
+      $adminMenu = array('Triggers &amp; Notifications' => 'trigger');
+      // Core admin can see all users or websites plus web admins can see their own users and websites.
+      if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin')) {
+        $adminMenu['Websites']='website';
+        $adminMenu['Users']='user';
       }
       if($this->auth->logged_in('CoreAdmin')) {
-        $menu['Admin'] = array_merge($menu['Admin'], array(
-            'Languages'=>'language',
-            'Titles'=>'title',
-            'Taxon Relations'=>'taxon_relation_type'
-        ));
+        $adminMenu['Languages']='language';
+        $adminMenu['Titles']='title';
+        $adminMenu['Taxon Relations']='taxon_relation_type';
       }
+      $menu['Admin'] = $adminMenu;
+      $menu['Logged in as '.$_SESSION['auth_user']->username] = array(
+          'Set New Password' => 'new_password',
+          'Logout'=>'logout'
+      );
       // Now look for any modules which extend the menu
       foreach (Kohana::config('config.modules') as $path) {
         $plugin = basename($path);
         if (file_exists("$path/plugins/$plugin.php")) {
           require_once("$path/plugins/$plugin.php");
           if (function_exists($plugin.'_alter_menu')) {
-            $menu = call_user_func($plugin.'_alter_menu', $menu);
+            $menu = call_user_func($plugin.'_alter_menu', $menu, $this->auth);
           }
         }
       }
@@ -462,7 +452,7 @@ class Indicia_Controller extends Template_Controller {
     else
       $prefix = '';
     $this->session->set_flash('flash_error', "You do not have sufficient permissions to access the $prefix$level.");
-    url::redirect('index.php');
+    url::redirect('home');
   }
 
   /**
@@ -526,8 +516,8 @@ class Indicia_Controller extends Template_Controller {
   protected function get_termlist_terms($termlist) {
     $arr=array();
     if (!is_numeric($termlist)) {
-    	// termlist is a string so check the termlist from the external key field
-    	$termlist = ORM::factory('termlist')->where('external_key', $termlist)->find();
+      // termlist is a string so check the termlist from the external key field
+      $termlist = ORM::factory('termlist')->where('external_key', $termlist)->find();
     }
     $terms = ORM::factory('termlists_term')->where(array('termlist_id' => $termlist, 'deleted' => 'f'))->find_all();
     foreach ($terms as $term) {

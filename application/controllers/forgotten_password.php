@@ -58,11 +58,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       }
       $user = $returned['user'];
       $person = $returned['person'];
-      if ( is_null($user->core_role_id) && ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all()===0)
-      {
-        $this->template->content->error_message = $_POST['UserID'].' does not have permission to log on to this website';
-        return;
-      }
+      if (!$this->check_can_login($user)) return;
       
       $this->auth->send_forgotten_password_mail($user, $person);
       
@@ -70,6 +66,15 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       $this->template->content = new View('login/login_message');
       $this->template->content->message = 'An email providing a link which will allow your password to be reset has been sent to the specified email address, or if a username was provided, to the registered email address for that user.<br />';
     }
+  }
+  
+  public function check_can_login($user) {
+    if (is_null($user->core_role_id) && ORM::factory('users_website')->where('user_id', $user->id)->where('site_role_id IS NOT ', null)->find_all()===0)
+    {
+      $this->template->content->error_message = $_POST['UserID'].' does not have permission to log on to this website';
+      return false;
+    }
+    return true;
   }
 
   public function send_from_user($id = null)
@@ -92,11 +97,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       $this->template->content->message = 'No user details have been set up for this Person';
       return;
     }
-    if ( is_null($user->core_role_id) )
-    {
-      $this->template->content->message = $user->username.' does not have permission to log on to this website';
-      return;
-    }
+    if (!$this->check_can_login($user)) return;
     $link_code = $this->auth->hash_password($user->username);
     $user->__set('forgotten_password_key', $link_code);
     $user->save();

@@ -35,6 +35,13 @@ class Taxon_Group_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Taxon Groups";
     $this->session = Session::instance();
   }
+  
+  /**
+   * You can only access the list of groups if at least an editor of one website.
+   */
+  protected function page_authorised() {
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
+  }
 
 }
 

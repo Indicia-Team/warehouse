@@ -108,53 +108,50 @@ class User_Controller extends Gridview_Base_Controller {
    * Displays a page allowing modification of an existing user or creation of a new user
    * driven by ther person id.
    */
-  public function edit_from_person($id = NULL) {
-    if ($id == null)
-    {
-      $this->setError('Invocation error: missing argument', 'You cannot edit user through edit_from_person() without an associated Person ID');
+  public function edit_from_person($id) {
+    if (!is_null($id) && !is_null($this->auth_filter) && !in_array($id, $this->auth_filter['values'])) {
+      $this->access_denied();
+      return;
     }
-    else
-    {
-      $this->model = new User_Model(array('person_id' => $id));
-      $websites = ORM::Factory('website')->in_allowed_websites()->find_all();
-      if ( $this->model->loaded ) {
-        $this->setView('user/user_edit', 'User', array('password_field' => ''));
-        foreach ($websites as $website) {
-          $users_website = ORM::factory('users_website', array('user_id' => $this->model->id, 'website_id' => $website->id));
+    $this->model = new User_Model(array('person_id' => $id));
+    $websites = ORM::Factory('website')->in_allowed_websites()->find_all();
+    if ( $this->model->loaded ) {
+      $this->setView('user/user_edit', 'User', array('password_field' => ''));
+      foreach ($websites as $website) {
+        $users_website = ORM::factory('users_website', array('user_id' => $this->model->id, 'website_id' => $website->id));
+        $this->model->users_websites[$website->id]=
+            array(
+              'id' => $website->id
+              ,'name' => 'website_'.$website->id
+              ,'title' => $website->title
+              ,'value' => ($users_website->loaded ? $users_website->site_role_id : null)
+              );
+      }
+    } else {
+      // new user
+      $login_config = Kohana::config('login');
+      $person = ORM::factory('person', $id);
+       if ($person->email_address == null)
+          {
+           $this->setError('Invocation error: missing email address', 'You cannot create user details for a person who has no email_address');
+          }
+      else
+      {
+        $this->setView('user/user_edit', 'User',
+          array('password_field' => $this->password_fields($login_config['default_password'], $login_config['default_password'])));
+        $this->template->content->model->person_id = $id;
+        $this->template->content->model->username = $this->new_username($person);
+        foreach ($websites as $website)
           $this->model->users_websites[$website->id]=
               array(
                 'id' => $website->id
                 ,'name' => 'website_'.$website->id
                 ,'title' => $website->title
-                ,'value' => ($users_website->loaded ? $users_website->site_role_id : null)
+                ,'value' => null
                 );
-        }
-      } else {
-        // new user
-        $login_config = Kohana::config('login');
-        $person = ORM::factory('person', $id);
-         if ($person->email_address == null)
-            {
-             $this->setError('Invocation error: missing email address', 'You cannot create user details for a person who has no email_address');
-            }
-        else
-        {
-          $this->setView('user/user_edit', 'User',
-            array('password_field' => $this->password_fields($login_config['default_password'], $login_config['default_password'])));
-          $this->template->content->model->person_id = $id;
-          $this->template->content->model->username = $this->new_username($person);
-          foreach ($websites as $website)
-            $this->model->users_websites[$website->id]=
-                array(
-                  'id' => $website->id
-                  ,'name' => 'website_'.$website->id
-                  ,'title' => $website->title
-                  ,'value' => null
-                  );
-        }
       }
     }
-	  $this->defineEditBreadcrumbs();
+    $this->defineEditBreadcrumbs();
   }
 
   protected function new_username($person)
@@ -202,13 +199,29 @@ class User_Controller extends Gridview_Base_Controller {
       }
     }
   }
+  
+  /**
+   * If trying to edit an existing user record, ensure the user has rights to a website the logged in user can access.
+   * Note that the /user/edit action is not really expected as the user is edited from the person ID, but this is here 
+   * as a safety check in case the user tries to guess the url for user editing and the base class edit method kicks in.
+   */
+  public function record_authorised($id) {
+    if ($this->auth->logged_in('CoreAdmin'))
+      return true;
+    elseif (!is_null($id) AND !is_null($this->auth_filter)) {
+      // auth filter here is a list of people ids
+      $u = ORM::factory('user', $id);
+      return (in_array($u->person_id, $this->auth_filter['values']));
+    }
+    return true;
+  }
 
   /**
    * Website admins and core admins area allowed view the users list.
    */
   protected function page_authorised ()
   {
-    return $this->auth->is_any_website_admin() || $this->auth->logged_in('CoreAdmin');
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
 }
 

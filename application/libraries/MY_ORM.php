@@ -22,6 +22,11 @@
  */
 
 class ORM extends ORM_Core {
+
+  public function last_query() {
+    return $this->db->last_query();
+  }
+  
   public $submission = array();
 
   /**
