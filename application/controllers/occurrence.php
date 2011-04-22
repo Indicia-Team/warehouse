@@ -37,8 +37,8 @@ class Occurrence_controller extends Gridview_Base_Controller {
     $this->pagetitle = 'Occurrences';
     $this->actionColumns = array
     (
-      'Edit Occ' => 'occurrence/edit/£id£',
-      'Edit Smp' => 'sample/edit/£sample_id£'
+      'Edit Occ' => 'occurrence/edit/#id#',
+      'Edit Smp' => 'sample/edit/#sample_id#'
     );
     $this->columns = array
     (

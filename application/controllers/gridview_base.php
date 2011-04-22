@@ -99,7 +99,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * override this in controllers to specify a different set of actions.
    */
   protected function get_action_columns() {
-    return array('edit' => $this->controllerpath."/edit/£id£");
+    return array('edit' => $this->controllerpath."/edit/#id#");
   }
   
   /**

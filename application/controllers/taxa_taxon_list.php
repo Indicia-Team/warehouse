@@ -192,7 +192,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $child_grid->base_filter['parent_id'] = $id;
     $child_grid->columns =  $this->columns;
     $child_grid->actionColumns = array(
-      'edit' => 'taxa_taxon_list/edit/£id£'
+      'edit' => 'taxa_taxon_list/edit/#id#'
     );
     if (isset($_GET['type'])) return 'got type';
     return $child_grid->display($forceFullGrid);

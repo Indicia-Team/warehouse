@@ -86,9 +86,9 @@ class User_Controller extends Gridview_Base_Controller {
    */
   protected function get_action_columns() {
     return array(
-      'Edit User Details' => 'user/edit_from_person/£person_id£',
-      'Edit Person Details' => 'person/edit_from_user/£person_id£',
-      'Send Forgotten Password Email' => 'forgotten_password/send_from_user/£person_id£',
+      'Edit User Details' => 'user/edit_from_person/#person_id#',
+      'Edit Person Details' => 'person/edit_from_user/#person_id#',
+      'Send Forgotten Password Email' => 'forgotten_password/send_from_user/#person_id#',
     );
   }
 

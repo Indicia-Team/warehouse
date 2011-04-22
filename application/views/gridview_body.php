@@ -57,8 +57,9 @@ foreach ($table as $item)
     foreach ($actionColumns as $name => $action)
     {
       if ($this->get_action_visibility($allfields, $name)) {
-        $action = preg_replace("/£([a-zA-Z_\-]+)£/e", "\$item->__get('$1')", $action);        
-        echo html::anchor($action, str_replace(' ','&nbsp;',$name), array('class'=>'grid-action'));
+        $action = preg_replace("/#([a-zA-Z_\-]+)#/e", "\$item->__get('$1')", $action);
+        $safename = str_replace(' ','-',strtolower($name));
+        echo html::anchor($action, str_replace(' ','&nbsp;',$name), array('class'=>'grid-action grid-action-'.$safename));
       }
     }
     echo "</td>";

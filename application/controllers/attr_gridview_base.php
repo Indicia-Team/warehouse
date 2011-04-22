@@ -61,7 +61,7 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
     $survey_id = $this->input->get('survey_id',null);
 
     $this->actionColumns = array(
-      'edit' => $this->controllerpath."/edit/£id£?filter_type=$filter_type&amp;website_id=$website_id&survey_id=$survey_id"
+      'edit' => $this->controllerpath."/edit/#id#?filter_type=$filter_type&amp;website_id=$website_id&survey_id=$survey_id"
     );
 
     // If not logged in as a Core admin, restrict access to available websites.

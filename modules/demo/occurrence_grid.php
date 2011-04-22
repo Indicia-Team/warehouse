@@ -17,7 +17,7 @@ $svcUrl = data_entry_helper::$base_url.'/index.php/services';
 $(document).ready(function(){
   $('div#grid').indiciaDataGrid('occurrence', {
     indiciaSvc: "<?php echo $svcUrl; ?>",
-    actionColumns: {view : "occurrence.php?id=£id£", edit : "data_entry/test_data_entry.php?id=£id£"},
+    actionColumns: {view : "occurrence.php?id=#id#", edit : "data_entry/test_data_entry.php?id=#id#"},
     auth : { nonce : "<?php echo $readAuth['nonce']; ?>", auth_token : "<?php echo $readAuth['auth_token']; ?>"}
   });
 });
