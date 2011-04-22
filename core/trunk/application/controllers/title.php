@@ -41,7 +41,10 @@ class Title_Controller extends Gridview_Base_Controller {
     $this->pagetitle = "Titles";
   }  
 
-  public function record_authorised($id)
+  /** 
+   * No access to the titles list unless core admin.
+   */
+  public function page_authorised()
   {
     return $this->auth->logged_in('CoreAdmin');
   }

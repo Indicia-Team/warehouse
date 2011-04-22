@@ -37,8 +37,9 @@ function taxon_designations_extend_ui() {
 /**
  * Create a menu item for the list of taxon designations.
  */
-function taxon_designations_alter_menu($menu) {
-  $menu['Lookup Lists']['Taxon Designations']='taxon_designation';
+function taxon_designations_alter_menu($menu, $auth) {
+  if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin')) 
+    $menu['Lookup Lists']['Taxon Designations']='taxon_designation';
   return $menu;
 }
 

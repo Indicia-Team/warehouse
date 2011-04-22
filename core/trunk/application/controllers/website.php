@@ -69,6 +69,13 @@ class Website_Controller extends Gridview_Base_Controller
     }
     return true;
   }
+  
+  /**
+   * Core admin or website admins can see the list of websites
+   */
+  public function page_authorised() {
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
+  }
 
 }
 

@@ -60,18 +60,14 @@ class Auth_ORM_Driver implements Auth_Driver {
       $user = ORM::factory('user', $user);
     }
 
-    // Two types of people have permissions to log in:
-    // 1) Users with a valid core_role_id (There is only one type of core role - CoreAdmin)
-    // 2) Users with Admin rights to at least one subsiduary website.
-    // Users not in either of these groups (which may intersect) can not log into the CORE module
-    // and can only log into the relevant subsiduary websites.
+    // Anyone with user status on a website, or a role on the Warehouse can log in.
     
     $site_role = (new Site_role_Model('Admin'));
+    
     $websites=ORM::factory('users_website')->where(
-        array('user_id' => $user->id,
-              'site_role_id' => $site_role->id))->find_all();
-
-    // If the password in the database is null, then do not check the password
+        array('user_id' => $user->id))->find_all();
+    
+     // If the password in the database is null, then do not check the password
     if ((!is_null($user->core_role_id) OR ($websites->count() > 0))
         AND (is_null($user->password) OR ($user->password === $password)))
     {

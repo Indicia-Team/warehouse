@@ -110,6 +110,13 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     }
     return true;
   }
+  
+  /**
+   * Must be core admin or website editor/admin to use the taxon lists.
+   */
+  protected function page_authorised() {
+    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('editor');
+  }
 
   /**
    * After a submission, override the default return page behaviour so that if the
