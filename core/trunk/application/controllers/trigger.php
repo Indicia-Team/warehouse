@@ -50,9 +50,9 @@ class Trigger_Controller extends Gridview_Base_Controller {
   protected function get_action_columns() {
     $r = array();
     if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin'))
-    $r['edit trigger'] = $this->controllerpath.'/edit/£id£';
-    $r['subscribe'] = 'trigger_action/create/£id£';
-    $r['edit subscription'] = 'trigger_action/edit/£id£';
+    $r['edit trigger'] = $this->controllerpath.'/edit/#id#';
+    $r['subscribe'] = 'trigger_action/create/#id#';
+    $r['edit subscription'] = 'trigger_action/edit/#id#';
     return $r;
   }
   

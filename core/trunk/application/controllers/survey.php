@@ -47,8 +47,8 @@ class Survey_Controller extends Gridview_Base_Controller {
    */
   protected function get_action_columns() {
     return array(
-        'edit' => $this->controllerpath."/edit/£id£",
-        'setup attributes' => "/attribute_by_survey/£id£?type=sample"
+        'edit' => $this->controllerpath."/edit/#id#",
+        'setup attributes' => "/attribute_by_survey/#id#?type=sample"
     );
   }
 

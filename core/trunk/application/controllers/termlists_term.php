@@ -181,7 +181,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $child_grid->base_filter['parent_id'] = $id;
     $child_grid->columns =  $this->columns;
     $child_grid->actionColumns = array(
-      'edit' => 'termlists_term/edit/£id£'
+      'edit' => 'termlists_term/edit/#id#'
     );
     return $child_grid->display();
   }

@@ -47,7 +47,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
   
   protected function get_action_columns() {
     // taxa taxon list ID should be the first argument from the index view
-    return array('edit' => $this->controllerpath."/edit/£id£?taxa_taxon_list_id=".$this->uri->argument(1));
+    return array('edit' => $this->controllerpath."/edit/#id#?taxa_taxon_list_id=".$this->uri->argument(1));
   }
 
   /**
