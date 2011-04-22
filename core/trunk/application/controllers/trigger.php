@@ -48,9 +48,12 @@ class Trigger_Controller extends Gridview_Base_Controller {
    * Override to specify action columns for subscription.
    */
   protected function get_action_columns() {
-    return array('edit trigger' => $this->controllerpath.'/edit/£id£',        
-        'subscribe' => 'trigger_action/create/£id£',
-        'edit subscription' => 'trigger_action/edit/£id£');
+    $r = array();
+    if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin'))
+    $r['edit trigger'] = $this->controllerpath.'/edit/£id£';
+    $r['subscribe'] = 'trigger_action/create/£id£';
+    $r['edit subscription'] = 'trigger_action/edit/£id£';
+    return $r;
   }
   
   /**
@@ -58,7 +61,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
    * actions depending on the circumstance and row data.
    */
   protected function get_action_visibility($row, $actionName) {
-    if ($actionName == 'edit trigger') {      
+    if ($actionName == 'edit trigger') {
       return $row['private_for_user_id'] == $_SESSION['auth_user']->id || $this->auth->logged_in('CoreAdmin');
     } else {
       // @todo Performance implications of this approach
