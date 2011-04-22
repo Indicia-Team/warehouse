@@ -48,10 +48,10 @@ class XMLReportReader_Core implements ReportReader
       $reader->open($report);
       while($reader->read())
       {
-      	switch($reader->nodeType)
+        switch($reader->nodeType)
         {
-        	case (XMLREADER::ELEMENT):
-        	  switch ($reader->name)
+          case (XMLREADER::ELEMENT):
+            switch ($reader->name)
               {
               case 'report':
                 $this->title = $reader->getAttribute('title');
@@ -67,7 +67,7 @@ class XMLReportReader_Core implements ReportReader
                 $this->order_by[] = $reader->value;
                 break;
               case 'param':
-              	$this->mergeParam(
+                $this->mergeParam(
                     $reader->getAttribute('name'),
                     $reader->getAttribute('display'),
                     $reader->getAttribute('datatype'),
@@ -105,46 +105,47 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('where'));
                 break;
               case 'tabColumn':
-               	$this->mergeTabColumn(
-              	    $reader->getAttribute('name'),
-              	    $reader->getAttribute('func'),
-              	    $reader->getAttribute('display'),
+                 $this->mergeTabColumn(
+                    $reader->getAttribute('name'),
+                    $reader->getAttribute('func'),
+                    $reader->getAttribute('display'),
                     $reader->getAttribute('style'),
                     $reader->getAttribute('class'),
                     $reader->getAttribute('visible'),
                     false
-              	    );
-              	break;
+                    );
+                break;
               case 'attributes':
-              	$this->setAttributes(
+                $this->setAttributes(
                     $reader->getAttribute('where'),
                     $reader->getAttribute('separator'),
                     $reader->getAttribute('hideVagueDateFields')); // determines whether to hide the main vague date fields for attributes.
                 break;
               case 'vagueDate': // This switches off vague date processing.
-              	$this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
-              	break;
+                $this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
+                break;
               case 'download': // This enables download processing.. potentially dangerous as updates DB.
-              	$this->setDownload($reader->getAttribute('mode'));;
-              	break;
+                $this->setDownload($reader->getAttribute('mode'));;
+                break;
               case 'mergeTabColumn':
-               	$this->setMergeTabColumn(
-              	    $reader->getAttribute('name'),
-              	    $reader->getAttribute('tablename'),
-              	    $reader->getAttribute('separator'),
+                 $this->setMergeTabColumn(
+                    $reader->getAttribute('name'),
+                    $reader->getAttribute('tablename'),
+                    $reader->getAttribute('separator'),
                     $reader->getAttribute('where'),
-                    $reader->getAttribute('display'));
-              	break;
+                    $reader->getAttribute('display'),
+                    $reader->getAttribute('visible'));
+                break;
               }
               break;
-        	case (XMLReader::END_ELEMENT):
-        	  switch ($reader->name)
+          case (XMLReader::END_ELEMENT):
+            switch ($reader->name)
               {
                 case 'subTable':
-                	$this->tableIndex=$this->tables[$this->tableIndex]['parent'];
-        		    break;
+                  $this->tableIndex=$this->tables[$this->tableIndex]['parent'];
+                break;
               }
-       		  break;
+             break;
         }
       }
       $reader->close();
@@ -179,63 +180,63 @@ class XMLReportReader_Core implements ReportReader
   */
   public function getQuery()
   {
-  	if ( $this->automagic == false) {
-	    return $this->query;
-  	}
+    if ( $this->automagic == false) {
+      return $this->query;
+    }
     $query = "SELECT ";
     $j=0;
-	for($i = 0; $i < count($this->tables); $i++){
-	  // In download mode make sure that the occurrences id is in the list
+  for($i = 0; $i < count($this->tables); $i++){
+    // In download mode make sure that the occurrences id is in the list
 
       foreach($this->tables[$i]['columns'] as $column){
-		if ($j != 0) $query .= ",";
-		if ($column['func']=='') {
-		    $query .= " lt".$i.".".$column['name']." AS lt".$i."_".$column['name'];
-		} else {
-      		$query .= " ".preg_replace("/#parent#/", "lt".$this->tables[$i]['parent'], preg_replace("/#this#/", "lt".$i, $column['func']))." AS lt".$i."_".$column['name'];
-		}
-      	$j++;
+    if ($j != 0) $query .= ",";
+    if ($column['func']=='') {
+        $query .= " lt".$i.".".$column['name']." AS lt".$i."_".$column['name'];
+    } else {
+          $query .= " ".preg_replace("/#parent#/", "lt".$this->tables[$i]['parent'], preg_replace("/#this#/", "lt".$i, $column['func']))." AS lt".$i."_".$column['name'];
+    }
+        $j++;
       }
-	}
-	// table list
-	$query .= " FROM ";
-	for($i = 0; $i < count($this->tables); $i++){
-		if ($i == 0) {
-    		$query .= $this->tables[$i]['tablename']." lt".$i;
-		} else {
-    		if ($this->tables[$i]['join'] != null) {
-    			$query .= " LEFT OUTER JOIN ";
-       		} else {
-    			$query .= " INNER JOIN ";
-    		}
-    		$query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-    		if($this->tables[$i]['where'] != null) {
-    			$query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
- 			}
-    		$query .= ") ";
-		}
-	}
-	// where list
-	$previous=false;
-	if($this->tables[0]['where'] != null) {
-		$query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
-		$previous = true;
-	}
-	// when in download mode set a where clause
-	// only down load records which are complete or verified, and have not been downloaded before.
-	// for the final download, only download thhose records which have gone through an initial download, and hence assumed been error checked.
-	if($this->download != 'OFF'){
-		for($i = 0; $i < count($this->tables); $i++){
-			if ($this->tables[$i]['tablename'] == "occurrences") {
-				$query .= ($previous ? " AND " : " WHERE ").
-					" (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
-		    		" AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
-		    		" AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
-				break;
-			}
-		}
-	}
-	return $query;
+  }
+  // table list
+  $query .= " FROM ";
+  for($i = 0; $i < count($this->tables); $i++){
+    if ($i == 0) {
+        $query .= $this->tables[$i]['tablename']." lt".$i;
+    } else {
+        if ($this->tables[$i]['join'] != null) {
+          $query .= " LEFT OUTER JOIN ";
+           } else {
+          $query .= " INNER JOIN ";
+        }
+        $query .= $this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
+        if($this->tables[$i]['where'] != null) {
+          $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
+       }
+        $query .= ") ";
+    }
+  }
+  // where list
+  $previous=false;
+  if($this->tables[0]['where'] != null) {
+    $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
+    $previous = true;
+  }
+  // when in download mode set a where clause
+  // only down load records which are complete or verified, and have not been downloaded before.
+  // for the final download, only download thhose records which have gone through an initial download, and hence assumed been error checked.
+  if($this->download != 'OFF'){
+    for($i = 0; $i < count($this->tables); $i++){
+      if ($this->tables[$i]['tablename'] == "occurrences") {
+        $query .= ($previous ? " AND " : " WHERE ").
+          " (lt".$i.".record_status in ('C'::bpchar, 'V'::bpchar) OR '".$this->download."'::text = 'OFF'::text) ".
+            " AND (lt".$i.".downloaded_flag in ('N'::bpchar, 'I'::bpchar) OR '".$this->download."'::text != 'INITIAL'::text) ".
+            " AND (lt".$i.".downloaded_flag = 'I'::bpchar OR ('".$this->download."'::text != 'CONFIRM'::text AND '".$this->download."'::text != 'FINAL'::text))";
+        break;
+      }
+    }
+  }
+  return $query;
   }
 
   /**
@@ -321,23 +322,23 @@ class XMLReportReader_Core implements ReportReader
 
   public function getVagueDateProcessing()
   {
-  	return $this->vagueDateProcessing;
+    return $this->vagueDateProcessing;
   }
 
   public function getDownloadDetails()
   {
- 	$thisDefn = new stdClass;
- 	$thisDefn->mode = $this->download;
- 	$thisDefn->id = 'occurrences_id';
- 	if($this->automagic) {
- 		for($i = 0; $i < count($this->tables); $i++){
-			if($this->tables[$i]['tablename'] == 'occurrences'){ // Warning, will not work with multiple occurrence tables
-		 		$thisDefn->id = "lt".$i."_id";
-		 		break;
-			}
- 		}
- 	}
- 	return $thisDefn;
+   $thisDefn = new stdClass;
+   $thisDefn->mode = $this->download;
+   $thisDefn->id = 'occurrences_id';
+   if($this->automagic) {
+     for($i = 0; $i < count($this->tables); $i++){
+      if($this->tables[$i]['tablename'] == 'occurrences'){ // Warning, will not work with multiple occurrence tables
+         $thisDefn->id = "lt".$i."_id";
+         break;
+      }
+     }
+   }
+   return $thisDefn;
   }
   //* PRIVATE FUNCTIONS *//
 
@@ -350,39 +351,39 @@ class XMLReportReader_Core implements ReportReader
   }
   private function buildAttributeQuery($attributes)
   {
-  	$parentSingular = inflector::singular($this->tables[$attributes->parentTableIndex]['tablename']);
-  	// This processing assumes some properties of the attribute tables - eg columns the data is stored in and deleted columns
-  	$query = "SELECT vt.".$parentSingular."_id as main_id,
-  		vt.text_value, vt.float_value, vt.int_value, vt.date_start_value, vt.date_end_value, vt.date_type_value,
-  		at.id, at.caption, at.data_type, at.termlist_id, at.multi_value ";
+    $parentSingular = inflector::singular($this->tables[$attributes->parentTableIndex]['tablename']);
+    // This processing assumes some properties of the attribute tables - eg columns the data is stored in and deleted columns
+    $query = "SELECT vt.".$parentSingular."_id as main_id,
+      vt.text_value, vt.float_value, vt.int_value, vt.date_start_value, vt.date_end_value, vt.date_type_value,
+      at.id, at.caption, at.data_type, at.termlist_id, at.multi_value ";
     $j=0;
-	// table list
-	$query .= " FROM ";
-	for($i = 0; $i <= $attributes->parentTableIndex; $i++){
-		if ($i == 0) {
-    		$query .= $this->tables[$i]['tablename']." lt".$i;
-		} else { // making assumption to reduce the size of the query that all left outer join tables can be excluded
-    		if ($this->tables[$i]['join'] == null) {
-    			$query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-    		    if($this->tables[$i]['where'] != null) {
-    			    $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
- 			    }
-    		    $query .= ") ";
-    		}
-		}
-	}
+  // table list
+  $query .= " FROM ";
+  for($i = 0; $i <= $attributes->parentTableIndex; $i++){
+    if ($i == 0) {
+        $query .= $this->tables[$i]['tablename']." lt".$i;
+    } else { // making assumption to reduce the size of the query that all left outer join tables can be excluded
+        if ($this->tables[$i]['join'] == null) {
+          $query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
+            if($this->tables[$i]['where'] != null) {
+              $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
+           }
+            $query .= ") ";
+        }
+    }
+  }
     $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE) ";
-  	// where list
-	$previous=false;
-	if($this->tables[0]['where'] != null) {
-		$query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
-		$previous = true;
-	}
-	if($attributes->where != null) {
-		$query .= ($previous ? " AND " : " WHERE ").$attributes->where;
-	}
+    // where list
+  $previous=false;
+  if($this->tables[0]['where'] != null) {
+    $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
+    $previous = true;
+  }
+  if($attributes->where != null) {
+    $query .= ($previous ? " AND " : " WHERE ").$attributes->where;
+  }
     $query .= " ORDER BY lt".$attributes->parentTableIndex.".id";
     return $query;
   }
@@ -420,7 +421,7 @@ class XMLReportReader_Core implements ReportReader
       if ($display != '') $this->columns[$name]['display'] = $display;
       if ($style != '') $this->columns[$name]['style'] = $style;
       if ($class != '') $this->columns[$name]['class'] = $class;
-      if ($visible == 'false' && $this->columns[$name]['visible'] == 'false')
+      if ($visible == 'false' || $this->columns[$name]['visible'] == 'false')
         $this->columns[$name]['visible'] = 'false';
       else
         $this->columns[$name]['visible'] = 'true';
@@ -445,45 +446,45 @@ class XMLReportReader_Core implements ReportReader
 
   private function setTable($tablename, $where)
   {
-  	$this->tables = array();
-  	$this->tableIndex = 0;
-  	$this->nextTableIndex = 1;
-  	$this->tables[$this->tableIndex] = array(
+    $this->tables = array();
+    $this->tableIndex = 0;
+    $this->nextTableIndex = 1;
+    $this->tables[$this->tableIndex] = array(
           'tablename' => $tablename,
-  	      'parent' => -1,
+          'parent' => -1,
           'parentKey' => '',
           'tableKey' => '',
-  	      'join' => '',
-  		  'attributes' => '',
+          'join' => '',
+        'attributes' => '',
           'where' => $where,
           'columns' => array());
   }
 
   private function setSubTable($tablename, $parentKey, $tableKey, $join, $where)
   {
-  	if($tableKey == ''){
-  		if($parentKey == 'id'){
-  			$tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
-  		} else {
-  			$tableKey = 'lt'.$this->nextTableIndex.'.id';
-  		}
-  	} else {
-  		$tableKey = 'lt'.$this->nextTableIndex.".".$tableKey;
-  	}
+    if($tableKey == ''){
+      if($parentKey == 'id'){
+        $tableKey = 'lt'.$this->nextTableIndex.".".(inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
+      } else {
+        $tableKey = 'lt'.$this->nextTableIndex.'.id';
+      }
+    } else {
+      $tableKey = 'lt'.$this->nextTableIndex.".".$tableKey;
+    }
     if($parentKey == ''){
       $parentKey = 'lt'.$this->tableIndex.".".(inflector::singular($tablename)).'_id';
-  	} else { // force the link as this table has foreign key to parent table, standard naming convention.
+    } else { // force the link as this table has foreign key to parent table, standard naming convention.
       $parentKey = 'lt'.$this->tableIndex.".".$parentKey;
-  	}
+    }
     $this->tables[$this->nextTableIndex] = array(
           'tablename' => $tablename,
-  	   	  'parent' => $this->tableIndex,
+           'parent' => $this->tableIndex,
           'parentKey' => $parentKey,
           'tableKey' => $tableKey,
-       	  'join' => $join,
+           'join' => $join,
           'attributes' => '',
           'where' => $where,
-       	  'columns' => array());
+           'columns' => array());
     $this->tableIndex=$this->nextTableIndex;
     $this->nextTableIndex++;
   }
@@ -515,18 +516,18 @@ class XMLReportReader_Core implements ReportReader
 
   private function setMergeTabColumn($name, $tablename, $separator, $where = '', $display = '')
   {
-  	// in this case the data for the column in merged into one, if there are more than one records
-  	// To do this we highjack the attribute handling functionality.
+    // in this case the data for the column in merged into one, if there are more than one records
+    // To do this we highjack the attribute handling functionality.
     $tableKey = (inflector::singular($this->tables[$this->tableIndex]['tablename'])).'_id';
 
     $thisDefn = new stdClass;
     $thisDefn->caption = 'caption';
     $thisDefn->main_id = $tableKey; // main_id is the name of the column in the subquery holding the PK value of the parent table.
-   	$thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
+     $thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
     $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
-   	$thisDefn->separator = $separator;
+     $thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = 'false';
-   	$thisDefn->columnPrefix = 'merge_'.count($this->attributes);
+     $thisDefn->columnPrefix = 'merge_'.count($this->attributes);
 
     if($display == ''){
       $display = $tablename.' '.$name;
@@ -540,19 +541,19 @@ class XMLReportReader_Core implements ReportReader
 
   private function setAttributes($where, $separator, $hideVagueDateFields)
   {
-  	$thisDefn = new stdClass;
+    $thisDefn = new stdClass;
     $thisDefn->caption = 'caption'; // caption is the name of the column in the subquery holding the attribute caption.
     $thisDefn->main_id = 'main_id'; // main_id is the name of the column in the subquery holding the PK value of the parent table.
-   	$thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
+     $thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
     $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
-   	$thisDefn->separator = $separator;
+     $thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = $hideVagueDateFields;
-   	$thisDefn->columnPrefix = 'attr_'.$this->tableIndex.'_';
+     $thisDefn->columnPrefix = 'attr_'.$this->tableIndex.'_';
     // folowing is used the query builder only
-   	$thisDefn->parentTableIndex = $this->tableIndex;
+     $thisDefn->parentTableIndex = $this->tableIndex;
     $thisDefn->where = $where;
 
-  	$thisDefn->query = $this->buildAttributeQuery($thisDefn);
+    $thisDefn->query = $this->buildAttributeQuery($thisDefn);
     $this->attributes[] = $thisDefn;
     // Make sure id column of parent table is in list of columns returned from query.
     $this->mergeTabColumn('id', '', '', '', '', 'false', true);
@@ -560,7 +561,7 @@ class XMLReportReader_Core implements ReportReader
 
   private function setDownload($mode)
   {
-  	$this->download = $mode;
+    $this->download = $mode;
   }
 
  /**
