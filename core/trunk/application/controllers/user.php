@@ -75,9 +75,6 @@ class User_Controller extends Gridview_Base_Controller {
    * a flash.
    */
   public function page($page_no, $filter=null) {
-    $this->session->set_flash('flash_info', "<strong>Notes:</strong>" .
-        "<p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>" .
-        "<p>In order to be on the list of potential users, the person must have an email address.</p>");
     parent::page($page_no, $filter);
   }
 

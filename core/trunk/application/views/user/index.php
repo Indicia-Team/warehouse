@@ -22,6 +22,11 @@
  */
 
 ?>
+<div class="ui-widget-content ui-corner-all ui-state-highlight page-notice" >
+  <strong>Notes:</strong>
+  <p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>
+  <p>In order to be on the list of potential users, the person must have an email address.</p>
+</div>
 <div class="users">
 <?php echo $table ?>
 <br />
