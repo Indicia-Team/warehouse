@@ -149,7 +149,8 @@ class iform_mnhnl_dynamic_1 {
             "<strong>=*=</strong> indicates a placeholder for putting any custom attribute tabs not defined in this form structure. <br/>".
             "<strong>[control name]</strong> indicates a predefined control is to be added to the form with the following predefined controls available: <br/>".
                 "&nbsp;&nbsp;<strong>[species]</strong> - a species grid or input control<br/>".
-                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid<br/>".
+                "&nbsp;&nbsp;<strong>[species attributes]</strong> - any custom attributes for the occurrence, if not using the grid. Also includes a file upload ".
+                "box if relevant. The attrubutes @resizeWidth and @resizeHeight can specified on subsequent lines, otherwise they default to 1600.<br/>".
                 "&nbsp;&nbsp;<strong>[date]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[map]</strong><br/>".
                 "&nbsp;&nbsp;<strong>[spatial reference]</strong><br/>".
@@ -1031,7 +1032,10 @@ class iform_mnhnl_dynamic_1 {
           'label'=>lang::get('Upload your photos'),
         );
       if ($args['interface']!=='one_page')
-          $opts['tabDiv']=$tabalias;
+        $opts['tabDiv']=$tabalias;
+      $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
+      $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
+      $opts['caption'] = lang::get('Photos');
       $r .= data_entry_helper::file_box($opts);
       return $r;
     } else 
