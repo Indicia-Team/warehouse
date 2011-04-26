@@ -1047,12 +1047,13 @@ $onload_javascript
       $rule = trim($rule);
       if    ($rule=='required'
           || $rule=='dateISO'
-          || $rule=='date'
           || $rule=='email'
           || $rule=='url'
           || $rule=='time') {
         $converted[] = $rule;
       // Now any rules which need parsing or conversion
+      } else if ($rule=='date') {
+        $converted[] = 'customDate';
       } else if ($rule=='digit') {
         $converted[] = 'digits';
       // the next test uses a regexp named expression to find the digit in a maximum rule (maximum[10])

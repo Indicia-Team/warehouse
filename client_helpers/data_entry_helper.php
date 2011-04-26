@@ -474,7 +474,15 @@ class data_entry_helper extends helper_base {
     $escaped_id=str_replace(':','\\\\:',$options['id']);
     // Don't set js up for the datepicker in the clonable row for the species checklist grid
     if ($escaped_id!='{fieldname}') {
-      self::$javascript .= "jQuery('#$escaped_id').datepicker({
+      self::$javascript .= "jQuery.validator.addMethod('customDate',
+  function(value, element) {
+    // parseDate throws exception if the value is invalid
+    try{jQuery.datepicker.parseDate( '".$options['dateFormat']."', value);return true;}
+    catch(e){return false;}
+  }, '".lang::get('Please enter a valid date')."'
+);
+
+jQuery('#$escaped_id').datepicker({
     dateFormat : '".$options['dateFormat']."',
     changeMonth: true,
     changeYear: true,
@@ -499,7 +507,7 @@ class data_entry_helper extends helper_base {
   // Check for the special default value of today
   if (isset($options['default']) ) {
     if ($options['default']=='today')
-      $options['default'] = date('Y-m-d');
+      $options['default'] = date('d/m/Y');
   }
 
     // Enforce a class on the control called date
