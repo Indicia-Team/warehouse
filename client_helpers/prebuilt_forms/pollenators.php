@@ -494,6 +494,7 @@ jQuery('#".$id."').click(function(){
     				'lookUpListCtrl' => 'radio_group',
     				'lookUpKey' => 'meaning_id',
     				'language' => iform_lang_iso_639_2($args['language']),
+    				'booleanCtrl' => 'radio', // default has changed
     				'containerClass' => 'group-control-box',
        				'sep' => ' &nbsp; ',
     				'suffixTemplate'=>'nosuffix');
