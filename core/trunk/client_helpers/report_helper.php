@@ -595,15 +595,13 @@ mapInitialisationHooks.push(function(div) {
    */
   private static function get_report_grid_parameters_form($response, $options, $params) {
     if ($options['autoParamsForm'] || $options['paramsOnly']) {
-      // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
-      // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
-      // using Apache mod_alias but we don't want to know about that)
-      $reloadUrl = self::get_reload_link_parts();
       $r = '';
+      // The form must use POST, because polygon parameters can be too large for GET.
       if ($options['completeParamsForm']==true) {
-        $r .= '<form action="'.$reloadUrl['path'].'" method="get" id="'.$options['id'].'-params">'."\n";
+        $r .= '<form action="'.$_SERVER['REQUEST_URI'].'" method="post" id="'.$options['id'].'-params">'."\n";
         $r .= '<fieldset><legend>'.lang::get('Report Parameters').'</legend>';
       }
+      $reloadUrl = self::get_reload_link_parts();
       // Output any other get parameters from our URL as hidden fields
       foreach ($reloadUrl['params'] as $key => $value) {
         // since any param will be from a URL it could be encoded. So we don't want to double encode if they repeatedly
@@ -761,7 +759,7 @@ mapInitialisationHooks.push(function(div) {
     }
     // Are there any parameters embedded in the URL, e.g. after submitting the params form?
     $paramKey = 'param-' . (isset($options['paramsFormId']) ? $options['paramsFormId'] : '').'-';
-    foreach ($_GET as $key=>$value) {
+    foreach ($_POST as $key=>$value) {
       if (substr($key, 0, strlen($paramKey))==$paramKey) {
         // We have found a parameter, so put it in the request to the report service
         $param = substr($key, strlen($paramKey));
