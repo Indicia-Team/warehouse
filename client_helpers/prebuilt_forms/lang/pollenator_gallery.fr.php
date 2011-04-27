@@ -95,7 +95,7 @@ $custom_terms = array(
 	,'LANG_Additional_Info_Title' => 'Informations Complémentaires'
 	,'LANG_Date' => 'Date'
 	,'LANG_Time' => 'Heure'
-	,'LANG_To' => ' a '
+	,'LANG_To' => ' à '
 	,'Sky' => 'Ciel : couverture nuageuse '
 	,'Temperature' => 'Température '
 	,'Wind' => 'Vent '
@@ -133,5 +133,9 @@ $custom_terms = array(
 	,'LANG_Or' => 'ou'
 	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
 	,'loading' => 'Chargement'
+
+	,'LANG_Bad_Collection_ID' => "Vous avez essayé de charger une session comme une collection: ce ID n'est pas une collection."
+	,'LANG_Bad_Insect_ID' => "Vous avez essayé de charger une fleur comme un insecte: cette ID n'est pas un insect."
+	,'LANG_Bad_Flower_ID' => "Vous avez essayé de charger un insecte comme une fleur: cet ID n'est pas une fleur."
 	
 );

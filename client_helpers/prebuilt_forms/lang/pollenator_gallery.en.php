@@ -119,4 +119,7 @@ $custom_terms = array(
 	,'LANG_Max_Features_Reached' => 'The number of results returned has exceeded the maximum number allowed. The list will be abridged.'
 	,'LANG_Indicia_Warehouse_Error' => 'Error returned from Indicia Warehouse'
 	
+	,'LANG_Bad_Collection_ID' => 'You have tried to load a session as a collection: this ID is not a valid collection.'
+	,'LANG_Bad_Insect_ID' => 'You have tried to load a flower as an insect: this ID is not a valid insect.'
+	,'LANG_Bad_Flower_ID' => 'You have tried to load an insect as a flower: this ID is not a valid flower.'
 );
