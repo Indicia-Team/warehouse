@@ -1197,7 +1197,11 @@ loadCollection = function(id, index){
    		if(!(collectionData instanceof Array)){
    			alertIndiciaError(collectionData);
    		} else if (collectionData.length>0) {
-			if(collectionData[0].date_start == collectionData[0].date_end){
+   			if(collectionData[0].parent_id != null {
+   				alertIndiciaError({error: \"".lang::get('LANG_Bad_Collection_ID')."\"});
+   				return;
+   			}
+   			if(collectionData[0].date_start == collectionData[0].date_end){
 				collection_preferred_object.date = collectionData[0].date_start.slice(0,10);
 				jQuery('<span>'+convertDate(collectionData[0].date_start, false)+'</span>').appendTo('#collection-date');
 			} else {
@@ -2665,6 +2669,10 @@ loadInsectAddnInfo = function(keyValue, collectionIndex){
    				if(!(smpData instanceof Array)){
    					alertIndiciaError(smpData);
    				} else if (smpData.length > 0) {
+   					if(smpData[0].parent_id == null {
+   						alertIndiciaError({error: \"".lang::get('LANG_Bad_Insect_ID')."\"});
+   						return;
+		   			}
    					collection = smpData[0].parent_id;
 					collectionProcessing(collection, ".(user_access('IForm n'.$node->nid.' insect expert') ? "true" : "false").");
 					jQuery('#fo-insect-date').empty().append(convertDate(smpData[0].date_start,false));
@@ -2692,7 +2700,11 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
    				if(!(collection instanceof Array)){
    					alertIndiciaError(collection);
    				} else if (collection.length > 0) {
-					loadLocationAttributes(collection[0].location_id);
+   					if(collection[0].parent_id != null {
+   						alertIndiciaError({error: \"".lang::get('LANG_Bad_Flower_ID')."\"});
+   						return;
+		   			}
+   					loadLocationAttributes(collection[0].location_id);
   				}
    		   	  }));
    		}
