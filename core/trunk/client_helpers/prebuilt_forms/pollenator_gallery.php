@@ -951,7 +951,10 @@ myScrollTo = function(selector){
 jQuery('#reset-name-button').click(function(){
 	jQuery('[name=username]').val('');
 });
-jQuery('#fold-name-button').click(function(){
+jQuery('#name-filter-header').click(function(evt){
+    if($(evt.originalTarget).hasClass('reset-button')){
+        return;
+    }
 	jQuery('#name-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-name-button').toggleClass('fold-button-folded');
 	jQuery('#name-filter-body').toggleClass('ui-accordion-content-active');
@@ -962,7 +965,10 @@ jQuery('#reset-date-button').click(function(){
 	jQuery('[name=end_date]').val('".lang::get('click here')."');
 	jQuery('[name=real_end_date]').val('');
 });
-jQuery('#fold-date-button').click(function(){
+jQuery('#date-filter-header').click(function(evt){
+    if($(evt.originalTarget).hasClass('reset-button')){
+        return;
+    }
 	jQuery('#date-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-date-button').toggleClass('fold-button-folded');
 	jQuery('#date-filter-body').toggleClass('ui-accordion-content-active');
@@ -973,7 +979,10 @@ jQuery('#reset-flower-button').click(function(){
 	jQuery('[name=flower\\:taxon_extra_info]').val(\"".lang::get('LANG_More_Precise')."\");
 	jQuery('#flower-filter-body').find(':checkbox').removeAttr('checked');
 });
-jQuery('#fold-flower-button').click(function(){
+jQuery('#flower-filter-header').click(function(evt){
+    if($(evt.originalTarget).hasClass('reset-button')){
+        return;
+    }
 	jQuery('#flower-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-flower-button').toggleClass('fold-button-folded');
 	jQuery('#flower-filter-body').toggleClass('ui-accordion-content-active');
@@ -984,8 +993,10 @@ jQuery('#reset-insect-button').click(function(){
 	jQuery('[name=insect\\:taxon_extra_info]').val(\"".lang::get('LANG_More_Precise')."\");
 	jQuery('#insect-filter-body').find(':checkbox').removeAttr('checked');
 });
-
-jQuery('#fold-insect-button').click(function(){
+jQuery('#insect-filter-header').click(function(evt){
+    if($(evt.originalTarget).hasClass('reset-button')){
+        return;
+    }
 	jQuery('#insect-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-insect-button').toggleClass('fold-button-folded');
 	jQuery('#insect-filter-body').toggleClass('ui-accordion-content-active');
@@ -994,8 +1005,10 @@ jQuery('#fold-insect-button').click(function(){
 jQuery('#reset-conditions-button').click(function(){
 	jQuery('#conditions-filter-body').find(':checkbox').removeAttr('checked');
 });
-
-jQuery('#fold-conditions-button').click(function(){
+jQuery('#conditions-filter-header').click(function(evt){
+    if($(evt.originalTarget).hasClass('reset-button')){
+        return;
+    }
 	jQuery('#conditions-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-conditions-button').toggleClass('fold-button-folded');
 	jQuery('#conditions-filter-body').toggleClass('ui-accordion-content-active');
@@ -1013,7 +1026,10 @@ jQuery('#reset-location-button').click(function(){
 	center.transform(div.map.displayProjection, div.map.projection);
 	div.map.setCenter(center, ".((int) $args['map_zoom']).");
 });
-jQuery('#fold-location-button').click(function(){
+jQuery('#location-filter-header').click(function(evt){
+    if($(evt.originalTarget).hasClass('reset-button')){
+        return;
+    }
 	jQuery('#location-filter-header').toggleClass('ui-state-active').toggleClass('ui-state-default');
 	jQuery('#fold-location-button').toggleClass('fold-button-folded');
 	jQuery('#location-filter-body').toggleClass('ui-accordion-content-active');
