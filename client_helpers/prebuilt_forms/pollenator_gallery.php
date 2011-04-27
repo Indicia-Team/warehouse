@@ -769,7 +769,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
 	if(user_access('IForm n'.$node->nid.' insect expert')){
-		$r .= '		<select name="determination:determination_type" />
+		$r .= '		<select id="fo-insect-expert-det-type" name="determination:determination_type" />
 			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
 			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
 		</select>';
@@ -802,7 +802,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     	<input type="hidden" name="determination:person_name" value="'.$username.'" />  
 		<input type="hidden" name="determination:email_address" value="'.$email.'" />';
 	if(user_access('IForm n'.$node->nid.' flower expert')){
-		$r .= '		<select name="determination:determination_type" />
+		$r .= '		<select id="fo-flower-expert-det-type" name="determination:determination_type" />
 			<option value="C" selected>'.lang::get('LANG_Det_Type_C').'</option>
 			<option value="X">'.lang::get('LANG_Det_Type_X').'</option>
 		</select>';
@@ -1737,6 +1737,21 @@ jQuery('#flower-id-button').click(function(){
 });
 jQuery('#flower-id-cancel').click(function(){
 	pollReset(flowerIDstruc);
+});
+
+// an expert can set the determination type to 'X' manually, so reset everything in this case.
+expertSetUnidentified = function(toolStruct){
+	jQuery('#'+toolStruct.type+'-id-button').data('toolRetValues', []);
+	jQuery(toolStruct.mainForm+' [name=determination\\:taxon_details]').val('');
+	jQuery('#'+toolStruct.type+'_taxa_list').empty();
+	jQuery(toolStruct.mainForm+' [name=determination\\:taxa_taxon_list_id]').val('');
+	jQuery(toolStruct.mainForm+' [name=determination\\:comment]').val(\"".lang::get('LANG_Default_ID_Comment')."\");
+  };
+jQuery('#fo-flower-expert-det-type').click(function(){
+	expertSetUnidentified(flowerIDstruc);
+});
+jQuery('#fo-insect-expert-det-type').click(function(){
+	expertSetUnidentified(insectIDstruc);
 });
 
 jQuery('#flower-id-cancel').hide();
