@@ -258,6 +258,14 @@ class iform_pollenators {
       	  'required'=>false
       ),
       array(
+          'name'=>'help_environment_arg',
+          'caption'=>'Environment Identification Help argument',
+          'description'=>'The argument(s) passed to the Help Module invocation function when the help button in "Environment" is clicked.',
+          'type'=>'string',
+          'group'=>'Help',
+      	  'required'=>false
+      ),
+      array(
           'name'=>'help_location_arg',
           'caption'=>'Location Help argument',
           'description'=>'The argument(s) passed to the Help Module invocation function when the help button in "Location" is clicked.',
@@ -1059,6 +1067,7 @@ $('#cc-1-reinit-button').click(function() {
     </div>
     <div class="poll-break"></div>
  	<div id="cc-2-environment">
+	  '.iform_pollenators::help_button($use_help, "environment-help-button", $args['help_function'], $args['help_environment_arg']).'
 	  <div id="cc-2-environment-title">'.lang::get('LANG_Upload_Environment').'</div>
  	  <form id="cc-2-environment-upload" enctype="multipart/form-data" action="'.iform_ajaxproxy_url($node, 'media').'" method="POST">
     	<input type="hidden" id="website_id" name="website_id" value="'.$args['website_id'].'" />
