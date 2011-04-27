@@ -1379,10 +1379,10 @@ addCollection = function(index, attributes, geom, first){
 	jQuery('<div class=\"ui-state-default ui-corner-all display-button\">".lang::get('LANG_Display')."</div>').click(function(){
 		loadCollection(jQuery(this).data('value'), jQuery(this).data('index'));
 	}).appendTo(displayButtonContainer).data('value',attributes.collection_id).data('index',index);
-	if(attributes.datedebut == attributes.datefin){
-	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.datedebut,false)+'</p>').appendTo(details);
+	if(attributes.datedebut_txt == attributes.datefin_txt){
+	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.datedebut_txt,false)+'</p>').appendTo(details);
     } else {
-	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.datedebut,false)+' - '+convertDate(attributes.datefin,false)+'</p>').appendTo(details);
+	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.datedebut_txt,false)+' - '+convertDate(attributes.datefin_txt,false)+'</p>').appendTo(details);
     }
 	jQuery('<p class=\"collection-name\">'+attributes.nom+'</p>').appendTo(details);
 	var locality = jQuery('<p  class=\"collection-locality\"></p>').appendTo(details);
@@ -2020,7 +2020,7 @@ runSearch = function(forCollections){
   	});
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	if(forCollections){
-		properties = ['collection_id','datedebut','datefin','geom','nom','image_de_environment','image_de_la_fleur','flower_id']
+		properties = ['collection_id','datedebut_txt','datefin_txt','geom','nom','image_de_environment','image_de_la_fleur','flower_id']
 		feature = 'spipoll_collections_cache_view';
   	} else {
   		feature = 'spipoll_insects_cache_view';
