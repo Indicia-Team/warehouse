@@ -2650,7 +2650,8 @@ jQuery.ajax({
 						jQuery('input[name=location\\:centroid_geom]').val(locData[0].centroid_geom);
 						jQuery('#imp-sref').change();
 						var parts=locData[0].centroid_sref.split(' ');
-						jQuery('input[name=place\\:lat]').val(parts[0]);
+						var refx = parts[0].split(',');
+						jQuery('input[name=place\\:lat]').val(refx[0]);
 						jQuery('input[name=place\\:long]').val(parts[1]);
 
 						$('#cc-1').foldPanel();
