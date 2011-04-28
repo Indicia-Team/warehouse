@@ -510,7 +510,8 @@ jQuery('#".$id."').click(function(){
     $defAttrOptions ['validation'] = array('required');
     $checkOptions = $defNRAttrOptions;
     $checkOptions['lookUpListCtrl'] = 'checkbox_group';
-	$language = iform_lang_iso_639_2($args['language']);
+    unset($checkOptions['booleanCtrl']); // this will default to single checkbox
+    $language = iform_lang_iso_639_2($args['language']);
     global $indicia_templates;
 	$indicia_templates['sref_textbox_latlong'] = '<div class="latLongDiv"><label for="{idLat}">{labelLat}:</label>'.
         '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{default}" /></div>' .
@@ -1919,6 +1920,7 @@ jQuery('.mod-button').click(function() {
     	    'extraParams'=>$extraParams,
 			'suffixTemplate'=>'nosuffix'
 	);
+	$checkOptions['labelClass']='checkbox-label';
  	$r .= '
 <div id="cc-4" class="poll-section">
   <div id="cc-4-title" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-all poll-section-title">'.lang::get('LANG_Photos').'
@@ -1988,8 +1990,7 @@ jQuery('.mod-button').click(function() {
 	    ))
 	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],
  			$defNRAttrOptions))
- 	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],
- 			$defNRAttrOptions)).'
+ 	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],$checkOptions)).'
     </form>
     <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Insect').'</span>
     <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all delete-button">'.lang::get('LANG_Delete_Insect').'</span>
