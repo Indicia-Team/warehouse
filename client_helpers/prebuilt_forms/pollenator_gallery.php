@@ -375,8 +375,9 @@ class iform_pollenator_gallery {
     			'IForm n'.$nid.' create insect comment',
     			'IForm n'.$nid.' create collection comment',
     			'IForm n'.$nid.' save filter',
-    			'IForm n'.$nid.' add preferred collection'
-    			);
+    			'IForm n'.$nid.' add preferred collection',
+    			'IForm n'.$nid.' edit geolocation'
+    );
   }
   
 /**
@@ -516,7 +517,8 @@ class iform_pollenator_gallery {
 	$options = iform_map_get_map_options($args, $readAuth);
 	$olOptions = iform_map_get_ol_options($args);
     // The maps internal projection will be left at its default of 900913.
-	
+    // Switch to degrees, minutes, seconds for lat long.
+    $options['latLongFormat'] = 'DMS';
     $options['initialFeatureWkt'] = null;
     $options['proxy'] = '';
     $options['suffixTemplate'] = 'nosuffix';
@@ -719,7 +721,30 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     data_entry_helper::$onload_javascript = $tempScript;
     $r .= '</div>
     </div>
-	<div id="collection-insects">
+	<div id="fc-new-location" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
+		<form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
+    		<input type="hidden"                       name="website_id" value="'.$args['website_id'].'" />
+    		<input type="hidden"                       name="survey_id" value="'.$args['survey_id'].'" />
+    		<input type="hidden" id="imp-sref"         name="location:centroid_sref"  value="" />
+    		<input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
+		 	<input type="hidden"                       name="location:name" value="" />
+    		<input type="hidden" id="location-id"      name="location:id" value=""/>
+    	'.data_entry_helper::sref_textbox(array(
+		        'srefField'=>'location:centroid_sref',
+        		'systemfield'=>'location:centroid_sref_system',
+        		'fieldname'=>'location:centroid_sref',
+        		'splitLatLong'=>true,
+		        'labelLat' => lang::get('Latitude'),
+    			'fieldnameLat' => 'place:lat',
+        		'labelLong' => lang::get('Longitude'),
+    			'fieldnameLong' => 'place:long',
+    			'idLat'=>'imp-sref-lat',
+        		'idLong'=>'imp-sref-long',
+    			'suffixTemplate'=>'nosuffix')).'
+       		<input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
+    	</form>
+    </div>
+    <div id="collection-insects">
     </div>
 	<div id="fc-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
 	    <div id="fc-new-comment-button" class="ui-state-default ui-corner-all new-comment-button">'.lang::get('LANG_New_Comment').'</div>
@@ -1102,7 +1127,9 @@ loadCollection = function(id, index){
 	jQuery('#fc-add-preferred').attr('smpID', id);
 	collection_preferred_object.collection_id = id;
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
-    jQuery('#focus-occurrence,#filter,#fc-next-button,#fc-prev-button').hide();
+	jQuery('#fc-new-comment').removeClass('ui-accordion-content-active');
+	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? ".addClass" : ".removeClass")."('ui-accordion-content-active');
+	jQuery('#focus-occurrence,#filter,#fc-next-button,#fc-prev-button').hide();
     jQuery('#focus-collection').show();
     if(index != null){
     	if(index < (searchResults.features.length-1) )
@@ -1189,7 +1216,9 @@ loadCollection = function(id, index){
 						case ".$args['uid_attr_id'].":
 							collection_preferred_object.user_id = attrdata[i].value
 			       		    jQuery('#collection-user-link').attr('href', '".url('node/'.$node->nid)."?user_id='+attrdata[i].value);
-							break;
+							if(attrdata[i].value == ".$user->uid.") // user can edit geolocation of own collections.
+								jQuery('#fc-new-location').addClass('ui-accordion-content-active');
+			       		    break;
     }}}}}));
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" +id+
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -1197,7 +1226,7 @@ loadCollection = function(id, index){
    		if(!(collectionData instanceof Array)){
    			alertIndiciaError(collectionData);
    		} else if (collectionData.length>0) {
-   			if(collectionData[0].parent_id != null {
+   			if(collectionData[0].parent_id != null) {
    				alertIndiciaError({error: \"".lang::get('LANG_Bad_Collection_ID')."\"});
    				return;
    			}
@@ -1216,7 +1245,15 @@ loadCollection = function(id, index){
    				if(!(locationData instanceof Array)){
    					alertIndiciaError(locationData);
    				} else if (locationData.length>0) {
-					loadImage('location_image', 'location_id', locationData[0].id, '#environment-image', ".$args['Environment_Image_Ratio'].", function(imageRecord){collection_preferred_object.environment_image_path = imageRecord.path}, 'med-', false);
+				    jQuery('#location-id').val(locationData[0].id);
+	    			jQuery('[name=location\\:name]').val(locationData[0].name);
+				    jQuery('#imp-sref').val(locationData[0].centroid_sref);
+					jQuery('#imp-geom').val(locationData[0].centroid_geom);
+					var parts=locationData[0].centroid_sref.split(' ');
+					var refx = parts[0].split(',');
+					jQuery('#imp-sref-lat').val(refx[0]);
+					jQuery('#imp-sref-long').val(parts[1]);
+				    loadImage('location_image', 'location_id', locationData[0].id, '#environment-image', ".$args['Environment_Image_Ratio'].", function(imageRecord){collection_preferred_object.environment_image_path = imageRecord.path}, 'med-', false);
 					var parser = new OpenLayers.Format.WKT();
 					var feature = parser.read(locationData[0].centroid_geom);
 					locationLayer.addFeatures([feature]);
@@ -2364,7 +2401,19 @@ jQuery('#fc-new-comment-form').ajaxForm({
 		}
 	} 
 });
-
+jQuery('#fc-new-location-form').ajaxForm({ 
+	async: false,
+	dataType:  'json', 
+	beforeSubmit:   function(data, obj, options){
+		if (!jQuery('form#fc-new-location-form').valid()) { return false; }
+		return true;
+	},
+	success:   function(data){
+		if(data.error != undefined){
+			alert(data.error);
+		}
+	} 
+});
 loadSampleAttributes = function(keyValue){
     jQuery('#fo-insect-start-time,#fo-insect-end-time,#fo-insect-sky,#fo-insect-temp,#fo-insect-wind,#fo-insect-shade').empty();
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
@@ -2689,7 +2738,7 @@ loadInsectAddnInfo = function(keyValue, collectionIndex){
    				if(!(smpData instanceof Array)){
    					alertIndiciaError(smpData);
    				} else if (smpData.length > 0) {
-   					if(smpData[0].parent_id == null {
+   					if(smpData[0].parent_id == null) {
    						alertIndiciaError({error: \"".lang::get('LANG_Bad_Insect_ID')."\"});
    						return;
 		   			}
@@ -2720,7 +2769,7 @@ loadFlowerAddnInfo = function(keyValue, collectionIndex){
    				if(!(collection instanceof Array)){
    					alertIndiciaError(collection);
    				} else if (collection.length > 0) {
-   					if(collection[0].parent_id != null {
+   					if(collection[0].parent_id != null) {
    						alertIndiciaError({error: \"".lang::get('LANG_Bad_Flower_ID')."\"});
    						return;
 		   			}
