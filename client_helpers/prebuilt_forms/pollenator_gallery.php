@@ -1974,7 +1974,17 @@ runSearch = function(forCollections){
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LESS_THAN_OR_EQUAL_TO, property: 'datedebut', value: end_date}));
  	
   	var flower = jQuery('select[name=flower\\:taxa_taxon_list_id]').val();
-  	if(flower != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon_ids', value: '*|'+flower+'|*'}));
+  	if(flower != '') {
+  		var flower_taxon_filter = new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'flower_taxon_ids', value: '*|'+flower+'|*'});
+  		if(jQuery('select[name=flower\\:taxa_taxon_list_id] option:selected').text().substring(0,13) == 'Taxon inconnu'){
+  			ORgroup = [];
+  			ORgroup.push(flower_taxon_filter);
+  			ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: 'status_fleur_code', value: 'X'}));
+  			filters.push(combineOR(ORgroup));
+  		} else { 
+  			filters.push(flower_taxon_filter);
+  		}
+  	}
   	flower = jQuery('[name=flower\\:taxon_extra_info]').val();
   	if(flower != '' && flower != '".lang::get('LANG_More_Precise')."')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'taxons_fleur_precise', value: '*'+flower+'*' }));
@@ -1991,7 +2001,17 @@ runSearch = function(forCollections){
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
 
   	var insect = jQuery('select[name=insect\\:taxa_taxon_list_id]').val();
-  	if(insect != '') filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_taxon_ids', value: '*|'+insect+'|*'}));
+  	if(insect != '') {
+  		var insect_taxon_filter = new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'insect_taxon_ids', value: '*|'+insect+'|*'});
+  		if(jQuery('select[name=insect\\:taxa_taxon_list_id] option:selected').text().substring(0,13) == 'Taxon inconnu'){
+  			ORgroup = [];
+  			ORgroup.push(insect_taxon_filter);
+  			ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'status_insecte_code', value: '*X*'}));
+  			filters.push(combineOR(ORgroup));
+  		} else { 
+  			filters.push(insect_taxon_filter);
+  		}
+  	}
   	insect = jQuery('[name=insect\\:taxon_extra_info]').val();
   	if(insect != '' && insect != '".lang::get('LANG_More_Precise')."')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'taxons_insecte_precise', value: '*'+insect+'*'}));
