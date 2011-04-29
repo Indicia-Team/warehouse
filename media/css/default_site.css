@@ -392,3 +392,7 @@ tr.odd {
   zoom:1;
   *display:inline;
 }
+
+.jqplot-table-legend {
+  width: auto;
+}
