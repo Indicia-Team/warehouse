@@ -71,43 +71,52 @@ class iform_ad_hoc_cetaceans {
         ),
         array(
           'name'=>'survey_id',
-          'caption'=>'Survey ID',
-          'description'=>'The Indicia ID of the survey that data will be posted into.',
-          'type'=>'int'
+          'caption'=>'Survey',
+          'description'=>'The survey that data will be posted into.',
+          'type'=>'select',
+          'table'=>'survey',
+          'captionField'=>'title',
+          'valueField'=>'id'
         ),
         array(
-          'name'=>'species_list_id',
-          'caption'=>'Species Checklist ID',
-          'description'=>'The Indicia ID of the species checklist that can be recorded against.',
-          'type'=>'int'
+          'fieldname'=>'species_list_id',
+          'label'=>'Species List',
+          'helpText'=>'The species list that species can be selected from.',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title'
         ),
 	      array(
-	          'name'=>'platform_attr_id',
-	          'caption'=>'Sighting Platform (Boat or Shore) Attribute ID',
-	          'description'=>'Indicia ID for the sample attribute that records the sighting platform.',
-	          'type'=>'smpAttr',
-	          'group'=>'Sample Attributes'
+          'name'=>'platform_attr_id',
+          'caption'=>'Sighting Platform (Boat or Shore) Attribute',
+          'description'=>'Indicia ID for the sample attribute that records the sighting platform.',
+          'type'=>'select',
+          'table'=>'sample_attribute',
+          'valueField'=>'id',
+          'captionField'=>'caption',
+          'group'=>'Sample Attributes'
 	      ),
 	      array(
-	          'name'=>'platform_termlist_id',
-	          'caption'=>'Sighting Platform (Boat or Shore) Termlist ID',
-	          'description'=>'Indicia ID for the termlist that contains possible values for the sighting platform.',
-	          'type'=>'int',
-	          'group'=>'Sample Attributes'
+          'name'=>'platform_termlist_id',
+          'caption'=>'Sighting Platform (Boat or Shore) Termlist ID',
+          'description'=>'Indicia ID for the termlist that contains possible values for the sighting platform.',
+          'type'=>'int',
+          'group'=>'Sample Attributes'
 	      ),
 	      array(
-            'name'=>'platform_mapped_term_id',
-            'caption'=>'Shore Term ID',
-            'description'=>'ID of the Shore term. This is the option that the user is allowed to click on the map for.',
-            'type'=>'int',
-            'group'=>'Sample Attributes'
+          'name'=>'platform_mapped_term_id',
+          'caption'=>'Shore Term ID',
+          'description'=>'ID of the Shore term. This is the option that the user is allowed to click on the map for.',
+          'type'=>'int',
+          'group'=>'Sample Attributes'
         ),
 	      array(
-	          'name'=>'abundance_attr_id',
-	          'caption'=>'Abundance Attribute ID',
-	          'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
-	          'type'=>'occAttr',
-	          'group'=>'Occurrence Attributes'
+          'name'=>'abundance_attr_id',
+          'caption'=>'Abundance Attribute ID',
+          'description'=>'Indicia ID for the occurrence attribute that records the approximate abundance.',
+          'type'=>'occAttr',
+          'group'=>'Occurrence Attributes'
 	      ),
 	      array(
           'name'=>'first_name_attr_id',
