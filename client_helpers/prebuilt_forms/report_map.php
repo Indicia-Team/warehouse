@@ -90,14 +90,16 @@ class iform_report_map {
               'the contents of this layer filtered by the report parameters, rather than build a layer '.
               'from the report data.',
           'type' => 'text_input',
-          'required' => false
+          'required' => false,
+          'group' => 'WMS Mapping'
         ),
         array(
           'name' => 'geoserver_layer_style',
           'caption' => 'GeoServer Layer Style',
           'description' => 'Optional name of the SLD file available on GeoServer which is to be applied to the GeoServer layer.',
           'type' => 'text_input',
-          'required' => false
+          'required' => false,
+          'group' => 'WMS Mapping'
         ),
         array(
           'name' => 'cql_template',
@@ -107,7 +109,8 @@ class iform_report_map {
               '<em>map_occurrences_by_survey</em> then you can set the geoserver_layer to the indicia:detail_occurrences '.
               'layer and set this to <em>INTERSECTS(geom, #searchArea#) AND survey_id=#survey#</em>.',
           'type' => 'textarea',
-          'required' => false
+          'required' => false,
+          'group' => 'WMS Mapping'
         )
       )
     );
