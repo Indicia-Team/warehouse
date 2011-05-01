@@ -553,6 +553,19 @@ class report_helper extends helper_base {
   * <li><b>paramsFormButtonCaption</b>
   * Caption of the button to run the report on the report parameters form. Defaults to Run Report. This caption
   * is localised when appropriate.
+  * <li><b>geoserverLayer</b>
+  * For improved mapping performance, specify a layer on GeoServer which
+  * has the same attributes and output as the report file. Then the report map can output
+  * the contents of this layer filtered by the report parameters, rather than build a layer
+  * from the report data.</li>
+  * <li><b>geoserverLayerStyle</b>
+  * Optional name of the SLD file available on GeoServer which is to be applied to the GeoServer layer.
+  * </li>
+  * <li><b>cqlTemplate</b>
+  * Use with the geoserver_layer to provide a template for the CQL to filter the layer
+  * according to the parameters of the report. For example, if you are using the report called
+  * <em>map_occurrences_by_survey</em> then you can set the geoserver_layer to the indicia:detail_occurrences
+  * layer and set this to <em>INTERSECTS(geom, #searchArea#) AND survey_id=#survey#</em>.</li>
   * </ul>
    */
   public static function report_map($options) {
@@ -614,14 +627,14 @@ function addDistPoint(features, record, wktCol) {
   delete record[wktCol];
   features.push(new OpenLayers.Feature.Vector(geom, record));
 }\n\n";
-  report_helper::$javascript.= "
-mapInitialisationHooks.push(function(div) {
-  var layer = new OpenLayers.Layer.Vector('Report output');
+  report_helper::$javascript.= "mapInitialisationHooks.push(function(div) {\n";
+  if (empty($options['geoserverLayer'])) {
+    report_helper::$javascript.= "  var layer = new OpenLayers.Layer.Vector('Report output');
   features = [];\n";
-  foreach ($records as $record) {
-    report_helper::$javascript.= "  addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
-  }
-  report_helper::$javascript.= "  layer.addFeatures(features);
+    foreach ($records as $record) {
+      report_helper::$javascript.= "  addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
+    }
+    report_helper::$javascript.= "  layer.addFeatures(features);
   div.map.addLayer(layer);
   if (layer.getDataExtent()!==null)
     div.map.zoomToExtent(layer.getDataExtent());
@@ -637,9 +650,21 @@ mapInitialisationHooks.push(function(div) {
   });
   div.map.addControl(selectControl);
   selectControl.activate();
-  */
-  
-});\n";
+  */\n";
+  } else {
+    $replacements = array();
+    foreach(array_keys($currentParamValues) as $key)
+      $replacements[] = "#$key#";
+    $options['cqlTemplate'] = str_replace($replacements, $currentParamValues, $options['cqlTemplate']);
+    $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
+    $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
+    map_helper::$javascript .= "  var reportMapLayer = new OpenLayers.Layer.WMS('Report output',
+      div.settings.indiciaGeoSvc + 'wms', { layers: '".$options['geoserverLayer']."', transparent: true,
+          cql_Filter: '".$options['cqlTemplate']."'$style},
+      {singleTile: true, isBaseLayer: false, sphericalMercator: true});
+  div.map.addLayer(reportMapLayer);";
+    }
+    report_helper::$javascript.= "});\n";
     return $r;
   }
   

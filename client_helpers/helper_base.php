@@ -498,7 +498,17 @@ $.fn.indiciaMapPanel.defaults.toolbarDiv='map-tools';
 mapInitialisationHooks.push(function(div) {
   // keep a global reference to the map, so we can get it later when Run Report is clicked
   mapDiv = div;
-});
+  var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
+        {fillOpacity: 0.05},
+        OpenLayers.Feature.Vector.style['default']));
+  mapDiv.map.editLayer.styleMap = styleMap;\n";
+      if (isset($_POST[$ctrlOptions['fieldname']])) {
+        data_entry_helper::$javascript .= "
+  var selection = new OpenLayers.Feature.Vector(
+      OpenLayers.Geometry.fromWKT('".$_POST[$ctrlOptions['fieldname']]."'));
+  mapDiv.map.editLayer.addFeatures([selection]);\n";
+      }
+      data_entry_helper::$javascript .= "});
 $('#run-report').click(function(evt) {
   var geoms=[], featureClass='', geom;
   if (mapDiv.map.editLayer.features.length===0) {
@@ -523,15 +533,14 @@ $('#run-report').click(function(evt) {
     geom = new OpenLayers.Geometry.MultiPoint(geoms);
   }
   $('.hidden-wkt').val(geom.toString());
-});
-var add_map_tools = function(opts) {\n";
+});\n";
+      data_entry_helper::$javascript .= "var add_map_tools = function(opts) {\n";
       foreach ($tools as $tool) {
         data_entry_helper::$javascript .= "opts.standardControls.push('draw$tool');\n";
       }
       data_entry_helper::$javascript .= "
 }
-mapSettingsHooks.push(add_map_tools)
-";
+mapSettingsHooks.push(add_map_tools)\n";
     }
     return $r;
   }
