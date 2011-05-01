@@ -55,6 +55,19 @@ function iform_report_get_report_parameters() {
       'type' => 'textarea',
       'required' => false
     ), array(
+      'name' => 'output',
+      'caption' => 'Output Mode',
+      'description' => 'Select what combination of the params form and report output will be output. This can be used to develop a single page '.
+          'with several reports linked to the same parameters form, e.g. using the Drupal panels module.',
+      'type' => 'select',
+      'required' => true,
+      'options' => array(
+        'default'=>'Include a parameters form and output',
+        'form'=>'Parameters form only - the output will be displayed elsewhere.',
+        'output'=>'Output only - the params form will be output elsewhere.',
+      ),
+      'default' => 'default'
+    ), array(
       'name' => 'columns_config',
       'caption' => 'Columns Configuration JSON',
       'description' => 'JSON that describes the columns configuration parameter sent to the report grid component.',
@@ -73,18 +86,6 @@ function iform_report_get_report_parameters() {
       'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
       'type' => 'string',
       'required' => false
-    ), array(
-      'name' => 'output',
-      'caption' => 'Output Mode',
-      'description' => 'Select what combination of the params form and report output will be output. This can be used to develop a single page '.
-          'with several reports linked to the same parameters form, e.g. using the Drupal panels module.',
-      'type' => 'select',
-      'required' => true,
-      'options' => array(
-        'default'=>'Include a parameters form and output',
-        'form'=>'Parameters form only - the output will be displayed elsewhere.',
-        'output'=>'Output only - the params form will be output elsewhere.',
-      )
     )
   );
 }
