@@ -81,6 +81,33 @@ class iform_report_map {
             'after'=>'Include the legend after the map.',
           ),
           'default'=>'after'
+        ),
+        array(
+          'name' => 'geoserver_layer',
+          'caption' => 'GeoServer Layer',
+          'description' => 'For improved mapping performance, specify a layer on GeoServer which '.
+              'has the same attributes and output as the report file. Then the report map can output '.
+              'the contents of this layer filtered by the report parameters, rather than build a layer '.
+              'from the report data.',
+          'type' => 'text_input',
+          'required' => false
+        ),
+        array(
+          'name' => 'geoserver_layer_style',
+          'caption' => 'GeoServer Layer Style',
+          'description' => 'Optional name of the SLD file available on GeoServer which is to be applied to the GeoServer layer.',
+          'type' => 'text_input',
+          'required' => false
+        ),
+        array(
+          'name' => 'cql_template',
+          'caption' => 'CQL Filter Template',
+          'description' => 'Use with the geoserver_layer to provide a template for the CQL to filter the layer '.
+              'according to the parameters of the report. For example, if you are using the report called '.
+              '<em>map_occurrences_by_survey</em> then you can set the geoserver_layer to the indicia:detail_occurrences '.
+              'layer and set this to <em>INTERSECTS(geom, #searchArea#) AND survey_id=#survey#</em>.',
+          'type' => 'textarea',
+          'required' => false
         )
       )
     );
@@ -99,11 +126,16 @@ class iform_report_map {
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     $r = '<div class="ui-helper-clearfix">';
+    $reportOptions['geoserverLayer'] = $args['geoserver_layer'];
+    $reportOptions['geoserverLayerStyle'] = $args['geoserver_layer_style'];
+    $reportOptions['cqlTemplate'] = $args['cql_template'];
     $r .= '<br/>'.report_helper::report_map($reportOptions);
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
-    // This is not a map used for input
+    // This is used for drawing, so need an editlayer, but not used for input
     $options['editLayer'] = true;
+    $options['editLayerInSwitcher'] = true;
+    $options['clickForSpatialRef'] = false;
     if ($args['layer_picker']!='none') {
       $picker = array(
         'id'=>'map-layer-picker',
