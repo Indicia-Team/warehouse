@@ -77,6 +77,15 @@ class iform_report_grid {
           'default' => 20,
           'required' => true,
           'group'=>'Report Settings'
+        ),
+        array(
+          'name' => 'download_link',
+          'caption' => 'Download link',
+          'description' => 'Should a link be made available to download the report content as CSV?',
+          'type' => 'checkbox',
+          'default' => 1,
+          'required' => false,
+          'group'=>'Report Settings'
         )
       )
     );
@@ -94,8 +103,9 @@ class iform_report_grid {
     require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
-    // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams 
-    $r .= '<br/>'.report_helper::report_download_link($reportOptions);
+    // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams
+    if (!isset($args['download_link']) || $args['download_link']===1)
+      $r .= '<br/>'.report_helper::report_download_link($reportOptions);
     // now the grid
     $r .= '<br/>'.report_helper::report_grid($reportOptions);
     return $r;
