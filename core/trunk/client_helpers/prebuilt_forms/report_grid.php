@@ -53,13 +53,21 @@ class iform_report_grid {
       iform_report_get_report_parameters(),
       array(
         array(
+          'name' => 'columns_config',
+          'caption' => 'Columns Configuration JSON',
+          'description' => 'JSON that describes the columns configuration parameter sent to the report grid component.',
+          'type' => 'textarea',
+          'required' => false,
+          'group'=>'Report Settings'
+        ), array(
           'name' => 'gallery_col_count',
           'caption' => 'Gallery Column Count',
-          'description' => ' If set to a value greater than one, then each grid row will contain more than one record of data from the database, allowing '.
+          'description' => 'If set to a value greater than one, then each grid row will contain more than one record of data from the database, allowing '.
               ' a gallery style view to be built.',
           'type' => 'int',
           'required' => false,
-          'default' => 1
+          'default' => 1,
+          'group'=>'Report Settings'
         ),
         array(
           'name' => 'items_per_page',
@@ -67,7 +75,8 @@ class iform_report_grid {
           'description' => 'Maximum number of rows shown on each page of the table',
           'type' => 'int',
           'default' => 20,
-          'required' => true
+          'required' => true,
+          'group'=>'Report Settings'
         )
       )
     );

@@ -36,7 +36,8 @@ function iform_report_get_report_parameters() {
       'name'=>'report_name',
       'caption'=>'Report Name',
       'description'=>'The name of the report file to load into the verification grid, excluding the .xml suffix.',
-      'type'=>'string'
+      'type'=>'string',
+      'group'=>'Report Settings'
     ), array(
       'name' => 'param_presets',
       'caption' => 'Preset Parameter Values',
@@ -44,7 +45,8 @@ function iform_report_get_report_parameters() {
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Preset Parameter Values can not be overridden by the user.',
       'type' => 'textarea',
-      'required' => false
+      'required' => false,
+      'group'=>'Report Settings'
     ), array(
       'name' => 'param_defaults',
       'caption' => 'Default Parameter Values',
@@ -53,7 +55,8 @@ function iform_report_get_report_parameters() {
           'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Unlike preset parameter values, parameters referred '.
           'to by default parameter values are displayed in the parameters form and can therefore be changed by the user.',
       'type' => 'textarea',
-      'required' => false
+      'required' => false,
+      'group'=>'Report Settings'
     ), array(
       'name' => 'output',
       'caption' => 'Output Mode',
@@ -66,26 +69,23 @@ function iform_report_get_report_parameters() {
         'form'=>'Parameters form only - the output will be displayed elsewhere.',
         'output'=>'Output only - the params form will be output elsewhere.',
       ),
-      'default' => 'default'
-    ), array(
-      'name' => 'columns_config',
-      'caption' => 'Columns Configuration JSON',
-      'description' => 'JSON that describes the columns configuration parameter sent to the report grid component.',
-      'type' => 'textarea',
-      'required' => false
+      'default' => 'default',
+      'group'=>'Report Settings'
     ), array(
       'name' => 'refresh_timer',
       'caption' => 'Automatic reload seconds',
       'description' => 'Set this value to the number of seconds you want to elapse before the report will be automatically reloaded, useful for '.
       'displaying live data updates at BioBlitzes. Combine this with Page to reload to define a sequence of pages that load in turn.',
       'type' => 'int',
-      'required' => false
+      'required' => false,
+      'group'=>'Page Refreshing'
     ), array(
       'name' => 'load_on_refresh',
       'caption' => 'Page to reload',
       'description' => 'Provide the full URL of a page to reload after the number of seconds indicated above.',
       'type' => 'string',
-      'required' => false
+      'required' => false,
+      'group'=>'Page Refreshing'
     )
   );
 }
