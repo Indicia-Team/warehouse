@@ -66,7 +66,8 @@ class iform_report_map {
             'before'=>'Include the layer picker before the map.',
             'after'=>'Include the layer picker after the map.',
           ),
-          'default'=>'none'
+          'default'=>'none',
+          'group'=>'Report Map Settings'
         ),
         array(
           'name' => 'legend',
@@ -80,7 +81,8 @@ class iform_report_map {
             'before'=>'Include the legend before the map.',
             'after'=>'Include the legend after the map.',
           ),
-          'default'=>'after'
+          'default'=>'after',
+          'group'=>'Report Map Settings'
         ),
         array(
           'name' => 'geoserver_layer',
