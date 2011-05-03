@@ -230,7 +230,7 @@ class Indicia_Controller extends Template_Controller {
     // Get this model's values. If the structure needs a specified field prefix then use it, otherwise it will default to the model name.    
     $r = $this->model->getPrefixedValuesArray(
         array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : null
-    );    
+    );
     if (array_key_exists('superModels', $struct)) {
       foreach ($struct['superModels'] as $super=>$content) {
         // Merge the supermodel's values into the main array. Use a specified fieldPrefix if there is one.         

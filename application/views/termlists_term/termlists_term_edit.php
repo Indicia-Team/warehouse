@@ -37,7 +37,6 @@ $term_id=html::initial_value($values, 'termlists_term:term_id');
 <input type="hidden" name="termlists_term:preferred" value="t" />
 <ol>
 <li>
-<input type="hidden" name="term_id" id="term_id" value="<?php echo $term_id; ?>" />
 <label for="term">Term Name</label>
 <input id="term" name="term:term" value="<?php echo html::initial_value($values, 'term:term'); ?>"/>
 <?php echo html::error_message($model->getError('term:term')); ?>
@@ -84,13 +83,3 @@ echo html::form_buttons(html::initial_value($values, 'termlists_term:id')!=null)
 echo html::error_message($model->getError('deleted')); 
 ?>
 </form>
-
-<?php if (html::initial_value($values, 'termlists_term:id') && $values['table'] != null) { ?>
-  <br />
-  <h2> Child Terms </h2>
-  <?php echo $values['table']; ?>
-<form class="cmxform" action="<?php echo url::site(); ?>termlists_term/create/<?php echo html::initial_value($values, 'termlists_term:termlist_id') ?>" method="post">
-  <input type="hidden" name="termlists_term:parent_id" value=<?php echo html::initial_value($values, 'termlists_term:id') ?> />
-  <input type="submit" value="New Child Term" class="ui-corner-all ui-state-default button" />
-  </form>
-<?php } ?>

@@ -21,9 +21,10 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+echo $grid;
+echo $upload_csv_form;
+
 ?>
-<div class="occurrence">
-<?php echo $table ?>
-<br/>
-<?php echo $upload_csv_form ?>
-</div>
+
+
+

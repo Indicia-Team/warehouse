@@ -393,6 +393,12 @@ tr.odd {
   *display:inline;
 }
 
+.linear-form * {
+  vertical-align: middle;
+  width: auto;
+  margin-left: 0;
+}
+
 .jqplot-table-legend {
   width: auto;
 }

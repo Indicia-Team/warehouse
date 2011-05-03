@@ -39,59 +39,42 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * $controllerpath = path the controller from the controllers folder
    * $viewname and $controllerpath can be ommitted if the names are all the same.
    */
-  public function __construct($modelname, $gridmodelname=NULL, $viewname=NULL, $controllerpath=NULL, $gridId=NULL) {
+  public function __construct($modelname, $viewname=NULL, $controllerpath=NULL, $gridId=NULL) {
     $this->model=ORM::factory($modelname);
-    $this->gridmodelname=is_null($gridmodelname) ? $modelname : $gridmodelname;
+    $this->modelname = $modelname;
     $this->viewname=is_null($viewname) ? $modelname : $viewname;
     $this->controllerpath=is_null($controllerpath) ? $modelname : $controllerpath;
     $this->gridId = $gridId;
-    $this->pageNoUriSegment = 3;
-    $this->base_filter = array('deleted' => 'f');
+    $this->base_filter = array();
     $this->auth_filter = null;
     $this->pagetitle = "Abstract gridview class - override this title!";
 
     parent::__construct();
-    $this->get_auth();
   }
 
   /**
    * This is the main controller action method for the index page of the grid.
    */
-  public function page($page_no, $filter=null) {
-    $this->prepare_grid_view();
+  public function index() {
+    $this->view = new View($this->viewname);
     $this->add_upload_csv_form();
-    
-    $grid =  Gridview_Controller::factory($this->gridmodel,
-        $page_no,
-        $this->pageNoUriSegment,
-        $this->gridId);
-    $grid->base_filter = $this->base_filter;
-    $grid->auth_filter = $this->auth_filter;
-    $grid->columns = array_intersect_key($this->columns, $grid->columns);
-    $grid->actionColumns = $this->get_action_columns();
-    if (isset($this->fixedSort)) {
-      $grid->fixedSort=$this->fixedSort;
-      $grid->fixedSortDir=$this->fixedSortDir;
-    }
-
-    // Add table to view
-    $this->view->table = $grid->display(true);
+    $grid = new View('gridview');
+    $grid->source = $this->modelname;
+    $grid->id = $this->modelname;
+    $grid->columns = $this->columns;
+    $filter = $this->base_filter;
+    if (isset($this->auth_filter['field']))
+      $filter[$this->auth_filter['field']] = $this->auth_filter['values'];
+    $grid->filter = $filter;
+    // Add grid to view
+    $this->view->grid = $grid->render();
 
     // Templating
     $this->template->title = $this->pagetitle;
     $this->template->content = $this->view;
     
     // Setup breadcrumbs
-    $this->page_breadcrumbs[] = html::anchor($this->gridmodelname, $this->pagetitle);
-  }
-
-  protected function prepare_grid_view() {
-    $this->view = new View($this->viewname);
-    $this->gridmodel = ORM::factory($this->gridmodelname);
-    if (!$this->columns) {
-      // If the controller class has not defined the list of columns, use the entire list as a default
-      $this->columns = $this->gridmodel->table_columns;
-    }
+    $this->page_breadcrumbs[] = html::anchor($this->modelname, $this->pagetitle);    
   }
 
   /**
@@ -99,52 +82,52 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
    * override this in controllers to specify a different set of actions.
    */
   protected function get_action_columns() {
-    return array('edit' => $this->controllerpath."/edit/#id#");
-  }
-  
-  /**
-   * Override to control the visibility of each action.
-   * @param Array $row Row data in an associative array.
-   * @param string $actionName Name of the action to check for visibility in this row.
-   */
-  protected function get_action_visibility($row, $actionName) {
-    return true;
-  }
-  
-
-  /**
-   * Method to retrieve pages for the index grid of taxa_taxon_list entries from an AJAX
-   * pagination call.
-   */
-  public function page_gv($page_no, $filter=null) {
-    $this->prepare_grid_view();
-    $this->auto_render = false;
-    $grid = Gridview_Controller::factory($this->gridmodel, $page_no, $this->pageNoUriSegment, $this->gridId);
-    $grid->base_filter = $this->base_filter;
-    $grid->auth_filter = $this->auth_filter;
-    $grid->columns = array_intersect_key($this->columns, $grid->columns);
-    $grid->actionColumns = $this->get_action_columns();
-    return $grid->display();
+    return array(
+      array(
+        'caption' => 'edit',
+        'url'=>$this->controllerpath."/edit/{id}"
+      )
+    );
   }
 
   /**
-   * Retrieve the list of websites the user has access to. The list is then stored in
-   * $this->gen_auth_filter. Also checks if the user is core admin.
+   * Sets the list of websites the user has access to according to the requested role.
    */
-  protected function get_auth() {
+  protected function set_website_access($level='admin') {
     // If not logged in as a Core admin, restrict access to available websites.
-    if(!$this->auth->logged_in('CoreAdmin')){
-      $site_role = (new Site_role_Model('Admin'));
-      $websites=ORM::factory('users_website')->where(
-      array('user_id' => $_SESSION['auth_user']->id,
-              'site_role_id' => $site_role->id))->find_all();
-      $website_id_values = array();
-      foreach($websites as $website)
-        $website_id_values[] = $website->website_id;
-      $website_id_values[] = null;
-      $this->gen_auth_filter = array('field' => 'website_id', 'values' => $website_id_values);
+    if ($this->auth->logged_in('CoreAdmin')) 
+      $this->auth_filter = null;
+    else {
+      $ids = $this->get_allowed_website_id_list($level);
+      $this->auth_filter = array('field' => 'website_id', 'values' => $ids);
     }
-    else $this->gen_auth_filter = null;    
+  }
+  
+  /**
+   * Gets a list of the website IDs a user can access at a certain level.
+   */
+  protected function get_allowed_website_id_list($level, $includeNull=true) {
+    if ($this->auth->logged_in('CoreAdmin'))
+      return null;
+    else {
+      switch ($level) {
+        case 'admin': $role=1; break;
+        case 'editor': $role=2; break;
+        case 'user': $role=3; break;
+      }
+      $user_websites = ORM::factory('users_website')->where(
+          array('user_id' => $_SESSION['auth_user']->id,
+          'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find_all();
+      $ids = array();
+      foreach ($user_websites as $user_website) {
+        $ids[] = $user_website->website_id;
+      }
+      if ($includeNull) {
+        // include a null to allow through records which have no associated website.
+        $ids[] = null;
+      }
+      return $ids;
+    }
   }
 
   /**

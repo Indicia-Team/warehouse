@@ -20,12 +20,11 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
+ 
+echo $grid;
 ?>
-<div class="termlist">
-<?php echo $table ?>
-<br/>
 <form action="<?php echo url::site().'taxon_relation_type/create'; ?>" method="post">
-<input type="submit" value="New Taxon Relation" />
+<input type="submit" value="New Taxon Relation Type" class="ui-corner-all ui-state-default button" />
 </form>
+<?php echo $upload_csv_form ?>
 </div>

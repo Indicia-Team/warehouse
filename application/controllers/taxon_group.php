@@ -29,7 +29,7 @@
  */
 class Taxon_Group_Controller extends Gridview_Base_Controller {
   public function __construct() {
-    parent::__construct('taxon_group', 'taxon_group', 'taxon_group/index');
+    parent::__construct('taxon_group', 'taxon_group/index');
     $this->columns = array(
       'title'=>'');
     $this->pagetitle = "Taxon Groups";

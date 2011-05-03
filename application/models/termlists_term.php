@@ -32,6 +32,8 @@ class Termlists_term_Model extends Base_Name_Model {
   // TODO: this is a temporary placeholder. Need to think how we can get the term (from the terms table)
   // in as the search field in termlists_terms. Perhaps a view?
   protected $search_field='id';
+  
+  protected $list_id_field = 'termlist_id';
 
   protected $belongs_to = array(
     'term', 'termlist', 'meaning',
@@ -190,7 +192,7 @@ class Termlists_term_Model extends Base_Name_Model {
   public function get_submission_structure()
   {
     return array(
-    	'model'=>$this->object_name,
+      'model'=>$this->object_name,
       'superModels'=>array(
         'meaning'=>array('fk' => 'meaning_id'),
         'term'=>array('fk' => 'term_id')

@@ -223,21 +223,30 @@ class ORM extends ORM_Core {
       }
     }
     $this->set_metadata();
-    if (parent::validate($array, $save)) {
-      return TRUE;
-    }
-    else {
-      // put the trimmed and processed data back into the model
-      $arr = $array->as_array();
-      if (array_key_exists('created_on', $this->table_columns)) {
-        $arr['created_on'] = $this->created_on;
+    try {
+      if (parent::validate($array, $save)) {
+        return TRUE;
       }
-      if (array_key_exists('updated_on', $this->table_columns)) {
-        $arr['updated_on'] = $this->updated_on;
+      else {
+        // put the trimmed and processed data back into the model
+        $arr = $array->as_array();
+        if (array_key_exists('created_on', $this->table_columns)) {
+          $arr['created_on'] = $this->created_on;
+        }
+        if (array_key_exists('updated_on', $this->table_columns)) {
+          $arr['updated_on'] = $this->updated_on;
+        }
+        $this->load_values($arr);
+        $this->errors = $array->errors('form_error_messages');
+        return FALSE;
       }
-      $this->load_values($arr);
-      $this->errors = $array->errors('form_error_messages');
-      return FALSE;
+    } catch (Exception $e) {
+      if (strpos($e->getMessage(), '_unique')!==false) {
+        // duplicate key violation
+        $this->errors = array('You cannot add the record as it would create a duplicate.');
+        return FALSE;
+      } else 
+        throw ($e);
     }
   }
 

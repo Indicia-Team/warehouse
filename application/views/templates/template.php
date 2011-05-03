@@ -57,8 +57,7 @@ echo html::stylesheet(
       'media/js/fancybox/jquery.fancybox.pack.js',
       'media/js/hasharray.js',
       'media/js/superfish.js',
-      'media/js/jquery-ui.custom.min.js',
-      'application/views/gridview.js'
+      'media/js/jquery-ui.custom.min.js'
     ), FALSE);
 ?>
 

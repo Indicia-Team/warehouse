@@ -20,14 +20,11 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
+ 
+ 
+echo $grid;
 ?>
-<div class="taxon_designation">
-<?php echo $table; ?>
-<br/>
-<form action="<?php echo url::site().'taxon_designation/create'; ?>" method="post">
-<input type="submit" value="New taxon_designation" class="ui-corner-all ui-state-default button" />
+<form action="<?php echo url::site().'taxon_designation/create'; ?>">
+<input type="submit" value="New taxon designation" class="ui-corner-all ui-state-default button" />
 </form>
-<br />
 <?php echo $upload_csv_form ?>
-</div>

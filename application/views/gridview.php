@@ -27,40 +27,46 @@
   *  $pagination - the pagination object
   *  $body - gridview_table object.
   */
-?>
-<div class="gvFilter">
-<form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
-<label for="filters" class="auto">Filter for</label>
-<input type="text" name="filters" id="filters" class="filterInput"/>
-<label for="columns" class="auto">in</label> <select name="columns" class="filterSelect" id="columns">
-<?php foreach ($columns as $name => $newname) {
-  if (!$newname) $newname = $name;
-  echo "<option value='".$name."'>".$newname."</option>";
+
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+$colDefs = array();
+foreach ($columns as $fieldname => $title) {
+  if (!isset($orderby)) $orderby=$fieldname;
+  $def = array(
+    'fieldname' => $fieldname,
+    'display' => empty($title) ? str_replace('_', ' ', ucfirst($fieldname)) : $title
+  );
+  if ($fieldname == 'path') 
+    $def['img'] = true;
+  $colDefs[] = $def;
 }
-?>
-</select>
-<input type="submit" value="Filter" class="ui-corner-all ui-state-default"/>
-</form>
-</div>
-<table id="pageGrid-<?php echo $id; ?>" class="ui-widget ui-widget-content">
-<thead class="ui-widget-header">
-<tr class='headingRow'>
-<?php
-$sortClass = $sortable ? 'gvSortable' : '';
-foreach ($columns as $name => $newname) {
-  if (!$newname) $newname = $name;
-  echo "<th class='$sortClass gvCol' id='$name'>".str_replace('_', ' ', ucwords($newname))."</th>";
+$actions = $this->get_action_columns();
+foreach ($actions as &$action) {
+  if (substr($action['url'], 0, 4) != 'http') {
+    $action['url'] = url::base(true).$action['url'];
+  }
 }
-if (count($actionColumns)>0) {
-  echo "<th class='gvAction'>Task</th>";
-}
+if (count($actions)>0) 
+  $colDefs[] = array(
+    'display' => 'Actions',
+    'actions' => $actions
+  );
+echo data_entry_helper::report_grid(array(
+  'id' => $id,
+  'mode'=>'direct',
+  'dataSource' => $source,
+  'view' => 'gv',
+  'readAuth' => $readAuth,
+  'includeAllColumns' => false,
+  'columns' => $colDefs,
+  'extraParams' => array('orderby'=>$orderby),
+  'filters' => $filter
+));
+data_entry_helper::link_default_stylesheet();
+// No need to re-link to jQuery
+data_entry_helper::$dumped_resources[] = 'jquery';
+data_entry_helper::$dumped_resources[] = 'jquery_ui';
+data_entry_helper::$dumped_resources[] = 'fancybox';
+echo data_entry_helper::dump_javascript();
 ?>
-</tr>
-</thead>
-<tbody id="gridBody-<?php echo $id; ?>">
-<?php echo $body ?>
-</tbody>
-</table>
-<div id="pager-<?php echo $id; ?>">
-<?php echo $pagination ?>
-</div>

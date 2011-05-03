@@ -36,8 +36,46 @@ $('.grid-action-delete').click(function(a) {
   
   return false;
 });
+
+add_taxon_group = function() {
+  // ask the warehouse to link the taxon group to this checklist
+  $.post('<?php echo url::site('taxon_groups_taxon_list/add_taxon_group'); ?>', {
+      taxon_list_id: <?php echo $this->taxon_list_id; ?>,
+      taxon_group_id: $('#add-group').val()
+    }, function(data, textStatus) {
+      if (isNaN(parseInt(data)))
+        // if text returned, it is a message to display
+        alert(data);
+      else
+        // if OK, it returns the new record ID. Add it to the grid.
+        if (data!==0)
+          grid_taxon_groups_taxon_list.addRecords('id', data);
+    }
+  );
+}
+
 /*]]>*/
 </script>
-<div class="taxon_groups_taxon_lists">
-<?php echo $table; ?>
-</div>
+<?php
+  require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+  $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+  echo '<div class="linear-form">';
+  echo data_entry_helper::autocomplete(array(
+    'label'=>'Add taxon group',
+    'fieldname'=>'add-group',
+    'helpText'=>'Search for taxon groups to quickly add them into this list.',
+    'table' => 'taxon_group',
+    'captionField' => 'title',
+    'valueField' => 'id',
+    'extraParams' => $readAuth,
+    'afterControl' => '<input type="button" value="Add" onclick="add_taxon_group();" />'
+  ));
+  echo '</div>';
+echo $grid;
+if (request::is_ajax()) {
+  // When viewing as an AJAX loaded tab, don't reload jQuery as it is already on the page.
+  data_entry_helper::$dumped_resources[] = 'jquery';
+}
+data_entry_helper::link_default_stylesheet();
+echo data_entry_helper::dump_javascript(true); 
+?>

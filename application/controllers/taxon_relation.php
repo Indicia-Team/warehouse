@@ -31,13 +31,31 @@ class Taxon_relation_Controller extends Gridview_Base_Controller
 {
   public function __construct()
   {
-    parent::__construct('taxon_relation', 'gv_taxon_relation', 'taxon_relation/index');
+    parent::__construct('taxon_relation', 'taxon_relation/index');
     $this->columns = array(
       'my_taxon'=>'',
       'term'=>'',
       'other_taxon'=>''
     );
     $this->pagetitle = "Relationships";
+  }
+  
+ /**
+  * Override the default index functionality to filter by sample_id.
+  */
+  public function index()
+  { 
+    if ($this->uri->total_arguments()>0) {
+      $taxa_taxon_list_id = $this->uri->argument(1);
+      $ttl = ORM::factory('taxa_taxon_list', $taxa_taxon_list_id);
+      $this->base_filter=array('my_taxon_meaning_id' => $ttl->taxon_meaning_id);
+    }
+    parent::index();
+    // pass the sample id into the view, so the create button can use it to autoset
+    // the sample of the new image.
+    if ($this->uri->total_arguments()>0) {
+      $this->view->taxa_taxon_list_id=$taxa_taxon_list_id;
+    }
   }
 
   /**

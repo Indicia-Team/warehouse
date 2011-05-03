@@ -30,7 +30,7 @@
 class User_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-  	parent::__construct('user', 'gv_user', 'user/index');
+  	parent::__construct('user','user/index');
     $this->columns = array(
       'name'=>'',
       'username'=>'',
@@ -38,7 +38,8 @@ class User_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Users";
     $this->model = new User_Model();
-    if(!is_null($this->gen_auth_filter)) {
+    $websites = $this->get_allowed_website_id_list('admin');
+    if(!is_null($websites)) {
       // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
       // you created the user
       $people_id_values = array();
@@ -49,7 +50,7 @@ class User_Controller extends Gridview_Base_Controller {
           ->join('users_websites','users_websites.user_id','users.id')
           ->where('users_websites.site_role_id IS NOT ', null)
           ->where('users.core_role_id IS ', null)
-          ->in('users_websites.website_id', $this->gen_auth_filter['values'])
+          ->in('users_websites.website_id', $websites)
           ->get();
       foreach ($list as $item) {
         $people_id_values[] = $item->id;
@@ -83,9 +84,18 @@ class User_Controller extends Gridview_Base_Controller {
    */
   protected function get_action_columns() {
     return array(
-      'Edit User Details' => 'user/edit_from_person/#person_id#',
-      'Edit Person Details' => 'person/edit_from_user/#person_id#',
-      'Send Forgotten Password Email' => 'forgotten_password/send_from_user/#person_id#',
+      array(
+        'caption'=>'Edit user details',
+        'url'=>'user/edit_from_person/{person_id}'
+      ),
+      array(
+        'caption'=>'Edit person details',
+        'url'=>'person/edit_from_user/{person_id}'
+      ),
+      array(
+        'caption'=>'Send forgotten password email',
+        'url'=>'forgotten_password/send_from_user/{person_id}'
+      )
     );
   }
 

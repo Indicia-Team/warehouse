@@ -325,25 +325,9 @@ class Auth_Core {
       case 'editor': $role=2; break;
       case 'user': $role=3; break;
     }
-    $test = ORM::factory('users_website');
-    $test->where(
-        array('user_id' => $_SESSION['auth_user']->id,
-        'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find()->loaded;
     return ORM::factory('users_website')->where(
         array('user_id' => $_SESSION['auth_user']->id,
         'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find()->loaded;
-  }
-
-  /**
-   * Returns the user's authorised list of ORM websites.
-   * @return Array of ORM website objects.
-   */
-  protected function get_allowed_website_list() {
-    $websites = ORM::factory('website');
-    if (!is_null($this->gen_auth_filter)) {
-      $websites = $websites->in('id', $this->gen_auth_filter['values']);
-    }
-    return $websites->find_all();
   }
       
   /**

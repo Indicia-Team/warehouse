@@ -42,6 +42,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
   
   protected $search_field='taxon';
   protected $lookup_against='gv_taxon_lists_taxon';
+  protected $list_id_field = 'taxon_list_id';
 
   public function validate(Validation $array, $save = FALSE) {
     $array->pre_filter('trim');

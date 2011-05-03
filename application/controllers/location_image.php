@@ -31,7 +31,7 @@ class location_image_Controller extends Gridview_Base_Controller
 {
 	public function __construct()
   {
-    parent::__construct('location_image', 'gv_location_image', 'location_image/index');
+    parent::__construct('location_image', 'location_image/index');
     $this->columns = array(
       'caption'=>'',
       'path'=>'Image'    
@@ -40,17 +40,19 @@ class location_image_Controller extends Gridview_Base_Controller
   }
 
   /**
-  * Override the default page functionality to filter by location_id.
+  * Override the default index functionality to filter by location_id.
   */
-  public function page($page_no, $filter=null)
+  public function index()
   { 
-    $location_id=$filter;
-    // At this point, $location_id has a value - the framework will trap the other case.
-    // No further filtering of the gridview required as the very fact you can access the parent location
-    // means you can access all the images for it.
-    $this->base_filter['location_id'] = $location_id;
-    parent::page($page_no);
-    $this->view->location_id = $location_id;
+    if ($this->uri->total_arguments()>0) {
+      $this->base_filter=array('location_id' => $this->uri->argument(1));
+    }
+    parent::index();
+    // pass the location id into the view, so the create button can use it to autoset
+    // the location of the new image.
+    if ($this->uri->total_arguments()>0) {
+      $this->view->location_id=$this->uri->argument(1);;
+    }
   }
   
   /**

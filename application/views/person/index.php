@@ -21,11 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+echo $grid;
 ?>
-<div class="termlist">
-<?php echo $table ?>
-<br />
-<form action="<?php echo url::site(); ?>person/create">
+<form action="<?php echo url::site().'person/create'; ?>" method="post">
 <input type="submit" value="New person" class="ui-corner-all ui-state-default button" />
 </form>
-</div>

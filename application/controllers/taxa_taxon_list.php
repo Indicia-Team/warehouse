@@ -30,12 +30,9 @@
 class Taxa_taxon_list_Controller extends Gridview_Base_Controller
 {
 
-  private $taxonListId;
-  private $taxonListName;
-
   public function __construct()
   {
-    parent::__construct('taxa_taxon_list', 'gv_taxon_lists_taxon', 'taxa_taxon_list/index', null, 'taxa_taxon_list');
+    parent::__construct('taxa_taxon_list', 'taxa_taxon_list/index', null, 'taxa_taxon_list');
     $this->base_filter['parent_id']=null;
     $this->base_filter['preferred']='t';
     $this->columns = array(
@@ -45,6 +42,45 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'language'=>'',
     );
     $this->pagetitle = "Species";
+  }
+  
+ /**
+  * Override the default index functionality to filter by taxon_list.
+  */
+  public function index()
+  {
+    $taxon_list_id = $this->uri->argument(1);
+    $list = ORM::factory('taxon_list',$taxon_list_id);
+    $this->pagetitle = "Species in ".$list->title;
+    $this->internal_index($taxon_list_id);
+  }
+ 
+  public function children($id) {
+    $parentTtl = ORM::factory('taxa_taxon_list', $id);
+    $this->base_filter['parent_id'] = $id;
+    $this->internal_index($parentTtl->taxon_list_id);
+    // pass the parent id into the view, so the create list button can use it to autoset
+    // the parent of the new list.
+    $this->view->parent_id=$id;
+  }
+  
+  private function internal_index($taxon_list_id) {
+    // No further filtering of the gridview required as the very fact you can access the parent taxon list
+    // means you can access all the taxa for it.
+    if (!$this->taxon_list_authorised($taxon_list_id))
+    {
+      $this->access_denied('table to view records with a taxon list ID='.$taxon_list_id);
+      return;
+    }
+    $this->base_filter['taxon_list_id'] = $taxon_list_id;
+    parent::index(); 
+    $this->view->taxon_list_id = $taxon_list_id;
+    $list = ORM::factory('taxon_list', $taxon_list_id);
+    $this->view->parent_list_id = $list->parent_id;
+    $this->upload_csv_form->staticFields = array(
+      'taxa_taxon_list:taxon_list_id' => $taxon_list_id
+    );
+    $this->upload_csv_form->returnPage = $taxon_list_id;
   }
 
   /**
@@ -62,46 +98,6 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $listTitle = ORM::Factory('taxon_list', $listId)->title;
     $this->page_breadcrumbs[] = html::anchor('taxon_list/edit/'.$listId.'?tab=taxa', $listTitle);
     $this->page_breadcrumbs[] = $this->model->caption();
-  }
-
-  /**
-  * Override the default page functionality to filter by taxon_list.
-  */
-  public function page($page_no, $filter=null)
-  {
-    $taxon_list_id=$filter;
-    // At this point, $taxon_list_id has a value - the framework will trap the other case.
-    // No further filtering of the gridview required as the very fact you can access the parent taxon list
-    // means you can access all the taxa for it.
-    if (!$this->taxon_list_authorised($taxon_list_id))
-    {
-      $this->access_denied('table to view records with a taxon list ID='.$taxon_list_id);
-      return;
-    }
-    $this->base_filter['taxon_list_id'] = $taxon_list_id;
-    $list = ORM::factory('taxon_list',$taxon_list_id);
-    $this->pagetitle = "Species in ".$list->title;
-    parent::page($page_no);
-    $this->view->taxon_list_id = $taxon_list_id;
-    if ($list->parent_id) {
-      $this->view->parent_id=$list->parent_id;
-    }
-    $this->upload_csv_form->staticFields = array(
-      'taxa_taxon_list:taxon_list_id' => $taxon_list_id
-    );
-    $this->upload_csv_form->returnPage = $taxon_list_id;
-  }
-
-  /**
-   * Method to retrieve pages for the index grid of taxa_taxon_list entries from an AJAX
-   * pagination call. Overrides the base class behaviour to enforce a filter on the
-   * taxon list id.
-   */
-  public function page_gv($page_no, $filter=null)
-  {
-    $taxon_list_id=$filter;
-    $this->base_filter['taxon_list_id'] = $taxon_list_id;
-    return parent::page_gv($page_no);
   }
 
   /**
@@ -133,69 +129,8 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       if (array_key_exists('taxa_taxon_list:parent_id', $_POST)) {
         $r['taxa_taxon_list:parent_id']=$_POST['taxa_taxon_list:parent_id'];
       }
-    } elseif ($this->uri->method(false)=='edit' || $this->uri->method(false)=='save') {
-      if (array_key_exists('taxa_taxon_list:id', $_POST) && $_POST['taxa_taxon_list:id']) {
-        $r['table'] = $this->get_child_grid($_POST['taxa_taxon_list:id'],
-          is_numeric($this->uri->argument(3)) ? $this->uri->argument(3) : 1, // page number
-          1 // limit
-        );
-      }
     }
     return $r;
-  }
-
-  /**
-   *  Auxilliary function for handling AJAX requests from the edit method child taxa
-   *  gridview component.
-   */
-  public function edit_gv($id,$page_no)
-  {
-    $this->auto_render=false;
-    return $this->get_child_grid($id,$page_no);
-  }
-
-  public function children($id) {
-    $child_grid_html = $this->get_child_grid(
-      $id,
-      is_numeric($this->uri->argument(3)) ? $this->uri->argument(3) : 1, // page number
-      !(count($_GET)>0)
-    );
-    if (count($_GET)>0) {
-      $this->auto_render=false;
-      return $child_grid_html;
-    } else
-      $this->setView('taxa_taxon_list/taxa_taxon_list_children', '', array(
-        'values' => array(
-          'grid' => $child_grid_html,
-          'id' => $id,
-          'taxon_list_id' => ORM::Factory('taxa_taxon_list', $id)->taxon_list_id
-        )
-      ));
-  }
-
-  /**
-   * Returns the HTML required for the grid of children of this taxon entry.
-   *
-   * @return string HTML for the grid.
-   * @access private
-   */
-  private function get_child_grid($id,$page_no,$forceFullGrid=false)
-  {
-    $gridmodel = ORM::factory('gv_taxon_lists_taxon');
-
-    $child_grid =  Gridview_Controller::factory(
-        $gridmodel,
-        $page_no,
-        4
-    );
-    $child_grid->base_filter = $this->base_filter;
-    $child_grid->base_filter['parent_id'] = $id;
-    $child_grid->columns =  $this->columns;
-    $child_grid->actionColumns = array(
-      'edit' => 'taxa_taxon_list/edit/#id#'
-    );
-    if (isset($_GET['type'])) return 'got type';
-    return $child_grid->display($forceFullGrid);
   }
 
   /**
@@ -221,16 +156,17 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     return ($this->taxon_list_authorised($list_id));
   }
 
-  protected function taxon_list_authorised ($id)
+  protected function taxon_list_authorised($id)
   {
     // for this controller, any null ID taxon_list can not be accessed
     if (is_null($id)) return false;
-    if (!is_null($this->gen_auth_filter))
+    $websites = $this->get_allowed_website_id_list('editor', false);
+    if (!is_null($websites))
     {
       $taxon_list = new Taxon_list_Model($id);
       // for this controller, any taxon_list that does not exist can not be accessed.
       if (!$taxon_list->loaded) return false;
-      return (in_array($taxon_list->website_id, $this->gen_auth_filter['values']));
+      return (in_array($taxon_list->website_id, $websites));
     }
     return true;
   }

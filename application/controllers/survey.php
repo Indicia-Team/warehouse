@@ -30,7 +30,7 @@
 class Survey_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-    parent::__construct('survey', 'gv_survey', 'survey/index');
+    parent::__construct('survey', 'survey/index');
     $this->columns = array(
       'id'          => '',
       'title'       => '',
@@ -38,7 +38,7 @@ class Survey_Controller extends Gridview_Base_Controller {
       'website'     => ''
     );
     $this->pagetitle = "Surveys";
-    $this->auth_filter = $this->gen_auth_filter;
+    $this->set_website_access('admin');
   }
   
   /**
@@ -47,8 +47,14 @@ class Survey_Controller extends Gridview_Base_Controller {
    */
   protected function get_action_columns() {
     return array(
-        'edit' => $this->controllerpath."/edit/#id#",
-        'setup attributes' => "/attribute_by_survey/#id#?type=sample"
+      array(
+        'caption'=>'edit',
+        'url'=>$this->controllerpath."/edit/{id}"
+      ),
+      array(
+        'caption'=>'setup attributes',
+        'url'=>"/attribute_by_survey/{id}?type=sample"
+      )
     );
   }
 

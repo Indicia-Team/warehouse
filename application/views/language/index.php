@@ -20,14 +20,12 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
+ 
+echo $grid;
 ?>
-<div class="termlist">
-<?php echo $table ?>
-<br/>
 <form action="<?php echo url::site().'language/create'; ?>" method="post">
-<input type="submit" value="New language" />
+<input type="submit" value="New language" class="ui-corner-all ui-state-default button" />
 </form>
 <br />
 <?php echo $upload_csv_form ?>
-</div>
+

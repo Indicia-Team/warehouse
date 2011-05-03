@@ -13,7 +13,7 @@ class Indicia
     public static function indicia_error_handler($errno, $errstr, $errfile, $errline)
     {
       try {
-        throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+        throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
       } catch (Exception $e) {
         error::log_error('Error converted to exception', $e);
         throw $e;

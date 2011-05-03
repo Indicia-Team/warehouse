@@ -31,6 +31,9 @@
  */
 class Base_Name_Model extends ORM_Tree {
 
+  // set this in the subclass to the field holding the list id.
+  protected $list_id_field;
+
   protected function parseRelatedNames($value, $parser) {
     $arrLine = explode("\n", trim($value));
     $arrNames = array();
@@ -62,8 +65,10 @@ class Base_Name_Model extends ORM_Tree {
         'deleted' => 'f',
         $meaning_field => $meaning_id
     );
-    if ($within_list)
-      $filters['taxon_list_id']=$this->taxon_list_id;
+    if ($within_list) {
+      $list_id_field = $this->list_id_field;
+      $filters[$list_id_field]=$this->$list_id_field;
+    }
     return ORM::factory(inflector::singular($this->table_name))->where(
       $filters)->find_all();
   }
