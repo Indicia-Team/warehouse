@@ -287,10 +287,12 @@ class config_test {
     if (!function_exists('zip_open')) {
       array_push($messages, array(
         'title' => 'Zip Library',
-        'description' => '<p>The zip library is not installed on this web server. To fix this for Windows servers, find your php.ini file in the PHP installation folder and ' .
+        'description' => '<p>The zip library is not installed on this web server. This is required to enable upload of SHP files containing location boundaries, but '.
+            'does not stop Indicia working. To fix this for Windows servers, find your php.ini file in the PHP installation folder and ' .
             'find the line <strong>;extension=php_zip.dll</strong>. Remove the semi-colon from the start of the line and save the file, then restart your ' .
             'webserver. For Linux systems, you must compile PHP with zip support by using the --enable-zip configuration option. Please pass this information to the administrator of your webserver if you are not sure how to do this.</p>',
-        'success' => false
+        'success' => true,
+        'warning' => true
       ));
     } elseif (!$problems_only) {
       array_push($messages, array(
