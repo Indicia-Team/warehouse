@@ -162,7 +162,7 @@ spatial reference. The more you zoom in, the more accurate the reference will be
  <ol>
  <?php
 foreach ($values['attributes'] as $attr) {
-  $name = 'smpAttr:'.$attr['location_attribute_id'];
+  $name = 'locAttr:'.$attr['location_attribute_id'];
   // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
   if ($attr['id']) $name .= ':'.$attr['id'];
   echo '<li><label for="">'.$attr['caption']."</label>\n";

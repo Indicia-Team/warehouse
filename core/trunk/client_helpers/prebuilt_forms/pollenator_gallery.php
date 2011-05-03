@@ -91,6 +91,20 @@ class iform_pollenator_gallery {
           'group'=>'Search'
       ),
       array(
+          'name'=>'search_collections_layer',
+          'caption'=>'Name layer for the Collections Search',
+          'description'=>'The Name of the Geoserver Layer used for the WFS feature lookup when searching Collections.',
+          'type'=>'string',
+          'group'=>'Search'
+      ),
+      array(
+          'name'=>'search_insects_layer',
+          'caption'=>'Name layer for the Insects Search',
+          'description'=>'The Name of the Geoserver Layer used for the WFS feature lookup when searching Insects.',
+          'type'=>'string',
+          'group'=>'Search'
+      ),
+      array(
           'name'=>'collectionsPerPage',
           'caption'=>'Collections per page of search results',
           'description'=>'Number of Collections per page of search results.',
@@ -1128,7 +1142,7 @@ loadCollection = function(id, index){
 	collection_preferred_object.collection_id = id;
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
 	jQuery('#fc-new-comment').removeClass('ui-accordion-content-active');
-	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? ".addClass" : ".removeClass")."('ui-accordion-content-active');
+	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "addClass" : "removeClass")."('ui-accordion-content-active');
 	jQuery('#focus-occurrence,#filter,#fc-next-button,#fc-prev-button').hide();
     jQuery('#focus-collection').show();
     if(index != null){
@@ -2078,9 +2092,9 @@ runSearch = function(forCollections){
   	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
   	if(forCollections){
 		properties = ['collection_id','datedebut_txt','datefin_txt','geom','nom','image_de_environment','image_de_la_fleur','flower_id']
-		feature = 'spipoll_collections_cache_view';
+		feature = '".$args['search_collections_layer']."';
   	} else {
-  		feature = 'spipoll_insects_cache_view';
+  		feature = '".$args['search_insects_layer']."';
   		properties = ['insect_id','collection_id','geom','image_d_insecte'];
   	}
 	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
