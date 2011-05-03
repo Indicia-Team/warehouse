@@ -117,6 +117,7 @@ class Forgotten_Password_Controller extends Indicia_Controller {
       throw new Kohana_User_Exception('swift.general_error', $e->getMessage());
     }
     kohana::log('info', "Forgotten password sent to $person->first_name $person->surname");
+    $this->session->set_flash('flash_info', "Forgotten password sent to $person->first_name $person->surname");
     url::redirect('user');
   }
 

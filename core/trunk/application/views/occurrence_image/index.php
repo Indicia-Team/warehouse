@@ -21,11 +21,9 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+echo $grid;
 ?>
-<div class="occurrence_images">
-<?php echo $table ?>
-<br/>
-<form action="<?php echo url::site().'occurrence_image/create/'.$occurrence_id; ?>" method="post">
+<form action="<?php echo url::site().'occurrence_image/create/'.$occurrence_id; ?>">
 <input type="submit" value="New occurrence image" class="ui-corner-all ui-state-default button" />
 </form>
-</div>
+<br />

@@ -39,7 +39,7 @@ function taxon_designations_extend_ui() {
  */
 function taxon_designations_alter_menu($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin')) 
-    $menu['Lookup Lists']['Taxon Designations']='taxon_designation';
+    $menu['Admin']['Taxon Designations']='taxon_designation';
   return $menu;
 }
 

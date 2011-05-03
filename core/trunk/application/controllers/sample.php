@@ -31,7 +31,7 @@ class Sample_Controller extends Gridview_Base_Controller
 {
   public function __construct()
   {
-    parent::__construct('sample', 'gv_sample', 'sample/index');
+    parent::__construct('sample', 'sample/index');
     $this->pagetitle = 'Samples';
     $this->columns = array
     (
@@ -41,7 +41,7 @@ class Sample_Controller extends Gridview_Base_Controller
       'location' => 'Location',
       'date_start' => 'Date'
     );
-    $this->auth_filter = $this->gen_auth_filter;
+   $this->set_website_access('editor');
   }
 
   protected function getModelValues() {

@@ -21,11 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+echo $grid;
 ?>
-<div class="taxon_images">
-<?php echo $table ?>
-<br/>
-<form action="<?php echo url::site().'taxon_image/create/'.$taxa_taxon_list_id; ?>" method="post">
+<form action="<?php echo url::site().'taxon_image/create/'.$taxon_meaning_id; ?>" method="post">
 <input type="submit" value="New taxon image" class="ui-corner-all ui-state-default button" />
 </form>
-</div>

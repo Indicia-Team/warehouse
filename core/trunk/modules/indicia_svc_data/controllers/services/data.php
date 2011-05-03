@@ -116,7 +116,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function location_attribute_value()
   {
-  $this->handle_call('location_attribute_value');
+    $this->handle_call('location_attribute_value');
   }
 
   /**
@@ -125,7 +125,16 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function location_image()
   {
-  $this->handle_call('location_image');
+    $this->handle_call('location_image');
+  }
+  
+ /**
+  * Provides the /service/data/sample_image service.
+  * Retrieves details of sample images.
+  */
+  public function sample_image()
+  {
+    $this->handle_call('sample_image');
   }
   
   /**
@@ -227,14 +236,33 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('taxon_group');
   }
+  
+ /**
+  * Provides the /service/data/taxon_image service.
+  * Retrieves details of location images.
+  */
+  public function taxon_image()
+  {
+    $this->handle_call('taxon_image');
+  }
+  
 
   /**
   * Provides the /services/data/taxon_list service.
-  * Retrieves details of a single taxon_list.
+  * Provides access to taxon_lists.
   */
   public function taxon_list()
   {
-  $this->handle_call('taxon_list');
+    $this->handle_call('taxon_list');
+  }
+  
+  /**
+  * Provides the /services/data/taxon_relation_type service.
+  * Provides access to taxon_relation_types.
+  */
+  public function taxon_relation_type()
+  {
+    $this->handle_call('taxon_relation_type');
   }
 
   /**
@@ -243,7 +271,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function taxa_taxon_list()
   {
-  $this->handle_call('taxa_taxon_list');
+    $this->handle_call('taxa_taxon_list');
   }
 
   /**
@@ -281,6 +309,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('termlists_term');
   }
+  
+  /**
+  * Provides the /services/data/title service.
+  * Retrieves details of titles.
+  */
+  public function title()
+  {
+    $this->handle_call('title');
+  }
 
   /**
   * Provides the /services/data/user service.
@@ -298,6 +335,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function website()
   {
     $this->handle_call('website');
+  }
+  
+  /**
+  * Provides the /services/data/trigger service.
+  * Retrieves details of a single trigger.
+  */
+  public function trigger()
+  {
+    $this->handle_call('trigger');
   }
 
   /**
@@ -493,15 +539,15 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->view_columns = $this->db->list_fields($this->viewname);
     $mode = $this->get_output_mode();
     if(!in_array ($this->entity, $this->allow_full_access)) {
-        if(array_key_exists ('website_id', $this->view_columns))
-        {
-          if ($this->website_id != 0) {
-            $this->db->in('website_id', array(null, $this->website_id));
-          }
-        } else {
-          Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-            throw new ServiceError('No access to '.$this->viewname.' allowed.');
+      if(array_key_exists ('website_id', $this->view_columns))
+      {
+        if ($this->website_id != 0) {
+          $this->db->in('website_id', array(null, $this->website_id));
         }
+      } else {
+        Kohana::log('info', $this->viewname.' does not have a website_id - access denied to table info');
+        throw new ServiceError('No access to '.$this->viewname.' allowed.');
+      }
     }
 
     $return = Array(
@@ -538,24 +584,21 @@ class Data_Controller extends Data_Service_Base_Controller {
     // Select all the table columns from the view
     $select = implode(', ', array_keys($this->db->list_fields($this->viewname)));
     $this->db->select($select);
-    // Make sure that we're only showing items appropriate to the logged-in website
-    if(!$this->in_warehouse && !in_array ($this->entity, $this->allow_full_access)) {
-      if(array_key_exists ('website_id', $this->view_columns))
-      {
-        if ($this->website_id) {
-          $this->db->in('website_id', array(null, $this->website_id));
-        } elseif (!$this->user_is_core_admin) {
-          // User is on Warehouse, but not core admin, so do a filter to all their websites.
-          $allowedWebsiteValues = array_merge($this->user_websites);
-          $allowedWebsiteValues[] = null;
-          $this->db->in('website_id', $allowedWebsiteValues);
-        }
-      } else {
-        Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
-        throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
+    if (array_key_exists ('website_id', $this->view_columns)) {
+      if ($this->website_id) {
+        $this->db->in('website_id', array(null, $this->website_id));
+      } elseif ($this->in_warehouse && !$this->user_is_core_admin) {
+        // User is on Warehouse, but not core admin, so do a filter to all their websites.
+        $allowedWebsiteValues = array_merge($this->user_websites);
+        $allowedWebsiteValues[] = null;
+        $this->db->in('website_id', $allowedWebsiteValues);
       }
+    } elseif (!$this->in_warehouse && !in_array($this->entity, $this->allow_full_access)) {
+      // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
+      Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
+      throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
     }
-     // if requesting a single item in the segment, filter for it, otherwise use GET parameters to control the list returned
+    // if requesting a single item in the segment, filter for it, otherwise use GET parameters to control the list returned
     if ($this->uri->total_arguments()==0)
       $this->apply_get_parameters_to_db();
     else {
@@ -717,34 +760,51 @@ class Data_Controller extends Data_Service_Base_Controller {
     foreach ($query as $cmd=>$params) {
       switch(strtolower($cmd)) {
         case 'in':
-          if (count($params)<>2 || !is_array($params[1]))
-            kohana::log('error','Queries using IN must provide 2 parameters, the field name and an array of values');
-          else
-            $this->db->in($params[0],$params[1]);
-          break;
         case 'notin':
-          if (count($params)<>2 || !is_array($params[1]))
-            kohana::log('error','Queries using NOTIN must provide 2 parameters, the field name and an array of values');
-          else
-            $this->db->notin($params[0],$params[1]);
+          unset($foundfield);
+          unset($foundvalue);
+          foreach($params as $key=>$value) {
+            if (is_int($key)) {
+              if ($key===0) $foundfield = $value;
+              elseif ($key===1) $foundvalue = $value;
+              else throw new Exception("In clause statement for $key is not of the correct structure");
+            } elseif (is_array($value)) {
+              $this->db->$cmd($key,$value);
+            } else {
+              throw new Exception("In clause statement for $key is not of the correct structure");
+            }
+          }
+          // if param was supplied in form "cmd = array(field, values)" then foundfield and foundvalue would be set.
+          if (isset($foundfield) && isset($foundvalue))
+            $this->db->$cmd($infield,$foundvalue);
           break;
         case 'where':
-          if (count($params)==2 && !is_array($params[0] && !is_array($params[1])))
-            $this->db->where($params[0],$params[1]);
-          elseif (count($params)===1 && is_array($params[0]))
-            $this->db->where($params[0]);
-          else
-            kohana::log('error','Queries using WHERE must provide 2 parameters, the field name and value, or an '.
-                'associative array of WHERE conditions.');
-          break;
         case 'orwhere':
-          if (count($params)==2 && !is_array($params[0] && !is_array($params[1])))
-            $this->db->orwhere($params[0],$params[1]);
-          elseif (count($params)==1 && is_array($params[1]))
-            $this->db->orwhere($params[0]);
-          else
-            kohana::log('error','Queries using ORWHERE must provide 2 parameters, the field name and value, or an '.
-                'associative array of WHERE conditions.');
+        case 'like':
+        case 'orlike':
+          unset($foundfield);
+          unset($foundvalue);
+          foreach($params as $key=>$value) {
+            if (is_int($key)) {
+              if ($key===0) $foundfield = $value;
+              elseif ($key===1) $foundvalue = $value;
+              else throw new Exception("In clause statement for $key is not of the correct structure");
+            } elseif (!is_array($value)) {
+              // id fields must be queried by Where clause not Like.
+              $this_cmd = ($key=='id') ? str_replace('like', 'where', $cmd) : $cmd;
+              // Apply the filter command. if we are switching a like to a where clause, but no value is provided, then don't filter because
+              // like '%%' matches anything, but where x='' would break on an int field.
+              if ($this_cmd == $cmd || !empty($value)) $this->db->$this_cmd($key,$value);
+            } else {
+              throw new Exception("$cmd clause statement for $key is not of the correct structure. ".print_r($params, true));
+            }
+          }
+          // if param was supplied in form "cmd = array(field, value)" then foundfield and foundvalue would be set.
+          if (isset($foundfield) && isset($foundvalue)) {
+            // id fields must be queried by Where clause not Like.
+            if ($foundfield=='id') $this_cmd = str_replace('like', 'where', $cmd);
+            if ($this_cmd == $cmd || !empty($foundvalue)) $this->db->$this_cmd($infield,$foundvalue);
+          }
           break;
         default:
           kohana::log('error',"Unsupported query command $cmd");

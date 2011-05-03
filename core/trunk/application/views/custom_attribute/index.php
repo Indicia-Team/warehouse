@@ -21,7 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-?>
-<div>
-<?php echo $table ?>
-</div>
+echo $grid ?>
+<form action="<?php echo url::site().$this->prefix.'_attribute/create'; ?>">
+<input type="hidden" name="website_id" value="" />
+<input type="submit" value="New <?php echo $this->prefix; ?> custom attribute" class="ui-corner-all ui-state-default button" />
+</form>

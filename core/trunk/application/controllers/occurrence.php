@@ -33,12 +33,12 @@ class Occurrence_controller extends Gridview_Base_Controller {
 
   public function __construct()
   {
-    parent::__construct('occurrence', 'gv_occurrence', 'occurrence/index');
+    parent::__construct('occurrence', 'occurrence/index');
     $this->pagetitle = 'Occurrences';
     $this->actionColumns = array
     (
-      'Edit Occ' => 'occurrence/edit/#id#',
-      'Edit Smp' => 'sample/edit/#sample_id#'
+      'Edit Occ' => 'occurrence/edit/{id}',
+      'Edit Smp' => 'sample/edit/{sample_id}'
     );
     $this->columns = array
     (
@@ -48,28 +48,19 @@ class Occurrence_controller extends Gridview_Base_Controller {
       'entered_sref' => 'Spatial Ref',
       'date_start' => 'Date'
     );
-    $this->auth_filter = $this->gen_auth_filter;
+    $this->set_website_access('editor');
   }
 
   /**
-  * Action for occurrence/create page/
-  * Displays a page allowing entry of a new occurrence.
-  */
-  public function create()
-  {
-    $this->setView('occurrence/occurrence_edit', 'Occurrence');
-  }
-
-  /**
-   * Override the index page controller action to add filters for the parent sample if viewing the child occurrences.
+   * Override the index controller action to add filters for the parent sample if viewing the child occurrences.
    */
-  public function page($page_no, $filter=null) {
+  public function index() {
     // This constructor normally has 1 argument which is the grid page. If there is a second argument
     // then it is the parent list ID.
-    if ($this->uri->total_arguments()>1) {
-      $this->base_filter=array('sample_id' => $this->uri->argument(2));
+    if ($this->uri->total_arguments()>0) {
+      $this->base_filter=array('sample_id' => $this->uri->argument(1));
     }
-    parent::page($page_no, $filter);
+    parent::index();
   }
   
   /**

@@ -27,7 +27,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
 
   public function __construct()
   {
-    parent::__construct('taxon_designation', 'gv_taxon_designation', 'taxon_designation/index');
+    parent::__construct('taxon_designation', 'taxon_designation/index');
     $this->columns = array(
       'id'          => '',
       'title'       => '',
@@ -35,11 +35,6 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
     );
     $this->pagetitle = "Taxon Designations";
     $this->model = ORM::factory('taxon_designation');
-    $this->auth_filter = $this->gen_auth_filter;
-  }
-
-  public function index() {
-    parent::page(1);
   }
 
   /**
@@ -50,6 +45,13 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
     return array(
       'category_terms' => $this->get_termlist_terms('indicia:taxon_designation_categories')
     );
+  }
+  
+  /**
+   * As the designations list is global, need to be admin to change it.
+   */
+  protected function page_authorised() {
+    return $this->auth->logged_in('CoreAdmin') || $auth->has_any_website_access('admin');
   }
 
 }

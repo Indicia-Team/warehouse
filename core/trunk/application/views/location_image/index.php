@@ -20,12 +20,9 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
+ 
+echo $grid;
 ?>
-<div class="location_images">
-<?php echo $table ?>
-<br/>
 <form action="<?php echo url::site().'location_image/create/'.$location_id; ?>" method="post">
 <input type="submit" value="New location image" class="ui-corner-all ui-state-default button" />
 </form>
-</div>

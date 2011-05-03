@@ -60,7 +60,7 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
     self::page(1, $filter);
   }
 
-  public function  page($page_no, $filter = null) {
+  public function page($page_no, $filter = null) {
     $ttl = ORM::Factory('taxa_taxon_list', $filter);
     $this->base_filter['taxa_taxon_list_id'] = $filter;
     parent::page($page_no, $filter);

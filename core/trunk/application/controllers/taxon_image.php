@@ -31,7 +31,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
 {
 	public function __construct()
   {
-    parent::__construct('taxon_image', 'gv_taxon_image', 'taxon_image/index');
+    parent::__construct('taxon_image', 'taxon_image/index');
     $this->columns = array(
       'caption'=>'',
       'path'=>'Image'    
@@ -39,20 +39,21 @@ class Taxon_image_Controller extends Gridview_Base_Controller
     $this->pagetitle = "Images";
   }
 
-  /**
-  * Override the default page functionality to filter by taxa_taxon_list_id.
+ /**
+  * Override the default index functionality to filter by sample_id.
   */
-  public function page($page_no, $filter=null)
-  {  	
-    $taxa_taxon_list_id=$filter;
-    // At this point, $taxa_taxon_list_id has a value - the framework will trap the other case.
-    // No further filtering of the gridview required as the very fact you can access the parent taxon
-    // means you can access all the images for it.
-    // However, the grid actually needs to be filtered by taxon_meaning_id.
-    $ttl = ORM::Factory('taxa_taxon_list', $taxa_taxon_list_id);
-    $this->base_filter['taxon_meaning_id'] = $ttl->taxon_meaning_id;   
-    parent::page($page_no);
-    $this->view->taxa_taxon_list_id = $taxa_taxon_list_id;
+  public function index()
+  { 
+    if ($this->uri->total_arguments()>0) {
+      $ttl = ORM::factory('taxa_taxon_list', $this->uri->argument(1));
+      $this->base_filter=array('taxon_meaning_id' => $ttl->taxon_meaning_id);
+    }
+    parent::index();
+    // pass the taxa_taxon_list id into the view, so the create button can use it to autoset
+    // the taxon of the new image.
+    if ($this->uri->total_arguments()>0) {
+      $this->view->taxon_meaning_id=$this->uri->argument(1);
+    }
   }
   
   /**

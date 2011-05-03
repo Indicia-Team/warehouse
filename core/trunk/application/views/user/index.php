@@ -27,10 +27,8 @@
   <p>All Users must have an associated 'Person' - in order to create a new user the 'Person' must exist first.</p>
   <p>In order to be on the list of potential users, the person must have an email address.</p>
 </div>
-<div class="users">
-<?php echo $table ?>
-<br />
+
+<?php echo $grid; ?>
 <form action="<?php echo url::site(); ?>person/create_from_user">
 <input type="submit" value="New person" class="ui-corner-all ui-state-default button" />
 </form>
-</div>

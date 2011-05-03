@@ -30,20 +30,18 @@
 class Person_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-    parent::__construct('person', 'person', 'person/index');
+    parent::__construct('person', 'person/index');
     $this->columns = array(
       'first_name'=>''
       ,'surname'=>''
       ,'initials'=>''
-      ,'email_address'=>''
-      ,'username'=>''
-      ,'is_core_user'=>''
     );
     $this->pagetitle = "People";
     $this->model = new Person_Model();
 
     $this->flag_warning = null;
-    if(!is_null($this->gen_auth_filter)){
+    $websites = $this->get_allowed_website_id_list('editor');
+    if(!is_null($websites)) {
       // If not core admin, then you can only edit a person if they have a role on one of your websites that you administer or
       // you created the user
       $list = $this->db
@@ -52,7 +50,7 @@ class Person_Controller extends Gridview_Base_Controller {
           ->join('users_websites','users_websites.user_id','users.id')
           ->where('users_websites.site_role_id IS NOT ', null) 
           ->where('users.core_role_id IS ', null)
-          ->in('users_websites.website_id', $this->gen_auth_filter['values'])
+          ->in('users_websites.website_id', $websites)
           ->get();
       foreach ($list as $user) {
         $person_id_values[] = $user->person_id;

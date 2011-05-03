@@ -47,11 +47,6 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected $user_is_core_admin = false;
 
   /**
-   * @var boolean Defines if the user is logged into the warehouse.
-   */
-  protected $in_warehouse = false;
-
-  /**
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
   * Read nonces do not need to be deleted - they are left to expire.
   */

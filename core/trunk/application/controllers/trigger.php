@@ -34,14 +34,19 @@ class Trigger_Controller extends Gridview_Base_Controller {
    */
   public function __construct()
   {
-    parent::__construct('trigger', 'gv_trigger', 'trigger/index');
+    parent::__construct('trigger', 'trigger/index');
     $this->columns = array(
       'name'=>'',
       'description'=>'',
       'created_by_name'=>'Owner'
     );
     $this->pagetitle = "Triggers";
+  }
+  
+  public function index() {
     $this->base_filter['private_for_user_id'] = array(null, $_SESSION['auth_user']->id);
+    $this->base_filter['user_id'] = array(null, $_SESSION['auth_user']->id);
+    parent::index();
   }
   
   /**
@@ -50,37 +55,22 @@ class Trigger_Controller extends Gridview_Base_Controller {
   protected function get_action_columns() {
     $r = array();
     if ($this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin'))
-    $r['edit trigger'] = $this->controllerpath.'/edit/#id#';
-    $r['subscribe'] = 'trigger_action/create/#id#';
-    $r['edit subscription'] = 'trigger_action/edit/#id#';
+      $r[] = array(
+          'caption' => 'edit trigger',
+          'url'=>$this->controllerpath.'/edit/{id}',
+          'visibility_field' => 'edit_trigger'
+      );
+    $r[] = array(
+        'caption' => 'subscribe',
+        'url'=>'trigger_action/create/{id}',
+        'visibility_field' => 'subscribe'
+    );
+    $r[] = array(
+        'caption' => 'edit subscription',
+        'url'=>'trigger_action/edit/{id}',
+        'visibility_field' => 'edit_subscription'
+    );
     return $r;
-  }
-  
-  /**
-   * Override to control the visibility of the edit trigger and subscription
-   * actions depending on the circumstance and row data.
-   */
-  protected function get_action_visibility($row, $actionName) {
-    if ($actionName == 'edit trigger') {
-      return $row['private_for_user_id'] == $_SESSION['auth_user']->id || $this->auth->logged_in('CoreAdmin');
-    } else {
-      // @todo Performance implications of this approach
-      // Because we can't write view code that returns a trigger action record based on a parameter (the user ID)
-      // we need to check the database at this point to decide if they are already subscribed.
-      $filter = array('param1'=> "".$_SESSION['auth_user']->id."", 'trigger_id'=>$row['id'], 'deleted'=>'f');      
-      $ta = $this->db
-          ->select('id')
-          ->from('trigger_actions')
-          ->where($filter)
-          ->limit(1)
-          ->get();
-      if ($actionName == 'subscribe') {      
-        return $ta->count()===0; 
-      } elseif ($actionName == 'edit subscription') {      
-        return $ta->count()!==0; 
-      }
-    }
-    return false;
   }
   
   /** 
@@ -115,9 +105,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
       // existing record, so we can get the params json data to convert it to individual params
       $params = json_decode($this->model->params_json, true);    
     else
-      $params = array();
-    
-          
+      $params = array(); 
     $this->setView('trigger/params_edit', 'Parameters for '.$this->model->caption(), array(
       'values'=>$_POST,
       'other_data' => array('defaults' => $params)

@@ -42,4 +42,11 @@ function taxon_groups_taxon_lists_extend_orm() {
   ));
 }
 
+// Provide access via the data services
+function taxon_groups_taxon_lists_extend_data_services() {
+  return array(
+    'taxon_groups_taxon_lists'=>array()
+  );
+}
+
 ?>

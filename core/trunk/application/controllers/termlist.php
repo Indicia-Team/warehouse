@@ -30,7 +30,7 @@
 class Termlist_Controller extends Gridview_Base_Controller {
   
   public function __construct() {
-    parent::__construct('termlist','gv_termlist','termlist/index');
+    parent::__construct('termlist', 'termlist/index');
     $this->columns = array(
       'id'=>'',
       'title'=>'',
@@ -38,21 +38,18 @@ class Termlist_Controller extends Gridview_Base_Controller {
       'website'=>''
       );
     $this->pagetitle = "Term lists";
-    $this->auth_filter = $this->gen_auth_filter;
+    $this->set_website_access('editor');
   }
   
-  /** 
-   * Override the index page controller action to add filters for the parent list if viewing the child lists.
-   */
-  public function page($page_no, $filter=null) {
-    // This constructor normally has 1 argument which is the grid page. If there is a second argument
-    // then it is the parent list ID. 
-    if ($this->uri->total_arguments()>1) {
-      $this->base_filter=array('parent_id' => $this->uri->argument(2));
+  public function index() {
+    if ($this->uri->total_arguments()>0) {
+      $this->base_filter=array('parent_id' => $this->uri->argument(1));
     }
-    parent::page($page_no, $filter);
-    if ($this->uri->total_arguments()>1) {
-      $parent_id = $this->uri->argument(2);
+    parent::index();
+    // pass the parent id into the view, so the create list button can use it to autoset
+    // the parent of the new list.
+    if ($this->uri->total_arguments()>0) {
+      $parent_id = $this->uri->argument(1);
       $this->view->parent_id=$parent_id;
     }
   }
@@ -69,26 +66,6 @@ class Termlist_Controller extends Gridview_Base_Controller {
       $r['termlist:parent_id'] = $_POST['parent_id'];
     }   
     return $r;    
-  }
-
-  /**
-   *  Auxilliary function for handling Ajax requests from the edit method gridview component.
-   */
-  public function edit_gv($id,$page_no) {
-    $this->auto_render=false;
-
-    $gridmodel = ORM::factory('gv_termlist',$id);
-
-    $grid =	Gridview_Controller::factory($gridmodel, $page_no, 4);
-    $grid->base_filter = $this->base_filter;
-    $grid->base_filter['parent_id'] = $id;
-    $grid->columns = array_intersect_key($grid->columns, array(
-      'title'=>'',
-      'description'=>''));
-    $grid->actionColumns = array(
-      'edit' => 'termlist/edit/#$id#'
-    );
-    return $grid->display();
   }
   
   /**

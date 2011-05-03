@@ -21,7 +21,7 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
-if (isset($parent_id)) : ?>
+if (isset($parent_list_id)) : ?>
 <script type="text/javascript">
 /*<![CDATA[*/
 add_parent_taxon = function() {
@@ -33,20 +33,19 @@ add_parent_taxon = function() {
       if (isNaN(parseInt(data)))
         // if text returned, it is a message to display
         alert(data);
-      else
-        // if OK, it returns the new record ID. Add it to the grid.
-        addSingleRecord('taxa_taxon_list',data);
+      else 
+        // if OK, it returns the new record ID. Add it to the grid, using the global var created
+        // when the grid was created.
+        grid_taxa_taxon_list.addRecords('id', data);
     }
   );
 }
 /*]]>*/
 </script>
 <?php
-endif;
-
-if (isset($parent_id)) {
   require_once(DOCROOT.'client_helpers/data_entry_helper.php');
   $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+  echo '<div class="linear-form">';
   echo data_entry_helper::autocomplete(array(
     'label'=>'Add species',
     'fieldname'=>'add-from-parent',
@@ -54,22 +53,25 @@ if (isset($parent_id)) {
     'table' => 'taxa_taxon_list',
     'captionField' => 'taxon',
     'valueField' => 'id',
-    'extraParams' => $readAuth + array('taxon_list_id'=>$parent_id),
+    'extraParams' => $readAuth + array('taxon_list_id'=>$parent_list_id),
     'afterControl' => '<input type="button" value="Add" onclick="add_parent_taxon();" />'
   ));
-}
-?>
+  echo '</div>';
+endif;
 
-<div class="taxa_taxon_lists">
-<?php echo $table ?>
+echo $grid;
+?>
 <br/>
 <form action="<?php echo url::site().'taxa_taxon_list/create/'.$taxon_list_id; ?>" method="post">
+<?php if (isset($parent_id)): ?>
+<input type="hidden" value="<?php echo $parent_id; ?>" name="taxa_taxon_list:parent_id"/>
+<?php endif; ?>
 <input type="submit" value="New taxon" class="ui-corner-all ui-state-default button" />
 </form>
 <br />
 <?php
 echo $upload_csv_form;
-if (isset($parent_id)) {
+if (isset($parent_list_id)) {
   if (request::is_ajax()) {
     // When viewing as an AJAX loaded tab, don't reload jQuery as it is already on the page.
     data_entry_helper::$dumped_resources[] = 'jquery';

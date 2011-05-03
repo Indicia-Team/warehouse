@@ -20,11 +20,8 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
-?><div class="triggers">
-<?php echo $table ?>
-<br />
-<?php print form::open('trigger/create'); ?>
+echo $grid;
+?>
+<form action="<?php echo url::site().'trigger/create'; ?>">
 <input type="submit" value="New trigger" class="ui-corner-all ui-state-default button" />
 </form>
-</div>

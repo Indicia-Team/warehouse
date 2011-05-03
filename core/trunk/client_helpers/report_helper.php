@@ -42,9 +42,9 @@ class report_helper extends helper_base {
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     // don't want to paginate the download link
     unset($sortAndPageUrlParams['page']);
-    $extraParams = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
+    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
     $options['linkOnly']=true;
-    return '<a href="'.self::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv">'.lang::get('Download this report').'</a>';
+    return '<a href="'.self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv">'.lang::get('Download this report').'</a>';
   }
   
   /**
@@ -70,6 +70,9 @@ class report_helper extends helper_base {
   * Read authorisation tokens.</li>
   * <li><b>dataSource</b><br/>
   * Name of the report file or table/view.</li>
+  * <li><b>view</b>
+  * When loading from a view, specify list, gv or detail to determine which view variant is loaded. Default is list.
+  * </li>
   * <li><b>itemsPerPage</b><br/>
   * Number of rows to display per page. Defaults to 20.</li>
   * <li><b>columns</b><br/>
@@ -81,10 +84,11 @@ class report_helper extends helper_base {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, url, urlParams, class and javascript. The javascript, url and urlParams values can all use the
-  *      field names from the report in braces as substitutions, for example {id} is replaced by the value of the field
-  *      called id in the respective row. In addition, the url can use {currentUrl} to represent the current page's URL,
-  *      {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
+  *      values for caption, visibility_field. url, urlParams, class and javascript. The visibibility field is an optional
+  *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url 
+  *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
+  *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the 
+  *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
   *      {imageFolder} for the image upload folder.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
@@ -103,7 +107,7 @@ class report_helper extends helper_base {
   * <li><b>rowId</b>
   * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the &lt;tr&gt; elements have their id attributes
   * set to row + this field value, e.g. row37.</li>
-  * <li><b>IncludeAllColumns</b>
+  * <li><b>includeAllColumns</b>
   * Defaults to true. If true, then any columns in the report, view or table which are not in the columns
   * option array are automatically added to the grid after any columns specified in the columns option array.
   * Therefore the default state for a report_grid control is to include all the report, view or table columns
@@ -124,7 +128,13 @@ class report_helper extends helper_base {
   * a parameter called survey will need an input or select control with the name attribute set to 'param-my-grid-survey'.
   * The submit button for the form should have the method set to "get" and should post back to the same page.
   * As a final alternative, if parameters are required by the report but some can be hard coded then
-  * those may be added to the extraParams array.</li>
+  * those may be added to the filters array.</li>
+  * <li><b>filters</b><br/>
+  * Array of key value pairs to include as a filter against the data.
+  * </li>
+  * <li><b>extraParams</b><br/>
+  * Array of additional key value pairs to attach to the request.
+  * </li>
   * <li><b>paramDefaults</b>
   * Optional associative array of parameter default values.</li>
   * <li><b>paramsOnly</b>
@@ -153,22 +163,27 @@ class report_helper extends helper_base {
     // Output a div to keep the grid and pager together
     $r = '<div id="'.$options['id'].'">';
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
-    $extraParams = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
+    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
+    // specify the view variant to load, if loading from a view
+    if ($options['mode']=='direct') $extras .= '&view='.$options['view'];
     // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
     // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
     // parameters form if needed, else the report data. 
-    $response = self::get_report_data($options, $extraParams);
+    $response = self::get_report_data($options, $extras);
     if (isset($response['error'])) return $response['error'];
     if (isset($response['parameterRequest'])) {
       $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
       // if we have a complete set of parameters in the URL, we can re-run the report to get the data
       if (count($currentParamValues)==count($response['parameterRequest'])) {
-        $response = self::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues, true));
+        $response = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true));
         if (isset($response['error'])) return $response['error'];
         $records = $response['records'];
       }
     } else {
+      if ($options['autoParamsForm'] && $options['mode']=='direct') {
+        $r .= self::get_direct_mode_params_form($options);
+      }
       $records = $response['records'];
     }
     // return the params form, if that is all that is being requested.
@@ -298,27 +313,31 @@ class report_helper extends helper_base {
 
     // Now AJAXify the grid
     self::add_resource('reportgrid');
-    self::$javascript .= "$('#".$options['id']."').reportgrid({
+    $uniqueName = 'grid_' . preg_replace("[^A-Za-z0-9_]", '', $options['id']);
+    self::$javascript .= $uniqueName . " = $('#".$options['id']."').reportgrid({
   mode: '".$options['mode']."',
   dataSource: '".str_replace('\\','/',$options['dataSource'])."',
+  view: '".$options['view']."',
   itemsPerPage: ".$options['itemsPerPage'].",
   auth_token: '".$options['readAuth']['auth_token']."',
   nonce: '".$options['readAuth']['nonce']."',
-  extraParams: ".json_encode($options['extraParams']).",
   callback: '".$options['callback']."',
   url: '".parent::$base_url."',
   paramsFormId: '".$options['paramsFormId']."',
+  autoParamsForm: '".$options['autoParamsForm']."',
   rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
   imageFolder: '".self::get_uploaded_image_folder()."',
   currentUrl: '".$currentUrl['path']."',
   galleryColCount: ".$options['galleryColCount'].",
   altRowClass: '".$options['altRowClass']."'";
+    if (isset($options['extraParams']))
+      self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
+    if (isset($options['filters']))
+      self::$javascript .= ",\n  filters: ".json_encode($options['filters']);
     if (isset($orderby))
-      self::$javascript .= ",
-  orderby: '".$orderby."'";
+      self::$javascript .= ",\n  orderby: '".$orderby."'";
     if (isset($sortdir))
-      self::$javascript .= ",
-  sortdir: '".$sortdir."'";
+      self::$javascript .= ",\n  sortdir: '".$sortdir."'";
     if (isset($options['columns']))
       self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
 });\n";
@@ -499,6 +518,32 @@ class report_helper extends helper_base {
     return $r;
   }
   
+  private static function get_direct_mode_params_form($options) {
+    $reloadUrl = self::get_reload_link_parts();
+    $r = '<form action="'.$reloadUrl['path'].'" method="get" class="linear-form" id="filterForm-'.$options['id'].'">';
+    $r .= '<label for="filters" class="auto">'.lang::get('Filter for').'</label> ';
+    $value = (isset($_GET['filters'])) ? ' value="'.$_GET['filters'].'"' : '';
+    $r .= '<input type="text" name="filters" id="filters" class="filterInput"'.$value.'/> ';
+    $r .= '<label for="columns" class="auto">'.lang::get('in').'</label> <select name="columns" class="filterSelect" id="columns">';
+    
+    foreach ($options['columns'] as $column) {
+      if (isset($column['fieldname']) && isset($column['display']) && (!isset($column['visible']) || $column['visible']===false)) {
+        $selected = (isset($_GET['columns']) && $_GET['columns']==$column['fieldname']) ? ' selected="selected"' : '';
+        $r .= "<option value=\"".$column['fieldname']."\"$selected>".$column['display']."</option>";
+      }
+    }
+    $r .= "</select>\n";
+    $r .= '<input type="submit" value="Filter" class="run-filter" class="ui-corner-all ui-state-default"/>'.
+        '<button class="clear-filter" style="display: none">Clear</button>';
+    $r .= "</form>\n";
+    self::$javascript .= '$("#filter-'.$options['id'].'").click(function(e) {
+  e.preventDefault();
+  refreshGrid("'.$options['id'].'")
+});
+';
+    return $r;
+  }
+  
  /**
   * Function to output a report onto a map rather than a grid.
   * Because there are many options for the map, this method does not generate the
@@ -537,7 +582,13 @@ class report_helper extends helper_base {
   * a parameter called survey will need an input or select control with the name attribute set to 'param-my-grid-survey'.
   * The submit button for the form should have the method set to "get" and should post back to the same page.
   * As a final alternative, if parameters are required by the report but some can be hard coded then
-  * those may be added to the extraParams array.</li>
+  * those may be added to the filters array.</li>
+  * <li><b>filters</b><br/>
+  * Array of key value pairs to include as a filter against the data.
+  * </li>
+  * <li><b>extraParams</b><br/>
+  * Array of additional key value pairs to attach to the request.
+  * </li>
   * <li><b>paramDefaults</b>
   * Optional associative array of parameter default values.</li>
   * <li><b>paramsOnly</b>
@@ -573,22 +624,23 @@ class report_helper extends helper_base {
     // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
     // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
     // parameters form if needed, else the report data. 
-    $response = self::get_report_data($options, $extraParams);
+    $response = self::get_report_data($options);
     if (isset($response['error'])) return $response['error'];
     if (isset($response['parameterRequest'])) {
       $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
       // if we have a complete set of parameters in the URL, we can re-run the report to get the data
       if (count($currentParamValues)==count($response['parameterRequest'])) {
-        $response = self::get_report_data($options, $extraParams.'&'.self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
+        $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
         if (isset($response['error'])) return $response['error'];
         $records = $response['records'];
       }
     } else {
-      $records = $response['records'];
+      // because we did not ask for columns, the records are at the root of the response
+      $records = $response;
     }
     
-    if (!isset($response['records']))
+    if (!isset($records))
       return $r;
     // find the geom column
     foreach($response['columns'] as $col=>$cfg) {
@@ -670,17 +722,43 @@ function addDistPoint(features, record, wktCol) {
   
   /**
    * Method that retrieves the data from a report or a table/view, ready to display in a chart or grid.
-   * @param array $options Options array for the control. Can contain a dataSource (report or table/view name),
-   * mode (direct or report) and readAuth entries. Pass linkOnly=true to return just a link to the report data
-   * rather than the data.
+   * Respects the filters and columns $_GET variables generated by a grid's filter form when JavaScript is disabled.
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>mode</b><br/>
+   * Defaults to report, which means report data is being loaded. Set to direct to load data directly from an entity's view.
+   * </li>
+   * <li><b>dataSource</b><br/>
+   * Name of the report or entity being queried.
+   * </li>
+   * <li><b>readAuth</b><br/>
+   * Read authentication tokens.
+   * </li>
+   * <li><b>filters</b><br/>
+   * Array of key value pairs to include as a filter against the data.
+   * </li>
+   * <li><b>extraParams</b><br/>
+   * Array of additional key value pairs to attach to the request.
+   * </li>
+   * <li><b>linkOnly</b><br/>
+   * Pass true to return a link to the report data request rather than the data itself. Default false.
+   * </li>
+   * </ul>
+   
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
    * @return object If linkOnly is set in the options, returns the link string, otherwise returns the response as an array. 
    */
   public static function get_report_data($options, $extra='') {
+    $query = array();
     if ($options['mode']=='report') {
       $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
     } elseif ($options['mode']=='direct') {
       $serviceCall = 'data/'.$options['dataSource'].'?';
+      if (isset($_GET['filters']) && isset($_GET['columns'])) {
+        $filters=explode(',', $_GET['filters']);
+        $columns=explode(',', $_GET['columns']);
+        $assoc = array_combine($columns, $filters);
+        $query['like'] = $assoc;
+      }
     } else {
       throw new Exception('Invalid mode parameter for call to report_grid');
     }
@@ -690,9 +768,22 @@ function addDistPoint(features, record, wktCol) {
         'mode=json&nonce='.$options['readAuth']['nonce'].
         '&auth_token='.$options['readAuth']['auth_token'].
         $extra;
+    if (isset($options['filters'])) {
+      foreach ($options['filters'] as $key=>$value) {
+        if (is_array($value)) {
+          if (!isset($query['in'])) $query['in'] = array();
+          $query['in'][$key] = $value;
+        } else {
+          if (!isset($query['where'])) $query['where'] = array();
+          $query['where'][$key] = $value;
+        }
+      }
+    }
+    if (!empty($query))
+      $request .= "&query=".urlencode(json_encode($query));
     if (isset($options['extraParams'])) {
-    	foreach ($options['extraParams'] as $key=>$value)
-    	  $request .= "&$key=".urlencode($value);
+      foreach ($options['extraParams'] as $key=>$value) 
+        $request .= "&$key=$value";
     }
     if (isset($options['linkOnly']) && $options['linkOnly'])
       return $request;
@@ -861,7 +952,10 @@ function addDistPoint(features, record, wktCol) {
     $links = array();
     $currentUrl = self::get_reload_link_parts(); // needed for params
     foreach ($actions as $action) {
-      if (isset($action['url'])) {        
+      // skip any actions which are marked as invisible for this row.
+      if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
+        continue;
+      if (isset($action['url'])) {
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
         if (isset($action['urlParams'])) 
           $urlParams = array_merge($currentUrl['params'], $action['urlParams']);
@@ -907,7 +1001,8 @@ function addDistPoint(features, record, wktCol) {
       'extraParams' => array(),
       'completeParamsForm' => true,
       'callback' => '',
-      'paramsFormButtonCaption' => 'Run Report'
+      'paramsFormButtonCaption' => 'Run Report',
+      'view' => 'list'
     ), $options);
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default

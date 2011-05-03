@@ -21,11 +21,8 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+echo $grid;
 ?>
-<div class="sample_images">
-<?php echo $table ?>
-<br/>
 <form action="<?php echo url::site().'sample_image/create/'.$sample_id; ?>" method="post">
 <input type="submit" value="New sample image" class="ui-corner-all ui-state-default button" />
 </form>
-</div>

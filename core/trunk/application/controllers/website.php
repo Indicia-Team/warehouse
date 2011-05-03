@@ -34,7 +34,7 @@ class Website_Controller extends Gridview_Base_Controller
    */
   public function __construct()
   {
-    parent::__construct('website', 'website', 'website/index');
+    parent::__construct('website', 'website/index');
 
     $this->columns = array(
         'id'          => '',
@@ -44,10 +44,7 @@ class Website_Controller extends Gridview_Base_Controller
     );
 
     $this->pagetitle = "Websites";
-    // because the website id is the pk, we need a modified version of the general authorisation filter
-    $this->auth_filter = $this->gen_auth_filter;
-    if (isset($this->auth_filter['field']) && $this->auth_filter['field']=='website_id')
-      $this->auth_filter['field']='id';
+    $this->set_website_access('admin');
   }
     
   /**

@@ -23,9 +23,6 @@
  * loaded HTML grid (loaded using PHP on page load), and provides AJAX pagination and sorting without
  * page refreshes. It does not do the initial grid load operation.
  */
-var report_grid_page = 0;
-var report_grid_orderby = '';
-var report_grid_sortdir = '';
 
 (function($) {
   $.fn.reportgrid = function(options) {
@@ -37,21 +34,23 @@ var report_grid_sortdir = '';
     var loading=false;
     
     /**
+     * Public function which adds a list of records to the bottom of the grid, loaded according to a filter.
+     * Typical usage might be to specify an id to add a single record.
+     */
+    this.addRecords = function(filterField, filterValue) {
+      $.each($(this), function(idx, div) {
+        var request = request = getRequest(div);
+        request += '&' + filterField + '=' + filterValue;
+        loadGridFrom(div, request, false);
+      });
+    }
+    
+    /**
      * Function to make a service call to load the grid data.
      */
     load = function(div) {
-      var serviceCall, paramName;
-      if (div.settings.mode=='report') {
-        serviceCall = 'report/requestReport?report='+div.settings.dataSource+'.xml&reportSource=local&';
-      } else if (div.settings.mode=='direct') {
-        serviceCall = 'data/' + div.settings.dataSource + '?';
-      }
-      var request = div.settings.url+'index.php/services/' +
-          serviceCall +
-          'mode=json&nonce=' + div.settings.nonce +
-          '&auth_token=' + div.settings.auth_token +
-          '&offset=' + div.settings.offset +
-          '&callback=?';
+      var paramName, request = getRequest(div);
+      request += '&offset=' + div.settings.offset;
       // Extract any parameters from the attached form
       $('form#'+div.settings.paramsFormId+'-params input, form#'+div.settings.paramsFormId+'-params select').each(function(idx, input) {
         if (input.type!=='submit') {
@@ -66,21 +65,26 @@ var report_grid_sortdir = '';
       if (div.settings.itemsPerPage !== null) {
         request += '&limit=' + (div.settings.itemsPerPage+1);
       }
-      // were any predefined parameter values supplied?
-      if (div.settings.extraParams !== undefined) {
-        $.each(div.settings.extraParams, function(name, value) {
-          request += '&' + name + '=' + value;
+      if (typeof div.settings.extraParams !== "undefined") {
+        $.each(div.settings.extraParams, function(key, value) {
+          // skip sorting params if the grid has its own sort applied by clicking a column title
+          if ((key!=='orderby' && key!=='sortdir') || div.settings.orderby === null) {
+            request += '&' + key + '=' + value;
+          }
         });
       }
-      report_grid_page = Math.floor(div.settings.offset / div.settings.itemsPerPage);
-      report_grid_orderby = div.settings.orderby;
-      report_grid_sortdir = div.settings.sortdir;
+      request += getQueryParam(div);
+      loadGridFrom(div, request, true);
+    }
+    
+    loadGridFrom = function(div, request, clearExistingRows) {      
       $.getJSON(request,
           null,
           function(response) {
             var tbody = $(div).find('tbody');
             // clear current grid rows
-            tbody.children().remove();
+            if (clearExistingRows)
+              tbody.children().remove();
             var row, rows = eval(response), rowclass='', count=0, hasMore=false, value, rowInProgress=false, rowOutput;            
             $.each(rows, function(rowidx, row) {
               // We asked for one too many rows. If we got it, then we can add a next page button
@@ -103,8 +107,8 @@ var report_grid_sortdir = '';
                       value = row[col.fieldname];
                     }
                     // clear null value cells
-                    value = (value===null) ? '' : value;
-                    if (col.img == 'true') {
+                    value = (value===null || typeof value==="undefined") ? '' : value;
+                    if (col.img === true || col.img==='true') {
                       value = '<a href="'+div.settings.imageFolder+value+'" class="fancybox"><img src="'+div.settings.imageFolder+'thumb-'+value+'" /></a>';
                     }
                     rowOutput += '<td>' + value + '</td>';
@@ -145,7 +149,7 @@ var report_grid_sortdir = '';
             }
             pager.append(pagerContent);
             div.loading=false;
-            setupPaginationClicks(div);
+            setupReloadLinks(div);
 
             // execute callback it there is one
             if (div.settings.callback !== "") {
@@ -155,42 +159,94 @@ var report_grid_sortdir = '';
       );
     };
     
+    getRequest = function(div) {
+      var serviceCall;
+      if (div.settings.mode=='report') {
+        serviceCall = 'report/requestReport?report='+div.settings.dataSource+'.xml&reportSource=local&';
+      } else if (div.settings.mode=='direct') {
+        serviceCall = 'data/' + div.settings.dataSource + '?';
+      }
+      var request = div.settings.url+'index.php/services/' +
+          serviceCall +
+          'mode=json&nonce=' + div.settings.nonce +
+          '&auth_token=' + div.settings.auth_token +
+          '&view=' + div.settings.view +          
+          '&callback=?';
+      return request;
+    }
+    
+    /**
+     * Returns the query parameter, which filters the output based on the filters and filtercol/filtervalue.
+     */
+    getQueryParam = function(div) {
+      var query={}, needQuery = false;
+      if (div.settings.filterCol !== null && div.settings.filterValue !== null) {
+        query.like = {};
+        query.like[div.settings.filterCol] = div.settings.filterValue;
+        needQuery = true;
+      }
+      // were any predefined parameter values supplied?
+      if (typeof div.settings.filters !== "undefined") {
+        $.each(div.settings.filters, function(name, value) {
+          if ($.isArray(value)) {
+            if (typeof query.in==="undefined") {
+              query.in = {};
+            }
+            query.in[name] = value;
+          } else {
+            if (typeof query.where==="undefined") {
+              query.where = {};
+            }
+            query.where[name] = value;
+          }
+          needQuery = true;
+        });
+      }
+      if (needQuery) {
+        return '&query=' + JSON.stringify(query);
+      } else {
+        return '';
+      }
+    }
+    
     getActions = function(div, row, actions) {
       var result='', onclick, href;
       $.each(actions, function(idx, action) {
-        if (typeof action.javascript != "undefined") {
-          var rowCopy = row;
-          $.each(rowCopy, function(idx) {
-            if (rowCopy[idx]!==null) {
-              rowCopy[idx] = rowCopy[idx].replace(/'/g,"\\'");
-            }
-          });
-          onclick=' onclick="' + mergeParamsIntoTemplate(div, rowCopy, action.javascript) + '"';
-        } else {
-          onclick='';
-        }
-        if (typeof action.url != "undefined") {
-          var link = action.url;
-          if (typeof action.urlParams != "undefined") {
-            if (link.indexOf('?')==-1) { link += '?'; }
-            else { link += '&'; }
-            $.each(action.urlParams, function(name, value) {              
-              link += name + '=' + value;
-              link += '&';
+        if (typeof action.visibility_field == "undefined" || row[action.visibility_field]!=='f') {
+          if (typeof action.javascript != "undefined") {
+            var rowCopy = row;
+            $.each(rowCopy, function(idx) {
+              if (rowCopy[idx]!==null) {
+                rowCopy[idx] = rowCopy[idx].replace(/'/g,"\\'");
+              }
             });
-            if (link.substr(-1)=='&') {
-              link = link.substr(0, link.length-1);
-            }
+            onclick=' onclick="' + mergeParamsIntoTemplate(div, rowCopy, action.javascript) + '"';
+          } else {
+            onclick='';
           }
-          link = mergeParamsIntoTemplate(div, row, link);
-          href=' href="' + link + '"';
-        } else {
-          href='';
+          if (typeof action.url != "undefined") {
+            var link = action.url;
+            if (typeof action.urlParams != "undefined") {
+              if (link.indexOf('?')==-1) { link += '?'; }
+              else { link += '&'; }
+              $.each(action.urlParams, function(name, value) {              
+                link += name + '=' + value;
+                link += '&';
+              });
+              if (link.substr(-1)=='&') {
+                link = link.substr(0, link.length-1);
+              }
+            }
+            link = mergeParamsIntoTemplate(div, row, link);
+            href=' href="' + link + '"';
+          } else {
+            href='';
+          }
+          if (result !== '') {
+            result += '<br/>';
+          }
+          result += '<a class="action-button"'+onclick+href+'>'+action.caption+'</a>';
         }
-        if (result !== '') {
-          result += '<br/>';
-        }
-        result += '<a class="action-button"'+onclick+href+'>'+action.caption+'</a>';
       });
       return result;
     };
@@ -215,7 +271,9 @@ var report_grid_sortdir = '';
       return template;
     };
     
-    setupPaginationClicks = function(div) {
+    
+    // Sets up various clickable things like the filter button on a direct report, or the pagination links.
+    setupReloadLinks = function(div) {
       // Define pagination clicks.
       if (div.settings.itemsPerPage!==null) {
         $(div).find('.pager .next').click(function(e) {
@@ -234,6 +292,29 @@ var report_grid_sortdir = '';
           // Min offset is zero, shouldn't really happen.
           if (div.settings.offset<0) {div.settings.offset=0;}
           load(div);
+        });
+      }
+      if (div.settings.mode=='direct' && div.settings.autoParamsForm) {
+        // define a filter form click
+        $(div).find('.run-filter').click(function(e) {
+          e.preventDefault();
+          div.settings.offset = 0;
+          if (div.loading) {return;}
+          div.loading = true;
+          div.settings.filterCol = $(div).find('.filterSelect').val();
+          div.settings.filterValue = $(div).find('.filterInput').val();
+          load(div);
+          if (div.settings.filterValue==='') {
+            $(div).find('.clear-filter').hide();
+          } else {
+            $(div).find('.clear-filter').show();
+          }
+        });
+        $(div).find('.clear-filter').click(function(e) {
+          e.preventDefault();
+          $(div).find('.filterSelect').val('');
+          $(div).find('.filterInput').val('');
+          $(div).find('.run-filter').click();
         });
       }
     }
@@ -267,12 +348,13 @@ var report_grid_sortdir = '';
         load(div);
       });    
 
-      setupPaginationClicks(div);
+      setupReloadLinks(div);
 
       // execute callback it there is one
       if (div.settings.callback !== "") {
         window[div.settings.callback]();
       }
+     
     });
   };
 })(jQuery);
@@ -285,6 +367,7 @@ $.fn.reportgrid.defaults = {
   auth_token : '',
   nonce : '',
   dataSource : '',
+  view: 'list', 
   columns : null,
   orderby : null,
   sortdir : 'ASC',
@@ -294,5 +377,7 @@ $.fn.reportgrid.defaults = {
   imageFolder : '',
   rootFolder: '',
   currentUrl: '',
-  callback : ''
+  callback : '',
+  filterCol: null,
+  filterValue: null
 };

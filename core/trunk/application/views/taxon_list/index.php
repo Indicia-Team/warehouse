@@ -21,14 +21,12 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+echo $grid;
 ?>
-<div class="taxon_list">
-<?php echo $table ?>
-<br/>
 <form action="<?php echo url::site().'taxon_list/create'; ?>" method="post">
 <?php if (isset($parent_id)) : ?>
 <input type="hidden" name="parent_id" value="<?php echo $parent_id; ?>" />
 <?php endif; ?>
 <input type="submit" value="New species list" class="ui-corner-all ui-state-default button" />
 </form>
-</div>
+

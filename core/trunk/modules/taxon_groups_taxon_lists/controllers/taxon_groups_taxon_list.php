@@ -22,33 +22,30 @@
 
 /**
  * Controller class for the taxon groups taxon lists plugin module.
+ * Calling modes:
+ * index - taxon_list_taxon_group/1 where 1 is the taxon_list_id
  */
 class Taxon_groups_taxon_list_Controller extends Gridview_Base_Controller {
 
   public function __construct()
   {
-    parent::__construct('taxon_groups_taxon_list', 'gv_taxon_groups_taxon_list', 'taxon_groups_taxon_list/index');
+    parent::__construct('taxon_groups_taxon_list', 'taxon_groups_taxon_list/index', 
+        null, 'taxon_groups_taxon_list');
     $this->columns = array(
       'title' => 'Taxon Group'
     );
     $this->pagetitle = "Taxon Groups";
-    $this->model = ORM::factory('taxon_groups_taxon_list');
-  }
-
-  /**
-   * This avoids the need for the plugin module to edit the router config file. 
-   * @param integer $filter The Id of the taxon list being viewed.
-   */
-  public function index($filter = null) {
-    self::page(1, $filter);
   }
   
   /**
    * Apply the filter for the selected taxon list to the list of groups.
    */
-  public function page($page_no, $filter = null) {
-    $this->base_filter['taxon_list_id'] = $filter;
-    parent::page($page_no, $filter);
+  public function index() {
+    if ($this->uri->total_arguments()>0) {
+      $this->taxon_list_id = $this->uri->argument(1);
+      $this->base_filter['taxon_list_id'] = $this->taxon_list_id;
+    }
+    parent::index();
   }
   
   /** 
@@ -69,8 +66,27 @@ class Taxon_groups_taxon_list_Controller extends Gridview_Base_Controller {
    */
   protected function get_action_columns() {
     return array(
-        'delete' => $this->controllerpath."/delete/#id#"
+      array(
+        'caption' => 'delete',
+        'url' => $this->controllerpath."/delete/{id}"
+      )
     );
+  }
+  
+  /**
+   * Controller action for AJAX to add a taxon group to this list.
+   */
+  public function add_taxon_group() {
+    // no template as this is for AJAX
+    $this->auto_render=false;
+    $new = ORM::factory('taxon_groups_taxon_list');
+    $data['taxon_list_id']=$_POST['taxon_list_id'];
+    $data['taxon_group_id']=$_POST['taxon_group_id'];
+    if ($new->validate(new Validation($data), true))
+      echo $new->id;
+    else {
+      echo implode("\n", array_values($new->getAllErrors()));
+    }
   }
 
 }
