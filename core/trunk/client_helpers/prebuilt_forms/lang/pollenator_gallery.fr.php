@@ -111,6 +111,7 @@ $custom_terms = array(
 	,'LANG_Submit_Comment' => 'Ajouter'
 	,'LANG_Comment_By' => "par : "
 	,'LANG_Reset_Filter' => 'Réinitialiser'
+	,'LANG_Submit_Location' => 'Ajouter'
 	
 	,'validation_required' => "Ce champ est obligatoire"
 	,'Yes' => 'Oui'

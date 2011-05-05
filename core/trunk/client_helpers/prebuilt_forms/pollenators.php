@@ -1763,7 +1763,7 @@ addSession = function(){
 		.appendTo(newTitle);	
 	newModButton.click(function() {
 		if(!validateAndSubmitOpenSessions()) return false;
-		var session=$(this).parents('.poll-session');;
+		var session=$(this).parents('.poll-session');
 		session.show();
 		session.children().show();
 		session.children(':first').children(':first').hide(); // this is the mod button itself
@@ -2278,7 +2278,7 @@ validateInsect = function(){
 	if(jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val() == ''){
     	myScrollTo('#cc-4-insect-upload');
 		alert(\"".lang::get('LANG_Must_Provide_Insect_Picture')."\");
-		valid = false;;
+		valid = false;
 	}
 	if(valid == false) {
 		myScrollToError();

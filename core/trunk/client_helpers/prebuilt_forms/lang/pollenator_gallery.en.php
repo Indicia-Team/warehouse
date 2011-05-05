@@ -95,6 +95,7 @@ $custom_terms = array(
 	,'Temperature Bands' => 'Temperature'
 	,'LANG_User_Link' => 'View all collections for this user'
 	
+	,'LANG_Submit_Location' => 'Submit'
 	,'LANG_Comments_Title' => 'COMMENTS'
 	,'LANG_New_Comment' => 'Add a comment'
 	,'LANG_Username' => 'Username'
