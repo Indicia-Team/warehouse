@@ -35,6 +35,7 @@ class Person_Controller extends Gridview_Base_Controller {
       'first_name'=>''
       ,'surname'=>''
       ,'initials'=>''
+      ,'email_address'=>''
     );
     $this->pagetitle = "People";
     $this->model = new Person_Model();
