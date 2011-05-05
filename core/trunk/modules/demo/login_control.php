@@ -22,7 +22,7 @@ $website_id=$config['website_id'];
 
 #indicia-login-control fieldset {
   width: 450px;
-  background-color: #ffffdd;;
+  background-color: #ffffdd;
   padding-bottom: 1em;
 }
 
