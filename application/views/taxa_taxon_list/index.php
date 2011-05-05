@@ -80,4 +80,3 @@ if (isset($parent_list_id)) {
   echo data_entry_helper::dump_javascript(true);
 }
 ?>
-</div>
