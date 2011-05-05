@@ -14,17 +14,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    http://code.google.com/p/indicia/
  */
 
 /**
  * Controller providing CRUD access to the images for an occurrence comment
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
  */
 class Occurrence_comment_Controller extends Gridview_Base_Controller
@@ -50,7 +50,7 @@ class Occurrence_comment_Controller extends Gridview_Base_Controller
     // pass the occurrence id into the view, so the create button can use it to autoset
     // the occurrence of the new comment.
     if ($this->uri->total_arguments()>0) {
-      $this->view->occurrence_id=$this->uri->argument(1);;
+      $this->view->occurrence_id=$this->uri->argument(1);
     }
   }
 
