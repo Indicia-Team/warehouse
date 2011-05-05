@@ -1,23 +1,29 @@
 <?php
+/**
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package Indicia
+ * @subpackage Libraries
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    http://code.google.com/p/indicia/
+ */
 
 /**
-* INDICIA
-* @link http://code.google.com/p/indicia/
-* @package Indicia
+* The report reader encapsulates logic for reading reports from a number of sources, and opens up * report 
+* methods in a transparent way to the report controller.
 */
-
-/**
-* <h1>XML Report reader</h1>
-* <p>The report reader encapsulates logic for reading reports from a number of sources, and opens up * report methods in a transparent way to the report controller.</p>
-*
-* @package Indicia
-* @subpackage Controller
-* @license http://www.gnu.org/licenses/gpl.html GPL
-* @author Nicholas Clarke <xxx@xxx.net> / $Author$
-* @copyright xxxx
-* @version $Rev$ / $LastChangedDate$
-*/
-
 class XMLReportReader_Core implements ReportReader
 {
   private $name;
@@ -125,7 +131,7 @@ class XMLReportReader_Core implements ReportReader
                 $this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
                 break;
               case 'download': // This enables download processing.. potentially dangerous as updates DB.
-                $this->setDownload($reader->getAttribute('mode'));;
+                $this->setDownload($reader->getAttribute('mode'));
                 break;
               case 'mergeTabColumn':
                  $this->setMergeTabColumn(
@@ -357,21 +363,21 @@ class XMLReportReader_Core implements ReportReader
       vt.text_value, vt.float_value, vt.int_value, vt.date_start_value, vt.date_end_value, vt.date_type_value,
       at.id, at.caption, at.data_type, at.termlist_id, at.multi_value ";
     $j=0;
-  // table list
-  $query .= " FROM ";
-  for($i = 0; $i <= $attributes->parentTableIndex; $i++){
-    if ($i == 0) {
-        $query .= $this->tables[$i]['tablename']." lt".$i;
-    } else { // making assumption to reduce the size of the query that all left outer join tables can be excluded
-        if ($this->tables[$i]['join'] == null) {
-          $query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
-            if($this->tables[$i]['where'] != null) {
-              $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
-           }
-            $query .= ") ";
-        }
+    // table list
+    $query .= " FROM ";
+    for($i = 0; $i <= $attributes->parentTableIndex; $i++){
+      if ($i == 0) {
+          $query .= $this->tables[$i]['tablename']." lt".$i;
+      } else { // making assumption to reduce the size of the query that all left outer join tables can be excluded
+          if ($this->tables[$i]['join'] == null) {
+            $query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
+              if($this->tables[$i]['where'] != null) {
+                $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
+             }
+              $query .= ") ";
+          }
+      }
     }
-  }
     $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE) ";
@@ -598,6 +604,9 @@ class XMLReportReader_Core implements ReportReader
       }
     }
     while ($nesting > 0);
+    kohana::log('debug', 'query: '.$query);
+    kohana::log('debug', 'i0: '.$i0);
+    kohana::log('debug', 'i1: '.$i1);
 
     $i1 = $nextFrom - $i0;
     $colString = substr($this->query, $i0, $i1);
