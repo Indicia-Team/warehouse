@@ -13,6 +13,9 @@ class Cache_File_Driver implements Cache_Driver {
 
 	protected $directory = '';
 
+	// Have to be very careful: need the functionality whereby we can reset the timeout on a cache entry.
+	// But if the cache is under multiple heavy use, deleting a file could be bad news.
+	
 	/**
 	 * Tests that the storage location is a directory and is writable.
 	 */
@@ -30,13 +33,14 @@ class Cache_File_Driver implements Cache_Driver {
 	}
 
 	/**
-	 * Finds an array of files matching the given id or tag.
+	 * Finds an array of all files matching the given id or tag.
+	 * Will include multiple entries for multiple lifetime values.
 	 *
 	 * @param  string  cache id or tag
 	 * @param  bool    search for tags
 	 * @return array   of filenames matching the id or tag
 	 */
-	public function exists($id, $tag = FALSE)
+	private function all_exists($id, $tag)
 	{
 		if ($id === TRUE)
 		{
@@ -79,6 +83,37 @@ class Cache_File_Driver implements Cache_Driver {
 	}
 
 	/**
+	 * Finds an array of files matching the given id or tag.
+	 * Only includes the most recent file.
+	 *
+	 * @param  string  cache id or tag
+	 * @param  bool    search for tags
+	 * @return array   of filenames matching the id or tag
+	 */
+	public function exists($id, $tag = FALSE)
+	{
+		$paths = $this->all_exists($id, $tag);
+		$tmpfiles = array();
+		foreach ($paths as $path)
+		{
+			// Split the files
+			$expires = (int) substr($path, strrpos($path, '~') + 1);
+			$theRest = substr($path, 0, strrpos($path, '~'));
+			if(array_key_exists($theRest, $tmpfiles)){
+				if($expires > $tmpfiles[$theRest])
+					$tmpfiles[$theRest] = $expires;
+			} else
+				$tmpfiles[$theRest] = $expires;
+		}
+		$files = array();
+		foreach ($tmpfiles as $theRest => $expires)
+		{
+			$files[] = $theRest.'~'.$expires;
+		}
+		return $files;
+	}
+
+	/**
 	 * Sets a cache item to the given data, tags, and lifetime.
 	 *
 	 * @param   string   cache id to set
@@ -89,23 +124,56 @@ class Cache_File_Driver implements Cache_Driver {
 	 */
 	public function set($id, $data, array $tags = NULL, $lifetime)
 	{
-		// Remove old cache files
-		$this->delete($id);
-
-		// Cache File driver expects unix timestamp
+		// Cache File driver expects unix timestamp: this is in seconds
 		if ($lifetime !== 0)
 		{
 			$lifetime += time();
 		}
-
 		if ( ! empty($tags))
 		{
 			// Convert the tags into a string list
 			$tags = implode('+', $tags);
 		}
-
+		$files = $this->all_exists($id, false);
+		$newFile = $id.'~'.$tags.'~'.$lifetime;
+		// create new file before deleting old ones.
+		$retVal = file_put_contents($this->directory.$newFile, serialize($data));
+		// because this can be referenced many times in parallel, eg by AJAX service calls,
+		// we can not just delete all old files, as they may be being used by another call at the time.
+		// the strategy then becomes do not delete anything less than 5 seconds old, and do not delete the youngest
+		// file more than 5 seconds old. 5 seconds is chosen as it is reasonable to assume that whatever process
+		// has asked for the list of files will be complete in that time.
+		if (!empty($files)){
+			// Disable all error reporting while deleting
+			$ER = error_reporting(0);
+			$age=-1;
+			foreach ($files as $file)
+			{
+				$oldfile = basename($file);
+				$oldlifetime = (int) substr($file, strrpos($file, '~')+1);
+				if($lifetime == 0 && $oldlifetime !=0){
+					if ( ! unlink($file))
+						Kohana::log('error', 'Cache: Unable to delete cache file: '.$file);
+				} else if ($lifetime-$oldlifetime > 5) {
+					if($oldlifetime > $age) {
+						if($age >= 0) {
+							if ( ! unlink($agefile))
+								Kohana::log('error', 'Cache: Unable to delete cache file: '.$agefile);
+						}
+						$age = $oldlifetime;
+						$agefile = $file;
+					} else {
+						if ( ! unlink($file))
+							 Kohana::log('error', 'Cache: Unable to delete cache file: '.$file);
+					}
+				}
+			}
+			// Turn on error reporting again
+			error_reporting($ER);
+		}	
+		
 		// Write out a serialized cache
-		return (bool) file_put_contents($this->directory.$id.'~'.$tags.'~'.$lifetime, serialize($data));
+		return (bool) $retVal;
 	}
 
 	/**
@@ -118,12 +186,9 @@ class Cache_File_Driver implements Cache_Driver {
 	{
 		// An array will always be returned
 		$result = array();
-
+		// use the most recent only.
 		if ($paths = $this->exists($tag, TRUE))
 		{
-			// Length of directory name
-			$offset = strlen($this->directory);
-
 			// Find all the files with the given tag
 			foreach ($paths as $path)
 			{
@@ -195,7 +260,7 @@ class Cache_File_Driver implements Cache_Driver {
 	 */
 	public function delete($id, $tag = FALSE)
 	{
-		$files = $this->exists($id, $tag);
+		$files = $this->all_exists($id, $tag);
 
 		if (empty($files))
 			return FALSE;
@@ -205,7 +270,7 @@ class Cache_File_Driver implements Cache_Driver {
 
 		foreach ($files as $file)
 		{
-			// Remove the cache file
+			// Remove the cache files
 			if ( ! unlink($file))
 				Kohana::log('error', 'Cache: Unable to delete cache file: '.$file);
 		}
@@ -223,7 +288,7 @@ class Cache_File_Driver implements Cache_Driver {
 	 */
 	public function delete_expired()
 	{
-		if ($files = $this->exists(TRUE))
+		if ($files = $this->all_exists(TRUE))
 		{
 			// Disable all error reporting while deleting
 			$ER = error_reporting(0);
