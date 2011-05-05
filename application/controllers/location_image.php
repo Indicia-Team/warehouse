@@ -14,22 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    http://code.google.com/p/indicia/
  */
 
 /**
  * Controller providing CRUD access to the images for an location
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
  */
 class location_image_Controller extends Gridview_Base_Controller
 {
-	public function __construct()
+  public function __construct()
   {
     parent::__construct('location_image', 'location_image/index');
     $this->columns = array(
@@ -51,7 +51,7 @@ class location_image_Controller extends Gridview_Base_Controller
     // pass the location id into the view, so the create button can use it to autoset
     // the location of the new image.
     if ($this->uri->total_arguments()>0) {
-      $this->view->location_id=$this->uri->argument(1);;
+      $this->view->location_id=$this->uri->argument(1);
     }
   }
   
