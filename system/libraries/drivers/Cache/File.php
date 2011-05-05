@@ -288,7 +288,7 @@ class Cache_File_Driver implements Cache_Driver {
 	 */
 	public function delete_expired()
 	{
-		if ($files = $this->all_exists(TRUE))
+		if ($files = $this->all_exists(TRUE, false))
 		{
 			// Disable all error reporting while deleting
 			$ER = error_reporting(0);

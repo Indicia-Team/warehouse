@@ -542,12 +542,11 @@ class iform_pollenator_gallery {
     	$options['msgGeorefNothingFound'] = lang::get('msgGeorefNothingFound');
     
     $options2 = $options;
-    $options['searchLayer'] = 'true';
-    $options['editLayer'] = 'false';
+    $options['searchLayer'] = true;
+    $options['editLayer'] = false;
     $options['layers'] = array('polygonLayer');
     
 	$options2['divId'] = "map2";
-    $options2['layers'] = array('locationLayer');
     $options2['height'] = $args['2nd_map_height'];
 
     data_entry_helper::$javascript .= "var flowerTaxa = [";
@@ -735,11 +734,10 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     data_entry_helper::$onload_javascript = $tempScript;
     $r .= '</div>
     </div>
-	<div id="fc-new-location" class="ui-accordion-content ui-helper-reset ui-widget-content ui-accordion-content-active ui-corner-all">
+	<div id="fc-new-location" class="ui-widget-content ui-corner-all">
 		<form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
     		<input type="hidden"                       name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden"                       name="survey_id" value="'.$args['survey_id'].'" />
-    		<input type="hidden" id="imp-sref"         name="location:centroid_sref"  value="" />
     		<input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
 		 	<input type="hidden"                       name="location:name" value="" />
     		<input type="hidden" id="location-id"      name="location:id" value=""/>
@@ -1142,7 +1140,7 @@ loadCollection = function(id, index){
 	collection_preferred_object.collection_id = id;
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
 	jQuery('#fc-new-comment').removeClass('ui-accordion-content-active');
-	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "addClass" : "removeClass")."('ui-accordion-content-active');
+	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "show()" : "hide()").";
 	jQuery('#focus-occurrence,#filter,#fc-next-button,#fc-prev-button').hide();
     jQuery('#focus-collection').show();
     if(index != null){
@@ -1152,11 +1150,11 @@ loadCollection = function(id, index){
     		jQuery('#fc-prev-button').show().data('index', index-1);
     }
     if(jQuery('#map2').children().length == 0) {
-    	locationLayer = new OpenLayers.Layer.Vector('Location Layer',{displayInLayerSwitcher: false});
     	".$map2JS."
  	};
-    locationLayer.destroyFeatures();
- 	jQuery('#map2').width('auto');
+	jQuery('#map2')[0].map.editLayer.clickControl.".(user_access('IForm n'.$node->nid.' edit geolocation') ? "" : "de")."activate();
+	jQuery('#map2')[0].map.editLayer.destroyFeatures();
+	jQuery('#map2').width('auto');
 	jQuery('#flower-image').data('occID', 'none').data('collectionIndex', index);
 	jQuery('#collection-insects,#collection-date,#collection-flower-name,#collection-flower-type,#collection-habitat,#collection-user-name').empty();
 	loadComments(id, '#fc-comment-list', 'sample_comment', 'sample_id', 'sample-comment-block', 'sample-comment-body', true);
@@ -1230,8 +1228,10 @@ loadCollection = function(id, index){
 						case ".$args['uid_attr_id'].":
 							collection_preferred_object.user_id = attrdata[i].value
 			       		    jQuery('#collection-user-link').attr('href', '".url('node/'.$node->nid)."?user_id='+attrdata[i].value);
-							if(attrdata[i].value == ".$user->uid.") // user can edit geolocation of own collections.
-								jQuery('#fc-new-location').addClass('ui-accordion-content-active');
+							if(attrdata[i].value == ".$user->uid.") { // user can edit geolocation of own collections.
+								jQuery('#fc-new-location').show();
+								jQuery('#map2')[0].map.editLayer.clickControl.activate();
+							}
 			       		    break;
     }}}}}));
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" +id+
@@ -1266,13 +1266,13 @@ loadCollection = function(id, index){
 					var parts=locationData[0].centroid_sref.split(' ');
 					var refx = parts[0].split(',');
 					jQuery('#imp-sref-lat').val(refx[0]);
-					jQuery('#imp-sref-long').val(parts[1]);
+					jQuery('#imp-sref-long').val(parts[1]).change();
 				    loadImage('location_image', 'location_id', locationData[0].id, '#environment-image', ".$args['Environment_Image_Ratio'].", function(imageRecord){collection_preferred_object.environment_image_path = imageRecord.path}, 'med-', false);
 					var parser = new OpenLayers.Format.WKT();
 					var feature = parser.read(locationData[0].centroid_geom);
-					locationLayer.addFeatures([feature]);
-					var bounds=locationLayer.getDataExtent();
-					locationLayer.map.setCenter(bounds.getCenterLonLat(), 13);
+//					jQuery('#map2')[0].map.editLayer.addFeatures([feature]);
+//					var bounds=jQuery('#map2')[0].map.editLayer.getDataExtent();
+//					jQuery('#map2')[0].map.editLayer.map.setCenter(bounds.getCenterLonLat(), 13);
 			        var filter = new OpenLayers.Filter.Spatial({
   						type: OpenLayers.Filter.Spatial.CONTAINS ,
     					property: 'the_geom',
@@ -1699,10 +1699,10 @@ setInsectPage = function(pageNum){
 
 // searchLayer in map is used for georeferencing.
 // map editLayer is switched off. TODO: need to switch off click control
+// editlayer left in map2: replaces locationLayer
 searchLayer = null;
 inseeLayer = null;
 polygonLayer = null;     
-locationLayer = null;
 inseeProtocol = new OpenLayers.Protocol.WFS({
               url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['INSEE_url'])."',
               featurePrefix: '".$args['INSEE_prefix']."',
@@ -2420,13 +2420,17 @@ jQuery('#fc-new-location-form').ajaxForm({
 	dataType:  'json', 
 	beforeSubmit:   function(data, obj, options){
 		if (!jQuery('form#fc-new-location-form').valid()) { return false; }
+  		jQuery('#fc_location_submit_button').addClass('loading-button');
 		return true;
 	},
 	success:   function(data){
 		if(data.error != undefined){
 			alert(data.error);
 		}
-	} 
+	},
+	complete: function (){
+  		jQuery('.loading-button').removeClass('loading-button');
+  	}
 });
 loadSampleAttributes = function(keyValue){
     jQuery('#fo-insect-start-time,#fo-insect-end-time,#fo-insect-sky,#fo-insect-temp,#fo-insect-wind,#fo-insect-shade').empty();
