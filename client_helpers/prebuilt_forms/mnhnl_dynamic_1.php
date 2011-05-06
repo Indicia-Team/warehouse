@@ -1050,7 +1050,7 @@ class iform_mnhnl_dynamic_1 {
     return data_entry_helper::date_picker(array_merge(array(
       'label'=>lang::get('LANG_Date'),
       'fieldname'=>'sample:date',
-          'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
+      'default' => isset($args['defaults']['sample:date']) ? $args['defaults']['sample:date'] : ''
     ), $options));
   }
   
