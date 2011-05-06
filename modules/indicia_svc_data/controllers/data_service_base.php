@@ -125,9 +125,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   
   /** 
    * By default, a service request returns the records only. This can be controlled by the GET parameters
-   * wantRecords (default 1), wantColumns (default 0) and wantParameters (default 0). If there is only one of these 
-   * set to true, then the requested structure is returned alone. Otherwise the structure returned is 
-   * 'records' => $records, 'columns' => $this->view_columns.
+   * wantRecords (default 1), wantColumns (default 0), wantCount (default 0) and wantParameters (default 0). If there is 
+   * only one of these set to true, then the requested structure is returned alone. Otherwise the structure returned is 
+   * 'records' => $records, 'columns' => $this->view_columns, 'count' => n.
    * Note that if the report parameters are incomplete, then the response will always be just the 
    * parameter request. 
    */
@@ -138,12 +138,15 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     } else {
       $wantRecords = !isset($_GET['wantRecords']) || $_GET['wantRecords']='0';
       $wantColumns = isset($_GET['wantColumns']) && $_GET['wantColumns']='1';
-      if ($wantRecords && $wantColumns)
-        return array('records'=>$records, 'columns'=>$this->view_columns);
-      elseif ($wantColumns)
-        return $this->view_columns;
+      $wantCount = isset($_GET['wantCount']) && $_GET['wantCount']='1';
+      $array = array();
+      if ($wantRecords) $array['records'] = $records;
+      if ($wantColumns) $array['columns'] = $this->view_columns;
+      if ($wantCount) $array['count'] = $this->record_count();
+      if (count($array)===1) 
+        return array_pop($array);
       else
-        return $records;
+        return $array;
     }
   }
 

@@ -229,6 +229,8 @@ class report_helper extends helper_base {
       }
       $r .= "</tr></thead>\n";
     }
+    
+    $r .= '<tfoot><tr><td colspan="'.count($options['columns']).'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr></tfoot>';
     $r .= "<tbody>\n";
     $rowClass = '';
     $outputCount = 0;
@@ -236,6 +238,7 @@ class report_helper extends helper_base {
     $currentUrl = self::get_reload_link_parts();
     $relpath = self::relative_client_helper_path();
     if (count($records)>0) {
+      $rowInProgress=false;
       foreach ($records as $rowIdx => $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
         if ($outputCount>=$options['itemsPerPage'])
@@ -292,29 +295,14 @@ class report_helper extends helper_base {
     }
     
     $r .= "</tbody></table>\n";
-    // Output pagination links
-    $pagLinkUrl = $pageUrl . ($sortAndPageUrlParams['orderby']['value'] ? $sortAndPageUrlParams['orderby']['name'].'='.$sortAndPageUrlParams['orderby']['value'].'&' : '');
-    $pagLinkUrl .= $sortAndPageUrlParams['sortdir']['value'] ? $sortAndPageUrlParams['sortdir']['name'].'='.$sortAndPageUrlParams['sortdir']['value'].'&' : '';
-    $r .= "<div class=\"pager\">\n";
-    // If not on first page, we can go back.
-    if ($sortAndPageUrlParams['page']['value']>0) {
-      $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
-      $r .= "<a class=\"prev\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">&#171 previous</a> \n";
-    }
-    // pagination separator if both links are present
-    if ($sortAndPageUrlParams['page']['value']>0 && count($records)>$options['itemsPerPage'])
-      $r .= ' &#166; ';
-    // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
-    if (count($records)>$options['itemsPerPage']) {
-      $next = $sortAndPageUrlParams['page']['value'] + 1;
-      $r .= "<a class=\"next\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">next &#187</a> \n";
-    }
-    $r .= "</div></div>\n";
+    $r .= "</div>\n";
 
     // Now AJAXify the grid
     self::add_resource('reportgrid');
     $uniqueName = 'grid_' . preg_replace("[^A-Za-z0-9_]", '', $options['id']);
+    global $indicia_templates;
     self::$javascript .= $uniqueName . " = $('#".$options['id']."').reportgrid({
+  id: '".$options['id']."',
   mode: '".$options['mode']."',
   dataSource: '".str_replace('\\','/',$options['dataSource'])."',
   view: '".$options['view']."',
@@ -329,6 +317,7 @@ class report_helper extends helper_base {
   imageFolder: '".self::get_uploaded_image_folder()."',
   currentUrl: '".$currentUrl['path']."',
   galleryColCount: ".$options['galleryColCount'].",
+  pagingTemplate: '".$indicia_templates['paging']."',
   altRowClass: '".$options['altRowClass']."'";
     if (isset($options['extraParams']))
       self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
@@ -338,9 +327,87 @@ class report_helper extends helper_base {
       self::$javascript .= ",\n  orderby: '".$orderby."'";
     if (isset($sortdir))
       self::$javascript .= ",\n  sortdir: '".$sortdir."'";
+    if (isset($response['count']))
+      self::$javascript .= ",\n  recordCount: ".$response['count'];
     if (isset($options['columns']))
       self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
 });\n";
+    return $r;
+  }
+  
+  /**
+   * Output pagination links
+   */
+  private static function output_pager($options, $pageUrl, $sortAndPageUrlParams, $response) {
+    global $indicia_templates;
+    $pagLinkUrl = $pageUrl . ($sortAndPageUrlParams['orderby']['value'] ? $sortAndPageUrlParams['orderby']['name'].'='.$sortAndPageUrlParams['orderby']['value'].'&' : '');
+    $pagLinkUrl .= $sortAndPageUrlParams['sortdir']['value'] ? $sortAndPageUrlParams['sortdir']['name'].'='.$sortAndPageUrlParams['sortdir']['value'].'&' : '';
+    if (!isset($response['count'])) {
+      $r = self::simple_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl);
+    } else {
+      $r = self::advanced_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl);
+    }
+    $r = str_replace('{paging}', $r, $indicia_templates['paging_container']);
+    return $r;
+  }
+  
+  private static function simple_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl) {
+    $r = '';
+    // If not on first page, we can go back.
+    if ($sortAndPageUrlParams['page']['value']>0) {
+      $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
+      $r .= "<a class=\"pag-prev pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">previous</a> \n";
+    } else 
+      $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">previous</span> \n";
+    // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
+    if (count($response['records'])>$options['itemsPerPage']) {
+      $next = $sortAndPageUrlParams['page']['value'] + 1;
+      $r .= "<a class=\"pag-next pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">next &#187</a> \n";
+    } else 
+      $r .= "<span class=\"pag-next ui-state-disabled pager-button\">next</span> \n";
+    return $r;
+  }
+  
+  private static function advanced_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl) {
+    global $indicia_templates;
+    $r = '';
+    $replacements = array();
+    // build a link URL to an unspecified page
+    $pagLinkUrl .= $sortAndPageUrlParams['page']['name'];
+    // If not on first page, we can include previous link.
+    if ($sortAndPageUrlParams['page']['value']>0) {
+      $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
+      $replacements['prev'] = "<a class=\"pag-prev pager-button\" href=\"$pagLinkUrl=$prev\">".lang::get('previous')."</a> \n";
+      $replacements['first'] = "<a class=\"pag-first pager-button\" href=\"$pagLinkUrl=0\">".lang::get('first')."</a> \n";
+    } else {
+      $replacements['prev'] = "<span class=\"pag-prev pager-button ui-state-disabled\">".lang::get('prev')."</span>\n";
+      $replacements['first'] = "<span class=\"pag-first pager-button ui-state-disabled\">".lang::get('first')."</span>\n";
+    }
+    $pagelist = '';
+    $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0)+1;
+    for ($i=max(1, $page-5); $i<=min($response['count']/$options['itemsPerPage'], $page+5); $i++) {
+      if ($i===$page) 
+        $pagelist .= "<span class=\"pag-page pager-button ui-state-disabled\" id=\"page-".$options['id']."-$i\">$i</span>\n";
+      else
+        $pagelist .= "<a class=\"pag-page pager-button\" href=\"$pagLinkUrl=".($i-1)."\" id=\"page-".$options['id']."-$i\">$i</a>\n";
+    }
+    $replacements['pagelist'] = $pagelist;
+    // if not on the last page, display a next link
+    if ($page<$response['count']/$options['itemsPerPage']) {
+      $next = $sortAndPageUrlParams['page']['value'] + 1;
+      $replacements['next'] = "<a class=\"pag-next pager-button\" href=\"$pagLinkUrl=$next\">".lang::get('next')."</a>\n";
+      $replacements['last'] = "<a class=\"pag-last pager-button\" href=\"$pagLinkUrl=".round($response['count']/$options['itemsPerPage']-1)."\">".lang::get('last')."</a>\n";
+    } else {
+      $replacements['next'] = "<span class=\"pag-next pager-button ui-state-disabled\">".lang::get('next')."</span>\n";
+      $replacements['last'] = "<span class=\"pag-last pager-button ui-state-disabled\">".lang::get('last')."</span>\n";
+    }
+    $replacements['showing'] = '<span class="pag-showing">'.lang::get('Showing records {1} to {2} of {3}', 
+        ($page-1)*$options['itemsPerPage']+1, 
+        min($page*$options['itemsPerPage'], $response['count']),
+        $response['count']).'</span>';
+    $r = $indicia_templates['paging'];
+    foreach($replacements as $search => $replace)
+      $r = str_replace('{'.$search.'}', $replace, $r);
     return $r;
   }
 
@@ -808,7 +875,7 @@ function addDistPoint(features, record, wktCol) {
     // Work out the names and current values of the params we expect in the report request URL for sort and pagination    
     $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
     // set the limit to one higher than we need, so the extra row can trigger the pagination next link
-    $extraParams = '&limit='.($options['itemsPerPage']+1).'&wantColumns=1&wantParameters=1';
+    $extraParams = '&limit='.($options['itemsPerPage']+1).'&wantColumns=1&wantParameters=1&wantCount=1';
     $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
 
     // Add in the sort parameters

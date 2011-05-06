@@ -402,3 +402,17 @@ tr.odd {
 .jqplot-table-legend {
   width: auto;
 }
+
+.pager-button {
+  border: solid grey 1px;
+  padding: 2px;
+  background-color: #ccc;
+}
+
+tfoot {
+  background-color: #eee;
+}
+
+tfoot td div{
+  padding: 2px 4px;
+}

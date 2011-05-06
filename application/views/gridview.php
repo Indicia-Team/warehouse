@@ -61,7 +61,8 @@ echo data_entry_helper::report_grid(array(
   'includeAllColumns' => false,
   'columns' => $colDefs,
   'extraParams' => array('orderby'=>$orderby),
-  'filters' => $filter
+  'filters' => $filter,
+  'itemsPerPage' => kohana::config('pagination.default.items_per_page')
 ));
 data_entry_helper::link_default_stylesheet();
 // No need to re-link to jQuery
