@@ -22,6 +22,161 @@
  
 require_once('helper_config.php');
 
+global $indicia_templates;
+
+/**
+ * Provides control templates to define the output of the data entry helper class.
+ *
+ * @package	Client
+ */
+$indicia_templates = array(
+  'prefix' => '',
+  'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
+  'suffix' => "<br/>\n",
+  'nosuffix' => " \n",
+  'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
+  'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
+  'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
+      '<span class="ui-icon ui-icon-alert"></span></span>',
+  'error_class' => 'inline-error',
+  'image_upload' => '<input type="file" id="{id}" name="{fieldname}" accept="png|jpg|gif|jpeg" {title}/>'."\n".
+      '<input type="hidden" id="{pathFieldName}" name="{pathFieldName}" value="{pathFieldValue}"/>'."\n",
+  'text_input' => '<input type="text" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
+  'password_input' => '<input type="password" id="{id}" name="{fieldname}"{class} {disabled} value="{default}" {title} />'."\n",
+  'textarea' => '<textarea id="{id}" name="{fieldname}"{class} {disabled} cols="{cols}" rows="{rows}" {title}>{default}</textarea>'."\n",
+  'checkbox' => '<input type="hidden" name="{fieldname}" value="0"/><input type="checkbox" id="{id}" name="{fieldname}" value="1"{class}{checked}{disabled} {title} />'."\n",
+  'date_picker' => '<input type="text" size="30"{class} id="{id}" name="{fieldname}" value="{default}" {title}/>',
+  'select' => '<select id="{id}" name="{fieldname}"{class} {disabled} {title}>{items}</select>',
+  'select_item' => '<option value="{value}" {selected} >{caption}</option>',
+  'select_species' => '<option value="{value}" {selected} >{caption} - {common}</option>',
+  'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{options}</select>',
+  'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
+  'list_in_template' => '<ul{class} {title}>{items}</ul>',
+  'check_or_radio_group' => '<div{class}>{items}</div>',
+  'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
+  'map_panel' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
+    "/* ]]> */</script>",
+  'georeference_lookup' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<input id=\"imp-georef-search\"{class} />');\n".
+    "document.write('<input type=\"button\" id=\"imp-georef-search-btn\" class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" value=\"{search}\" />');\n".
+    "document.write('<div id=\"imp-georef-div\" class=\"ui-corner-all ui-widget-content ui-helper-hidden\">');\n".
+    "document.write('  <div id=\"imp-georef-output-div\">');\n".
+    "document.write('  </div>');\n".
+    "document.write('  <a class=\"ui-corner-all ui-widget-content ui-state-default indicia-button\" href=\"#\" id=\"imp-georef-close-btn\">{close}</a>');\n".
+    "document.write('</div>');".
+    "\n/* ]]> */</script>",
+  'tab_header' => '<script type="text/javascript">/* <![CDATA[ */'."\n".
+      'document.write(\'<ul class="ui-helper-hidden">{tabs}</ul>\');'.
+      "\n/* ]]> */</script>\n".
+      "<noscript><ul>{tabs}</ul></noscript>\n",
+  'tab_next_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div{class}>');\n".
+    "document.write('  <span>{captionNext}</span>');\n".
+    "document.write('  <span class=\"ui-icon ui-icon-circle-arrow-e\"></span>');\n".
+    "document.write('</div>');\n".
+    "/* ]]> */</script>\n",
+  'tab_prev_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div{class}>');\n".
+    "document.write('  <span class=\"ui-icon ui-icon-circle-arrow-w\"></span>');\n".
+    "document.write('  <span>{captionPrev}</span>');\n".
+    "document.write('</div>');\n".
+    "/* ]]> */</script>\n",
+  'submit_button' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+    "document.write('<div{class}>');\n".
+    "document.write('  <span>{captionSave}</span>');\n".
+    "document.write('</div>');\n".
+    "/* ]]> */</script>\n".
+    "<noscript><input type=\"submit\" value=\"{captionSave}\" /></noscript>\n",
+  'loading_block_start' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+      'document.write(\'<div class="ui-widget ui-widget-content ui-corner-all loading-panel" >'.
+      '<img src="'.helper_config::$base_url.'media/images/ajax-loader2.gif" />'.
+      lang::get('loading')."...</div>');\n".
+      'document.write(\'<div class="loading-hide">\');'.
+      "\n/* ]]> */</script>\n",
+  'loading_block_end' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
+      "document.write('</div>');\n".
+      "/* ]]> */</script>",
+  'taxon_label' => '<div class="biota"><span class="nobreak sci binomial"><em>{taxon}</em></span> {authority} '.
+      '<span class="nobreak vernacular">{common}</span></div>',
+  'treeview_node' => '<span>{caption}</span>',
+  'tree_browser' => '<div{outerClass} id="{divId}"></div><input type="hidden" name="{fieldname}" id="{id}" value="{default}"{class}/>',
+  'tree_browser_node' => '<span>{caption}</span>',
+  'autocomplete' => '<input type="hidden" class="hidden" id="{id}" name="{fieldname}" value="{default}" />'."\n".
+      '<input id="{inputId}" name="{inputId}" value="{defaultCaption}" {class} {disabled} {title}/>'."\n",
+  'autocomplete_javascript' => "jQuery('input#{escaped_input_id}').autocomplete('{url}/{table}',
+      {
+        extraParams : {
+          orderby : '{captionField}',
+          mode : 'json',
+          qfield : '{captionField}',
+          {sParams}
+        },
+        parse: function(data)
+        {
+          // Clear the current selected key as the user has changed the search text
+          jQuery('input#{escaped_id}').val('');
+          var results = [];
+          jQuery.each(data, function(i, item) {
+            results[results.length] =
+            {
+              'data' : item,
+              'result' : item.{captionField},
+              'value' : item.{valueField}
+            };
+          });
+          return results;
+        },
+      formatItem: function(item)
+      {
+        return item.{captionField};
+      }
+      {max}
+    });
+    jQuery('input#{escaped_input_id}').result(function(event, data) {
+      jQuery('input#{escaped_id}').attr('value', data.id);
+      jQuery('input#{escaped_id}').change();
+    });\r\n",
+  'linked_list_javascript' => "
+{fn} = function() {
+  $('#{escapedId}').addClass('ui-state-disabled');
+  $('#{escapedId}').html('<option>Loading...</option>');
+  $.getJSON('{request}&{filterField}='+$(this).val(), function(data){
+    $('#{escapedId}').html('');
+    if (data.length>0) {
+      $('#{escapedId}').removeClass('ui-state-disabled');
+      $.each(data, function(i) {
+        $('#{escapedId}').append('<option value=\"'+this.{valueField}+'\">'+this.{captionField}+'</option>');
+      });
+    } else {
+      $('#{escapedId}').html('<option>{instruct}</option>');
+    }
+  });
+};
+jQuery('#{parentControlId}').change({fn});
+jQuery('#{parentControlId}').change();\n",
+  'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
+        'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
+  'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
+        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />',
+  'sref_textbox_latlong' => '<label for="{idLat}">{labelLat}:</label>'.
+        '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{defaultLat}" /><br />' .
+        '<label for="{idLong}">{labelLong}:</label>'.
+        '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{defaultLong}" />' .
+        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
+        '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
+  'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\">{content}</td>",
+  'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\"{colspan}>{content}</td>",
+  'helpText' => "\n<p class=\"{helpTextClass}\">{helpText}</p>",
+  'button' => '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
+  'file_box' => '',                   // the JQuery plugin default will apply, this is just a placeholder for template overrides.
+  'file_box_initial_file_info' => '', // the JQuery plugin default will apply, this is just a placeholder for template overrides.
+  'file_box_uploaded_image' => '',    // the JQuery plugin default will apply, this is just a placeholder for template overrides.
+  'paging_container' => "<div class=\"pager ui-helper-clearfix\">\n{paging}\n</div>\n",
+  'paging' => '<div class="left">{first} {prev} {pagelist} {next} {last}</div><div class="right">{showing}</div>'
+);
+
+
 /** 
  * Base class for the report and data entry helpers. Provides several generally useful methods and also includes 
  * resource management.
