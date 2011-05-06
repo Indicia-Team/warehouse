@@ -5,19 +5,7 @@
     
 >
   <query for="Occurrences List">
-  SELECT su.title, su.website_id, o.id as occurrence_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
-  s.entered_sref, l.name as location_name, oi.path, 
-  CASE o.record_status 
-    WHEN 'C' THEN 'Data Entry Complete' 
-    WHEN 'V' THEN 'Verified'
-    WHEN 'R' THEN 'Rejected'
-    WHEN 'I' THEN 'In Progress'
-    WHEN 'T' THEN 'Test'
-    WHEN 'S' THEN 'Sent for verification'
-    ELSE ''
-  END AS record_status,
-  st_astext(s.geom) as geom,
-  u.username as verified_by
+  SELECT #field_sql#
   FROM samples s
   JOIN occurrences o ON o.sample_id=s.id and o.deleted=false
   LEFT JOIN occurrence_images oi ON oi.occurrence_id=o.id and oi.deleted=false
@@ -31,6 +19,21 @@
   AND s.deleted=false
   #order_by#
   </query>
+  <field_sql>
+  su.title, su.website_id, o.id as occurrence_id, s.date_start, s.date_end, s.date_type, lttl.taxon, 
+  s.entered_sref, l.name as location_name, oi.path, 
+  CASE o.record_status 
+    WHEN 'C' THEN 'Data Entry Complete' 
+    WHEN 'V' THEN 'Verified'
+    WHEN 'R' THEN 'Rejected'
+    WHEN 'I' THEN 'In Progress'
+    WHEN 'T' THEN 'Test'
+    WHEN 'S' THEN 'Sent for verification'
+    ELSE ''
+  END AS record_status,
+  st_astext(s.geom) as geom,
+  u.username as verified_by
+  </field_sql>
   <order_bys>
     <order_by>date_start DESC</order_by>
   </order_bys>
