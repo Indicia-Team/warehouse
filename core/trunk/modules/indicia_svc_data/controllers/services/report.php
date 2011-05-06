@@ -140,8 +140,8 @@ class Report_Controller extends Data_Service_Base_Controller {
     $params = json_decode($this->input->post('params', '{}'), true);
     // NB that for JSON requests (eg from datagrids) the parameters do not get posted, but appear in the url.
     if(empty($params)){
-    	// no params posted so look on URL
-    	$params = $_GET;
+      // no params posted so look on URL
+      $params = $_GET;
     }
     $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
     if (isset($data['content']['columns']))

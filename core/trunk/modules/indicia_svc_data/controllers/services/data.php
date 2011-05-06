@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Services
+ * @package Services
  * @subpackage Data
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    http://code.google.com/p/indicia/
  */
 
 
@@ -127,7 +127,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('location_image');
   }
-  
+
  /**
   * Provides the /service/data/sample_image service.
   * Retrieves details of sample images.
@@ -136,7 +136,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('sample_image');
   }
-  
+
   /**
   * Provides the /services/data/occurrence service.
   * Retrieves details of occurrences.
@@ -163,7 +163,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('occurrence_attribute_value');
   }
-  
+
   /**
   * Provides the /service/data/occurrence_image service.
   * Retrieves details of occurrence images.
@@ -172,7 +172,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('occurrence_image');
   }
-  
+
   /**
   * Provides the /service/data/occurrence_attribute service.
   * Retrieves details of occurrence attributes.
@@ -181,7 +181,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('determination');
   }
-  
+
   /**
   * Provides the /services/data/person service.
   * Retrieves details of a single person.
@@ -236,7 +236,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
   $this->handle_call('taxon_group');
   }
-  
+
  /**
   * Provides the /service/data/taxon_image service.
   * Retrieves details of location images.
@@ -245,7 +245,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('taxon_image');
   }
-  
+
 
   /**
   * Provides the /services/data/taxon_list service.
@@ -255,7 +255,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('taxon_list');
   }
-  
+
   /**
   * Provides the /services/data/taxon_relation_type service.
   * Provides access to taxon_relation_types.
@@ -309,7 +309,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('termlists_term');
   }
-  
+
   /**
   * Provides the /services/data/title service.
   * Retrieves details of titles.
@@ -336,7 +336,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('website');
   }
-  
+
   /**
   * Provides the /services/data/trigger service.
   * Retrieves details of a single trigger.
@@ -489,7 +489,7 @@ class Data_Controller extends Data_Service_Base_Controller {
    * should already be globally unique. Otherwise the current time is prefixed to the name to make it unique.
    */
   public function handle_media()
-  {    
+  {
     try
     {
       // Ensure we have write permissions.
@@ -504,7 +504,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       );
       if ($_FILES->validate())
       {
-        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true') 
+        if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true')
           $finalName = strtolower($_FILES['media_upload']['name']);
         else
           $finalName = time().strtolower($_FILES['media_upload']['name']);
@@ -573,17 +573,19 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
   * Builds a query to extract data from the requested entity, and also
   * include relationships to foreign key tables and the caption fields from those tables.
-  *
+  * @param boolean $count if set to true then just returns a record count.
   * @todo Review this code for SQL Injection attack!
   * @todo Basic website filter done, but not clever enough.
   */
-  protected function build_query_results()
+  protected function build_query_results($count=false)
   {
     $this->foreign_keys = array();
     $this->db->from($this->viewname);
     // Select all the table columns from the view
-    $select = implode(', ', array_keys($this->db->list_fields($this->viewname)));
-    $this->db->select($select);
+    if (!$count) {
+      $select = implode(', ', array_keys($this->db->list_fields($this->viewname)));
+      $this->db->select($select);
+    }
     if (array_key_exists ('website_id', $this->view_columns)) {
       if ($this->website_id) {
         $this->db->in('website_id', array(null, $this->website_id));
@@ -600,7 +602,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     // if requesting a single item in the segment, filter for it, otherwise use GET parameters to control the list returned
     if ($this->uri->total_arguments()==0)
-      $this->apply_get_parameters_to_db();
+      $this->apply_get_parameters_to_db($count);
     else {
      if (!$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id))
       {
@@ -610,10 +612,13 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->db->where($this->viewname.'.id', $this->uri->argument(1));
     }
     try {
-      return $this->db->get()->result_array(FALSE);
+      if ($count)
+        return $this->db->count_records();
+      else
+        return $this->db->get()->result_array(FALSE);
     }
     catch (Exception $e) {
-      kohana::log('error', 'Error occurred running the following query from a service request:'); 
+      kohana::log('error', 'Error occurred running the following query from a service request:');
       kohana::log('error', $this->db->last_query());
       kohana::log('error', 'Request detail:');
       kohana::log('error', $this->uri->string());
@@ -645,19 +650,21 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
   * Works out what filter and other options to set on the db object according to the
   * $_GET parameters currently available, when retrieving a list of items.
+  * @param boolean $count set to true when doing a count query, so the limit and offset are skipped
   */
-  protected function apply_get_parameters_to_db()
+  protected function apply_get_parameters_to_db($count=false)
   {
     $sortdir='ASC';
     $orderby='';
     $like=array();
-    $where=array();    
+    $where=array();
     foreach ($_GET as $param => $value)
     {
       $value = urldecode($value);
       switch ($param)
       {
         case 'sortdir':
+          if ($count) break;
           $sortdir=strtoupper($value);
           if ($sortdir != 'ASC' && $sortdir != 'DESC')
           {
@@ -665,14 +672,17 @@ class Data_Controller extends Data_Service_Base_Controller {
           }
           break;
         case 'orderby':
+          if ($count) break;
           if (array_key_exists(strtolower($value), $this->view_columns))
             $orderby=strtolower($value);
           break;
         case 'limit':
+          if ($count) break;
           if (is_numeric($value))
           $this->db->limit($value);
           break;
         case 'offset':
+          if ($count) break;
           if (is_numeric($value))
           $this->db->offset($value);
           break;
@@ -740,7 +750,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     if ($orderby)
       $this->db->orderby($orderby, $sortdir);
-    if (count($like)) {      
+    if (count($like)) {
       foreach ($like as $field => $value) {
         $this->db->like($field, $value, false);
       }
@@ -748,9 +758,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (count($where))
       $this->db->where($where);
   }
-  
+
   /**
-   * Takes the value of a query parameter passed to the data service, and processes it to apply the filter conditions 
+   * Takes the value of a query parameter passed to the data service, and processes it to apply the filter conditions
    * defined in the JSON to $this->db, ready for when the service query is run.
    * @param string $value The value of the parameter called query, which should contain a JSON object.
    * @link http://code.google.com/p/indicia/wiki/DataServices#Using_the_query_parameter
@@ -858,11 +868,11 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     return $id;
   }
-  
+
   /**
   * Takes a single submission entry and attempts to save to the database.
   */
-  protected function submit_single($item) {        
+  protected function submit_single($item) {
     $model = ORM::factory($item['id']); // id is the entity.
     $this->check_update_access($item['id'], $item);
     $model->submission = $item;
@@ -919,7 +929,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $db->where(array('id' => $id));
 
       if(!in_array ($entity, $this->allow_full_access)) {
-      		if(array_key_exists ('website_id', $fields))
+          if(array_key_exists ('website_id', $fields))
             {
                 $db->in('website_id', array(null, $this->website_id));
             } else {
@@ -930,6 +940,14 @@ class Data_Controller extends Data_Service_Base_Controller {
     $number_rec = $db->count_records();
     return ($number_rec > 0 ? true : false);
   }
+  
+  /**
+   * Get the record count of the full grid result.
+   */
+  protected function record_count() {
+    return $this->build_query_results(true);
+  }
+  
 }
 
 ?>
