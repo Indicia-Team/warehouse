@@ -11,6 +11,7 @@ CREATE TABLE taxon_groups_taxon_lists
   created_by_id integer NOT NULL, -- Foreign key to the users table (creator).
   updated_on timestamp without time zone NOT NULL, -- Date this record was last updated.
   updated_by_id integer NOT NULL, -- Foreign key to the users table (last updater).
+  deleted boolean NOT NULL DEFAULT false,
   CONSTRAINT pk_taxon_groups_taxon_lists PRIMARY KEY (id),
   CONSTRAINT fk_taxon_groups_taxon_lists_taxon_groups FOREIGN KEY (taxon_group_id)
       REFERENCES taxon_groups (id) MATCH SIMPLE
@@ -48,6 +49,7 @@ COMMENT ON COLUMN taxon_groups_taxon_lists.created_on IS 'Date this record was c
 COMMENT ON COLUMN taxon_groups_taxon_lists.created_by_id IS 'Foreign key to the users table (creator).';
 COMMENT ON COLUMN taxon_groups_taxon_lists.updated_on IS 'Date this record was last updated.';
 COMMENT ON COLUMN taxon_groups_taxon_lists.updated_by_id IS 'Foreign key to the users table (last updater).';
+COMMENT ON COLUMN taxon_groups_taxon_lists.deleted IS 'Has this association been deleted?';
 
 -- Add an attribute to taxon lists to define if the synching from parent list to child list is automated.
 ALTER TABLE taxon_lists ADD synch_groups_from_parent BOOLEAN NOT NULL DEFAULT FALSE;

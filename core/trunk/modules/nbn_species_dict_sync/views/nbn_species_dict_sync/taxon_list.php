@@ -65,6 +65,10 @@ $('#submit-sync').click(function(e) {
 </script>
 <p>This facility allows you to import the names from the NBN Species Dictionary web services into this list. Because of the current nature
 of the web services this process will be very slow, though it is safe to cancel at any time by refreshing the web page. </p>
+<?php if (in_array(MODPATH.'taxon_groups_taxon_lists', kohana::config('config.modules'))) : ?>
+<p>The names imported will be only those which belong to the reporting categories which correspond to the taxon groups associated with this
+checklist on the Taxon Groups tab.</p>
+<?php endif; ?>
 <p>Before using this facility you should import the <a href="<?php echo url::site(); ?>taxon_designation?tab=NBN_Sync">taxon designations</a>
 and <a href="<?php echo url::site(); ?>taxon_group?tab=NBN_Sync">taxon groups</a>.</p>
 <form action="<?php echo url::site(); ?>nbn_species_dict_sync/taxon_list_sync/<?php echo $taxon_list_id; ?>" method="post" class="iform">
