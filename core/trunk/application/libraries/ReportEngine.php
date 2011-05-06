@@ -62,6 +62,7 @@ class ReportEngine {
   public function __construct()
   {
     $this->localReportDir = Kohana::config('indicia.localReportDir');
+    $this->reportDb = new Database('report');
   }
 
   /**
@@ -87,7 +88,7 @@ class ReportEngine {
     Kohana::log('debug', "Received request for report: $report, source: $reportSource");
 
     if ($reportSource == null) {
-    	$reportSource='local';
+      $reportSource='local';
     }
     if ($report == null)
     {
@@ -171,8 +172,8 @@ class ReportEngine {
     // Merge the new parameters in
     $this->providedParams = array_merge($this->providedParams, $params);
     $this->limit = isset($this->providedParams['limit']) ? $this->providedParams['limit'] : $this->limit;
-	  $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : $this->offset;
-	  $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : $this->orderby;
+    $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : $this->offset;
+    $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : $this->orderby;
     $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : $this->sortdir;
 
     return array(
@@ -254,14 +255,25 @@ class ReportEngine {
     {
       // Okay, all the parameters have been provided.
       $this->mergeQuery();
+      $this->mergeCountQuery();
       $this->executeQuery();
       $data = $this->response->result_array(FALSE);
       $this->prepareColumns();
       $this->post_process($data);
-      return array(
+      $r = array(
         'columns'=>$this->columns,
         'data'=>$data
       );
+      return $r;
+    }
+  }
+  
+  public function record_count() {
+    if ($this->countQuery!==null) {
+      $count = $this->reportDb->query($this->countQuery)->result_array(FALSE);
+      return $count[0]['count'];
+    } else {
+      return false;
     }
   }
   
@@ -279,34 +291,34 @@ class ReportEngine {
    * report reader.
    */
   private function post_process(&$data) {
-  	$this->merge_attribute_data($data, $this->providedParams);
+    $this->merge_attribute_data($data, $this->providedParams);
 
-  	$vagueDateProcessing = $this->getVagueDateProcessing();
-  	$downloadProcessing = $this->getDownloadDetails();
-  	if($vagueDateProcessing) {
-	  	$this->add_vague_dates($data);
-  	}
-  	if($downloadProcessing->mode == 'INITIAL' || $downloadProcessing->mode == 'CONFIRM' ||$downloadProcessing->mode == 'FINAL') {
-	  	$this->setDownloaded($data, $downloadProcessing);
-  	}
+    $vagueDateProcessing = $this->getVagueDateProcessing();
+    $downloadProcessing = $this->getDownloadDetails();
+    if($vagueDateProcessing) {
+      $this->add_vague_dates($data);
+    }
+    if($downloadProcessing->mode == 'INITIAL' || $downloadProcessing->mode == 'CONFIRM' ||$downloadProcessing->mode == 'FINAL') {
+      $this->setDownloaded($data, $downloadProcessing);
+    }
   }
 
   private function getVagueDateProcessing() {
-  	$vagueDateProcessing = $this->reportReader->getVagueDateProcessing();
-   	foreach ($this->providedParams as $name => $value)
+    $vagueDateProcessing = $this->reportReader->getVagueDateProcessing();
+     foreach ($this->providedParams as $name => $value)
     {
-    	$vagueDateProcessing = preg_replace("/#$name#/", $value, $vagueDateProcessing);
+      $vagueDateProcessing = preg_replace("/#$name#/", $value, $vagueDateProcessing);
     }
-  	return !($vagueDateProcessing == 'false');
+    return !($vagueDateProcessing == 'false');
   }
 
   private function getDownloadDetails() {
-  	$downloadProcessing = $this->reportReader->getDownloadDetails();
-   	foreach ($this->providedParams as $name => $value)
+    $downloadProcessing = $this->reportReader->getDownloadDetails();
+     foreach ($this->providedParams as $name => $value)
     {
-  	    $downloadProcessing->mode = preg_replace("/#$name#/", $value, $downloadProcessing->mode);
+        $downloadProcessing->mode = preg_replace("/#$name#/", $value, $downloadProcessing->mode);
     }
-  	return $downloadProcessing;
+    return $downloadProcessing;
   }
 
 
@@ -366,129 +378,128 @@ class ReportEngine {
 
   public function merge_attribute_data(&$data, $providedParams)
   {
-  	$dataCount = count($data); // invariant
-  	/* attributes are extra pieces of information associated with data rows. These can have multiple values within each field,
-  	 * so do not lend themselves to being fetched by a extended join within the original SQL query.
-  	 */
-  	/* loop through each table, looking for attribute definitions */
-  	$attributeDefns = $this->reportReader->getAttributeDefns();
-  	/* Attribute definitions included the query to run, and the field names to compare between each data array for matching */
-    $db = new Database('report');
+    $dataCount = count($data); // invariant
+    /* attributes are extra pieces of information associated with data rows. These can have multiple values within each field,
+     * so do not lend themselves to being fetched by a extended join within the original SQL query.
+     */
+    /* loop through each table, looking for attribute definitions */
+    $attributeDefns = $this->reportReader->getAttributeDefns();
+    /* Attribute definitions included the query to run, and the field names to compare between each data array for matching */
     $vagueDateProcessing = $this->getVagueDateProcessing();
     foreach($attributeDefns as $attributeDefn){
-  	  	$subquery = $attributeDefn->query;
-  	  	foreach ($providedParams as $name => $value)
-    	{
-    		$subquery = preg_replace("/#$name#/", $value, $subquery);
-	    }
-        $response = $db->query($subquery);
+        $subquery = $attributeDefn->query;
+        foreach ($providedParams as $name => $value)
+      {
+        $subquery = preg_replace("/#$name#/", $value, $subquery);
+      }
+        $response = $this->reportDb->query($subquery);
         $attrData = $response->result_array(FALSE);
         $newColumns = array();
         // initially create new columns in the the data set for each distinct attribute, and initialise them to blank.
         // This makes some assumptions about the way the attribute data is stored within the DB tables.
-  	  	foreach ($attrData as $row){
-  	  		if(!array_key_exists($row[$attributeDefn->id], $newColumns)){  // id is the column holding the attribute id.
-  	  			$newColName=$attributeDefn->columnPrefix.$row[$attributeDefn->id];
-  	  			$multiValue = ($row['multi_value'] == 't') && ($row["data_type"] != 'D') && ($row["data_type"] != 'V');
-  	  			$newColumns[$row[$attributeDefn->id]] = array(
-  	  						'caption' => $row[$attributeDefn->caption],
-  	  						'column' => $newColName,
-  	  						'multi_value' => $multiValue);
-  	  			switch ($row["data_type"]) {
-              		case 'D':
-		            case 'V':
-		              	$this->columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-		              	$this->columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-		              	$this->columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-		              	if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
-		              		$this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
-		              	}
-			        	for ($r=0; $r<$dataCount; $r++) {
-				        	$data[$r][$newColName.'_date_start'] = '';
-				        	$data[$r][$newColName.'_date_end'] = '';
-			        		$data[$r][$newColName.'_date_type'] = '';
-			        		$data[$r][$newColName.'_date'] = '';
-			        	}
-		              	break;
-              		case 'L':
-              		  	// Lookup
-              		  	$termResponse = $db->query("select t.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by t.id;");
-        				$newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
-               		  	// allow follow through so Lookup follows normal format of a singular field.
-		            default:
-		              	$this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
-			        	for ($r=0; $r<$dataCount; $r++) {
-			        		$data[$r][$newColName] = $multiValue ? array() : '';
-			        	}
-		              	break;
-  	  			}
-   	  		}
-  	  	}
-  	  	// Build an index of the attribute data: nb that the attribute data has been sorted in main_id order.
-  	  	// We need the index of first record for each main_id value (there may be many)
-      	$index = array();
-      	for ($r=0; $r<count($attrData); $r++) {
-      		if(!isset($index[$attrData[$r][$attributeDefn->main_id]])){
-      			$index[$attrData[$r][$attributeDefn->main_id]] = $r;
-      		}
-      	}
-  	  	for ($r=0; $r<$dataCount; $r++) {
-  	  		if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
-  	  			continue;
-  	  		}
-  	  		$rowIndex = $index[$data[$r][$attributeDefn->parentKey]];
-  	  		while($rowIndex < count($attrData) && $attrData[$rowIndex][$attributeDefn->main_id] == $data[$r][$attributeDefn->parentKey]){
-  	  			$column = $newColumns[$attrData[$rowIndex][$attributeDefn->id]]['column'];
-   	  			switch ($attrData[$rowIndex]["data_type"]) {
-   	  				case 'L':
-   	  					$value = $attrData[$rowIndex]['int_value']; // default value is int value
-   	  					foreach($newColumns[$attrData[$rowIndex][$attributeDefn->id]]['lookup'] as $lookup){
-   	  						if($value == $lookup["id"]){
-   	  							$value = $lookup['term'];
-   	  							break;
-   	  						}
-   	  					}
-   	  					$this->mergeColumnData($data[$r][$column], $value);
-   	  					break;
-   	  				case 'I':
-   	  					$this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value']);
-		              	break;
-   	  				case 'B':
-   	  					$this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value'] ? 'Yes' : 'No');
-		              	break;
-		            case 'F':
-		              	$this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['float_value']);
-				        break;
-		            case 'T':
-		              	$this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['text_value']);
-				        break;
-		            case 'D':
-		            case 'V': // assume no multi values: would be far too complex to deal with...
-		              	$data[$r][$column."_date_start"] = $attrData[$rowIndex]['date_start_value'];
-		              	$data[$r][$column."_date_end"] = $attrData[$rowIndex]['date_end_value'];
-		              	$data[$r][$column."_date_type"] = $attrData[$rowIndex]['date_type_value'];
-				        break;
-  	  			}
-  	  			$rowIndex++;
-  	  		}
-      	}
-  	  	for ($r=0; $r<$dataCount; $r++) {
-  	  		foreach($newColumns as $newCol){
-  	  			$column = $newCol['column'];
-   	  			if($newCol['multi_value'] == true && is_array($data[$r][$column])){
-   	  				$data[$r][$column] = implode($attributeDefn->separator, $data[$r][$column]);
-   	  			}
-  	  		}
-      	}
+        foreach ($attrData as $row){
+          if(!array_key_exists($row[$attributeDefn->id], $newColumns)){  // id is the column holding the attribute id.
+            $newColName=$attributeDefn->columnPrefix.$row[$attributeDefn->id];
+            $multiValue = ($row['multi_value'] == 't') && ($row["data_type"] != 'D') && ($row["data_type"] != 'V');
+            $newColumns[$row[$attributeDefn->id]] = array(
+                  'caption' => $row[$attributeDefn->caption],
+                  'column' => $newColName,
+                  'multi_value' => $multiValue);
+            switch ($row["data_type"]) {
+                  case 'D':
+                case 'V':
+                    $this->columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+                    $this->columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+                    $this->columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+                    if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
+                      $this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
+                    }
+                for ($r=0; $r<$dataCount; $r++) {
+                  $data[$r][$newColName.'_date_start'] = '';
+                  $data[$r][$newColName.'_date_end'] = '';
+                  $data[$r][$newColName.'_date_type'] = '';
+                  $data[$r][$newColName.'_date'] = '';
+                }
+                    break;
+                  case 'L':
+                      // Lookup
+                      $termResponse = $this->reportDb->query("select t.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by t.id;");
+                $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
+                       // allow follow through so Lookup follows normal format of a singular field.
+                default:
+                    $this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
+                for ($r=0; $r<$dataCount; $r++) {
+                  $data[$r][$newColName] = $multiValue ? array() : '';
+                }
+                    break;
+            }
+           }
+        }
+        // Build an index of the attribute data: nb that the attribute data has been sorted in main_id order.
+        // We need the index of first record for each main_id value (there may be many)
+        $index = array();
+        for ($r=0; $r<count($attrData); $r++) {
+          if(!isset($index[$attrData[$r][$attributeDefn->main_id]])){
+            $index[$attrData[$r][$attributeDefn->main_id]] = $r;
+          }
+        }
+        for ($r=0; $r<$dataCount; $r++) {
+          if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
+            continue;
+          }
+          $rowIndex = $index[$data[$r][$attributeDefn->parentKey]];
+          while($rowIndex < count($attrData) && $attrData[$rowIndex][$attributeDefn->main_id] == $data[$r][$attributeDefn->parentKey]){
+            $column = $newColumns[$attrData[$rowIndex][$attributeDefn->id]]['column'];
+             switch ($attrData[$rowIndex]["data_type"]) {
+               case 'L':
+                 $value = $attrData[$rowIndex]['int_value']; // default value is int value
+                 foreach($newColumns[$attrData[$rowIndex][$attributeDefn->id]]['lookup'] as $lookup){
+                   if($value == $lookup["id"]){
+                     $value = $lookup['term'];
+                     break;
+                   }
+                 }
+                 $this->mergeColumnData($data[$r][$column], $value);
+                 break;
+               case 'I':
+                 $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value']);
+                    break;
+               case 'B':
+                 $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value'] ? 'Yes' : 'No');
+                    break;
+                case 'F':
+                    $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['float_value']);
+                break;
+                case 'T':
+                    $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['text_value']);
+                break;
+                case 'D':
+                case 'V': // assume no multi values: would be far too complex to deal with...
+                    $data[$r][$column."_date_start"] = $attrData[$rowIndex]['date_start_value'];
+                    $data[$r][$column."_date_end"] = $attrData[$rowIndex]['date_end_value'];
+                    $data[$r][$column."_date_type"] = $attrData[$rowIndex]['date_type_value'];
+                break;
+            }
+            $rowIndex++;
+          }
+        }
+        for ($r=0; $r<$dataCount; $r++) {
+          foreach($newColumns as $newCol){
+            $column = $newCol['column'];
+             if($newCol['multi_value'] == true && is_array($data[$r][$column])){
+               $data[$r][$column] = implode($attributeDefn->separator, $data[$r][$column]);
+             }
+          }
+        }
     }
   }
 
   private function mergeColumnData(&$data, $value){
-	if(is_array($data)){
-		$data[] = $value;
-	} else {
-		$data = $value;
-	}
+  if(is_array($data)){
+    $data[] = $value;
+  } else {
+    $data = $value;
+  }
   }
 
   /* The following function is the only method by which the reports can update the contents of the database. As a consequence
@@ -499,35 +510,35 @@ class ReportEngine {
    */
   private function setDownloaded($data, $downloadDetails)
   {
-  	if($downloadDetails->mode == 'INITIAL' || $downloadDetails->mode == 'FINAL') {
-  		$idList = array();
-  		foreach($data as $row){
-  			if(isset($row[$downloadDetails->id])){
-  				$idList[] = $row[$downloadDetails->id];
-  				if(count($idList) >= self::rowsPerUpdate){
-  					$this->updateDownloaded($idList, $downloadDetails->mode);
-  					$idList = array();
-  				}
-  			}
-  		}
-  		$this->updateDownloaded($idList, $downloadDetails->mode);
-  	}
+    if($downloadDetails->mode == 'INITIAL' || $downloadDetails->mode == 'FINAL') {
+      $idList = array();
+      foreach($data as $row){
+        if(isset($row[$downloadDetails->id])){
+          $idList[] = $row[$downloadDetails->id];
+          if(count($idList) >= self::rowsPerUpdate){
+            $this->updateDownloaded($idList, $downloadDetails->mode);
+            $idList = array();
+          }
+        }
+      }
+      $this->updateDownloaded($idList, $downloadDetails->mode);
+    }
   }
 
   private function updateDownloaded($idList, $mode)
   {
-  	if(!is_array($idList) || count($idList) == 0)
-  		return;
-  	if($mode != 'INITIAL' && $mode != 'FINAL') {
-  		return;
-  	}
-  	$downloaded_on = date("Ymd H:i:s");
+    if(!is_array($idList) || count($idList) == 0)
+      return;
+    if($mode != 'INITIAL' && $mode != 'FINAL') {
+      return;
+    }
+    $downloaded_on = date("Ymd H:i:s");
     $db = new Database(); // use default access so can update.
     $db->query('START TRANSACTION READ WRITE;');
     $response = $db->in("id", $idList)
-    		->update('occurrences',
-    			array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I'),
-    					'downloaded_on' => $downloaded_on));
+        ->update('occurrences',
+          array('downloaded_flag' => ($mode == 'FINAL'? 'F' : 'I'),
+              'downloaded_on' => $downloaded_on));
     $db->query('COMMIT;');
   }
 
@@ -633,6 +644,21 @@ class ReportEngine {
   {
     // Grab the query from the report reader
     $query = $this->reportReader->getQuery();
+    $this->query = $this->mergeQueryWithParams($query);
+  }
+  
+  private function mergeCountQuery()
+  {
+    // Grab the query from the report reader
+    $query = $this->reportReader->getCountQuery();
+    if ($query!==null)
+      $this->countQuery = $this->mergeQueryWithParams($query, true);
+    else 
+      $this->countQuery = null;
+  }
+  
+  private function mergeQueryWithParams($query, $counting=false)
+  {
     // Replace each parameter in place
     $paramDefs = $this->reportReader->getParams();
     foreach ($this->providedParams as $name => $value)
@@ -644,24 +670,28 @@ class ReportEngine {
         $query = preg_replace("/#$name#/", $value, $query);
     }
     // allow the URL to provide a sort order override
-    if (isset($this->orderby))
-      $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
-    else
-      $order_by=$this->reportReader->getOrderClause();
-    if ($order_by) {
-      $order_by = $this->checkOrderByForVagueDate($order_by);
-      // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
-      $count=0;
-      $query = preg_replace("/#order_by#/",  "ORDER BY $order_by", $query, -1, $count);
-      if ($count==0) {
-        $query .= " ORDER BY $order_by";
+    if (!$counting) {
+      if (isset($this->orderby))
+        $order_by = $this->orderby . (isset($this->sortdir) ? ' '.$this->sortdir : '');
+      else
+        $order_by=$this->reportReader->getOrderClause();
+      if ($order_by) {
+        $order_by = $this->checkOrderByForVagueDate($order_by);
+        // Order by will either be appended to the end of the query, or inserted at a #order_by# marker.
+        $count=0;
+        $query = preg_replace("/#order_by#/",  "ORDER BY $order_by", $query, -1, $count);
+        if ($count==0) {
+          $query .= " ORDER BY $order_by";
+        }
       }
+      if ($this->limit)
+        $query .= ' LIMIT '.$this->limit;
+      if ($this->offset)
+        $query .= ' OFFSET '.$this->offset;
+    } else {
+      $query = preg_replace("/#order_by#/",  "", $query);
     }
-    if ($this->limit)
-      $query .= ' LIMIT '.$this->limit;
-    if ($this->offset)
-      $query .= ' OFFSET '.$this->offset;
-    $this->query = $query;
+    return $query;
   }
   
   /**
@@ -693,10 +723,9 @@ class ReportEngine {
   }
 
   private function executeQuery()
-  {
-    $db = new Database('report');
+  {    
     Kohana::log('debug', "Running report query : ".$this->query);
-    $this->response = $db->query($this->query);
+    $this->response = $this->reportDb->query($this->query);
   }
 
 }
