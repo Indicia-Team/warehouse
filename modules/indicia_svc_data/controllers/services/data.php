@@ -786,7 +786,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           }
           // if param was supplied in form "cmd = array(field, values)" then foundfield and foundvalue would be set.
           if (isset($foundfield) && isset($foundvalue))
-            $this->db->$cmd($infield,$foundvalue);
+            $this->db->$cmd($foundfield,$foundvalue);
           break;
         case 'where':
         case 'orwhere':
