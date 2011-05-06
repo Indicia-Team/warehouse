@@ -29,5 +29,5 @@
 <?php else: ?>
 <div class="page-notice ui-state-highlight ui-corner-all">Your system has been upgraded to version <?php echo $app_version; ?>.
 </div>
-<a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home">Return to the Home Page</a></div> 
+<a class="ui-state-default ui-corner-all button" href="<?php echo url::base();?>index.php/home">Return to the Home Page</a>
 <?php endif;?>
