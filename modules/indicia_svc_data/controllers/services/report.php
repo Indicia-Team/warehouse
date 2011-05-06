@@ -179,4 +179,8 @@ class Report_Controller extends Data_Service_Base_Controller {
     header("Content-Type: application/json");
     echo json_encode($stuff);
   }
+  
+  protected function record_count() {
+    return $this->reportEngine->record_count();
+  }
 }
