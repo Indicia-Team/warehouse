@@ -39,7 +39,7 @@ require_once("libcurlEmulator/libcurlemu.inc.php");
  * Optional. If specified, then an HTML label containing this value is prefixed to the control HTML.</li>
  * <li><b>helpText</b><br/>
  * Optional. Defines help text to be displayed alongside the control. The position of the text is defined by
- * data_entry_helper::$helpTextPos, which can be set to before or after (default). The template is defined by
+ * helper_base::$helpTextPos, which can be set to before or after (default). The template is defined by
  * global $indicia_templates['helpText'] and can be replaced on an instance by instance basis by specifying an
  * option 'helpTextTemplate' for the control.
  * <li><b>helpTextTemplate</b>
