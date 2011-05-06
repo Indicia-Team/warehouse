@@ -31,6 +31,8 @@ class XMLReportReader_Core implements ReportReader
   private $description;
   private $row_class;
   private $query;
+  private $countQuery=null;
+  private $field_sql;
   private $order_by;
   private $params = array();
   private $columns = array();
@@ -67,6 +69,12 @@ class XMLReportReader_Core implements ReportReader
               case 'query':
                 $reader->read();
                 $this->query = $reader->value;
+                break;
+              case 'field_sql':
+                $reader->read();
+                $this->field_sql = $reader->value;
+                $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
+                $this->query = str_replace('#field_sql#', $this->field_sql, $this->query);
                 break;
               case 'order_by':
                 $reader->read();
@@ -243,6 +251,11 @@ class XMLReportReader_Core implements ReportReader
     }
   }
   return $query;
+  }
+  
+  public function getCountQuery()
+  {
+    return $this->countQuery;
   }
 
   /**
@@ -604,9 +617,6 @@ class XMLReportReader_Core implements ReportReader
       }
     }
     while ($nesting > 0);
-    kohana::log('debug', 'query: '.$query);
-    kohana::log('debug', 'i0: '.$i0);
-    kohana::log('debug', 'i1: '.$i1);
 
     $i1 = $nextFrom - $i0;
     $colString = substr($this->query, $i0, $i1);
