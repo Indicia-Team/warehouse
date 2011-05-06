@@ -142,12 +142,25 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $array = array();
       if ($wantRecords) $array['records'] = $records;
       if ($wantColumns) $array['columns'] = $this->view_columns;
-      if ($wantCount) $array['count'] = $this->record_count();
+      
+      if ($wantCount) {
+        $count = $this->record_count();
+        if ($count!==false)
+          $array['count']=$count;
+      }
       if (count($array)===1) 
         return array_pop($array);
       else
         return $array;
     }
+  }
+  
+  /**
+   * Default implementation of method to get the record count. Must be implemented in subclasses in order to get the 
+   * count and therefore enable pagination.
+   */
+  protected function record_count() {
+    return false;
   }
 
   /**
