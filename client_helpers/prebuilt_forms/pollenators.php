@@ -510,7 +510,6 @@ jQuery('#".$id."').click(function(){
     $defAttrOptions ['validation'] = array('required');
     $checkOptions = $defNRAttrOptions;
     $checkOptions['lookUpListCtrl'] = 'checkbox_group';
-    unset($checkOptions['booleanCtrl']); // this will default to single checkbox
     $language = iform_lang_iso_639_2($args['language']);
     global $indicia_templates;
 	$indicia_templates['sref_textbox_latlong'] = '<div class="latLongDiv"><label for="{idLat}">{labelLat}:</label>'.
@@ -753,6 +752,16 @@ checkProtocolStatus = function(display){
     } else if(display == false){
       jQuery('#cc-1-details').removeClass('ui-accordian-content-active');
     } // anything else just leave
+};
+checkForagingStatus = function(setForagingConfirm){
+	jQuery('[name=occAttr\\:".$args['foraging_attr_id']."],[name^=occAttr\\:".$args['foraging_attr_id'].":]').filter('[checked]').each(function(index, elem){
+		if(elem.value==1){ // need to allow string 1 comparison so no ===
+			jQuery('#Foraging_Confirm').show();
+			if(setForagingConfirm)
+				jQuery('[name=dummy_foraging_confirm]').filter('[value=1]').attr('checked',true);
+		} else
+			jQuery('#Foraging_Confirm').hide();
+	});
 };
 checkSessionButtons = function(){
 	if (jQuery('#cc-3-body').children().length === 1) {
@@ -1991,7 +2000,7 @@ jQuery('.mod-button').click(function() {
 	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],
  			$defNRAttrOptions))
  	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],$checkOptions)).'
-    </form>
+	<div id="Foraging_Confirm"><label>'.lang::get('Foraging_Confirm').'</label><div class="control-box "><nobr><span><input type="radio" name="dummy_foraging_confirm" value="0" checked="checked"  /><label>'.lang::get('No').'</label></span></nobr> &nbsp; <nobr><span><input type="radio" name="dummy_foraging_confirm" value="1" /><label>'.lang::get('Yes').'</label></span></nobr></div></div></form><br />
     <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Insect').'</span>
     <span id="cc-4-delete-insect-button" class="ui-state-default ui-corner-all delete-button">'.lang::get('LANG_Delete_Insect').'</span>
   </div>
@@ -2010,6 +2019,11 @@ jQuery('.mod-button').click(function() {
 </div>';
 
     data_entry_helper::$javascript .= "
+jQuery('#Foraging_Confirm').hide();
+jQuery('[name=occAttr\\:".$args['foraging_attr_id']."],[name^=occAttr\\:".$args['foraging_attr_id'].":]').change(function(){
+	jQuery('[name=dummy_foraging_confirm]').filter('[value=0]').attr('checked',true);
+	checkForagingStatus(false);
+});
 
 insectIDstruc = {
 	type: 'insect',
@@ -2155,6 +2169,9 @@ clearInsect = function(){
 	});
     jQuery('#cc-4-insect-image').empty();
     populateSessionSelect();
+    jQuery('#Foraging_Confirm').hide();
+    jQuery('[name=dummy_foraging_confirm]').filter('[value=0]').attr('checked',true);
+    jQuery('#cc-4').find('.inline-error').remove();
 	jQuery('.currentPhoto').removeClass('currentPhoto');
 	jQuery('.blankPhoto').addClass('currentPhoto');
 };
@@ -2279,6 +2296,16 @@ validateInsect = function(){
     	myScrollTo('#cc-4-insect-upload');
 		alert(\"".lang::get('LANG_Must_Provide_Insect_Picture')."\");
 		valid = false;
+	}
+	if(jQuery('[name=occAttr\\:".$args['foraging_attr_id']."],[name^=occAttr\\:".$args['foraging_attr_id'].":]').filter('[checked]').val()==1){
+		if(jQuery('[name=dummy_foraging_confirm]').filter('[checked]').val()==0){
+			valid = false;
+	        var label = $('<p/>')
+				.attr({'for': 'dummy_foraging_confirm'})
+				.addClass('inline-error')
+				.html(\"".lang::get('Foraging_Validation')."\");
+			label.appendTo(jQuery('#Foraging_Confirm'));
+		}
 	}
 	if(valid == false) {
 		myScrollToError();
@@ -2512,6 +2539,7 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 		  }
 		  checkProtocolStatus('leave');
 		  populateSessionSelect();
+		  checkForagingStatus(true);
 		},
 		dataType: 'json'
 	});
