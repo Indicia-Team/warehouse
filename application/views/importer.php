@@ -32,7 +32,8 @@ echo import_helper::importer(array(
   'model' => $this->controllerpath,
   'auth' => $auth  
 ));
-
+import_helper::$dumped_resources[] = 'jquery';
+import_helper::$dumped_resources[] = 'jquery-ui';
 echo import_helper::dump_javascript();
 
 ?>
