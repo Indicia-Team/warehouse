@@ -299,7 +299,7 @@ class report_helper extends helper_base {
 
     // Now AJAXify the grid
     self::add_resource('reportgrid');
-    $uniqueName = 'grid_' . preg_replace("[^A-Za-z0-9_]", '', $options['id']);
+    $uniqueName = 'grid_' . preg_replace( "/[^a-z]+/", "_", $options['id']);
     global $indicia_templates;
     self::$javascript .= $uniqueName . " = $('#".$options['id']."').reportgrid({
   id: '".$options['id']."',
