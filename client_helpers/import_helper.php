@@ -159,8 +159,10 @@ class import_helper extends helper_base {
     $response = self::http_post($request, array());
     $model_required_fields = self::expand_ids_to_fks(json_decode($response['output'], true));
     $preset_fields = self::expand_ids_to_fks(array_keys($_POST));
-    
-    $unlinked_fields = array_diff_key($fields, array_combine($preset_fields, $preset_fields));
+    if (!empty($preset_fields))
+      $unlinked_fields = array_diff_key($fields, array_combine($preset_fields, $preset_fields));
+    else
+      $unlinked_fields = $fields;
     // only use the required fields that are available for selection - the rest are handled somehow else
     $unlinked_required_fields = array_intersect($model_required_fields, array_keys($unlinked_fields));
     
