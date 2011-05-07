@@ -7,13 +7,15 @@ function submit_to(){
   // We need to dynamically build the submitTo so we get the correct sort order
   var submitTo = "";
   // access globals created by the report grid to get the current state of pagination and sort as a result of AJAX calls
-  url.params["page-verification-grid"] = report_grid_page;
-  if (report_grid_orderby!==null && report_grid_orderby!=="") {
+  if (typeof report_grid_page!=="undefined" && report_grid_page!==null && report_grid_page!=="") {
+    url.params["page-verification-grid"] = report_grid_page;
+  }
+  if (typeof report_grid_orderby!=="undefined" && report_grid_orderby!==null && report_grid_orderby!=="") {
     url.params["orderby-verification-grid"] = report_grid_orderby;
   } else {
     delete url.params["orderby-verification-grid"];
   }
-  if (report_grid_sortdir!==null && report_grid_sortdir!=="") {
+  if (typeof report_grid_sortdir!=="undefined" && report_grid_sortdir!==null && report_grid_sortdir!=="") {
     url.params["sortdir-verification-grid"] = report_grid_sortdir;
   } else {
     delete url.params["sortdir-verification-grid"];
