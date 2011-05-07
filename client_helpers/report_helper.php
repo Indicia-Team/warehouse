@@ -829,6 +829,8 @@ function addDistPoint(features, record, wktCol) {
     } else {
       throw new Exception('Invalid mode parameter for call to report_grid');
     }
+    if (!empty($extra) && substr($extra, 1, 1)!=='&')
+      $extra = '&'.$extra;
     // We request limit 1 higher than actually needed, so we know if the next page link is required.
     $request = parent::$base_url.'index.php/services/'.
         $serviceCall.
