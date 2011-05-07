@@ -174,6 +174,8 @@ class iform_mnhnl_dynamic_1 {
           'default' => "=Species=\r\n".
               "?Please enter the species you saw and any other information about them.?\r\n".
               "[species]\r\n".
+              "@resizeWidth=1500\r\n".
+              "@resizeHeight=1500\r\n".
               "[species attributes]\r\n".
               "[*]\r\n".
               "=Place=\r\n".
@@ -543,9 +545,9 @@ class iform_mnhnl_dynamic_1 {
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
     ));
-    // Make sure the form action points back to this page
+    //// Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
-    $reloadPath = $reload['path'];
+    $reloadPath = $_SERVER['REQUEST_URI'];
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
