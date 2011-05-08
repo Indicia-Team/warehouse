@@ -89,7 +89,10 @@ class report_helper extends helper_base {
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
   *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the 
   *      current page's URL, {rootFolder} to represent the folder on the server that the current PHP page is running from, and 
-  *      {imageFolder} for the image upload folder.
+  *      {imageFolder} for the image upload folder. Because the javascript may pass the field values as parameters to functions, 
+  *      there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or 
+  *      -escape-dblquote to the fieldname. For example this would be valid in the action javascript: foo("{bar-escape-dblquote}"); 
+  *      even if the field value contains a double quote which would have broken the syntax.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
   *  of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
@@ -1018,6 +1021,12 @@ function addDistPoint(features, record, wktCol) {
   }
 
   private static function get_report_grid_actions($actions, $row) {
+    $jsReplacements = array();
+    foreach ($row as $key=>$value) {
+      $jsReplacements[$key]=$value;
+      $jsReplacements["$key-escape-quote"]=str_replace("'", "\'", $value);
+      $jsReplacements["$key-escape-dblquote"]=str_replace('"', '\"', $value);
+    }
     $links = array();
     $currentUrl = self::get_reload_link_parts(); // needed for params
     foreach ($actions as $action) {
@@ -1041,7 +1050,7 @@ function addDistPoint(features, record, wktCol) {
         $href='';
       }
       if (isset($action['javascript'])) {
-        $onclick=' onclick="'.self::mergeParamsIntoTemplate($row,$action['javascript'],true).'"';
+        $onclick=' onclick="'.self::mergeParamsIntoTemplate($jsReplacements,$action['javascript'],true).'"';
       } else {
         $onclick = '';
       }
