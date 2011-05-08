@@ -38,7 +38,6 @@ class Taxon_Model extends ORM {
     $array->pre_filter('trim');
     $array->add_rules('taxon', 'required');
     $array->add_rules('language_id', 'required');
-    $array->add_rules('scientific', 'required');
     $array->add_rules('taxon_group_id', 'required');
 
     // Explicitly add those fields for which we don't do validation
