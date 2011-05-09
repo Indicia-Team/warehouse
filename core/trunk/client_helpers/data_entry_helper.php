@@ -3556,7 +3556,7 @@ $('.ui-state-default').live('mouseout', function() {
       $item['default'] = self::attributes_get_default($item);
       $retVal[$itemId] = $item;
     }
-    if(!$options['id'])
+    if(!isset($options['id']))
       return $retVal;
 
     $options['extraParams'][$options['key']] = $options['id'];
@@ -3672,7 +3672,7 @@ $('.ui-state-default').live('mouseout', function() {
       $validation = explode("\n", $item['validation_rules']);
       // append the rules to any existing class string
       $attrOptions['class'] = (isset($attrOptions['class']) ? $attrOptions['class'] .' ' : '') .
-          self::build_validation_class(array('validation'=>$validation));
+          self::build_validation_class(array('fieldname' => $item['fieldname'], 'validation'=>$validation));
       if (in_array('required',$validation))
         $attrOptions['suffixTemplate'] = 'requiredsuffix';
     }
