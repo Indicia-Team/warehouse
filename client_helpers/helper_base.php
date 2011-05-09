@@ -1144,8 +1144,8 @@ $onload_javascript
  /**
    * Converts the validation rules in an options array into a string that can be used as the control class,
    * to trigger the jQuery validation plugin.
-   * @param $options. For validation to be applied should contain a validation entry, containing a single
-   * validation string or an array of strings.
+   * @param $options. Control options array. For validation to be applied should contain a validation entry, 
+   * containing a single validation string or an array of strings.
    * @return string The validation rules formatted as a class.
    */
   protected static function build_validation_class($options) {
