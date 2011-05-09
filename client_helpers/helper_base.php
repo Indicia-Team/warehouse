@@ -504,7 +504,7 @@ class helper_base extends helper_config {
     if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
       return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     else {
-      return dirname(__FILE_).'/'.self::$final_image_folder;
+      return dirname(__FILE__).'/'.self::$final_image_folder;
     }      
   }
   
@@ -787,7 +787,7 @@ mapSettingsHooks.push(add_map_tools)\n";
   protected static function send_file_to_warehouse($path, $persist_auth=false, $readAuth = null, $service='data/handle_media') {
     if ($readAuth==null) $readAuth=$_POST;
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-    $interim_path = dirname(__FILE__).'/'.self::$interim_image_folder;
+    $interim_path = dirname(__FILE__).'/'.$interim_image_folder;
     if (!file_exists($interim_path.$path)) 
       return "The file $interim_path$path does not exist and cannot be uploaded to the Warehouse.";
     $serviceUrl = parent::$base_url."index.php/services/".$service;

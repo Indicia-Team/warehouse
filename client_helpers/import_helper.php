@@ -423,7 +423,7 @@ class import_helper extends helper_base {
       // Generate a file id to store the upload as
       $destination = time().rand(0,1000).".".$fext;
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      $interim_path = dirname(__FILE__).'/'.self::$interim_image_folder;
+      $interim_path = dirname(__FILE__).'/'.$interim_image_folder;
       if (move_uploaded_file($file['tmp_name'], "$interim_path$destination")) {
         return "$interim_path$destination";
       }
