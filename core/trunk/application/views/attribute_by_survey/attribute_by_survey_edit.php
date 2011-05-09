@@ -147,12 +147,15 @@ echo data_entry_helper::outputAttribute(array(
   array(
     'extraParams' => $readAuth
   )
-);?>
+);
+?>
 <label for="control_type_id">Default control type:</label>
 <select name="<?php echo $model->object_name; ?>:control_type_id" id="control_type_id">
+<option value="">&lt;Not specified&gt;</option>
 <?php
+$controlTypeId = html::initial_value($values, $_GET['type'].'_attributes_website:control_type_id');
 foreach ($other_data['controlTypes'] as $controlType) {
-  $selected = ($controlType->id==$model->control_type_id) ? ' selected="selected"' : '';
+  $selected = ($controlType->id==$controlTypeId) ? ' selected="selected"' : '';
   echo "<option value=\"$controlType->id\"$selected>$controlType->control</option>";
 }
 ?>
