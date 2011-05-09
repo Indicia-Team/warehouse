@@ -467,7 +467,7 @@ jQuery('#$escaped_id').datepicker({
     global $indicia_templates;
     // Upload directory defaults to client_helpers/upload, but can be overriden.
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-    $relpath = self::relative_client_helper_path();
+    $relpath = self::getRootFolder() . self::relative_client_helper_path();
     // Allow options to be defaulted and overridden
     $defaults = array(
       'caption' => lang::get('Files'),
@@ -484,10 +484,10 @@ jQuery('#$escaped_id').datepicker({
       'runtimes' => array('html5','silverlight','flash','gears','browserplus','html4'),
       'autoupload' => true,
       'imageWidth' => 200,
-      'uploadScript' => self::getRootFolder() . $relpath . 'upload.php',
-      'destinationFolder' => self::getRootFolder() . $relpath . $interim_image_folder,
+      'uploadScript' => $relpath . 'upload.php',
+      'destinationFolder' => $relpath . $interim_image_folder,
       'finalImageFolder' => self::get_uploaded_image_folder(),
-      'swfAndXapFolder' => self::getRootFolder() .$relpath . 'plupload/',
+      'swfAndXapFolder' => $relpath . 'plupload/',
       'jsPath' => self::$js_path,
       'buttonTemplate' => $indicia_templates['button'],
       'table' => 'occurrence_image',
@@ -495,7 +495,7 @@ jQuery('#$escaped_id').datepicker({
       'codeGenerated' => 'all'
     );
     if (isset(self::$final_image_folder_thumbs))
-      $defaults['finalImageFolderThumbs'] = self::getRootFolder() . self::relative_client_helper_path() . self::$final_image_folder_thumbs;
+      $defaults['finalImageFolderThumbs'] = $relpath . self::$final_image_folder_thumbs;
     $browser = self::get_browser_info();
     // Flash doesn't seem to work on IE6.
     if ($browser['name']=='msie' && $browser['version']<7)
@@ -1458,12 +1458,12 @@ jQuery('#$escaped_id').datepicker({
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
-      $relpath = self::relative_client_helper_path();
+      $relpath = self::getRootFolder() . self::relative_client_helper_path();
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
       self::$javascript .= "uploadSettings = {\n";
-      self::$javascript .= "  uploadScript: '".self::getRootFolder() . $relpath . "upload.php',\n";
-      self::$javascript .= "  destinationFolder: '".self::getRootFolder() . $relpath . $interim_image_folder."',\n";
-      self::$javascript .= "  swfAndXapFolder: '".self::getRootFolder() . $relpath . "plupload/',\n";
+      self::$javascript .= "  uploadScript: '" . $relpath . "upload.php',\n";
+      self::$javascript .= "  destinationFolder: '" . $relpath . $interim_image_folder."',\n";
+      self::$javascript .= "  swfAndXapFolder: '" . $relpath . "plupload/',\n";
       self::$javascript .= "  jsPath: '".self::$js_path."'";
       if (isset($options['resizeWidth'])) {
         self::$javascript .= ",\n  resizeWidth: ".$options['resizeWidth'];
