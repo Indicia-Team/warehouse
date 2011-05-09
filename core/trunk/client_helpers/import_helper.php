@@ -423,9 +423,9 @@ class import_helper extends helper_base {
       // Generate a file id to store the upload as
       $destination = time().rand(0,1000).".".$fext;
       $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-      $relpath = self::relative_client_helper_path();
-      if (move_uploaded_file($file['tmp_name'], $relpath.$interim_image_folder.$destination)) {
-        return $relpath.$interim_image_folder.$destination;
+      $interim_path = dirname(__FILE__).'/'.self::$interim_image_folder;
+      if (move_uploaded_file($file['tmp_name'], "$interim_path$destination")) {
+        return "$interim_path$destination";
       }
     } elseif (isset($options['existing_file']))
       return $options['existing_file'];
