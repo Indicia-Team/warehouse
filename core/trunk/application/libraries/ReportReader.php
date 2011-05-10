@@ -26,7 +26,7 @@ interface ReportReader
   /**
   * <p> Constructs a reader for the specified report. </p>
   */
-  public function __construct($report);
+  public function __construct($report, $websiteIds);
 
   /**
    * <p> Returns the title of the report. </p>

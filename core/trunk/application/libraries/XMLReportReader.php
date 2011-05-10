@@ -45,7 +45,7 @@ class XMLReportReader_Core implements ReportReader
   /**
   * <p> Constructs a reader for the specified report. </p>
   */
-  public function __construct($report)
+  public function __construct($report, $websiteIds)
   {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
@@ -67,8 +67,23 @@ class XMLReportReader_Core implements ReportReader
                 $this->row_class = $reader->getAttribute('row_class');
                 break;
               case 'query':
+                if (!$websiteFilterField = $reader->getAttribute('website_filter_field'))
+                  // default field name for filtering against websites
+                  $websiteFilterField = 'w.id';
                 $reader->read();
                 $this->query = $reader->value;
+                if ($websiteIds) {
+                  if (in_array('', $websiteIds)) {
+                    foreach($websiteIds as $key=>$value) {
+                      if (empty($value))
+                        unset($websiteIds[$key]);
+                    }  
+                  }
+                  $filter = $websiteFilterField.' in ('.implode($websiteIds, ',').')';
+                  $this->query = str_replace('#website_filter#', $filter, $this->query);
+                } else
+                  // use a dummy filter to return all websites if core admin
+                  $this->query = str_replace('#website_filter#', '1=1', $this->query);
                 break;
               case 'field_sql':
                 $reader->read();

@@ -35,10 +35,10 @@ class Report_viewer_Controller extends Indicia_Controller
   public function __construct()
   {
     $this->pageTitle = 'Reports';
+    parent::__construct();
     // As we're local, we just call the class report with suppress set to true, which will prevent
     // it from writing to the screen.
-    $this->repServ = new ReportEngine();
-    parent::__construct();
+    $this->repServ = new ReportEngine($this->get_allowed_website_id_list('editor'));
   }
 
   /**

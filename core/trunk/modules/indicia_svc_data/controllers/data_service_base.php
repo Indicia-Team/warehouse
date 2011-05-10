@@ -30,23 +30,6 @@
 class Data_Service_Base_Controller extends Service_Base_Controller {
 
   /**
-   * @var int Id of the website calling the service. Obtained when performing read authentication and used
-   * to filter the response. A value of 0 indicates the warehouse.
-   */
-  protected $website_id = null;
-  
-  /**
-   * @var int Id of the Warehouse user calling the service. Obtained when performing read authentication and used
-   * to filter the response. Only applies when the request originates from the warehouse.
-   */
-  protected $user_id = null;
-  
-  /**
-   * @var boolean Flag set to true when user has core admin rights. Only applies when the request originates from the warehouse.
-   */
-  protected $user_is_core_admin = false;
-
-  /**
   * Cleanup a write once nonce from the cache. Should be called after a call to authenticate.
   * Read nonces do not need to be deleted - they are left to expire.
   */

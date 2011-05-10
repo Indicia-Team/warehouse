@@ -91,46 +91,6 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   }
 
   /**
-   * Sets the list of websites the user has access to according to the requested role.
-   */
-  protected function set_website_access($level='admin') {
-    // If not logged in as a Core admin, restrict access to available websites.
-    if ($this->auth->logged_in('CoreAdmin')) 
-      $this->auth_filter = null;
-    else {
-      $ids = $this->get_allowed_website_id_list($level);
-      $this->auth_filter = array('field' => 'website_id', 'values' => $ids);
-    }
-  }
-  
-  /**
-   * Gets a list of the website IDs a user can access at a certain level.
-   */
-  protected function get_allowed_website_id_list($level, $includeNull=true) {
-    if ($this->auth->logged_in('CoreAdmin'))
-      return null;
-    else {
-      switch ($level) {
-        case 'admin': $role=1; break;
-        case 'editor': $role=2; break;
-        case 'user': $role=3; break;
-      }
-      $user_websites = ORM::factory('users_website')->where(
-          array('user_id' => $_SESSION['auth_user']->id,
-          'site_role_id <=' => $role, 'site_role_id IS NOT' => NULL))->find_all();
-      $ids = array();
-      foreach ($user_websites as $user_website) {
-        $ids[] = $user_website->website_id;
-      }
-      if ($includeNull) {
-        // include a null to allow through records which have no associated website.
-        $ids[] = null;
-      }
-      return $ids;
-    }
-  }
-
-  /**
    * Adds the upload csv form to the view (which should then insert it at the bottom of the grid).
    */
   protected function add_upload_csv_form() {

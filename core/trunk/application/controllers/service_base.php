@@ -32,6 +32,17 @@ class ArrayException extends Kohana_Exception {
    */
   protected $in_warehouse = false;
 
+  /**
+   * @var int Id of the website calling the service. Obtained when performing read authentication and used
+   * to filter the response. A value of 0 indicates the warehouse.
+   */
+  protected $website_id = null;
+
+  /**
+   * @var boolean Flag set to true when user has core admin rights. Only applies when the request originates from the warehouse.
+   */
+  protected $user_is_core_admin = false;
+
   private $errors = array();
 
   /**
