@@ -29,14 +29,13 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_relation_type_Model extends ORM {
-
+  public static $search_field='caption';
+  
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user');
 
   protected $has_many = array(
     'taxon_relations'
-    );
-
-  protected $search_field='caption';
+  );
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation

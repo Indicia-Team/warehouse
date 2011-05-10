@@ -37,7 +37,7 @@ class Trigger_Model extends ORM {
     'updated_by'=>'user'
   );
   
-  protected $search_field='name';
+  public static $search_field='name';
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation

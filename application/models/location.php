@@ -30,6 +30,8 @@
  */
 class Location_Model extends ORM_Tree {
 
+  public static $search_field='name';
+
   protected $ORM_Tree_children = "locations";
   protected $has_and_belongs_to_many = array('websites');
   protected $has_many = array('samples', 'location_attribute_values', 'location_images');
@@ -39,8 +41,6 @@ class Location_Model extends ORM_Tree {
   protected $has_attributes=true;
   protected $attrs_submission_name='locAttributes';
   protected $attrs_field_prefix='locAttr';
-
-  protected $search_field='name';
 
   public function validate(Validation $array, $save = FALSE) {
     $orig_values = $array->as_array();

@@ -30,6 +30,8 @@
  */
 class Sample_Model extends ORM_Tree
 {
+  public static $search_field = 'id';
+  
   protected $ORM_Tree_children = "samples";
   protected $has_many=array('occurrences', 'sample_attribute_values', 'sample_images');
   protected $belongs_to=array
@@ -40,7 +42,7 @@ class Sample_Model extends ORM_Tree
     'updated_by'=>'user',
     'sample_method'=>'termlists_term'
   );
-  protected $search_field = 'id';
+  
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
   protected $attrs_submission_name='smpAttributes';

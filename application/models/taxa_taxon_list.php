@@ -29,7 +29,10 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxa_taxon_list_Model extends Base_Name_Model {
-
+  public static $search_field='taxon';
+  
+  protected static $lookup_against='gv_taxon_lists_taxon';
+  
   protected $belongs_to = array(
     'taxon', 
     'taxon_list',  
@@ -38,10 +41,7 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     'updated_by' => 'user'
   );
 
-  protected $ORM_Tree_children = 'taxa_taxon_lists';
-  
-  protected $search_field='taxon';
-  protected $lookup_against='gv_taxon_lists_taxon';
+  protected $ORM_Tree_children = 'taxa_taxon_lists';  
   protected $list_id_field = 'taxon_list_id';
 
   public function validate(Validation $array, $save = FALSE) {

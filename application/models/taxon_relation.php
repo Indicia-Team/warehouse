@@ -29,15 +29,14 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_Relation_Model extends ORM {
-
+  public static $search_field = 'id';
+  
   protected $belongs_to = array(
     'created_by' => 'user', 
     'updated_by' => 'user',
     'from_taxon_meaning' => 'taxon_meaning', 
     'to_taxon_meaning' => 'taxon_meaning',
     'taxon_relation_type');
-
-  protected $search_field = 'id';
 
   public function validate(Validation $array, $save = false) {
     $array->pre_filter('trim');

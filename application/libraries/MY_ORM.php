@@ -22,17 +22,21 @@
  */
 
 class ORM extends ORM_Core {
+  /**
+  * @var Should foreign key lookups be cached? Set to true during import for example.
+  */
+  public static $cacheFkLookups = true;
 
   public function last_query() {
     return $this->db->last_query();
   }
   
   public $submission = array();
-
+  
   /**
    * The default field that is searchable is called title. Override this when a different field name is used.
    */
-  protected $search_field='title';
+  public static $search_field='title';
 
   protected $errors = array();
   protected $identifiers = array('website_id'=>null,'survey_id'=>null);
@@ -54,6 +58,8 @@ class ORM extends ORM_Core {
    */
   protected $has_attributes = false;
   
+  private $cache;
+  
   /**
    * Constructor allows plugins to modify the data model.
    */
@@ -63,8 +69,8 @@ class ORM extends ORM_Core {
     // exist yet as we haven't called the parent construct, so we build our own.
     $object_name = strtolower(substr(get_class($this), 0, -6));
     $cacheId = 'orm-'.$object_name;
-    $cache = Cache::instance();
-    $ormRelations = $cache->get($cacheId);
+    $this->cache = Cache::instance();
+    $ormRelations = $this->cache->get($cacheId);
     if ($ormRelations === null) {
       // now look for modules which plugin to tweak the orm relationships.
       foreach (Kohana::config('config.modules') as $path) {      
@@ -92,7 +98,7 @@ class ORM extends ORM_Core {
         'belongs_to' => $this->belongs_to,
         'has_and_belongs_to_many' => $this->has_and_belongs_to_many
       );
-      $cache->set($cacheId, $cacheArray);
+      $this->cache->set($cacheId, $cacheArray);
     } else {
       $this->has_one = $ormRelations['has_one'];
       $this->has_many = $ormRelations['has_many'];
@@ -284,7 +290,8 @@ class ORM extends ORM_Core {
    */
   public function lookup($search_text)
   {
-    return $this->where($this->search_field, $search_text)->find();
+    $modelName = ucfirst($this->object_name).'_Model';
+    return $this->where($modelName::$search_field, $search_text)->find();
   }
 
   /**
@@ -294,7 +301,8 @@ class ORM extends ORM_Core {
   public function caption()
   {
     if ($this->id) {
-      return $this->__get($this->search_field);
+      $modelName = ucfirst($this->object_name).'_Model';
+      return $this->__get($modelName::$search_field);
     } else {
       return $this->getNewItemCaption();
     }
@@ -481,26 +489,44 @@ class ORM extends ORM_Core {
    * caption that must be searched for in the fk entity. This method does the searching and
    * puts the fk id back into the main model so when it is saved, it links to the correct fk
    * record.
+   * Respects the setting $cacheFkLookups to use the cache if possible.
    *
    * @return boolean True if all lookups populated successfully.
    */
   private function populateFkLookups() {
     $r=true;
+     if (!ORM::$cacheFkLookups) {
+       throw new Exception('NO CACHING');
+     }
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
-        $matches = $this->db
-            ->select('id')
-            ->from(inflector::plural($b['fkTable']))
-            ->like(array($b['fkSearchField'] => $b['fkSearchValue']))
-            ->limit(1)
-            ->get();
-        if (count($matches)<1) {
-          $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
-              '" in the '.ucwords($b['fkSearchField']).' field.';
-          $r=false;
+        $cache = false;
+        if (ORM::$cacheFkLookups) {
+          kohana::log('debug', 'trying to read from cache '.'lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue']);
+          $cache = $this->cache->get('lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue']);
+          if ($cache) kohana::log('debug', 'cache read OK');
+        }
+        if ($cache) {
+          $this->submission['fields'][$b['fkIdField']] = $cache;
         } else {
-          $this->submission['fields'][$b['fkIdField']] = $matches[0]->id;
-        }        
+          $matches = $this->db
+              ->select('id')
+              ->from(inflector::plural($b['fkTable']))
+              ->like(array($b['fkSearchField'] => $b['fkSearchValue']))
+              ->limit(1)
+              ->get();
+          if (count($matches)<1) {
+            $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
+                '" in the '.ucwords($b['fkSearchField']).' field.';
+            $r=false;
+          } else {
+            $this->submission['fields'][$b['fkIdField']] = $matches[0]->id;
+            if (ORM::$cacheFkLookups) {
+              $this->cache->set('lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue'], $matches[0]->id, array('lookup'));
+              kohana::log('debug', 'cache setting OK');
+            }
+          }
+        }
       }
     }
     return $r;
@@ -1042,16 +1068,16 @@ class ORM extends ORM_Core {
         } else {
            $fkTable = $fieldName;
         }
-        $fkModel = ORM::factory($fkTable);
+        $fkModel = ucfirst($fkTable).'_Model';
         // let the model map the lookup against a view if necessary
-        $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
+        $lookupAgainst = isset($fkModel::$lookup_against) ? $fkModel::$lookup_against : $fkTable;
         // Generate a foreign key instance
         $submission['fkFields'][$field] = array
         (
           // Foreign key id field is table_id
           'fkIdField' => "$fieldName"."_id",
           'fkTable' => $lookupAgainst,
-          'fkSearchField' => $fkModel->search_field,
+          'fkSearchField' => $fkModel::$search_field,
           'fkSearchValue' => trim($value['value']),
           'readableTableName' => ucwords(preg_replace('/[\s_]+/', ' ', $fkTable))
         );

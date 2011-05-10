@@ -29,11 +29,10 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Location_Image_Model extends ORM {
-
+  public static $search_field = 'caption';
+  
   protected $belongs_to = array('created_by' => 'user', 'updated_by' => 'user',
     'occurrence');
-
-  protected $search_field = 'caption';
 
   public function validate(Validation $array, $save = false) {
 
