@@ -29,13 +29,12 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_Image_Model extends ORM {
+  public static $search_field = 'caption';
 
   protected $belongs_to = array(
     'created_by' => 'user', 
     'updated_by' => 'user',
     'taxon_meaning');
-
-  protected $search_field = 'caption';
 
   public function validate(Validation $array, $save = false) {
     $array->pre_filter('trim');

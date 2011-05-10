@@ -29,11 +29,10 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Person_Model extends ORM {
-
+  public static $search_field='surname';
+  
   protected $has_one = array('user');
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'title');
-
-  protected $search_field='surname';
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation

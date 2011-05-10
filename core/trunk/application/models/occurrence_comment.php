@@ -29,10 +29,9 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Occurrence_comment_model extends ORM {
-
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence');
+  public static $search_field = 'comment';
   
-  protected $search_field = 'comment';
+  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence');
   
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation

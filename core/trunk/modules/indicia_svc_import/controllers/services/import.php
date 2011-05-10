@@ -165,6 +165,8 @@ class Import_Controller extends Service_Base_Controller {
         'details'=>array()
       );
     }
+    // enable caching of things like language lookups
+    ORM::$cacheFkLookups = true;
     // make sure the file still exists
     if (file_exists($csvTempFile))
     {
@@ -177,10 +179,12 @@ class Import_Controller extends Service_Base_Controller {
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : false);
       $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
       $offset = (isset($_GET['offset']) ? $_GET['offset'] : 0);
-      if ($filepos==0)
+      if ($filepos==0) {
         // first row, so skip the header
         fgetcsv($handle, 1000, ",");
-      else
+        // also clear the lookup cache
+        $cache->delete_tag('lookup');
+      } else
         // skip rows to allow for the last file position
         fseek($handle, $filepos);
       $count=0;

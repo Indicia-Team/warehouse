@@ -29,6 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class User_Model extends ORM {
+  public static $search_field='username';
 
   protected $belongs_to = array('person', 'core_role',
     'created_by'=>'user', 'updated_by'=>'user');
@@ -36,9 +37,7 @@ class User_Model extends ORM {
     'termlist'=>'created_by','termlist'=>'updated_by',
     'website'=>'created_by','website'=>'updated_by',
     'location'=>'created_by','location'=>'updated_by',
-    );
-
-  protected $search_field='username';
+  );  
 
   protected $droppedFields;
 

@@ -29,14 +29,13 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Trigger_Action_Model extends ORM {
+  public static $search_field='id';
 
   protected $belongs_to = array(
     'created_by'=>'user',
     'updated_by'=>'user',   
     'trigger'
-  );
-  
-  protected $search_field='id';
+  );  
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation

@@ -14,39 +14,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Models
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
 /**
  * Model class for the Taxon_Meanings table.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Models
- * @link	http://code.google.com/p/indicia/wiki/DataModel
+ * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_meaning_Model extends ORM {
-	protected $search_field='id';
+  public static $search_field='id';
 
-	protected $has_many = array(
-			'taxa_taxon_lists'
-		);
+  protected $has_many = array(
+      'taxa_taxon_lists'
+    );
 
-	public function insert(){
-		$nextval = $this->db->query("SELECT nextval('taxon_meanings_id_seq'::regclass)")
-			->current()->nextval;
-		$this->id = $nextval;
-		 return $this->save();
-	}
+  public function insert(){
+    $nextval = $this->db->query("SELECT nextval('taxon_meanings_id_seq'::regclass)")
+      ->current()->nextval;
+    $this->id = $nextval;
+     return $this->save();
+  }
 
-	public function validate(Validation $array, $save = FALSE){
-	  if (!$this->id) {
-		  $this->insert();
-	  }
-		return true;
-	}
+  public function validate(Validation $array, $save = FALSE){
+    if (!$this->id) {
+      $this->insert();
+    }
+    return true;
+  }
 
 }

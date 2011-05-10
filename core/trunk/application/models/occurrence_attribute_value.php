@@ -29,12 +29,11 @@
  * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Occurrence_Attribute_Value_Model extends Attribute_Value_ORM {
-
+  public static $search_field='text_value';
+  
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence', 'occurrence_attribute');
 
-  protected $search_field='text_value';
-
-   public function validate(Validation $array, $save = FALSE) {
+  public function validate(Validation $array, $save = FALSE) {
     self::attribute_validation($array, 'occurrence');    
     return parent::validate($array, $save);
   }
