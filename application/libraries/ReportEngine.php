@@ -58,9 +58,11 @@ class ReportEngine {
   private $localReportDir;
   private $cache;
   const rowsPerUpdate = 50;
+  private $websiteIds = null;
 
-  public function __construct()
+  public function __construct($websiteIds = null)
   {
+    $this->websiteIds = $websiteIds;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
     $this->reportDb = new Database('report');
   }
@@ -120,7 +122,7 @@ class ReportEngine {
     switch ($this->reportFormat)
     {
       case 'xml':
-        $this->reportReader = new XMLReportReader($this->report);
+        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
         break;
       default:
         return array('error' => 'Unknown report format specified: '. $this->reportFormat);
@@ -218,7 +220,7 @@ class ReportEngine {
           case 'xml':
             Kohana::log('debug', "Invoking XMLReportReader to handle $file.");
             $this->fetchLocalReport($file);
-            $this->reportReader = new XMLReportReader($this->report);
+            $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
             break;
           default:
             continue 2;
