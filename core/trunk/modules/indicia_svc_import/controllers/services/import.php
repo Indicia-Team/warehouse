@@ -146,7 +146,7 @@ class Import_Controller extends Service_Base_Controller {
   
   /**
    * Controller action that performs the import of data in an uploaded CSV file.
-   * Allows $_GET parameters to specify the offset and limit when uploading just a chunk at a time.
+   * Allows $_GET parameters to specify the filepos, offset and limit when uploading just a chunk at a time.
    * This method is called to perform the entire upload when JavaScript is not enabled, or can 
    * be called to perform part of an AJAX csv upload where only a part of the data is imported
    * on each call.
@@ -175,11 +175,14 @@ class Import_Controller extends Service_Base_Controller {
       $errorHandle = $this->_get_error_file_handle($csvTempFile, $handle);
       $count=0;
       $limit = (isset($_GET['limit']) ? $_GET['limit'] : false);
+      $filepos = (isset($_GET['filepos']) ? $_GET['filepos'] : 0);
       $offset = (isset($_GET['offset']) ? $_GET['offset'] : 0);
-      // skip rows to allow for the offset
-      while ($count<$offset && fgetcsv($handle, 1000, ",") !== FALSE) {
-        $count++;
-      }
+      if ($filepos==0)
+        // first row, so skip the header
+        fgetcsv($handle, 1000, ",");
+      else
+        // skip rows to allow for the last file position
+        fseek($handle, $filepos);
       $count=0;
       $model = ORM::Factory($_GET['model']);
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
@@ -227,13 +230,14 @@ class Import_Controller extends Service_Base_Controller {
       }
       // Get percentage progress
       $progress = ftell($handle) * 100 / filesize($csvTempFile);
+      $filepos = ftell($handle);
+      echo "{uploaded:$count,progress:$progress,filepos:$filepos}";
       fclose($handle);
       fclose($errorHandle);
       self::internal_cache_upload_metadata($metadata);
       
       // An AJAX upload request will just receive the number of records uploaded and progress
-      $this->auto_render=false;
-      echo "{uploaded:$count,progress:$progress}";      
+      $this->auto_render=false;      
       $cache->set(basename($csvTempFile).'previousSupermodels', $this->previousCsvSupermodel);      
     }
   }

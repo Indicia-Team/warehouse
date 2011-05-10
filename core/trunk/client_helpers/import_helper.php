@@ -307,9 +307,10 @@ class import_helper extends helper_base {
   */
   uploadChunk = function() {
     var limit=10;
-    jQuery.getJSON('".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&uploaded_csv=$filename&model=".$options['model']."',
+    jQuery.getJSON('".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
       function(response) {
         total = total + response.uploaded;
+        filepos = response.filepos;
         jQuery('#progress-text').html(total + ' records uploaded.');
         $('#progress-bar').progressbar ('option', 'value', response.progress);
         if (response.uploaded>=limit) {
@@ -322,7 +323,7 @@ class import_helper extends helper_base {
     );  
   };
   
-  var total=0;
+  var total=0, filepos=0;
   jQuery('#progress-bar').progressbar ({value: 0});
   uploadChunk();
   ";
