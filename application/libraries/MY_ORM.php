@@ -774,7 +774,14 @@ class ORM extends ORM_Core {
     $fields = array_merge($fields, $this->additional_csv_fields);
     return $fields;
   }
-  
+
+  /**
+   * Retrieves a list of the required fields for this model and its related models.
+   * @param <type> $fk
+   * @param <type> $website_id
+   * @param <type> $survey_id
+   * @return <type>
+   */
   public function getRequiredFields($fk = false, $website_id=null, $survey_id=null) {
     if ($website_id!==null) 
       $this->identifiers['website_id']=$website_id;
@@ -920,8 +927,12 @@ class ORM extends ORM_Core {
     }
     // Create a attribute value, loading the existing value id if it exists
     $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
-    
-    $dataType = ORM::factory($this->object_name.'_attribute', $attrId)->data_type;
+    $dt = $this->db
+        ->select('data_type')
+        ->from($this->object_name.'_attributes')
+        ->where(array('id'=>$attrId))
+        ->get();
+    $dataType = $dt[0]->data_type;
     $vf = null;
     
     switch ($dataType) {
@@ -986,7 +997,7 @@ class ORM extends ORM_Core {
 
     $attrValueModel->save();
 
-     return true;
+    return true;
   }
 
   /**
