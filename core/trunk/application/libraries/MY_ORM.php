@@ -488,24 +488,19 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
-        // Establish the correct model
-        $m = ORM::factory($b['fkTable']);
-        // Check that it has the required search field
-        if (array_key_exists($b['fkSearchField'], $m->table_columns)) {
-          $fkRecords = $m->like(array(
-              $b['fkSearchField'] => $b['fkSearchValue']));
-          if (isset($b['fkSearchFilterField'])) {
-            $fkRecords->where($b['fkSearchFilterField'], $b['fkSearchFilterValue']);
-          }
-          $fkRecords = $fkRecords->find_all();
-          if (count($fkRecords)<1) {
-            $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
-                '" in the '.ucwords($b['fkSearchField']).' field.';
-            $r=false;
-          } else {
-            $this->submission['fields'][$b['fkIdField']] = $fkRecords[0]->id;
-          }
-        }
+        $matches = $this->db
+            ->select('id')
+            ->from(inflector::plural($b['fkTable']))
+            ->like(array($b['fkSearchField'] => $b['fkSearchValue']))
+            ->limit(1)
+            ->get();
+        if (count($matches)<1) {
+          $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
+              '" in the '.ucwords($b['fkSearchField']).' field.';
+          $r=false;
+        } else {
+          $this->submission['fields'][$b['fkIdField']] = $matches[0]->id;
+        }        
       }
     }
     return $r;
