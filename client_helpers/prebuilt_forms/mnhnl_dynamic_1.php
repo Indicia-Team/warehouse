@@ -1028,17 +1028,18 @@ class iform_mnhnl_dynamic_1 {
           'fieldname'=>'occurrence:comment',
           'label'=>lang::get('Record Comment')
         )); 
-      if ($args['occurrence_images'])
-        $opt = array(
+      if ($args['occurrence_images']){
+        $opts = array(
           'table'=>'occurrence_image',
           'label'=>lang::get('Upload your photos'),
         );
-      if ($args['interface']!=='one_page')
-        $opts['tabDiv']=$tabalias;
-      $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
-      $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
-      $opts['caption'] = lang::get('Photos');
-      $r .= data_entry_helper::file_box($opts);
+        if ($args['interface']!=='one_page')
+          $opts['tabDiv']=$tabalias;
+        $opts['resizeWidth'] = isset($options['resizeWidth']) ? $options['resizeWidth'] : 1600;
+        $opts['resizeHeight'] = isset($options['resizeHeight']) ? $options['resizeHeight'] : 1600;
+        $opts['caption'] = lang::get('Photos');
+        $r .= data_entry_helper::file_box($opts);
+      }
       return $r;
     } else 
       // in grid mode the attributes are embedded in the grid.
