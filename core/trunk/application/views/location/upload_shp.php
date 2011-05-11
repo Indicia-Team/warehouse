@@ -21,10 +21,10 @@
  * @link 	http://code.google.com/p/indicia/
  */
 ?>
-<form action="<?php echo $controllerpath.'/upload_shp2'; ?>" method="post" class="cmxform">
+<form action="<?php echo url::site().$controllerpath.'/upload_shp2'; ?>" method="post" class="cmxform">
 <fieldset>
-<input type='checkbox' name="boundary"/>Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).<br/>
-<input type='checkbox' name="use_parent"/>Select the checkbox if the locations are associated with a parent location.<br/>
+<input type='checkbox' class="vnarrow" name="boundary"/>Select this checkbox if the data should be loaded into the boundary geometry in the location (as opposed to the centroid geometry).<br/>
+<input type='checkbox' class="vnarrow" name="use_parent"/>Select the checkbox if the locations are associated with a parent location.<br/>
 <label for='SRID' class='wide' >SRID used in Shapefile</label>
 <select id='SRID' name='srid' >
   <option value="27700">EPSG:27700 British National Grid</option>
@@ -35,7 +35,8 @@
 <label for='SRID' class='wide' >Default Website to attach any new locations to</label>
 <select id='website_id' name='website_id' >
 <?php
-  if (!is_null($this->gen_auth_filter))
+  
+  if (isset($this->gen_auth_filter) && !is_null($this->gen_auth_filter))
     $websites = ORM::factory('website')->in('id',$this->gen_auth_filter['values'])->orderby('title','asc')->find_all();
   else
     $websites = ORM::factory('website')->orderby('title','asc')->find_all();        
@@ -66,7 +67,7 @@ foreach ($columns as $col): ?>
 <?php endforeach; ?>
 </tbody>
 </table>
-<input type="submit" value="Upload Data" id="upload-button" />
+<input type="submit" value="Upload Data" id="upload-button" class="default" />
 <br/>
 <?php
 // We stick these at the bottom so that all the other things will be parsed first
