@@ -117,7 +117,7 @@ $custom_terms = array(
 	,'LANG_Determination_Incorrect' => 'This identification has been flagged as incorrect.'
 	,'LANG_Determination_Unconfirmed' => 'This identification has been flagged as unconfirmed.'
 	,'LANG_Determination_Unknown' => 'The taxon was not known in the identification tool.'
-	,'LANG_Max_Features_Reached' => 'The number of results returned has exceeded the maximum number allowed. The list will be abridged.'
+	,'LANG_Max_Features_Reached' => "Because of the large number of collections recorded on SPIPOLL's website, only the last 1000 recorded collections are displayed. Use the geolocation and/or the filter 'date' to see the whole collection set inside a given area and/or a period of observation."
 	,'LANG_Indicia_Warehouse_Error' => 'Error returned from Indicia Warehouse'
 	
 	,'LANG_Bad_Collection_ID' => 'You have tried to load a session as a collection: this ID is not a valid collection.'
