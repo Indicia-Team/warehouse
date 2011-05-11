@@ -34,36 +34,27 @@ class Taxa_taxon_designation_Controller extends Gridview_Base_Controller {
 
   public function __construct()
   {
-    parent::__construct('taxa_taxon_designation', 'gv_taxa_taxon_designation', 'taxa_taxon_designation/index');
+    parent::__construct('taxa_taxon_designation', 'taxa_taxon_designation/index');
     $this->columns = array(
       'id'          => '',
       'title'       => '',
       'category'    => ''
     );
     $this->pagetitle = "Taxon Designations";
-    $this->model = ORM::factory('taxa_taxon_designation');
-    $this->auth_filter = $this->gen_auth_filter;
   }
   
+  /**
+   * Override loading of action columns to ensure the taxa taxon list id is passed to the edit view.
+   */
   protected function get_action_columns() {
     // taxa taxon list ID should be the first argument from the index view
-    return array('edit' => $this->controllerpath."/edit/#id#?taxa_taxon_list_id=".$this->uri->argument(1));
+    return array(array('caption' => 'edit', 'url' => $this->controllerpath."/edit/{id}?taxa_taxon_list_id=".$this->uri->argument(1)));
   }
 
-  /**
-   * To save the plugin needing to modify the routes config file, we write a hard-
-   * coded routing from index to the page function for page 1. The filter here
-   * should be the taxa_taxon_list_id.
-   * @param <type> $filter
-   */
   public function index($filter = null) {
-    self::page(1, $filter);
-  }
-
-  public function page($page_no, $filter = null) {
     $ttl = ORM::Factory('taxa_taxon_list', $filter);
     $this->base_filter['taxa_taxon_list_id'] = $filter;
-    parent::page($page_no, $filter);
+    parent::index($filter);
     $this->view->taxa_taxon_list_id = $ttl->id;
   }
 
