@@ -963,7 +963,8 @@ $.validator.messages.required = \"".lang::get('validation_required')."\";
 
 // remove the (don't know) entry from flower type filter.
 jQuery('[name=occAttr\\:".$args['flower_type_attr_id']."]').filter('[value=".$args['flower_type_dont_know']."]').parent().remove();
- 
+jQuery('[name=location\\:geom]').attr('name', 'location:centroid_geom');
+
 jQuery('#start_date').datepicker({
   dateFormat : 'dd/mm/yy',
   constrainInput: false,
@@ -2097,9 +2098,27 @@ runSearch = function(forCollections){
   		feature = '".$args['search_insects_layer']."';
   		properties = ['insect_id','collection_id','geom','image_d_insecte'];
   	}
+  	
+    var style = new OpenLayers.Style({
+                    pointRadius: '\${radius}',
+                    fillColor: '#ffcc66',
+                    fillOpacity: 0.8,
+                    strokeColor: '#cc6633',
+                    strokeWidth: 2,
+                    strokeOpacity: 1
+       }, {context: {radius: function(feature) {
+                     if(feature.attributes.count>=10) return 10;
+                     if(feature.attributes.count>=5) return 8;
+                     if(feature.attributes.count>1) return 6;
+                     return 4;}}
+    });
+    var styleMap = new OpenLayers.StyleMap({\"default\": style});
+    
 	var strategy = new OpenLayers.Strategy.Fixed({preload: false, autoActivate: false});
+	clusterStrategy = new OpenLayers.Strategy.Cluster();
 	searchLayer = new OpenLayers.Layer.Vector('Search Layer', {
-          strategies: [strategy],
+		  styleMap: styleMap,
+	      strategies: [strategy, clusterStrategy],
           displayInLayerSwitcher: false,
 	      protocol: new OpenLayers.Protocol.WFS({
               url: '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $args['search_url'])."',
@@ -2117,7 +2136,8 @@ runSearch = function(forCollections){
 	if(forCollections) {
 		jQuery('#results-collections-results').empty().append('<div class=\"collection-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchLayer.events.register('featuresadded', {}, function(a1){
-			searchResults = a1;
+			searchLayer.events.remove('featuresadded');
+			searchResults = clusterStrategy;
 			searchResults.type = 'C';
 			if(searchResults.features.length >= ".$args['max_features']."){
 				alert(\"".lang::get('LANG_Max_Features_Reached')."\");
@@ -2132,7 +2152,8 @@ runSearch = function(forCollections){
 	} else {
 		jQuery('#results-insects-results').empty().append('<div class=\"insect-loading-panel\" ><img src=\"".helper_config::$base_url."media/images/ajax-loader2.gif\" />".lang::get('loading')."...</div>');
 		searchLayer.events.register('featuresadded', {}, function(a1){
-			searchResults = a1;
+			searchLayer.events.remove('featuresadded');
+			searchResults = clusterStrategy;
 			searchResults.type = 'I';
 			if(searchResults.features.length >= ".$args['max_features']."){
 				alert(\"".lang::get('LANG_Max_Features_Reached')."\");

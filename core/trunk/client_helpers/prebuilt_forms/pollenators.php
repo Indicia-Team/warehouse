@@ -124,6 +124,34 @@ class iform_pollenators {
           'group'=>'Floral Station Attributes'
           ),
       array(
+          'name'=>'location_picture_camera_attr_id',
+          'caption'=>'Location Picture Camera Attribute ID',      
+          'description'=>'Indicia ID for the location attribute that stores the Camera EXIF data for the location picture.',
+          'type'=>'int',
+          'group'=>'Floral Station Attributes'
+            ),
+      array(
+          'name'=>'location_picture_datetime_attr_id',
+          'caption'=>'Location Picture Datetime Attribute ID',      
+          'description'=>'Indicia ID for the location attribute that stores the DateTime EXIF data for the location picture.',
+          'type'=>'int',
+          'group'=>'Floral Station Attributes'
+      ),
+      array(
+          'name'=>'occurrence_picture_camera_attr_id',
+          'caption'=>'Flower and Insect Picture Camera Attribute ID',      
+          'description'=>'Indicia ID for the occurrence attribute that stores the Camera EXIF data for the flower and insect pictures.',
+          'type'=>'int',
+          'group'=>'Floral Station Attributes'
+            ),
+      array(
+          'name'=>'occurrence_picture_datetime_attr_id',
+          'caption'=>'Flower and Insect Picture Datetime Attribute ID',      
+          'description'=>'Indicia ID for the occurrence attribute that stores the DateTime EXIF data for the flower and insect pictures.',
+          'type'=>'int',
+          'group'=>'Floral Station Attributes'
+            ),
+      array(
           'name'=>'flower_type_attr_id',
           'caption'=>'Flower Type Attribute ID',      
           'description'=>'Indicia ID for the occurrence attribute that stores how the flower got there.',
@@ -582,7 +610,7 @@ jQuery('#".$id."').click(function(){
     <input type="hidden" id="website_id"       name="website_id" value="'.$args['website_id'].'" />
     <input type="hidden" id="imp-sref"         name="location:centroid_sref"  value="" />
     <input type="hidden" id="imp-geom"         name="location:centroid_geom" value="" />
-    <input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
+    <input type="hidden" id="X-sref-system"  name="location:centroid_sref_system" value="900913" />
     <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
     '.iform_pollenators::help_button($use_help, "collection-help-button", $args['help_function'], $args['help_collection_arg']).'
     <label for="location:name">'.lang::get('LANG_Collection_Name_Label').'</label>
@@ -655,12 +683,13 @@ $.fn.hidePanel = function(){
 
 inseeLayer = null;
 
-defaultSref = '".
+newDefaultSref = '0, 0';
+oldDefaultSref = '".
     		((int)$args['map_centroid_lat'] > 0 ? $args['map_centroid_lat'].'N' : (-((int)$args['map_centroid_lat'])).'S').' '.
     		((int)$args['map_centroid_long'] > 0 ? $args['map_centroid_long'].'E' : (-((int)$args['map_centroid_long'])).'W')."';
 defaultGeom = '';
 $.getJSON('".$svcUrl."' + '/spatial/sref_to_wkt'+
-        			'?sref=' + defaultSref +
+        			'?sref=' + newDefaultSref +
           			'&system=' + jQuery('#imp-sref-system').val() +
           			'&callback=?', function(data) {
             	defaultGeom = data.wkt;
@@ -680,10 +709,11 @@ $.fn.resetPanel = function(){
 	this.find('[name=place\\:INSEE]').val('".lang::get('LANG_INSEE')."');
 	this.find('#imp-sref-lat').val('');
 	this.find('#imp-sref-long').val('');
+	this.find('#X-sref-system').val('900913'); //note only one of these in cc-1, distinct from location:centroid_sref_system. This indicates no geolocation loaded.
 	// TODO Map
 	this.find('.thumb').filter('not(.blankPhoto)').remove();
 
-	// resetForm does not reset the hidden fields. record_status, imp-sref-system, website_id and survey_id are not altered so do not reset.
+	// resetForm does not reset the hidden fields. record_status, website_id and survey_id are not altered so do not reset.
 	// hidden Attributes generally hold unchanging data, but the name needs to be reset (does it for non hidden as well).
 	// hidden location:name are set in code anyway.
 	this.find('.poll-dummy-form input').val('');
@@ -696,8 +726,9 @@ $.fn.resetPanel = function(){
 		jQuery(this).find('[name=sample\\:location_name],[name=location_image\\:path],[name=occurrence_image\\:path]').val('');
 		jQuery(this).filter('#cc-1-collection-details').find('[name=sample\\:id],[name=location\\:id]').val('').attr('disabled', 'disabled');
 		jQuery(this).find('[name=location_image\\:id],[name=occurrence\\:id],[name=determination\\:id],[name=occurrence_image\\:id]').val('').attr('disabled', 'disabled');
-		jQuery(this).find('[name=sample\\:date]:hidden').val('2010-01-01');		
+		jQuery(this).find('[name=sample\\:date]:hidden').val('2010-01-01');
 		jQuery(this).find('input[name=locations_website\\:website_id]').removeAttr('disabled');
+		jQuery(this).find('[name=locAttr\\:".$args['location_picture_camera_attr_id']."],[name^=locAttr\\:".$args['location_picture_camera_attr_id']."\\:],[name=locAttr\\:".$args['location_picture_datetime_attr_id']."],[name^=locAttr\\:".$args['location_picture_datetime_attr_id']."\\:],[name=occAttr\\:".$args['occurrence_picture_camera_attr_id']."],[name^=occAttr\\:".$args['occurrence_picture_camera_attr_id']."\\:],[name=occAttr\\:".$args['occurrence_picture_datetime_attr_id']."],[name^=occAttr\\:".$args['occurrence_picture_datetime_attr_id']."\\:]').val('');
 		jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').filter('.multiselect').remove();
 		jQuery(this).find('[name^=smpAttr\\:],[name^=locAttr\\:],[name^=occAttr\\:]').each(function(){
 			var name = jQuery(this).attr('name').split(':');
@@ -911,8 +942,10 @@ $('#cc-1-collection-details').ajaxForm({
   			// 1) the location:name is the sixth field in the form.
   			// 1) the sample:location_name is the seventh field in the form.
   			data[6].value = data[5].value;
-  			if(data[1].value=='') data[1].value=defaultSref;
-  			if(data[2].value=='') data[2].value=defaultGeom;
+  			if(data[3].value=='900913'){
+  				data[1].value=newDefaultSref;
+  				data[2].value=defaultGeom;
+  			}
   			jQuery('#cc-2-floral-station > input[name=location\\:name]').val(data[5].value);
   			jQuery('#cc-1-valid-button').addClass('loading-button');
         	return true;
@@ -1092,8 +1125,10 @@ $('#cc-1-reinit-button').click(function() {
       <input type="hidden" id="location:name" name="location:name" value=""/>
       <input type="hidden" name="location:centroid_sref" />
       <input type="hidden" name="location:centroid_geom" />
-      <input type="hidden" name="location:centroid_sref_system" value="4326" />
+      <input type="hidden" id="imp-sref-system" name="location:centroid_sref_system" value="4326" />
       <input type="hidden" id="location_image:path" name="location_image:path" value="" />
+      <input type="hidden" id="location_picture_camera_attr" name="locAttr:'.$args['location_picture_camera_attr_id'].'" value="" />
+      <input type="hidden" id="location_picture_datetime_attr" name="locAttr:'.$args['location_picture_datetime_attr_id'].'" value="" />
       <input type="hidden" id="sample:survey_id" name="sample:survey_id" value="'.$args['survey_id'].'" />
       <input type="hidden" id="sample:id" name="sample:id" value=""/>
       <input type="hidden" name="sample:date" value="2010-01-01"/>
@@ -1112,6 +1147,8 @@ $('#cc-1-reinit-button').click(function() {
       <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
       <input type="hidden" id="occurrence_image:path" name="occurrence_image:path" value="" />
+      <input type="hidden" id="flower_picture_camera_attr" name="occAttr:'.$args['occurrence_picture_camera_attr_id'].'" value="" />
+      <input type="hidden" id="flower_picture_datetime_attr" name="occAttr:'.$args['occurrence_picture_datetime_attr_id'].'" value="" />
       '.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['flower_type_attr_id']], $defNRAttrOptions))
       .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['distance_attr_id']], $defNRAttrOptions))
       .str_replace("\n", "", data_entry_helper::outputAttribute($location_attributes[$args['within50m_attr_id']], $defNRAttrOptions))
@@ -1469,10 +1506,12 @@ $('#cc-2-flower-upload').ajaxForm({
         success:   function(data){
         	if(data.success == true){
 	        	// There is only one file
-	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.files[0]);
-	        	insertImage('med-'+data.files[0], jQuery('#cc-2-flower-image'), ".$args['Flower_Image_Ratio'].");
-				jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
-			} else
+	        	jQuery('form#cc-2-floral-station input[name=occurrence_image\\:path]').val(data.files[0].filename);
+	        	jQuery('#flower_picture_camera_attr').val(data.files[0].EXIF_Camera_Make);
+	        	jQuery('#flower_picture_datetime_attr').val(data.files[0].EXIF_DateTime);
+	        	insertImage('med-'+data.files[0].filename, jQuery('#cc-2-flower-image'), ".$args['Flower_Image_Ratio'].");
+	        	jQuery('#cc-2-flower-upload input[name=upload_file]').val('');
+  			} else
 				alertIndiciaError(data);
   		},
   		complete: function(){
@@ -1495,8 +1534,10 @@ $('#cc-2-environment-upload').ajaxForm({
         success:   function(data){
         	if(data.success == true){
 	        	// There is only one file
-	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.files[0]);
-	        	insertImage('med-'+data.files[0], jQuery('#cc-2-environment-image'), ".$args['Environment_Image_Ratio'].");
+	        	jQuery('form#cc-2-floral-station input[name=location_image\\:path]').val(data.files[0].filename);
+	        	jQuery('#location_picture_camera_attr').val(data.files[0].EXIF_Camera_Make);
+	        	jQuery('#location_picture_datetime_attr').val(data.files[0].EXIF_DateTime);
+	        	insertImage('med-'+data.files[0].filename, jQuery('#cc-2-environment-image'), ".$args['Environment_Image_Ratio'].");
 				jQuery('#cc-2-environment-upload input[name=upload_file]').val('');
 			} else
 				alertIndiciaError(data);
@@ -1989,6 +2030,8 @@ jQuery('.mod-button').click(function() {
     	<input type="hidden" id="occurrence:id" name="occurrence:id" value="" disabled="disabled" />
 	    <input type="hidden" id="determination:id" name="determination:id" value="" disabled="disabled" />
 	    <input type="hidden" id="occurrence_image:id" name="occurrence_image:id" value="" disabled="disabled" />
+        <input type="hidden" id="insect_picture_camera_attr" name="occAttr:'.$args['occurrence_picture_camera_attr_id'].'" value="" />
+        <input type="hidden" id="insect_picture_datetime_attr" name="occAttr:'.$args['occurrence_picture_datetime_attr_id'].'" value="" />
 	    <label for="occurrence:sample_id">'.lang::get('LANG_Session').'</label>
 	    <select id="occurrence:sample_id" name="occurrence:sample_id" value="" class="required" /></select>
 	    '
@@ -2068,8 +2111,10 @@ $('#cc-4-insect-upload').ajaxForm({
         success:   function(data){
         	if(data.success == true){
 	        	// There is only one file
-	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val(data.files[0]);
-	        	insertImage('med-'+data.files[0], jQuery('#cc-4-insect-image'), ".$args['Insect_Image_Ratio'].");
+	        	jQuery('form#cc-4-main-form input[name=occurrence_image\\:path]').val(data.files[0].filename);
+	        	jQuery('#insect_picture_camera_attr').val(data.files[0].EXIF_Camera_Make);
+	        	jQuery('#insect_picture_datetime_attr').val(data.files[0].EXIF_DateTime);
+	        	insertImage('med-'+data.files[0].filename, jQuery('#cc-4-insect-image'), ".$args['Insect_Image_Ratio'].");
 				jQuery('#cc-4-insect-upload input[name=upload_file]').val('');
 			}  else
 				alertIndiciaError(data);
@@ -2635,7 +2680,9 @@ jQuery.ajax({
        			jQuery('#cc-1-collection-details,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
        			// main sample date is only set when collection is completed, so leave default.
        			loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data[i].id, 'smpAttr', false);
-  				var locData = [];
+				$('#cc-1').foldPanel();
+				checkProtocolStatus(true);
+				$('#cc-2').showPanel();
   				jQuery.ajax({ 
 					type: 'GET', 
 					url: \"".$svcUrl."/data/location/\" + data[i].location_id +
@@ -2646,14 +2693,27 @@ jQuery.ajax({
 		    		  if(!(locationdata instanceof Array)){
    						alertIndiciaError(locationdata);
    					  } else if (locationdata.length>0) {
-   					    locData = locationdata;
 		    			jQuery('input[name=location\\:id]').val(locationdata[0].id).removeAttr('disabled');
 	    				jQuery('input[name=location\\:name]').val(locationdata[0].name);
        					jQuery('input[name=sample\\:location_name]').val(locationdata[0].name); // make sure the 2 coincide
 	    				jQuery('input[name=locations_website\\:website_id]').attr('disabled', 'disabled');
 	    				loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', locationdata[0].id, 'locAttr', false);
     	   				loadImage('location_image', 'location_id', 'location\\:id', locationdata[0].id, '#cc-2-environment-image', ".$args['Environment_Image_Ratio'].", false);
-  					  }
+						// The location only holds a valid place if the floral station has been saved: 
+						// we use the centroid_sref_system to indicate this: when the initial save is done the system is 900913,
+						// but when a user has loaded one it is in 4326
+						// NB the location geometry is stored in centroid, due to restrictions in location model.
+						if(locationdata[0].centroid_sref_system == 4326 && locationdata[0].centroid_sref != oldDefaultSref){
+							jQuery('input[name=location\\:centroid_sref]').val(locationdata[0].centroid_sref);
+							jQuery('input[name=location\\:centroid_sref_system]').val(locationdata[0].centroid_sref_system); // note this will change the 900913 in cc-1 to 4326
+							jQuery('input[name=location\\:centroid_geom]').val(locationdata[0].centroid_geom);
+							jQuery('#imp-sref').change();
+							var parts=locationdata[0].centroid_sref.split(' ');
+							var refx = parts[0].split(',');
+							jQuery('input[name=place\\:lat]').val(refx[0]);
+							jQuery('input[name=place\\:long]').val(parts[1]);
+						}
+					  }
   					}, 
 					data: {}, 
 					async: false 
@@ -2669,27 +2729,10 @@ jQuery.ajax({
 		    		  if(!(flowerData instanceof Array)){
 						alertIndiciaError(flowerData);
 					  } else if (flowerData.length>0) {
-						// The location only holds a valid place if the floral station has been saved: because 
-						// the location is saved on cc-1 (due to FK constraints), we use the presence of the flower
-						// occurrence as the indicator of FS saving. Only load location location at this point.
-						// NB the location geometry is stored in centroid, due to restrictions in location model.
-						jQuery('input[name=location\\:centroid_sref]').val(locData[0].centroid_sref);
-						jQuery('input[name=location\\:centroid_sref_system]').val(locData[0].centroid_sref_system);
-						jQuery('input[name=location\\:centroid_geom]').val(locData[0].centroid_geom);
-						jQuery('#imp-sref').change();
-						var parts=locData[0].centroid_sref.split(' ');
-						var refx = parts[0].split(',');
-						jQuery('input[name=place\\:lat]').val(refx[0]);
-						jQuery('input[name=place\\:long]').val(parts[1]);
-
-						$('#cc-1').foldPanel();
-						checkProtocolStatus(true);
-						$('#cc-2').showPanel();
 						jQuery('form#cc-2-floral-station > input[name=occurrence\\:sample_id]').val(data[i].id);
 						jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val(flowerData[0].id).removeAttr('disabled');
 						loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', flowerData[0].id, 'occAttr', false);
 						loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', flowerData[0].id, '#cc-2-flower-image', ".$args['Flower_Image_Ratio'].");
-
 						jQuery.ajax({ 
 							type: 'GET', 
 							url: \"".$svcUrl."/data/determination\" + 
@@ -2703,7 +2746,9 @@ jQuery.ajax({
 							data: {}, 
 							async: false 
 						});
-    	      				  
+						jQuery('#cc-2').foldPanel();
+						jQuery('#cc-3-body').empty();
+						jQuery('#cc-3').showPanel();
     	   				jQuery.ajax({ 
 							type: 'GET', 
 							url: \"".$svcUrl."/data/sample\" + 
@@ -2713,10 +2758,7 @@ jQuery.ajax({
 	    			  		  if(!(sessiondata instanceof Array)){
    								alertIndiciaError(sessiondata);
    					  		  } else if (sessiondata.length>0) {
-								jQuery('#cc-2').foldPanel();
 								sessionCounter = 0;
-								jQuery('#cc-3-body').empty();
- 								$('#cc-3').showPanel();
 								for (var i=0;i<sessiondata.length;i++){
 									var thisSession = addSession();
 									jQuery('input[name=sample\\:id]', thisSession).val(sessiondata[i].id).removeAttr('disabled');
