@@ -128,7 +128,8 @@ class iform_mnhnl_dynamic_1 {
           'type'=>'boolean',
           'default' => false,
           'required' => false,
-          'group' => 'User Interface'
+          'group' => 'User Interface',
+          'visible' => function_exists('profile_load_profile')
         ),
         array(
           'name'=>'clientSideValidation',

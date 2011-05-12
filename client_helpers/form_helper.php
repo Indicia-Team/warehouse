@@ -215,6 +215,8 @@ $('#load-params').click(function(evt) {
     $fieldsets = array();
     $r = '';
     foreach ($formparams as $control) {
+      if (isset($control['visible']) && !$control['visible'])
+        continue;
       $fieldset = isset($control['group']) ? $control['group'] : 'Other IForm Parameters';
       // apply default options to the control
       $ctrlOptions = array_merge(array(
