@@ -31,7 +31,7 @@
 class Taxa_taxon_list_Model extends Base_Name_Model {
   public static $search_field='taxon';
   
-  protected static $lookup_against='gv_taxon_lists_taxon';
+  protected static $lookup_against='gv_taxa_taxon_list';
   
   protected $belongs_to = array(
     'taxon', 
