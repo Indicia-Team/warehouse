@@ -106,7 +106,8 @@ class Import_Controller extends Service_Base_Controller {
       }
       else
       {
-        kohana::log('info', 'Validation errors uploading file '. $_FILES['media_upload']['name']);
+        kohana::log('error', 'Validation errors uploading file '. $_FILES['media_upload']['name']);
+        kohana::log('error', print_r($_FILES->errors('form_error_messages'), true));
         Throw new ArrayException('Validation error', $_FILES->errors('form_error_messages'));
       }
     }
