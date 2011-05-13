@@ -279,54 +279,55 @@ class import_helper extends helper_base {
       return lang::get('upload_not_available');
     $filename=basename($_SESSION['uploaded_file']);
     // move file to server
-    self::send_file_to_warehouse($filename, false, $options['auth']['write_tokens'], 'import/upload_csv');    
-    
-    $reload = self::get_reload_link_parts();
-    $reload['params']['uploaded_csv']=$filename;
-    $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
-    
-    // initiate local javascript to do the upload with a progress feedback
-    $r = '
-<div id="progress" class="ui-widget ui-widget-content ui-corner-all">
-<div id="progress-bar" style="width: 400"></div>
-<div id="progress-text">Preparing to upload.</div>
-</div>
-';
-    // cache the mappings
-    $metadata = array('mappings' => json_encode($_POST));
-    $post = array_merge($options['auth']['write_tokens'], $metadata);
-    $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
-    $response = self::http_post($request, $post);
-    if (!isset($response['output']) || $response['output'] != 'OK')
-      return "Could not upload the mappings metadata. <br/>".print_r($response, true);
-    
-    self::$onload_javascript .= "
-  /**
-  * Upload a single chunk of a file, by doing an AJAX get. If there is more, then on receiving the response upload the
-  * next chunk.
-  */
-  uploadChunk = function() {
-    var limit=10;
-    jQuery.getJSON('".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
-      function(response) {
-        total = total + response.uploaded;
-        filepos = response.filepos;
-        jQuery('#progress-text').html(total + ' records uploaded.');
-        $('#progress-bar').progressbar ('option', 'value', response.progress);
-        if (response.uploaded>=limit) {
-          uploadChunk();
-        } else {
-          jQuery('#progress-text').html('Upload complete.');
-          window.location = '$reloadpath&total='+total;
+    $r = self::send_file_to_warehouse($filename, false, $options['auth']['write_tokens'], 'import/upload_csv');    
+    if ($r===true) {
+      $reload = self::get_reload_link_parts();
+      $reload['params']['uploaded_csv']=$filename;
+      $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
+      
+      // initiate local javascript to do the upload with a progress feedback
+      $r = '
+  <div id="progress" class="ui-widget ui-widget-content ui-corner-all">
+  <div id="progress-bar" style="width: 400"></div>
+  <div id="progress-text">Preparing to upload.</div>
+  </div>
+  ';
+      // cache the mappings
+      $metadata = array('mappings' => json_encode($_POST));
+      $post = array_merge($options['auth']['write_tokens'], $metadata);
+      $request = parent::$base_url."index.php/services/import/cache_upload_metadata?uploaded_csv=$filename";
+      $response = self::http_post($request, $post);
+      if (!isset($response['output']) || $response['output'] != 'OK')
+        return "Could not upload the mappings metadata. <br/>".print_r($response, true);
+      
+      self::$onload_javascript .= "
+    /**
+    * Upload a single chunk of a file, by doing an AJAX get. If there is more, then on receiving the response upload the
+    * next chunk.
+    */
+    uploadChunk = function() {
+      var limit=10;
+      jQuery.getJSON('".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
+        function(response) {
+          total = total + response.uploaded;
+          filepos = response.filepos;
+          jQuery('#progress-text').html(total + ' records uploaded.');
+          $('#progress-bar').progressbar ('option', 'value', response.progress);
+          if (response.uploaded>=limit) {
+            uploadChunk();
+          } else {
+            jQuery('#progress-text').html('Upload complete.');
+            window.location = '$reloadpath&total='+total;
+          }
         }
-      }
-    );  
-  };
-  
-  var total=0, filepos=0;
-  jQuery('#progress-bar').progressbar ({value: 0});
-  uploadChunk();
-  ";
+      );  
+    };
+    
+    var total=0, filepos=0;
+    jQuery('#progress-bar').progressbar ({value: 0});
+    uploadChunk();
+    ";
+    }
     return $r;
   }
   
