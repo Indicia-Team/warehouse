@@ -113,8 +113,9 @@ class iform_mnhnl_dynamic_1 {
         array(
           'name'=>'nameShow',
           'caption'=>'Show user profile fields even if logged in',
-          'description'=>'If the survey requests first name and last name or any field which matches a field in the users profile, these are hidden for logged in '.
-              'users where they are populated if the data is available in the profile and user id is sent instead. Check this box to show these fields.',
+          'description'=>'If the survey requests first name and last name or any field which matches a field in the users profile, these are hidden. '.
+              'Check this box to show these fields. Always show these fields if they are required at the warehouse unless the profile module is enabled, '.
+              '<em>copy field values from user profile</em> is selected and the fields are required in the profile.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
@@ -123,8 +124,8 @@ class iform_mnhnl_dynamic_1 {
         array(
           'name'=>'copyFromProfile',
           'caption'=>'Copy field values from user profile',
-          'description'=>'If logged in, copy any matching fields from the user\'s profile into the fields with matching names in the sample data. This currently works for fields '.
-              'defined in the Drupal Profile module.',
+          'description'=>'Copy any matching fields from the user\'s profile into the fields with matching names in the sample data. This works for fields '.
+              'defined in the Drupal Profile module. Applies whether fields are shown or not.',
           'type'=>'boolean',
           'default' => false,
           'required' => false,
