@@ -1090,7 +1090,7 @@ $onload_javascript
 
     // Add a label only if specified in the options array. Link the label to the inputId if available,
     // otherwise the fieldname (as the fieldname control could be a hidden control).
-    if (array_key_exists('label', $options)) {
+    if (array_key_exists('label', $options) && !empty($options['label'])) {
       $r .= str_replace(
           array('{label}', '{id}', '{labelClass}'),
           array(
