@@ -182,6 +182,7 @@ class Import_Controller extends Service_Base_Controller {
       $offset = (isset($_GET['offset']) ? $_GET['offset'] : 0);
       if ($filepos==0) {
         // first row, so skip the header
+        fseek($handle, 0);
         fgetcsv($handle, 1000, ",");
         // also clear the lookup cache
         $cache->delete_tag('lookup');
