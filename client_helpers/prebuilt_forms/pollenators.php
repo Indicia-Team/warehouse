@@ -1759,14 +1759,19 @@ compareTimes = function(nameStart, nameEnd, formSel){
     }
     return true;
 }
+convertDate = function(dateStr){
+	// Converts a YYYY-MM-DD date to YYYY/MM/DD so IE can handle it.
+	return dateStr.slice(0,4)+'/'+dateStr.slice(5,7)+'/'+dateStr.slice(8,10);
+} 
+
 checkDate = function(name, formSel){
   var control = jQuery(formSel).find('[name='+name+']');
   var session = this;
   var dateError = false;
-  var d2 = new Date(control.val());
+  var d2 = new Date(convertDate(control.val()));
   var two_days=2*1000*60*61*24; // allows a bit of leaway
   jQuery('.required').filter('[name=sample:date]').each(function(){
-    var d1 = new Date(jQuery(this).val());
+    var d1 = new Date(convertDate(jQuery(this).val()));
     if(Math.abs(d1.getTime()-d2.getTime()) > two_days){
       dateError=true;
     }
@@ -1833,6 +1838,8 @@ addSession = function(){
 	});
 	helpDiv.appendTo(newForm);";
     }
+    // we have to be careful with the dates: Indicia supplies dates as YYYY-MM-DD, but this is not ready understood by the IE JS Date, which is OK with YYYY/MM/DD.
+    // We keep the YYYY-MM-DD internally for consistency.
     data_entry_helper::$javascript .= "
 	var dateID = 'cc-3-session-date-'+sessionCounter;
 	var dateAttr = '<label for=\"'+dateID+'\">".lang::get('LANG_Date')."</label><input type=\"text\" size=\"10\" class=\"vague-date-picker required\" id=\"'+dateID+'\" name=\"dummy_date\" value=\"".lang::get('click here')."\" /> ';
@@ -2140,6 +2147,7 @@ $('#cc-4-main-form').ajaxForm({
 			valid = false;
 		}
 		if (jQuery('#id-insect-later').attr('checked') == ''){
+			prepPhotoReelForNew(false);
 			data[findID('determination:taxa_taxon_list_id', data)].value = jQuery('#cc-4-insect-identify select[name=insect\\:taxa_taxon_list_id]').val();
 			data[findID('determination:taxon_details', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:taxon_details]').val();
 			data[findID('determination:taxon_extra_info', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:taxon_extra_info]').val();
@@ -2158,6 +2166,7 @@ $('#cc-4-main-form').ajaxForm({
 				}			
 			}
 		} else {
+			prepPhotoReelForNew(true);
 			data.splice(4,8); // remove determination entries.
 		}
    		if ( valid == false ) {
@@ -2169,7 +2178,7 @@ $('#cc-4-main-form').ajaxForm({
 	},
     success:   function(data){
        	if(data.success == 'multiple records' && data.outer_table == 'occurrence'){
-       		updatePhotoReel(data.outer_id, false); // do sync
+       		addNewToPhotoReel(data.outer_id);
 			window.scroll(0,0);
         } else
 			alertIndiciaError(data);
@@ -2245,7 +2254,31 @@ loadInsect = function(id){
 	jQuery('[occId='+id+']').addClass('currentPhoto');
 }
 
-updatePhotoReel = function(occId, doAsync){
+prepPhotoReelForNew = function(notID){
+	container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', 'new');
+	if(notID)
+		jQuery('<span>?</span>').addClass('thumb-text').appendTo(container);
+}
+
+addNewToPhotoReel = function(occId){
+	var container = jQuery('[occId=new]');
+	container.attr('occId', occId.toString()).click(function () {
+		    setInsect(occId)});
+	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
+			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
+		if(!(imageData instanceof Array)){
+			alertIndiciaError(imageData);
+		} else if (imageData.length>0) {
+			var img = new Image();
+			var container = jQuery('[occId='+imageData[0].occurrence_id+']');
+			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
+			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
+		}
+	});
+}
+
+addExistingToPhotoReel = function(occId){
 	var container = jQuery('[occId='+occId+']');
 	if(container.length == 0)
 		container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', occId.toString()).click(function () {
@@ -2256,11 +2289,6 @@ updatePhotoReel = function(occId, doAsync){
 	// we use the presence of the text to determine whether the 
 	// insect has been identified or not. NB an insect tagged as unidentified (type = 'X') has actually been through the ID
 	// process, so is not unidentified!!!
-	// When generating the photoreel when loading an existing collection this can be done async. BUT If we 'validate the photos'
-	// (as opposed to 'validate the insect'), the presence of the thumb-text is used immediately after to
-	// count if the insect is identified before allowing the collection to be closed. This must therefore
-	// wait until the data is returned - ie done synchronously. This must be done before the image fetch so it
-	// doesn't block it.
 	jQuery.ajax({ 
         type: \"GET\", 
         url: \"".$svcUrl."/data/determination\" + 
@@ -2273,8 +2301,7 @@ updatePhotoReel = function(occId, doAsync){
 	    		jQuery('[occId='+detData[0].occurrence_id+']').find('.thumb-text').remove();
 	    	}
   		}, 
-    	dataType: 'json', 
-	    async: doAsync 
+    	dataType: 'json' 
     });
 	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -2461,7 +2488,7 @@ $('#cc-5-collection').ajaxForm({
 			jQuery('.poll-session-form').each(function(i){
 				if(jQuery(this).find('input[name=sample\\:id]').val() != '') {
 					var sessDate = jQuery(this).find('input[name=sample\\:date]').val();
-					var sessDateDate = new Date(sessDate); // sessions are only on one date.
+					var sessDateDate = new Date(convertDate(sessDate)); // sessions are only on one date.
 					if(date_start == '' || date_start > sessDateDate) {
 						date_start = sessDateDate;
 						data[3].value = sessDate;
@@ -2661,7 +2688,7 @@ jQuery('#flower-id-button').data('toolRetValues',[]);
 jQuery('#insect-id-button').data('toolRetValues',[]);
 jQuery('#flower_taxa_list').empty();
 jQuery('#insect_taxa_list').empty();
-	
+
 jQuery.ajax({ 
     type: 'GET', 
     url: \"".$svcUrl."\" + \"/report/requestReport?report=reports_for_prebuilt_forms/poll_my_collections.xml&reportSource=local&mode=json\" +
@@ -2747,7 +2774,6 @@ jQuery.ajax({
 							async: false 
 						});
 						jQuery('#cc-2').foldPanel();
-						jQuery('#cc-3-body').empty();
 						jQuery('#cc-3').showPanel();
     	   				jQuery.ajax({ 
 							type: 'GET', 
@@ -2759,11 +2785,12 @@ jQuery.ajax({
    								alertIndiciaError(sessiondata);
    					  		  } else if (sessiondata.length>0) {
 								sessionCounter = 0;
+								jQuery('#cc-3-body').empty();
 								for (var i=0;i<sessiondata.length;i++){
 									var thisSession = addSession();
 									jQuery('input[name=sample\\:id]', thisSession).val(sessiondata[i].id).removeAttr('disabled');
 									jQuery('input[name=sample\\:date]', thisSession).val(sessiondata[i].date_start);
-									jQuery('input[name=dummy_date]', thisSession).datepicker('disable').datepicker('setDate', new Date(sessiondata[i].date_start)).datepicker('enable');
+									jQuery('input[name=dummy_date]', thisSession).datepicker('disable').datepicker('setDate', new Date(convertDate(sessiondata[i].date_start))).datepicker('enable');
 									loadAttributes(thisSession, 'sample_attribute_value', 'sample_attribute_id', 'sample_id', sessiondata[i].id, 'smpAttr', false);
   									// fold this session.
   									thisSession.show();
@@ -2776,7 +2803,7 @@ jQuery.ajax({
    											alertIndiciaError(insectData);
    					  		  			} else if (insectData.length>0) {
  											for (var j=0;j<insectData.length;j++){
-												updatePhotoReel(insectData[j].id, true);
+												addExistingToPhotoReel(insectData[j].id);
 											}
 										}
 		    						});
