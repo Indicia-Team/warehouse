@@ -312,12 +312,6 @@ mapInitialisationHooks = [];
       var corner2xy = corner2.split(', ');
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
       _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
-      if(!div.settings.searchLayer){ // no separate search layer, so have just put it on the editLayer
-          $('#'+opts.srefId).val(ref);
-          $('#'+opts.srefLatId).val(refxy[0]);
-          $('#'+opts.srefLongId).val(refxy[1]);
-          $('#'+opts.geomId).val(dataref);
-      }
     }
 
     /**
