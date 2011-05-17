@@ -644,7 +644,8 @@ class helper_base extends helper_config {
       $r .= '<label>'.$ctrlOptions['label'].':</label>';
       $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
       '<div id="map-tools" class="olControlEditingToolbar left"></div></div><br/>';
-      $r .= '<input type="hidden" name="'.$ctrlOptions['fieldname'].'" class="hidden-wkt" />';
+      $r .= '<input type="hidden" name="'.$ctrlOptions['fieldname'].'" class="hidden-wkt" value="'.
+          (isset($_POST[$ctrlOptions['fieldname']]) ? $_POST[$ctrlOptions['fieldname']] : '').'"/>';
       // Output some JavaScript to setup a toolbar for the map drawing tools. Also JS
       // to handle getting the polygons from the edit layer into the report parameter
       // when run report is clicked.
