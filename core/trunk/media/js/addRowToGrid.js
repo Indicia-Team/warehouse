@@ -227,7 +227,7 @@ function ConvertControlsToPopup(controls, label, icon) {
           '<img src="' + icon + '" width="22" height="22" alt="Show ' + label + '" /></a>');
       $('#anchor-' + identifier).append('<label>'+label+':</label><br/>');
       $('#anchor-' + identifier).append(input);
-      $('#anchor-' + identifier).append('<br/><input type="button" value="Close" onclick="$.fancybox.close();" ?>');
+      $('#anchor-' + identifier).append('<br/><input type="button" value="Close" onclick="$.fancybox.close();" class="ui-state-default ui-corner-all" />');
       // make sure the input shows, though at this stage it is in a hidden div. @todo This is a bit of a nasty hack, 
       // would rather obay CSS precedence rules but !important is getting in the way.
       $(input).css('cssText', 'display: inline !important');
