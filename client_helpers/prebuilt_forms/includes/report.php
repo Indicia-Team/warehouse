@@ -166,9 +166,9 @@ function _get_initial_vals($type, $args) {
         $tokens = explode('=', $param);
         if (count($tokens)==2) {
           // perform any replacements on the intiial values
-          if ($tokens[1]=='{user_id}') {
+          if (trim($tokens[1])=='{user_id}') {
             $tokens[1]=$user->uid;
-          } else if ($tokens[1]=='{username}') {
+          } else if (trim($tokens[1])=='{username}') {
             $tokens[1]=$user->name;
           }
           $r[$tokens[0]]=trim($tokens[1]);
