@@ -1,0 +1,27 @@
+<report
+    title="Latest images"
+    description="Outputs a list of recent occurrence images"
+    row_class="biota"
+>
+  <query>
+  SELECT #field_sql#
+  FROM occurrences o
+  JOIN samples s ON s.id=o.sample_id
+  JOIN occurrence_images oi ON oi.occurrence_id=o.id
+  WHERE #website_filter#
+  AND o.record_status NOT IN ('I','T','R')
+  #order_by#
+  </query>
+  <field_sql>
+  oi.id, oi.path, oi.caption
+  </field_sql>
+  <order_bys>
+    <order_by>oi.created_on DESC</order_by>
+    <order_by>s.date_start DESC</order_by>
+  </order_bys>
+  <columns>
+    <column name='id' visible='false' />
+    <column name='path' display='Photo' img='true' />
+    <column name='caption' display='Caption' />
+  </columns>
+</report>
