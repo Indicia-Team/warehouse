@@ -19,7 +19,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
- 
+
 require_once('helper_config.php');
 
 global $indicia_templates;
@@ -177,8 +177,8 @@ jQuery('#{parentControlId}').change();\n",
 );
 
 
-/** 
- * Base class for the report and data entry helpers. Provides several generally useful methods and also includes 
+/**
+ * Base class for the report and data entry helpers. Provides several generally useful methods and also includes
  * resource management.
  */
 class helper_base extends helper_config {
@@ -194,13 +194,13 @@ class helper_base extends helper_config {
    * sub-arrays. This has public access so the Drupal module can perform Drupal specific resource output.
    */
   public static $required_resources=array();
-  
+
   /**
    * @var Array List of all available resources known. Each resource is named, and contains a sub array of
    * deps (dependencies), stylesheets and javascripts.
    */
   public static $resource_list=null;
-  
+
   /**
    * @var string Path to Indicia JavaScript folder. If not specified, then it is calculated from the Warehouse $base_url.
    * This path should be a full path on the server (starting with '/' exluding the domain).
@@ -214,11 +214,11 @@ class helper_base extends helper_config {
   public static $css_path = null;
 
   /**
-   * @var array List of resources that have already been dumped out, so we don't duplicate them. For example, if the 
+   * @var array List of resources that have already been dumped out, so we don't duplicate them. For example, if the
    * site template includes JQuery set $dumped_resources[]='jquery'.
    */
   public static $dumped_resources=array();
-  
+
   /**
    * @var string JavaScript text to be emitted after the data entry form. Each control that
    * needs custom JavaScript can append the script to this variable.
@@ -234,7 +234,7 @@ class helper_base extends helper_config {
    * @var string JavaScript text to be emitted during window.onload.
    */
   public static $onload_javascript = '';
-  
+
   /**
    * List of methods used to report a validation failure. Options are message, message, hint, icon, colour, inline.
    * The inline option specifies that the message should appear on the same line as the control.
@@ -244,7 +244,7 @@ class helper_base extends helper_config {
    * @var array
    */
   public static $validation_mode=array('message', 'colour');
-  
+
   /**
    * @var array Name of the form which has been set up for jQuery validation, if any.
    */
@@ -260,7 +260,7 @@ class helper_base extends helper_config {
    * @var array List of all error messages returned from an attempt to save.
    */
   public static $validation_errors=null;
-  
+
   /**
    * @var Array of default validation rules to apply to the controls on the form if the
    * built in client side validation is used (with the jQuery validation plugin). This array
@@ -273,18 +273,18 @@ class helper_base extends helper_config {
     'sample:entered_sref'=>array('required'),
     'occurrence:taxa_taxon_list_id'=>array('required')
   );
-  
+
   /**
    * @var array List of messages defined to pass to the validation plugin.
    */
   public static $validation_messages = array();
-  
+
   /**
    * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the
    * list, allowing our CSS to override other stuff.
    */
   protected static $default_styles = false;
-  
+
   /**
    * Array of html attributes. When replacing items in a template, these get automatically wrapped. E.g.
    * a template replacement for the class will be converted to class="value". The key is the parameter name,
@@ -295,7 +295,7 @@ class helper_base extends helper_config {
     'outerClass' => 'class',
     'selected' => 'selected'
   );
-  
+
   /**
    * @var array List of error messages that have been displayed, so we don't duplicate them when dumping any
    * remaining ones at the end.
@@ -306,7 +306,7 @@ class helper_base extends helper_config {
    * Method to link up the external css or js files associated with a set of code.
    * This is normally called internally by the control methods to ensure the required files are linked into the page so
    * does not need to be called directly. However it can be useful when writing custom code that uses one of these standard
-   * libraries such as jQuery. Ensures each file is only linked once. 
+   * libraries such as jQuery. Ensures each file is only linked once.
    *
    * @param string $resource Name of resource to link. The following options are available:
    * <ul>
@@ -342,7 +342,7 @@ class helper_base extends helper_config {
       self::$required_resources[] = $resource;
     }
   }
-  
+
   /**
    * List of external resources including stylesheets and js files used by the data entry helper class.
    */
@@ -415,7 +415,7 @@ class helper_base extends helper_config {
     }
     return self::$resource_list;
   }
-  
+
   /**
    * Returns a span containing any validation errors active on the form for the
    * control with the supplied ID.
@@ -457,7 +457,7 @@ class helper_base extends helper_config {
       return '';
     }
   }
-  
+
   /**
    * Sends a POST using the cUrl library
    */
@@ -496,7 +496,7 @@ class helper_base extends helper_config {
     curl_close($session);
     return $return;
   }
-  
+
   /**
    * Calculates the folder that submitted images end up in according to the helper_config.
    */
@@ -505,9 +505,9 @@ class helper_base extends helper_config {
       return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     else {
       return dirname(__FILE__).'/'.self::$final_image_folder;
-    }      
+    }
   }
-  
+
   /**
    * Calculates the relative path to the client_helpers folder from wherever the current PHP script is.
    */
@@ -529,7 +529,7 @@ class helper_base extends helper_config {
     }
     return $path;
   }
-  
+
   /**
    * Parameters forms are a quick way of specifying a simple form used to specify the input
    * parameters for a process. Returns the HTML required for a parameters form, e.g. the form
@@ -578,7 +578,7 @@ class helper_base extends helper_config {
       // If this parameter is in the URL or post data, put it in the control instead of the original default
       if (isset($options['defaults'][$key]))
         $ctrlOptions['default'] = $options['defaults'][$key];
-      elseif (isset($info['default'])) 
+      elseif (isset($info['default']))
         $ctrlOptions['default'] = $info['default'];
       if (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
         $r .= "<input type=\"hidden\" name=\"$key\" value=\"".$options['presetParams'][$key]."\" />\n";
@@ -591,13 +591,13 @@ class helper_base extends helper_config {
           'blankText'=>'<'.lang::get('please select').'>',
           'extraParams'=>$options['readAuth']
         ));
-        if ($popOpts[0]=='direct') 
+        if ($popOpts[0]=='direct')
           $ctrlOptions['table']=$popOpts[1];
         else
           $ctrlOptions['report']=$popOpts[1];
         if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
           if (isset($options['presetParams']) && array_key_exists($info['linked_to'], $options['presetParams'])) {
-            // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the 
+            // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the
             // population call for this control
             $ctrlOptions = array_merge($ctrlOptions, array(
               'extraParams' => array_merge($ctrlOptions['extraParams'], array($info['linked_filter_field']=>$options['presetParams'][$info['linked_to']]))
@@ -623,7 +623,7 @@ class helper_base extends helper_config {
         $ctrlOptions = array_merge($ctrlOptions, array(
           'blankText'=>'<'.lang::get('please select').'>',
           'lookupValues' => $lookupsAssoc
-        ));        
+        ));
         $r .= data_entry_helper::select($ctrlOptions);
       } elseif ($info['datatype']=='date') {
         $r .= data_entry_helper::date_picker($ctrlOptions);
@@ -676,8 +676,8 @@ $('#run-report').click(function(evt) {
       // grab the first feature's type
       featureClass = feature.geometry.CLASS_NAME;
     }
-    if (featureClass == feature.geometry.CLASS_NAME) {
-      // for subsequent features, ignore them unless the same type as the first
+    // for subsequent features, ignore them unless the same type as the first, accepting that multipolygons and polygons are compatible
+    if (str_replace('Multi', '', featureClass) == str_replace('Multi', '', feature.geometry.CLASS_NAME)) {
       geoms.push(feature.geometry);
     }
   });
@@ -700,7 +700,7 @@ mapSettingsHooks.push(add_map_tools)\n";
     }
     return $r;
   }
-  
+
   /**
    * Utility method that returns the parts required to build a link back to the current page.
    * @return array Associative array containing path and params (itself a key/value paired associative array).
@@ -708,8 +708,8 @@ mapSettingsHooks.push(add_map_tools)\n";
   public static function get_reload_link_parts() {
     $split = strpos($_SERVER['REQUEST_URI'], '?');
     // convert the query parameters into an array
-    $gets = ($split!==false && strlen($_SERVER['REQUEST_URI']) > $split+1) ? 
-        explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) : 
+    $gets = ($split!==false && strlen($_SERVER['REQUEST_URI']) > $split+1) ?
+        explode('&', substr($_SERVER['REQUEST_URI'], $split+1)) :
         array();
     $getsAssoc = array();
     foreach ($gets as $get) {
@@ -739,7 +739,7 @@ mapSettingsHooks.push(add_map_tools)\n";
     }
     return implode('&', $params);
   }
-  
+
     /**
    * Applies a output template to an array. This is used to build the output for each item in a list,
    * such as a species checklist grid or a radio group.
@@ -789,7 +789,7 @@ mapSettingsHooks.push(add_map_tools)\n";
     if ($readAuth==null) $readAuth=$_POST;
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
     $interim_path = dirname(__FILE__).'/'.$interim_image_folder;
-    if (!file_exists($interim_path.$path)) 
+    if (!file_exists($interim_path.$path))
       return "The file $interim_path$path does not exist and cannot be uploaded to the Warehouse.";
     $serviceUrl = parent::$base_url."index.php/services/".$service;
     // This is used by the file box control which renames uploaded files using a guid system, so disable renaming on the server.
@@ -801,8 +801,8 @@ mapSettingsHooks.push(add_map_tools)\n";
       $postargs['nonce'] = $readAuth['nonce'];
     if ($persist_auth)
       $postargs['persist_auth'] = 'true';
-    $file_to_upload = array('media_upload'=>'@'.realpath($interim_path.$path));    
-    $response = self::http_post($serviceUrl, $file_to_upload + $postargs);    
+    $file_to_upload = array('media_upload'=>'@'.realpath($interim_path.$path));
+    $response = self::http_post($serviceUrl, $file_to_upload + $postargs);
     $output = json_decode($response['output'], true);
     $r = true; // default is success
     if (is_array($output)) {
@@ -822,14 +822,14 @@ mapSettingsHooks.push(add_map_tools)\n";
 
  /**
   * Internal function to find the path to the root of the site, including the trailing slash.
-  */  
+  */
   protected static function getRootFolder() {
     $rootFolder = dirname($_SERVER['PHP_SELF']);
     if ($rootFolder =='\\') $rootFolder = '/'; // if no directory, then on windows may just return a single backslash.
     if (substr($rootFolder, -1)!='/') $rootFolder .= '/';
     return $rootFolder;
   }
-  
+
   /**
   * Retrieves a token and inserts it into a data entry form which authenticates that the
   * form was submitted by this website.
@@ -896,7 +896,7 @@ mapSettingsHooks.push(add_map_tools)\n";
       ),
     );
   }
-  
+
   /**
    * This method allows JavaScript and CSS links to be created and placed in the <head> of the
    * HTML file rather than using dump_javascript which must be called after the form is built.
@@ -918,7 +918,7 @@ mapSettingsHooks.push(add_map_tools)\n";
     // place a css class on the body if JavaScript enabled. And output the resources
     return self::internal_dump_javascript('$("body").addClass("js");', '', '', self::$required_resources);
   }
-  
+
   /**
   * Helper function to collect javascript code in a single location. Should be called at the end of each HTML
   * page which uses the data entry helper so output all JavaScript required by previous calls.
@@ -939,7 +939,7 @@ mapSettingsHooks.push(add_map_tools)\n";
     self::$onload_javascript = "";
     return $dump;
   }
-  
+
   /**
    * Internal implementation of the dump_javascript method which takes the javascript and resources list
    * as flexible parameters, rather that using the globals.
@@ -1026,7 +1026,7 @@ $onload_javascript
       });\n";
     }
   }
-  
+
   /**
    * Internal method to build a control from its options array and its template. Outputs the
    * prefix template, a label (if in the options), a control, the control's errors and a
@@ -1128,10 +1128,10 @@ $onload_javascript
 
     return $r;
   }
-  
+
  /**
   * Call the enable_validation method to turn on client-side validation for any controls with
-  * validation rules defined. 
+  * validation rules defined.
   * To specify validation on each control, set the control's options array
   * to contain a 'validation' entry. This must be set to an array of validation rules in Indicia
   * validation format. For example, 'validation' => array('required', 'email').
@@ -1141,11 +1141,11 @@ $onload_javascript
     self::$validated_form_id = $form_id;
     self::add_resource('validation');
   }
-  
+
  /**
    * Converts the validation rules in an options array into a string that can be used as the control class,
    * to trigger the jQuery validation plugin.
-   * @param $options. Control options array. For validation to be applied should contain a validation entry, 
+   * @param $options. Control options array. For validation to be applied should contain a validation entry,
    * containing a single validation string or an array of strings.
    * @return string The validation rules formatted as a class.
    */
@@ -1165,7 +1165,7 @@ $onload_javascript
     // Convert these rules into jQuery format.
     return self::convert_to_jquery_val_metadata($rules);
   }
-  
+
   /**
    * Returns templated help text for a control, but only if the position matches the $helpTextPos value, and
    * the $options array contains a helpText entry.
@@ -1180,10 +1180,10 @@ $onload_javascript
     } else
       return '';
   }
-  
+
   /**
    * Takes a template string (e.g. <div id="{id}">) and replaces the tokens with the equivalent values looked up from the $options array.
-   */ 
+   */
   protected static function apply_replacements_to_template($template, $options) {
     // Build an array of all the possible tags we could replace in the template.
     $replaceTags=array();
@@ -1196,14 +1196,14 @@ $onload_javascript
     }
     return str_replace($replaceTags, $replaceValues, $template);
   }
-  
+
    /**
   * Takes a list of validation rules in Kohana/Indicia format, and converts them to the jQuery validation
   * plugin metadata format.
   * @param array $rules List of validation rules to be converted.
   * @return string Validation metadata classes to add to the input element.
-  * @todo Implement a more complete list of validation rules. 
-  * @todo Suspect there is a versioning issue, because the minimum/maximum rule classes don't work. 
+  * @todo Implement a more complete list of validation rules.
+  * @todo Suspect there is a versioning issue, because the minimum/maximum rule classes don't work.
   */
   protected static function convert_to_jquery_val_metadata($rules) {
     $converted = array();
@@ -1231,7 +1231,7 @@ $onload_javascript
     }
     return implode(' ', $converted);
   }
-  
+
    /**
   * Returns a static template which is either a default template or one
   * specified in the options
@@ -1258,12 +1258,12 @@ $onload_javascript
     }
     return self::apply_replacements_to_template($r, $options);
   }
-  
+
   /**
    * Method to format a control error message inside a templated span.
-   */ 
+   */
   private static function apply_error_template($error, $fieldname) {
-    if (empty($error)) 
+    if (empty($error))
       return '';
     global $indicia_templates;
     if (empty($error)) return '';
@@ -1271,7 +1271,7 @@ $onload_javascript
     $template = str_replace('{for}', $fieldname, $template);
     return str_replace('{error}', lang::get($error), $template);
   }
-  
+
 }
 
 ?>
