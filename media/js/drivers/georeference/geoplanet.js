@@ -28,8 +28,7 @@ function Georeferencer(mapdiv, callback) {
   this.georeference = function(searchtext) {
     searchtext = searchtext.replace(/,/gi, ' ');
     var request = 'http://where.yahooapis.com/v1/places.q(' +
-        searchtext + ' ' + settings.georefCountry + ', ' +
-        settings.georefPreferredArea + ');count=10';
+        searchtext + ' ' + settings.georefPreferredArea + ' ' + settings.georefCountry + ');count=10';
     $.getJSON(request + "?format=json&lang="+settings.georefLang+
             "&appid="+settings.geoplanet_api_key+"&callback=?", function(data){
           // an array to store the responses in the required country, because GeoPlanet will not limit to a country
