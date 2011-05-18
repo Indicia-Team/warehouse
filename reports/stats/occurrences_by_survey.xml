@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Occurrences by Survey" description="Lists individual surveys registered on the core module and the total number of occurrences associated with each.">
+      <query>
+      SELECT su.title as survey, w.title as website, w.id as website_id, COUNT(o.id) as count
+      FROM report_websites w
+      JOIN surveys su on su.website_id=w.id
+      LEFT JOIN (samples s
+        JOIN occurrences o on o.sample_id=s.id
+        AND o.deleted='f'
+      )on s.survey_id=su.id
+      WHERE #website_filter#
+      GROUP BY survey, website
+      </query>
+      <order_bys>
+            <order_by>website ASC</order_by>
+            <order_by>survey ASC</order_by>
+      </order_bys>
+      <columns>
+            <column name="survey" display="Survey Name" style="background-color: #e7e7e7;" />
+            <column name="website" display="Website Name" style="background-color: #e7e7e7;" />
+            <column name="count" display="Total no. of Occurrences" />
+            <column name="website_id" visible="false" />
+      </columns>
+</report>
