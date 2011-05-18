@@ -842,7 +842,7 @@ $.fn.indiciaMapPanel.defaults = {
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
-    maxZoom: 13, //maximum zoom when relocating to gridref, postcode etc.
+    maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
 
     //options for OpenLayers. Feature. Vector. style
