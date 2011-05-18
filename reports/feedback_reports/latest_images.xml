@@ -6,22 +6,32 @@
   <query>
   SELECT #field_sql#
   FROM occurrences o
-  JOIN samples s ON s.id=o.sample_id
-  JOIN occurrence_images oi ON oi.occurrence_id=o.id
-  WHERE #website_filter#
+  JOIN samples s ON s.id=o.sample_id AND s.deleted=false
+  JOIN occurrence_images oi ON oi.occurrence_id=o.id AND oi.deleted=false
+  JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id AND ttl.deleted=false
+  JOIN taxa_taxon_lists ttlpref ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id AND ttlpref.preferred='t' AND ttlpref.deleted=false
+  JOIN taxa tpref ON tpref.id=ttlpref.taxon_id AND tpref.deleted=false
+  LEFT JOIN taxa tcommon ON tcommon.id=ttlpref.common_taxon_id AND tcommon.deleted=false
+  WHERE o.deleted=false
+  AND #website_filter#
   AND o.record_status NOT IN ('I','T','R')
   #order_by#
   </query>
   <field_sql>
-  oi.id, oi.path, oi.caption
+  oi.id, oi.path, oi.caption, tpref.taxon, tcommon.taxon as common
   </field_sql>
   <order_bys>
     <order_by>oi.created_on DESC</order_by>
     <order_by>s.date_start DESC</order_by>
   </order_bys>
+  <params>
+    <param name='website_id' display='Website' description='Enter the website ID' datatype='int' />
+  </params>
   <columns>
     <column name='id' visible='false' />
     <column name='path' display='Photo' img='true' />
     <column name='caption' display='Caption' />
+    <column name='taxon' display='Taxon' />
+    <column name='common' display='Common' />
   </columns>
 </report>
