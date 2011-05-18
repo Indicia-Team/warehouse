@@ -22,7 +22,8 @@ function Georeferencer(mapdiv, callback) {
   
   this.georeference = function(searchtext) {
     var request = mapdiv.georefOpts.proxy +  
-        '?url=http://map.geoportal.lu/locationsearch&query=' + searchtext + '&lang=' + mapdiv.georefOpts.georefLang;
+        '?url=http://map.geoportal.lu/locationsearch&query=' + searchtext + '&lang=' + mapdiv.georefOpts.georefLang +
+            '&subtype=Commune,Localité';
     $.getJSON(request, function(data){
           // an array to store the responses in the required country, because GeoPlanet will not limit to a country
           var places = [];
