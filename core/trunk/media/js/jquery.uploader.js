@@ -102,6 +102,7 @@ checkSubmitInProgress = function () {
             .replace(/\{filesize\}/g, 'Uploaded')
             .replace(/\{imagewidth\}/g, div.settings.imageWidth);
         $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(existing);
+        $('#' + uniqueId + ' .progress').remove();
         if (div.settings.finalImageFolderThumbs===undefined) {
           // default thumbnail location if Indicia in charge of images
           var thumbnailfilepath = div.settings.finalImageFolder + 'med-' + file.path;
