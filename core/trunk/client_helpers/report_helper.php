@@ -819,6 +819,7 @@ function addDistPoint(features, record, wktCol) {
    */
   public static function get_report_data($options, $extra='') {
     $query = array();
+    if (!isset($options['mode'])) $options['mode']='report';
     if ($options['mode']=='report') {
       $serviceCall = 'report/requestReport?report='.$options['dataSource'].'.xml&reportSource=local&';
     } elseif ($options['mode']=='direct') {
@@ -855,7 +856,7 @@ function addDistPoint(features, record, wktCol) {
       $request .= "&query=".urlencode(json_encode($query));
     if (isset($options['extraParams'])) {
       foreach ($options['extraParams'] as $key=>$value) 
-        $request .= "&$key=$value";
+        $request .= "&$key=".urlencode($value);
     }
     if (isset($options['linkOnly']) && $options['linkOnly'])
       return $request;
