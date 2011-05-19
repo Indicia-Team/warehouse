@@ -677,7 +677,7 @@ $('#run-report').click(function(evt) {
       featureClass = feature.geometry.CLASS_NAME;
     }
     // for subsequent features, ignore them unless the same type as the first, accepting that multipolygons and polygons are compatible
-    if (str_replace('Multi', '', featureClass) == str_replace('Multi', '', feature.geometry.CLASS_NAME)) {
+    if (featureClass.replace('Multi', '') == feature.geometry.CLASS_NAME.replace('Multi', '')) {
       geoms.push(feature.geometry);
     }
   });
