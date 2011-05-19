@@ -1548,7 +1548,8 @@ class data_entry_helper extends helper_base {
         }
         $row .= "\n<td class=\"scPresenceCell\"$hidden>";
         if ($options['rowInclusionCheck']!='hasData')
-          $row .= "<input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked />";
+          // this includes a control to force out a 0 value when the checkbox is unchecked.
+          $row .= "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$id:$existing_record_id:present\" $checked />";
         $row .= "</td>";
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
@@ -3154,7 +3155,7 @@ if (errors.length>0) {
     unset($record['id']);
     $recordData=implode('',$record);
     return ($include_if_any_data && $recordData!='' && !preg_match("/^[0]*$/", $recordData)) ||       // inclusion of record is detected from having a non-zero value in any cell
-      (!$include_if_any_data && array_key_exists('present', $record)); // inclusion of record detected from the presence checkbox
+      (!$include_if_any_data && array_key_exists('present', $record) && $record['present']!='0'); // inclusion of record detected from the presence checkbox
   }
 
   /**

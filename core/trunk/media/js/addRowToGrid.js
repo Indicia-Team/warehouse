@@ -141,7 +141,8 @@ $('.remove-row').live('click', function(e) {
     // Hide the checkbox so this can't be undone
     row.find('.scPresence').css('display','none');
     // disable or remove all other active controls from the row.
-    row.find('*:not(.scPresence)').attr('disabled','disabled');
+    // Do NOT disable the presence checkbox or the container td, otherwise it is not submitted.
+    row.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled');
     row.find('a').remove();
   }
 });
