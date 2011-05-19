@@ -55,7 +55,8 @@ class iform_report_grid {
         array(
           'name' => 'columns_config',
           'caption' => 'Columns Configuration JSON',
-          'description' => 'JSON that describes the columns configuration parameter sent to the report grid component.',
+          'description' => 'JSON that describes the columns configuration parameter sent to the report grid component. '.
+              'The <a href="http://jsonlint.com/">JSONLint</a> validator is useful for checking your JSON is correct.',
           'type' => 'textarea',
           'required' => false,
           'group'=>'Report Settings'
