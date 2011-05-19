@@ -849,6 +849,8 @@ class iform_mnhnl_dynamic_1 {
     if ($args['interface']!=='one_page')
       $options['tabDiv'] = $tabalias;
     $olOptions = iform_map_get_ol_options($args);
+    if (!isset($options['standardControls']))
+      $options['standardControls']=array('layerSwitcher','panZoom');
     return data_entry_helper::map_panel($options, $olOptions);
   }
   

@@ -117,7 +117,7 @@ class map_helper extends helper_base {
   * </li>
   * <li><b>standardControls</b>
   * An array of predefined controls that are added to the map. Select from layerSwitcher, drawPolygon,
-  *    drawLine, drawPoint, zoomBox, panZoom, panZoomBar. Default is layerSwitcher and panZoom.
+  *    drawLine, drawPoint, zoomBox, panZoom, panZoomBar. Default is layerSwitcher, panZoom and graticule.
   * </li>
   * <li><b>initialFeatureWkt</b><br/>
   * </li>
@@ -154,6 +154,14 @@ class map_helper extends helper_base {
   * When there is JavaScript to run before the map is initialised, put the JavaScript into this option. This allows the map to run the 
   * setup JavaScript just in time, immediately before the map is created. This avoids problems where the setup JavaScript causes the OpenLayers library 
   * to be initialised too earlier if the map is on a div.</li>
+  * <li><b>setupJs</b><br/>
+  * When there is JavaScript to run before the map is initialised, put the JavaScript into this option. This allows the map to run the 
+  * setup JavaScript just in time, immediately before the map is created. This avoids problems where the setup JavaScript causes the OpenLayers library 
+  * to be initialised too earlier if the map is on a div.</li>
+  * <li><b>graticuleProjection</b><br/>
+  * EPSG code (including EPSG:) for the projection used for the graticule (grid overlay).</li>
+  * <li><b>graticuleBounds</b><br/>
+  * Array of the bounding box coordinates for the graticule(W,S,E,N).</li>
   * </ul>
   * @param array $olOptions Optional array of settings for the OpenLayers map object. If overriding the projection or
   * displayProjection settings, just pass the EPSG number, e.g. 27700.

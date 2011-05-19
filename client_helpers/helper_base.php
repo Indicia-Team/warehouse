@@ -376,7 +376,7 @@ class helper_base extends helper_config {
         $indicia_theme_path .= '/';
       self::$resource_list = array (
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
-        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js")),
+        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."indiciaGraticule.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js")),
         'addrowtogrid' => array('javascript' => array(self::$js_path."addRowToGrid.js")),
         'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
