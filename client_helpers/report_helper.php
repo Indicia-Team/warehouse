@@ -855,7 +855,8 @@ function addDistPoint(features, record, wktCol) {
     if (!empty($query))
       $request .= "&query=".urlencode(json_encode($query));
     if (isset($options['extraParams'])) {
-      foreach ($options['extraParams'] as $key=>$value) 
+      foreach ($options['extraParams'] as $key=>$value)
+        // Must urlencode the parameters, as things like spaces cause curl to hang
         $request .= "&$key=".urlencode($value);
     }
     if (isset($options['linkOnly']) && $options['linkOnly'])
