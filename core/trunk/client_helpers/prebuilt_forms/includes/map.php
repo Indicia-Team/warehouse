@@ -138,6 +138,15 @@ function iform_map_get_map_parameters() {
       'group'=>'Other Map Settings',
       'required'=>false
     ),
+    array(
+      'name' => 'standard_controls',
+      'caption' => 'Controls to add to map',
+      'description' => 'List of map controls, one per line. Select from layerSwitcher, zoomBox, panZoom, panZoomBar, drawPolygon, drawPoint, drawLine, graticule.',
+      'type' => 'textarea',
+      'group'=>'Other Map Settings',
+      'required'=>false,
+      'default'=>"layerSwitcher\npanZoom"
+    ),
 
   );
 
@@ -213,7 +222,8 @@ function iform_map_get_map_options($args, $readAuth) {
     'initial_long'=>$args['map_centroid_long'],
     'initial_zoom'=>(int) $args['map_zoom'],
     'width'=>(int) $args['map_width'],
-    'height'=>(int) $args['map_height']
+    'height'=>(int) $args['map_height'],
+    'standardControls'=>array('layerSwitcher','panZoom')
   );
   // If they have defined a custom base layer, add it
   if ($args['wms_base_title'] && $args['wms_base_url'] && $args['wms_base_layer']) {
@@ -231,6 +241,11 @@ function iform_map_get_map_options($args, $readAuth) {
   // And any indicia Wms layers from the GeoServer
   if ($args['indicia_wms_layers']) {
     $options['indiciaWMSLayers'] = explode("\n", $args['indicia_wms_layers']);
+  }
+  // set up standard control list if supplied
+  if ($args['standard_controls']) {
+    $args['standard_controls'] = str_replace("\r\n", "\n", $args['standard_controls']);
+    $options['standardControls']=explode("\n", $args['standard_controls']);
   }
   // And pass through any translation strings, only if they exist
   $msgGeorefSelectPlace = lang::get('LANG_Georef_SelectPlace');

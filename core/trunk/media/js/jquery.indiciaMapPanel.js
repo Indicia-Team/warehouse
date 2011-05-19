@@ -727,7 +727,7 @@ mapInitialisationHooks = [];
         if (ctrl=='layerSwitcher' &&
             (div.settings.presetLayers.length + div.settings.layers.length + div.settings.tilecacheLayers.length) > 1) {
           div.map.addControl(new OpenLayers.Control.LayerSwitcher());
-        }  else if (ctrl=='zoomBox') {
+        } else if (ctrl=='zoomBox') {
           div.map.addControl(new OpenLayers.Control.ZoomBox());
         } else if (ctrl=='panZoom') {
           div.map.addControl(new OpenLayers.Control.PanZoom());
@@ -745,6 +745,10 @@ mapInitialisationHooks = [];
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
               {'displayClass': align + 'olControlDrawFeaturePoint'}));
+        } else if (ctrl=='graticule') {
+          var graticule = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
+          div.map.addControl(graticule);
+          graticule.activate();
         }
       });
       if (div.settings.editLayer && div.settings.clickForSpatialRef) {
@@ -863,11 +867,13 @@ $.fn.indiciaMapPanel.defaults = {
     hoverPointUnit: '%',
     pointerEvents: 'visiblePainted',
     cursor: '',
+    graticuleProjection: 'EPSG:27700',
+    graticuleBounds: [0,0,700000,1300000],
 
     /* Intention is to also implement hoveredSrefPrecisionMin and Max for a square size shown when you hover, and also a
      * displayedSrefPrecisionMin and Mx for a square size output into a list box as you hover. Both of these could either be
      * absolute numbers, or a number preceded by - or + to be relative to the default square size for this zoom level. */
-	// Additional options for OpenLayers.Feature.Vector.style on the search layer.
+    // Additional options for OpenLayers.Feature.Vector.style on the search layer.
     fillColorSearch: '#ee0000',
     fillOpacitySearch: 0.5,
     strokeColorSearch: '#ee0000',
