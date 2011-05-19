@@ -1052,8 +1052,8 @@ class iform_mnhnl_dynamic_1 {
    * Get the date control.
    */
   private static function get_control_date($auth, $args, $tabalias, $options) {
-    if (isset(data_entry_helper::$entity_to_load['sample:date'])) {
-      // convert date to expected output format
+    if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
+      // Date has 4 digit year first (ISO style) - convert date to expected output format
       // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
       $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
       data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
