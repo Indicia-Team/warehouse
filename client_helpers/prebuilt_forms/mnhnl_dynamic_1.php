@@ -1054,8 +1054,8 @@ class iform_mnhnl_dynamic_1 {
   private static function get_control_date($auth, $args, $tabalias, $options) {
     if (isset(data_entry_helper::$entity_to_load['sample:date'])) {
       // convert date to expected output format
-      // @todo The date format should be a global configurable option.
-      $d = DateTime::createFromFormat('Y-m-d', data_entry_helper::$entity_to_load['sample:date']);
+      // @todo The date format should be a global configurable option. It should also be applied to reloading of custom date attributes.
+      $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
       data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
     }
     return data_entry_helper::date_picker(array_merge(array(
