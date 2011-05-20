@@ -411,6 +411,7 @@ class helper_base extends helper_config {
         'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
         'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
         'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
+        'spatialReports' => array('javascript'=>array(self::$js_path.'spatialReports.js'))
       );
     }
     return self::$resource_list;
@@ -641,11 +642,23 @@ class helper_base extends helper_config {
     }
     // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
     if (isset($tools)) {
+      self::add_resource('spatialReports');
       $r .= '<label>'.$ctrlOptions['label'].':</label>';
       $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
       '<div id="map-tools" class="olControlEditingToolbar left"></div></div><br/>';
-      $r .= '<input type="hidden" name="'.$ctrlOptions['fieldname'].'" class="hidden-wkt" value="'.
+      $r .= '<input type="hidden" name="'.$ctrlOptions['fieldname'].'" id="hidden-wkt" value="'.
           (isset($_POST[$ctrlOptions['fieldname']]) ? $_POST[$ctrlOptions['fieldname']] : '').'"/>';
+      if (isset($info['allow_buffer']) && $info['allow_buffer']) {
+        $r .= data_entry_helper::text_input(array(
+          'label'=>'Buffer (m)',
+          'fieldname'=>'geom_buffer',
+          'default'=>isset($_POST['geom_buffer']) ? $_POST['geom_buffer'] : 0
+        ));
+        // keep a copy of the unbuffered polygons in this input, so that when the page reloads both versions
+        // are available
+        $r .= '<input type="hidden" name="orig-wkt" id="orig-wkt" '.
+            'value="'.(isset($_POST['orig-wkt']) ? $_POST['orig-wkt'] : '')."\" />\n";
+      }
       // Output some JavaScript to setup a toolbar for the map drawing tools. Also JS
       // to handle getting the polygons from the edit layer into the report parameter
       // when run report is clicked.
@@ -658,39 +671,34 @@ mapInitialisationHooks.push(function(div) {
         {fillOpacity: 0.05},
         OpenLayers.Feature.Vector.style['default']));
   mapDiv.map.editLayer.styleMap = styleMap;\n";
-      if (isset($_POST[$ctrlOptions['fieldname']])) {
+      
+      if (isset($info['allow_buffer']) && $info['allow_buffer'] && !empty($_POST[$ctrlOptions['fieldname']])) {
         data_entry_helper::$javascript .= "
-  var selection = new OpenLayers.Feature.Vector(
+  var sel = new OpenLayers.Feature.Vector(
       OpenLayers.Geometry.fromWKT('".$_POST[$ctrlOptions['fieldname']]."'));
-  mapDiv.map.editLayer.addFeatures([selection]);\n";
+  bufferLayer.addFeatures([sel]);
+  var selorig = new OpenLayers.Feature.Vector(
+      OpenLayers.Geometry.fromWKT('".$_POST['orig-wkt']."'));
+  mapDiv.map.editLayer.addFeatures([selorig]);\n";
+      }
+      else if (!empty($_POST[$ctrlOptions['fieldname']])) {
+        data_entry_helper::$javascript .= "
+  var sel = new OpenLayers.Feature.Vector(
+      OpenLayers.Geometry.fromWKT('".$_POST[$ctrlOptions['fieldname']]."'));
+  mapDiv.map.editLayer.addFeatures([sel]);\n";
       }
       data_entry_helper::$javascript .= "});
-$('#run-report').click(function(evt) {
-  var geoms=[], featureClass='', geom;
-  if (mapDiv.map.editLayer.features.length===0) {
-    evt.preventDefault();
-    alert('Please supply a search area for the report.');
-  }
-  $.each(mapDiv.map.editLayer.features, function(i, feature) {
-    if (i===0) {
-      // grab the first feature's type
-      featureClass = feature.geometry.CLASS_NAME;
-    }
-    // for subsequent features, ignore them unless the same type as the first, accepting that multipolygons and polygons are compatible
-    if (featureClass.replace('Multi', '') == feature.geometry.CLASS_NAME.replace('Multi', '')) {
-      geoms.push(feature.geometry);
-    }
-  });
-  if (featureClass === 'OpenLayers.Geometry.Polygon') {
-    geom = new OpenLayers.Geometry.MultiPolygon(geoms);
-  } else if (featureClass === 'OpenLayers.Geometry.LineString') {
-    geom = new OpenLayers.Geometry.MultiLineString(geoms);
-  } else if (featureClass === 'OpenLayers.Geometry.Point') {
-    geom = new OpenLayers.Geometry.MultiPoint(geoms);
-  }
-  $('.hidden-wkt').val(geom.toString());
-});\n";
-      data_entry_helper::$javascript .= "var add_map_tools = function(opts) {\n";
+
+$('#run-report').click(function(evt) {";
+      if (isset($info['allow_buffer']) && $info['allow_buffer'])
+        data_entry_helper::$javascript .= "
+  storeGeomsInHiddenInput(mapDiv.map.editLayer, 'orig-wkt');
+  storeGeomsInHiddenInput(bufferLayer, 'hidden-wkt');\n";
+      else
+        data_entry_helper::$javascript .= "
+  storeGeomsInHiddenInput(mapDiv.map.editLayer, 'hidden-wkt');\n";
+      data_entry_helper::$javascript .= "});
+var add_map_tools = function(opts) {\n";
       foreach ($tools as $tool) {
         data_entry_helper::$javascript .= "opts.standardControls.push('draw$tool');\n";
       }
