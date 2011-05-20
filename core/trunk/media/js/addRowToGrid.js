@@ -62,7 +62,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     // Finally, a blank row is added for the next record
     makeSpareRow(true, formatter);
     // Allow forms to hook into the event of a new row being added
-    if (hook_species_checklist_new_row !== undefined) {
+    if (typeof hook_species_checklist_new_row !== "undefined") {
       hook_species_checklist_new_row(data);
     }
   };
