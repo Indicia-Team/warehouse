@@ -381,6 +381,8 @@ mapInitialisationHooks = [];
     return this.each(function() {
       this.settings = opts;
 
+      this.settings.boundaryStyle=new style();
+
       // Sizes the div
       $(this).css('height', this.settings.height);
       if(this.settings.width != 'auto') {
