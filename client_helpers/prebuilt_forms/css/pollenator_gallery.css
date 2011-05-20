@@ -122,6 +122,16 @@
     height: 24px;
     background: url(/misc/occ_doubtful.png);
 }
+.insect-valid {
+    margin-top:0px;
+    margin-bottom:0px;
+    margin-left: auto ;
+    margin-right: auto ;
+    padding:0px;
+    width: 24px;
+    height: 24px;
+    background: url(/misc/watchdog-ok.png) no-repeat ;
+}
 .display-button {
 	text-align: center;
 }
