@@ -62,6 +62,21 @@ class Spatial_Controller extends Service_Base_Controller {
 	 	echo spatial_ref::internal_wkt_to_sref($wkt, $_GET['to_system'], $precision);
 	 }
 
+   public function buffer()
+   {
+     if (array_key_exists('wkt', $_GET) && array_key_exists('buffer', $_GET)) {
+       $db = new Database;
+       $wkt = $_GET['wkt'];
+       $buffer = $_GET['buffer'];
+       kohana::log('debug', "SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;");
+			 $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
+			 echo $result->wkt;
+     } else {
+       echo 'No wkt or buffer to process';
+     }
+
+   }
+
 
 }
 ?>

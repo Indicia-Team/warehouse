@@ -100,6 +100,7 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('name'),
                     $reader->getAttribute('display'),
                     $reader->getAttribute('datatype'),
+                    $reader->getAttribute('allow_buffer'),
                     $reader->getAttribute('emptyvalue'),
                     $reader->getAttribute('description'),
                     $reader->getAttribute('query'),
@@ -422,13 +423,14 @@ class XMLReportReader_Core implements ReportReader
     return $query;
   }
 
-  private function mergeParam($name, $display = '', $type = '', $emptyvalue='', $description = '', $query='', $lookup_values='', $population_call='')
+  private function mergeParam($name, $display = '', $type = '', $allow_buffer='',$emptyvalue='', $description = '', $query='', $lookup_values='', $population_call='')
   {
     if (array_key_exists($name, $this->params))
     {
       if ($display != '') $this->params[$name]['display'] = $display;
       if ($type != '') $this->params[$name]['datatype'] = $type;
-      if ($type != '') $this->params[$name]['emptyvalue'] = $emptyvalue;
+      if ($allow_buffer != '') $this->params[$name]['allow_buffer'] = $allow_buffer;
+      if ($emptyvalue != '') $this->params[$name]['emptyvalue'] = $emptyvalue;
       if ($description != '') $this->params[$name]['description'] = $description;
       if ($query != '') $this->params[$name]['query'] = $query;
       if ($lookup_values != '') $this->params[$name]['lookup_values'] = $lookup_values;
@@ -437,7 +439,8 @@ class XMLReportReader_Core implements ReportReader
     else
     {
       $this->params[$name] = array(
-        'datatype'=>$type, 
+        'datatype'=>$type,
+        'allow_buffer'=>$allow_buffer,
         'emptyvalue'=>$emptyvalue,
         'display'=>$display, 
         'description'=>$description, 
