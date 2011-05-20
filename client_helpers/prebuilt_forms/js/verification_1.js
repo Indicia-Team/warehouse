@@ -93,7 +93,7 @@ function indicia_send_to_verifier(taxon, id, cmsUser, websiteId) {
   jQuery.each(row.childNodes, function(i, item) {
     var $item = jQuery(item);
     var attrClass = $item.attr('class');
-    if (attrClass !== undefined) {
+    if (typeof attrClass !== "undefined") {
       var classList = attrClass.split(/\s+/);
       if (jQuery.trim($item.text())!=='' && classList.length >= 2 && classList[0] == 'data') {
         record += classList[1] + ': ' + $item.text() + "\n";
