@@ -34,13 +34,14 @@
   st_astext(s.geom) as geom,
   u.username as verified_by
   </field_sql>
+  <cql_filter>INTERSECTS(geom, #searchArea#) AND survey_id=#survey#</cql_filter>
   <order_bys>
     <order_by>date_start DESC</order_by>
   </order_bys>
   <params>
     <param name='survey' display='Survey' description='Select the survey to return data for' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' emptyvalue="0" />
-    <param name='searchArea' display='Report Search Area' datatype='geometry' />
+    <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
   </params>
   <columns for="Occurrences List">
     <column name='title' display='Survey' />
