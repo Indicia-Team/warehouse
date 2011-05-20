@@ -102,6 +102,7 @@ $custom_terms = array(
 	,'Shade' => "Fleur à l'ombre "
 	,'Flower Type' => "Il s'agit d'une fleur "
 	,'Habitat' => "Il s'agit d'une habitat "
+	,'Foraging'=> "L'insecte a été photographié ailleurs que sur la fleur"
 	
 	,'LANG_Comments_Title' => 'COMMENTAIRES DES INTERNAUTES'
 	,'LANG_New_Comment' => 'Ajouter un commentaire'
@@ -111,7 +112,7 @@ $custom_terms = array(
 	,'LANG_Submit_Comment' => 'Ajouter'
 	,'LANG_Comment_By' => "par : "
 	,'LANG_Reset_Filter' => 'Réinitialiser'
-	,'LANG_Submit_Location' => 'Ajouter'
+	,'LANG_Submit_Location' => 'Modifier'
 	
 	,'validation_required' => "Ce champ est obligatoire"
 	,'Yes' => 'Oui'
@@ -134,7 +135,11 @@ $custom_terms = array(
 	,'LANG_Or' => 'ou'
 	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
 	,'loading' => 'Chargement'
-
+	,'LANG_INSEE_Localisation' => 'Localisation'
+	,'LANG_Localisation' => 'Localisation'
+	,'LANG_Front Page' => 'Include collection on front page'
+	,'LANG_Submit_Front_Page' => 'Save'
+	
 	,'LANG_Bad_Collection_ID' => "Vous avez essayé de charger une session comme une collection: ce ID n'est pas une collection."
 	,'LANG_Bad_Insect_ID' => "Vous avez essayé de charger une fleur comme un insecte: cette ID n'est pas un insect."
 	,'LANG_Bad_Flower_ID' => "Vous avez essayé de charger un insecte comme une fleur: cet ID n'est pas une fleur."

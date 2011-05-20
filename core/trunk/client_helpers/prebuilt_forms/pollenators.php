@@ -711,8 +711,9 @@ $.fn.resetPanel = function(){
 	this.find('#imp-sref-long').val('');
 	this.find('#X-sref-system').val('900913'); //note only one of these in cc-1, distinct from location:centroid_sref_system. This indicates no geolocation loaded.
 	// TODO Map
-	this.find('.thumb').filter('not(.blankPhoto)').remove();
-
+	this.find('.thumb').not('.blankPhoto').remove();
+	this.find('.blankPhoto').addClass('currentPhoto');
+	
 	// resetForm does not reset the hidden fields. record_status, website_id and survey_id are not altered so do not reset.
 	// hidden Attributes generally hold unchanging data, but the name needs to be reset (does it for non hidden as well).
 	// hidden location:name are set in code anyway.
@@ -1008,6 +1009,7 @@ $('#cc-1-delete-collection').ajaxForm({
 				if(jQuery('#map').children().length > 0) {
 					var div = jQuery('#map')[0];
 					div.map.editLayer.destroyFeatures();
+					if(inseeLayer != null) inseeLayer.destroyFeatures();
 					var center = new OpenLayers.LonLat(".$args['map_centroid_long'].", ".$args['map_centroid_lat'].");
 					center.transform(div.map.displayProjection, div.map.projection);
 					div.map.setCenter(center, ".((int) $args['map_zoom']).");

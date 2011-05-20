@@ -119,6 +119,12 @@ $custom_terms = array(
 	,'LANG_Determination_Unknown' => 'The taxon was not known in the identification tool.'
 	,'LANG_Max_Features_Reached' => "Because of the large number of collections recorded on SPIPOLL's website, only the last 1000 recorded collections are displayed. Use the geolocation and/or the filter 'date' to see the whole collection set inside a given area and/or a period of observation."
 	,'LANG_Indicia_Warehouse_Error' => 'Error returned from Indicia Warehouse'
+	,'LANG_INSEE_Localisation' => 'Locality'
+	,'LANG_Localisation' => 'Locality'
+	,'LANG_Front Page' => 'Include collection on front page'
+	,'LANG_Submit_Front_Page' => 'Save'
+	
+	,'Foraging'=> "The insect was not photo'ed on the flower"
 	
 	,'LANG_Bad_Collection_ID' => 'You have tried to load a session as a collection: this ID is not a valid collection.'
 	,'LANG_Bad_Insect_ID' => 'You have tried to load a flower as an insect: this ID is not a valid insect.'

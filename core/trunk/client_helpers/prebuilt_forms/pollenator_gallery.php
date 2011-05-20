@@ -187,7 +187,14 @@ class iform_pollenator_gallery {
           'type'=>'smpAttr',
           'group'=>'Collection Attributes'
         ),
-      array(
+        array(      
+          'name'=>'front_page_attr_id',
+          'caption'=>'Front Page Attribute ID',      
+          'description'=>'Indicia ID for the sample attribute that stores the whether a collection is to be included on the front page.',
+          'type'=>'smpAttr',
+          'group'=>'Collection Attributes'
+        ),
+        array(
           'name'=>'flower_type_attr_id',
           'caption'=>'Flower Type Attribute ID',      
           'description'=>'Indicia ID for the occurrence attribute that stores how the flower got there.',
@@ -266,6 +273,14 @@ class iform_pollenator_gallery {
           'type'=>'int',
           'group'=>'Insect Attributes'
       ),
+/* 3_2
+      array(
+          'name'=>'foraging_attr_id',
+          'caption'=>'Foraging Attribute ID',
+          'description'=>'The Indicia ID for the occurrence attribute that stores the foraging flag.',
+          'type'=>'int',
+          'group'=>'Insect Attributes'
+      ), */
       array(
           'name'=>'ID_tool_flower_url',
           'caption'=>'Flower ID Tool URL',
@@ -390,7 +405,8 @@ class iform_pollenator_gallery {
     			'IForm n'.$nid.' create collection comment',
     			'IForm n'.$nid.' save filter',
     			'IForm n'.$nid.' add preferred collection',
-    			'IForm n'.$nid.' edit geolocation'
+    			'IForm n'.$nid.' edit geolocation',
+    			'IForm n'.$nid.' add to front page',
     );
   }
   
@@ -409,7 +425,7 @@ class iform_pollenator_gallery {
     $uid = $user->uid;
     $email = $user->mail;
     $username = $user->name;
-
+	
     if(!user_access('IForm n'.$node->nid.' access')){
     	return "<p>".lang::get('LANG_Insufficient_Privileges')."</p>";
     }
@@ -638,8 +654,11 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 		  '.data_entry_helper::select($insect_ctrl_args).'
  		  <input type="text" name="insect:taxon_extra_info" class="taxon-info" value="'.lang::get('LANG_More_Precise').'"
 	 		onclick="if(this.value==\''.lang::get('LANG_More_Precise').'\'){this.value=\'\'; this.style.color=\'#000\'}"  
-            onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_More_Precise').'\'; this.style.color=\'#555\'}" />
-		</div>
+            onblur="if(this.value==\'\'){this.value=\''.lang::get('LANG_More_Precise').'\'; this.style.color=\'#555\'}" />';
+/* 3_2
+		$r = str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']], $defAttrOptions));
+*/
+	$r .= '	</div>
 		<div id="conditions-filter-header" class="ui-accordion-header ui-helper-reset ui-state-default ui-corner-all">
 	  		<div id="fold-conditions-button" class="ui-state-default ui-corner-all fold-button fold-button-folded">&nbsp;</div>
 			<div id="reset-conditions-button" class="ui-state-default ui-corner-all reset-button">'.lang::get('LANG_Reset_Filter').'</div>
@@ -721,7 +740,9 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 	    <p id="collection-flower-name"></p>
 	    <p>'.lang::get($occurrence_attributes[$args['flower_type_attr_id']]['caption']).': <span id="collection-flower-type" class=\"collection-value\"></span></p>
 	    <p>'.lang::get($location_attributes[$args['habitat_attr_id']]['caption']).': <span id="collection-habitat" class=\"collection-value\"></span></p>
-	    <p id="collection-locality"></p>
+	    <br />
+	    <p>'.lang::get(LANG_INSEE_Localisation).': <span id="collection-locality" ></span></p>
+	    <br />
 	    <p id="collection-user-name"></p>
 	    <a id="collection-user-link">'.lang::get('LANG_User_Link').'</a>
 	  </div>
@@ -735,6 +756,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     $r .= '</div>
     </div>
 	<div id="fc-new-location" class="ui-widget-content ui-corner-all">
+	    <p>'.lang::get(LANG_Localisation).'</p>
 		<form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
     		<input type="hidden"                       name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden"                       name="survey_id" value="'.$args['survey_id'].'" />
@@ -755,7 +777,23 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     			'suffixTemplate'=>'nosuffix')).'
        		<input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
     	</form>
-    </div>
+    </div>';
+    if(user_access('IForm n'.$node->nid.' add to front page')){
+    	$r .= '<div id="fc-front-page" class="ui-widget-content ui-corner-all">
+    <form id="fc-front-page-form" action="'.iform_ajaxproxy_url($node, 'sample').'" method="POST">
+       <input type="hidden" name="website_id" value="'.$args['website_id'].'" />
+       <input type="hidden" name="survey_id" value="'.$args['survey_id'].'" />
+       <input type="hidden" name="sample:id" value="" />
+       <input type="hidden" name="sample:date_start" value="2010-01-01"/>
+       <input type="hidden" name="sample:date_end" value="2010-01-01"/>
+       <input type="hidden" name="sample:date_type" value="D"/>
+       <input type="hidden" name="sample:location_id" value="" />
+       <label>'.lang::get('LANG_Front Page').'</label><div class="control-box "><nobr><span><input type="radio" id="smpAttr:'.$args['front_page_attr_id'].':0" name="smpAttr:'.$args['front_page_attr_id'].'" value="0" checked="checked" /><label for="smpAttr:'.$args['front_page_attr_id'].':0">'.lang::get('No').'</label></span></nobr> &nbsp; <nobr><span><input type="radio" id="smpAttr:'.$args['front_page_attr_id'].':1" name="smpAttr:'.$args['front_page_attr_id'].'" value="1" /><label for="smpAttr:'.$args['front_page_attr_id'].':1">'.lang::get('Yes').'</label></span></nobr></div>
+       <input type="submit" id="fc_front_page_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Front_Page').'" />
+    </form>
+  </div>';
+    }
+    $r .= '
     <div id="collection-insects">
     </div>
 	<div id="fc-comments-header" class="ui-accordion-header ui-helper-reset ui-state-active ui-corner-top">
@@ -1137,7 +1175,8 @@ convertDate = function(dateStr, incTime){
 loadCollection = function(id, index){
 	abortAjax();
     jQuery('[name=sample_comment\\:sample_id]').val(id);
-	jQuery('#fc-add-preferred').attr('smpID', id);
+    jQuery('[name=sample\\:id]').val(id);
+    jQuery('#fc-add-preferred').attr('smpID', id);
 	collection_preferred_object.collection_id = id;
 	jQuery('#fc-new-comment-button').".(user_access('IForm n'.$node->nid.' create collection comment') ? "show()" : "hide()").";
 	jQuery('#fc-new-comment').removeClass('ui-accordion-content-active');
@@ -1213,7 +1252,15 @@ loadCollection = function(id, index){
   			}}}}}));
 				
 		}
-	}));
+	}));";
+    if(user_access('IForm n'.$node->nid.' add to front page')){
+    	data_entry_helper::$javascript .= "
+	jQuery('#fc-front-page-form').find('[name^=smpAttr\\:".$args['front_page_attr_id']."]')
+		.attr('name', 'smpAttr:".$args['front_page_attr_id']."')
+		.filter('[value=0]')
+		.attr('checked', 'checked');";
+    }
+	data_entry_helper::$javascript .= "
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample_attribute_value\"  +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
    			\"&sample_id=\" + id + \"&REMOVEABLEJSONP&callback=?\", function(attrdata) {
@@ -1233,7 +1280,17 @@ loadCollection = function(id, index){
 								jQuery('#fc-new-location').show();
 								jQuery('#map2')[0].map.editLayer.clickControl.activate();
 							}
-			       		    break;
+			       		    break;";
+    if(user_access('IForm n'.$node->nid.' add to front page')){
+    	data_entry_helper::$javascript .= "
+						case ".$args['front_page_attr_id'].":
+							jQuery('#fc-front-page-form').find('[name^=smpAttr\\:".$args['front_page_attr_id']."]')
+								.attr('name', 'smpAttr:".$args['front_page_attr_id'].":'+attrdata[i].id)
+								.filter('[value='+attrdata[i].raw_value+']')
+								.attr('checked', 'checked');
+							break;";
+    }
+	data_entry_helper::$javascript .= "
     }}}}}));
 	ajaxStack.push($.getJSON(\"".$svcUrl."/data/sample/\" +id+
 			\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -1245,6 +1302,10 @@ loadCollection = function(id, index){
    				alertIndiciaError({error: \"".lang::get('LANG_Bad_Collection_ID')."\"});
    				return;
    			}
+   			jQuery('[name=sample\\:date_start]').val(collectionData[0].date_start);
+   			jQuery('[name=sample\\:date_end]').val(collectionData[0].date_end);
+   			jQuery('[name=sample\\:date_type]').val(collectionData[0].date_type);
+   			jQuery('[name=sample\\:location_id]').val(collectionData[0].location_id);
    			if(collectionData[0].date_start == collectionData[0].date_end){
 				collection_preferred_object.date = collectionData[0].date_start.slice(0,10);
 				jQuery('<span>'+convertDate(collectionData[0].date_start, false)+'</span>').appendTo('#collection-date');
@@ -1381,6 +1442,8 @@ loadCollection = function(id, index){
 										jQuery('<div><p>".lang::get('LANG_Last_ID').":</p><p><strong>'+string+'</strong></p></div>').addClass('insect-id').appendTo(det);
 									if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
 										tag.removeClass('insect-unknown').addClass('insect-dubious');
+									} else if(detData[i].determination_type == 'C'){
+										tag.removeClass('insect-unknown').addClass('insect-valid');
 									} else {
 										tag.removeClass('insect-unknown').addClass('insect-ok');
 									}
@@ -1539,6 +1602,8 @@ addInsect = function(index, attributes, endOfRow, first){
 			jQuery('<p>'+string+'</p>').appendTo(determination)
 			if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
 				flag.removeClass('insect-unknown').addClass('insect-dubious');
+			} else if(detData[i].determination_type == 'C'){
+				flag.removeClass('insect-unknown').addClass('insect-valid');
 			} else 
 				flag.removeClass('insect-unknown').addClass('insect-ok');
 		   }
@@ -2067,7 +2132,17 @@ runSearch = function(forCollections){
   	insect = jQuery('[name=insect\\:taxon_extra_info]').val();
   	if(insect != '' && insect != '".lang::get('LANG_More_Precise')."')
   		filters.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'taxons_insecte_precise', value: '*'+insect+'*'}));
-
+/* 3_2
+	ORgroup = [];
+	jQuery('#insect-filter-body').find('[name^=occAttr:".$args['foraging_attr_id']."]').filter('[checked]').each(function(index, elem){
+  		if(forCollections)
+  			ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: (forCollections ? 'foraging_ids' : ', value: '*'+elem.value+'*'}));
+  		else
+  			ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.EQUAL_TO, property: (forCollections ? 'foraging_id' : ', value: elem.value}));
+	});
+	if(ORgroup.length >= 1) filters.push(combineOR(ORgroup));
+	*/
+  		
   	ORgroup = [];
   	jQuery('#conditions-filter-body').find('[name^=smpAttr:".$args['sky_state_attr_id']."]').filter('[checked]').each(function(index, elem){
   		ORgroup.push(new OpenLayers.Filter.Comparison({type: OpenLayers.Filter.Comparison.LIKE, property: 'sky_ids', value: '*|'+elem.value+'|*'}));
@@ -2436,6 +2511,51 @@ jQuery('#fc-new-comment-form').ajaxForm({
 		}
 	} 
 });
+";
+    if(user_access('IForm n'.$node->nid.' add to front page')){
+    	data_entry_helper::$javascript .= "
+jQuery('#fc-front-page-form').ajaxForm({ 
+	async: false,
+	dataType:  'json', 
+	beforeSubmit:   function(data, obj, options){
+		if (!jQuery('form#fc-front-page-form').valid()) { return false; }
+  		jQuery('#fc_front_page_submit_button').addClass('loading-button');
+		return true;
+	},
+	success:   function(data){
+		if(data.error != undefined){
+			alert(data.error);
+		} else {
+			ajaxStack.push(
+				jQuery.ajax({ 
+					type: \"GET\", 
+					url: \"".$svcUrl."/data/sample_attribute_value\"  +
+						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+						\"&sample_id=\" + data.outer_id + \"&REMOVEABLEJSONP&callback=?\",
+					dataType: 'json',
+					success: function(attrdata) {
+						if(!(attrdata instanceof Array)){
+							alertIndiciaError(attrdata);
+						} else if (attrdata.length>0) {
+							for(i=0; i< attrdata.length; i++){
+								if (attrdata[i].id){
+									switch(parseInt(attrdata[i].sample_attribute_id)){
+										case ".$args['front_page_attr_id'].":
+											jQuery('#fc-front-page-form').find('[name^=smpAttr\\:".$args['front_page_attr_id']."]')
+												.attr('name', 'smpAttr:".$args['front_page_attr_id'].":'+attrdata[i].id)
+												.filter('[value='+attrdata[i].raw_value+']')
+												.attr('checked', 'checked');
+											break;
+									}
+					}}}}}));
+		}
+	},
+	complete: function (){
+  		jQuery('.loading-button').removeClass('loading-button');
+  	}
+});";
+    }
+	data_entry_helper::$javascript .= "
 jQuery('#fc-new-location-form').ajaxForm({ 
 	async: false,
 	dataType:  'json', 
