@@ -2149,7 +2149,7 @@ $('#cc-4-main-form').ajaxForm({
 			valid = false;
 		}
 		if (jQuery('#id-insect-later').attr('checked') == ''){
-			prepPhotoReelForNew(false);
+			prepPhotoReelForNew(false, jQuery('#cc-4-main-form').find('[name=occurrence\\:id]').val());
 			data[findID('determination:taxa_taxon_list_id', data)].value = jQuery('#cc-4-insect-identify select[name=insect\\:taxa_taxon_list_id]').val();
 			data[findID('determination:taxon_details', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:taxon_details]').val();
 			data[findID('determination:taxon_extra_info', data)].value = jQuery('#cc-4-insect-identify [name=insect\\:taxon_extra_info]').val();
@@ -2168,7 +2168,7 @@ $('#cc-4-main-form').ajaxForm({
 				}			
 			}
 		} else {
-			prepPhotoReelForNew(true);
+			prepPhotoReelForNew(true, jQuery('#cc-4-main-form').find('[name=occurrence\\:id]').val());
 			data.splice(4,8); // remove determination entries.
 		}
    		if ( valid == false ) {
@@ -2256,16 +2256,23 @@ loadInsect = function(id){
 	jQuery('[occId='+id+']').addClass('currentPhoto');
 }
 
-prepPhotoReelForNew = function(notID){
-	container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', 'new');
+prepPhotoReelForNew = function(notID, id){
+	var container;
+	if(id == '')
+		container = jQuery('<div/>').addClass('thumb').insertBefore('.blankPhoto').attr('occId', 'new');
+	else
+		container = jQuery('[occId='+id+']').empty();
 	if(notID)
 		jQuery('<span>?</span>').addClass('thumb-text').appendTo(container);
 }
 
 addNewToPhotoReel = function(occId){
-	var container = jQuery('[occId=new]');
-	container.attr('occId', occId.toString()).click(function () {
+	var container = jQuery('[occId='+occId+']');
+	if(container.length == 0) {
+		container = jQuery('[occId=new]');
+		container.attr('occId', occId.toString()).click(function () {
 		    setInsect(occId)});
+	}
 	$.getJSON(\"".$svcUrl."/data/occurrence_image\" +
 			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 			\"&occurrence_id=\" + occId + \"&callback=?\", function(imageData) {
