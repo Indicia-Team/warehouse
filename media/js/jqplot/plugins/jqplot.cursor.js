@@ -2,7 +2,7 @@
  * jqPlot
  * Pure JavaScript plotting plugin using jQuery
  *
- * Version: 1.0.0a_r701
+ * Version: 1.0.0b1_r746
  *
  * Copyright (c) 2009-2011 Chris Leonello
  * jqPlot is currently available for use in all personal or commercial projects 
@@ -92,6 +92,10 @@
         // They Will be set through call to zoomProxy method.
         this.zoomProxy = false;
         this.zoomTarget = false;
+        // prop: looseZoom
+        // Will expand zoom range to provide more rounded tick values.
+        // Works only with linear axes and date axes.
+        this.looseZoom = false;
         // prop: clickReset
         // Will reset plot zoom if single click on plot without drag.
         this.clickReset = false;
@@ -305,9 +309,9 @@
         var zaxes = c._zoom.axes;
         var start = zaxes.start;
         var end = zaxes.end;
-        var min, max;
+        var min, max, dp, span;
         var ctx = plot.plugins.cursor.zoomCanvas._ctx;
-        // don't zoom is zoom area is too small (in pixels)
+        // don't zoom if zoom area is too small (in pixels)
         if ((c.constrainZoomTo == 'none' && Math.abs(gridpos.x - c._zoom.start[0]) > 6 && Math.abs(gridpos.y - c._zoom.start[1]) > 6) || (c.constrainZoomTo == 'x' && Math.abs(gridpos.x - c._zoom.start[0]) > 6) ||  (c.constrainZoomTo == 'y' && Math.abs(gridpos.y - c._zoom.start[1]) > 6)) {
             if (!plot.plugins.cursor.zoomProxy) {
                 for (var ax in datapos) {
@@ -321,21 +325,39 @@
                         c._zoom.axes[ax].min = axes[ax].min;
                         c._zoom.axes[ax].max = axes[ax].max;
                     }
+
+
                     if ((c.constrainZoomTo == 'none') || (c.constrainZoomTo == 'x' && ax.charAt(0) == 'x') || (c.constrainZoomTo == 'y' && ax.charAt(0) == 'y')) {   
                         dp = datapos[ax];
-                        if (dp != null) {           
+                        if (dp != null) {  
+                            var newmin, newmax;         
                             if (dp > start[ax]) { 
-                                axes[ax].min = start[ax];
-                                axes[ax].max = dp;
+                                newmin = start[ax];
+                                newmax = dp;
                             }
                             else {
                                 span = start[ax] - dp;
-                                axes[ax].max = start[ax];
-                                axes[ax].min = dp;
+                                newmin = dp;
+                                newmax = start[ax];
                             }
-                            axes[ax].tickInterval = null;
-                            // for date axes...
-                            axes[ax].daTickInterval = null;
+                            
+                            if (this.looseZoom && (axes[ax].renderer.constructor === $.jqplot.LinearAxisRenderer || axes[ax].renderer.constructor === $.jqplot.DateAxisRenderer)) {
+                                var ret = $.jqplot.LinearTickGenerator(newmin, newmax);
+                                axes[ax].min = ret[0];
+                                axes[ax].max = ret[1];
+                                axes[ax].numberTicks = ret[2];
+                                axes[ax].tickInterval = ret[4];
+                                // for date axes...
+                                axes[ax].daTickInterval = [ret[4]/1000, 'seconds'];
+                            }
+                            else {
+                                axes[ax].min = newmin;
+                                axes[ax].max = newmax;
+                                axes[ax].tickInterval = null;
+                                // for date axes...
+                                axes[ax].daTickInterval = null;
+                            }
+
                             axes[ax]._ticks = [];
                         }
                     }
@@ -476,7 +498,7 @@
         
     function getIntersectingPoints(plot, x, y) {
         var ret = {indices:[], data:[]};
-        var s, i, d0, d, j, r;
+        var s, i, d0, d, j, r, p;
         var threshold;
         var c = plot.plugins.cursor;
         for (var i=0; i<plot.series.length; i++) {
@@ -922,14 +944,14 @@
     // called in context of a Legend
     $.jqplot.CursorLegendRenderer.prototype.draw = function() {
         if (this.show) {
-            var series = this._series;
+            var series = this._series, s;
             // make a table.  one line label per row.
             this._elem = $('<table class="jqplot-legend jqplot-cursor-legend" style="position:absolute"></table>');
         
             var pad = false;
             for (var i = 0; i< series.length; i++) {
                 s = series[i];
-                if (s.show) {
+                if (s.show && s.showLabel) {
                     var lt = $.jqplot.sprintf(this.formatString, s.label.toString());
                     if (lt) {
                         var color = s.color;
@@ -949,6 +971,9 @@
                     }
                 }
             }
+            series = s = null;
+            delete series;
+            delete s;
         }
         
         function addrow(label, color, pad, idx) {

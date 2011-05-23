@@ -5,7 +5,7 @@
  * 
  * About: Version
  * 
- * 1.0.0a_r701 
+ * 1.0.0b1_r746 
  * 
  * About: Copyright & License
  * 
@@ -39,7 +39,7 @@
  * To use jqPlot include jQuery, the jqPlot jQuery plugin, the jqPlot css file and optionally 
  * the excanvas script for IE support in your web page:
  * 
- * > <!--[if IE]><script language="javascript" type="text/javascript" src="excanvas.js"></script><![endif]-->
+ * > <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="excanvas.js"></script><![endif]-->
  * > <script language="javascript" type="text/javascript" src="jquery-1.4.4.min.js"></script>
  * > <script language="javascript" type="text/javascript" src="jquery.jqplot.min.js"></script>
  * > <link rel="stylesheet" type="text/css" href="jquery.jqplot.css" />
@@ -180,14 +180,16 @@
         errorFontStyle: '',
         errorFontWeight: '',
         catchErrors: false,
-        defaultTickFormatString: "%.1f"
+        defaultTickFormatString: "%.1f",
+        defaultColors: [ "#4bb2c5", "#EAA228", "#c5b47f", "#579575", "#839557", "#958c12", "#953579", "#4b5de4", "#d8b83f", "#ff5800", "#0085cc", "#c747a3", "#cddf54", "#FBD178", "#26B4E3", "#bd70c7"],
+        defaultNegativeColors: [ "#498991", "#C08840", "#9F9274", "#546D61", "#646C4A", "#6F6621", "#6E3F5F", "#4F64B0", "#A89050", "#C45923", "#187399", "#945381", "#959E5C", "#C7AF7B", "#478396", "#907294"]
     };
-	
-	
+    
+    
     $.jqplot.arrayMax = function( array ){
         return Math.max.apply( Math, array );
     };
-	
+    
     $.jqplot.arrayMin = function( array ){
         return Math.min.apply( Math, array );
     };
@@ -195,7 +197,7 @@
     $.jqplot.enablePlugins = $.jqplot.config.enablePlugins;
     
     // canvas related tests taken from modernizer:
-    // Copyright © 2009ñ2010 Faruk Ates.
+    // Copyright (c) 2009 - 2010 Faruk Ates.
     // http://www.modernizr.com
     
     $.jqplot.support_canvas = function() {
@@ -436,9 +438,9 @@
         this.borderColor = null;
         // minimum and maximum values on the axis.
         this._dataBounds = {min:null, max:null};
-		// statistics (min, max, mean) as well as actual data intervals for each series attached to axis.
-		// holds collection of {intervals:[], min:, max:, mean: } objects for each series on axis.
-		this._intervalStats = [];
+        // statistics (min, max, mean) as well as actual data intervals for each series attached to axis.
+        // holds collection of {intervals:[], min:, max:, mean: } objects for each series on axis.
+        this._intervalStats = [];
         // pixel position from the top left of the min value and max value on the axis.
         this._offsets = {min:null, max:null};
         this._ticks=[];
@@ -554,19 +556,25 @@
     };
     
     Axis.prototype.resetScale = function(opts) {
-		$.extend(true, this, {min: null, max: null, numberTicks: null, tickInterval: null, _ticks: [], ticks: []}, opts);
-		this.resetDataBounds();
+        $.extend(true, this, {min: null, max: null, numberTicks: null, tickInterval: null, _ticks: [], ticks: []}, opts);
+        this.resetDataBounds();
     };
-	
-	Axis.prototype.resetDataBounds = function() {
+    
+    Axis.prototype.resetDataBounds = function() {
         // Go through all the series attached to this axis and find
         // the min/max bounds for this axis.
-		var db = this._dataBounds;
-		db.min = null;
-		db.max = null;
+        var db = this._dataBounds;
+        db.min = null;
+        db.max = null;
         for (var i=0; i<this._series.length; i++) {
             var s = this._series[i];
             var d = s._plotData;
+            var minyidx = 1, maxyidx = 1;
+
+            if (s._type != null && s._type == 'ohlc') {
+                minyidx = 3;
+                maxyidx = 2;
+            }
             
             for (var j=0; j<d.length; j++) { 
                 if (this.name == 'xaxis' || this.name == 'x2axis') {
@@ -578,16 +586,16 @@
                     }
                 }              
                 else {
-                    if ((d[j][1] != null && d[j][1] < db.min) || db.min == null) {
-                        db.min = d[j][1];
+                    if ((d[j][minyidx] != null && d[j][minyidx] < db.min) || db.min == null) {
+                        db.min = d[j][minyidx];
                     }
-                    if ((d[j][1] != null && d[j][1] > db.max) || db.max == null) {
-                        db.max = d[j][1];
+                    if ((d[j][maxyidx] != null && d[j][maxyidx] > db.max) || db.max == null) {
+                        db.max = d[j][maxyidx];
                     }
                 }              
             }
         }
-	};
+    };
 
     /**
      * Class: Legend
@@ -924,6 +932,12 @@
         // prop: lineWidth
         // width of the line in pixels.  May have different meanings depending on renderer.
         this.lineWidth = 2.5;
+        // prop: lineJoin
+        // Canvas lineJoin style between segments of series.
+        this.lineJoin = 'round';
+        // prop: lineCap
+        // Canvas lineCap style at ends of line.
+        this.lineCap = 'round';
         // prop: shadow
         // wether or not to draw a shadow on the line
         this.shadow = true;
@@ -940,7 +954,7 @@
         // Alpha channel transparency of shadow.  0 = transparent.
         this.shadowAlpha = '0.1';
         // prop: breakOnNull
-        // Not implemented. wether line segments should be be broken at null value.
+        // Wether line segments should be be broken at null value.
         // False will join point on either side of line.
         this.breakOnNull = false;
         // prop: markerRenderer
@@ -1025,6 +1039,7 @@
         // sum of y values in this series.
         this._sumy = 0;
         this._sumx = 0;
+        this._type = '';
     }
     
     Series.prototype = new $.jqplot.ElemContainer();
@@ -1083,9 +1098,9 @@
     Series.prototype.draw = function(sctx, opts, plot) {
         var options = (opts == undefined) ? {} : opts;
         sctx = (sctx == undefined) ? this.canvas._ctx : sctx;
-		
-		var j, data, gridData;
-		
+        
+        var j, data, gridData;
+        
         // hooks get called even if series not shown
         // we don't clear canvas here, it would wipe out all other series as well.
         for (j=0; j<$.jqplot.preDrawSeriesHooks.length; j++) {
@@ -1113,16 +1128,16 @@
         for (j=0; j<$.jqplot.postDrawSeriesHooks.length; j++) {
             $.jqplot.postDrawSeriesHooks[j].call(this, sctx, options);
         }
-		
-		sctx = opts = plot = j = data = gridData = null;
+        
+        sctx = opts = plot = j = data = gridData = null;
     };
     
     Series.prototype.drawShadow = function(sctx, opts, plot) {
         var options = (opts == undefined) ? {} : opts;
         sctx = (sctx == undefined) ? this.shadowCanvas._ctx : sctx;
-		
-		var j, data, gridData;
-		
+        
+        var j, data, gridData;
+        
         // hooks get called even if series not shown
         // we don't clear canvas here, it would wipe out all other series as well.
         for (j=0; j<$.jqplot.preDrawSeriesShadowHooks.length; j++) {
@@ -1149,8 +1164,8 @@
         for (j=0; j<$.jqplot.postDrawSeriesShadowHooks.length; j++) {
             $.jqplot.postDrawSeriesShadowHooks[j].call(this, sctx, options);
         }
-		
-		sctx = opts = plot = j = data = gridData = null;
+        
+        sctx = opts = plot = j = data = gridData = null;
         
     };
     
@@ -1412,24 +1427,24 @@
         this.dataRendererOptions;
         // prop noDataIndicator
         // Options to set up a mock plot with a data loading indicator if no data is specified.
-        this.noDataIndicator = {	
-			show: false,
-			indicator: 'Loading Data...',
-			axes: {
-				xaxis: {
-					min: 0,
-					max: 10,
-					tickInterval: 2,
-					show: true
-				},
-				yaxis: {
-					min: 0,
-					max: 12,
-					tickInterval: 3,
-					show: true
-				}
-			}
-		};
+        this.noDataIndicator = {    
+            show: false,
+            indicator: 'Loading Data...',
+            axes: {
+                xaxis: {
+                    min: 0,
+                    max: 10,
+                    tickInterval: 2,
+                    show: true
+                },
+                yaxis: {
+                    min: 0,
+                    max: 12,
+                    tickInterval: 3,
+                    show: true
+                }
+            }
+        };
         // The id of the dom element to render the plot into
         this.targetId = null;
         // the jquery object for the dom target.
@@ -1481,8 +1496,8 @@
         // to the series in the plot.  Colors will wrap around so, if their
         // are more series than colors, colors will be reused starting at the
         // beginning.  For pie charts, this specifies the colors of the slices.
-        this.seriesColors = [ "#4bb2c5", "#EAA228", "#c5b47f", "#579575", "#839557", "#958c12", "#953579", "#4b5de4", "#d8b83f", "#ff5800", "#0085cc", "#c747a3", "#cddf54", "#FBD178", "#26B4E3", "#bd70c7"];
-        this.negativeSeriesColors = [ "#498991", "#C08840", "#9F9274", "#546D61", "#646C4A", "#6F6621", "#6E3F5F", "#4F64B0", "#A89050", "#C45923", "#187399", "#945381", "#959E5C", "#C7AF7B", "#478396", "#907294"];
+        this.seriesColors = $.jqplot.config.defaultColors;
+        this.negativeSeriesColors = $.jqplot.config.defaultNegativeColors;
         // prop: sortData
         // false to not sort the data passed in by the user.
         // Many bar, stakced and other graphs as well as many plugins depend on
@@ -1653,54 +1668,50 @@
             }
             
             if (options.noDataIndicator && jQuery.isPlainObject(options.noDataIndicator)) {
-				$.extend(true, this.noDataIndicator, options.noDataIndicator);
+                $.extend(true, this.noDataIndicator, options.noDataIndicator);
             }
             
-            if (data == null) {
-                throw{
-                    name: "DataError",
-                    message: "No data to plot."
-                };
-            }
-            
-            if (jQuery.isArray(data) == false || data.length == 0 || jQuery.isArray(data[0]) == false || data[0].length == 0) {
+            if (data == null || jQuery.isArray(data) == false || data.length == 0 || jQuery.isArray(data[0]) == false || data[0].length == 0) {
                 
-				if (this.noDataIndicator.show == false) {
-					throw{
-						name: "DataError",
-						message: "No data to plot."
-					};
-				}
-				
-				else {
-					
-					for (ax in this.noDataIndicator.axes) {
-						for (prop in this.noDataIndicator.axes[ax]) {
-							this.axes[ax][prop] = this.noDataIndicator.axes[ax][prop];
-						}
-					}
-					
-					this.postDrawHooks.add(function() {
-						var eh = this.eventCanvas.getHeight();
-						var ew = this.eventCanvas.getWidth();
-						var temp = $('<div class="jqplot-noData-container" style="position:absolute;"></div>');
-						this.target.append(temp);
-						temp.height(eh);
-						temp.width(ew);
-						temp.css('top', this.eventCanvas._offsets.top);
-						temp.css('left', this.eventCanvas._offsets.left);
-						
-						temp2 = $('<div class="jqplot-noData-contents" style="text-align:center; position:relative; margin-left:auto; margin-right:auto;"></div>');
-						temp.append(temp2);
-						temp2.html(this.noDataIndicator.indicator);
-						var th = temp2.height();
-						var tw = temp2.width();
-						temp2.height(th);
-						temp2.width(tw);
-						temp2.css('top', (eh - th)/2 + 'px');
-					});
+                if (this.noDataIndicator.show == false) {
+                    throw{
+                        name: "DataError",
+                        message: "No data to plot."
+                    };
+                }
+                
+                else {
+                    // have to be descructive here in order for plot to not try and render series.
+                    // This means that $.jqplot() will have to be called again when there is data.
+                    //delete options.series;
+                    
+                    for (var ax in this.noDataIndicator.axes) {
+                        for (var prop in this.noDataIndicator.axes[ax]) {
+                            this.axes[ax][prop] = this.noDataIndicator.axes[ax][prop];
+                        }
+                    }
+                    
+                    this.postDrawHooks.add(function() {
+                        var eh = this.eventCanvas.getHeight();
+                        var ew = this.eventCanvas.getWidth();
+                        var temp = $('<div class="jqplot-noData-container" style="position:absolute;"></div>');
+                        this.target.append(temp);
+                        temp.height(eh);
+                        temp.width(ew);
+                        temp.css('top', this.eventCanvas._offsets.top);
+                        temp.css('left', this.eventCanvas._offsets.left);
+                        
+                        var temp2 = $('<div class="jqplot-noData-contents" style="text-align:center; position:relative; margin-left:auto; margin-right:auto;"></div>');
+                        temp.append(temp2);
+                        temp2.html(this.noDataIndicator.indicator);
+                        var th = temp2.height();
+                        var tw = temp2.width();
+                        temp2.height(th);
+                        temp2.width(tw);
+                        temp2.css('top', (eh - th)/2 + 'px');
+                    });
 
-				}
+                }
             }
             
             this.data = data;
@@ -1775,7 +1786,7 @@
         // Parameters:
         // axes - Boolean to reset or not reset all axes or an array or object of axis names to reset.
         this.resetAxesScale = function(axes, options) {
-			var opts = options || {};
+            var opts = options || {};
             var ax = axes || this.axes;
             if (ax === true) {
                 ax = this.axes;
@@ -1799,6 +1810,10 @@
             // If plot doesn't have height and width for some
             // reason, set it by other means.  Plot must not have
             // a display:none attribute, however.
+            
+            //
+            // Wont have options here
+            /*
             if (!this.target.height()) {
                 var h;
                 if (options && options.height) {
@@ -1833,6 +1848,10 @@
             else {
                 this._width = this.target.width();
             }
+            */
+            
+            this._height = this.target.height();
+            this._width = this.target.width();
             
             if (this._height <=0 || this._width <=0 || !this._height || !this._width) {
                 throw "Target dimension not set";
@@ -1993,6 +2012,13 @@
                 series._sumx += series.data[i][0];
             }
         };
+
+        // this.setData = function(seriesIndex, newdata) {
+        //     // if newdata is null, assume all data is passed in as first argument
+        //     if (newdata == null) {
+                
+        //     }
+        // };
         
         // function to safely return colors from the color array and wrap around at the end.
         this.getNextSeriesColor = (function(t) {
@@ -2039,12 +2065,12 @@
                 axis._plotWidth = this._width;
                 axis._plotHeight = this._height;
             }
-            if (this.data.length == 0) {
-                this.data = [];
-                for (var i=0; i<this.options.series.length; i++) {
-                    this.data.push(this.options.series.data);
-                }    
-            }
+            // if (this.data.length == 0) {
+            //     this.data = [];
+            //     for (var i=0; i<this.options.series.length; i++) {
+            //         this.data.push(this.options.series.data);
+            //     }    
+            // }
                 
             var normalizeData = function(data, dir, start) {
                 // return data as an array of point arrays,
@@ -2072,7 +2098,7 @@
                 return temp;
             };
 
-            for (var i=0; i<this.data.length; i++) { 
+            for (var i=0; i<this.data.length; i++) {
                 var temp = new Series();
                 for (var j=0; j<$.jqplot.preParseSeriesOptionsHooks.length; j++) {
                     $.jqplot.preParseSeriesOptionsHooks[j].call(temp, this.options.seriesDefaults, this.options.series[i]);
@@ -2175,16 +2201,16 @@
             var resetAxes = opts.resetAxes || false;
             this.target.trigger('jqplotPreReplot');
             if (clear) {
-            	// Couple of posts on Stack Overflow indicate that empty() doesn't
-	            // always cear up the dom and release memory.  Sometimes setting
-	            // innerHTML property to null is needed.  Particularly on IE, may 
-	            // have to directly set it to null, bypassing jQuery.
+                // Couple of posts on Stack Overflow indicate that empty() doesn't
+                // always cear up the dom and release memory.  Sometimes setting
+                // innerHTML property to null is needed.  Particularly on IE, may 
+                // have to directly set it to null, bypassing jQuery.
                 this.target.empty();
             }
+            this.reInitialize();
             if (resetAxes) {
                 this.resetAxesScale(resetAxes, opts.axes);
             }
-            this.reInitialize();
             this.draw();
             this.target.trigger('jqplotPostReplot');
         };
@@ -2204,10 +2230,10 @@
             clear = (clear != null) ? clear : true;
             this.target.trigger('jqplotPreRedraw');
             if (clear) {
-            	// Couple of posts on Stack Overflow indicate that empty() doesn't
-	            // always cear up the dom and release memory.  Sometimes setting
-	            // innerHTML property to null is needed.  Particularly on IE, may 
-	            // have to directly set it to null, bypassing jQuery.
+                // Couple of posts on Stack Overflow indicate that empty() doesn't
+                // always cear up the dom and release memory.  Sometimes setting
+                // innerHTML property to null is needed.  Particularly on IE, may 
+                // have to directly set it to null, bypassing jQuery.
                 this.target.empty();
             }
              for (var ax in this.axes) {
@@ -2371,9 +2397,9 @@
                 }
                 else {  // draw series before legend
                     this.drawSeries();
-					if (this.series.length) {
-						$(this.series[this.series.length-1].canvas._elem).after(legendElem);
-					}
+                    if (this.series.length) {
+                        $(this.series[this.series.length-1].canvas._elem).after(legendElem);
+                    }
                     this.legend.pack(legendPadding);                
                 }
             
@@ -2417,8 +2443,8 @@
             if (this.captureRightClick) {
                 this.eventCanvas._elem.bind('mouseup', {plot:this}, this.onRightClick);
                 this.eventCanvas._elem.get(0).oncontextmenu = function() {
-					return false;
-				};
+                    return false;
+                };
             }
             else {
                 this.eventCanvas._elem.bind('mouseup', {plot:this}, this.onMouseUp);
@@ -2459,6 +2485,7 @@
                         y = gridpos.y;
                         for (j=0; j<s._barPoints.length; j++) {
                             points = s._barPoints[j];
+                            p = s.gridData[j];
                             if (x>points[0][0] && x<points[2][0] && y>points[2][1] && y<points[0][1]) {
                                 return {seriesIndex:s.index, pointIndex:j, gridData:p, data:s.data[j], points:s._barPoints[j]};
                             }
@@ -2582,7 +2609,8 @@
                             vfirst = v[0],
                             vlast = v[v.length-1],
                             lex,
-                            rex;
+                            rex,
+                            cv;
     
                         // equations of right and left sides, returns x, y values given height of section (y value and 2 points)
     
@@ -2621,16 +2649,16 @@
                                     var j = numPoints-1;
 
                                     for(var ii=0; ii < numPoints; ii++) { 
-                                    	var vertex1 = [s._areaPoints[ii][0], s._areaPoints[ii][1]];
-                                    	var vertex2 = [s._areaPoints[j][0], s._areaPoints[j][1]];
+                                        var vertex1 = [s._areaPoints[ii][0], s._areaPoints[ii][1]];
+                                        var vertex2 = [s._areaPoints[j][0], s._areaPoints[j][1]];
 
-                                    	if (vertex1[1] < y && vertex2[1] >= y || vertex2[1] < y && vertex1[1] >= y)	 {
-                                    		if (vertex1[0] + (y - vertex1[1]) / (vertex2[1] - vertex1[1]) * (vertex2[0] - vertex1[0]) < x) {
-                                    			inside = !inside;
-                                    		}
-                                    	}
+                                        if (vertex1[1] < y && vertex2[1] >= y || vertex2[1] < y && vertex1[1] >= y)     {
+                                            if (vertex1[0] + (y - vertex1[1]) / (vertex2[1] - vertex1[1]) * (vertex2[0] - vertex1[0]) < x) {
+                                                inside = !inside;
+                                            }
+                                        }
 
-                                    	j = ii;
+                                        j = ii;
                                     }        
                                 }
                                 if (inside) {
@@ -2863,7 +2891,7 @@
                     series.draw(ctx, options, this);
                 }
             }
-			options = idx = i = series = ctx = null;
+            options = idx = i = series = ctx = null;
         };
         
         // method: moveSeriesToFront
@@ -2926,7 +2954,7 @@
         // Useful to put a series back where it belongs after moving
         // it to the front.
         this.restorePreviousSeriesOrder = function () {
-            var i, j, serelem, shadelem, temp;
+            var i, j, serelem, shadelem, temp, move, keep;
             // if no change, return.
             if (this.seriesStack == this.previousSeriesStack) {
                 return;
@@ -2949,7 +2977,7 @@
         // Restore the series canvas order to its original order
         // when the plot was created.
         this.restoreOriginalSeriesOrder = function () {
-            var i, j, arr=[];
+            var i, j, arr=[], serelem, shadelem;
             for (i=0; i<this.series.length; i++) {
                 arr.push(i);
             }
@@ -3004,6 +3032,7 @@
     };
         
    $.jqplot.ColorGenerator = function(colors) {
+        colors = colors || $.jqplot.config.defaultColors;
         var idx = 0;
         
         this.next = function () { 
@@ -3063,7 +3092,7 @@
         var pat = /rgba?\( *([0-9]{1,3}\.?[0-9]*%?) *, *([0-9]{1,3}\.?[0-9]*%?) *, *([0-9]{1,3}\.?[0-9]*%?) *(?:, *[0-9.]*)?\)/;
         var m = s.match(pat);
         var h = '#';
-        for (i=1; i<4; i++) {
+        for (var i=1; i<4; i++) {
             var temp;
             if (m[i].search(/%/) != -1) {
                 temp = parseInt(255*m[i]/100, 10).toString(16);
@@ -3103,7 +3132,7 @@
         var pat = /rgba?\( *([0-9]{1,3}\.?[0-9]*%?) *, *([0-9]{1,3}\.?[0-9]*%?) *, *([0-9]{1,3}\.?[0-9]*%?) *,? *([0-9.]* *)?\)/;
         var m = rgb.match(pat);
         var ret = [];
-        for (i=1; i<4; i++) {
+        for (var i=1; i<4; i++) {
             if (m[i].search(/%/) != -1) {
                 ret[i-1] = parseInt(255*m[i]/100, 10);
             }
@@ -3265,7 +3294,7 @@
         if (this.prefix && !this.formatString) {
             this.label = this.prefix + this.label;
         }
-        style ='style="position:absolute;';
+        var style ='style="position:absolute;';
         if (Number(this.label)) {
             style +='white-space:nowrap;';
         }
@@ -3363,7 +3392,7 @@
             ctx.lineCap = 'butt';
             ctx.lineWidth = this.gridLineWidth;
             ctx.strokeStyle = this.gridLineColor;
-            var b, e;
+            var b, e, s, m;
             var ax = ['xaxis', 'yaxis', 'x2axis', 'y2axis'];
             for (var i=4; i>0; i--) {
                 var name = ax[i-1];
@@ -3675,6 +3704,7 @@
     // called with scope of series.
     $.jqplot.LineRenderer.prototype.init = function(options, plot) {
         options = options || {};
+        this._type='line';
         var lopts = {highlightMouseOver: options.highlightMouseOver, highlightMouseDown: options.highlightMouseDown, highlightColor: options.highlightColor};
         
         delete (options.highlightMouseOver);
@@ -3683,7 +3713,7 @@
         
         $.extend(true, this.renderer, options);
         // set the shape renderer options
-        var opts = {lineJoin:'round', lineCap:'round', fill:this.fill, isarc:false, strokeStyle:this.color, fillStyle:this.fillColor, lineWidth:this.lineWidth, closePath:this.fill};
+        var opts = {lineJoin:this.lineJoin, lineCap:this.lineCap, fill:this.fill, isarc:false, strokeStyle:this.color, fillStyle:this.fillColor, lineWidth:this.lineWidth, closePath:this.fill};
         this.renderer.shapeRenderer.init(opts);
         // set the shadow renderer options
         // scale the shadowOffset to the width of the line.
@@ -3695,7 +3725,7 @@
         else {
             var shadow_offset = this.shadowOffset*Math.atan((this.lineWidth/2.5))/0.785398163;
         }
-        var sopts = {lineJoin:'round', lineCap:'round', fill:this.fill, isarc:false, angle:this.shadowAngle, offset:shadow_offset, alpha:this.shadowAlpha, depth:this.shadowDepth, lineWidth:this.lineWidth, closePath:this.fill};
+        var sopts = {lineJoin:this.lineJoin, lineCap:this.lineCap, fill:this.fill, isarc:false, angle:this.shadowAngle, offset:shadow_offset, alpha:this.shadowAlpha, depth:this.shadowDepth, lineWidth:this.lineWidth, closePath:this.fill};
         this.renderer.shadowRenderer.init(sopts);
         this._areaPoints = [];
         this._boundingBox = [[],[]];
@@ -3930,7 +3960,7 @@
                             var gridymin = ctx.canvas.height;
                             // IE doesn't return new length on unshift
                             gd.unshift([gd[0][0], gridymin]);
-                            len = gd.length;
+                            var len = gd.length;
                             gd.push([gd[len - 1][0], gridymin]);                   
                         }
                         // if stacked, fill to line below 
@@ -4011,7 +4041,7 @@
     // called with scope of plot.
     // make sure to not leave anything highlighted.
     function postInit(target, data, options) {
-        for (i=0; i<this.series.length; i++) {
+        for (var i=0; i<this.series.length; i++) {
             if (this.series[i].renderer.constructor == $.jqplot.LineRenderer) {
                 // don't allow mouseover and mousedown at same time.
                 if (this.series[i].highlightMouseOver) {
@@ -4144,6 +4174,25 @@
 		// prop: breakTickLabel
 		// Label to use at the axis break if breakPoints are specified.
 		this.breakTickLabel = "&asymp;";
+        // prop: forceTickAt0
+        // This will ensure that there is always a tick mark at 0.
+        // If data range is strictly positive or negative,
+        // this will force 0 to be inside the axis bounds unless
+        // the appropriate axis pad (pad, padMin or padMax) is set
+        // to 0, then this will force an axis min or max value at 0.
+        // This has know effect when any of the following options
+        // are set:  autoscale, min, max, numberTicks or tickInterval.
+        this.forceTickAt0 = false;
+        // prop: forceTickAt100
+        // This will ensure that there is always a tick mark at 100.
+        // If data range is strictly above or below 100,
+        // this will force 100 to be inside the axis bounds unless
+        // the appropriate axis pad (pad, padMin or padMax) is set
+        // to 0, then this will force an axis min or max value at 100.
+        // This has know effect when any of the following options
+        // are set:  autoscale, min, max, numberTicks or tickInterval.
+        this.forceTickAt100 = false;
+        this._autoFormatString = '';
         $.extend(true, this, options);
 		if (this.breakPoints) {
 			if (!$.isArray(this.breakPoints)) {
@@ -4364,265 +4413,316 @@
         
             min = ((this.min != null) ? this.min : db.min);
             max = ((this.max != null) ? this.max : db.max);
-            
-            // if min and max are same, space them out a bit
-            if (min == max) {
-                var adj = 0.05;
-                if (min > 0) {
-                    adj = Math.max(Math.log(min)/Math.LN10, 0.05);
-                }
-                min -= adj;
-                max += adj;
-            }
 
             var range = max - min;
             var rmin, rmax;
             var temp;
-            
-            // autoscale.  Can't autoscale if min or max is supplied.
-            // Will use numberTicks and tickInterval if supplied.  Ticks
-            // across multiple axes may not line up depending on how
-            // bars are to be plotted.
-            if (this.autoscale && this.min == null && this.max == null) {
-                var rrange, ti, margin;
-                var forceMinZero = false;
-                var forceZeroLine = false;
-                var intervals = {min:null, max:null, average:null, stddev:null};
-                // if any series are bars, or if any are fill to zero, and if this
-                // is the axis to fill toward, check to see if we can start axis at zero.
-                for (var i=0; i<this._series.length; i++) {
-                    var s = this._series[i];
-                    var faname = (s.fillAxis == 'x') ? s._xaxis.name : s._yaxis.name;
-                    // check to see if this is the fill axis
-                    if (this.name == faname) {
-                        var vals = s._plotValues[s.fillAxis];
-                        var vmin = vals[0];
-                        var vmax = vals[0];
-                        for (var j=1; j<vals.length; j++) {
-                            if (vals[j] < vmin) {
-                                vmin = vals[j];
+
+            // Doing complete autoscaling
+            if (this.min == null && this.max == null && this.numberTicks == null && this.tickInterval == null && !this.autoscale) {
+                // Check if user must have tick at 0 or 100 and ensure they are in range.
+                // The autoscaling algorithm will always place ticks at 0 and 100 if they are in range.
+                if (this.forceTickAt0) {
+                    if (min > 0) {
+                        min = 0;
+                    }
+                    if (max < 0) {
+                        max = 0;
+                    }
+                }
+
+                if (this.forceTickAt100) {
+                    if (min > 100) {
+                        min = 100;
+                    }
+                    if (max < 100) {
+                        max = 100;
+                    }
+                }
+
+                var ret = $.jqplot.LinearTickGenerator(min, max); 
+                // calculate a padded max and min, points should be less than these
+                // so that they aren't too close to the edges of the plot.
+                // User can adjust how much padding is allowed with pad, padMin and PadMax options. 
+                var tumin = min + range*(this.padMin - 1);
+                var tumax = max - range*(this.padMax - 1);
+
+                if (min <=tumin || max >= tumax) {
+                    tumin = min - range*(this.padMin - 1);
+                    tumax = max + range*(this.padMax - 1);
+                    ret = $.jqplot.LinearTickGenerator(tumin, tumax);
+                }
+
+                this.min = ret[0];
+                this.max = ret[1];
+                this.numberTicks = ret[2];
+                this._autoFormatString = ret[3];
+                //this.tickInterval = Math.abs(this.max - this.min)/(this.numberTicks - 1);
+                this.tickInterval = ret[4];
+            }
+
+            // User has specified some axis scale related option, can use auto algorithm
+            else {
+                
+                // if min and max are same, space them out a bit
+                if (min == max) {
+                    var adj = 0.05;
+                    if (min > 0) {
+                        adj = Math.max(Math.log(min)/Math.LN10, 0.05);
+                    }
+                    min -= adj;
+                    max += adj;
+                }
+                
+                // autoscale.  Can't autoscale if min or max is supplied.
+                // Will use numberTicks and tickInterval if supplied.  Ticks
+                // across multiple axes may not line up depending on how
+                // bars are to be plotted.
+                if (this.autoscale && this.min == null && this.max == null) {
+                    var rrange, ti, margin;
+                    var forceMinZero = false;
+                    var forceZeroLine = false;
+                    var intervals = {min:null, max:null, average:null, stddev:null};
+                    // if any series are bars, or if any are fill to zero, and if this
+                    // is the axis to fill toward, check to see if we can start axis at zero.
+                    for (var i=0; i<this._series.length; i++) {
+                        var s = this._series[i];
+                        var faname = (s.fillAxis == 'x') ? s._xaxis.name : s._yaxis.name;
+                        // check to see if this is the fill axis
+                        if (this.name == faname) {
+                            var vals = s._plotValues[s.fillAxis];
+                            var vmin = vals[0];
+                            var vmax = vals[0];
+                            for (var j=1; j<vals.length; j++) {
+                                if (vals[j] < vmin) {
+                                    vmin = vals[j];
+                                }
+                                else if (vals[j] > vmax) {
+                                    vmax = vals[j];
+                                }
                             }
-                            else if (vals[j] > vmax) {
-                                vmax = vals[j];
+                            var dp = (vmax - vmin) / vmax;
+                            // is this sries a bar?
+                            if (s.renderer.constructor == $.jqplot.BarRenderer) {
+                                // if no negative values and could also check range.
+                                if (vmin >= 0 && (s.fillToZero || dp > 0.1)) {
+                                    forceMinZero = true;
+                                }
+                                else {
+                                    forceMinZero = false;
+                                    if (s.fill && s.fillToZero && vmin < 0 && vmax > 0) {
+                                        forceZeroLine = true;
+                                    }
+                                    else {
+                                        forceZeroLine = false;
+                                    }
+                                }
                             }
-                        }
-                        var dp = (vmax - vmin) / vmax;
-                        // is this sries a bar?
-                        if (s.renderer.constructor == $.jqplot.BarRenderer) {
-                            // if no negative values and could also check range.
-                            if (vmin >= 0 && (s.fillToZero || dp > 0.1)) {
-                                forceMinZero = true;
-                            }
-                            else {
-                                forceMinZero = false;
-                                if (s.fill && s.fillToZero && vmin < 0 && vmax > 0) {
+                            
+                            // if not a bar and filling, use appropriate method.
+                            else if (s.fill) {
+                                if (vmin >= 0 && (s.fillToZero || dp > 0.1)) {
+                                    forceMinZero = true;
+                                }
+                                else if (vmin < 0 && vmax > 0 && s.fillToZero) {
+                                    forceMinZero = false;
                                     forceZeroLine = true;
                                 }
                                 else {
+                                    forceMinZero = false;
                                     forceZeroLine = false;
                                 }
                             }
-                        }
-                        
-                        // if not a bar and filling, use appropriate method.
-                        else if (s.fill) {
-                            if (vmin >= 0 && (s.fillToZero || dp > 0.1)) {
-                                forceMinZero = true;
-                            }
-                            else if (vmin < 0 && vmax > 0 && s.fillToZero) {
+                            
+                            // if not a bar and not filling, only change existing state
+                            // if it doesn't make sense
+                            else if (vmin < 0) {
                                 forceMinZero = false;
-                                forceZeroLine = true;
-                            }
-                            else {
-                                forceMinZero = false;
-                                forceZeroLine = false;
                             }
                         }
-                        
-                        // if not a bar and not filling, only change existing state
-                        // if it doesn't make sense
-                        else if (vmin < 0) {
-                            forceMinZero = false;
-                        }
-                    }
-                }
-                
-                // check if we need make axis min at 0.
-                if (forceMinZero) {
-                    // compute number of ticks
-                    this.numberTicks = 2 + Math.ceil((dim-(this.tickSpacing-1))/this.tickSpacing);
-                    this.min = 0;
-                    userMin = 0;
-                    // what order is this range?
-                    // what tick interval does that give us?
-                    ti = max/(this.numberTicks-1);
-                    temp = Math.pow(10, Math.abs(Math.floor(Math.log(ti)/Math.LN10)));
-                    if (ti/temp == parseInt(ti/temp, 10)) {
-                        ti += temp;
-                    }
-                    this.tickInterval = Math.ceil(ti/temp) * temp;
-                    this.max = this.tickInterval * (this.numberTicks - 1);
-                }
-                
-                // check if we need to make sure there is a tick at 0.
-                else if (forceZeroLine) {
-                    // compute number of ticks
-                    this.numberTicks = 2 + Math.ceil((dim-(this.tickSpacing-1))/this.tickSpacing);
-                    var ntmin = Math.ceil(Math.abs(min)/range*(this.numberTicks-1));
-                    var ntmax = this.numberTicks - 1  - ntmin;
-                    ti = Math.max(Math.abs(min/ntmin), Math.abs(max/ntmax));
-                    temp = Math.pow(10, Math.abs(Math.floor(Math.log(ti)/Math.LN10)));
-                    this.tickInterval = Math.ceil(ti/temp) * temp;
-                    this.max = this.tickInterval * ntmax;
-                    this.min = -this.tickInterval * ntmin;                  
-                }
-                
-                // if nothing else, do autoscaling which will try to line up ticks across axes.
-                else {  
-                    if (this.numberTicks == null){
-                        if (this.tickInterval) {
-                            this.numberTicks = 3 + Math.ceil(range / this.tickInterval);
-                        }
-                        else {
-                            this.numberTicks = 2 + Math.ceil((dim-(this.tickSpacing-1))/this.tickSpacing);
-                        }
-                    }
-            
-                    if (this.tickInterval == null) {
-                        // get a tick interval
-                        ti = range/(this.numberTicks - 1);
-
-                        if (ti < 1) {
-                            temp = Math.pow(10, Math.abs(Math.floor(Math.log(ti)/Math.LN10)));
-                        }
-                        else {
-                            temp = 1;
-                        }
-                        this.tickInterval = Math.ceil(ti*temp*this.pad)/temp;
-                    }
-                    else {
-                        temp = 1 / this.tickInterval;
                     }
                     
-                    // try to compute a nicer, more even tick interval
-                    // temp = Math.pow(10, Math.floor(Math.log(ti)/Math.LN10));
-                    // this.tickInterval = Math.ceil(ti/temp) * temp;
-                    rrange = this.tickInterval * (this.numberTicks - 1);
-                    margin = (rrange - range)/2;
-       
-                    if (this.min == null) {
-                        this.min = Math.floor(temp*(min-margin))/temp;
-                    }
-                    if (this.max == null) {
-                        this.max = this.min + rrange;
-                    }
-                }
-            }
-            
-            // Use the default algorithm which pads each axis to make the chart
-            // centered nicely on the grid.
-            else {
-                rmin = (this.min != null) ? this.min : min - range*(this.padMin - 1);
-                rmax = (this.max != null) ? this.max : max + range*(this.padMax - 1);
-                this.min = rmin;
-                this.max = rmax;
-                range = this.max - this.min;
-    
-                if (this.numberTicks == null){
-                    // if tickInterval is specified by user, we will ignore computed maximum.
-                    // max will be equal or greater to fit even # of ticks.
-                    if (this.tickInterval != null) {
-                        this.numberTicks = Math.ceil((this.max - this.min)/this.tickInterval)+1;
-                        this.max = this.min + this.tickInterval*(this.numberTicks-1);
-                    }
-                    else if (dim > 100) {
-                        this.numberTicks = parseInt(3+(dim-100)/75, 10);
-                    }
-                    else {
-                        this.numberTicks = 2;
-                    }
-                }
-            
-                if (this.tickInterval == null) {
-                    this.tickInterval = range / (this.numberTicks-1);
-                }
-            }
-            
-            if (this.renderer.constructor == $.jqplot.LinearAxisRenderer) {
-                // fix for misleading tick display with small range and low precision.
-                range = this.max - this.min;
-                // figure out precision
-                var temptick = new this.tickRenderer(this.tickOptions);
-                // use the tick formatString or, the default.
-                var fs = temptick.formatString || $.jqplot.config.defaultTickFormatString; 
-                var fs = fs.match($.jqplot.sprintf.regex)[0];
-                var precision = 0;
-                if (fs) {
-                    if (fs.search(/[fFeEgGpP]/) > -1) {
-                        var m = fs.match(/\%\.(\d{0,})?[eEfFgGpP]/);
-                        if (m) {
-                            precision = parseInt(m[1], 10);
+                    // check if we need make axis min at 0.
+                    if (forceMinZero) {
+                        // compute number of ticks
+                        this.numberTicks = 2 + Math.ceil((dim-(this.tickSpacing-1))/this.tickSpacing);
+                        this.min = 0;
+                        userMin = 0;
+                        // what order is this range?
+                        // what tick interval does that give us?
+                        ti = max/(this.numberTicks-1);
+                        temp = Math.pow(10, Math.abs(Math.floor(Math.log(ti)/Math.LN10)));
+                        if (ti/temp == parseInt(ti/temp, 10)) {
+                            ti += temp;
                         }
-                        else {
-                            precision = 6;
-                        }
+                        this.tickInterval = Math.ceil(ti/temp) * temp;
+                        this.max = this.tickInterval * (this.numberTicks - 1);
                     }
-                    else if (fs.search(/[di]/) > -1) {
-                        precision = 0;
+                    
+                    // check if we need to make sure there is a tick at 0.
+                    else if (forceZeroLine) {
+                        // compute number of ticks
+                        this.numberTicks = 2 + Math.ceil((dim-(this.tickSpacing-1))/this.tickSpacing);
+                        var ntmin = Math.ceil(Math.abs(min)/range*(this.numberTicks-1));
+                        var ntmax = this.numberTicks - 1  - ntmin;
+                        ti = Math.max(Math.abs(min/ntmin), Math.abs(max/ntmax));
+                        temp = Math.pow(10, Math.abs(Math.floor(Math.log(ti)/Math.LN10)));
+                        this.tickInterval = Math.ceil(ti/temp) * temp;
+                        this.max = this.tickInterval * ntmax;
+                        this.min = -this.tickInterval * ntmin;
                     }
-                    // fact will be <= 1;
-                    var fact = Math.pow(10, -precision);
-                    if (this.tickInterval < fact) {
-                        // need to correct underrange
-                        if (userNT == null && userTI == null) {
-                            this.tickInterval = fact;
-                            if (userMax == null && userMin == null) {
-                                // this.min = Math.floor((this._dataBounds.min - this.tickInterval)/fact) * fact;
-                                this.min = Math.floor(this._dataBounds.min/fact) * fact;
-                                if (this.min == this._dataBounds.min) {
-                                    this.min = this._dataBounds.min - this.tickInterval;
-                                }
-                                // this.max = Math.ceil((this._dataBounds.max + this.tickInterval)/fact) * fact;
-                                this.max = Math.ceil(this._dataBounds.max/fact) * fact;
-                                if (this.max == this._dataBounds.max) {
-                                    this.max = this._dataBounds.max + this.tickInterval;
-                                }
-                                var n = (this.max - this.min)/this.tickInterval;
-                                n = n.toFixed(11);
-                                n = Math.ceil(n);
-                                this.numberTicks = n + 1;
-                            }
-                            else if (userMax == null) {
-                                // add one tick for top of range.
-                                var n = (this._dataBounds.max - this.min) / this.tickInterval;
-                                n = n.toFixed(11);
-                                this.numberTicks = Math.ceil(n) + 2;
-                                this.max = this.min + this.tickInterval * (this.numberTicks-1);
-                            }
-                            else if (userMin == null) {
-                                // add one tick for bottom of range.
-                                var n = (this.max - this._dataBounds.min) / this.tickInterval;
-                                n = n.toFixed(11);
-                                this.numberTicks = Math.ceil(n) + 2;
-                                this.min = this.max - this.tickInterval * (this.numberTicks-1);
+                    
+                    // if nothing else, do autoscaling which will try to line up ticks across axes.
+                    else {  
+                        if (this.numberTicks == null){
+                            if (this.tickInterval) {
+                                this.numberTicks = 3 + Math.ceil(range / this.tickInterval);
                             }
                             else {
-                                // calculate a number of ticks so max is within axis scale
-                                this.numberTicks = Math.ceil((userMax - userMin)/this.tickInterval) + 1;
-                                // if user's min and max don't fit evenly in ticks, adjust.
-                                // This takes care of cases such as user min set to 0, max set to 3.5 but tick
-                                // format string set to %d (integer ticks)
-                                this.min =  Math.floor(userMin*Math.pow(10, precision))/Math.pow(10, precision);
-                                this.max =  Math.ceil(userMax*Math.pow(10, precision))/Math.pow(10, precision);
-                                // this.max = this.min + this.tickInterval*(this.numberTicks-1);
-                                this.numberTicks = Math.ceil((this.max - this.min)/this.tickInterval) + 1;
+                                this.numberTicks = 2 + Math.ceil((dim-(this.tickSpacing-1))/this.tickSpacing);
+                            }
+                        }
+                
+                        if (this.tickInterval == null) {
+                            // get a tick interval
+                            ti = range/(this.numberTicks - 1);
+
+                            if (ti < 1) {
+                                temp = Math.pow(10, Math.abs(Math.floor(Math.log(ti)/Math.LN10)));
+                            }
+                            else {
+                                temp = 1;
+                            }
+                            this.tickInterval = Math.ceil(ti*temp*this.pad)/temp;
+                        }
+                        else {
+                            temp = 1 / this.tickInterval;
+                        }
+                        
+                        // try to compute a nicer, more even tick interval
+                        // temp = Math.pow(10, Math.floor(Math.log(ti)/Math.LN10));
+                        // this.tickInterval = Math.ceil(ti/temp) * temp;
+                        rrange = this.tickInterval * (this.numberTicks - 1);
+                        margin = (rrange - range)/2;
+           
+                        if (this.min == null) {
+                            this.min = Math.floor(temp*(min-margin))/temp;
+                        }
+                        if (this.max == null) {
+                            this.max = this.min + rrange;
+                        }
+                    }
+                }
+                
+                // Use the default algorithm which pads each axis to make the chart
+                // centered nicely on the grid.
+                else {
+                    rmin = (this.min != null) ? this.min : min - range*(this.padMin - 1);
+                    rmax = (this.max != null) ? this.max : max + range*(this.padMax - 1);
+                    this.min = rmin;
+                    this.max = rmax;
+                    range = this.max - this.min;
+        
+                    if (this.numberTicks == null){
+                        // if tickInterval is specified by user, we will ignore computed maximum.
+                        // max will be equal or greater to fit even # of ticks.
+                        if (this.tickInterval != null) {
+                            this.numberTicks = Math.ceil((this.max - this.min)/this.tickInterval)+1;
+                            this.max = this.min + this.tickInterval*(this.numberTicks-1);
+                        }
+                        else if (dim > 100) {
+                            this.numberTicks = parseInt(3+(dim-100)/75, 10);
+                        }
+                        else {
+                            this.numberTicks = 2;
+                        }
+                    }
+                
+                    if (this.tickInterval == null) {
+                        this.tickInterval = range / (this.numberTicks-1);
+                    }
+                }
+                
+                if (this.renderer.constructor == $.jqplot.LinearAxisRenderer) {
+                    // fix for misleading tick display with small range and low precision.
+                    range = this.max - this.min;
+                    // figure out precision
+                    var temptick = new this.tickRenderer(this.tickOptions);
+                    // use the tick formatString or, the default.
+                    var fs = temptick.formatString || $.jqplot.config.defaultTickFormatString; 
+                    var fs = fs.match($.jqplot.sprintf.regex)[0];
+                    var precision = 0;
+                    if (fs) {
+                        if (fs.search(/[fFeEgGpP]/) > -1) {
+                            var m = fs.match(/\%\.(\d{0,})?[eEfFgGpP]/);
+                            if (m) {
+                                precision = parseInt(m[1], 10);
+                            }
+                            else {
+                                precision = 6;
+                            }
+                        }
+                        else if (fs.search(/[di]/) > -1) {
+                            precision = 0;
+                        }
+                        // fact will be <= 1;
+                        var fact = Math.pow(10, -precision);
+                        if (this.tickInterval < fact) {
+                            // need to correct underrange
+                            if (userNT == null && userTI == null) {
+                                this.tickInterval = fact;
+                                if (userMax == null && userMin == null) {
+                                    // this.min = Math.floor((this._dataBounds.min - this.tickInterval)/fact) * fact;
+                                    this.min = Math.floor(this._dataBounds.min/fact) * fact;
+                                    if (this.min == this._dataBounds.min) {
+                                        this.min = this._dataBounds.min - this.tickInterval;
+                                    }
+                                    // this.max = Math.ceil((this._dataBounds.max + this.tickInterval)/fact) * fact;
+                                    this.max = Math.ceil(this._dataBounds.max/fact) * fact;
+                                    if (this.max == this._dataBounds.max) {
+                                        this.max = this._dataBounds.max + this.tickInterval;
+                                    }
+                                    var n = (this.max - this.min)/this.tickInterval;
+                                    n = n.toFixed(11);
+                                    n = Math.ceil(n);
+                                    this.numberTicks = n + 1;
+                                }
+                                else if (userMax == null) {
+                                    // add one tick for top of range.
+                                    var n = (this._dataBounds.max - this.min) / this.tickInterval;
+                                    n = n.toFixed(11);
+                                    this.numberTicks = Math.ceil(n) + 2;
+                                    this.max = this.min + this.tickInterval * (this.numberTicks-1);
+                                }
+                                else if (userMin == null) {
+                                    // add one tick for bottom of range.
+                                    var n = (this.max - this._dataBounds.min) / this.tickInterval;
+                                    n = n.toFixed(11);
+                                    this.numberTicks = Math.ceil(n) + 2;
+                                    this.min = this.max - this.tickInterval * (this.numberTicks-1);
+                                }
+                                else {
+                                    // calculate a number of ticks so max is within axis scale
+                                    this.numberTicks = Math.ceil((userMax - userMin)/this.tickInterval) + 1;
+                                    // if user's min and max don't fit evenly in ticks, adjust.
+                                    // This takes care of cases such as user min set to 0, max set to 3.5 but tick
+                                    // format string set to %d (integer ticks)
+                                    this.min =  Math.floor(userMin*Math.pow(10, precision))/Math.pow(10, precision);
+                                    this.max =  Math.ceil(userMax*Math.pow(10, precision))/Math.pow(10, precision);
+                                    // this.max = this.min + this.tickInterval*(this.numberTicks-1);
+                                    this.numberTicks = Math.ceil((this.max - this.min)/this.tickInterval) + 1;
+                                }
                             }
                         }
                     }
                 }
+                
             }
             
-            
+            if ((this.tickOptions == null || !this.tickOptions.formatString) && this._autoFormatString != '') {
+                this.tickOptions = this.tickOptions || {};
+                this.tickOptions.formatString = this._autoFormatString;
+            }
 
             for (var i=0; i<this.numberTicks; i++){
                 tt = this.min + i * this.tickInterval;
@@ -4772,7 +4872,7 @@
         
         if (this.show) {
             if (this.name == 'xaxis' || this.name == 'x2axis') {
-                for (i=0; i<ticks.length; i++) {
+                for (var i=0; i<ticks.length; i++) {
                     var t = ticks[i];
                     if (t.show && t.showLabel) {
                         var shim;
@@ -4826,7 +4926,7 @@
                 }
             }
             else {
-                for (i=0; i<ticks.length; i++) {
+                for (var i=0; i<ticks.length; i++) {
                     var t = ticks[i];
                     if (t.show && t.showLabel) {                        
                         var shim;
@@ -4888,6 +4988,81 @@
                 }
             }
         }
+    };
+
+
+    /**
+    * The following code was generaously given to me a while back by Scott Prahl.
+    * He did a good job at computing axes min, max and number of ticks for the 
+    * case where the user has not set any scale related parameters (tickInterval,
+    * numberTicks, min or max).  I had ignored this use case for a long time,
+    * focusing on the more difficult case where user has set some option controlling
+    * tick generation.  Anyway, about time I got this into jqPlot.
+    * Thanks Scott!!
+    */
+    
+    /**
+    * Copyright (c) 2010 Scott Prahl
+    * The next three routines are currently available for use in all personal 
+    * or commercial projects under both the MIT and GPL version 2.0 licenses. 
+    * This means that you can choose the license that best suits your project 
+    * and use it accordingly. 
+    */
+
+    // A good format string depends on the interval. If the interval is greater 
+    // than 1 then there is no need to show any decimal digits. If it is < 1.0, then
+    // use the magnitude of the interval to determine the number of digits to show.
+    function bestFormatString (interval)
+    {
+        interval = Math.abs(interval);
+        if (interval > 1) {return '%d';}
+
+        var expv = -Math.floor(Math.log(interval)/Math.LN10);
+        return '%.' + expv + 'f'; 
+    }
+
+    // This will return an interval of form 2 * 10^n, 5 * 10^n or 10 * 10^n
+    function bestLinearInterval(range) {
+        var expv = Math.floor(Math.log(range)/Math.LN10);
+        var magnitude = Math.pow(10, expv);
+        var f = range / magnitude;
+
+        if (f<=1.6) {return 0.2*magnitude;}
+        if (f<=4.0) {return 0.5*magnitude;}
+        if (f<=8.0) {return magnitude;}
+        return 2*magnitude; 
+    }
+
+    // Given the min and max for a dataset, return suitable endpoints
+    // for the graphing, a good number for the number of ticks, and a
+    // format string so that extraneous digits are not displayed.
+    // returned is an array containing [min, max, nTicks, format]
+    $.jqplot.LinearTickGenerator = function(axis_min, axis_max) {
+        // if endpoints are equal try to include zero otherwise include one
+        if (axis_min == axis_max) {
+        axis_max = (axis_max) ? 0 : 1;
+        }
+
+        // make sure range is positive
+        if (axis_max < axis_min) {
+        var a = axis_max;
+        axis_max = axis_min;
+        axis_min = a;
+        }
+
+        var ss = bestLinearInterval(axis_max - axis_min);
+        var r = [];
+
+        // Figure out the axis min, max and number of ticks
+        // the min and max will be some multiple of the tick interval,
+        // 1*10^n, 2*10^n or 5*10^n.  This gaurantees that, if the
+        // axis min is negative, 0 will be a tick.
+        r[0] = Math.floor(axis_min / ss) * ss;  // min
+        r[1] = Math.ceil(axis_max / ss) * ss;   // max
+        r[2] = Math.round((r[1]-r[0])/ss+1);    // number of ticks
+        r[3] = bestFormatString(ss);            // format string
+        r[4] = ss;                              // tick Interval
+        return r;
     };
 
 
@@ -5253,7 +5428,7 @@
         var clearRect = (opts.clearRect != null) ? opts.clearRect : this.clearRect;
         var isarc = (opts.isarc != null) ? opts.isarc : this.isarc;
         ctx.lineWidth = opts.lineWidth || this.lineWidth;
-        ctx.lineJoin = opts.lineJoing || this.lineJoin;
+        ctx.lineJoin = opts.lineJoin || this.lineJoin;
         ctx.lineCap = opts.lineCap || this.lineCap;
         ctx.strokeStyle = (opts.strokeStyle || opts.color) || this.strokeStyle;
         ctx.fillStyle = opts.fillStyle || this.fillStyle;
@@ -5375,7 +5550,8 @@
             this._elem = $('<table class="jqplot-table-legend" style="'+ss+'"></table>');
         
             var pad = false, 
-                reverse = false;
+                reverse = false,
+				s;
             for (var i = 0; i< series.length; i++) {
                 s = series[i];
                 if (s._stack || s.renderer.constructor == $.jqplot.BezierCurveRenderer){
@@ -5739,7 +5915,7 @@
     $.jqplot.ThemeEngine.prototype.init = function() {
         // get the Default theme from the current plot settings.
         var th = new $.jqplot.Theme({_name:'Default'});
-        var n, i;
+        var n, i, nn;
         
         for (n in th.target) {
             if (n == "textColor") {
@@ -5941,7 +6117,7 @@
                 }
             }
             
-            for (axname in plot.axes) {
+            for (var axname in plot.axes) {
                 var axis = plot.axes[axname];
                 if (axis.show) {
                     var thaxis = th.axes[axname] || {};
@@ -5958,7 +6134,7 @@
                         redrawPlot = true;
                     }
                     if (axis._ticks && axis._ticks[0]) {
-                        for (nn in thax.ticks) {
+                        for (var nn in thax.ticks) {
                             // val = null;
                             // if (th.axesStyles.ticks && th.axesStyles.ticks[nn] != null) {
                             //     val = th.axesStyles.ticks[nn];
@@ -5975,7 +6151,7 @@
                         }
                     }
                     if (axis._label && axis._label.show) {
-                        for (nn in thax.label) {
+                        for (var nn in thax.label) {
                             // val = null;
                             // if (th.axesStyles.label && th.axesStyles.label[nn] != null) {
                             //     val = th.axesStyles.label[nn];
@@ -6173,50 +6349,50 @@
     
         // Use the jQuery 1.3.2 extend function since behaviour in jQuery 1.4 seems problematic
     $.jqplot.extend = function() {
-    	// copy reference to target object
-    	var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options;
+        // copy reference to target object
+        var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options;
 
-    	// Handle a deep copy situation
-    	if ( typeof target === "boolean" ) {
-    		deep = target;
-    		target = arguments[1] || {};
-    		// skip the boolean and the target
-    		i = 2;
-    	}
-
-    	// Handle case when target is a string or something (possible in deep copy)
-    	if ( typeof target !== "object" && !toString.call(target) === "[object Function]" ) {
-    	    target = {};
-    	}
-
-    	for ( ; i < length; i++ ){
-    		// Only deal with non-null/undefined values
-    		if ( (options = arguments[ i ]) != null ) {
-    			// Extend the base object
-    			for ( var name in options ) {
-    				var src = target[ name ], copy = options[ name ];
-
-    				// Prevent never-ending loop
-    				if ( target === copy ) {
-    					continue;
-    				}
-
-    				// Recurse if we're merging object values
-    				if ( deep && copy && typeof copy === "object" && !copy.nodeType ) {
-    					target[ name ] = $.jqplot.extend( deep, 
-    						// Never move original objects, clone them
-    						src || ( copy.length != null ? [ ] : { } )
-    					, copy );
-                    }
-    				// Don't bring in undefined values
-    				else if ( copy !== undefined ) {
-    					target[ name ] = copy;
-    				}
-    			}
-    		}
+        // Handle a deep copy situation
+        if ( typeof target === "boolean" ) {
+            deep = target;
+            target = arguments[1] || {};
+            // skip the boolean and the target
+            i = 2;
         }
-    	// Return the modified object
-    	return target;
+
+        // Handle case when target is a string or something (possible in deep copy)
+        if ( typeof target !== "object" && !toString.call(target) === "[object Function]" ) {
+            target = {};
+        }
+
+        for ( ; i < length; i++ ){
+            // Only deal with non-null/undefined values
+            if ( (options = arguments[ i ]) != null ) {
+                // Extend the base object
+                for ( var name in options ) {
+                    var src = target[ name ], copy = options[ name ];
+
+                    // Prevent never-ending loop
+                    if ( target === copy ) {
+                        continue;
+                    }
+
+                    // Recurse if we're merging object values
+                    if ( deep && copy && typeof copy === "object" && !copy.nodeType ) {
+                        target[ name ] = $.jqplot.extend( deep, 
+                            // Never move original objects, clone them
+                            src || ( copy.length != null ? [ ] : { } )
+                        , copy );
+                    }
+                    // Don't bring in undefined values
+                    else if ( copy !== undefined ) {
+                        target[ name ] = copy;
+                    }
+                }
+            }
+        }
+        // Return the modified object
+        return target;
     };
 
     /**
@@ -6437,66 +6613,66 @@
 
 
 
-	/** 
-	 * @description
-	 * <p>Object with extended date parsing and formatting capabilities.
-	 * This library borrows many concepts and ideas from the Date Instance 
-	 * Methods by Ken Snyder along with some parts of Ken's actual code.</p>
-	 *
-	 * <p>jsDate takes a different approach by not extending the built-in 
-	 * Date Object, improving date parsing, allowing for multiple formatting 
-	 * syntaxes and multiple and more easily expandable localization.</p>
-	 * 
-	 * @author Chris Leonello
-	 * @date #date#
-	 * @version #VERSION#
-	 * @copyright (c) 2010 Chris Leonello
- 	 * jsDate is currently available for use in all personal or commercial projects 
-	 * under both the MIT and GPL version 2.0 licenses. This means that you can 
-	 * choose the license that best suits your project and use it accordingly.
-	 * 
-	 * <p>Ken's origianl Date Instance Methods and copyright notice:</p>
+    /** 
+     * @description
+     * <p>Object with extended date parsing and formatting capabilities.
+     * This library borrows many concepts and ideas from the Date Instance 
+     * Methods by Ken Snyder along with some parts of Ken's actual code.</p>
+     *
+     * <p>jsDate takes a different approach by not extending the built-in 
+     * Date Object, improving date parsing, allowing for multiple formatting 
+     * syntaxes and multiple and more easily expandable localization.</p>
+     * 
+     * @author Chris Leonello
+     * @date #date#
+     * @version #VERSION#
+     * @copyright (c) 2010 Chris Leonello
+     * jsDate is currently available for use in all personal or commercial projects 
+     * under both the MIT and GPL version 2.0 licenses. This means that you can 
+     * choose the license that best suits your project and use it accordingly.
+     * 
+     * <p>Ken's origianl Date Instance Methods and copyright notice:</p>
      * <pre>
      * Ken Snyder (ken d snyder at gmail dot com)
      * 2008-09-10
      * version 2.0.2 (http://kendsnyder.com/sandbox/date/)     
      * Creative Commons Attribution License 3.0 (http://creativecommons.org/licenses/by/3.0/)
-	 * </pre>
-	 * 
-	 * @class
-	 * @name jsDate
-	 * @param  {String | Number | Array | Date&nbsp;Object | Options&nbsp;Object} arguments Optional arguments, either a parsable date/time string,
-	 * a JavaScript timestamp, an array of numbers of form [year, month, day, hours, minutes, seconds, milliseconds],
-	 * a Date object, or an options object of form {syntax: "perl", date:some Date} where all options are optional.
-	 */
-	 
+     * </pre>
+     * 
+     * @class
+     * @name jsDate
+     * @param  {String | Number | Array | Date&nbsp;Object | Options&nbsp;Object} arguments Optional arguments, either a parsable date/time string,
+     * a JavaScript timestamp, an array of numbers of form [year, month, day, hours, minutes, seconds, milliseconds],
+     * a Date object, or an options object of form {syntax: "perl", date:some Date} where all options are optional.
+     */
+     
     var jsDate = function () {
-	
-    	this.syntax = jsDate.config.syntax;
-		this._type = "jsDate";
+    
+        this.syntax = jsDate.config.syntax;
+        this._type = "jsDate";
         this.utcOffset = new Date().getTimezoneOffset * 60000;
         this.proxy = new Date();
-		this.options = {};
-		this.locale = jsDate.regional.getLocale();
-		this.formatString = '';
-		this.defaultCentury = jsDate.config.defaultCentury;
+        this.options = {};
+        this.locale = jsDate.regional.getLocale();
+        this.formatString = '';
+        this.defaultCentury = jsDate.config.defaultCentury;
 
         switch ( arguments.length ) {
             case 0:
                 break;
             case 1:
-				// other objects either won't have a _type property or,
-				// if they do, it shouldn't be set to "jsDate", so
-				// assume it is an options argument.
-				if (get_type(arguments[0]) == "[object Object]" && arguments[0]._type != "jsDate") {
-					var opts = this.options = arguments[0];
-					this.syntax = opts.syntax || this.syntax;
-					this.defaultCentury = opts.defaultCentury || this.defaultCentury;
-					this.proxy = jsDate.createDate(opts.date);
-				}
-				else {
-					this.proxy = jsDate.createDate(arguments[0]);
-				}
+                // other objects either won't have a _type property or,
+                // if they do, it shouldn't be set to "jsDate", so
+                // assume it is an options argument.
+                if (get_type(arguments[0]) == "[object Object]" && arguments[0]._type != "jsDate") {
+                    var opts = this.options = arguments[0];
+                    this.syntax = opts.syntax || this.syntax;
+                    this.defaultCentury = opts.defaultCentury || this.defaultCentury;
+                    this.proxy = jsDate.createDate(opts.date);
+                }
+                else {
+                    this.proxy = jsDate.createDate(arguments[0]);
+                }
                 break;
             default:
                 var a = [];
@@ -6511,406 +6687,406 @@
                 break;
         }
     };
-	
-	/**
-	 * @namespace Configuration options that will be used as defaults for all instances on the page.
-	 * @property {String} defaultLocale The default locale to use [en].
-	 * @property {String} syntax The default syntax to use [perl].
-	 */
-	jsDate.config = {
-		defaultLocale: 'en',
-		syntax: 'perl',
-		defaultCentury: 1900
-	};
-		
-	/**
-	 * Add an arbitrary amount to the currently stored date
-	 * 
-	 * @param {Number} number      
-	 * @param {String} unit
-	 * @returns {jsDate}       
-	 */
-	 
-	jsDate.prototype.add = function(number, unit) {
-		var factor = multipliers[unit] || multipliers.day;
-		if (typeof factor == 'number') {
-			this.proxy.setTime(this.proxy.getTime() + (factor * number));
-		} else {
-			factor.add(this, number);
-		}
-		return this;
-	};
-		
-	/**
-	 * Create a new jqplot.date object with the same date
-	 * 
-	 * @returns {jsDate}
-	 */  
-	 
-	jsDate.prototype.clone = function() {
-			return new jsDate(this.proxy.getTime());
-	};
+    
+    /**
+     * @namespace Configuration options that will be used as defaults for all instances on the page.
+     * @property {String} defaultLocale The default locale to use [en].
+     * @property {String} syntax The default syntax to use [perl].
+     */
+    jsDate.config = {
+        defaultLocale: 'en',
+        syntax: 'perl',
+        defaultCentury: 1900
+    };
+        
+    /**
+     * Add an arbitrary amount to the currently stored date
+     * 
+     * @param {Number} number      
+     * @param {String} unit
+     * @returns {jsDate}       
+     */
+     
+    jsDate.prototype.add = function(number, unit) {
+        var factor = multipliers[unit] || multipliers.day;
+        if (typeof factor == 'number') {
+            this.proxy.setTime(this.proxy.getTime() + (factor * number));
+        } else {
+            factor.add(this, number);
+        }
+        return this;
+    };
+        
+    /**
+     * Create a new jqplot.date object with the same date
+     * 
+     * @returns {jsDate}
+     */  
+     
+    jsDate.prototype.clone = function() {
+            return new jsDate(this.proxy.getTime());
+    };
 
-	/**
-	 * Find the difference between this jsDate and another date.
-	 * 
-	 * @param {String| Number| Array| jsDate&nbsp;Object| Date&nbsp;Object} dateObj
-	 * @param {String} unit
-	 * @param {Boolean} allowDecimal
-	 * @returns {Number} Number of units difference between dates.
-	 */
-	 
-	jsDate.prototype.diff = function(dateObj, unit, allowDecimal) {
-		// ensure we have a Date object
-		dateObj = new jsDate(dateObj);
-		if (dateObj === null) {
-			return null;
-		}
-		// get the multiplying factor integer or factor function
-		var factor = multipliers[unit] || multipliers.day;
-		if (typeof factor == 'number') {
-			// multiply
-			var unitDiff = (this.proxy.getTime() - dateObj.proxy.getTime()) / factor;
-		} else {
-			// run function
-			var unitDiff = factor.diff(this.proxy, dateObj.proxy);
-		}
-		// if decimals are not allowed, round toward zero
-		return (allowDecimal ? unitDiff : Math[unitDiff > 0 ? 'floor' : 'ceil'](unitDiff));          
-	};
-	
-	/**
-	 * Get the abbreviated name of the current week day
-	 * 
-	 * @returns {String}
-	 */   
-	 
-	jsDate.prototype.getAbbrDayName = function() {
-		return jsDate.regional[this.locale]["dayNamesShort"][this.proxy.getDay()];
-	};
-	
-	/**
-	 * Get the abbreviated name of the current month
-	 * 
-	 * @returns {String}
-	 */
-	 
-	jsDate.prototype.getAbbrMonthName = function() {
-		return jsDate.regional[this.locale]["monthNamesShort"][this.proxy.getMonth()];
-	};
-	
-	/**
-	 * Get UPPER CASE AM or PM for the current time
-	 * 
-	 * @returns {String}
-	 */
-	 
-	jsDate.prototype.getAMPM = function() {
-		return this.proxy.getHours() >= 12 ? 'PM' : 'AM';
-	};
-	
-	/**
-	 * Get lower case am or pm for the current time
-	 * 
-	 * @returns {String}
-	 */
-	 
-	jsDate.prototype.getAmPm = function() {
-		return this.proxy.getHours() >= 12 ? 'pm' : 'am';
-	};
-	
-	/**
-	 * Get the century (19 for 20th Century)
-	 *
-	 * @returns {Integer} Century (19 for 20th century).
-	 */
-	jsDate.prototype.getCentury = function() { 
-		return parseInt(this.proxy.getFullYear()/100, 10);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getDate = function() {
-		return this.proxy.getDate();
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getDay = function() {
-		return this.proxy.getDay();
-	};
-	
-	/**
-	 * Get the Day of week 1 (Monday) thru 7 (Sunday)
-	 * 
-	 * @returns {Integer} Day of week 1 (Monday) thru 7 (Sunday)
-	 */
-	jsDate.prototype.getDayOfWeek = function() { 
-		var dow = this.proxy.getDay(); 
-		return dow===0?7:dow; 
-	};
-	
-	/**
-	 * Get the day of the year
-	 * 
-	 * @returns {Integer} 1 - 366, day of the year
-	 */
-	jsDate.prototype.getDayOfYear = function() {
-		var d = this.proxy;
-		var ms = d - new Date('' + d.getFullYear() + '/1/1 GMT');
-		ms += d.getTimezoneOffset()*60000;
-		d = null;
-		return parseInt(ms/60000/60/24, 10)+1;
-	};
-	
-	/**
-	 * Get the name of the current week day
-	 * 
-	 * @returns {String}
-	 */  
-	 
-	jsDate.prototype.getDayName = function() {
-		return jsDate.regional[this.locale]["dayNames"][this.proxy.getDay()];
-	};
-	
-	/**
-	 * Get the week number of the given year, starting with the first Sunday as the first week
-	 * @returns {Integer} Week number (13 for the 13th full week of the year).
-	 */
-	jsDate.prototype.getFullWeekOfYear = function() {
-		var d = this.proxy;
-		var doy = this.getDayOfYear();
-		var rdow = 6-d.getDay();
-		var woy = parseInt((doy+rdow)/7, 10);
-		return woy;
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getFullYear = function() {
-		return this.proxy.getFullYear();
-	};
-	
-	/**
-	 * Get the GMT offset in hours and minutes (e.g. +06:30)
-	 * 
-	 * @returns {String}
-	 */
-	 
-	jsDate.prototype.getGmtOffset = function() {
-		// divide the minutes offset by 60
-		var hours = this.proxy.getTimezoneOffset() / 60;
-		// decide if we are ahead of or behind GMT
-		var prefix = hours < 0 ? '+' : '-';
-		// remove the negative sign if any
-		hours = Math.abs(hours);
-		// add the +/- to the padded number of hours to : to the padded minutes
-		return prefix + addZeros(Math.floor(hours), 2) + ':' + addZeros((hours % 1) * 60, 2);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getHours = function() {
-		return this.proxy.getHours();
-	};
-	
-	/**
-	 * Get the current hour on a 12-hour scheme
-	 * 
-	 * @returns {Integer}
-	 */
-	 
-	jsDate.prototype.getHours12  = function() {
-		var hours = this.proxy.getHours();
-		return hours > 12 ? hours - 12 : (hours == 0 ? 12 : hours);
-	};
-	
-	
-	jsDate.prototype.getIsoWeek = function() {
-		var d = this.proxy;
-		var woy = d.getWeekOfYear();
-		var dow1_1 = (new Date('' + d.getFullYear() + '/1/1')).getDay();
-		// First week is 01 and not 00 as in the case of %U and %W,
-		// so we add 1 to the final result except if day 1 of the year
-		// is a Monday (then %W returns 01).
-		// We also need to subtract 1 if the day 1 of the year is 
-		// Friday-Sunday, so the resulting equation becomes:
-		var idow = woy + (dow1_1 > 4 || dow1_1 <= 1 ? 0 : 1);
-		if(idow == 53 && (new Date('' + d.getFullYear() + '/12/31')).getDay() < 4)
-		{
-			idow = 1;
-		}
-		else if(idow === 0)
-		{
-			d = new jsDate(new Date('' + (d.getFullYear()-1) + '/12/31'));
-			idow = d.getIsoWeek();
-		}
-		d = null;
-		return idow;
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getMilliseconds = function() {
-		return this.proxy.getMilliseconds();
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getMinutes = function() {
-		return this.proxy.getMinutes();
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getMonth = function() {
-		return this.proxy.getMonth();
-	};
-	
-	/**
-	 * Get the name of the current month
-	 * 
-	 * @returns {String}
-	 */
-	 
-	jsDate.prototype.getMonthName = function() {
-		return jsDate.regional[this.locale]["monthNames"][this.proxy.getMonth()];
-	};
-	
-	/**
-	 * Get the number of the current month, 1-12
-	 * 
-	 * @returns {Integer}
-	 */
-	 
-	jsDate.prototype.getMonthNumber = function() {
-		return this.proxy.getMonth() + 1;
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getSeconds = function() {
-		return this.proxy.getSeconds();
-	};
-	
-	/**
-	 * Return a proper two-digit year integer
-	 * 
-	 * @returns {Integer}
-	 */
-	 
-	jsDate.prototype.getShortYear = function() {
-		return this.proxy.getYear() % 100;
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getTime = function() {
-		return this.proxy.getTime();
-	};
-	
-	/**
-	 * Get the timezone abbreviation
-	 *
-	 * @returns {String} Abbreviation for the timezone
-	 */
-	jsDate.prototype.getTimezoneAbbr = function() {
-		return this.proxy.toString().replace(/^.*\(([^)]+)\)$/, '$1'); 
-	};
-	
-	/**
-	 * Get the browser-reported name for the current timezone (e.g. MDT, Mountain Daylight Time)
-	 * 
-	 * @returns {String}
-	 */
-	jsDate.prototype.getTimezoneName = function() {
-		var match = /(?:\((.+)\)$| ([A-Z]{3}) )/.exec(this.toString());
-		return match[1] || match[2] || 'GMT' + this.getGmtOffset();
-	}; 
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getTimezoneOffset = function() {
-		return this.proxy.getTimezoneOffset();
-	};
-	
-	
-	/**
-	 * Get the week number of the given year, starting with the first Monday as the first week
-	 * @returns {Integer} Week number (13 for the 13th week of the year).
-	 */
-	jsDate.prototype.getWeekOfYear = function() {
-		var doy = this.getDayOfYear();
-		var rdow = 7 - this.getDayOfWeek();
-		var woy = parseInt((doy+rdow)/7, 10);
-		return woy;
-	};
-	
-	/**
-	 * Get the current date as a Unix timestamp
-	 * 
-	 * @returns {Integer}
-	 */
-	 
-	jsDate.prototype.getUnix = function() {
-		return Math.round(this.proxy.getTime() / 1000, 0);
-	}; 
-	
-	/**
-	 * Implements Date functionality
-	 */
-	jsDate.prototype.getYear = function() {
-		return this.proxy.getYear();
-	};
-	
-	/**
-	 * Return a date one day ahead (or any other unit)
-	 * 
-	 * @param {String} unit Optional, year | month | day | week | hour | minute | second | millisecond
-	 * @returns {jsDate}
-	 */
-	 
-	jsDate.prototype.next = function(unit) {
-		unit = unit || 'day';
-		return this.clone().add(1, unit);
-	};
-	
-	/**
-	 * Set the jsDate instance to a new date.
-	 *
-	 * @param  {String | Number | Array | Date Object | jsDate Object | Options Object} arguments Optional arguments, 
-	 * either a parsable date/time string,
-	 * a JavaScript timestamp, an array of numbers of form [year, month, day, hours, minutes, seconds, milliseconds],
-	 * a Date object, jsDate Object or an options object of form {syntax: "perl", date:some Date} where all options are optional.
-	 */
-	jsDate.prototype.set = function() {
+    /**
+     * Find the difference between this jsDate and another date.
+     * 
+     * @param {String| Number| Array| jsDate&nbsp;Object| Date&nbsp;Object} dateObj
+     * @param {String} unit
+     * @param {Boolean} allowDecimal
+     * @returns {Number} Number of units difference between dates.
+     */
+     
+    jsDate.prototype.diff = function(dateObj, unit, allowDecimal) {
+        // ensure we have a Date object
+        dateObj = new jsDate(dateObj);
+        if (dateObj === null) {
+            return null;
+        }
+        // get the multiplying factor integer or factor function
+        var factor = multipliers[unit] || multipliers.day;
+        if (typeof factor == 'number') {
+            // multiply
+            var unitDiff = (this.proxy.getTime() - dateObj.proxy.getTime()) / factor;
+        } else {
+            // run function
+            var unitDiff = factor.diff(this.proxy, dateObj.proxy);
+        }
+        // if decimals are not allowed, round toward zero
+        return (allowDecimal ? unitDiff : Math[unitDiff > 0 ? 'floor' : 'ceil'](unitDiff));          
+    };
+    
+    /**
+     * Get the abbreviated name of the current week day
+     * 
+     * @returns {String}
+     */   
+     
+    jsDate.prototype.getAbbrDayName = function() {
+        return jsDate.regional[this.locale]["dayNamesShort"][this.proxy.getDay()];
+    };
+    
+    /**
+     * Get the abbreviated name of the current month
+     * 
+     * @returns {String}
+     */
+     
+    jsDate.prototype.getAbbrMonthName = function() {
+        return jsDate.regional[this.locale]["monthNamesShort"][this.proxy.getMonth()];
+    };
+    
+    /**
+     * Get UPPER CASE AM or PM for the current time
+     * 
+     * @returns {String}
+     */
+     
+    jsDate.prototype.getAMPM = function() {
+        return this.proxy.getHours() >= 12 ? 'PM' : 'AM';
+    };
+    
+    /**
+     * Get lower case am or pm for the current time
+     * 
+     * @returns {String}
+     */
+     
+    jsDate.prototype.getAmPm = function() {
+        return this.proxy.getHours() >= 12 ? 'pm' : 'am';
+    };
+    
+    /**
+     * Get the century (19 for 20th Century)
+     *
+     * @returns {Integer} Century (19 for 20th century).
+     */
+    jsDate.prototype.getCentury = function() { 
+        return parseInt(this.proxy.getFullYear()/100, 10);
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getDate = function() {
+        return this.proxy.getDate();
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getDay = function() {
+        return this.proxy.getDay();
+    };
+    
+    /**
+     * Get the Day of week 1 (Monday) thru 7 (Sunday)
+     * 
+     * @returns {Integer} Day of week 1 (Monday) thru 7 (Sunday)
+     */
+    jsDate.prototype.getDayOfWeek = function() { 
+        var dow = this.proxy.getDay(); 
+        return dow===0?7:dow; 
+    };
+    
+    /**
+     * Get the day of the year
+     * 
+     * @returns {Integer} 1 - 366, day of the year
+     */
+    jsDate.prototype.getDayOfYear = function() {
+        var d = this.proxy;
+        var ms = d - new Date('' + d.getFullYear() + '/1/1 GMT');
+        ms += d.getTimezoneOffset()*60000;
+        d = null;
+        return parseInt(ms/60000/60/24, 10)+1;
+    };
+    
+    /**
+     * Get the name of the current week day
+     * 
+     * @returns {String}
+     */  
+     
+    jsDate.prototype.getDayName = function() {
+        return jsDate.regional[this.locale]["dayNames"][this.proxy.getDay()];
+    };
+    
+    /**
+     * Get the week number of the given year, starting with the first Sunday as the first week
+     * @returns {Integer} Week number (13 for the 13th full week of the year).
+     */
+    jsDate.prototype.getFullWeekOfYear = function() {
+        var d = this.proxy;
+        var doy = this.getDayOfYear();
+        var rdow = 6-d.getDay();
+        var woy = parseInt((doy+rdow)/7, 10);
+        return woy;
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getFullYear = function() {
+        return this.proxy.getFullYear();
+    };
+    
+    /**
+     * Get the GMT offset in hours and minutes (e.g. +06:30)
+     * 
+     * @returns {String}
+     */
+     
+    jsDate.prototype.getGmtOffset = function() {
+        // divide the minutes offset by 60
+        var hours = this.proxy.getTimezoneOffset() / 60;
+        // decide if we are ahead of or behind GMT
+        var prefix = hours < 0 ? '+' : '-';
+        // remove the negative sign if any
+        hours = Math.abs(hours);
+        // add the +/- to the padded number of hours to : to the padded minutes
+        return prefix + addZeros(Math.floor(hours), 2) + ':' + addZeros((hours % 1) * 60, 2);
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getHours = function() {
+        return this.proxy.getHours();
+    };
+    
+    /**
+     * Get the current hour on a 12-hour scheme
+     * 
+     * @returns {Integer}
+     */
+     
+    jsDate.prototype.getHours12  = function() {
+        var hours = this.proxy.getHours();
+        return hours > 12 ? hours - 12 : (hours == 0 ? 12 : hours);
+    };
+    
+    
+    jsDate.prototype.getIsoWeek = function() {
+        var d = this.proxy;
+        var woy = d.getWeekOfYear();
+        var dow1_1 = (new Date('' + d.getFullYear() + '/1/1')).getDay();
+        // First week is 01 and not 00 as in the case of %U and %W,
+        // so we add 1 to the final result except if day 1 of the year
+        // is a Monday (then %W returns 01).
+        // We also need to subtract 1 if the day 1 of the year is 
+        // Friday-Sunday, so the resulting equation becomes:
+        var idow = woy + (dow1_1 > 4 || dow1_1 <= 1 ? 0 : 1);
+        if(idow == 53 && (new Date('' + d.getFullYear() + '/12/31')).getDay() < 4)
+        {
+            idow = 1;
+        }
+        else if(idow === 0)
+        {
+            d = new jsDate(new Date('' + (d.getFullYear()-1) + '/12/31'));
+            idow = d.getIsoWeek();
+        }
+        d = null;
+        return idow;
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getMilliseconds = function() {
+        return this.proxy.getMilliseconds();
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getMinutes = function() {
+        return this.proxy.getMinutes();
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getMonth = function() {
+        return this.proxy.getMonth();
+    };
+    
+    /**
+     * Get the name of the current month
+     * 
+     * @returns {String}
+     */
+     
+    jsDate.prototype.getMonthName = function() {
+        return jsDate.regional[this.locale]["monthNames"][this.proxy.getMonth()];
+    };
+    
+    /**
+     * Get the number of the current month, 1-12
+     * 
+     * @returns {Integer}
+     */
+     
+    jsDate.prototype.getMonthNumber = function() {
+        return this.proxy.getMonth() + 1;
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getSeconds = function() {
+        return this.proxy.getSeconds();
+    };
+    
+    /**
+     * Return a proper two-digit year integer
+     * 
+     * @returns {Integer}
+     */
+     
+    jsDate.prototype.getShortYear = function() {
+        return this.proxy.getYear() % 100;
+    };
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getTime = function() {
+        return this.proxy.getTime();
+    };
+    
+    /**
+     * Get the timezone abbreviation
+     *
+     * @returns {String} Abbreviation for the timezone
+     */
+    jsDate.prototype.getTimezoneAbbr = function() {
+        return this.proxy.toString().replace(/^.*\(([^)]+)\)$/, '$1'); 
+    };
+    
+    /**
+     * Get the browser-reported name for the current timezone (e.g. MDT, Mountain Daylight Time)
+     * 
+     * @returns {String}
+     */
+    jsDate.prototype.getTimezoneName = function() {
+        var match = /(?:\((.+)\)$| ([A-Z]{3}) )/.exec(this.toString());
+        return match[1] || match[2] || 'GMT' + this.getGmtOffset();
+    }; 
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getTimezoneOffset = function() {
+        return this.proxy.getTimezoneOffset();
+    };
+    
+    
+    /**
+     * Get the week number of the given year, starting with the first Monday as the first week
+     * @returns {Integer} Week number (13 for the 13th week of the year).
+     */
+    jsDate.prototype.getWeekOfYear = function() {
+        var doy = this.getDayOfYear();
+        var rdow = 7 - this.getDayOfWeek();
+        var woy = parseInt((doy+rdow)/7, 10);
+        return woy;
+    };
+    
+    /**
+     * Get the current date as a Unix timestamp
+     * 
+     * @returns {Integer}
+     */
+     
+    jsDate.prototype.getUnix = function() {
+        return Math.round(this.proxy.getTime() / 1000, 0);
+    }; 
+    
+    /**
+     * Implements Date functionality
+     */
+    jsDate.prototype.getYear = function() {
+        return this.proxy.getYear();
+    };
+    
+    /**
+     * Return a date one day ahead (or any other unit)
+     * 
+     * @param {String} unit Optional, year | month | day | week | hour | minute | second | millisecond
+     * @returns {jsDate}
+     */
+     
+    jsDate.prototype.next = function(unit) {
+        unit = unit || 'day';
+        return this.clone().add(1, unit);
+    };
+    
+    /**
+     * Set the jsDate instance to a new date.
+     *
+     * @param  {String | Number | Array | Date Object | jsDate Object | Options Object} arguments Optional arguments, 
+     * either a parsable date/time string,
+     * a JavaScript timestamp, an array of numbers of form [year, month, day, hours, minutes, seconds, milliseconds],
+     * a Date object, jsDate Object or an options object of form {syntax: "perl", date:some Date} where all options are optional.
+     */
+    jsDate.prototype.set = function() {
         switch ( arguments.length ) {
             case 0:
                 this.proxy = new Date();
-				break;
+                break;
             case 1:
-				// other objects either won't have a _type property or,
-				// if they do, it shouldn't be set to "jsDate", so
-				// assume it is an options argument.
-				if (get_type(arguments[0]) == "[object Object]" && arguments[0]._type != "jsDate") {
-					var opts = this.options = arguments[0];
-					this.syntax = opts.syntax || this.syntax;
-					this.defaultCentury = opts.defaultCentury || this.defaultCentury;
-					this.proxy = jsDate.createDate(opts.date);
-				}
-				else {
-					this.proxy = jsDate.createDate(arguments[0]);
-				}
+                // other objects either won't have a _type property or,
+                // if they do, it shouldn't be set to "jsDate", so
+                // assume it is an options argument.
+                if (get_type(arguments[0]) == "[object Object]" && arguments[0]._type != "jsDate") {
+                    var opts = this.options = arguments[0];
+                    this.syntax = opts.syntax || this.syntax;
+                    this.defaultCentury = opts.defaultCentury || this.defaultCentury;
+                    this.proxy = jsDate.createDate(opts.date);
+                }
+                else {
+                    this.proxy = jsDate.createDate(arguments[0]);
+                }
                 break;
             default:
                 var a = [];
@@ -6924,237 +7100,237 @@
                 }
                 break;
         }
-	};
-	
-	/**
-	 * Sets the day of the month for a specified date according to local time.
-	 * @param {Integer} dayValue An integer from 1 to 31, representing the day of the month. 
-	 */
-	jsDate.prototype.setDate = function(n) {
-		return this.proxy.setDate(n);
-	};
-	
-	/**
-	 * Sets the full year for a specified date according to local time.
-	 * @param {Integer} yearValue The numeric value of the year, for example, 1995.  
-	 * @param {Integer} monthValue Optional, between 0 and 11 representing the months January through December.  
-	 * @param {Integer} dayValue Optional, between 1 and 31 representing the day of the month. If you specify the dayValue parameter, you must also specify the monthValue. 
-	 */
-	jsDate.prototype.setFullYear = function() {
-		return this.proxy.setFullYear.apply(this.proxy, arguments);
-	};
-	
-	/**
-	 * Sets the hours for a specified date according to local time.
-	 * 
-	 * @param {Integer} hoursValue An integer between 0 and 23, representing the hour.  
-	 * @param {Integer} minutesValue Optional, An integer between 0 and 59, representing the minutes.  
-	 * @param {Integer} secondsValue Optional, An integer between 0 and 59, representing the seconds. 
-	 * If you specify the secondsValue parameter, you must also specify the minutesValue.  
-	 * @param {Integer} msValue Optional, A number between 0 and 999, representing the milliseconds. 
-	 * If you specify the msValue parameter, you must also specify the minutesValue and secondsValue. 
-	 */
-	jsDate.prototype.setHours = function() {
-		return this.proxy.setHours.apply(this.proxy, arguments);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */	
-	jsDate.prototype.setMilliseconds = function(n) {
-		return this.proxy.setMilliseconds(n);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */	
-	jsDate.prototype.setMinutes = function() {
-		return this.proxy.setMinutes.apply(this.proxy, arguments);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */	
-	jsDate.prototype.setMonth = function() {
-		return this.proxy.setMonth.apply(this.proxy, arguments);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */	
-	jsDate.prototype.setSeconds = function() {
-		return this.proxy.setSeconds.apply(this.proxy, arguments);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */	
-	jsDate.prototype.setTime = function(n) {
-		return this.proxy.setTime(n);
-	};
-	
-	/**
-	 * Implements Date functionality
-	 */	
-	jsDate.prototype.setYear = function() {
-		return this.proxy.setYear.apply(this.proxy, arguments);
-	};
-	
-	/**
-	 * Provide a formatted string representation of this date.
-	 * 
-	 * @param {String} formatString A format string.  
-	 * See: {@link jsDate.formats}.
-	 * @returns {String} Date String.
-	 */
-			
-	jsDate.prototype.strftime = function(formatString) {
-		formatString = formatString || this.formatString || jsDate.regional[this.locale]['formatString'];
-		return jsDate.strftime(this, formatString, this.syntax);
-	};
+    };
+    
+    /**
+     * Sets the day of the month for a specified date according to local time.
+     * @param {Integer} dayValue An integer from 1 to 31, representing the day of the month. 
+     */
+    jsDate.prototype.setDate = function(n) {
+        return this.proxy.setDate(n);
+    };
+    
+    /**
+     * Sets the full year for a specified date according to local time.
+     * @param {Integer} yearValue The numeric value of the year, for example, 1995.  
+     * @param {Integer} monthValue Optional, between 0 and 11 representing the months January through December.  
+     * @param {Integer} dayValue Optional, between 1 and 31 representing the day of the month. If you specify the dayValue parameter, you must also specify the monthValue. 
+     */
+    jsDate.prototype.setFullYear = function() {
+        return this.proxy.setFullYear.apply(this.proxy, arguments);
+    };
+    
+    /**
+     * Sets the hours for a specified date according to local time.
+     * 
+     * @param {Integer} hoursValue An integer between 0 and 23, representing the hour.  
+     * @param {Integer} minutesValue Optional, An integer between 0 and 59, representing the minutes.  
+     * @param {Integer} secondsValue Optional, An integer between 0 and 59, representing the seconds. 
+     * If you specify the secondsValue parameter, you must also specify the minutesValue.  
+     * @param {Integer} msValue Optional, A number between 0 and 999, representing the milliseconds. 
+     * If you specify the msValue parameter, you must also specify the minutesValue and secondsValue. 
+     */
+    jsDate.prototype.setHours = function() {
+        return this.proxy.setHours.apply(this.proxy, arguments);
+    };
+    
+    /**
+     * Implements Date functionality
+     */ 
+    jsDate.prototype.setMilliseconds = function(n) {
+        return this.proxy.setMilliseconds(n);
+    };
+    
+    /**
+     * Implements Date functionality
+     */ 
+    jsDate.prototype.setMinutes = function() {
+        return this.proxy.setMinutes.apply(this.proxy, arguments);
+    };
+    
+    /**
+     * Implements Date functionality
+     */ 
+    jsDate.prototype.setMonth = function() {
+        return this.proxy.setMonth.apply(this.proxy, arguments);
+    };
+    
+    /**
+     * Implements Date functionality
+     */ 
+    jsDate.prototype.setSeconds = function() {
+        return this.proxy.setSeconds.apply(this.proxy, arguments);
+    };
+    
+    /**
+     * Implements Date functionality
+     */ 
+    jsDate.prototype.setTime = function(n) {
+        return this.proxy.setTime(n);
+    };
+    
+    /**
+     * Implements Date functionality
+     */ 
+    jsDate.prototype.setYear = function() {
+        return this.proxy.setYear.apply(this.proxy, arguments);
+    };
+    
+    /**
+     * Provide a formatted string representation of this date.
+     * 
+     * @param {String} formatString A format string.  
+     * See: {@link jsDate.formats}.
+     * @returns {String} Date String.
+     */
+            
+    jsDate.prototype.strftime = function(formatString) {
+        formatString = formatString || this.formatString || jsDate.regional[this.locale]['formatString'];
+        return jsDate.strftime(this, formatString, this.syntax);
+    };
         
-	/**
-	 * Return a String representation of this jsDate object.
-	 * @returns {String} Date string.
-	 */
-	
-	jsDate.prototype.toString = function() {
-		return this.proxy.toString();
-	};
-		
-	/**
-	 * Convert the current date to an 8-digit integer (%Y%m%d)
-	 * 
-	 * @returns {Integer}
-	 */
-	 
-	jsDate.prototype.toYmdInt = function() {
-		return (this.proxy.getFullYear() * 10000) + (this.getMonthNumber() * 100) + this.proxy.getDate();
-	};
-	
-	/**
-	 * @namespace Holds localizations for month/day names.
-	 * <p>jsDate attempts to detect locale when loaded and defaults to 'en'.
-	 * If a localization is detected which is not available, jsDate defaults to 'en'.
-	 * Additional localizations can be added after jsDate loads.  After adding a localization,
-	 * call the jsDate.regional.getLocale() method.  Currently, en, fr and de are defined.</p>
-	 * 
-	 * <p>Localizations must be an object and have the following properties defined:  monthNames, monthNamesShort, dayNames, dayNamesShort and Localizations are added like:</p>
-	 * <pre class="code">
-	 * jsDate.regional['en'] = {
-	 * monthNames      : 'January February March April May June July August September October November December'.split(' '),
-	 * monthNamesShort : 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' '),
-	 * dayNames        : 'Sunday Monday Tuesday Wednesday Thursday Friday Saturday'.split(' '),
-	 * dayNamesShort   : 'Sun Mon Tue Wed Thu Fri Sat'.split(' ')
-	 * };
-	 * </pre>
-	 * <p>After adding localizations, call <code>jsDate.regional.getLocale();</code> to update the locale setting with the
-	 * new localizations.</p>
-	 */
-	 
-	jsDate.regional = {
-		'en': {
-			monthNames: ['January','February','March','April','May','June','July','August','September','October','November','December'],
-			monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun','Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-			dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-			dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-			formatString: '%Y-%m-%d %H:%M:%S'
-		},
-		
-		'fr': {
-			monthNames: ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
-			monthNamesShort: ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'],
-			dayNames: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],
-			dayNamesShort: ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],
-			formatString: '%Y-%m-%d %H:%M:%S'
-		},
-		
-		'de': {
-			monthNames: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
-			monthNamesShort: ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],
-			dayNames: ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'],
-			dayNamesShort: ['So','Mo','Di','Mi','Do','Fr','Sa'],
-			formatString: '%Y-%m-%d %H:%M:%S'
-		},
-		
-		'es': {
-			monthNames: ['Enero','Febrero','Marzo','Abril','Mayo','Junio', 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
-			monthNamesShort: ['Ene','Feb','Mar','Abr','May','Jun', 'Jul','Ago','Sep','Oct','Nov','Dic'],
-			dayNames: ['Domingo','Lunes','Martes','Mi&eacute;rcoles','Jueves','Viernes','S&aacute;bado'],
-			dayNamesShort: ['Dom','Lun','Mar','Mi&eacute;','Juv','Vie','S&aacute;b'],
-			formatString: '%Y-%m-%d %H:%M:%S'
-		},
-		
-		'ru': {
-			monthNames: ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
-			monthNamesShort: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
-			dayNames: ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],
-			dayNamesShort: ['вск','пнд','втр','срд','чтв','птн','сбт'],
-			formatString: '%Y-%m-%d %H:%M:%S'
-		},
-		
-		'ar': {
-			monthNames: ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'آذار', 'حزيران','تموز', 'آب', 'أيلول',	'تشرين الأول', 'تشرين الثاني', 'كانون الأول'],
-			monthNamesShort: ['1','2','3','4','5','6','7','8','9','10','11','12'],
-			dayNames: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
-			dayNamesShort: ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'],
-			formatString: '%Y-%m-%d %H:%M:%S'
-		},
-		
-		'pt': {
-			monthNames: ['Janeiro','Fevereiro','Mar&ccedil;o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
-			monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-			dayNames: ['Domingo','Segunda-feira','Ter&ccedil;a-feira','Quarta-feira','Quinta-feira','Sexta-feira','S&aacute;bado'],
-			dayNamesShort: ['Dom','Seg','Ter','Qua','Qui','Sex','S&aacute;b'],
-			formatString: '%Y-%m-%d %H:%M:%S'	
-		},
-		
-		'pt-BR': {
-			monthNames: ['Janeiro','Fevereiro','Mar&ccedil;o','Abril','Maio','Junho', 'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
-			monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-			dayNames: ['Domingo','Segunda-feira','Ter&ccedil;a-feira','Quarta-feira','Quinta-feira','Sexta-feira','S&aacute;bado'],
-			dayNamesShort: ['Dom','Seg','Ter','Qua','Qui','Sex','S&aacute;b'],
-			formatString: '%Y-%m-%d %H:%M:%S'
-		}
-		
-	
-	};
-	
-	// Set english variants to 'en'
-	jsDate.regional['en-US'] = jsDate.regional['en-GB'] = jsDate.regional['en'];
-	
-	/**
-	 * Try to determine the users locale based on the lang attribute of the html page.  Defaults to 'en'
-	 * if it cannot figure out a locale of if the locale does not have a localization defined.
-	 * @returns {String} locale
-	 */
-	 
-	jsDate.regional.getLocale = function () {
-		var l = jsDate.config.defaultLocale;
-		
-		if ( document && document.getElementsByTagName('html') && document.getElementsByTagName('html')[0].lang ) {
-			l = document.getElementsByTagName('html')[0].lang;
-			if (!jsDate.regional.hasOwnProperty(l)) {
-				l = jsDate.config.defaultLocale;
-			}
-		}
-		
-		return l;
-	};
-	
-	// ms in day
+    /**
+     * Return a String representation of this jsDate object.
+     * @returns {String} Date string.
+     */
+    
+    jsDate.prototype.toString = function() {
+        return this.proxy.toString();
+    };
+        
+    /**
+     * Convert the current date to an 8-digit integer (%Y%m%d)
+     * 
+     * @returns {Integer}
+     */
+     
+    jsDate.prototype.toYmdInt = function() {
+        return (this.proxy.getFullYear() * 10000) + (this.getMonthNumber() * 100) + this.proxy.getDate();
+    };
+    
+    /**
+     * @namespace Holds localizations for month/day names.
+     * <p>jsDate attempts to detect locale when loaded and defaults to 'en'.
+     * If a localization is detected which is not available, jsDate defaults to 'en'.
+     * Additional localizations can be added after jsDate loads.  After adding a localization,
+     * call the jsDate.regional.getLocale() method.  Currently, en, fr and de are defined.</p>
+     * 
+     * <p>Localizations must be an object and have the following properties defined:  monthNames, monthNamesShort, dayNames, dayNamesShort and Localizations are added like:</p>
+     * <pre class="code">
+     * jsDate.regional['en'] = {
+     * monthNames      : 'January February March April May June July August September October November December'.split(' '),
+     * monthNamesShort : 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' '),
+     * dayNames        : 'Sunday Monday Tuesday Wednesday Thursday Friday Saturday'.split(' '),
+     * dayNamesShort   : 'Sun Mon Tue Wed Thu Fri Sat'.split(' ')
+     * };
+     * </pre>
+     * <p>After adding localizations, call <code>jsDate.regional.getLocale();</code> to update the locale setting with the
+     * new localizations.</p>
+     */
+     
+    jsDate.regional = {
+        'en': {
+            monthNames: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+            monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun','Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            formatString: '%Y-%m-%d %H:%M:%S'
+        },
+        
+        'fr': {
+            monthNames: ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
+            monthNamesShort: ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'],
+            dayNames: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'],
+            dayNamesShort: ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],
+            formatString: '%Y-%m-%d %H:%M:%S'
+        },
+        
+        'de': {
+            monthNames: ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
+            monthNamesShort: ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'],
+            dayNames: ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'],
+            dayNamesShort: ['So','Mo','Di','Mi','Do','Fr','Sa'],
+            formatString: '%Y-%m-%d %H:%M:%S'
+        },
+        
+        'es': {
+            monthNames: ['Enero','Febrero','Marzo','Abril','Mayo','Junio', 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+            monthNamesShort: ['Ene','Feb','Mar','Abr','May','Jun', 'Jul','Ago','Sep','Oct','Nov','Dic'],
+            dayNames: ['Domingo','Lunes','Martes','Mi&eacute;rcoles','Jueves','Viernes','S&aacute;bado'],
+            dayNamesShort: ['Dom','Lun','Mar','Mi&eacute;','Juv','Vie','S&aacute;b'],
+            formatString: '%Y-%m-%d %H:%M:%S'
+        },
+        
+        'ru': {
+            monthNames: ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'],
+            monthNamesShort: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
+            dayNames: ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'],
+            dayNamesShort: ['вск','пнд','втр','срд','чтв','птн','сбт'],
+            formatString: '%Y-%m-%d %H:%M:%S'
+        },
+        
+        'ar': {
+            monthNames: ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'آذار', 'حزيران','تموز', 'آب', 'أيلول',   'تشرين الأول', 'تشرين الثاني', 'كانون الأول'],
+            monthNamesShort: ['1','2','3','4','5','6','7','8','9','10','11','12'],
+            dayNames: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
+            dayNamesShort: ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'],
+            formatString: '%Y-%m-%d %H:%M:%S'
+        },
+        
+        'pt': {
+            monthNames: ['Janeiro','Fevereiro','Mar&ccedil;o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+            monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+            dayNames: ['Domingo','Segunda-feira','Ter&ccedil;a-feira','Quarta-feira','Quinta-feira','Sexta-feira','S&aacute;bado'],
+            dayNamesShort: ['Dom','Seg','Ter','Qua','Qui','Sex','S&aacute;b'],
+            formatString: '%Y-%m-%d %H:%M:%S'   
+        },
+        
+        'pt-BR': {
+            monthNames: ['Janeiro','Fevereiro','Mar&ccedil;o','Abril','Maio','Junho', 'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+            monthNamesShort: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+            dayNames: ['Domingo','Segunda-feira','Ter&ccedil;a-feira','Quarta-feira','Quinta-feira','Sexta-feira','S&aacute;bado'],
+            dayNamesShort: ['Dom','Seg','Ter','Qua','Qui','Sex','S&aacute;b'],
+            formatString: '%Y-%m-%d %H:%M:%S'
+        }
+        
+    
+    };
+    
+    // Set english variants to 'en'
+    jsDate.regional['en-US'] = jsDate.regional['en-GB'] = jsDate.regional['en'];
+    
+    /**
+     * Try to determine the users locale based on the lang attribute of the html page.  Defaults to 'en'
+     * if it cannot figure out a locale of if the locale does not have a localization defined.
+     * @returns {String} locale
+     */
+     
+    jsDate.regional.getLocale = function () {
+        var l = jsDate.config.defaultLocale;
+        
+        if ( document && document.getElementsByTagName('html') && document.getElementsByTagName('html')[0].lang ) {
+            l = document.getElementsByTagName('html')[0].lang;
+            if (!jsDate.regional.hasOwnProperty(l)) {
+                l = jsDate.config.defaultLocale;
+            }
+        }
+        
+        return l;
+    };
+    
+    // ms in day
     var day = 24 * 60 * 60 * 1000;
-	
+    
     // padd a number with zeros
     var addZeros = function(num, digits) {
         num = String(num);
-		var i = digits - num.length;
-		var s = String(Math.pow(10, i)).slice(1);
-		return s.concat(num);
+        var i = digits - num.length;
+        var s = String(Math.pow(10, i)).slice(1);
+        return s.concat(num);
     };
 
-	// representations used for calculating differences between dates.
-	// This borrows heavily from Ken Snyder's work.
+    // representations used for calculating differences between dates.
+    // This borrows heavily from Ken Snyder's work.
     var multipliers = {
         millisecond: 1,
         second: 1000,
@@ -7203,80 +7379,80 @@
     };
     //
     // Alias each multiplier with an 's' to allow 'year' and 'years' for example.
-	// This comes from Ken Snyders work.
+    // This comes from Ken Snyders work.
     //
     for (var unit in multipliers) {
         if (unit.substring(unit.length - 1) != 's') { // IE will iterate newly added properties :|
             multipliers[unit + 's'] = multipliers[unit];
         }
     }
-	
+    
     //
     // take a jsDate instance and a format code and return the formatted value.
-	// This is a somewhat modified version of Ken Snyder's method.
+    // This is a somewhat modified version of Ken Snyder's method.
     //
     var format = function(d, code, syntax) {
-		// if shorcut codes are used, recursively expand those.
-		if (jsDate.formats[syntax]["shortcuts"][code]) {
-			return jsDate.strftime(d, jsDate.formats[syntax]["shortcuts"][code], syntax);
-		} else {
-			// get the format code function and addZeros() argument
-			var getter = (jsDate.formats[syntax]["codes"][code] || '').split('.');
-			var nbr = d['get' + getter[0]] ? d['get' + getter[0]]() : '';
-			if (getter[1]) {
-				nbr = addZeros(nbr, getter[1]);
-			}
-			return nbr;
-		}       
+        // if shorcut codes are used, recursively expand those.
+        if (jsDate.formats[syntax]["shortcuts"][code]) {
+            return jsDate.strftime(d, jsDate.formats[syntax]["shortcuts"][code], syntax);
+        } else {
+            // get the format code function and addZeros() argument
+            var getter = (jsDate.formats[syntax]["codes"][code] || '').split('.');
+            var nbr = d['get' + getter[0]] ? d['get' + getter[0]]() : '';
+            if (getter[1]) {
+                nbr = addZeros(nbr, getter[1]);
+            }
+            return nbr;
+        }       
     };
     
     /**
-	 * @static
-	 * Static function for convert a date to a string according to a given format.  Also acts as namespace for strftime format codes.
-	 * <p>strftime formatting can be accomplished without creating a jsDate object by calling jsDate.strftime():</p>
-	 * <pre class="code">
-	 * var formattedDate = jsDate.strftime('Feb 8, 2006 8:48:32', '%Y-%m-%d %H:%M:%S');
-	 * </pre>
-	 * @param {String | Number | Array | jsDate&nbsp;Object | Date&nbsp;Object} date A parsable date string, JavaScript time stamp, Array of form [year, month, day, hours, minutes, seconds, milliseconds], jsDate Object or Date object.
-	 * @param {String} formatString String with embedded date formatting codes.  
-	 * See: {@link jsDate.formats}. 
-	 * @param {String} syntax Optional syntax to use [default perl].
-	 * @param {String} locale Optional locale to use.
-	 * @returns {String} Formatted representation of the date.
+     * @static
+     * Static function for convert a date to a string according to a given format.  Also acts as namespace for strftime format codes.
+     * <p>strftime formatting can be accomplished without creating a jsDate object by calling jsDate.strftime():</p>
+     * <pre class="code">
+     * var formattedDate = jsDate.strftime('Feb 8, 2006 8:48:32', '%Y-%m-%d %H:%M:%S');
+     * </pre>
+     * @param {String | Number | Array | jsDate&nbsp;Object | Date&nbsp;Object} date A parsable date string, JavaScript time stamp, Array of form [year, month, day, hours, minutes, seconds, milliseconds], jsDate Object or Date object.
+     * @param {String} formatString String with embedded date formatting codes.  
+     * See: {@link jsDate.formats}. 
+     * @param {String} syntax Optional syntax to use [default perl].
+     * @param {String} locale Optional locale to use.
+     * @returns {String} Formatted representation of the date.
     */
     //
-	// Logic as implemented here is very similar to Ken Snyder's Date Instance Methods.
-	//
+    // Logic as implemented here is very similar to Ken Snyder's Date Instance Methods.
+    //
     jsDate.strftime = function(d, formatString, syntax, locale) {
-		var syn = 'perl';
-		var loc = jsDate.regional.getLocale();
-		
-		// check if syntax and locale are available or reversed
-		if (syntax && jsDate.formats.hasOwnProperty(syntax)) {
-			syn = syntax;
-		}
-		else if (syntax && jsDate.regional.hasOwnProperty(syntax)) {
-			loc = syntax;
-		}
-		
-		if (locale && jsDate.formats.hasOwnProperty(locale)) {
-			syn = locale;
-		}
-		else if (locale && jsDate.regional.hasOwnProperty(locale)) {
-			loc = locale;
-		}
-		
+        var syn = 'perl';
+        var loc = jsDate.regional.getLocale();
+        
+        // check if syntax and locale are available or reversed
+        if (syntax && jsDate.formats.hasOwnProperty(syntax)) {
+            syn = syntax;
+        }
+        else if (syntax && jsDate.regional.hasOwnProperty(syntax)) {
+            loc = syntax;
+        }
+        
+        if (locale && jsDate.formats.hasOwnProperty(locale)) {
+            syn = locale;
+        }
+        else if (locale && jsDate.regional.hasOwnProperty(locale)) {
+            loc = locale;
+        }
+        
         if (get_type(d) != "[object Object]" || d._type != "jsDate") {
             d = new jsDate(d);
-			d.locale = loc;
+            d.locale = loc;
         }
-		if (!formatString) {
-			formatString = d.formatString || jsDate.regional[loc]['formatString'];
-		}
+        if (!formatString) {
+            formatString = d.formatString || jsDate.regional[loc]['formatString'];
+        }
         // default the format string to year-month-day
         var source = formatString || '%Y-%m-%d', 
-			result = '', 
-			match;
+            result = '', 
+            match;
         // replace each format code
         while (source.length > 0) {
             if (match = source.match(jsDate.formats[syn].codes.matcher)) {
@@ -7290,321 +7466,321 @@
         }
         return result;
     };
-	
-	/**
-	 * @namespace
-	 * Namespace to hold format codes and format shortcuts.  "perl" and "php" format codes 
-	 * and shortcuts are defined by default.  Additional codes and shortcuts can be
-	 * added like:
-	 * 
-	 * <pre class="code">
-	 * jsDate.formats["perl"] = {
-	 *     "codes": {
-	 *         matcher: /someregex/,
-	 *         Y: "fullYear",  // name of "get" method without the "get",
-	 *         ...,            // more codes
-	 *     },
-	 *     "shortcuts": {
-	 *         F: '%Y-%m-%d',
-	 *         ...,            // more shortcuts
-	 *     }
-	 * };
-	 * </pre>
-	 * 
-	 * <p>Additionally, ISO and SQL shortcuts are defined and can be accesses via:
-	 * <code>jsDate.formats.ISO</code> and <code>jsDate.formats.SQL</code>
-	 */
-	
-	jsDate.formats = {
-		ISO:'%Y-%m-%dT%H:%M:%S.%N%G',
-		SQL:'%Y-%m-%d %H:%M:%S'
-	};
-	
-	/**
-	 * Perl format codes and shortcuts for strftime.
-	 * 
-	 * A hash (object) of codes where each code must be an array where the first member is 
-	 * the name of a Date.prototype or jsDate.prototype function to call
-	 * and optionally a second member indicating the number to pass to addZeros()
-	 * 
-	 * <p>The following format codes are defined:</p>
-	 * 
-	 * <pre class="code">
-	 * Code    Result                    Description
-	 * == Years ==           
-	 * %Y      2008                      Four-digit year
-	 * %y      08                        Two-digit year
-	 * 
-	 * == Months ==          
-	 * %m      09                        Two-digit month
-	 * %#m     9                         One or two-digit month
-	 * %B      September                 Full month name
-	 * %b      Sep                       Abbreviated month name
-	 * 
-	 * == Days ==            
-	 * %d      05                        Two-digit day of month
-	 * %#d     5                         One or two-digit day of month
-	 * %e      5                         One or two-digit day of month
-	 * %A      Sunday                    Full name of the day of the week
-	 * %a      Sun                       Abbreviated name of the day of the week
-	 * %w      0                         Number of the day of the week (0 = Sunday, 6 = Saturday)
-	 * 
-	 * == Hours ==           
-	 * %H      23                        Hours in 24-hour format (two digits)
-	 * %#H     3                         Hours in 24-hour integer format (one or two digits)
-	 * %I      11                        Hours in 12-hour format (two digits)
-	 * %#I     3                         Hours in 12-hour integer format (one or two digits)
-	 * %p      PM                        AM or PM
-	 * 
-	 * == Minutes ==         
-	 * %M      09                        Minutes (two digits)
-	 * %#M     9                         Minutes (one or two digits)
-	 * 
-	 * == Seconds ==         
-	 * %S      02                        Seconds (two digits)
-	 * %#S     2                         Seconds (one or two digits)
-	 * %s      1206567625723             Unix timestamp (Seconds past 1970-01-01 00:00:00)
-	 * 
-	 * == Milliseconds ==    
-	 * %N      008                       Milliseconds (three digits)
-	 * %#N     8                         Milliseconds (one to three digits)
-	 * 
-	 * == Timezone ==        
-	 * %O      360                       difference in minutes between local time and GMT
-	 * %Z      Mountain Standard Time    Name of timezone as reported by browser
-	 * %G      06:00                     Hours and minutes between GMT
-	 * 
-	 * == Shortcuts ==       
-	 * %F      2008-03-26                %Y-%m-%d
-	 * %T      05:06:30                  %H:%M:%S
-	 * %X      05:06:30                  %H:%M:%S
-	 * %x      03/26/08                  %m/%d/%y
-	 * %D      03/26/08                  %m/%d/%y
-	 * %#c     Wed Mar 26 15:31:00 2008  %a %b %e %H:%M:%S %Y
-	 * %v      3-Sep-2008                %e-%b-%Y
-	 * %R      15:31                     %H:%M
-	 * %r      03:31:00 PM               %I:%M:%S %p
-	 * 
-	 * == Characters ==      
-	 * %n      \n                        Newline
-	 * %t      \t                        Tab
-	 * %%      %                         Percent Symbol
-	 * </pre>
-	 * 
-	 * <p>Formatting shortcuts that will be translated into their longer version.
-	 * Be sure that format shortcuts do not refer to themselves: this will cause an infinite loop.</p>
-	 * 
-	 * <p>Format codes and format shortcuts can be redefined after the jsDate
-	 * module is imported.</p>
-	 * 
-	 * <p>Note that if you redefine the whole hash (object), you must supply a "matcher"
-	 * regex for the parser.  The default matcher is:</p>
-	 * 
-	 * <code>/()%(#?(%|[a-z]))/i</code>
-	 * 
-	 * <p>which corresponds to the Perl syntax used by default.</p>
-	 * 
-	 * <p>By customizing the matcher and format codes, nearly any strftime functionality is possible.</p>
-	 */
-	 
-	jsDate.formats.perl = {
-		codes: {
-			//
-			// 2-part regex matcher for format codes
-			//
-			// first match must be the character before the code (to account for escaping)
-			// second match must be the format code character(s)
-			//
-			matcher: /()%(#?(%|[a-z]))/i,
-			// year
-			Y: 'FullYear',
-			y: 'ShortYear.2',
-			// month
-			m: 'MonthNumber.2',
-			'#m': 'MonthNumber',
-			B: 'MonthName',
-			b: 'AbbrMonthName',
-			// day
-			d: 'Date.2',
-			'#d': 'Date',
-			e: 'Date',
-			A: 'DayName',
-			a: 'AbbrDayName',
-			w: 'Day',
-			// hours
-			H: 'Hours.2',
-			'#H': 'Hours',
-			I: 'Hours12.2',
-			'#I': 'Hours12',
-			p: 'AMPM',
-			// minutes
-			M: 'Minutes.2',
-			'#M': 'Minutes',
-			// seconds
-			S: 'Seconds.2',
-			'#S': 'Seconds',
-			s: 'Unix',
-			// milliseconds
-			N: 'Milliseconds.3',
-			'#N': 'Milliseconds',
-			// timezone
-			O: 'TimezoneOffset',
-			Z: 'TimezoneName',
-			G: 'GmtOffset'  
-		},
-		
-		shortcuts: {
-			// date
-			F: '%Y-%m-%d',
-			// time
-			T: '%H:%M:%S',
-			X: '%H:%M:%S',
-			// local format date
-			x: '%m/%d/%y',
-			D: '%m/%d/%y',
-			// local format extended
-			'#c': '%a %b %e %H:%M:%S %Y',
-			// local format short
-			v: '%e-%b-%Y',
-			R: '%H:%M',
-			r: '%I:%M:%S %p',
-			// tab and newline
-			t: '\t',
-			n: '\n',
-			'%': '%'
-		}
-	};
-	
-	/**
-	 * PHP format codes and shortcuts for strftime.
-	 * 
-	 * A hash (object) of codes where each code must be an array where the first member is 
-	 * the name of a Date.prototype or jsDate.prototype function to call
-	 * and optionally a second member indicating the number to pass to addZeros()
-	 * 
-	 * <p>The following format codes are defined:</p>
-	 * 
-	 * <pre class="code">
-	 * Code    Result                    Description
-	 * === Days ===        
-	 * %a      Sun through Sat           An abbreviated textual representation of the day
-	 * %A      Sunday - Saturday         A full textual representation of the day
-	 * %d      01 to 31                  Two-digit day of the month (with leading zeros)
-	 * %e      1 to 31                   Day of the month, with a space preceding single digits.
-	 * %j      001 to 366                Day of the year, 3 digits with leading zeros
-	 * %u      1 - 7 (Mon - Sun)         ISO-8601 numeric representation of the day of the week
-	 * %w      0 - 6 (Sun - Sat)         Numeric representation of the day of the week
-	 *                                  
-	 * === Week ===                     
-	 * %U      13                        Full Week number, starting with the first Sunday as the first week
-	 * %V      01 through 53             ISO-8601:1988 week number, starting with the first week of the year 
-	 *                                   with at least 4 weekdays, with Monday being the start of the week
-	 * %W      46                        A numeric representation of the week of the year, 
-	 *                                   starting with the first Monday as the first week
-	 * === Month ===                    
-	 * %b      Jan through Dec           Abbreviated month name, based on the locale
-	 * %B      January - December        Full month name, based on the locale
-	 * %h      Jan through Dec           Abbreviated month name, based on the locale (an alias of %b)
-	 * %m      01 - 12 (Jan - Dec)       Two digit representation of the month
-	 * 
-	 * === Year ===                     
-	 * %C      19                        Two digit century (year/100, truncated to an integer)
-	 * %y      09 for 2009               Two digit year
-	 * %Y      2038                      Four digit year
-	 * 
-	 * === Time ===                     
-	 * %H      00 through 23             Two digit representation of the hour in 24-hour format
-	 * %I      01 through 12             Two digit representation of the hour in 12-hour format
-	 * %l      1 through 12              Hour in 12-hour format, with a space preceeding single digits
-	 * %M      00 through 59             Two digit representation of the minute
-	 * %p      AM/PM                     UPPER-CASE 'AM' or 'PM' based on the given time
-	 * %P      am/pm                     lower-case 'am' or 'pm' based on the given time
-	 * %r      09:34:17 PM               Same as %I:%M:%S %p
-	 * %R      00:35                     Same as %H:%M
-	 * %S      00 through 59             Two digit representation of the second
-	 * %T      21:34:17                  Same as %H:%M:%S
-	 * %X      03:59:16                  Preferred time representation based on locale, without the date
-	 * %z      -0500 or EST              Either the time zone offset from UTC or the abbreviation
-	 * %Z      -0500 or EST              The time zone offset/abbreviation option NOT given by %z
-	 * 
-	 * === Time and Date ===            
-	 * %D      02/05/09                  Same as %m/%d/%y
-	 * %F      2009-02-05                Same as %Y-%m-%d (commonly used in database datestamps)
-	 * %s      305815200                 Unix Epoch Time timestamp (same as the time() function)
-	 * %x      02/05/09                  Preferred date representation, without the time
-	 * 
-	 * === Miscellaneous ===            
-	 * %n        ---                     A newline character (\n)
-	 * %t        ---                     A Tab character (\t)
-	 * %%        ---                     A literal percentage character (%)
-	 * </pre>
-	 */
+    
+    /**
+     * @namespace
+     * Namespace to hold format codes and format shortcuts.  "perl" and "php" format codes 
+     * and shortcuts are defined by default.  Additional codes and shortcuts can be
+     * added like:
+     * 
+     * <pre class="code">
+     * jsDate.formats["perl"] = {
+     *     "codes": {
+     *         matcher: /someregex/,
+     *         Y: "fullYear",  // name of "get" method without the "get",
+     *         ...,            // more codes
+     *     },
+     *     "shortcuts": {
+     *         F: '%Y-%m-%d',
+     *         ...,            // more shortcuts
+     *     }
+     * };
+     * </pre>
+     * 
+     * <p>Additionally, ISO and SQL shortcuts are defined and can be accesses via:
+     * <code>jsDate.formats.ISO</code> and <code>jsDate.formats.SQL</code>
+     */
+    
+    jsDate.formats = {
+        ISO:'%Y-%m-%dT%H:%M:%S.%N%G',
+        SQL:'%Y-%m-%d %H:%M:%S'
+    };
+    
+    /**
+     * Perl format codes and shortcuts for strftime.
+     * 
+     * A hash (object) of codes where each code must be an array where the first member is 
+     * the name of a Date.prototype or jsDate.prototype function to call
+     * and optionally a second member indicating the number to pass to addZeros()
+     * 
+     * <p>The following format codes are defined:</p>
+     * 
+     * <pre class="code">
+     * Code    Result                    Description
+     * == Years ==           
+     * %Y      2008                      Four-digit year
+     * %y      08                        Two-digit year
+     * 
+     * == Months ==          
+     * %m      09                        Two-digit month
+     * %#m     9                         One or two-digit month
+     * %B      September                 Full month name
+     * %b      Sep                       Abbreviated month name
+     * 
+     * == Days ==            
+     * %d      05                        Two-digit day of month
+     * %#d     5                         One or two-digit day of month
+     * %e      5                         One or two-digit day of month
+     * %A      Sunday                    Full name of the day of the week
+     * %a      Sun                       Abbreviated name of the day of the week
+     * %w      0                         Number of the day of the week (0 = Sunday, 6 = Saturday)
+     * 
+     * == Hours ==           
+     * %H      23                        Hours in 24-hour format (two digits)
+     * %#H     3                         Hours in 24-hour integer format (one or two digits)
+     * %I      11                        Hours in 12-hour format (two digits)
+     * %#I     3                         Hours in 12-hour integer format (one or two digits)
+     * %p      PM                        AM or PM
+     * 
+     * == Minutes ==         
+     * %M      09                        Minutes (two digits)
+     * %#M     9                         Minutes (one or two digits)
+     * 
+     * == Seconds ==         
+     * %S      02                        Seconds (two digits)
+     * %#S     2                         Seconds (one or two digits)
+     * %s      1206567625723             Unix timestamp (Seconds past 1970-01-01 00:00:00)
+     * 
+     * == Milliseconds ==    
+     * %N      008                       Milliseconds (three digits)
+     * %#N     8                         Milliseconds (one to three digits)
+     * 
+     * == Timezone ==        
+     * %O      360                       difference in minutes between local time and GMT
+     * %Z      Mountain Standard Time    Name of timezone as reported by browser
+     * %G      06:00                     Hours and minutes between GMT
+     * 
+     * == Shortcuts ==       
+     * %F      2008-03-26                %Y-%m-%d
+     * %T      05:06:30                  %H:%M:%S
+     * %X      05:06:30                  %H:%M:%S
+     * %x      03/26/08                  %m/%d/%y
+     * %D      03/26/08                  %m/%d/%y
+     * %#c     Wed Mar 26 15:31:00 2008  %a %b %e %H:%M:%S %Y
+     * %v      3-Sep-2008                %e-%b-%Y
+     * %R      15:31                     %H:%M
+     * %r      03:31:00 PM               %I:%M:%S %p
+     * 
+     * == Characters ==      
+     * %n      \n                        Newline
+     * %t      \t                        Tab
+     * %%      %                         Percent Symbol
+     * </pre>
+     * 
+     * <p>Formatting shortcuts that will be translated into their longer version.
+     * Be sure that format shortcuts do not refer to themselves: this will cause an infinite loop.</p>
+     * 
+     * <p>Format codes and format shortcuts can be redefined after the jsDate
+     * module is imported.</p>
+     * 
+     * <p>Note that if you redefine the whole hash (object), you must supply a "matcher"
+     * regex for the parser.  The default matcher is:</p>
+     * 
+     * <code>/()%(#?(%|[a-z]))/i</code>
+     * 
+     * <p>which corresponds to the Perl syntax used by default.</p>
+     * 
+     * <p>By customizing the matcher and format codes, nearly any strftime functionality is possible.</p>
+     */
+     
+    jsDate.formats.perl = {
+        codes: {
+            //
+            // 2-part regex matcher for format codes
+            //
+            // first match must be the character before the code (to account for escaping)
+            // second match must be the format code character(s)
+            //
+            matcher: /()%(#?(%|[a-z]))/i,
+            // year
+            Y: 'FullYear',
+            y: 'ShortYear.2',
+            // month
+            m: 'MonthNumber.2',
+            '#m': 'MonthNumber',
+            B: 'MonthName',
+            b: 'AbbrMonthName',
+            // day
+            d: 'Date.2',
+            '#d': 'Date',
+            e: 'Date',
+            A: 'DayName',
+            a: 'AbbrDayName',
+            w: 'Day',
+            // hours
+            H: 'Hours.2',
+            '#H': 'Hours',
+            I: 'Hours12.2',
+            '#I': 'Hours12',
+            p: 'AMPM',
+            // minutes
+            M: 'Minutes.2',
+            '#M': 'Minutes',
+            // seconds
+            S: 'Seconds.2',
+            '#S': 'Seconds',
+            s: 'Unix',
+            // milliseconds
+            N: 'Milliseconds.3',
+            '#N': 'Milliseconds',
+            // timezone
+            O: 'TimezoneOffset',
+            Z: 'TimezoneName',
+            G: 'GmtOffset'  
+        },
+        
+        shortcuts: {
+            // date
+            F: '%Y-%m-%d',
+            // time
+            T: '%H:%M:%S',
+            X: '%H:%M:%S',
+            // local format date
+            x: '%m/%d/%y',
+            D: '%m/%d/%y',
+            // local format extended
+            '#c': '%a %b %e %H:%M:%S %Y',
+            // local format short
+            v: '%e-%b-%Y',
+            R: '%H:%M',
+            r: '%I:%M:%S %p',
+            // tab and newline
+            t: '\t',
+            n: '\n',
+            '%': '%'
+        }
+    };
+    
+    /**
+     * PHP format codes and shortcuts for strftime.
+     * 
+     * A hash (object) of codes where each code must be an array where the first member is 
+     * the name of a Date.prototype or jsDate.prototype function to call
+     * and optionally a second member indicating the number to pass to addZeros()
+     * 
+     * <p>The following format codes are defined:</p>
+     * 
+     * <pre class="code">
+     * Code    Result                    Description
+     * === Days ===        
+     * %a      Sun through Sat           An abbreviated textual representation of the day
+     * %A      Sunday - Saturday         A full textual representation of the day
+     * %d      01 to 31                  Two-digit day of the month (with leading zeros)
+     * %e      1 to 31                   Day of the month, with a space preceding single digits.
+     * %j      001 to 366                Day of the year, 3 digits with leading zeros
+     * %u      1 - 7 (Mon - Sun)         ISO-8601 numeric representation of the day of the week
+     * %w      0 - 6 (Sun - Sat)         Numeric representation of the day of the week
+     *                                  
+     * === Week ===                     
+     * %U      13                        Full Week number, starting with the first Sunday as the first week
+     * %V      01 through 53             ISO-8601:1988 week number, starting with the first week of the year 
+     *                                   with at least 4 weekdays, with Monday being the start of the week
+     * %W      46                        A numeric representation of the week of the year, 
+     *                                   starting with the first Monday as the first week
+     * === Month ===                    
+     * %b      Jan through Dec           Abbreviated month name, based on the locale
+     * %B      January - December        Full month name, based on the locale
+     * %h      Jan through Dec           Abbreviated month name, based on the locale (an alias of %b)
+     * %m      01 - 12 (Jan - Dec)       Two digit representation of the month
+     * 
+     * === Year ===                     
+     * %C      19                        Two digit century (year/100, truncated to an integer)
+     * %y      09 for 2009               Two digit year
+     * %Y      2038                      Four digit year
+     * 
+     * === Time ===                     
+     * %H      00 through 23             Two digit representation of the hour in 24-hour format
+     * %I      01 through 12             Two digit representation of the hour in 12-hour format
+     * %l      1 through 12              Hour in 12-hour format, with a space preceeding single digits
+     * %M      00 through 59             Two digit representation of the minute
+     * %p      AM/PM                     UPPER-CASE 'AM' or 'PM' based on the given time
+     * %P      am/pm                     lower-case 'am' or 'pm' based on the given time
+     * %r      09:34:17 PM               Same as %I:%M:%S %p
+     * %R      00:35                     Same as %H:%M
+     * %S      00 through 59             Two digit representation of the second
+     * %T      21:34:17                  Same as %H:%M:%S
+     * %X      03:59:16                  Preferred time representation based on locale, without the date
+     * %z      -0500 or EST              Either the time zone offset from UTC or the abbreviation
+     * %Z      -0500 or EST              The time zone offset/abbreviation option NOT given by %z
+     * 
+     * === Time and Date ===            
+     * %D      02/05/09                  Same as %m/%d/%y
+     * %F      2009-02-05                Same as %Y-%m-%d (commonly used in database datestamps)
+     * %s      305815200                 Unix Epoch Time timestamp (same as the time() function)
+     * %x      02/05/09                  Preferred date representation, without the time
+     * 
+     * === Miscellaneous ===            
+     * %n        ---                     A newline character (\n)
+     * %t        ---                     A Tab character (\t)
+     * %%        ---                     A literal percentage character (%)
+     * </pre>
+     */
  
-	jsDate.formats.php = {
-		codes: {
-			//
-			// 2-part regex matcher for format codes
-			//
-			// first match must be the character before the code (to account for escaping)
-			// second match must be the format code character(s)
-			//
-			matcher: /()%((%|[a-z]))/i,
-			// day
-			a: 'AbbrDayName',
-			A: 'DayName',
-			d: 'Date.2',
-			e: 'Date',
-			j: 'DayOfYear.3',
-			u: 'DayOfWeek',
-			w: 'Day',
-			// week
-			U: 'FullWeekOfYear.2',
-			V: 'IsoWeek.2',
-			W: 'WeekOfYear.2',
-			// month
-			b: 'AbbrMonthName',
-			B: 'MonthName',
-			m: 'MonthNumber.2',
-			h: 'AbbrMonthName',
-			// year
-			C: 'Century.2',
-			y: 'ShortYear.2',
-			Y: 'FullYear',
-			// time
-			H: 'Hours.2',
-			I: 'Hours12.2',
-			l: 'Hours12',
-			p: 'AMPM',
-			P: 'AmPm',
-			M: 'Minutes.2',
-			S: 'Seconds.2',
-			s: 'Unix',
-			O: 'TimezoneOffset',
-			z: 'GmtOffset',
-			Z: 'TimezoneAbbr'
-		},
-		
-		shortcuts: {
-			D: '%m/%d/%y',
-			F: '%Y-%m-%d',
-			T: '%H:%M:%S',
-			X: '%H:%M:%S',
-			x: '%m/%d/%y',
-			R: '%H:%M',
-			r: '%I:%M:%S %p',
-			t: '\t',
-			n: '\n',
-			'%': '%'
-		}
-	};   
-	//
-	// Conceptually, the logic implemented here is similar to Ken Snyder's Date Instance Methods.
-	// I use his idea of a set of parsers which can be regular expressions or functions,
-	// iterating through those, and then seeing if Date.parse() will create a date.
-	// The parser expressions and functions are a little different and some bugs have been
-	// worked out.  Also, a lot of "pre-parsing" is done to fix implementation
-	// variations of Date.parse() between browsers.
-	//
+    jsDate.formats.php = {
+        codes: {
+            //
+            // 2-part regex matcher for format codes
+            //
+            // first match must be the character before the code (to account for escaping)
+            // second match must be the format code character(s)
+            //
+            matcher: /()%((%|[a-z]))/i,
+            // day
+            a: 'AbbrDayName',
+            A: 'DayName',
+            d: 'Date.2',
+            e: 'Date',
+            j: 'DayOfYear.3',
+            u: 'DayOfWeek',
+            w: 'Day',
+            // week
+            U: 'FullWeekOfYear.2',
+            V: 'IsoWeek.2',
+            W: 'WeekOfYear.2',
+            // month
+            b: 'AbbrMonthName',
+            B: 'MonthName',
+            m: 'MonthNumber.2',
+            h: 'AbbrMonthName',
+            // year
+            C: 'Century.2',
+            y: 'ShortYear.2',
+            Y: 'FullYear',
+            // time
+            H: 'Hours.2',
+            I: 'Hours12.2',
+            l: 'Hours12',
+            p: 'AMPM',
+            P: 'AmPm',
+            M: 'Minutes.2',
+            S: 'Seconds.2',
+            s: 'Unix',
+            O: 'TimezoneOffset',
+            z: 'GmtOffset',
+            Z: 'TimezoneAbbr'
+        },
+        
+        shortcuts: {
+            D: '%m/%d/%y',
+            F: '%Y-%m-%d',
+            T: '%H:%M:%S',
+            X: '%H:%M:%S',
+            x: '%m/%d/%y',
+            R: '%H:%M',
+            r: '%I:%M:%S %p',
+            t: '\t',
+            n: '\n',
+            '%': '%'
+        }
+    };   
+    //
+    // Conceptually, the logic implemented here is similar to Ken Snyder's Date Instance Methods.
+    // I use his idea of a set of parsers which can be regular expressions or functions,
+    // iterating through those, and then seeing if Date.parse() will create a date.
+    // The parser expressions and functions are a little different and some bugs have been
+    // worked out.  Also, a lot of "pre-parsing" is done to fix implementation
+    // variations of Date.parse() between browsers.
+    //
     jsDate.createDate = function(date) {
         // if passing in multiple arguments, try Date constructor
         if (date == null) {
@@ -7620,13 +7796,13 @@
             return new Date(date);
         }
         
-		// Before passing strings into Date.parse(), have to normalize them for certain conditions.
-		// If strings are not formatted staccording to the EcmaScript spec, results from Date parse will be implementation dependent.  
-		// 
-		// For example: 
-		//  * FF and Opera assume 2 digit dates are pre y2k, Chome assumes <50 is pre y2k, 50+ is 21st century.  
-		//  * Chrome will correctly parse '1984-1-25' into localtime, FF and Opera will not parse.
-		//  * Both FF, Chrome and Opera will parse '1984/1/25' into localtime.
+        // Before passing strings into Date.parse(), have to normalize them for certain conditions.
+        // If strings are not formatted staccording to the EcmaScript spec, results from Date parse will be implementation dependent.  
+        // 
+        // For example: 
+        //  * FF and Opera assume 2 digit dates are pre y2k, Chome assumes <50 is pre y2k, 50+ is 21st century.  
+        //  * Chrome will correctly parse '1984-1-25' into localtime, FF and Opera will not parse.
+        //  * Both FF, Chrome and Opera will parse '1984/1/25' into localtime.
         
         // remove leading and trailing spaces
         var parsable = String(date).replace(/^\s*(.+)\s*$/g, '$1');
@@ -7702,8 +7878,9 @@
         
         var i = 0;
         var length = jsDate.matchers.length;
-        var pattern;
-        var current = parsable;
+        var pattern,
+            ms,
+            current = parsable;
         while (i < length) {
             ms = Date.parse(current);
             if (!isNaN(ms)) {
@@ -7711,7 +7888,7 @@
             }
             pattern = jsDate.matchers[i];
             if (typeof pattern == 'function') {
-                obj = pattern.call(jsDate, current);
+                var obj = pattern.call(jsDate, current);
                 if (obj instanceof Date) {
                     return obj;
                 }
@@ -7725,15 +7902,15 @@
     
 
     /**
-	 * @static
-	 * Handy static utility function to return the number of days in a given month.
-	 * @param {Integer} year Year
-	 * @param {Integer} month Month (1-12)
-	 * @returns {Integer} Number of days in the month.
+     * @static
+     * Handy static utility function to return the number of days in a given month.
+     * @param {Integer} year Year
+     * @param {Integer} month Month (1-12)
+     * @returns {Integer} Number of days in the month.
     */
-	//
-	// handy utility method Borrowed right from Ken Snyder's Date Instance Mehtods.
-	// 
+    //
+    // handy utility method Borrowed right from Ken Snyder's Date Instance Mehtods.
+    // 
     jsDate.daysInMonth = function(year, month) {
         if (month == 2) {
             return new Date(year, 1, 29).getDate() == 29 ? 29 : 28;
@@ -7742,16 +7919,16 @@
     };
 
 
-	//
-	// An Array of regular expressions or functions that will attempt to match the date string.
-	// Functions are called with scope of a jsDate instance.
+    //
+    // An Array of regular expressions or functions that will attempt to match the date string.
+    // Functions are called with scope of a jsDate instance.
     //
     jsDate.matchers = [
-		// convert dd.mmm.yyyy to mm/dd/yyyy (world date to US date).
+        // convert dd.mmm.yyyy to mm/dd/yyyy (world date to US date).
         [/(3[01]|[0-2]\d)\s*\.\s*(1[0-2]|0\d)\s*\.\s*([1-9]\d{3})/, '$2/$1/$3'],
-		// convert yyyy-mm-dd to mm/dd/yyyy (ISO date to US date).
+        // convert yyyy-mm-dd to mm/dd/yyyy (ISO date to US date).
         [/([1-9]\d{3})\s*-\s*(1[0-2]|0\d)\s*-\s*(3[01]|[0-2]\d)/, '$2/$3/$1'],
-		// Handle 12 hour or 24 hour time with milliseconds am/pm and optional date part.
+        // Handle 12 hour or 24 hour time with milliseconds am/pm and optional date part.
         function(str) { 
             var match = str.match(/^(?:(.+)\s+)?([012]?\d)(?:\s*\:\s*(\d\d))?(?:\s*\:\s*(\d\d(\.\d*)?))?\s*(am|pm)?\s*$/i);
             //                   opt. date      hour       opt. minute     opt. second       opt. msec   opt. am or pm
@@ -7776,7 +7953,7 @@
                 return str;
             }
         },
-		// Handle ISO timestamp with time zone.
+        // Handle ISO timestamp with time zone.
         function(str) {
             var match = str.match(/^(?:(.+))[T|\s+]([012]\d)(?:\:(\d\d))(?:\:(\d\d))(?:\.\d+)([\+\-]\d\d\:\d\d)$/i);
             if (match) {
@@ -7799,7 +7976,7 @@
         },
         // Try to match ambiguous strings like 12/8/22.
         // Use FF date assumption that 2 digit years are 20th century (i.e. 1900's).
-		// This may be redundant with pre processing of date already performed.
+        // This may be redundant with pre processing of date already performed.
         function(str) {
             var match = str.match(/^([0-3]?\d)\s*[-\/.\s]{1}\s*([a-zA-Z]{3,9})\s*[-\/.\s]{1}\s*([0-3]?\d)$/);
             if (match) {
@@ -7835,9 +8012,9 @@
         }      
     ];
 
-	//
-	// I think John Reisig published this method on his blog, ejohn.
-	//
+    //
+    // I think John Reisig published this method on his blog, ejohn.
+    //
     function inArray( elem, array ) {
         if ( array.indexOf ) {
             return array.indexOf( elem );
@@ -7851,16 +8028,16 @@
 
         return -1;
     }
-	
-	//
-	// Thanks to Kangax, Christian Sciberras and Stack Overflow for this method.
-	//
-	function get_type(thing){
-		if(thing===null) return "[object Null]"; // special case
-		return Object.prototype.toString.call(thing);
-	}
-	
-	$.jsDate = jsDate;
+    
+    //
+    // Thanks to Kangax, Christian Sciberras and Stack Overflow for this method.
+    //
+    function get_type(thing){
+        if(thing===null) return "[object Null]"; // special case
+        return Object.prototype.toString.call(thing);
+    }
+    
+    $.jsDate = jsDate;
 
       
     /**
@@ -7927,7 +8104,7 @@
         }
 
 		function thousand_separate(value) {
-			value_str = new String(value);
+			var value_str = new String(value);
 			for (var i=10; i>0; i--) {
 				if (value_str == (value_str = value_str.replace(/^(\d+)(\d{3})/, "$1"+$.jqplot.sprintf.thousandsSeparator+"$2"))) break;
 			}
@@ -8041,7 +8218,7 @@
                 return '';
               }
               var prefix = number < 0 ? '-' : positivePrefix;
-              number_str = thousandSeparation ? thousand_separate(String(Math.abs(number))): String(Math.abs(number));
+              var number_str = thousandSeparation ? thousand_separate(String(Math.abs(number))): String(Math.abs(number));
 			  value = prefix + pad(number_str, precision, '0', false);
               //value = prefix + pad(String(Math.abs(number)), precision, '0', false);
               return justify(value, prefix, leftJustify, minWidth, zeroPad, htmlSpace);
@@ -8052,7 +8229,7 @@
                 return '';
               }
               var prefix = number < 0 ? '-' : positivePrefix;
-              number_str = thousandSeparation ? thousand_separate(String(Math.abs(number))): String(Math.abs(number));
+              var number_str = thousandSeparation ? thousand_separate(String(Math.abs(number))): String(Math.abs(number));
 			  value = prefix + pad(number_str, precision, '0', false);
               return justify(value, prefix, leftJustify, minWidth, zeroPad, htmlSpace);
                   }
@@ -8070,7 +8247,7 @@
                       var prefix = number < 0 ? '-' : positivePrefix;
                       var method = ['toExponential', 'toFixed', 'toPrecision']['efg'.indexOf(type.toLowerCase())];
                       var textTransform = ['toString', 'toUpperCase']['eEfFgG'.indexOf(type) % 2];
-                      number_str = Math.abs(number)[method](precision);
+                      var number_str = Math.abs(number)[method](precision);
                       number_str = thousandSeparation ? thousand_separate(number_str): number_str;
                       value = prefix + number_str;
                       return justify(value, prefix, leftJustify, minWidth, zeroPad, htmlSpace)[textTransform]();
