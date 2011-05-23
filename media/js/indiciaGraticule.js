@@ -98,10 +98,10 @@ OpenLayers.Control.IndiciaGraticule = OpenLayers.Class(OpenLayers.Control, {
      * {symbolizer} the symbolizer used to render lines
      */
     lineSymbolizer: {
-                strokeColor: "#333",
-                strokeWidth: 1,
-                strokeOpacity: 0.5
-            },
+        strokeColor: "#222",
+        strokeWidth: 1,
+        strokeOpacity: 0.6
+    },
 
     /**
      * APIProperty: labelSymbolizer
