@@ -646,12 +646,14 @@ class helper_base extends helper_config {
     if (isset($tools)) {
       self::add_resource('spatialReports');
       self::add_resource('clearLayer');
+      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
+        data_entry_helper::$javascript .= "enableBuffering();\n";
       $r .= '<label>'.$ctrlOptions['label'].':</label>';
       $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
       '<div id="map-tools" class="olControlEditingToolbar left"></div></div><br/>';
       $r .= '<input type="hidden" name="'.$ctrlOptions['fieldname'].'" id="hidden-wkt" value="'.
           (isset($_POST[$ctrlOptions['fieldname']]) ? $_POST[$ctrlOptions['fieldname']] : '').'"/>';
-      if (isset($info['allow_buffer']) && $info['allow_buffer']) {
+      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') {
         $r .= data_entry_helper::text_input(array(
           'label'=>'Buffer (m)',
           'fieldname'=>'geom_buffer',
@@ -675,7 +677,7 @@ mapInitialisationHooks.push(function(div) {
         OpenLayers.Feature.Vector.style['default']));
   mapDiv.map.editLayer.styleMap = styleMap;\n";
       
-      if (isset($info['allow_buffer']) && $info['allow_buffer'])
+      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
         $origWkt = empty($_POST['orig-wkt']) ? '' : $_POST['orig-wkt'];
       else
         $origWkt = empty($_POST[$ctrlOptions['fieldname']]) ? '' : $_POST[$ctrlOptions['fieldname']];
@@ -691,7 +693,7 @@ $('#run-report').click(function(evt) {
   if (document.activeElement.id=='geom_buffer') {
     $('#geom_buffer').blur();
   }";
-      if (isset($info['allow_buffer']) && $info['allow_buffer'])
+      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
         data_entry_helper::$javascript .= "
   storeGeomsInHiddenInput(mapDiv.map.editLayer, 'orig-wkt');
   storeGeomsInHiddenInput(bufferLayer, 'hidden-wkt');\n";
