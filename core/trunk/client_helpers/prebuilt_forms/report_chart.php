@@ -166,6 +166,7 @@ class iform_report_chart {
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $chartOptions = iform_report_get_report_options($args, $auth);
     $chartOptions = array_merge($chartOptions, array(
+      'id' => 'chart-div',
       'width'=> $args['width'],
       'height'=> $args['height'],
       'chartType' => $args['chart_type'],
