@@ -17,28 +17,42 @@
  */
 function storeGeomsInHiddenInput(layer, inputId) {
   var geoms=[], featureClass='', geom;
-  if (layer.features.length===0) {
-    evt.preventDefault();
-    alert('Please supply a search area for the report.');
-  }
+  var geoms=[];
   $.each(layer.features, function(i, feature) {
-    if (i===0) {
-      // grab the first feature's type
-      featureClass = feature.geometry.CLASS_NAME;
-    }
-    // for subsequent features, ignore them unless the same type as the first, accepting that multipolygons and polygons are compatible
-    if (featureClass.replace('Multi', '') == feature.geometry.CLASS_NAME.replace('Multi', '')) {
+    if (feature.geometry.CLASS_NAME.contains('Multi')) {
+      geoms = geoms.concat(feature.geometry.components);
+    } else {
       geoms.push(feature.geometry);
     }
   });
-  if (featureClass === 'OpenLayers.Geometry.Polygon') {
-    geom = new OpenLayers.Geometry.MultiPolygon(geoms);
-  } else if (featureClass === 'OpenLayers.Geometry.LineString') {
-    geom = new OpenLayers.Geometry.MultiLineString(geoms);
-  } else if (featureClass === 'OpenLayers.Geometry.Point') {
-    geom = new OpenLayers.Geometry.MultiPoint(geoms);
+  if (geoms.length===0) {
+    $('#'+inputId).val('');
+  } else {
+    if (geoms[0].CLASS_NAME == 'OpenLayers.Geometry.Polygon') {
+      geom = new OpenLayers.Geometry.MultiPolygon(geoms);
+    } else if (geoms[0].CLASS_NAME == 'OpenLayers.Geometry.LineString') {
+      geom = new OpenLayers.Geometry.MultiLineString(geoms);
+    } else if (geoms[0].CLASS_NAME == 'OpenLayers.Geometry.Point') {
+      geom = new OpenLayers.Geometry.MultiPoint(geoms);
+    }
+    $('#'+inputId).val(geom.toString());
   }
-  $('#'+inputId).val(geom.toString());
+}
+
+function bufferFeature(feature) {
+  if (typeof feature.geometry!=="undefined" && feature.geometry!==null) {
+    $.ajax({
+      url:mapDiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
+          +'?wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val(),
+      success: function(buffered) {
+        buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered));
+        // link the feature to its buffer, for easy removal
+        feature.buffer = buffer;
+        bufferLayer.addFeatures([buffer]);
+      },
+      async: false
+    });
+  }
 }
 
 jQuery(document).ready(function() {
@@ -46,25 +60,36 @@ jQuery(document).ready(function() {
   mapInitialisationHooks.push(function(div) {
     var style = $.extend({}, div.settings.boundaryStyle);
     style.strokeDashstyle = 'dash';
+    style.strokeColor = '#777777';
     style.fillOpacity = 0.2;
-    style.fillColor = '#aaaaaa';
+    style.fillColor = '#777777';
     bufferLayer = new OpenLayers.Layer.Vector(
         'buffer outlines',
         {style: style, 'sphericalMercator': true, displayInLayerSwitcher: false}
     );
     div.map.addLayer(bufferLayer);
+    div.map.editLayer.events.register('featureadded', div.map.editLayer, function(evt) {
+      bufferFeature(evt.feature);
+    });
+    div.map.editLayer.events.register('featuresremoved', div.map.editLayer, function(evt) {
+      buffers = [];
+      $.each(evt.features, function(idx, feature) {
+        if (!typeof feature.buffer!=="undefined") {
+          buffers.push(feature.buffer);
+        }
+      });
+      bufferLayer.removeFeatures(buffers);
+    });
   });
   // When exiting the buffer input, recreate all the buffer polygons.
   $('#geom_buffer').blur(function() {
+    if (!$('#geom_buffer').val().match(/^\d+$/)) {
+      $('#geom_buffer').val(0);
+    }
     bufferLayer.removeAllFeatures();
     // re-add each object from the edit layer using the spatial buffering service
     $.each(mapDiv.map.editLayer.features, function(idx, feature) {
-      $.get(mapDiv.settings.indiciaSvc + 'index.php/services/spatial/buffer', 
-          {'wkt':feature.geometry.toString(), 'buffer':$('#geom_buffer').val()},
-          function(buffered) {
-            bufferLayer.addFeatures([new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered))]);
-          }
-      );
+      bufferFeature(feature);
     })
 
   });

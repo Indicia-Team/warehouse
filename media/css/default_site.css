@@ -416,3 +416,7 @@ tfoot {
 tfoot td div{
   padding: 2px 4px;
 }
+
+.olControlClearLayerItemInactive {
+  background-image: url("../images/nuvola/no-22px.png") !important;
+}
