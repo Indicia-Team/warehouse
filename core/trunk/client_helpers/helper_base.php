@@ -376,7 +376,9 @@ class helper_base extends helper_config {
         $indicia_theme_path .= '/';
       self::$resource_list = array (
         'jquery' => array('javascript' => array(self::$js_path."jquery.js",self::$js_path."ie_vml_sizzlepatch_2.js")),
-        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."indiciaGraticule.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js")),
+        'openlayers' => array('javascript' => array(self::$js_path."OpenLayers.js", self::$js_path."proj4js.js", self::$js_path."proj4defs.js")),
+        'graticule' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."indiciaGraticule.js")),
+        'clearLayer' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."clearLayer.js")),
         'addrowtogrid' => array('javascript' => array(self::$js_path."addRowToGrid.js")),
         'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
@@ -387,7 +389,7 @@ class helper_base extends helper_config {
         'jquery_ui_fr' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path."jquery.ui.datepicker-fr.js")),
         'json' => array('javascript' => array(self::$js_path."json2.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
-        self::$js_path."jquery.treeview.edit.js")),
+            self::$js_path."jquery.treeview.edit.js")),
         'googlemaps' => array('javascript' => array("http://maps.google.com/maps?file=api&amp;v=2&amp;sensor=false&amp;key=".parent::$google_api_key)),
         'multimap' => array('javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
@@ -643,6 +645,7 @@ class helper_base extends helper_config {
     // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
     if (isset($tools)) {
       self::add_resource('spatialReports');
+      self::add_resource('clearLayer');
       $r .= '<label>'.$ctrlOptions['label'].':</label>';
       $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
       '<div id="map-tools" class="olControlEditingToolbar left"></div></div><br/>';
@@ -672,24 +675,22 @@ mapInitialisationHooks.push(function(div) {
         OpenLayers.Feature.Vector.style['default']));
   mapDiv.map.editLayer.styleMap = styleMap;\n";
       
-      if (isset($info['allow_buffer']) && $info['allow_buffer'] && !empty($_POST[$ctrlOptions['fieldname']])) {
+      if (isset($info['allow_buffer']) && $info['allow_buffer'])
+        $origWkt = empty($_POST['orig-wkt']) ? '' : $_POST['orig-wkt'];
+      else
+        $origWkt = empty($_POST[$ctrlOptions['fieldname']]) ? '' : $_POST[$ctrlOptions['fieldname']];
+
+      if (!empty($origWkt))
         data_entry_helper::$javascript .= "
-  var sel = new OpenLayers.Feature.Vector(
-      OpenLayers.Geometry.fromWKT('".$_POST[$ctrlOptions['fieldname']]."'));
-  bufferLayer.addFeatures([sel]);
   var selorig = new OpenLayers.Feature.Vector(
-      OpenLayers.Geometry.fromWKT('".$_POST['orig-wkt']."'));
+      OpenLayers.Geometry.fromWKT('$origWkt'));
   mapDiv.map.editLayer.addFeatures([selorig]);\n";
-      }
-      else if (!empty($_POST[$ctrlOptions['fieldname']])) {
-        data_entry_helper::$javascript .= "
-  var sel = new OpenLayers.Feature.Vector(
-      OpenLayers.Geometry.fromWKT('".$_POST[$ctrlOptions['fieldname']]."'));
-  mapDiv.map.editLayer.addFeatures([sel]);\n";
-      }
       data_entry_helper::$javascript .= "});
 
-$('#run-report').click(function(evt) {";
+$('#run-report').click(function(evt) {
+  if (document.activeElement.id=='geom_buffer') {
+    $('#geom_buffer').blur();
+  }";
       if (isset($info['allow_buffer']) && $info['allow_buffer'])
         data_entry_helper::$javascript .= "
   storeGeomsInHiddenInput(mapDiv.map.editLayer, 'orig-wkt');
@@ -697,12 +698,18 @@ $('#run-report').click(function(evt) {";
       else
         data_entry_helper::$javascript .= "
   storeGeomsInHiddenInput(mapDiv.map.editLayer, 'hidden-wkt');\n";
-      data_entry_helper::$javascript .= "});
+      data_entry_helper::$javascript .= "  if ($('#hidden-wkt').val()==='') {
+    evt.preventDefault();
+    alert('".lang::get('Please supply a search area for the report.')."');
+    return false;
+  }
+});
 var add_map_tools = function(opts) {\n";
       foreach ($tools as $tool) {
         data_entry_helper::$javascript .= "opts.standardControls.push('draw$tool');\n";
       }
       data_entry_helper::$javascript .= "
+  opts.standardControls.push('clearEditLayer');
 }
 mapSettingsHooks.push(add_map_tools)\n";
     }

@@ -738,15 +738,18 @@ mapInitialisationHooks = [];
         } else if (ctrl=='drawPolygon' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Polygon,
-              {'displayClass': align + 'olControlDrawFeaturePolygon'}));
+              {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':'Draw polygons by clicking on the then double click to finish'}));
         } else if (ctrl=='drawLine' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Path,
-              {'displayClass': align + 'olControlDrawFeaturePath'}));
+              {'displayClass': align + 'olControlDrawFeaturePath', 'title':'Draw lines by clicking on the then double click to finish'}));
         } else if (ctrl=='drawPoint' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
-              {'displayClass': align + 'olControlDrawFeaturePoint'}));
+              {'displayClass': align + 'olControlDrawFeaturePoint', 'title':'Draw points by clicking on the map'}));
+        } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
+          toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
+              {'displayClass': align + ' olControlClearLayer', 'title':'Clear selection'}));
         } else if (ctrl=='graticule') {
           var graticule = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
           div.map.addControl(graticule);

@@ -237,7 +237,12 @@ class map_helper extends helper_base {
 
       // This resource has a dependency on the googlemaps resource so has to be added afterwards.
       self::add_resource('indiciaMapPanel');
-
+      if (array_key_exists('standardControls', $options)) {
+        if (in_array('graticule', $options['standardControls']))
+          self::add_resource('graticule');
+        if (in_array('clearEditLayer', $options['standardControls']))
+          self::add_resource('clearLayer');
+      }
       // We need to fudge the JSON passed to the JavaScript class so it passes any actual layers, functions
       // and controls, not the string class names.
       $json_insert='';
