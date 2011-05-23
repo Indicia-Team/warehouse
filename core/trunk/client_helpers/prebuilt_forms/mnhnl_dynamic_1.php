@@ -299,6 +299,15 @@ class iform_mnhnl_dynamic_1 {
           'group'=>'Species'
         ),
         array(
+          'name'=>'occurrence_confidential',
+          'caption'=>'Occurrence Confidential',
+          'description'=>'Should a checkbox be present for confidential status of each occurrence?',
+          'type'=>'boolean',
+          'required' => false,
+          'default'=>false,
+          'group'=>'Species'
+        ),
+        array(
           'name'=>'occurrence_images',
           'caption'=>'Occurrence Images',
           'description'=>'Should occurrences allow images to be uploaded?',
@@ -874,6 +883,7 @@ class iform_mnhnl_dynamic_1 {
           'extraParams'=>$extraParams,
           'survey_id'=>$args['survey_id'],
           'occurrenceComment'=>$args['occurrence_comment'],
+          'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true
       ), $options);
@@ -1031,7 +1041,12 @@ class iform_mnhnl_dynamic_1 {
         $r .= data_entry_helper::textarea(array(
           'fieldname'=>'occurrence:comment',
           'label'=>lang::get('Record Comment')
-        )); 
+        ));
+      if ($args['occurrence_confidential'])
+        $r .= data_entry_helper::checkbox(array(
+          'fieldname'=>'occurrence:confidential',
+          'label'=>lang::get('Record Confidental')
+        ));
       if ($args['occurrence_images']){
         $opts = array(
           'table'=>'occurrence_image',
