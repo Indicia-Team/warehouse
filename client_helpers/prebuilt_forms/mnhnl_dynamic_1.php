@@ -350,7 +350,7 @@ class iform_mnhnl_dynamic_1 {
             'language' => 'Only allow selection of species using common names in the user\'s language',
             'preferred' => 'Only allow selection of species using names which are flagged as preferred'            
           ),
-          'default' => 'autocomplete',
+          'default' => 'all',
           'group'=>'Species'
         ),
         array(
