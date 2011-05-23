@@ -55,7 +55,7 @@ function bufferFeature(feature) {
   }
 }
 
-jQuery(document).ready(function() {
+function enableBuffering() {
   // add a mapinitialisation hook to add a layer for buffered versions of polygons
   mapInitialisationHooks.push(function(div) {
     var style = $.extend({}, div.settings.boundaryStyle);
@@ -93,4 +93,4 @@ jQuery(document).ready(function() {
     })
 
   });
-});
+}
