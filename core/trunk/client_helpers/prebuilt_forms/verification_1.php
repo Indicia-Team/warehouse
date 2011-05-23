@@ -80,6 +80,13 @@ class iform_verification_1 {
         'type'=>'textarea',
         'default'=>1
       ), array(
+        'name' => 'path_to_record_details_page',
+        'caption' => 'Path to a record details page',
+        'description' => 'If a path is supplied here to a <em>View details of a record</em> page, then a link is provided from each row to the page. The path should '.
+            'be relative to the root of the website.',
+        'type' => 'text_input',
+        'required' => false
+      ), array(
         'name'=>'send_for_verification',
         'caption'=>'Allow records to be sent for verification',
         'description'=>'Enables a facility to email the details of a record to a verifier, who can check the record and reply so that their response can '.
@@ -270,16 +277,21 @@ class iform_verification_1 {
       // store authorisation details as a global in js, since some of the JavaScript needs to be able to access Indicia data
       data_entry_helper::$javascript .= 'auth=' . json_encode($auth) . ';';
       $actions[] = 
-        array('caption' => 'Send to verifier', 'class'=>'send_for_verification_btn',
+        array('caption' => str_replace(' ', '&nbsp;', lang::get('Send to verifier')), 'class'=>'send_for_verification_btn',
             'javascript'=>'indicia_send_to_verifier(\'{taxon}\', {occurrence_id}, '.$user->uid.', '.$args['website_id'].'); return false;'
         );     
       $r .= self::get_send_for_verification_form();  
     }
-    $actions[] = array('caption' => 'Verify', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, true, '.$user->uid.'); return false;');
-    $actions[] = array('caption' => 'Reject', 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, false, '.$user->uid.'); return false;');
-    $actions[] = array('caption' => 'Comments', 'javascript'=>'indicia_comments(\'{taxon}\', {occurrence_id}, '.$user->uid.
+    $actions[] = array('caption' => str_replace(' ', '&nbsp;', lang::get('Verify')), 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, true, '.$user->uid.'); return false;');
+    $actions[] = array('caption' => str_replace(' ', '&nbsp;', lang::get('Reject')), 'javascript'=>'indicia_verify(\'{taxon}\', {occurrence_id}, false, '.$user->uid.'); return false;');
+    $actions[] = array('caption' => str_replace(' ', '&nbsp;', lang::get('Comments')), 'javascript'=>'indicia_comments(\'{taxon}\', {occurrence_id}, '.$user->uid.
         ', \''.$auth['read']['nonce'].'\', \''.$auth['read']['auth_token'].'\'); return false;');
-
+    if (isset($args['path_to_record_details_page']) && $args['path_to_record_details_page'])
+      $actions[] = array(
+          'caption' => str_replace(' ', '&nbsp;', lang::get('View details')), 
+          'url' => '{rootFolder}' . $args['path_to_record_details_page'], 
+          'urlParams' => array('occurrence_id'=>'{occurrence_id}')
+      );
     // default columns behaviour is to just include anything returned by the report plus add an actions column
     $columns = array(
         array('display' => 'Actions', 'actions' => $actions)
