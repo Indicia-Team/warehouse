@@ -93,7 +93,7 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
     return $r;  
   }
   
-  public function save() {       
+  public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
       // Build the validation_rules field from the set of controls that are associated with it.
       $rules = array();
@@ -119,13 +119,11 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
     parent::save();    
   }
   
+  /**
+   * You can always get to the edit page for an attribute though the form might be read only.
+   */
   protected function record_authorised ($id)
   {
-    if (!is_null($id) AND !is_null($this->auth_filter))
-    {
-      $attribute_website = ORM::factory($this->prefix.'_attributes_website', $id);
-      return (in_array($attribute_website->website_id, $this->auth_filter['values']));
-    }
     return true;
   }
 
