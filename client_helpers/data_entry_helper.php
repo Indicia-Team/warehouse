@@ -1423,6 +1423,8 @@ class data_entry_helper extends helper_base {
   * Optional. Used to determine which attributes are valid for this website/survey combination</li>
   * <li><b>occurrenceComment</b><br/>
   * Optional. If set to true, then an occurrence comment input field is included on each row.</li>
+  * <li><b>occurrenceConfidential</b><br/>
+  * Optional. If set to true, then an occurrence confidential checkbox is included on each row.</li>
   * <li><b>occurrenceImages</b><br/>
   * Optional. If set to true, then images can be uploaded for each occurrence row. Currently not supported for
   * multi-column grids.</li>
@@ -1593,6 +1595,11 @@ class data_entry_helper extends helper_base {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\"><input class=\"scComment\" type=\"text\" name=\"sc:$id:$existing_record_id:occurrence:comment\" ".
           "id=\"sc:$id:$existing_record_id:occurrence:comment\" value=\"".self::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
+        if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
+          $row .= "\n<td class=\"ui-widget-content scConfidentialCell\">";
+          $row .= self::checkbox(array('fieldname'=>"sc:$id:$existing_record_id:occurrence:confidential"));
+          $row .= "</td>\n";
+        }
         if ($options['occurrenceImages']) {
           $existingImages = is_array(self::$entity_to_load) ? preg_grep("/^sc:$id:$existing_record_id:occurrence_image:id:[0-9]*$/", array_keys(self::$entity_to_load)) : array();
           if (count($existingImages)===0)
@@ -1683,6 +1690,7 @@ class data_entry_helper extends helper_base {
         self::$entity_to_load['occurrence:record_status']=$occurrence['record_status'];
         self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':present'] = true;
         self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:comment'] = $occurrence['comment'];
+        self::$entity_to_load['sc:'.$occurrence['taxa_taxon_list_id'].':'.$occurrence['id'].':occurrence:confidential'] = $occurrence['confidential'];
         self::$entity_to_load['occurrence:taxa_taxon_list_id']=$occurrence['taxa_taxon_list_id'];
         self::$entity_to_load['occurrence:taxa_taxon_list_id:taxon']=$occurrence['taxon'];
         // Keep a list of all Ids
@@ -1739,6 +1747,9 @@ class data_entry_helper extends helper_base {
         }
         if ($options['occurrenceComment']) {
           $r .= self::get_species_checklist_col_header(lang::get('Comment'), $visibleColIdx, $options['colWidths']) ;
+        }
+        if ($options['occurrenceConfidential']) {
+          $r .= self::get_species_checklist_col_header(lang::get('Confidential'), $visibleColIdx, $options['colWidths']) ;
         }
         if ($options['occurrenceImages']) {
           $r .= self::get_species_checklist_col_header(lang::get('Images'), $visibleColIdx, $options['colWidths']) ;
@@ -1821,6 +1832,7 @@ class data_entry_helper extends helper_base {
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
+        'occurrenceConfidential' => false,
         'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array()
@@ -1919,6 +1931,11 @@ class data_entry_helper extends helper_base {
     if ($options['occurrenceComment']) {
       $r .= '<td class="ui-widget-content scCommentCell"><input class="scComment" type="text" ' .
           'id="sc:-ttlId-::occurrence:comment" name="sc:-ttlId-::occurrence:comment" value="" /></td>';
+    }
+    if (isset($options['occurrenceConfidential']) && $options['occurrenceConfidential']) {
+      $r .= '<td class="ui-widget-content scConfidentialCell">'.
+          self::checkbox(array('fieldname'=>'sc:-ttlId-::occurrence:confidential')).
+          '</td>';
     }
     if ($options['occurrenceImages']) {
       // Add a link, but make it display none for now as we can't link images till we know what species we are linking to.
