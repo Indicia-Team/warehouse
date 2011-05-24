@@ -1,4 +1,5 @@
 DROP VIEW gv_people;
+DROP VIEW gv_taxon_lists;
 
 CREATE OR REPLACE VIEW gv_people AS 
          SELECT p.id, p.first_name, p.surname, p.initials, (p.first_name::text || ' '::text) || p.surname::text AS caption, 
