@@ -990,7 +990,8 @@ mapSettingsHooks.push(add_map_tools)\n";
       }
     }
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
-      $script = "<script type='text/javascript'>/* <![CDATA[ */
+      $script = "indiciaData = {windowLoaded:false};\n";
+      $script .= "<script type='text/javascript'>/* <![CDATA[ */
 jQuery(document).ready(function() {
 $javascript
 $late_javascript
@@ -998,6 +999,7 @@ $late_javascript
       if (!empty($onload_javascript)) {
         $script .= "window.onload = function() {
 $onload_javascript
+indiciaData.windowLoaded=true;
 };\n";
       }
       $script .= "/* ]]> */</script>";
