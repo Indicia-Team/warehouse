@@ -29,7 +29,7 @@
  * @link  http://code.google.com/p/indicia/wiki/DataModel
  */
 class Location_Attribute_Value_Model extends Attribute_Value_ORM {
-  public static $search_field='text_value';
+  public $search_field='text_value';
 
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'location', 'location_attribute');
 

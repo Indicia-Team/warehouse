@@ -29,7 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Person_Model extends ORM {
-  public static $search_field='surname';
+  public $search_field='surname';
   
   protected $has_one = array('user');
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'title');

@@ -30,7 +30,7 @@
  */
 class Location_Model extends ORM_Tree {
 
-  public static $search_field='name';
+  public $search_field='name';
 
   protected $ORM_Tree_children = "locations";
   protected $has_and_belongs_to_many = array('websites');

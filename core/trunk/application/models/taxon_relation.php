@@ -29,7 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_Relation_Model extends ORM {
-  public static $search_field = 'id';
+  public $search_field = 'id';
   
   protected $belongs_to = array(
     'created_by' => 'user', 

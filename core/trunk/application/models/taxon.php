@@ -29,7 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Taxon_Model extends ORM {
-  public static $search_field='taxon';
+  public $search_field='taxon';
   protected $belongs_to = array('meaning', 'language', 'created_by' => 'user', 'updated_by' => 'user');
   protected $has_many = array('taxa_taxon_lists');
   protected $has_and_belongs_to_many = array('taxon_lists');

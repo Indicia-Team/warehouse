@@ -21,6 +21,13 @@
  * @link     http://code.google.com/p/indicia/
  */
 
+/**
+ * Override of the Kohana core ORM class which provides Indicia specific functionality for submission of data.
+ * ORM objects are normally instantiated by calling ORM::Factory(modelname[, id]). For Indicia ORM objects, 
+ * there is an option to pass -1 as the ID indicating that the ORM object should not be initialised. This
+ * allows access to variables such as the lookup table and search field without full instantiation of the ORM
+ * object, saving hits on the database etc.
+ */
 class ORM extends ORM_Core {
   /**
   * @var Should foreign key lookups be cached? Set to true during import for example.
@@ -36,7 +43,7 @@ class ORM extends ORM_Core {
   /**
    * The default field that is searchable is called title. Override this when a different field name is used.
    */
-  public static $search_field='title';
+  public $search_field='title';
 
   protected $errors = array();
   protected $identifiers = array('website_id'=>null,'survey_id'=>null);
@@ -65,47 +72,51 @@ class ORM extends ORM_Core {
    */
   public function __construct($id = NULL)
   {
-    // use caching, so things don't slow down if there are lots of plugins. the object_name does not 
-    // exist yet as we haven't called the parent construct, so we build our own.
-    $object_name = strtolower(substr(get_class($this), 0, -6));
-    $cacheId = 'orm-'.$object_name;
-    $this->cache = Cache::instance();
-    $ormRelations = $this->cache->get($cacheId);
-    if ($ormRelations === null) {
-      // now look for modules which plugin to tweak the orm relationships.
-      foreach (Kohana::config('config.modules') as $path) {      
-        $plugin = basename($path);
-        if (file_exists("$path/plugins/$plugin.php")) {
-          require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_extend_orm')) {
-            $extends = call_user_func($plugin.'_extend_orm');
-            if (isset($extends[$object_name])) {
-              if (isset($extends[$object_name]['has_one']))
-                $this->has_one = array_merge($this->has_one, $extends[$object_name]['has_one']);
-              if (isset($extends[$object_name]['has_many']))
-                $this->has_many = array_merge($this->has_many, $extends[$object_name]['has_many']);
-              if (isset($extends[$object_name]['belongs_to']))
-                $this->belongs_to = array_merge($this->belongs_to, $extends[$object_name]['belongs_to']);
-              if (isset($extends[$object_name]['has_and_belongs_to_many']))
-                $this->has_and_belongs_to_many = array_merge($this->has_and_belongs_to_many, $extends[$object_name]['has_and_belongs_to_many']);
+    if ($id!=-1) {
+      // use caching, so things don't slow down if there are lots of plugins. the object_name does not 
+      // exist yet as we haven't called the parent construct, so we build our own.
+      $object_name = strtolower(substr(get_class($this), 0, -6));
+      $cacheId = 'orm-'.$object_name;
+      $this->cache = Cache::instance();
+      $ormRelations = $this->cache->get($cacheId);
+      if ($ormRelations === null) {
+        // now look for modules which plugin to tweak the orm relationships.
+        foreach (Kohana::config('config.modules') as $path) {      
+          $plugin = basename($path);
+          if (file_exists("$path/plugins/$plugin.php")) {
+            require_once("$path/plugins/$plugin.php");
+            if (function_exists($plugin.'_extend_orm')) {
+              $extends = call_user_func($plugin.'_extend_orm');
+              if (isset($extends[$object_name])) {
+                if (isset($extends[$object_name]['has_one']))
+                  $this->has_one = array_merge($this->has_one, $extends[$object_name]['has_one']);
+                if (isset($extends[$object_name]['has_many']))
+                  $this->has_many = array_merge($this->has_many, $extends[$object_name]['has_many']);
+                if (isset($extends[$object_name]['belongs_to']))
+                  $this->belongs_to = array_merge($this->belongs_to, $extends[$object_name]['belongs_to']);
+                if (isset($extends[$object_name]['has_and_belongs_to_many']))
+                  $this->has_and_belongs_to_many = array_merge($this->has_and_belongs_to_many, $extends[$object_name]['has_and_belongs_to_many']);
+              }
             }
           }
         }
+        $cacheArray = array(
+          'has_one' => $this->has_one,
+          'has_many' => $this->has_many,
+          'belongs_to' => $this->belongs_to,
+          'has_and_belongs_to_many' => $this->has_and_belongs_to_many
+        );
+        $this->cache->set($cacheId, $cacheArray);
+      } else {
+        $this->has_one = $ormRelations['has_one'];
+        $this->has_many = $ormRelations['has_many'];
+        $this->belongs_to = $ormRelations['belongs_to'];
+        $this->has_and_belongs_to_many = $ormRelations['has_and_belongs_to_many'];
       }
-      $cacheArray = array(
-        'has_one' => $this->has_one,
-        'has_many' => $this->has_many,
-        'belongs_to' => $this->belongs_to,
-        'has_and_belongs_to_many' => $this->has_and_belongs_to_many
-      );
-      $this->cache->set($cacheId, $cacheArray);
+      parent::__construct($id);
     } else {
-      $this->has_one = $ormRelations['has_one'];
-      $this->has_many = $ormRelations['has_many'];
-      $this->belongs_to = $ormRelations['belongs_to'];
-      $this->has_and_belongs_to_many = $ormRelations['has_and_belongs_to_many'];
+      kohana::log('debug', 'skipped constructor for '.strtolower(substr(get_class($this), 0, -6)));
     }
-    parent::__construct($id);
   }
 
   /**
@@ -290,8 +301,7 @@ class ORM extends ORM_Core {
    */
   public function lookup($search_text)
   {
-    $modelName = ucfirst($this->object_name).'_Model';
-    return $this->where($modelName::$search_field, $search_text)->find();
+    return $this->where($this->search_field, $search_text)->find();
   }
 
   /**
@@ -301,8 +311,7 @@ class ORM extends ORM_Core {
   public function caption()
   {
     if ($this->id) {
-      $modelName = ucfirst($this->object_name).'_Model';
-      return $this->__get($modelName::$search_field);
+      return $this->__get($this->search_field);
     } else {
       return $this->getNewItemCaption();
     }
@@ -626,6 +635,7 @@ class ORM extends ORM_Core {
         $joinModel = inflector::singular($this->join_table($table));
         // Remove any joins that are to records that should no longer be joined.
         foreach ($to_delete as $id) {
+          // @todo: This could be optimised by not using ORM to do the deletion.
           $joinModel = ORM::factory($joinModel,
             array($this->object_name.'_id' => $this->id, $model.'_id' => $id));
           $joinModel->delete();
@@ -763,7 +773,7 @@ class ORM extends ORM_Core {
         $fields["metaFields:$metaField"]='';
       }
     }    
-    if ($this->has_attributes) {    
+    if ($this->has_attributes) {
       $this->setupDbToQueryAttributes();
       $result = $this->db->get();
       foreach($result as $row) {
@@ -1079,16 +1089,17 @@ class ORM extends ORM_Core {
         } else {
            $fkTable = $fieldName;
         }
-        $fkModel = ucfirst($fkTable).'_Model';
+        // Create model without initialisting, so we can just check the lookup variables
+        $fkModel = ORM::Factory($fkTable, -1);
         // let the model map the lookup against a view if necessary
-        $lookupAgainst = isset($fkModel::$lookup_against) ? $fkModel::$lookup_against : $fkTable;
+        $lookupAgainst = isset($fkModel->lookup_against) ? $fkModel->lookup_against : $fkTable;
         // Generate a foreign key instance
         $submission['fkFields'][$field] = array
         (
           // Foreign key id field is table_id
           'fkIdField' => "$fieldName"."_id",
           'fkTable' => $lookupAgainst,
-          'fkSearchField' => $fkModel::$search_field,
+          'fkSearchField' => $fkModel->search_field,
           'fkSearchValue' => trim($value['value']),
           'readableTableName' => ucwords(preg_replace('/[\s_]+/', ' ', $fkTable))
         );
