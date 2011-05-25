@@ -21,7 +21,7 @@ mapSettingsHooks = [];
 
 /**
  * Add functions to this array for them to be called when the map initialises.
- */ 
+ */
 mapInitialisationHooks = [];
 
 /**
@@ -129,7 +129,7 @@ mapInitialisationHooks = [];
      * bound to them to associate them with the map.
      */
     function _bindControls(div) {
-      
+
       // If the spatial ref input control exists, bind it to the map, so entering a ref updates the map
       $('#'+opts.srefId).change(function() {
         _handleEnteredSref($(this).val(), div);
@@ -165,7 +165,7 @@ mapInitialisationHooks = [];
       });
 
       $('#'+div.georefOpts.georefCloseBtnId).click(function(e) {
-        $('#'+div.georefOpts.georefDivId).hide('fast', function() {div.map.updateSize();});        
+        $('#'+div.georefOpts.georefDivId).hide('fast', function() {div.map.updateSize();});
         e.preventDefault();
       });
 
@@ -185,7 +185,7 @@ mapInitialisationHooks = [];
         }
       });
     }
-    
+
     function _handleEnteredSref(value, div) {
       if (value!='') {
         $.getJSON(div.settings.indiciaSvc + "index.php/services/spatial/sref_to_wkt"+
@@ -201,7 +201,7 @@ mapInitialisationHooks = [];
         );
       }
     }
-    
+
     /**
      * Having clicked on the map, and asked warehouse services to transform this to a WKT, add the feature to the map editlayer.
      */
@@ -239,7 +239,7 @@ mapInitialisationHooks = [];
         }
       }
     }
-    
+
     /**
      * Callback function, called by the georeferencer driver when it has found the results of a place
      * search.
@@ -270,24 +270,24 @@ mapInitialisationHooks = [];
             if (place.admin1!==undefined && place.admin1!='') {
               placename = placename + ', '+place.admin1;
             }
-            if (place.admin2!==undefined && place.admin2!='') { 
+            if (place.admin2!==undefined && place.admin2!='') {
               placename = placename + '\\' + place.admin2;
             }
-  
+
             ol.append($("<li>").append(
               $("<a href='#'>" + placename + "</a>")
                 .click(function(e) {e.preventDefault();})
                 .click((
-                  // use closures to persist the values of ref, corner1, corner 2 
+                  // use closures to persist the values of ref, corner1, corner 2
                   function(ref, corner1, corner2, epsg){
-                    return function() { 
+                    return function() {
                       _displayLocation(div, ref, corner1, corner2, epsg);
                     };
                   }
                 )(ref, corner1, corner2, epsg))
             ));
           });
-  
+
           ol.appendTo('#'+div.georefOpts.georefOutputDivId);
           $('#'+div.georefOpts.georefDivId).show("fast", function() {div.map.updateSize();});
         }
@@ -303,7 +303,7 @@ mapInitialisationHooks = [];
     * @access private
     */
     function _displayLocation(div, ref, corner1, corner2, epsgCode)
-    { 
+    {
       var epsg=new OpenLayers.Projection("EPSG:"+epsgCode);
       var refxy = ref.split(', ');
       var dataref = new OpenLayers.Geometry.Point(refxy[1],refxy[0]).transform(epsg, div.map.projection).toString();
@@ -329,7 +329,7 @@ mapInitialisationHooks = [];
 
     /**
     * Some pre-configured layers that can be added to the map.
-    */    
+    */
     function _getPresetLayers() {
       var r={
         openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true}); },
@@ -366,7 +366,7 @@ mapInitialisationHooks = [];
     if (opts.useOlDefaults) {
       olOptions = $.extend({}, $.fn.indiciaMapPanel.openLayersDefaults, olOptions);
     }
-    
+
     olOptions.projection = new OpenLayers.Projection("EPSG:"+olOptions.projection);
     olOptions.displayProjection = new OpenLayers.Projection("EPSG:"+olOptions.displayProjection);
     if ((typeof olOptions.maxExtent !== "undefined") && (olOptions.maxExtent instanceof Array)) {
@@ -397,7 +397,7 @@ mapInitialisationHooks = [];
 
       // Keep a reference to this, to simplify scoping issues.
       var div = this;
-      
+
       // Create a projection to represent data in the Indicia db
       div.indiciaProjection = new OpenLayers.Projection('EPSG:900913');
       olOptions.controls = [
@@ -406,22 +406,22 @@ mapInitialisationHooks = [];
             new OpenLayers.Control.Attribution()
       ];
 
-      // Constructs the map      
+      // Constructs the map
       div.map = new OpenLayers.Map($(this)[0], olOptions);
-      
+
       // and prepare a georeferencer
       div.georefOpts = $.extend({}, $.fn.indiciaMapPanel.georeferenceDriverSettings, $.fn.indiciaMapPanel.georeferenceLookupSettings);
       if (typeof Georeferencer !== "undefined") {
         div.georeferencer = new Georeferencer(div, _displayGeorefOutput);
       }
-      
+
       // Add any tile cache layers
       var tcLayer;
       $.each(this.settings.tilecacheLayers, function(i, item) {
         tcLayer = new OpenLayers.Layer.TileCache(item.caption, item.servers, item.layerName, item.settings);
         div.map.addLayer(tcLayer);
       });
-      
+
       // Iterate over the preset layers, adding them to the map
       var presetLayers=_getPresetLayers();
       $.each(this.settings.presetLayers, function(i, item)
@@ -451,13 +451,13 @@ mapInitialisationHooks = [];
       });
 
       div.map.addLayers(this.settings.layers);
-      
+
       // Centre the map
       var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
       if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
         center.transform(div.map.displayProjection, div.map.projection);
       }
-      div.map.setCenter(center, this.settings.initial_zoom);      
+      div.map.setCenter(center, this.settings.initial_zoom);
 
       // This hack fixes an IE8 bug where it won't display Google layers when switching using the Layer Switcher.
       div.map.events.register('changebaselayer', null, function(e) {
@@ -472,7 +472,7 @@ mapInitialisationHooks = [];
       if (this.settings.editLayer) {
         // Add an editable layer to the map
         var editLayer = new OpenLayers.Layer.Vector(
-            this.settings.editLayerName, 
+            this.settings.editLayerName,
             {style: this.settings.boundaryStyle, 'sphericalMercator': true, displayInLayerSwitcher: this.settings.editLayerInSwitcher}
         );
         div.map.editLayer = editLayer;
@@ -502,7 +502,7 @@ mapInitialisationHooks = [];
       $.each(this.settings.controls, function(i, item) {
         div.map.addControl(item);
       });
-      
+
       if (this.settings.clickableLayers.length!==0) {
         var clickableLayerNames = [];
         $.each(div.settings.clickableLayers, function(i, item) {
@@ -527,7 +527,7 @@ mapInitialisationHooks = [];
             });
             OpenLayers.Control.prototype.activate.call(this);
           },
-  
+
           onClick: function(e) {
             div.settings.lastclick = e.xy;
             var params={
@@ -549,7 +549,7 @@ mapInitialisationHooks = [];
               if (div.settings.clickableLayers.length>1) {
                 alert('Multiple layers are clickable with filters defined. This is not supported at present');
                 exit;
-              }            
+              }
               params.CQL_FILTER = div.settings.clickableLayers[0].params.CQL_FILTER;
             }
             this.protocol.read({
@@ -558,14 +558,14 @@ mapInitialisationHooks = [];
               scope: this
             });
           },
-  
+
           onResponse: function(response) {
             if (typeof div.settings.clickableLayersOutputDiv==="undefined") {
               for (var i=0; i<div.map.popups.length; i++) {
                 div.map.removePopup(div.map.popups[i]);
               }
               div.map.addPopup(new OpenLayers.Popup.FramedCloud(
-                  "popup", 
+                  "popup",
                   div.map.getLonLatFromPixel(div.settings.lastclick),
                   null,
                   div.settings.clickableLayersOutputFn(response.features, div),
@@ -579,22 +579,22 @@ mapInitialisationHooks = [];
         });
 
         div.map.addControl(infoCtrl);
-        infoCtrl.activate();      
+        infoCtrl.activate();
       }
-      
+
       if (div.settings.locationLayerName) {
-        var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', { 
-            layers: div.settings.locationLayerName, 
-            transparent: true 
-          }, { 
-            singleTile: true, 
-            isBaseLayer: false, 
-            sphericalMercator: true, 
+        var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', {
+            layers: div.settings.locationLayerName,
+            transparent: true
+          }, {
+            singleTile: true,
+            isBaseLayer: false,
+            sphericalMercator: true,
             opacity: div.settings.fillOpacity/2
         });
         div.settings.layers.push(layer);
         div.map.addLayers([layer]);
-        
+
         var infoCtrl = new OpenLayers.Control({
           activate: function() {
             var handlerOptions = {
@@ -613,7 +613,7 @@ mapInitialisationHooks = [];
             });
             OpenLayers.Control.prototype.activate.call(this);
           },
-  
+
           onClick: function(e) {
             div.settings.lastclick = e.xy;
             var params={
@@ -637,7 +637,7 @@ mapInitialisationHooks = [];
               scope: this
             });
           },
-  
+
           onResponse: function(response) {
             if (response.features.length>0) {
               $('#imp-location').val(response.features[0].data.id);
@@ -647,7 +647,7 @@ mapInitialisationHooks = [];
         });
 
         div.map.addControl(infoCtrl);
-        infoCtrl.activate();      
+        infoCtrl.activate();
       }
       var toolbarControls = [];
       if (div.settings.editLayer && div.settings.clickForSpatialRef) {
@@ -655,7 +655,7 @@ mapInitialisationHooks = [];
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
           defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
           initialize: function(options)
-          {            
+          {
             this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
             OpenLayers.Control.prototype.initialize.apply(this, arguments);
             this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
@@ -663,8 +663,7 @@ mapInitialisationHooks = [];
 
           trigger: function(e)
           {
-            var lonlat = div.map.getLonLatFromViewPortPx(new
-              OpenLayers.Pixel(e.xy.x , e.xy.y));
+            var lonlat = div.map.getLonLatFromPixel (e.xy);
             // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
             var precision, metres = div.map.getScale()/200;
             // now round to find appropriate square size
@@ -677,7 +676,7 @@ mapInitialisationHooks = [];
             } else {
               precision=2;
             }
-            // enforce precision limits if specifid in the settings
+            // enforce precision limits if specified in the settings
             if (div.settings.clickedSrefPrecisionMin!=='') {
             precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
             }
@@ -721,7 +720,7 @@ mapInitialisationHooks = [];
           }
         });
       }
-      // specify a class to align edit buttons left if they are on a toolbar somewhere other than 
+      // specify a class to align edit buttons left if they are on a toolbar somewhere other than
       // the map.
       var align = (div.settings.toolbarDiv=='map') ? '' : 'left ';
       $.each(div.settings.standardControls, function(i, ctrl) {
@@ -882,7 +881,7 @@ $.fn.indiciaMapPanel.defaults = {
     fillColorSearch: '#ee0000',
     fillOpacitySearch: 0.5,
     strokeColorSearch: '#ee0000',
-    
+
     // Are we using the OpenLayers defaults, or are they all provided?
     useOlDefaults: true
 

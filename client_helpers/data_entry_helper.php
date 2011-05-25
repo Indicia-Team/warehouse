@@ -633,7 +633,6 @@ class data_entry_helper extends helper_base {
     // We need to see if there is a resource in the resource list for any special files required by this driver. This
     // will do nothing if the resource is absent.
     self::add_resource('georeference_'.$options['driver']);
-    self::$javascript .= "indicia_url='".self::$base_url."';\n";
     foreach ($options as $key=>$value) {
       // if any of the options are for the georeferencer driver, then we must set them in the JavaScript.
       if (substr($key, 0, 6)=='georef') {

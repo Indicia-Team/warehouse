@@ -268,24 +268,32 @@ class map_helper extends helper_base {
         $json .= ','.json_encode($olOptions);
       }
       $javascript = '';
-      if (isset($options['tabDiv'])) {
-        // The map is displayed on a tab, so we must only generate it when the tab is displayed.        
-        $javascript .= "var tabHandler = function(event, ui) { \n";
-        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n    ";        
-      }
+      $mapSetupJs = '';
       if (isset($options['setupJs'])) {
-        $javascript .= $options['setupJs']."\n";
+        $mapSetupJs .= $options['setupJs']."\n";
       }
-      $javascript .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+      $mapSetupJs .= "jQuery('#".$options['divId']."').indiciaMapPanel($json);\n";
+      // If the map is displayed on a tab, so we must only generate it when the tab is displayed as creating the 
+      // map on a hidden div can cause problems. Also, the map must not be created until onload or later. So 
+      // we have to set use the mapTabLoaded and windowLoaded to track when these events are fired, and only
+      // load the map when BOTH the events have fired.
       if (isset($options['tabDiv'])) {
-        $javascript .= "    $(this).unbind(event);\n";
-        $javascript .= "  }\n};\n";
+        
+        $javascript .= "var tabHandler = function(event, ui) { \n";
+        $javascript .= "  if (ui.panel.id=='".$options['tabDiv']."') {\n";
+        $javascript .= "    indiciaData.mapTabLoaded=true;\n";
+        $javascript .= "    if (indiciaData.windowLoaded) {\n      ";
+        $javascript .= $mapSetupJs;
+        $javascript .= "    }\n    $(this).unbind(event);\n";
+        $javascript .= "  }\n\n};\n";
         $javascript .= "jQuery(jQuery('#".$options['tabDiv']."').parent()).bind('tabsshow', tabHandler);\n";
         // Insert this script at the beginning, because it must be done before the tabs are initialised or the 
         // first tab cannot fire the event
         self::$javascript = $javascript . self::$javascript;
-      }	else
-        self::$onload_javascript .= $javascript;
+        self::$onload_javascript .= "if (typeof indiciaData.mapTabLoaded!==\"undefined\") {\n$mapSetupJs\n}\n";
+      } else {
+        self::$onload_javascript .= $mapSetupJs;
+      }
       
       return self::apply_template('map_panel', $options);
     }
