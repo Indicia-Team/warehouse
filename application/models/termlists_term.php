@@ -31,7 +31,7 @@
 class Termlists_term_Model extends Base_Name_Model {
   // TODO: this is a temporary placeholder. Need to think how we can get the term (from the terms table)
   // in as the search field in termlists_terms. Perhaps a view?
-  public static $search_field='id';
+  public $search_field='id';
   
   protected $list_id_field = 'termlist_id';
 

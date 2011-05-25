@@ -29,7 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Form_Structure_Block_Model extends ORM_Tree {
-  public static $search_field='name';
+  public $search_field='name';
   protected $ORM_Tree_children = "form_structure_blocks";
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'survey');
 

@@ -29,7 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Meaning_Model extends ORM {
-  public static $search_field='id';
+  public $search_field='id';
 
   protected $has_many = array(
       'terms'

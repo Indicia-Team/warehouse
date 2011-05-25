@@ -29,7 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Term_Model extends ORM {
-  public static $search_field='term';
+  public $search_field='term';
   
   protected $belongs_to = array('meaning', 'language', 'created_by' => 'user', 'updated_by' => 'user');
   protected $has_many = array('termlists_terms');
