@@ -349,7 +349,7 @@ class helper_base extends helper_config {
     if (!isset(self::$final_image_folder) || self::$final_image_folder=='warehouse')
       return self::$base_url.(isset(self::$indicia_upload_path) ? self::$indicia_upload_path : 'upload/');
     else {
-      return dirname($_SERVER['PHP_SELF']) . '/' . self::relative_client_helper_path() . self::$final_image_folder;
+      return dirname(__FILE__).'/'.self::$final_image_folder;
     }      
   }
   
@@ -623,9 +623,9 @@ mapSettingsHooks.push(add_map_tools)
   protected static function send_file_to_warehouse($path, $persist_auth=false, $readAuth = null, $service='data/handle_media') {
     if ($readAuth==null) $readAuth=$_POST;
     $interim_image_folder = isset(parent::$interim_image_folder) ? parent::$interim_image_folder : 'upload/';
-    $uploadpath = self::relative_client_helper_path() . $interim_image_folder;
-    if (!file_exists($uploadpath.$path)) 
-      return "The file $uploadpath$path does not exist and cannot be uploaded to the Warehouse.";
+    $interim_path = dirname(__FILE__).'/'.$interim_image_folder;
+    if (!file_exists($interim_path.$path))
+      return "The file $interim_path$path does not exist and cannot be uploaded to the Warehouse.";
     $serviceUrl = parent::$base_url."index.php/services/".$service;
     // This is used by the file box control which renames uploaded files using a guid system, so disable renaming on the server.
     $postargs = array('name_is_guid' => 'true');
@@ -636,7 +636,7 @@ mapSettingsHooks.push(add_map_tools)
       $postargs['nonce'] = $readAuth['nonce'];
     if ($persist_auth)
       $postargs['persist_auth'] = 'true';
-    $file_to_upload = array('media_upload'=>'@'.realpath($uploadpath.$path));    
+    $file_to_upload = array('media_upload'=>'@'.realpath($interim_path.$path));
     $response = self::http_post($serviceUrl, $file_to_upload + $postargs);    
     $output = json_decode($response['output'], true);
     $r = true; // default is success
@@ -651,7 +651,7 @@ mapSettingsHooks.push(add_map_tools)
       }
     }
     //remove local copy
-    unlink(realpath($uploadpath.$path));
+    unlink(realpath($interim_path.$path));
     return $r;
   }
 
