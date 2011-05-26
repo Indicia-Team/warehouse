@@ -448,16 +448,17 @@ class iform_mnhnl_dynamic_1 {
           }
         }
       } else if(!is_null(data_entry_helper::$entity_to_load)){
-          $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
-        } // else valid save, so go back to gridview: default mode 0
+        $mode = MODE_EXISTING; // errors with new sample, entity populated with post, so display this data.
+      } // else valid save, so go back to gridview: default mode 0
     }
-    if (array_key_exists('sample_id', $_GET)){
+    if (array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}'){
       $mode = MODE_EXISTING;
       $loadedSampleId = $_GET['sample_id'];
     }
-    if (array_key_exists('occurrence_id', $_GET)){
+    if (array_key_exists('occurrence_id', $_GET) && $_GET['occurrence_id']!='{occurrence_id}'){
       $mode = MODE_EXISTING;
       $loadedOccurrenceId = $_GET['occurrence_id'];
+      self::$occurrenceIds = array($loadedOccurrenceId);
     } 
     if ($mode!=MODE_EXISTING && array_key_exists('newSample', $_GET)){
       $mode = MODE_NEW_SAMPLE;
@@ -483,7 +484,7 @@ class iform_mnhnl_dynamic_1 {
       if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
         $extraTabs = call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), false, $auth['read'], $args, $attributes);
         if(is_array($extraTabs))
-        	$tabs = $tabs + $extraTabs;
+          $tabs = $tabs + $extraTabs;
       }
       if(count($tabs) > 1){
         $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
@@ -529,7 +530,6 @@ class iform_mnhnl_dynamic_1 {
       }
       return $r;
     }
-    
     if ($mode == MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { // only load if not in error situation
       data_entry_helper::$entity_to_load = array();
       // Displaying an existing sample. If we know the occurrence ID, and don't know the sample ID or are displaying just one occurrence
@@ -900,9 +900,6 @@ class iform_mnhnl_dynamic_1 {
     }
     else {
       // A single species entry control of some kind
-      if (count(self::$occurrenceIds)==1)
-        // output a hidden input to contain the occurrence id
-        $r .= '<input type="hidden" name="occurrence:id" value="'.self::$occurrenceIds[0].'" />'."\n";
       if ($args['extra_list_id']=='')
         $extraParams['taxon_list_id'] = $args['list_id'];
       // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should 
@@ -939,7 +936,7 @@ class iform_mnhnl_dynamic_1 {
             '<span>{caption}</span>';
       }
       // Dynamically generate the species selection control required.
-     return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_ctrl_opts);
+      return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_ctrl_opts);
     }
   }
   
@@ -1216,7 +1213,7 @@ class iform_mnhnl_dynamic_1 {
   }
   
   /**
-   * Returns true if this form should be displaying a multipled occurrence entry grid.
+   * Returns true if this form should be displaying a multiple occurrence entry grid.
    */
   protected static function getGridMode($args) {
     // if loading an existing sample and we are allowed to display a grid or single species selector
@@ -1225,7 +1222,8 @@ class iform_mnhnl_dynamic_1 {
       // after a validation failure with a hidden input indicating grid mode.
       return isset($_GET['gridmode']) || 
           isset(data_entry_helper::$entity_to_load['gridmode']) ||
-          count(self::$occurrenceIds)>1;
+          ((array_key_exists('sample_id', $_GET) && $_GET['sample_id']!='{sample_id}') &&
+           (!array_key_exists('occurrence_id', $_GET) || $_GET['occurrence_id']=='{occurrence_id}'));
     } else
       return 
           // a form saved using a previous version might not have this setting, so default to grid mode=true

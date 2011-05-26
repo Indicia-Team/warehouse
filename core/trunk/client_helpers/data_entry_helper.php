@@ -322,6 +322,8 @@ class data_entry_helper extends helper_base {
     // Don't set js up for the datepicker in the clonable row for the species checklist grid
     if ($escaped_id!='{fieldname}') {
       if (self::$validated_form_id!==null) {
+        if (!isset($options['default']) || $options['default']=='')
+          $options['default']=lang::get('click here');
         self::$javascript .= "jQuery.validator.addMethod('customDate',
   function(value, element) {
     // parseDate throws exception if the value is invalid
@@ -349,14 +351,9 @@ class data_entry_helper extends helper_base {
       }
       self::$javascript .= "\n});\n";
     }
-    if (!array_key_exists('default', $options) || $options['default']=='') {
-      $options['default']=lang::get('click here');
-    }
-  // Check for the special default value of today
-  if (isset($options['default']) ) {
-    if ($options['default']=='today')
+    // Check for the special default value of today
+    if (isset($options['default']) && $options['default']=='today')
       $options['default'] = date('d/m/Y');
-  }
 
     // Enforce a class on the control called date
     if (!array_key_exists('class', $options)) {
@@ -3694,7 +3691,8 @@ $('.ui-state-default').live('mouseout', function() {
       if (in_array('required',$validation))
         $attrOptions['suffixTemplate'] = 'requiredsuffix';
     }
-    if(isset($item['default']) && $item['default']!="") $attrOptions['default']= $item['default'];
+    if(isset($item['default']) && $item['default']!="") 
+      $attrOptions['default']= $item['default'];
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
