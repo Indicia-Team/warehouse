@@ -85,6 +85,13 @@ class Sample_Controller extends Gridview_Base_Controller
         'title' => 'Occurrences',
         'views'=>'sample',
         'actions'=>array('edit')
+// This will add the sample comments tab but I haven't enabled it as I am
+// not able to test it at present.
+//      ), array(
+//        'controller' => 'sample_comment',
+//        'title' => 'Comments',
+//        'views'=>'sample',
+//        'actions'=>array('edit')
       ), array(
         'controller' => 'sample_image',
         'title' => 'Images',
