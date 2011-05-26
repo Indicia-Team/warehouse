@@ -990,8 +990,8 @@ mapSettingsHooks.push(add_map_tools)\n";
       }
     }
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
-      $script = "indiciaData = {windowLoaded:false};\n";
-      $script .= "<script type='text/javascript'>/* <![CDATA[ */
+      $script = "<script type='text/javascript'>/* <![CDATA[ */
+indiciaData = {windowLoaded:false};
 jQuery(document).ready(function() {
 $javascript
 $late_javascript

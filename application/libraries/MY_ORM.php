@@ -72,7 +72,7 @@ class ORM extends ORM_Core {
    */
   public function __construct($id = NULL)
   {
-    if ($id!=-1) {
+    if (is_object($id) || $id!=-1) {
       // use caching, so things don't slow down if there are lots of plugins. the object_name does not 
       // exist yet as we haven't called the parent construct, so we build our own.
       $object_name = strtolower(substr(get_class($this), 0, -6));
