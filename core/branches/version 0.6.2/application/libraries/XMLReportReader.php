@@ -420,7 +420,7 @@ class XMLReportReader_Core implements ReportReader
       if ($display != '') $this->columns[$name]['display'] = $display;
       if ($style != '') $this->columns[$name]['style'] = $style;
       if ($class != '') $this->columns[$name]['class'] = $class;
-      if ($visible == 'false' && $this->columns[$name]['visible'] == 'false')
+      if ($visible == 'false' || $this->columns[$name]['visible'] == 'false')
         $this->columns[$name]['visible'] = 'false';
       else
         $this->columns[$name]['visible'] = 'true';
