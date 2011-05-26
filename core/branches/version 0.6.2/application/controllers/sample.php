@@ -86,6 +86,11 @@ class Sample_Controller extends Gridview_Base_Controller
         'views'=>'sample',
         'actions'=>array('edit')
       ), array(
+        'controller' => 'sample_comment',
+        'title' => 'Comments',
+        'views'=>'sample',
+        'actions'=>array('edit')
+      ), array(
         'controller' => 'sample_image',
         'title' => 'Images',
         'views'=>'sample',

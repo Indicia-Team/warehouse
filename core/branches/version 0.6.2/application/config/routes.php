@@ -70,6 +70,7 @@ $config['occurrence_image/([0-9]+)'] = 'occurrence_image/page/1/$1';
 $config['occurrence_comment/([0-9]+)'] = 'occurrence_comment/page/1/$1';
 $config['sample'] = 'sample/page/1';
 $config['sample_image/([0-9]+)'] = 'sample_image/page/1/$1';
+$config['sample_comment/([0-9]+)'] = 'sample_comment/page/1/$1';
 // Title
 $config['title'] = 'title/page/1';
 // Taxon Relation Types

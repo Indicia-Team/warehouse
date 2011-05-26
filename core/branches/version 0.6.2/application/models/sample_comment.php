@@ -30,7 +30,7 @@
  */
 class Sample_comment_model extends ORM {
 
-  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'occurrence');
+  protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'sample');
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
