@@ -237,7 +237,12 @@ class Import_Controller extends Service_Base_Controller {
       // Get percentage progress
       $progress = ftell($handle) * 100 / filesize($csvTempFile);
       $filepos = ftell($handle);
-      echo "{uploaded:$count,progress:$progress,filepos:$filepos}";
+      $r = "{uploaded:$count,progress:$progress,filepos:$filepos}";
+      // allow for a JSONP cross-site request
+      if (array_key_exists('callback', $_GET)) {
+        $r = $_GET['callback']."(".$r.")";
+      }
+      echo $r;
       fclose($handle);
       fclose($errorHandle);
       self::internal_cache_upload_metadata($metadata);
