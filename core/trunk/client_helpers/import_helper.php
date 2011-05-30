@@ -307,8 +307,10 @@ class import_helper extends helper_base {
     */
     uploadChunk = function() {
       var limit=10;
-      jQuery.getJSON('".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
-        function(response) {
+      $.ajax({
+        url: '".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
+        dataType: 'jsonp',
+        success: function(response) {
           total = total + response.uploaded;
           filepos = response.filepos;
           jQuery('#progress-text').html(total + ' records uploaded.');
@@ -320,7 +322,7 @@ class import_helper extends helper_base {
             window.location = '$reloadpath&total='+total;
           }
         }
-      );  
+      });  
     };
     
     var total=0, filepos=0;
