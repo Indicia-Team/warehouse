@@ -3899,7 +3899,7 @@ $('.ui-state-default').live('mouseout', function() {
    * @param   array    maximum file size
    * @return  bool
    */
-  private static function check_upload_size(array $file)
+  public static function check_upload_size(array $file)
   {
     if ((int) $file['error'] !== UPLOAD_ERR_OK)
       return TRUE;
