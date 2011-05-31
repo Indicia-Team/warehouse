@@ -1604,7 +1604,7 @@ $('#cc-2-floral-station').ajaxForm({
 				}			
 			}
 		} else {
-			data.splice(10,8); // remove determination entries.
+			data.splice(12,8); // remove determination entries.
 		}
    		if ( valid == false ) {
 			myScrollToError();
