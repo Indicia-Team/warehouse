@@ -743,23 +743,13 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
 	    <p>'.lang::get($occurrence_attributes[$args['flower_type_attr_id']]['caption']).': <span id="collection-flower-type" class=\"collection-value\"></span></p>
 	    <p>'.lang::get($location_attributes[$args['habitat_attr_id']]['caption']).': <span id="collection-habitat" class=\"collection-value\"></span></p>
 	    <br />
-	    <p>'.lang::get(LANG_INSEE_Localisation).': <span id="collection-locality" ></span></p>
-	    <br />
 	    <p id="collection-user-name"></p>
 	    <a id="collection-user-link">'.lang::get('LANG_User_Link').'</a>
-	  </div>
-      <div id="map2_container">';
-    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
-    $tempScript = data_entry_helper::$onload_javascript;
-    data_entry_helper::$onload_javascript = '';
-    $r .= data_entry_helper::map_panel($options2, $olOptions);
-    $map2JS = data_entry_helper::$onload_javascript;
-    data_entry_helper::$onload_javascript = $tempScript;
-    $r .= '</div>
-    </div>
-	<div id="fc-new-location" class="ui-widget-content ui-corner-all">
-	    <p>'.lang::get(LANG_Localisation).'</p>
-		<form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
+	    <br />
+	    <p>'.lang::get('LANG_INSEE_Localisation').'</p><p id="collection-locality"></p>
+        <div id="fc-new-location">
+          <p id="fc-new-location-desc">'.lang::get('LANG_Localisation_Desc').'</p>
+		  <form id="fc-new-location-form" action="'.iform_ajaxproxy_url($node, 'location').'" method="POST">
     		<input type="hidden"                       name="website_id" value="'.$args['website_id'].'" />
     		<input type="hidden"                       name="survey_id" value="'.$args['survey_id'].'" />
     		<input type="hidden" id="imp-sref-system"  name="location:centroid_sref_system" value="4326" />
@@ -779,7 +769,17 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     			'suffixTemplate'=>'nosuffix')).'
        		<input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
     	</form>
-      <div id="fc-new-location-message"></div>
+       <div id="fc-new-location-message"></div>
+       </div>
+	  </div>
+      <div id="map2_container">';
+    // this is a bit of a hack, because the apply_template method is not public in data entry helper.
+    $tempScript = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = '';
+    $r .= data_entry_helper::map_panel($options2, $olOptions);
+    $map2JS = data_entry_helper::$onload_javascript;
+    data_entry_helper::$onload_javascript = $tempScript;
+    $r .= '</div>
     </div>';
     if(user_access('IForm n'.$node->nid.' add to front page')){
     	$r .= '<div id="fc-front-page" class="ui-widget-content ui-corner-all">
@@ -1198,6 +1198,16 @@ loadCollection = function(id, index){
     	".$map2JS."
 		jQuery('#map2')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
 			jQuery('#fc-new-location-message').empty();
+			var parser = new OpenLayers.Format.WKT();
+			var feature = parser.read(jQuery('#imp-geom').val());
+			var filter = new OpenLayers.Filter.Spatial({
+  				type: OpenLayers.Filter.Spatial.CONTAINS ,
+    			property: 'the_geom',
+    			value: feature.geometry
+			});
+			var locality = jQuery('#collection-locality');
+			var scope = {target: locality};
+			inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope});
 		});
  	};
 	jQuery('#map2')[0].map.editLayer.clickControl.".(user_access('IForm n'.$node->nid.' edit geolocation') ? "" : "de")."activate();
@@ -1508,7 +1518,7 @@ addCollection = function(index, attributes, geom, first){
 	  jQuery('<p class=\"collection-date\">'+convertDate(attributes.datedebut_txt,false)+' - '+convertDate(attributes.datefin_txt,false)+'</p>').appendTo(details);
     }
 	jQuery('<p class=\"collection-name\">'+attributes.nom+'</p>').appendTo(details);
-	var locality = jQuery('<p  class=\"collection-locality\"></p>').appendTo(details);
+	var locality = jQuery('<p class=\"collection-locality\"></p>').appendTo(details);
 	var scope = {target: locality};
 	inseeProtocol.read({filter: filter, callback: fillLocationDetails, scope: scope});
 	jQuery.getJSON(\"".$svcUrl."/data/sample?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" + (first ? \"&reset_timeout=true\" : \"\") + \"&callback=?&parent_id=\"+attributes.collection_id,
@@ -2585,6 +2595,7 @@ jQuery('#fc-new-location-form').ajaxForm({
 	async: false,
 	dataType:  'json', 
 	beforeSubmit:   function(data, obj, options){
+		if(!confirm(\"".lang::get('LANG_Localisation_Confirm')."\")) { return false; }
 		if (!jQuery('form#fc-new-location-form').valid()) { return false; }
   		jQuery('#fc_location_submit_button').addClass('loading-button');
 		return true;
