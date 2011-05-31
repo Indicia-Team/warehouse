@@ -123,6 +123,10 @@ $custom_terms = array(
 	,'LANG_Localisation' => 'Locality'
 	,'LANG_Front Page' => 'Include collection on front page'
 	,'LANG_Submit_Front_Page' => 'Save'
+	,'LANG_Included_In_Front_Page' => 'This collection has been included in the list to be used on the front page.'
+	,'LANG_Removed_From_Front_Page' => 'This collection has been removed from the list to be used on the front page.'
+	,'LANG_Number_In_Front_Page' => 'Number of collections in the front page list: '
+	,'LANG_Location_Updated' => 'The location for this collection has been updated.'
 	
 	,'Foraging'=> "The insect was not photo'ed on the flower"
 	
