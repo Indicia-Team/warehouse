@@ -20,6 +20,7 @@
   header("Pragma: no-cache");
   
   require('helper_config.php');
+  require('data_entry_helper.php');
 
   // Settings. Note the interim image folder may not be in helper_config in which case use a default
   $interim_image_folder = isset(helper_config::$interim_image_folder) ? helper_config::$interim_image_folder : 'upload/';
@@ -40,6 +41,7 @@
   // Create target dir
   if (!file_exists($targetDir))
     @mkdir($targetDir);
+  $targetPath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
 
   if (!file_exists($targetDir)) {
     echo '{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to create upload directory."}, "id" : "id"}';
@@ -72,7 +74,7 @@
   if (strpos($contentType, "multipart") !== false) {
     if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
       // Open temp file
-      $out = fopen($targetDir . DIRECTORY_SEPARATOR . $fileName, $chunk == 0 ? "wb" : "ab");
+      $out = fopen($targetPath, $chunk == 0 ? "wb" : "ab");
       if ($out) {
         // Read binary input stream and append it to temp file
         $in = fopen($_FILES['file']['tmp_name'], "rb");
@@ -95,7 +97,7 @@
     }
   } else {
     // Open temp file
-    $out = fopen($targetDir . DIRECTORY_SEPARATOR . $fileName, $chunk == 0 ? "wb" : "ab");
+    $out = fopen($targetPath, $chunk == 0 ? "wb" : "ab");
     if ($out) {
       // Read binary input stream and append it to temp file
       $in = fopen("php://input", "rb");
@@ -115,6 +117,16 @@
     }
   }
 
-  // Return JSON-RPC response
+  //test uploaded file size
+  clearstatcache();
+  $file['size'] = filesize($targetPath);
+  $file['error'] = '';
+  if (!data_entry_helper::check_upload_size($file)) {
+    unlink($targetPath);
+      echo '{"jsonrpc" : "2.0", "error" : {"code": 104, "message": "Uploaded file too big."}, "id" : "id"}'; 
+      return;
+  }
+  
+  // Return JSON-RPC success response
   echo '{"jsonrpc" : "2.0", "result" : null, "id" : "id"}';
 ?>
