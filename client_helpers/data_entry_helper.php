@@ -828,6 +828,10 @@ class data_entry_helper extends helper_base {
   * <li><b>captionTemplate</b><br/>
   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
   * with each database field represented as {fieldname}.</li>
+  * <li><b>listCaptionSpecialChars</b><br/>
+  * Optional and only relevant when loading content from a data service call. Specifies whether to run the caption through
+  * htmlspecialchars. In some cases there may be format info in the caption, and in others we may wish to keep those
+  * characters as literal.
   * <li><b>selectedItemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the selected item in the control.</li></ul>
@@ -849,6 +853,8 @@ class data_entry_helper extends helper_base {
       ),
       $options
     );
+    if($options['multiselect'] && $options['multiselect']!=false && $options['multiselect']!='false')
+      $options['multiple']='multiple';
     return self::select_or_listbox($options);
   }
 
@@ -1188,6 +1194,10 @@ class data_entry_helper extends helper_base {
   * <li><b>captionTemplate</b><br/>
   * Optional and only relevant when loading content from a data service call. Specifies the template used to build the caption,
   * with each database field represented as {fieldname}.</li>
+  * <li><b>listCaptionSpecialChars</b><br/>
+  * Optional and only relevant when loading content from a data service call. Specifies whether to run the caption through
+  * htmlspecialchars. In some cases there may be format info in the caption, and in others we may wish to keep those
+  * characters as literal.
   * <li><b>selectedItemTemplate</b><br/>
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for the selected item in the control.</li></ul>
@@ -1338,8 +1348,8 @@ class data_entry_helper extends helper_base {
       $options = array_merge(array(
         'defaultLat' => $parts[0][0],
         'defaultLong' => $parts[1],
-        'fieldnameLat' => $options['srefField'].':lat',
-        'fieldnameLong' => $options['srefField'].':long',
+        'fieldnameLat' => $options['srefField'].'_lat',
+        'fieldnameLong' => $options['srefField'].'_long',
         'labelLat' => lang::get('Latitude'),
         'labelLong' => lang::get('Longitude'),
         'idLat'=>'imp-sref-lat',
@@ -2703,6 +2713,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
               $caption = self::mergeParamsIntoTemplate($record, $options['captionTemplate']);
             else
               $caption = $record[$options['captionField']];
+            if(isset($options['listCaptionSpecialChars'])) {
+            	$caption=htmlspecialchars($caption);
+            }
             $item = str_replace(
                 array('{value}', '{caption}'),
                 array($record[$options['valueField']], $caption),
@@ -3713,9 +3726,8 @@ $('.ui-state-default').live('mouseout', function() {
           break;
         case 'Boolean':
         case 'B':
-          // Can't use a checkbox as it is not included in the post when unchecked, so unset data is not saved
-          // in the optional attribute record.
-          // If using this to generate a filter, need also to use checkboxes.
+          // A change in template means we can now use a checkbox if desired: in fact this is now the default.
+          // Can also use checkboxes (eg for filters where none selected is a possibility) or radio buttons.
             $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
             if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='radio') {
               $output = self::boolean_attribute('radio', $attrOptions);

@@ -1009,7 +1009,9 @@ $('#cc-1-delete-collection').ajaxForm({
 				if(jQuery('#map').children().length > 0) {
 					var div = jQuery('#map')[0];
 					div.map.editLayer.destroyFeatures();
+					div.map.searchLayer.destroyFeatures();
 					if(inseeLayer != null) inseeLayer.destroyFeatures();
+					jQuery('#cc-2-loc-description').empty();
 					var center = new OpenLayers.LonLat(".$args['map_centroid_long'].", ".$args['map_centroid_lat'].");
 					center.transform(div.map.displayProjection, div.map.projection);
 					div.map.setCenter(center, ".((int) $args['map_zoom']).");
@@ -1063,7 +1065,8 @@ $('#cc-1-reinit-button').click(function() {
         	'fieldname'=>'flower:taxa_taxon_list_id',
 	        'table'=>'taxa_taxon_list',
     	    'captionField'=>'taxon',
-        	'valueField'=>'id',
+        	'listCaptionSpecialChars'=>true,
+    	    'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
     	    'extraParams'=>$extraParams,
@@ -1973,7 +1976,8 @@ jQuery('.mod-button').click(function() {
         	'fieldname'=>'insect:taxa_taxon_list_id',
 	        'table'=>'taxa_taxon_list',
     	    'captionField'=>'taxon',
-        	'valueField'=>'id',
+        	'listCaptionSpecialChars'=>true,
+    	    'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
     	    'extraParams'=>$extraParams,
@@ -2743,12 +2747,12 @@ jQuery.ajax({
 							jQuery('input[name=location\\:centroid_sref]').val(locationdata[0].centroid_sref);
 							jQuery('input[name=location\\:centroid_sref_system]').val(locationdata[0].centroid_sref_system); // note this will change the 900913 in cc-1 to 4326
 							jQuery('input[name=location\\:centroid_geom]').val(locationdata[0].centroid_geom);
-							jQuery('#imp-sref').change();
 							var parts=locationdata[0].centroid_sref.split(' ');
 							var refx = parts[0].split(',');
 							jQuery('input[name=place\\:lat]').val(refx[0]);
 							jQuery('input[name=place\\:long]').val(parts[1]);
-						}
+							jQuery('#imp-sref').change();
+  						}
 					  }
   					}, 
 					data: {}, 

@@ -521,7 +521,8 @@ class iform_pollenator_gallery {
         	'fieldname'=>'flower:taxa_taxon_list_id',
 	        'table'=>'taxa_taxon_list',
     	    'captionField'=>'taxon',
-        	'valueField'=>'id',
+			'listCaptionSpecialChars'=>true,
+			'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
     	    'extraParams'=>$readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'detail','orderby'=>'taxonomic_sort_order'),
@@ -535,6 +536,7 @@ class iform_pollenator_gallery {
         	'fieldname'=>'insect:taxa_taxon_list_id',
 	        'table'=>'taxa_taxon_list',
     	    'captionField'=>'taxon',
+			'listCaptionSpecialChars'=>true,
         	'valueField'=>'id',
 	        'columns'=>2,
     		'blankText'=>lang::get('LANG_Choose_Taxon'),
@@ -777,6 +779,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     			'suffixTemplate'=>'nosuffix')).'
        		<input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
     	</form>
+      <div id="fc-new-location-message"></div>
     </div>';
     if(user_access('IForm n'.$node->nid.' add to front page')){
     	$r .= '<div id="fc-front-page" class="ui-widget-content ui-corner-all">
@@ -791,6 +794,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
        <label>'.lang::get('LANG_Front Page').'</label><div class="control-box "><nobr><span><input type="radio" id="smpAttr:'.$args['front_page_attr_id'].':0" name="smpAttr:'.$args['front_page_attr_id'].'" value="0" checked="checked" /><label for="smpAttr:'.$args['front_page_attr_id'].':0">'.lang::get('No').'</label></span></nobr> &nbsp; <nobr><span><input type="radio" id="smpAttr:'.$args['front_page_attr_id'].':1" name="smpAttr:'.$args['front_page_attr_id'].'" value="1" /><label for="smpAttr:'.$args['front_page_attr_id'].':1">'.lang::get('Yes').'</label></span></nobr></div>
        <input type="submit" id="fc_front_page_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Front_Page').'" />
     </form>
+    <div id="fc-front-page-message"></div>
   </div>';
     }
     $r .= '
@@ -1183,6 +1187,7 @@ loadCollection = function(id, index){
 	jQuery('#fc-new-location').".(user_access('IForm n'.$node->nid.' edit geolocation') ? "show()" : "hide()").";
 	jQuery('#focus-occurrence,#filter,#fc-next-button,#fc-prev-button').hide();
     jQuery('#focus-collection').show();
+    jQuery('#fc-front-page-message,#fc-new-location-message').empty();
     if(index != null){
     	if(index < (searchResults.features.length-1) )
     		jQuery('#fc-next-button').show().data('index', index+1);
@@ -1191,6 +1196,9 @@ loadCollection = function(id, index){
     }
     if(jQuery('#map2').children().length == 0) {
     	".$map2JS."
+		jQuery('#map2')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
+			jQuery('#fc-new-location-message').empty();
+		});
  	};
 	jQuery('#map2')[0].map.editLayer.clickControl.".(user_access('IForm n'.$node->nid.' edit geolocation') ? "" : "de")."activate();
 	jQuery('#map2')[0].map.editLayer.destroyFeatures();
@@ -2526,6 +2534,11 @@ jQuery('#fc-front-page-form').ajaxForm({
 		if(data.error != undefined){
 			alert(data.error);
 		} else {
+			if(jQuery('#fc-front-page-form').find('[name^=smpAttr\\:".$args['front_page_attr_id']."]')
+						.filter('[checked]').val() == '1')
+				jQuery('#fc-front-page-message').empty().append(\"<span>".lang::get('LANG_Included_In_Front_Page')."<span>\");
+			else
+				jQuery('#fc-front-page-message').empty().append(\"<span>".lang::get('LANG_Removed_From_Front_Page')."<span>\");
 			ajaxStack.push(
 				jQuery.ajax({ 
 					type: \"GET\", 
@@ -2548,8 +2561,20 @@ jQuery('#fc-front-page-form').ajaxForm({
 											break;
 									}
 					}}}}}));
-		}
-	},
+			ajaxStack.push(
+				jQuery.ajax({ 
+					type: \"GET\", 
+					url: \"".$svcUrl."/data/sample_attribute_value\"  +
+						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
+						\"&sample_attribute_id=".$args['front_page_attr_id']."&value=1&REMOVEABLEJSONP&callback=?\",
+					dataType: 'json',
+					success: function(attrdata) {
+						if(!(attrdata instanceof Array)){
+							alertIndiciaError(attrdata);
+						} else {
+							jQuery('#fc-front-page-message').append(\"<br /><span>".lang::get('LANG_Number_In_Front_Page')."\"+attrdata.length+\".<span>\");
+						}}}));
+    }},
 	complete: function (){
   		jQuery('.loading-button').removeClass('loading-button');
   	}
@@ -2567,6 +2592,8 @@ jQuery('#fc-new-location-form').ajaxForm({
 	success:   function(data){
 		if(data.error != undefined){
 			alert(data.error);
+		} else {
+			jQuery('#fc-new-location-message').empty().append(\"<span>".lang::get('LANG_Location_Updated')."<span>\");
 		}
 	},
 	complete: function (){

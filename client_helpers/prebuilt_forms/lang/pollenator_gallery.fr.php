@@ -137,8 +137,13 @@ $custom_terms = array(
 	,'loading' => 'Chargement'
 	,'LANG_INSEE_Localisation' => 'Localisation'
 	,'LANG_Localisation' => 'Localisation'
-	,'LANG_Front Page' => 'Include collection on front page'
-	,'LANG_Submit_Front_Page' => 'Save'
+	,'LANG_Front Page' => "Inclure cette collection à la page d'accueil"
+	,'LANG_Submit_Front_Page' => 'Enregistrer'
+	,'LANG_Included_In_Front_Page' => "Cette collection a été inclue à la page d'accueil."
+	,'LANG_Removed_From_Front_Page' => "Cette collection a été retiré de la page d'accueil"
+	,'LANG_Number_In_Front_Page' => "Nombre de collections dans la liste page d'accueil: "
+	,'LANG_Location_Updated' => 'Localisation de cette collection a été mis à jour.'
+	
 	
 	,'LANG_Bad_Collection_ID' => "Vous avez essayé de charger une session comme une collection: ce ID n'est pas une collection."
 	,'LANG_Bad_Insect_ID' => "Vous avez essayé de charger une fleur comme un insecte: cette ID n'est pas un insect."
