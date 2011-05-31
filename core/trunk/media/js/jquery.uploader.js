@@ -133,24 +133,15 @@ checkSubmitInProgress = function () {
         extras = files.splice(div.settings.maxFileCount - existingCount, 9999);
         if (extras.length!==0) {
           alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
-          // remove the extras from the queue
-          $.each(extras, function(file) {
-            div.uploader.removeFile(file);
-          });
         }
         $.each(files, function(i, file) {
-          if (resize===null && file.size>div.settings.maxUploadSize) {
-            // We are not resizing, and the file is too big for the Indicia server. So display a warning.
-            alert(div.settings.msgFileTooBig);
-          } else {
-            $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace('{id}', file.id)
-                .replace(/\{filename\}/g, file.name)
-                .replace(/\{filesize\}/g, plupload.formatSize(file.size))
-                .replace(/\{imagewidth\}/g, div.settings.imageWidth)
-            );
-            // change the file name to be unique
-            file.name=plupload.guid() + '.jpg';
-          }
+          $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace('{id}', file.id)
+              .replace(/\{filename\}/g, file.name)
+              .replace(/\{filesize\}/g, plupload.formatSize(file.size))
+              .replace(/\{imagewidth\}/g, div.settings.imageWidth)
+          );
+          // change the file name to be unique
+          file.name=plupload.guid() + '.jpg';
           $('#' + file.id + ' .progress-percent').progressbar ({value: 0});
           var msg='Resizing...';
           if (div.settings.resizeWidth===0 || div.settings.resizeHeight===0 || typeof div.uploader.features.jpgresize == "undefined") {
@@ -170,7 +161,7 @@ checkSubmitInProgress = function () {
       
       this.uploader.bind('Error', function(up, error) {
         if (error.code==-600) {
-          alert('The file you are trying to upload is too big to be uploaded. Try opening it in a photo editor and resizing it to a smaller size before attempting the upload again.');
+          alert(div.settings.msgFileTooBig);
         } else {
           alert(error.message);
         }
