@@ -33,7 +33,7 @@
 abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
 
   public function __construct()
-  {    
+  {
     parent::__construct($this->prefix.'_attribute', 'custom_attribute/index');
     $this->pagetitle = ucfirst($this->prefix).' Custom Attributes';
     $this->columns = array
@@ -46,37 +46,29 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
     );
     $this->set_website_access('admin');
   }
-  
+
   /**
    * Returns the shared view for all custom attribute edits.
    */
   protected function editViewName() {
     return 'custom_attribute/custom_attribute_edit';
   }
-  
+
   /**
-   * Returns some addition information required by the edit view, which is not associated with 
-   * a particular record. 
+   * Returns some addition information required by the edit view, which is not associated with
+   * a particular record.
    */
   protected function prepareOtherViewData($values)
-  {    
+  {
     return array(
       'name' => ucfirst($this->prefix),
       'controllerpath' => $this->controllerpath,
       'webrec_entity' => $this->prefix.'_attributes_website',
       'webrec_key' => $this->prefix.'_attribute_id'
-    );   
-  }
-  
-  /**
-   * Force the base class methods to link the form values to controls named custom_attribute:* which allows
-   * a single generic form to be used for several different models.      
-   */
-  protected function getAttrPrefix() {
-    return 'custom_attribute';
+    );
   }
 
- /**
+  /**
    * Setup the values to be loaded into the edit view.
    */
   protected function getModelValues() {
@@ -86,39 +78,49 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
       $r['metaFields:disabled_input']='NO';
     } else {
       // We need to know if this attribute is unique to the website
-      $count = ORM::factory($this->prefix.'_attributes_website')->where($this->model->object_name.'_id',$this->model->id)->find_all()->count();    
+      $count = ORM::factory($this->prefix.'_attributes_website')->where($this->model->object_name.'_id',$this->model->id)->find_all()->count();
       $r['metaFields:disabled_input']=$count<=1 ? 'NO' : 'YES';
     }
     $this->model->populate_validation_rules();
-    return $r;  
+    return $r;
   }
-  
+
   public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
       // Build the validation_rules field from the set of controls that are associated with it.
       $rules = array();
-      foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past') as $rule) {          
-        if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {            
+      foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past') as $rule) {
+        if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {
           array_push($rules, $rule);
         }
       }
-      if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1)   $rules[] = 'length['.$_POST['valid_length_min'].','.$_POST['valid_length_max'].']';
-      if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1) $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
-      if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)		 $rules[] = 'regex['.$_POST['valid_regex_format'].']';
-      if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)		     $rules[] = 'minimum['.$_POST['valid_min_value'].']';
-      if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)		     $rules[] = 'maximum['.$_POST['valid_max_value'].']';
+      // trim the input data, incase spaces are left in the validation parameters which would affect our tests
+      $_POST = array_map('trim', $_POST);
+      if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1
+          && !empty($_POST['valid_length_max'])) {
+        $min = empty($_POST['valid_length_min']) ? '0' : $_POST['valid_length_min'];
+        $rules[] = 'length['.$min.','.$_POST['valid_length_max'].']';
+      }
+      if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1 && !empty($_POST['valid_dec_format']))
+        $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
+      if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1 && !empty($_POST['valid_regex_format']))
+        $rules[] = 'regex['.$_POST['valid_regex_format'].']';
+      if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)
+        $rules[] = 'minimum['.$_POST['valid_min_value'].']';
+      if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)
+        $rules[] = 'maximum['.$_POST['valid_max_value'].']';
 
       if (!empty($rules)) {
-        $_POST['custom_attribute:validation_rules'] = implode("\r\n", $rules);        
-        kohana::log('debug', 'Posted rules '.$_POST['custom_attribute:validation_rules']);
+        $_POST[$this->model->object_name.':validation_rules'] = implode("\r\n", $rules);
       }
-      // Make sure checkboxes have a value
-      if (!array_key_exists('custom_attribute:public', $_POST)) $_POST['custom_attribute:public'] = '0'; 
-      if (!array_key_exists('custom_attribute:multi_value', $_POST)) $_POST['custom_attribute:multi_value'] = '0';
-    }       
-    parent::save();    
+      // Make sure checkboxes have a value as unchecked values don't appear in $_POST
+      // @todo: If we use Indicia client helper controls for the attribute edit page, this becomes unnecessary
+      if (!array_key_exists($this->model->object_name.':public', $_POST)) $_POST[$this->model->object_name.':public'] = '0';
+      if (!array_key_exists($this->model->object_name.':multi_value', $_POST)) $_POST[$this->model->object_name.':multi_value'] = '0';
+    }
+    parent::save();
   }
-  
+
   /**
    * You can always get to the edit page for an attribute though the form might be read only.
    */

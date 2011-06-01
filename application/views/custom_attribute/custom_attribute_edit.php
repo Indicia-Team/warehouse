@@ -27,18 +27,19 @@ $enabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
 <p>This page allows you to specify a new or edit an existing custom attribute for <?php echo strtolower($other_data['name']); ?> data.</p>
 <form class="cmxform"
   action="<?php echo url::site().$other_data['controllerpath']."/save"; ?>"
-  method="post"><input type="hidden" name="custom_attribute:id"
-  value="<?php echo html::initial_value($values, 'custom_attribute:id'); ?>" />
+  method="post"><input type="hidden" name="<?php echo $model->object_name; ?>:id"
+  value="<?php echo html::initial_value($values, $model->object_name.':id'); ?>" />
 <input type="hidden" name="metaFields:disabled_input"
   value="<?php echo $disabled_input; ?>" />
+<?php print_r($model->getAllErrors()); ?>
 <fieldset
 <?php if ($disabled_input=='YES') echo ' class="ui-state-disabled"'; ?>>
 <legend><?php echo $other_data['name']; ?> Attribute details</legend>
 <ol>
   <li><label for="caption">Caption</label> <input id="caption"
-    name="custom_attribute:caption"
-    value="<?php echo html::initial_value($values, 'custom_attribute:caption'); ?>"
-    <?php echo $enabled; ?> /> <?php echo html::error_message($model->getError('custom_attribute:caption')); ?>
+    name="<?php echo $model->object_name; ?>:caption"
+    value="<?php echo html::initial_value($values, $model->object_name.':caption'); ?>"
+    <?php echo $enabled; ?> /> <?php echo html::error_message($model->getError($model->object_name.':caption')); ?>
   </li>
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
@@ -93,7 +94,7 @@ $(document).ready(function() {
 <?php
   }
 ?>
-</script> <select id="data_type" name="custom_attribute:data_type"
+</script> <select id="data_type" name="<?php echo $model->object_name; ?>:data_type"
 <?php echo $enabled; ?>
     onchange="toggleOptions(this.value);">
     <option value=''>&lt;Please Select&gt;</option>
@@ -109,16 +110,16 @@ $(document).ready(function() {
     );
     foreach ($optionlist as $key => $option) {
       echo '  <option value="'.$key.'" ';
-      if ($key==html::initial_value($values, 'custom_attribute:data_type'))
+      if ($key==html::initial_value($values, $model->object_name.':data_type'))
       echo 'selected="selected" ';
       echo '>'.$option.'</option>';
     }
     ?>
-  </select> <?php echo html::error_message($model->getError('custom_attribute:data_type')); ?>
+  </select> <?php echo html::error_message($model->getError($model->object_name.':data_type')); ?>
   </li>
 
   <li><label for="termlist_id">Termlist</label> <select id="termlist_id"
-    name="custom_attribute:termlist_id" <?php echo $enabled; ?>>
+    name="<?php echo $model->object_name; ?>:termlist_id" <?php echo $enabled; ?>>
     <option value=''>&lt;Please Select&gt;</option>
     <?php
     if (!is_null($this->auth_filter))
@@ -127,29 +128,34 @@ $(document).ready(function() {
     $termlists = ORM::factory('termlist')->where('deleted','f')->orderby('title','asc')->find_all();
     foreach ($termlists as $termlist) {
       echo '  <option value="'.$termlist->id.'" ';
-      if ($termlist->id==html::initial_value($values, 'custom_attribute:termlist_id'))
+      if ($termlist->id==html::initial_value($values, $model->object_name.':termlist_id'))
       echo 'selected="selected" ';
       echo '>'.$termlist->title.'</option>';
     }
     ?>
-  </select> <?php echo html::error_message($model->getError('custom_attribute:termlist_id')); ?>
+  </select> <?php echo html::error_message($model->getError($model->object_name.':termlist_id')); ?>
   </li>
   <li><label class="wide" for="multi_value">Allow Multiple Values</label>
-  <?php echo form::checkbox('custom_attribute:multi_value', TRUE, (html::initial_value($values, 'custom_attribute:multi_value') == 't'), 'class="vnarrow" '.$enabled ) ?>
+  <?php echo form::checkbox($model->object_name.':multi_value', TRUE, (html::initial_value($values, $model->object_name.':multi_value') == 't'), 'class="vnarrow" '.$enabled ) ?>
   </li>
   <li><label class="wide" for="public">Available to other Websites</label>
-  <?php echo form::checkbox('custom_attribute:public', TRUE, (html::initial_value($values, 'custom_attribute:public') == 't'), 'class="vnarrow" '.$enabled ) ?>
+  <?php echo form::checkbox($model->object_name.':public', TRUE, (html::initial_value($values, $model->object_name.':public') == 't'), 'class="vnarrow" '.$enabled ) ?>
   </li>
+  <?php if ($model->object_name=='sample_attribute') : ?>
+  <li><label class="wide" for="public">Applies to location</label>
+  <?php echo form::checkbox($model->object_name.':applies_to_location', TRUE, (html::initial_value($values, $model->object_name.':applies_to_location') == 't'), 'class="vnarrow" '.$enabled ) ?>
+  </li>
+  <?php endif; ?>
 </ol>
 </fieldset>
 <fieldset>
 <legend>Validation Rules</legend>
 <ol>
   <li id="li_valid_required"><label class="narrow" for="valid_required">Required</label><?php echo form::checkbox('valid_required', TRUE, isset($model->valid_required) AND ($model->valid_required == 't'), 'class="vnarrow" '.$enabled ) ?></li>
-  <li id="li_valid_length"><label class="narrow" for="valid_length">Length</label><?php echo form::checkbox('valid_length', TRUE, isset($model->valid_length) AND ($model->valid_length == 't'), 'class="vnarrow" '.$enabled ) ?><input
-    class="narrow" id="valid_length_min" name="valid_length_min"
+  <li id="li_valid_length"><label class="narrow" for="valid_length">Length</label><?php echo form::checkbox('valid_length', TRUE, isset($model->valid_length) AND ($model->valid_length == 't'), 'class="vnarrow" '.$enabled ) ?>
+    Between <input class="narrow" id="valid_length_min" name="valid_length_min"
     value="<?php echo html::specialchars($model->valid_length_min); ?>"
-    <?php echo $enabled?> /> - <input class="narrow"
+    <?php echo $enabled?> /> and <input class="narrow"
     id="valid_length_max" name="valid_length_max"
     value="<?php echo html::specialchars($model->valid_length_max); ?>"
     <?php echo $enabled?> /> <?php echo html::error_message($model->getError('valid_length')); ?>
@@ -226,5 +232,5 @@ foreach ($websites as $website) {
 ?>
 </fieldset>
 <?php echo $metadata;
-echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null);
+echo html::form_buttons(html::initial_value($values, $model->object_name.':id')!=null);
 ?></form>
