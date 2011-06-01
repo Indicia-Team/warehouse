@@ -28,45 +28,47 @@ abstract class ATTR_ORM extends Valid_ORM {
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $this->unvalidatedFields = array('validation_rules', 'public', 'multi_value', 'deleted');
+    // merge unvalidated fields, in case the subclass has set any.
+    if (!isset($this->unvalidatedFields))
+      $this->unvalidatedFields = array();
+    $this->unvalidatedFields = array_merge($this->unvalidatedFields, array('validation_rules', 'public', 'multi_value', 'deleted'));
     $array->add_rules('caption', 'required');
-    $array->add_rules('data_type', 'required');       
-    if (array_key_exists('data_type', $array->as_array()) && $array['data_type'] == 'L') {      
-      if (empty($array['termlist_id'])) {        
+    $array->add_rules('data_type', 'required');
+    if (array_key_exists('data_type', $array->as_array()) && $array['data_type'] == 'L') {
+      if (empty($array['termlist_id'])) {
         $array->add_rules('termlist_id', 'required');
       } else
         array_push($this->unvalidatedFields, 'termlist_id');
-    } 
-    $parent_valid = parent::validate($array, $save);   
+    }
+    $parent_valid = parent::validate($array, $save);
     return $save && $parent_valid;
   }
-  
+
   /**
    * As we share a generic form, the submission structure is generic to all custom attributes.   *
    */
   public function get_submission_structure() {
     return array(
-    	'model'=>'custom_attribute',
-      'fieldPrefix'=>'custom_attribute',
-      'metaFields' => array('disabled_input')      
+      'model'=>$this->object_name,
+      'metaFields' => array('disabled_input')
     );
   }
-  
+
   /**
    * If saving a re-used attribute, then don't bother posting the main record data as it can't be changed. The postSubmit
    * can still occur though to link it to websites and surveys.
-   *   
+   *
    * @return integer Id of the attribute.
    */
   protected function validateAndSubmit() {
-    if ($this->submission['metaFields']['disabled_input']['value']=='YES') {      
+    if ($this->submission['metaFields']['disabled_input']['value']=='YES') {
       $this->find($this->submission['fields']['id']['value']);
       return $this->id;
-    } else {     
+    } else {
       return parent::validateAndSubmit();
     }
   }
-  
+
   protected function postSubmit() {
     // Record has saved correctly or is being reused
     /*if(!is_null($this->gen_auth_filter))
@@ -80,12 +82,12 @@ abstract class ATTR_ORM extends Valid_ORM {
       foreach ($surveys as $survey) {
         $this->set_attribute_website_record($this->id, $website->id, $survey->id, isset($_POST['website_'.$website->id.'_'.$survey->id]));
       }
-    }          
+    }
     return true;
   }
-  
+
   private function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
-  {    
+  {
     $attributes_website = ORM::factory(inflector::plural($this->object_name).'_website',
             array($this->object_name.'_id' => $attr_id
                 , 'website_id' => $website_id
