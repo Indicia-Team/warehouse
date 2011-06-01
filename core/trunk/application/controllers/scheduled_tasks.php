@@ -119,7 +119,7 @@ class Scheduled_Tasks_Controller extends Controller {
             $this->db->insert('notifications', array(
               'source' => "'$trigger->name'",
               'source_type' => "'T'",
-              'data' => "'".json_encode(array('headings'=>$parsedData['headingData'], 'data' => $allowedData))."'",
+              'data' => "'".pg_escape_string(json_encode(array('headings'=>$parsedData['headingData'], 'data' => $allowedData)))."'",
               'user_id' => $action->param1,
               // use digest mode the user selected for this notification, or their default if not specific
               'digest_mode' => "'" . ($action->param2===null ? $action->default_digest_mode : $action->param2) . "'",
