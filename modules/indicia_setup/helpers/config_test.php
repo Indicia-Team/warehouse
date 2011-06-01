@@ -331,22 +331,30 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/upload',
           'images can be uploaded',
           'images cannot be uploaded');
-      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'configuration',
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
           'the installation settings to be stored correctly',
           'the installation settings cannot be stored');
-      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'database update folders',
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'database update folders',
           dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
           'the database upgrades can be tracked',
           'the database upgrades cannot be tracked');
-      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'configuration',
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',
           'the settings for the data entry helper classes cannot be stored');
-      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'demo',
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'demo',
           dirname(dirname(dirname(dirname(__file__ )))) . '/modules/demo',
           'the settings for the demo configuration to be stored',
           'the settings for the demo configuration classes cannot be stored');
+      self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'reports',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/reports',
+          'the report templates to be accessed',
+          'the reports templates cannot be aceessed');
+      self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'trigger templates',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/reports/trigger_templates',
+          'the trigger and notification templates to be accessed',
+          'the trigger and notification templates cannot be aceessed');
 
       if (count($good_dirs)>0 && !$problems_only) {
         array_push($messages, array(
@@ -381,17 +389,17 @@ class config_test {
   private static function check_dir_permission($readonly, &$good_dirs, &$bad_dirs, $folder_name, $dir, $pass, $fail) {
     $access_str=$readonly ? 'readable' : 'writeable';
     $dir = realpath($dir);
-    if (($readonly && is_readable($dir)) || (!$readonly && is_writeable($dir))) {
-      if ($readonly && is_writeable($dir)) {
-        array_push($bad_dirs, "The $folder_name directory at $dir is writeable. It should be readonly otherwise " .
+    if (!is_readable($dir))
+      array_push($bad_dirs,
+          "The $folder_name directory at $dir isn't readable by PHP scripts. This means that $fail.");
+    elseif ($readonly && is_writeable($dir))
+      array_push($bad_dirs, "The $folder_name directory at $dir is writeable. It should be readonly otherwise " .
             "it presents an unnecessary security risk.");
-      } else {
-        array_push($good_dirs, "The $folder_name directory is $access_str to allow $pass.");
-      }
-    } else {
+    elseif (!$readonly && !is_writeable($dir))
       array_push($bad_dirs,
           "The $folder_name directory at $dir isn't writeable by PHP scripts. This means that $fail.");
-    }
+    else
+      array_push($good_dirs, "The $folder_name directory is $access_str to allow $pass.");
   }
 
   /**
