@@ -14,74 +14,72 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
  defined('SYSPATH') or die('No direct script access.');
 
 /**
  * Controller that implements any scheduled tasks, such as checking triggers against the recent
- * records to look for notifications. This controller does not have a user interface, it is intended 
- * to be automated on a schedule.  
+ * records to look for notifications. This controller does not have a user interface, it is intended
+ * to be automated on a schedule.
  *
  * @package Core
  * @subpackage Controllers
  */
 class Scheduled_Tasks_Controller extends Controller {
-  private $last_run_date;  
-  
-  public function __construct()
-	{
-		parent::__construct();
-	}
-  
-  /** 
-   * The index method is the default method called when you access this controller, so we can use this 
+  private $last_run_date;
+
+  public function __construct()  {
+    parent::__construct();
+  }
+
+  /**
+   * The index method is the default method called when you access this controller, so we can use this
    * to run the scheduled tasks.
    */
   public function index() {
     $system = new System_Model();
-    $this->last_run_date = $system->getLastScheduledTaskCheck();    
+    $this->last_run_date = $system->getLastScheduledTaskCheck();
     // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
     $currentTime = time();
     $this->checkTriggers();
     $swift = email::connect();
     $this->doRecordOwnerNotifications($swift);
-    $this->doDigestNotifications($swift);    
+    $this->doDigestNotifications($swift);
     // mark the time of the last scheduled task check, so we can get diffs next time
     $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('id' => 1));
     echo "Ok!";
   }
-  
-  /** 
+
+  /**
   * Compares any recently entered or edited records with the notifications registered on the system, looking
   * for matches. If found, then the notification's actions are fired.
   */
   protected function checkTriggers() {
     echo "Checking triggers<br/>";
-    $dbConfig = Kohana::config('database.default');
-    $this->db = new Database($dbConfig);    
+    $this->db = new Database();
     // Get a list of all the triggers that have at least one action
     $result = $this->getTriggerQuery();
     $reportEngine = new ReportEngine();
     // For each trigger, we need to get the output of the report file which defines the trigger
     foreach ($result as $trigger)
-    {       
-      $params = json_decode($trigger->params_json, true);      
+    {
+      $params = json_decode($trigger->params_json, true);
       $params['date'] = $this->last_run_date;
-      $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);      
-      
-      if (count($data['content']['data']>0)) {        
-        $parsedData = $this->parseData($data);               
+      $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);
+
+      if (count($data['content']['data']>0)) {
+        $parsedData = $this->parseData($data);
         echo count($data['content']['data']). " records found<br/>";
         //Note escaping disabled in where clause to permit use of CAST expression
         $actions = $this->db
             ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
-            ->from('trigger_actions, users')            
+            ->from('trigger_actions, users')
             ->join('people', 'people.id', 'users.person_id')
             ->where(array(
                 'trigger_id' => $trigger->id,
@@ -91,8 +89,8 @@ class Scheduled_Tasks_Controller extends Controller {
                 'users.deleted' => "'f'",
                 'people.deleted' => "'f'"
             ), NULL, false)
-            ->get();        
-        foreach ($actions as $action) {          
+            ->get();
+        foreach ($actions as $action) {
           if ($action->core_role_id!==1) {
             // if not a core admin, we will need to do a filter on websites the user has access to.
             $userWebsites = $this->db
@@ -101,18 +99,18 @@ class Scheduled_Tasks_Controller extends Controller {
                   ->where('user_id', $action->param1)
                   ->get();
           }
-          
+
           // Insert data in notifications table, either for the user to manually acknowledge, or for a digest mail to be built.
           // First build a list of data for the user's websites
           if ($action->core_role_id==1) {
-            // core admin can see any data            
+            // core admin can see any data
             $allowedData = $parsedData['websiteRecordData'];
           } else {
             $allowedData = array();
-            foreach ($userWebsites as $allowedWebsite) {              
+            foreach ($userWebsites as $allowedWebsite) {
               if (isset($parsedData['websiteRecordData'][$allowedWebsite->website_id]))
                 $allowedData[$allowedWebsite->website_id] = $parsedData['websiteRecordData'][$allowedWebsite->website_id];
-            }              
+            }
           }
           if (count($allowedData)>0) {
             $this->db->insert('notifications', array(
@@ -125,28 +123,28 @@ class Scheduled_Tasks_Controller extends Controller {
               'cc' => $action->param3
             ));
           }
-        }        
-      }      
+        }
+      }
     }
   }
-  
+
   /**
   * Takes any notifications stored in the database and builds emails to send for any that are now due.
   */
   private function doDigestNotifications($swift) {
-    // First, build a list of the notifications we are going to do    
+    // First, build a list of the notifications we are going to do
     $digestTypes = array('I');
-    $date = getdate();    
+    $date = getdate();
     $lastdate = getdate(strtotime($this->last_run_date));
     if ($date['yday']!=$lastdate['yday'] || $date['year']!=$lastdate['year'])
       $digestTypes[] = 'D';
     if ($date['yday']-$lastdate['yday']>=7 || $date['wday']<$lastdate['wday'])
       $digestTypes[] = 'W';
-    
+
     // Get a list of the notifications to send, ordered by user so we can construct each email
     $notifications = $this->db
       ->select('id, source, source_type, data, user_id, cc')
-      ->from('notifications')      
+      ->from('notifications')
       ->where('acknowledged','f')
       ->in('notifications.digest_mode', $digestTypes)
       ->orderby('notifications.user_id', 'ASC')
@@ -155,8 +153,8 @@ class Scheduled_Tasks_Controller extends Controller {
     $emailContent='';
     $notificationIds = array();
     foreach ($notifications as $notification) {
-      $notificationIds[] = $notification->id;     
-      if ($currentUserId!=$notification->user_id) {        
+      $notificationIds[] = $notification->id;
+      if ($currentUserId!=$notification->user_id) {
         if ($currentUserId) {
           // send current email data
           $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $notification->cc);
@@ -165,21 +163,21 @@ class Scheduled_Tasks_Controller extends Controller {
         $currentUserId = $notification->user_id;
         $cc = $notification->cc;
         $emailContent = kohana::lang('misc.notification_intro', kohana::config('email.server_name')) . '<br/><br/>';
-      }      
+      }
       $emailContent .= self::unparseData($notification->data);
     }
     // make sure we send the email to the last person in the list
     if ($currentUserId!==null) {
-      // send current email data      
+      // send current email data
       $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $cc);
-    }    
+    }
   }
-  
+
   private function sendEmail($notificationIds, $swift, $userId, $emailContent, $cc) {
     // Use a transaction to allow us to prevent the email sending and marking of notification as done
     // getting out of step
     $this->db->begin();
-    try {      
+    try {
       $this->db
           ->set('acknowledged', 't')
           ->from('notifications')
@@ -192,12 +190,12 @@ class Scheduled_Tasks_Controller extends Controller {
           ->join('users', 'users.person_id', 'people.id')
           ->where('users.id', $userId)
           ->limit(1)
-          ->get(); 
+          ->get();
       if (!isset($email_config['address'])) {
         kohana::log('error', 'Address not provided in email configuration');
         echo "Email not sent";
         return;
-      }      
+      }
       foreach($userResults as $user) {
         $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
                                      'text/html');
@@ -217,9 +215,9 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     $this->db->commit();
   }
-  
+
   /**
-   * Return a query to get the list of triggers. Uses the query builder as gives us good performance without 
+   * Return a query to get the list of triggers. Uses the query builder as gives us good performance without
    * making additional work should we go database agnostic.
    */
   private function getTriggerQuery() {
@@ -231,7 +229,7 @@ class Scheduled_Tasks_Controller extends Controller {
         ->where(array('enabled'=>'true','triggers.deleted'=>'false','trigger_actions.deleted'=>'false'))
         ->get();
   }
-  
+
   /**
    * Takes the output of a report. Parses it to return an associative array containing the following information:
    *   'headingData' => Array of column headings
@@ -243,17 +241,17 @@ class Scheduled_Tasks_Controller extends Controller {
     // build the column headers. Get the HTML (for immediate use) as well as the array data (for storing the notifications).
     $headingData = array();
     foreach ($data['content']['columns'] as $column=>$cfg) {
-      if ($cfg['visible']!=='false') {        
+      if ($cfg['visible']!=='false') {
         $headingData[] = empty($cfg['display']) ? $column : $cfg['display'];
       }
     }
     // build the blocks of data, one per website, so we can tailor the output table to each recipient.
-    $websiteRecordData = array();              
+    $websiteRecordData = array();
     foreach ($data['content']['data'] as $idx => $record) {
-      $recordAsArray = array(); 
+      $recordAsArray = array();
       foreach ($data['content']['columns'] as $column=>$cfg) {
         if ($cfg['visible']!=='false') {
-          $recordAsArray[] = $record[$column];          
+          $recordAsArray[] = $record[$column];
         }
       }
       $websiteRecordData[$record['website_id']][] = $recordAsArray;
@@ -284,7 +282,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $r .= "</tbody>\n</table>\n";
     return $r;
   }
-  
+
   /**
    * Look for records posted by recorders who have given their email address and want to receive a summary of the record they are posting.
    */
@@ -300,12 +298,12 @@ class Scheduled_Tasks_Controller extends Controller {
         ->join('sample_attribute_values as sav2', 'sav2.sample_id', 'samples.id')
         ->join('sample_attributes as sa2', 'sa2.id', 'sav2.sample_attribute_id')
         ->where(array(
-            'sa1.caption'=>'Email me a copy of the record', 
-            'sa2.caption'=>'Email', 
+            'sa1.caption'=>'Email me a copy of the record',
+            'sa2.caption'=>'Email',
             'samples.created_on>=' => $this->last_run_date
         ))
         ->get();
-    
+
     // get a list of the records we need details of, so we can hit the db more efficiently.
     $recordsToFetch = array();
     foreach ($emailsRequired as $email) {
@@ -330,7 +328,7 @@ class Scheduled_Tasks_Controller extends Controller {
         ->select('o.id, av.caption, av.value')
         ->from('list_sample_attribute_values as av')
         ->join('samples as s','s.id','av.sample_id')
-        ->join('occurrences as o','o.sample_id','s.id')        
+        ->join('occurrences as o','o.sample_id','s.id')
         ->in('o.id',$recordsToFetch)
         ->get();
     foreach ($attrValues as $attrValue) {
@@ -339,7 +337,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // Get the occurrence attributes
     $attrValues = $this->db
         ->select('av.occurrence_id, av.caption, av.value')
-        ->from('list_occurrence_attribute_values av')        
+        ->from('list_occurrence_attribute_values av')
         ->in('av.occurrence_id',$recordsToFetch)
         ->get();
     foreach ($attrValues as $attrValue) {
@@ -351,18 +349,18 @@ class Scheduled_Tasks_Controller extends Controller {
       $this->addArrayToEmailTable($email->occurrence_id, $occurrenceArray, $emailContent);
       $this->addArrayToEmailTable($email->occurrence_id, $attrArray, $emailContent);
       $emailContent .= "</table>";
-      
+
       $message = new Swift_Message(kohana::lang('misc.notification_subject', kohana::config('email.server_name')), $emailContent,
                                      'text/html');
-      $recipients = new Swift_RecipientList();            
-      $recipients->addTo($email->email_address);            
-      // send the email            
+      $recipients = new Swift_RecipientList();
+      $recipients->addTo($email->email_address);
+      // send the email
       $swift->send($message, $recipients, $email_config['address']);
     }
   }
-  
+
   /*
-  * Takes the content of an array keyed bby occurrence ID, looks up the item for the required 
+  * Takes the content of an array keyed bby occurrence ID, looks up the item for the required
   * occurrence, and puts the content of this item into a set of rows (one row per name/value pair)
   * with one table cell for the key, and one for the value
   */
@@ -382,5 +380,5 @@ class Scheduled_Tasks_Controller extends Controller {
       }
     }
   }
-   
+
 }
