@@ -48,7 +48,9 @@ class iform_importer {
       array(
         'name'=>'presetSettings',
         'caption'=>'Preset Settings',
-        'description'=>'Provide a list of predetermined settings which the user does not need to specify, one on each line in the form name=value.',
+        'description'=>'Provide a list of predetermined settings which the user does not need to specify, one on each line in the form name=value. '.
+            'The preset settings available are those which are available for input on the first page of the import wizard, depending on the table you '.
+            'are inputting data for.',
         'type'=>'textarea',
         'required'=>false
       )
