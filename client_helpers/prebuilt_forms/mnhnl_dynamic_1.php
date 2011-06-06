@@ -905,7 +905,7 @@ class iform_mnhnl_dynamic_1 {
       // @todo At the moment the autocomplete control does not support 2 lists. So use just the extra list. Should 
       // update to support 2 lists.
       elseif ($args['species_ctrl']=='autocomplete')
-        $extraParams['taxon_list_id'] = $args['extra_list_id'];
+        $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
       else
         $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
       $species_ctrl_opts=array_merge(array(
