@@ -513,9 +513,7 @@ class report_helper extends helper_base {
         break;
       // default is line
     }
-    if (isset($options['xLabels'])) {
-      self::add_resource('jqplot_category_axis_renderer');
-    }
+    self::check_for_jqplot_plugins($options);
     $opts[] = "seriesDefaults:{\n".(isset($renderer) ? "  renderer:$renderer,\n" : '')."  rendererOptions:".json_encode($options['rendererOptions'])."}";
     $opts[] = 'legend:'.json_encode($options['legendOptions']);
     $opts[] = 'series:'.json_encode($options['seriesOptions']);
@@ -548,6 +546,9 @@ class report_helper extends helper_base {
       // now request the report data, only if the last request was not for the same data
       if ($lastRequestSource != $options['dataSource'])
         $data=self::get_report_data($options);
+      if (isset($data['error']))
+        // data returned must be an error message so may as well display it
+        return $data['error'];
       $lastRequestSource = $options['dataSource'];
       $values=array();
       $xLabelsForSeries=array();
@@ -586,6 +587,22 @@ class report_helper extends helper_base {
     $r .= '<div id="'.$options['id'].'" style="height:'.$options['height'].'px;width:'.$options['width'].'px; "></div>'."\n";
     $r .= "</div>\n";
     return $r;
+  }
+
+  /**
+   * Checks through the options array for the chart to look for any jqPlot plugins that
+   * have been referred to so should be included.
+   * Currently only scans for the trendline and category_axis_rendered plugins.
+   * @param Array $options Chart control's options array
+   */
+  private static function check_for_jqplot_plugins($options) {
+    foreach($options['seriesOptions'] as $series) {
+      if (isset($series['trendline']))
+        self::add_resource('jqplot_trendline');
+    }
+    if (isset($options['xLabels'])) {
+      self::add_resource('jqplot_category_axis_renderer');
+    }
   }
   
   private static function get_direct_mode_params_form($options) {

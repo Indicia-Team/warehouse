@@ -2563,7 +2563,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('nonce', $cacheOpts)) {
       unset($cacheOpts['nonce']);
     }
-    if (isset($_GET['nocache']) || (isset($options['nocache']) && $options['nocache']))
+    if (self::$nocache || isset($_GET['nocache']) || (isset($options['nocache']) && $options['nocache']))
       $response = self::http_post($request, null);
     else {
       $cacheTimeOut = self::_getCacheTimeOut($options);

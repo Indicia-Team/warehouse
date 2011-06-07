@@ -211,6 +211,10 @@ $('#load-params').click(function(evt) {
    */
   public static function prebuilt_form_params_form($options) {
     require_once('data_entry_helper.php');
+    // temporarily disable caching because performance is not as important as reflecting
+    // the latest available parameters, surveys etc. in the drop downs
+    $oldnocache = self::$nocache;
+    self::$nocache = true;
     $formparams = self::get_form_parameters($options['form']);
     $fieldsets = array();
     $r = '';
@@ -248,6 +252,7 @@ $('#load-params').click(function(evt) {
       if (isset($options['expandFirst']) && $options['expandFirst'])
         $class .= ' collapsed';
     }
+    self::$nocache = $oldnocache;
     return $r;
   }
 
