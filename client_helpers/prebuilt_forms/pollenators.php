@@ -1801,7 +1801,8 @@ validateAndSubmitOpenSessions = function(){
    		if (!validateRadio('smpAttr\\:".$args['sky_state_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['temperature_attr_id']."', this)) { valid = false; }
    		if (!validateRadio('smpAttr\\:".$args['wind_attr_id']."', this)) { valid = false; }
-    });
+   		if (!validateRadio('smpAttr\\:".$args['shade_attr_id']."', this)) { valid = false; }
+   });
 	if(valid == false) {
 		myScrollToError();
 		return false;
@@ -1862,7 +1863,7 @@ addSession = function(){
 	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['sky_state_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
 	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['temperature_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
 	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['wind_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
-	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], $defNRAttrOptions))."').appendTo(newForm);
+	jQuery('".str_replace("\n", "", data_entry_helper::outputAttribute($sample_attributes[$args['shade_attr_id']], array_merge($defNRAttrOptions, array('default'=>'-1'))))."').appendTo(newForm);
 	newDeleteButton.click(function() {
 		var container = $(this).parent().parent();
 		jQuery('#cc-3-delete-session').find('[name=sample\\:id]').val(container.find('[name=sample\\:id]').val());
@@ -1900,7 +1901,7 @@ addSession = function(){
     		if (!validateRadio('smpAttr\\:".$args['sky_state_attr_id']."', obj)) { valid = false; }
    			if (!validateRadio('smpAttr\\:".$args['temperature_attr_id']."', obj)) { valid = false; }
    			if (!validateRadio('smpAttr\\:".$args['wind_attr_id']."', obj)) { valid = false; }
-   			// shade is a boolean, and will always have one set, default no
+   			if (!validateRadio('smpAttr\\:".$args['shade_attr_id']."', obj)) { valid = false; }
    			data[2].value = jQuery('#cc-1-collection-details > input[name=sample\\:id]').val();
 			data[3].value = jQuery('#cc-1-collection-details > input[name=location\\:id]').val();
 			jQuery('#cc-3-valid-button').addClass('loading-button');
@@ -1936,8 +1937,8 @@ validateSessionsPanel = function(){
 				jQuery('[name=smpAttr\\:".$args['end_time_attr_id']."],[name^=smpAttr\\:".$args['end_time_attr_id']."\\:]', openSession).val() == '' &&
 				jQuery('[name=smpAttr\\:".$args['sky_state_attr_id']."],[name^=smpAttr\\:".$args['sky_state_attr_id']."\\:]', openSession).filter('[checked]').length == 0 &&
     			jQuery('[name=smpAttr\\:".$args['temperature_attr_id']."],[name^=smpAttr\\:".$args['temperature_attr_id']."\\:]', openSession).filter('[checked]').length == 0 &&
-    			jQuery('[name=smpAttr\\:".$args['wind_attr_id']."],[name^=smpAttr\\:".$args['wind_attr_id']."\\:]', openSession).filter('[checked]').length == 0) {
-			// NB shade is a boolean, and always has one set (default no)
+    			jQuery('[name=smpAttr\\:".$args['wind_attr_id']."],[name^=smpAttr\\:".$args['wind_attr_id']."\\:]', openSession).filter('[checked]').length == 0 &&
+    			jQuery('[name=smpAttr\\:".$args['shade_attr_id']."],[name^=smpAttr\\:".$args['shade_attr_id']."\\:]', openSession).filter('[checked]').length == 0) {
     		jQuery('#cc-3').foldPanel();
 			return true;
 		}
@@ -2053,8 +2054,7 @@ jQuery('.mod-button').click(function() {
     	    'fieldname'=>'occurrence:comment',
  			'suffixTemplate'=>'nosuffix'
 	    ))
-	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],
- 			$defNRAttrOptions))
+	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['number_attr_id']],$defNRAttrOptions))
  	.str_replace("\n", "", data_entry_helper::outputAttribute($occurrence_attributes[$args['foraging_attr_id']],$checkOptions)).'
 	<div id="Foraging_Confirm"><label>'.lang::get('Foraging_Confirm').'</label><div class="control-box "><nobr><span><input type="radio" name="dummy_foraging_confirm" value="0" checked="checked"  /><label>'.lang::get('No').'</label></span></nobr> &nbsp; <nobr><span><input type="radio" name="dummy_foraging_confirm" value="1" /><label>'.lang::get('Yes').'</label></span></nobr></div></div></form><br />
     <span id="cc-4-valid-insect-button" class="ui-state-default ui-corner-all save-button">'.lang::get('LANG_Validate_Insect').'</span>
