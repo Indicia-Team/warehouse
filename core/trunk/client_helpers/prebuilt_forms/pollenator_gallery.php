@@ -769,7 +769,6 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     			'suffixTemplate'=>'nosuffix')).'
        		<input type="submit" id="fc_location_submit_button" class="ui-state-default ui-corner-all submit-button" value="'.lang::get('LANG_Submit_Location').'" />
     	</form>
-       <div id="fc-new-location-message"></div>
        </div>
 	  </div>
       <div id="map2_container">';
@@ -780,6 +779,7 @@ alt="Mes filtres" title="Mes filtres" /></div> <div id="gallery-filter-retrieve"
     $map2JS = data_entry_helper::$onload_javascript;
     data_entry_helper::$onload_javascript = $tempScript;
     $r .= '</div>
+      <div id="fc-new-location-message"></div>
     </div>';
     if(user_access('IForm n'.$node->nid.' add to front page')){
     	$r .= '<div id="fc-front-page" class="ui-widget-content ui-corner-all">
@@ -1235,25 +1235,24 @@ loadCollection = function(id, index){
    					var i = detData.length-1;
 					var string = '';
 					if(detData[i].taxon != '' && detData[i].taxon != null){
-						string = detData[i].taxon;
+						string = htmlspecialchars(detData[i].taxon);
 		  			}
 					if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null){
-						detData[i].taxa_taxon_list_id_list;
 			  			var resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 						if(resultsIDs[0] != '') {
 							for(var j=0; j < resultsIDs.length; j++){
 								for(k = 0; k< flowerTaxa.length; k++){
 									if(flowerTaxa[k].id == resultsIDs[j]){
-										string = (string == '' ? '' : string + ', ') + flowerTaxa[k].taxon;
+										string = (string == '' ? '' : string + ', ') + flowerTaxa[k].taxon; // already specialchared
 									}
 								};
 					  		}
 					  	}
 					}
 		  			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
-						string = (string == '' ? '' : string + ' ') + '('+detData[i].taxon_extra_info+')';
+						string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 					}
-					jQuery('<span>".lang::get('LANG_Flower_Name').": <span class=\"collection-value\">'+htmlspecialchars(string)+'</span></span>').appendTo('#collection-flower-name');
+					jQuery('<span>".lang::get('LANG_Flower_Name').": <span class=\"collection-value\">'+string+'</span></span>').appendTo('#collection-flower-name');
 				}}));
 			ajaxStack.push($.getJSON(\"".$svcUrl."/data/occurrence_attribute_value\"  +
    					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -1369,13 +1368,16 @@ loadCollection = function(id, index){
 				if(!(attrdata instanceof Array)){
    					alertIndiciaError(attrdata);
    				} else if (attrdata.length>0) {
+					var habitat_string = '';
 					for(i=0; i< attrdata.length; i++){
 						if (attrdata[i].id){
 							switch(parseInt(attrdata[i].location_attribute_id)){
 								case ".$args['habitat_attr_id'].":
-									if(attrdata[i].raw_value > 0) jQuery('<span>'+attrdata[i].value+' / </span>').appendTo('#collection-habitat');
+									if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? attrdata[i].value : (habitat_string + ', ' + attrdata[i].value));
 									break;
-  			}}}}}));
+					}}}
+					jQuery('<span>'+habitat_string+'</span>').appendTo('#collection-habitat');
+  			}}));
 		}
 	}));
 	// we want to tag end of row pictuure, so we need to keep track of its position in list.
@@ -1441,10 +1443,9 @@ loadCollection = function(id, index){
 									var i = detData.length-1;
 									var string = '';
 									if(detData[i].taxon != '' && detData[i].taxon != null){
-										string = detData[i].taxon;
+										string = htmlspecialchars(detData[i].taxon);
 						  			}
 									if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null){
-										detData[i].taxa_taxon_list_id_list;
 									  	var resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 										if(resultsIDs[0] != '') {
 											for(var j=0; j < resultsIDs.length; j++){
@@ -1455,7 +1456,8 @@ loadCollection = function(id, index){
 												};
 											}
 								  		}
-									}	
+									}
+									// we use the short determination data here - no extra info
 									if(string != '')
 										jQuery('<div><p>".lang::get('LANG_Last_ID').":</p><p><strong>'+string+'</strong></p></div>').addClass('insect-id').appendTo(det);
 									if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
@@ -1602,10 +1604,9 @@ addInsect = function(index, attributes, endOfRow, first){
 			var determination = jQuery('.insect-determinationX').filter('[occID='+detData[i].occurrence_id+']').empty();
 			var flag = determination.parent().find('.insect-unknown');
 			if(detData[i].taxon != '' && detData[i].taxon != null){
-				string = detData[i].taxon;
+				string = htmlspecialchars(detData[i].taxon);
 			}
 			if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null && detData[i].taxa_taxon_list_id_list != '{}'){
-				detData[i].taxa_taxon_list_id_list;
 				var resultsIDs = detData[i].taxa_taxon_list_id_list.substring(1, detData[i].taxa_taxon_list_id_list.length - 1).split(',');
 				if(resultsIDs[0] != '') {
 					for(var j=0; j < resultsIDs.length; j++){
@@ -1616,6 +1617,9 @@ addInsect = function(index, attributes, endOfRow, first){
 						};
 					}
 				}
+			}
+			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
+				string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 			}
 			jQuery('<p>'+string+'</p>').appendTo(determination)
 			if(detData[i].determination_type == 'B' || detData[i].determination_type == 'I' || detData[i].determination_type == 'U'){
@@ -2674,12 +2678,12 @@ loadLocationAttributes = function(keyValue){
 		if(!(attrdata instanceof Array)){
    			alertIndiciaError(attrdata);
    		} else if (attrdata.length>0) {
-   			var habitat_string = '';
+			var habitat_string = '';
 			for(i=0; i< attrdata.length; i++){
 				if (attrdata[i].id){
 					switch(parseInt(attrdata[i].location_attribute_id)){
 						case ".$args['habitat_attr_id'].":
-							if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? attrdata[i].value : (habitat_string + ' | ' + attrdata[i].value));
+							if (attrdata[i].raw_value > 0) habitat_string = (habitat_string == '' ? attrdata[i].value : (habitat_string + ', ' + attrdata[i].value));
 							break;
 			}}}
 			jQuery('<span>'+habitat_string+'</span>').appendTo('#focus-habitat');
@@ -2752,7 +2756,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
    			var string = '';
    			var resultsText = \"".lang::get('LANG_Taxa_Returned')."<br />{ \";
 			if(detData[i].taxon != '' && detData[i].taxon != null){
-				string = detData[i].taxon;
+				string = htmlspecialchars(detData[i].taxon);
 				callbackEntry.taxa.push(detData[i].taxon);
   			}
 			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxa_taxon_list_id]').val(detData[i].taxa_taxon_list_id);
@@ -2776,7 +2780,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 			callbackArgs.push(callbackEntry);
 			jQuery('#poll-banner').append(string);
 			if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
-				string = (string == '' ? '' : string + ' ') + '('+detData[i].taxon_extra_info+')';
+				string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')';
 			}
 			jQuery('#fo-express-doubt-form').find('[name=determination\\:taxon_extra_info]').val(detData[i].taxon_extra_info);
 			jQuery(this.myLookup).find('[name=determination:taxon_extra_info]').val(detData[i].taxon_extra_info);
@@ -2812,7 +2816,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 				string = '';
 				var item = jQuery('<div></div>').addClass('history-item').appendTo(this.myHistoryID);
 				if(detData[i].taxon != '' && detData[i].taxon != null){
-					string = detData[i].taxon;
+					string = htmlspecialchars(detData[i].taxon);
 		  			callbackEntry.taxa.push(detData[i].taxon);
   				}
 				if(detData[i].taxa_taxon_list_id_list != '' && detData[i].taxa_taxon_list_id_list != null && detData[i].taxa_taxon_list_id_list != '{}'){
@@ -2826,7 +2830,7 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
 					}
 				}
 				if(detData[i].taxon_extra_info != '' && detData[i].taxon_extra_info != null){
-					string = (string == '' ? '' : string + ' ') + '('+detData[i].taxon_extra_info+')' ;
+					string = (string == '' ? '' : string + ' ') + '('+htmlspecialchars(detData[i].taxon_extra_info)+')' ;
 				}
 				string = convertDate(detData[i].updated_on,false) + ' : ' + string;
 				jQuery('<p><strong>'+string+ '</strong> ".lang::get('LANG_Comment_By')."' + detData[i].person_name+'</p>').appendTo(item)
