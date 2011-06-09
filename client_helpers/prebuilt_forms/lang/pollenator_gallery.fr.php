@@ -101,7 +101,7 @@ $custom_terms = array(
 	,'Wind' => 'Vent '
 	,'Shade' => "Fleur à l'ombre "
 	,'Flower Type' => "Il s'agit d'une fleur "
-	,'Habitat' => "Il s'agit d'une habitat "
+	,'Habitat' => "Il s'agit d'un habitat "
 	,'Foraging'=> "L'insecte a été photographié ailleurs que sur la fleur"
 	
 	,'LANG_Comments_Title' => 'COMMENTAIRES DES INTERNAUTES'
@@ -136,14 +136,14 @@ $custom_terms = array(
 	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
 	,'loading' => 'Chargement'
 	,'LANG_INSEE_Localisation' => 'Localisation'
-	,'LANG_Localisation_Confirm' => 'Etes-vous sûr de voiloir modifier la géolocalisation de votre collection?'
+	,'LANG_Localisation_Confirm' => 'Etes-vous sûr de vouloir modifier la géolocalisation de votre collection?'
 	,'LANG_Localisation_Desc' => "Si la géolocalisation de votre collection est incorrecte, vous pouvez la modifier en cliquant sur la carte ou en modifiant ses coordonnées."
 	,'LANG_Front Page' => "Inclure cette collection à la page d'accueil"
 	,'LANG_Submit_Front_Page' => 'Enregistrer'
 	,'LANG_Included_In_Front_Page' => "Cette collection a été inclue à la page d'accueil."
 	,'LANG_Removed_From_Front_Page' => "Cette collection a été retiré de la page d'accueil"
 	,'LANG_Number_In_Front_Page' => "Nombre de collections dans la liste page d'accueil: "
-	,'LANG_Location_Updated' => 'Localisation de cette collection a été mis à jour.'
+	,'LANG_Location_Updated' => 'La localisation de cette collection a été mise à jour.'
 	
 	
 	,'LANG_Bad_Collection_ID' => "Vous avez essayé de charger une session comme une collection: ce ID n'est pas une collection."

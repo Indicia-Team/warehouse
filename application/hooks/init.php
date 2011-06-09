@@ -12,6 +12,12 @@ class Indicia
      */
     public static function indicia_error_handler($errno, $errstr, $errfile, $errline)
     {
+      // if error reporting has been switched off completely we don't want to convert the error to an exception
+      // should really do a binary AND between error_reporting() and $errno; which would only raise exceptions for those which are
+      // flagged by error_reporting(), but this may impact unknown assumptions elsewhere.
+      if(error_reporting() == 0)
+        return true;
+ 
       try {
         throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
       } catch (Exception $e) {
