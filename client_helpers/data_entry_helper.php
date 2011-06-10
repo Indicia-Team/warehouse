@@ -684,6 +684,45 @@ class data_entry_helper extends helper_base {
     return $r;
   }
 
+  /**
+   * A control for building JSON strings, based on http://robla.net/jsonwidget/. Dynamically
+   * generates an input form for the JSON depending on a defined schema. This control
+   * is not normally used for typical Indicia forms, but is used by the prebuilt
+   * forms parameter entry forms for complex parameter structures such as the options
+   * available for a chart.
+   *
+   * @param array $options Options array with the following possibilities:<ul>
+   * <li><b>fieldname</b><br/>
+   * The name of the database or form parameter field this control is bound to, e.g. series_options.</li>
+   * <li><b>if</b>
+   * The HTML id of the output div.</li>
+   * <li><b>schema</b>
+   * Must be supplied with a schema string that defines the allowable structure of the JSON output. Schemas can be
+   * automatically built using the schema generator at
+   * http://robla.net/jsonwidget/example.php?sample=byexample&user=normal.</li>
+   * <li><b>class</b>
+   * Additional css class names to include on the outer div.</li>
+   * </ul>
+   * @return HTML string to insert in the form.
+   */
+  public static function jsonwidget($options) {
+    $options = array_merge(array(
+      'id' => 'jsonwidget_container',
+      'fieldname' => 'jsonwidget',
+      'schema' => '{}',
+      'class'=> ''
+    ), $options);
+    $options['class'] = trim($options['class'].' control-box jsonwidget');
+
+    self::add_resource('jsonwidget');
+    extract($options, EXTR_PREFIX_ALL, 'opt');
+    $opt_default = str_replace("\r", '\r', $opt_default);
+    $opt_default = str_replace("\n", '\n', $opt_default);
+    self::$javascript .= "$('#".$options['id']."').jsonedit({schema: $opt_schema, default: '$opt_default', fieldname: \"$opt_fieldname\"});\n";
+
+    return self::apply_template('jsonwidget', $options);
+  }
+
  /**
   * Outputs an autocomplete control that is dedicated to listing locations and which is bound to any map panel
   * added to the page. Although it is possible to set all the options of a normal autocomplete, generally

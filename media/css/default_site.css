@@ -69,10 +69,10 @@ label {
   margin: 4px 0 4px 0;
 }
 
-input, select, textarea {
+input, select, textarea, #form-params textarea {
   vertical-align: top;
   margin: 4px 0 4px 0;
-  display: inline !important; 
+  display: inline; 
 }
 
 a {

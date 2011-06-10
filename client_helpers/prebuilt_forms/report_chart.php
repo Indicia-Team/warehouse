@@ -130,11 +130,59 @@ class iform_report_chart {
         array(
           'name' => 'series_options',
           'caption' => 'Series Options',
-          'description' => 'JSON describing an array of series options to pass to the chart with one entry per series. '.
+          'description' => 'A list of series options to pass to the chart with one entry per series. '.
               'Applies to line and bar charts only. For full details of the options available, see '.
-              '<a href="http://www.jqplot.com/docs/files/jqplot-core-js.html#Series">chart series options</a>. '.
-              'For example, to set the label and colour use <em>[{"label":"Count of records per survey","color":"#FF0000"}]</em>.',
-          'type' => 'textarea',
+              '<a href="http://www.jqplot.com/docs/files/jqplot-core-js.html#Series">chart series options</a>. ',
+          'type' => 'jsonwidget',
+          'schema'=>'{
+  "type":"seq",
+  "title":"Series List",
+  "sequence":
+  [
+    {
+      "type":"map",
+      "title":"Series",
+      "mapping":
+      {
+        "show": {"type":"bool"},
+        "label": {"type":"str"},
+        "showlabel": {"type":"bool"},
+        "color": {"type":"str","desc":"Specify the colour using CSS format, e.g. #ffffff or a named colour."},
+        "lineWidth": {"type":"number","desc":"Width of the line in pixels."},
+        "shadow": {"type":"bool"},
+        "shadowAngle": {"type":"int","desc":"Shadow angle in degrees."},
+        "shadowOffset": {"type":"number","desc":"Shadow offset from line in pixels."},
+        "shadowDepth": {"type":"int","desc":"Number of times shadow is stroked, each stroke offset shadowOffset from the last."},
+        "shadowAlpha": {"type":"number","desc":"Alpha channel transparency of shadow.  0 = transparent."},
+        "breakOnNull": {"type":"bool","desc":"Whether line segments should be be broken at null value.  False will join point on either side of line."},
+        "showLine": {"type":"bool","desc":"Whether to actually draw the line or not.  Series will still be renderered, even if no line is drawn."},
+        "showMarker": {"type":"bool","desc":"Whether or not to show the markers at the data points."},
+        "rendererOptions": {"type":"map",
+            "mapping": {
+            }
+        },
+        "markerOptions": {"type":"map",
+            "mapping": {
+              "style": {"type":"str","enum":["diamond","circle","square","x","plus","dash","filledDiamond","filledCircle","filledSquare"]},
+              "size": {"type":"int"},
+              "color": {"type":"str"}
+            }
+        },
+        "fill": {"type":"bool","desc":"True or false, wether to fill under lines or in bars.  May not be implemented in all renderers."},
+        "fillColor": {"type":"str","desc":"CSS color spec to use for fill under line.  Defaults to line color."},
+        "fillAlpha": {"type":"number","desc":"Alpha transparency to apply to the fill under the line (between 0 and 1).  Use this to adjust alpha separate from fill color."},
+        "useNegativeColors": {"type":"bool","desc":"True to color negative values differently in filled and bar charts."},
+        "trendline": {
+          "type":"map",
+          "mapping": {
+            "show": {"type":"bool"},
+            "color":{"type":"str","desc":"Specify the colour using CSS format, e.g. #ffffff or a named colour."}
+          }
+        }
+      }
+    }
+  ]
+}',
           'required' => false,
           'group'=>'Advanced Chart Options'
         ),

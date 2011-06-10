@@ -173,7 +173,8 @@ jQuery('#{parentControlId}').change();\n",
   'file_box_initial_file_info' => '', // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'file_box_uploaded_image' => '',    // the JQuery plugin default will apply, this is just a placeholder for template overrides.
   'paging_container' => "<div class=\"pager ui-helper-clearfix\">\n{paging}\n</div>\n",
-  'paging' => '<div class="left">{first} {prev} {pagelist} {next} {last}</div><div class="right">{showing}</div>'
+  'paging' => '<div class="left">{first} {prev} {pagelist} {next} {last}</div><div class="right">{showing}</div>',
+  'jsonwidget' => '<div id="{id}" {class}></div>'
 );
 
 
@@ -337,6 +338,8 @@ class helper_base extends helper_config {
   public static function add_resource($resource)
   {
     // If this is an available resource and we have not already included it, then add it to the list
+    if (!array_key_exists($resource, self::get_resources()))
+      watchdog('warning', "Resource $resource does not exist");
     if (array_key_exists($resource, self::get_resources()) && !in_array($resource, self::$required_resources)) {
       $resourceList = self::get_resources();
       if (isset($resourceList[$resource]['deps'])) {
@@ -421,7 +424,9 @@ class helper_base extends helper_config {
         'reportgrid' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'jquery.reportgrid.js', self::$js_path.'json2.js')),
         'tabs' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path.'tabs.js')),
         'wizardprogress' => array('deps' => array('tabs'), 'stylesheets' => array(self::$css_path."wizard_progress.css")),
-        'spatialReports' => array('javascript'=>array(self::$js_path.'spatialReports.js'))
+        'spatialReports' => array('javascript'=>array(self::$js_path.'spatialReports.js')),
+        'jsonwidget' => array('javascript'=>array(self::$js_path."jsonwidget/json.js", self::$js_path."jsonwidget/jsonedit.js",
+            self::$js_path."jquery.jsonwidget.js"), 'stylesheets'=>array(self::$css_path."jsonwidget.css"))
       );
     }
     return self::$resource_list;
