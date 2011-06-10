@@ -32,4 +32,6 @@ echo form_helper::prebuilt_form_params_form(array(
   'expandFirst' => true
 ));
 
+echo form_helper::dump_javascript();
+
 ?>
