@@ -338,8 +338,6 @@ class helper_base extends helper_config {
   public static function add_resource($resource)
   {
     // If this is an available resource and we have not already included it, then add it to the list
-    if (!array_key_exists($resource, self::get_resources()))
-      watchdog('warning', "Resource $resource does not exist");
     if (array_key_exists($resource, self::get_resources()) && !in_array($resource, self::$required_resources)) {
       $resourceList = self::get_resources();
       if (isset($resourceList[$resource]['deps'])) {
