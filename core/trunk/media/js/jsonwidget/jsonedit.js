@@ -168,25 +168,25 @@ jsonwidget.jsonTreeRef.init = function () {
 }
 
 jsonwidget.jsonTreeRef.attachSchema = function () {
-  if(this.schemaref.node.type == 'any') {
-  if(this.getType()=='map') {
-    this.schemaref.node.mapping = {
-    "extension": {
-      "title":"extension field",
-      "type":"any"
+  if(this.schemaref.node.type == 'any' || typeof this.schemaref.node.subtype!=='undefined') {
+    if(this.getType()=='map') {
+      this.schemaref.node.mapping = {
+        "extension": {
+          "title": "extension field",
+          "type":typeof this.schemaref.node.subtype==='undefined' ? "any" : this.schemaref.node.subtype
+        }
+      };
+      this.schemaref.node.user_key = "extension";
     }
-    };
-    this.schemaref.node.user_key = "extension";
-  }
-  else if(this.getType()=='seq') {
-    this.schemaref.node.sequence = [
-      {
-      "title":"extension field",
-      "type":"any"
-      }
-    ];
-    this.schemaref.node.user_key = "extension";
-  }
+    else if(this.getType()=='seq') {
+      this.schemaref.node.sequence = [
+        {
+        "title":"extension field",
+        "type":typeof this.schemaref.node.subtype==='undefined' ? "any" : this.schemaref.node.subtype
+        }
+      ];
+      this.schemaref.node.user_key = "extension";
+    }
   }
 }
 
