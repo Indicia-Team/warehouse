@@ -36,13 +36,10 @@ function iform_lang_iso_639_2($lang=null) {
     global $language;
     $lang = $language->language;
   }
-  watchdog('language', $lang);
   // If there is a sub-language, ignore it (e.g. en-GB becomes just en). 
   // @todo may want to handle sub-languages
   $lang = explode('-', $lang);
-  watchdog('language', print_r($lang, true));
   $lang = $lang[0];
-  watchdog('language', print_r($lang, true));
   switch ($lang) {
     case 'en' : return 'eng';
     case 'de' : return 'deu';

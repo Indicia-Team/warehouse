@@ -49,15 +49,64 @@ class iform_report_grid {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {
+
     return array_merge(
       iform_report_get_report_parameters(),
       array(
         array(
           'name' => 'columns_config',
-          'caption' => 'Columns Configuration JSON',
-          'description' => 'JSON that describes the columns configuration parameter sent to the report grid component. '.
-              'The <a href="http://jsonlint.com/">JSONLint</a> validator is useful for checking your JSON is correct.',
-          'type' => 'textarea',
+          'caption' => 'Columns Configuration',
+          'description' => 'Define a list of columns with various configuration options when you want to override the '.
+              'default output of the report.',
+          'type' => 'jsonwidget',
+          'schema' => '{
+  "type":"seq",
+  "title":"Columns List",
+  "sequence":
+  [
+    {
+      "type":"map",
+      "title":"Column",
+      "mapping": {
+        "fieldname": {"type":"str","desc":"Name of the field to output in this column. Does not need to be specified when using the template option."},
+        "display": {"type":"str","desc":"Caption of the column, which defaults to the fieldname if not specified."},
+        "actions": {
+          "type":"seq",
+          "title":"Actions List",
+          "sequence": [{
+            "type":"map",
+            "title":"Actions",
+            "desc":"List of actions to make available for each row in the grid.",
+            "mapping": {
+              "caption": {"type":"str","desc":"Display caption for the action\'s link."},
+              "visibility_field": {"type":"str","desc":"Optional name of a field in the data which contains true or false to define the visibility of this action."},
+              "url": {"type":"str","desc":"A url that the action link will point to, unless overridden by JavaScript. The url can contain tokens which '.
+                  'will be subsituted for field values, e.g. for http://www.example.com/image/{id} the {id} is replaced with a field called id in the current row. '.
+              'Can also use the subsitution {currentUrl} to link back to the current page, {rootFolder} to represent the folder on the server that the current PHP page is running from, and '.
+              '{imageFolder} for the image upload folder"},
+              "urlParams": {
+                "type":"map",
+                "subtype":"str",
+                "desc":"List of parameters to append to the URL link, with field value replacements such as {id} begin replaced '.
+                    'by the value of the id field for the current row."
+              },
+              "class": {"type":"str","desc":"CSS class to attach to the action link."},
+              "javascript": {"type":"str","desc":"JavaScript that will be run when the link is clicked. Can contain field value substitutions '.
+                  'such as {id} which is replaced by the value of the id field for the current row. Because the javascript may pass the field values as parameters to functions, '.
+                  'there are escaped versions of each of the replacements available for the javascript action type. Add -escape-quote or '.
+                  '-escape-dblquote to the fieldname. For example this would be valid in the action javascript: foo(\"{bar-escape-dblquote}\"); '.
+                  'even if the field value contains a double quote which would have broken the syntax."}
+            }
+          }]
+        },
+        "visible": {"type":"bool","desc":"Should this column be shown? Hidden columns can still be used in templates or actions."},
+        "template": {"type":"str","desc":"Allows you to create columns that contain dynamic content using a template, rather than just the output '.
+        'of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values. '.
+        'Note that template columns cannot be sorted by clicking grid headers." }
+      }
+    }
+  ]
+}',
           'required' => false,
           'group'=>'Report Settings'
         ), array(

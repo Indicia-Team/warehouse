@@ -84,7 +84,7 @@ class report_helper extends helper_base {
   *  - fieldname: name of the field to output in this column. Does not need to be specified when using the template option.
   *  - display: caption of the column, which defaults to the fieldname if not specified
   *  - actions: list of action buttons to add to each grid row. Each button is defined by a sub-array containing
-  *      values for caption, visibility_field. url, urlParams, class and javascript. The visibibility field is an optional
+  *      values for caption, visibility_field, url, urlParams, class and javascript. The visibibility field is an optional
   *      name of a field in the data which contains true or false to define the visibility of this action. The javascript, url 
   *      and urlParams values can all use the field names from the report in braces as substitutions, for example {id} is replaced
   *      by the value of the field called id in the respective row. In addition, the url can use {currentUrl} to represent the 
@@ -1054,7 +1054,7 @@ function addDistPoint(features, record, wktCol) {
         continue;
       if (isset($action['url'])) {
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
-        if (isset($action['urlParams'])) 
+        if (isset($action['urlParams']))
           $urlParams = array_merge($currentUrl['params'], $action['urlParams']);
         else if (substr($action['url'], 0, 1)=='#')
           // if linking to an internal bookmark, no need to attach the url parameters
