@@ -224,6 +224,7 @@ $('#load-params').click(function(evt) {
       $fieldset = isset($control['group']) ? $control['group'] : 'Other IForm Parameters';
       // apply default options to the control
       $ctrlOptions = array_merge(array(
+        'id' => $control['fieldname'],
         'sep' => '<br/>',
         'class' => '',
         'blankText'=>'<'.lang::get('please select').'>',

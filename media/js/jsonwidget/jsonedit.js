@@ -457,7 +457,10 @@ jsonwidget.editor.attachHandlers = function () {
     if(nodetype == 'str') {
       var value = event.target.value;
     }
-    else if(nodetype == 'number' || nodetype == 'int') {
+    else if(nodetype == 'number') {
+      var value = parseFloat(event.target.value);
+    }
+    else if(nodetype == 'int') {
       var value = parseInt(event.target.value);
     }
     else if(nodetype == 'bool') {
