@@ -33,8 +33,7 @@ class Upgrade_Model extends Model
       $messages = array();
       // upgrades cannot proceed without directory permissions being sorted, because otherwise we cannot write the ____*____ files which 
       // track the last run script.
-      config_test::check_dir_permissions($messages, true);
-      if (count($messages)>0) {
+      if (!is_writeable(DOCROOT.'/modules/indicia_setup/db')) {
         $message = array("You cannot upgrade at the moment until the directory permissions on the Warehouse are corrected. ");
         foreach($messages as $m)
           $message[] = $m['description'];
