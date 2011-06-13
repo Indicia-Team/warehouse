@@ -108,22 +108,83 @@ class iform_report_chart {
         array(
           'name' => 'renderer_options',
           'caption' => 'Renderer Options',
-          'description' => 'JSON describing the renderer options to pass to the chart. For full details of the options available, '.
+          'description' => 'Editor for the renderer options to pass to the chart. For full details of the options available, '.
               'see <a href="http://www.jqplot.com/docs/files/plugins/jqplot-barRenderer-js.html">bar chart renderer options</a>, '.
               '<a href="http://www.jqplot.com/docs/files/plugins/jqplot-lineRenderer-js.html">line charts rendered options<a/> or '.
               '<a href="http://www.jqplot.com/docs/files/plugins/jqplot-pieRenderer-js.html">pie chart renderer options</a>.',
-          'type' => 'textarea',
+          'type' => 'jsonwidget',
+          'schema' => '{
+  "type":"map",
+  "title":"Renderer Options",
+  "mapping":{
+    "barPadding":{"title":"Bar Padding", "type":"int","desc":"Number of pixels between adjacent bars at the same axis value."},
+    "barMargin":{"title":"Bar Margin", "type":"int","desc":"Number of pixels between groups of bars at adjacent axis values."},
+    "barDirection":{"title":"Bar Direction", "type":"str","desc":"Select vertical for up and down bars or horizontal for side to side bars","enum":["vertical","horizontal"]},
+    "barWidth":{"title":"Bar Width", "type":"int","desc":"Width of the bar in pixels (auto by devaul)."},
+    "shadowOffset":{"title":"Bar or Pie Slice Shadow Offset", "type":"number","desc":"Offset of the shadow from the slice and offset of each succesive stroke of the shadow from the last."},
+    "shadowDepth":{"title":"Bar or Pie Slice Shadow Depth", "type":"int","desc":"Number of strokes to apply to the shadow, each stroke offset shadowOffset from the last."},
+    "shadowAlpha":{"title":"Bar or Pie Slice Shadow Alpha", "type":"number","desc":"Transparency of the shadow (0 = transparent, 1 = opaque)"},
+    "waterfall":{"title":"Bar Waterfall","type":"bool","desc":"Check to enable waterfall plot."},
+    "groups":{"type":"int","desc":"Group bars into this many groups."},
+    "varyBarColor":{"type":"bool","desc":"Check to color each bar of a series separately rather than have every bar of a given series the same color."},
+    "highlightMouseOver":{"type":"bool","desc":"Check to highlight slice, bar or filled line plot when mouse over."},
+    "highlightMouseDown":{"type":"bool","desc":"Check to highlight slice, bar or filled line plot when mouse down."},
+    "highlightColors":{"type":"seq","desc":"An array of colors to use when highlighting a bar or pie slice.",
+        "sequence":[{"type":"str"}]
+    },
+    "highlightColor":{"type":"str","desc":"A colour to use when highlighting an area on a filled line plot."},
+    "diameter":{"title":"Pie Diameter","type":"int","desc":"Outer diameter of the pie, auto computed by default."},
+    "padding":{"title":"Pie Padding","type":"int","desc":"padding between the pie and plot edges, legend, etc."},
+    "sliceMargin":{"title":"Pie Slice Margin","type":"int","desc":"Angular spacing between pie slices in degrees."},
+    "fill":{"title":"Pie Fill", "type":"bool","desc":"true or false, whether to fill the slices."},
+    "dataLabels":{"title":"Pie Data Labels", "type":"str","desc":"Select what to display as labels on pie slices.",
+      "enum":["label","value","percent"]
+    },
+    "showDataLabels":{"title":"Pie Show Data Labels", "type":"bool","desc":"Check to show data labels on pie slices."},
+    "dataLabelFormatString":{"title":"Pie Data Label Format String", "type":"str","desc":"Format string for data labels. %s is replaced with the label, %d with the value, %d%% with the percentage."},
+    "dataLabelThreshold":{"title":"Pie Data Label Threshold", "type":"int","desc":"Threshhold in percentage (0-100) of pie area, below which no label will be displayed.  This applies to all label types, not just to percentage labels."},
+    "dataLabelPositionFactor":{"title":"Pie Data Label Position Factor", "type":"number","desc":"A Multiplier (0-1) of the pie radius which controls position of label on slice."},
+    "dataLabelNudge":{"title":"Pie Data Label Nudge", "type":"number","desc":"Number of pixels to slide the label away from (+) or toward (-) the center of the pie."},
+    "dataLabelCenterOn":{"title":"Pie Data Label Centre On", "type":"bool","desc":"Check to center the data label at its position."},
+    "startAngle":{"title":"Pie Start Angle", "type":"int","desc":"Angle to start drawing pie in degrees."}
+  }  
+}',
           'required' => false,
           'group'=>'Advanced Chart Options'
         ),
         array(
           'name' => 'legend_options',
           'caption' => 'Legend Options',
-          'description' => 'JSON describing the legend options to pass to the chart. For full details of the options available, '.
+          'description' => 'Editor for the legend options to pass to the chart. For full details of the options available, '.
               'see <a href="http://www.jqplot.com/docs/files/jqplot-core-js.html#Legend">chart legend options</a>. '.
               'For example, set the value to <em>{"show":true,"location":"ne"}</em> to show the legend in the top-right '.
               '(north east) corner.',
-          'type' => 'textarea',
+          'type' => 'jsonwidget',
+          'schema'=>'{
+  "type":"map",
+  "title":"Legend Options",
+  "mapping":{
+    "show":{"type":"bool","desc":"Whether to display the legend on the graph."},
+    "location":{"type":"str","desc":"Placement of the legend (compass direction).","enum":["nw","n","ne","e","se","s","sw","w"]},
+    "labels":{"type":"seq","desc":"Array of labels to use. By default the renderer will look for labels on the series.  Labels specified in this array will override labels specified on the series.",
+        "sequence":[{"type":"str"}]},
+    "showLabels":{"type":"bool","desc":"Check to show the label text on the legend."},
+    "showSwatch":{"type":"bool","desc":"Check to show the color swatches on the legend."},
+    "placement":{"type":"str","desc":"insideGrid places legend inside the grid area of the plot. OutsideGrid places the legend outside the grid but inside the plot container, shrinking the '.
+        'grid to accomodate the legend. Outside places the legend ouside the grid area, but does not shrink the grid which can cause the legend to overflow the plot container.",
+        "enum":["insideGrid","outsideGrid","outside"]},
+    "border":{"type":"str","desc":"CSS spec for the border around the legend box."},
+    "background":{"type":"str","desc":"CSS spec for the background of the legend box."},
+    "textColor":{"type":"str","desc":"CSS color spec for the legend text."},
+    "fontFamily":{"type":"str","desc":"CSS font-family spec for the legend text."},
+    "fontSize":{"type":"str","desc":"CSS font-size spec for the legend text."},
+    "rowSpacing":{"type":"str","desc":"CSS padding-top spec for the rows in the legend."},
+    "marginTop":{"type":"str","desc":"CSS margin for the legend DOM element."},
+    "marginRight":{"type":"str","desc":"CSS margin for the legend DOM element."},
+    "marginBottom":{"type":"str","desc":"CSS margin for the legend DOM element."},
+    "marginLeft":{"type":"str","desc":"CSS margin for the legend DOM element."}
+  }
+}',
           'required' => false,
           'group'=>'Advanced Chart Options'
         ),
@@ -189,14 +250,106 @@ class iform_report_chart {
         array(
           'name' => 'axes_options',
           'caption' => 'Axes Options',
-          'description' => 'JSON describing axes options to pass to the chart. Provide entries for yaxis and xaxis as required. '.
+          'description' => 'Editor for axes options to pass to the chart. Provide entries for yaxis and xaxis as required. '.
               'Applies to line and bar charts only. For full details of the options available, see '.
               '<a href="http://www.jqplot.com/docs/files/jqplot-core-js.html#Axis">chart axes options</a>. '.
               'For example, <em>{"yaxis":{"min":0,"max":100}}</em>.',
-          'type' => 'textarea',
+          'type' => 'jsonwidget',
           'required' => false,
-          'group'=>'Advanced Chart Options'
-        ),
+          'group'=>'Advanced Chart Options',
+          'schema'=>'{
+  "type":"map",
+  "title":"Axis options",
+  "mapping":{
+    "xaxis":{
+      "type":"map",
+      "mapping":{
+        "show":{"type":"bool"},
+        "tickOptions":{"type":"map","mapping":{
+          "mark":{"type":"str","desc":"Tick mark type on the axis.","enum":["inside","outside","cross"]},
+          "showMark":{"type":"bool"},
+          "showGridline":{"type":"bool"},
+          "isMinorTick":{"type":"bool"},
+          "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For ‘cross’ style, length will be stoked above and below axis, so total length will be twice this."},
+          "show":{"type":"bool"},
+          "showLabel":{"type":"bool"},
+          "formatString":{"type":"bool","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
+          "fontFamily":{"type":"str","desc":"CSS spec for the font-family css attribute."},
+          "fontSize":{"type":"str","desc":"CSS spec for the font-size css attribute."},
+          "textColor":{"type":"str","desc":"CSS spec for the color attribute."},
+        }},
+        "labelOptions":{"type":"map","mapping":{
+          "label":{"type":"str","desc":"Label for the axis."},
+          "show":{"type":"bool","desc":"Check to show the axis label."},
+          "escapeHTML":{"type":"bool","desc":"Check to escape HTML entities in the label."},
+        }},
+        "min":{"type":"number","desc":"minimum value of the axis (in data units, not pixels)."},
+        "max":{"type":"number","desc":"maximum value of the axis (in data units, not pixels)."},
+        "autoscale":{"type":"bool","desc":"Autoscale the axis min and max values to provide sensible tick spacing."},
+        "pad":{"type":"number","desc":"Padding to extend the range above and below the data bounds.  The data range is multiplied by this factor to determine minimum '.
+            'and maximum axis bounds.  A value of 0 will be interpreted to mean no padding, and pad will be set to 1.0."},
+        "padMax":{"type":"number","desc":"Padding to extend the range above data bounds.  The top of the data range is multiplied by this factor to determine maximum '.
+            'axis bounds.  A value of 0 will be interpreted to mean no padding, and padMax will be set to 1.0."},
+        "padMin":{"type":"numer","desc":"Padding to extend the range below data bounds.  The bottom of the data range is multiplied by this factor to determine minimum '.
+            'axis bounds.  A value of 0 will be interpreted to mean no padding, and padMin will be set to 1.0."},
+        "numberTicks":{"type":"int","desc":"Desired number of ticks."},
+        "tickInterval":{"type":"number","desc":"Number of units between ticks."},
+        "showTicks":{"type":"bool","desc":"Whether to show the ticks (both marks and labels) or not."},
+        "showTickMarks":{"type":"bool","desc":"Wether to show the tick marks (line crossing grid) or not."},
+        "showMinorTicks":{"type":"bool","desc":"Wether or not to show minor ticks."},
+        "useSeriesColor":{"type":"bool","desc":"Use the color of the first series associated with this axis for the tick marks and line bordering this axis."},
+        "borderWidth":{"type":"int","desc":"Width of line stroked at the border of the axis."},
+        "borderColor":{"type":"str","desc":"Color of the border adjacent to the axis."},
+        "syncTicks":{"type":"bool","desc":"Check to try and synchronize tick spacing across multiple axes so that ticks and grid lines line up."},
+        "tickSpacing":{"type":"","desc":"Approximate pixel spacing between ticks on graph.  Used during autoscaling.  This number will be an upper bound, actual spacing will be less."}
+      }
+    },
+    "yaxis":{
+      "type":"map",
+      "mapping":{
+        "show":{"type":"bool"},
+        "tickOptions":{"type":"map","mapping":{
+          "mark":{"type":"str","desc":"Tick mark type on the axis.","enum":["inside","outside","cross"]},
+          "showMark":{"type":"bool"},
+          "showGridline":{"type":"bool"},
+          "isMinorTick":{"type":"bool"},
+          "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For ‘cross’ style, length will be stoked above and below axis, so total length will be twice this."},
+          "show":{"type":"bool"},
+          "showLabel":{"type":"bool"},
+          "formatString":{"type":"bool","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
+          "fontFamily":{"type":"str","desc":"CSS spec for the font-family css attribute."},
+          "fontSize":{"type":"str","desc":"CSS spec for the font-size css attribute."},
+          "textColor":{"type":"str","desc":"CSS spec for the color attribute."},
+        }},
+        "labelOptions":{"type":"map","mapping":{
+          "label":{"type":"str","desc":"Label for the axis."},
+          "show":{"type":"bool","desc":"Check to show the axis label."},
+          "escapeHTML":{"type":"bool","desc":"Check to escape HTML entities in the label."},
+        }},
+        "min":{"type":"number","desc":"minimum value of the axis (in data units, not pixels)."},
+        "max":{"type":"number","desc":"maximum value of the axis (in data units, not pixels)."},
+        "autoscale":{"type":"bool","desc":"Autoscale the axis min and max values to provide sensible tick spacing."},
+        "pad":{"type":"number","desc":"Padding to extend the range above and below the data bounds.  The data range is multiplied by this factor to determine minimum '.
+            'and maximum axis bounds.  A value of 0 will be interpreted to mean no padding, and pad will be set to 1.0."},
+        "padMax":{"type":"number","desc":"Padding to extend the range above data bounds.  The top of the data range is multiplied by this factor to determine maximum '.
+            'axis bounds.  A value of 0 will be interpreted to mean no padding, and padMax will be set to 1.0."},
+        "padMin":{"type":"numer","desc":"Padding to extend the range below data bounds.  The bottom of the data range is multiplied by this factor to determine minimum '.
+            'axis bounds.  A value of 0 will be interpreted to mean no padding, and padMin will be set to 1.0."},
+        "numberTicks":{"type":"int","desc":"Desired number of ticks."},
+        "tickInterval":{"type":"number","desc":"Number of units between ticks."},
+        "showTicks":{"type":"bool","desc":"Whether to show the ticks (both marks and labels) or not."},
+        "showTickMarks":{"type":"bool","desc":"Wether to show the tick marks (line crossing grid) or not."},
+        "showMinorTicks":{"type":"bool","desc":"Wether or not to show minor ticks."},
+        "useSeriesColor":{"type":"bool","desc":"Use the color of the first series associated with this axis for the tick marks and line bordering this axis."},
+        "borderWidth":{"type":"int","desc":"Width of line stroked at the border of the axis."},
+        "borderColor":{"type":"str","desc":"Color of the border adjacent to the axis."},
+        "syncTicks":{"type":"bool","desc":"Check to try and synchronize tick spacing across multiple axes so that ticks and grid lines line up."},
+        "tickSpacing":{"type":"","desc":"Approximate pixel spacing between ticks on graph.  Used during autoscaling.  This number will be an upper bound, actual spacing will be less."}
+      }
+    }
+  }
+}',
+        )
       )
     );
   }
