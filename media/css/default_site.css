@@ -417,6 +417,24 @@ tfoot td div{
   padding: 2px 4px;
 }
 
+#map-toolbar-outer .olControlEditingToolbar, #map-toolbar-outer label {
+  width: auto;
+  display:-moz-inline-stack;
+  display:inline-block;
+  zoom:1;
+  *display:inline;
+}
+
+#map-toolbar-outer  * {
+  vertical-align: middle;
+}
+
 .olControlClearLayerItemInactive {
   background-image: url("../images/nuvola/no-22px.png") !important;
+}
+
+.no-border {
+  border: none;
+  margin: 0;
+  padding: 0;
 }

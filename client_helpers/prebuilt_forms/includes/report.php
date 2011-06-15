@@ -43,7 +43,7 @@ function iform_report_get_report_parameters() {
       'caption' => 'Preset Parameter Values',
       'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
-          'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Preset Parameter Values can not be overridden by the user.',
+          'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Preset Parameter Values can\'t be overridden by the user.',
       'type' => 'textarea',
       'required' => false,
       'group'=>'Report Settings'
@@ -71,6 +71,14 @@ function iform_report_get_report_parameters() {
       ),
       'default' => 'default',
       'group'=>'Report Settings'
+    ), array(
+      'name' => 'params_in_map_toolbar',
+      'caption' => 'Params in map toolbar',
+      'description' => 'Should the report input parameters be inserted into a map toolbar instead of displaying a panel of input parameters at the top? '.
+          'This is only useful when there is a map output onto the page which has a toolbar in the top or bottom position.',
+      'type' => 'checkbox',
+      'required' => false,
+      'group' => 'Report Settings'
     ), array(
       'name' => 'refresh_timer',
       'caption' => 'Automatic reload seconds',
@@ -105,9 +113,14 @@ function iform_report_get_report_options($args, $auth) {
     if (!$args['auto_params_form'])
       $args['output']='output';
   }
+  if (isset($args['map_toolbar_pos']) && $args['map_toolbar_pos']=='map')
+    // report params cannot go in the map toolbar if displayed as overlay on map
+    $args['params_in_map_toolbar']=false;
   // put each param control in a div, which makes it easier to layout with CSS
-  $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container">';
-  $indicia_templates['suffix']='</div>';
+  if (!isset($args['params_in_map_toolbar']) || !$args['params_in_map_toolbar']) {
+    $indicia_templates['prefix']='<div id="container-{fieldname}" class="param-container">';
+    $indicia_templates['suffix']='</div>';
+  }
   $r = '';
   $presets = _get_initial_vals('param_presets', $args);
   $defaults = _get_initial_vals('param_defaults', $args);
@@ -128,7 +141,8 @@ function iform_report_get_report_options($args, $auth) {
     'extraParams' => $presets,
     'paramDefaults' => $defaults,
     'galleryColCount' => isset($args['gallery_col_count']) ? $args['gallery_col_count'] : 1,
-    'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true
+    'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true,
+    'paramsInMapToolbar'=>isset($args['params_in_map_toolbar']) ? $args['params_in_map_toolbar'] : false
   );
   if (empty($args['output']) || $args['output']=='default') {
     $reportOptions['autoParamsForm'] = true;

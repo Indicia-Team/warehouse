@@ -380,7 +380,21 @@ mapInitialisationHooks = [];
     }
     return this.each(function() {
       this.settings = opts;
-
+      // wrap the map in a div container
+      $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
+      
+      if (this.settings.toolbarDiv!='map') {
+        var toolbar='<div id="map-toolbar-outer">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
+        if (this.settings.toolbarDiv=='top') {
+          $(this).before(toolbar);
+        } else if (this.settings.toolbarDiv=='bottom') {
+          $(this).after(toolbar);
+        } else {
+          $('#' + this.settings.toolbarDiv).html(toolbar);
+        }
+        this.settings.toolbarDiv='map-toolbar';
+      }
+      
       this.settings.boundaryStyle=new style();
 
       // Sizes the div
@@ -830,6 +844,8 @@ $.fn.indiciaMapPanel.defaults = {
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
     toolbarDiv: 'map', // map or div ID
+    toolbarPrefix: '', // content to prepend to the toolbarDiv content if not on the map
+    toolbarSuffix: '', // content to append to the toolbarDiv content if not on the map
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
     editLayerName: 'Selection layer',

@@ -16,8 +16,8 @@
  * Method which copies the features on a layer into a WKT in a form input.
  */
 function storeGeomsInHiddenInput(layer, inputId) {
+  "use strict";
   var geoms=[], featureClass='', geom;
-  var geoms=[];
   $.each(layer.features, function(i, feature) {
     if (feature.geometry.CLASS_NAME.contains('Multi')) {
       geoms = geoms.concat(feature.geometry.components);
@@ -28,11 +28,11 @@ function storeGeomsInHiddenInput(layer, inputId) {
   if (geoms.length===0) {
     $('#'+inputId).val('');
   } else {
-    if (geoms[0].CLASS_NAME == 'OpenLayers.Geometry.Polygon') {
+    if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.Polygon') {
       geom = new OpenLayers.Geometry.MultiPolygon(geoms);
-    } else if (geoms[0].CLASS_NAME == 'OpenLayers.Geometry.LineString') {
+    } else if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.LineString') {
       geom = new OpenLayers.Geometry.MultiLineString(geoms);
-    } else if (geoms[0].CLASS_NAME == 'OpenLayers.Geometry.Point') {
+    } else if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.Point') {
       geom = new OpenLayers.Geometry.MultiPoint(geoms);
     }
     $('#'+inputId).val(geom.toString());
@@ -45,13 +45,33 @@ function bufferFeature(feature) {
       url:mapDiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
           +'?wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val(),
       success: function(buffered) {
-        buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered));
+        var buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered));
         // link the feature to its buffer, for easy removal
         feature.buffer = buffer;
         bufferLayer.addFeatures([buffer]);
       },
       async: false
     });
+  }
+}
+
+function rebuildBuffer(div) {
+  if (!$('#geom_buffer').val().match(/^\d+$/)) {
+    $('#geom_buffer').val(0);
+  }
+  bufferLayer.removeAllFeatures();
+  // re-add each object from the edit layer using the spatial buffering service
+  $.each(div.map.editLayer.features, function(idx, feature) {
+    bufferFeature(feature);
+  });
+}
+
+function storeGeomsInForm(div) {
+  if (typeof bufferLayer==="undefined") {
+    storeGeomsInHiddenInput(div.map.editLayer, 'hidden-wkt');
+  } else {
+    storeGeomsInHiddenInput(div.map.editLayer, 'orig-wkt');
+    storeGeomsInHiddenInput(bufferLayer, 'hidden-wkt');
   }
 }
 
@@ -74,23 +94,25 @@ function enableBuffering() {
     div.map.editLayer.events.register('featuresremoved', div.map.editLayer, function(evt) {
       buffers = [];
       $.each(evt.features, function(idx, feature) {
-        if (!typeof feature.buffer!=="undefined") {
+        if (typeof feature.buffer!=="undefined") {
           buffers.push(feature.buffer);
         }
       });
       bufferLayer.removeFeatures(buffers);
     });
-  });
-  // When exiting the buffer input, recreate all the buffer polygons.
-  $('#geom_buffer').blur(function() {
-    if (!$('#geom_buffer').val().match(/^\d+$/)) {
-      $('#geom_buffer').val(0);
-    }
-    bufferLayer.removeAllFeatures();
-    // re-add each object from the edit layer using the spatial buffering service
-    $.each(mapDiv.map.editLayer.features, function(idx, feature) {
-      bufferFeature(feature);
-    })
-
+    // When exiting the buffer input, recreate all the buffer polygons.
+    $('#geom_buffer').blur(function() {rebuildBuffer(div);});
+    $('#run-report').click(function(evt) {
+      // rebuild the buffer if the user is changing it.
+      if (document.activeElement.id==='geom_buffer') {
+        rebuildBuffer(div);
+      }
+      storeGeomsInForm(div);
+      if ($('#hidden-wkt').val()==='') {
+        evt.preventDefault();
+        alert('Please supply a search area for the report.');
+        return false;
+      }
+    });
   });
 }

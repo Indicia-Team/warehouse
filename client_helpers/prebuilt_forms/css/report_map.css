@@ -1,9 +1,18 @@
-#map {
+#map-container {
   float: left;
+  clear: left;
+}
+
+#map-toolbar {
+  float: none;
 }
 
 #map-legend, #map-layer-picker {
   float: right;
   clear: right;
+}
+
+#map-container {
+  background-color: #eee;
 }
 
