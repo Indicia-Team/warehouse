@@ -979,8 +979,11 @@ function addDistPoint(features, record, wktCol) {
       $r = '';
       // The form must use POST, because polygon parameters can be too large for GET.
       if ($options['completeParamsForm']==true) {
-        $r .= '<form action="'.$_SERVER['REQUEST_URI'].'" method="post" id="'.$options['id'].'-params">'."\n";
-        $r .= '<fieldset><legend>'.lang::get('Report Parameters').'</legend>';
+        $cls = $options['paramsInMapToolbar'] ? 'no-border' : '';
+        $r .= '<form action="'.$_SERVER['REQUEST_URI'].'" method="post" id="'.$options['id'].'-params">'."\n<fieldset class=\"$cls\">";
+        if (!$options['paramsInMapToolbar']) 
+          // don't use the fieldset legend in toolbar mode
+          $r .= '<legend>'.lang::get('Report Parameters').'</legend>';
       }
       $reloadUrl = self::get_reload_link_parts();
       // Output any other get parameters from our URL as hidden fields
@@ -994,12 +997,19 @@ function addDistPoint(features, record, wktCol) {
       }
       $r .= self::build_params_form(array_merge(array('form'=>$response['parameterRequest'], 'field_name_prefix'=>'param', 'defaults'=>$params), $options));
       if ($options['completeParamsForm']==true) {
-        $r .= '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'."\n";
-        $r .= "</fieldset></form>\n";
-      }
-      return $r;
+        $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
+            '</fieldset></form>';
+      } else 
+        $suffix = '';
+      if ($options['paramsInMapToolbar']) {
+        $toolbarControls = str_replace(array('<br/>', "\n"), '', $r);
+        data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarPrefix+='$toolbarControls';\n";
+        data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarSuffix+='$suffix';\n";
+        return '';
+      } else      
+        return "$r$suffix\n";
     } else {
-      return $r;
+      return '';
     }
   }
 

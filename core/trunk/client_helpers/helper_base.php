@@ -574,157 +574,167 @@ class helper_base extends helper_config {
    * <li><b>presetParams</b><br/>
    * Optional array of param names and values that have a fixed value and are therefore output only as a hidden control.
    * </li>
+   * <li><b>inlineMapTools</b><br/>
+   * Defaults to false. If true, then map drawing parameter tools are embedded into the report parameters form. If false, then the map
+   * drawing tools are added to a toolbar at the top of the map.
+   * </li>
+   * <li><b>helpText</b><br/>
+   * Defaults to true. Set to false to disable helpText being displayed alongside controls, useful for building compact versions of 
+   * simple parameter forms.
+   * </li>
    * </ul>
    */
   public static function build_params_form($options) {
     require_once('data_entry_helper.php');
+    // apply defaults
+    $options = array_merge(array(
+      'inlineMapTools' => false,
+      'helpText' => true
+    ), $options);
     $r = '';
-    $fieldPrefix = (isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '');
+    $tools = array();
     foreach($options['form'] as $key=>$info) {
-      unset($tools);
       // Skip parameters if we have been asked to ignore them
-      if (isset($options['ignoreParams']) && in_array($key, $options['ignoreParams'])) continue;
-      $ctrlOptions = array(
-        'label' => $info['display'],
-        'helpText' => $info['description'],
-        'fieldname' => $fieldPrefix.$key
-      );
-      // If this parameter is in the URL or post data, put it in the control instead of the original default
-      if (isset($options['defaults'][$key]))
-        $ctrlOptions['default'] = $options['defaults'][$key];
-      elseif (isset($info['default']))
-        $ctrlOptions['default'] = $info['default'];
-      if (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
-        $r .= "<input type=\"hidden\" name=\"$key\" value=\"".$options['presetParams'][$key]."\" />\n";
-      } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
-        // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
-        $popOpts = explode(':', $info['population_call']);
-        $ctrlOptions = array_merge($ctrlOptions, array(
-          'valueField'=>$popOpts[2],
-          'captionField'=>$popOpts[3],
-          'blankText'=>'<'.lang::get('please select').'>',
-          'extraParams'=>$options['readAuth']
-        ));
-        if ($popOpts[0]=='direct')
-          $ctrlOptions['table']=$popOpts[1];
-        else
-          $ctrlOptions['report']=$popOpts[1];
-        if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
-          if (isset($options['presetParams']) && array_key_exists($info['linked_to'], $options['presetParams'])) {
-            // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the
-            // population call for this control
-            $ctrlOptions = array_merge($ctrlOptions, array(
-              'extraParams' => array_merge($ctrlOptions['extraParams'], array($info['linked_filter_field']=>$options['presetParams'][$info['linked_to']]))
-            ));
-          } else {
-            // otherwise link the 2 controls
-            $ctrlOptions = array_merge($ctrlOptions, array(
-              'parentControlId' => $fieldPrefix.$info['linked_to'],
-              'filterField' => $info['linked_filter_field'],
-              'parentControlLabel' => $options['form'][$info['linked_to']]['display']
-            ));
+      if (!isset($options['ignoreParams']) || !in_array($key, $options['ignoreParams'])) 
+        $r .= self::get_params_form_control($key, $info, $options, $tools);
+      // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
+      if (count($tools)) {
+        $fieldname=(isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '').$key;
+        self::add_resource('spatialReports');
+        self::add_resource('clearLayer');
+        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
+          data_entry_helper::$javascript .= "enableBuffering();\n";
+        if ($options['inlineMapTools']) {
+          $r .= '<label>'.$info['display'].':</label>';
+          $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
+          '<div id="map-toolbar" class="olControlEditingToolbar left"></div></div><br/>';
+        }
+        $r .= '<input type="hidden" name="'.$fieldname.'" id="hidden-wkt" value="'.
+            (isset($_POST[$fieldname]) ? $_POST[$fieldname] : '').'"/>';
+        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') {
+          $bufferInput .= data_entry_helper::text_input(array(
+            'label'=>'Buffer (m)',
+            'fieldname'=>'geom_buffer',
+            'prefix'=>'',
+            'suffix'=>'',
+            'class'=>'control-width-1',
+            'default'=>isset($_POST['geom_buffer']) ? $_POST['geom_buffer'] : 0
+          ));
+          if ($options['inlineMapTools']) 
+            $r .= $bufferInput;
+          else {
+            $bufferInput = str_replace(array('<br/>',"\n"), '', $bufferInput);
+            data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarSuffix+='$bufferInput';\n";
           }
+          // keep a copy of the unbuffered polygons in this input, so that when the page reloads both versions
+          // are available
+          $r .= '<input type="hidden" name="orig-wkt" id="orig-wkt" '.
+              'value="'.(isset($_POST['orig-wkt']) ? $_POST['orig-wkt'] : '')."\" />\n";
         }
-        $r .= data_entry_helper::select($ctrlOptions);
-      } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
-        // Convert the lookup values into an associative array
-        $lookups = explode(',', $info['lookup_values']);
-        $lookupsAssoc = array();
-        foreach($lookups as $lookup) {
-          $lookup = explode(':', $lookup);
-          $lookupsAssoc[$lookup[0]] = $lookup[1];
+        // Output some JavaScript to setup a toolbar for the map drawing tools. Also JS
+        // to handle getting the polygons from the edit layer into the report parameter
+        // when run report is clicked.
+        $toolbarDiv = $options['inlineMapTools'] ? 'map-toolbar' : 'top';
+        data_entry_helper::$javascript .= "
+  $.fn.indiciaMapPanel.defaults.toolbarDiv='$toolbarDiv';
+  mapInitialisationHooks.push(function(div) {
+    // keep a global reference to the map, so we can get it later when Run Report is clicked
+    mapDiv = div;
+    var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
+          {fillOpacity: 0.05},
+          OpenLayers.Feature.Vector.style['default']));
+    mapDiv.map.editLayer.styleMap = styleMap;\n";
+        
+        if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
+          $origWkt = empty($_POST['orig-wkt']) ? '' : $_POST['orig-wkt'];
+        else
+          $origWkt = empty($_POST[$fieldname]) ? '' : $_POST[$fieldname];
+
+        if (!empty($origWkt))
+          data_entry_helper::$javascript .= "  mapDiv.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT('$origWkt'))]);\n";
+        data_entry_helper::$javascript .= "
+  });
+  var add_map_tools = function(opts) {\n";
+        foreach ($tools as $tool) {
+          data_entry_helper::$javascript .= "  opts.standardControls.push('draw$tool');\n";
         }
-        $ctrlOptions = array_merge($ctrlOptions, array(
-          'blankText'=>'<'.lang::get('please select').'>',
-          'lookupValues' => $lookupsAssoc
-        ));
-        $r .= data_entry_helper::select($ctrlOptions);
-      } elseif ($info['datatype']=='date') {
-        $r .= data_entry_helper::date_picker($ctrlOptions);
-      } elseif ($info['datatype']=='geometry') {
-        $tools = array('Polygon','Line','Point');
-      } elseif ($info['datatype']=='polygon') {
-        $tools = array('Polygon');
-      } elseif ($info['datatype']=='line') {
-        $tools = array('Line');
-      } elseif ($info['datatype']=='point') {
-        $tools = array('Point');
-      } else {
-        $r .= data_entry_helper::text_input($ctrlOptions);
+        data_entry_helper::$javascript .= "  opts.standardControls.push('clearEditLayer');
+  }
+  mapSettingsHooks.push(add_map_tools);\n";
       }
     }
-    // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
-    if (isset($tools)) {
-      self::add_resource('spatialReports');
-      self::add_resource('clearLayer');
-      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
-        data_entry_helper::$javascript .= "enableBuffering();\n";
-      $r .= '<label>'.$ctrlOptions['label'].':</label>';
-      $r .= '<div class="control-box">Use the following tools to define the query area.<br/>'.
-      '<div id="map-tools" class="olControlEditingToolbar left"></div></div><br/>';
-      $r .= '<input type="hidden" name="'.$ctrlOptions['fieldname'].'" id="hidden-wkt" value="'.
-          (isset($_POST[$ctrlOptions['fieldname']]) ? $_POST[$ctrlOptions['fieldname']] : '').'"/>';
-      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') {
-        $r .= data_entry_helper::text_input(array(
-          'label'=>'Buffer (m)',
-          'fieldname'=>'geom_buffer',
-          'default'=>isset($_POST['geom_buffer']) ? $_POST['geom_buffer'] : 0
-        ));
-        // keep a copy of the unbuffered polygons in this input, so that when the page reloads both versions
-        // are available
-        $r .= '<input type="hidden" name="orig-wkt" id="orig-wkt" '.
-            'value="'.(isset($_POST['orig-wkt']) ? $_POST['orig-wkt'] : '')."\" />\n";
-      }
-      // Output some JavaScript to setup a toolbar for the map drawing tools. Also JS
-      // to handle getting the polygons from the edit layer into the report parameter
-      // when run report is clicked.
-      data_entry_helper::$javascript .= "
-$.fn.indiciaMapPanel.defaults.toolbarDiv='map-tools';
-mapInitialisationHooks.push(function(div) {
-  // keep a global reference to the map, so we can get it later when Run Report is clicked
-  mapDiv = div;
-  var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
-        {fillOpacity: 0.05},
-        OpenLayers.Feature.Vector.style['default']));
-  mapDiv.map.editLayer.styleMap = styleMap;\n";
-      
-      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
-        $origWkt = empty($_POST['orig-wkt']) ? '' : $_POST['orig-wkt'];
-      else
-        $origWkt = empty($_POST[$ctrlOptions['fieldname']]) ? '' : $_POST[$ctrlOptions['fieldname']];
-
-      if (!empty($origWkt))
-        data_entry_helper::$javascript .= "
-  var selorig = new OpenLayers.Feature.Vector(
-      OpenLayers.Geometry.fromWKT('$origWkt'));
-  mapDiv.map.editLayer.addFeatures([selorig]);\n";
-      data_entry_helper::$javascript .= "});
-
-$('#run-report').click(function(evt) {
-  if (document.activeElement.id=='geom_buffer') {
-    $('#geom_buffer').blur();
-  }";
-      if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
-        data_entry_helper::$javascript .= "
-  storeGeomsInHiddenInput(mapDiv.map.editLayer, 'orig-wkt');
-  storeGeomsInHiddenInput(bufferLayer, 'hidden-wkt');\n";
-      else
-        data_entry_helper::$javascript .= "
-  storeGeomsInHiddenInput(mapDiv.map.editLayer, 'hidden-wkt');\n";
-      data_entry_helper::$javascript .= "  if ($('#hidden-wkt').val()==='') {
-    evt.preventDefault();
-    alert('".lang::get('Please supply a search area for the report.')."');
-    return false;
+    return $r;
   }
-});
-var add_map_tools = function(opts) {\n";
-      foreach ($tools as $tool) {
-        data_entry_helper::$javascript .= "opts.standardControls.push('draw$tool');\n";
+  
+  private static function get_params_form_control($key, $info, $options, &$tools) {
+    $fieldPrefix = (isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '');
+    $ctrlOptions = array(
+      'label' => $info['display'],
+      'helpText' => $options['helpText'] ? $info['description'] : '', // note we can't fit help text in the toolbar versions of a params form
+      'fieldname' => $fieldPrefix.$key
+    );
+    // If this parameter is in the URL or post data, put it in the control instead of the original default
+    if (isset($options['defaults'][$key]))
+      $ctrlOptions['default'] = $options['defaults'][$key];
+    elseif (isset($info['default']))
+      $ctrlOptions['default'] = $info['default'];
+    if (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
+      $r .= "<input type=\"hidden\" name=\"$key\" value=\"".$options['presetParams'][$key]."\" />\n";
+    } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
+      // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
+      $popOpts = explode(':', $info['population_call']);
+      $ctrlOptions = array_merge($ctrlOptions, array(
+        'valueField'=>$popOpts[2],
+        'captionField'=>$popOpts[3],
+        'blankText'=>'<'.lang::get('please select').'>',
+        'extraParams'=>$options['readAuth']
+      ));
+      if ($popOpts[0]=='direct')
+        $ctrlOptions['table']=$popOpts[1];
+      else
+        $ctrlOptions['report']=$popOpts[1];
+      if (isset($info['linked_to']) && isset($info['linked_filter_field'])) {
+        if (isset($options['presetParams']) && array_key_exists($info['linked_to'], $options['presetParams'])) {
+          // if the control this is linked to is hidden because it has a preset value, just use that value as a filter on the
+          // population call for this control
+          $ctrlOptions = array_merge($ctrlOptions, array(
+            'extraParams' => array_merge($ctrlOptions['extraParams'], array($info['linked_filter_field']=>$options['presetParams'][$info['linked_to']]))
+          ));
+        } else {
+          // otherwise link the 2 controls
+          $ctrlOptions = array_merge($ctrlOptions, array(
+            'parentControlId' => $fieldPrefix.$info['linked_to'],
+            'filterField' => $info['linked_filter_field'],
+            'parentControlLabel' => $options['form'][$info['linked_to']]['display']
+          ));
+        }
       }
-      data_entry_helper::$javascript .= "
-  opts.standardControls.push('clearEditLayer');
-}
-mapSettingsHooks.push(add_map_tools)\n";
+      $r .= data_entry_helper::select($ctrlOptions);
+    } elseif ($info['datatype']=='lookup' && isset($info['lookup_values'])) {
+      // Convert the lookup values into an associative array
+      $lookups = explode(',', $info['lookup_values']);
+      $lookupsAssoc = array();
+      foreach($lookups as $lookup) {
+        $lookup = explode(':', $lookup);
+        $lookupsAssoc[$lookup[0]] = $lookup[1];
+      }
+      $ctrlOptions = array_merge($ctrlOptions, array(
+        'blankText'=>'<'.lang::get('please select').'>',
+        'lookupValues' => $lookupsAssoc
+      ));
+      $r .= data_entry_helper::select($ctrlOptions);
+    } elseif ($info['datatype']=='date') {
+      $r .= data_entry_helper::date_picker($ctrlOptions);
+    } elseif ($info['datatype']=='geometry') {
+      $tools = array('Polygon','Line','Point');
+    } elseif ($info['datatype']=='polygon') {
+      $tools = array('Polygon');
+    } elseif ($info['datatype']=='line') {
+      $tools = array('Line');
+    } elseif ($info['datatype']=='point') {
+      $tools = array('Point');
+    } else {
+      $r .= data_entry_helper::text_input($ctrlOptions);
     }
     return $r;
   }

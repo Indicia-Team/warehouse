@@ -85,6 +85,17 @@ class iform_report_map {
           'group'=>'Report Map Settings'
         ),
         array(
+          'name' => 'map_toolbar_pos',
+          'caption' => 'Map Toolbar Position',
+          'description' => 'Specify the position of the map toolbar. Either use \'map\' to place it in the corner of the map, '.
+              '\top\' to place it at the top, \'bottom\' to place it at the bottom, or provide the CSS ID of a div element on the page that the '.
+              'toolbar should be added to.',
+          'type' => 'text_input',
+          'required' => true,
+          'default' => 'top',
+          'group' => 'Report Map Settings'
+        ),
+        array(
           'name' => 'geoserver_layer',
           'caption' => 'GeoServer Layer',
           'description' => 'For improved mapping performance, specify a layer on GeoServer which '.
@@ -163,12 +174,15 @@ class iform_report_map {
       if ($args['legend']=='before')
         $r .= map_helper::layer_list($legend);
     }
+    if (isset($args['map_toolbar_pos']))
+      $options['toolbarDiv'] = $args['map_toolbar_pos'];
     $r .= map_helper::map_panel($options, $olOptions);
     if ($args['layer_picker']=='after')
       $r .= map_helper::layer_list($picker);
     if ($args['legend']=='after')
       $r .= map_helper::layer_list($legend);
     $r .= '</div>';
+    
     return $r;
   }
 

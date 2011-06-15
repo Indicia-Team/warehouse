@@ -111,6 +111,16 @@ class map_helper extends helper_base {
   * </li>
   * <li><b>controls</b><br/>
   * </li>
+  * <li><b>toolbarDiv</b><br/>
+  * If set to 'map' then any required toolbuttons are output directly onto the map canvas (in the top right corner). Alternatively can be set to 'top',
+  * 'bottom' or the id of a div on the page to output them into.
+  * </li>
+  * <li><b>toolbarPrefix</b><br/>
+  * Content to include at the beginning of the map toolbar. Not applicable when the toolbar is added directly to the map.
+  * </li>
+  * <li><b>toolbarSuffix</b><br/>
+  * Content to include at the end of the map toolbar. Not applicable when the toolbar is added directly to the map.
+  * </li>
   * <li><b>editLayer</b><br/>
   * </li>
   * <li><b>editLayerName</b><br/>
@@ -294,7 +304,6 @@ class map_helper extends helper_base {
       } else {
         self::$onload_javascript .= $mapSetupJs;
       }
-      
       return self::apply_template('map_panel', $options);
     }
   }
