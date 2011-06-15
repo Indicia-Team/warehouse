@@ -153,6 +153,10 @@ class report_helper extends helper_base {
   * <li><b>paramsFormButtonCaption</b>
   * Caption of the button to run the report on the report parameters form. Defaults to Run Report. This caption
   * is localised when appropriate.
+  * <li><b>paramsInMapToolbar</b>
+  * If set to true, then the parameters for this report are not output, but are passed to a map_panel control
+  * (which must therefore exist on the same web page) and are output as part of the map's toolbar.
+  * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -630,6 +634,98 @@ class report_helper extends helper_base {
 ';
     return $r;
   }
+
+ /**
+  * Outputs the content of a report using freeform text templates to create output as required,
+  * as opposed to the report_grid which forces a table based output. Has a header and footer
+  * plus any number of bands which are output once per row, or once each time a particular
+  * field value changes (i.e. acting as a header band).
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>mode</b><br/>
+  * Pass report to retrieve the underlying data from a report, or direct for an Indicia table or view. Default is report.</li>
+  * <li><b>readAuth</b><br/>
+  * Read authorisation tokens.</li>
+  * <li><b>dataSource</b><br/>
+  * Name of the report file or table/view(s) to retrieve underlying data.</li>
+  * <li><b>class</b><br/>
+  * CSS class to apply to the outer div. Default is banded-report.</li>
+  * <li><b>header</b><br/>
+  * Text to output as the header of the report.</li>
+  * <li><b>footer</b><br/>
+  * Text to output as the footer of the report.</li>
+  * <li><b>bands</b><br/>
+  * Array of bands to output per row. Each band is itself an array, with at least an
+  * item called 'content' which contains a template for the output of the band. The
+  * template can contain replacements for each field value in the row, e.g. the
+  * replacement {survey} is replaced with the value of the field called survey. In
+  * addition, the band array can contain a triggerFields element, which contains an
+  * array of the names of fields which act as triggers for the band to be output.
+  * The band will then only be output once at the beginning of the report, then once
+  * each time one of the named trigger fields' values change. Therefore when using
+  * trigger fields the band acts as a group header band.</li>
+  */
+  public static function freeform_report($options) {
+    $options = array_merge(array(
+      'header' => '',
+      'footer' => '',
+      'bands' => array(),
+      'class' => 'banded-report'
+    ), $options);
+
+    $response = self::get_report_data($options);
+    if (isset($response['error'])) return $response['error'];
+    if (isset($response['parameterRequest'])) {
+      $currentParamValues = self::get_report_grid_current_param_values($options);
+      $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+      // if we have a complete set of parameters in the URL, we can re-run the report to get the data
+      if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
+        $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
+        if (isset($response['error'])) return $response['error'];
+        $records = $response['records'];
+      }
+    } else {
+      // because we did not ask for columns, the records are at the root of the response
+      $records = $response;
+    }
+
+    if (!isset($records))
+      return '';
+    if (count($records)>0) {
+      // add a header
+      $r .= '<div class="'.$options['class'].'">'.$options['header'];
+      // output each row
+      foreach ($records as $row) {
+        // for each row, check through the list of report bands
+        foreach ($options['bands'] as &$band) {
+          // default is to output a band
+          $outputBand = true;
+          // if the band has fields which trigger it to be output when they change value between rows,
+          // we need to check for changes to see if the band is to be output
+          if (isset($band['triggerFields'])) {
+            $outputBand = false;
+            // Make sure we have somewhere to store the current field values for checking against
+            if (!isset($band['triggerValues']))
+              $band['triggerValues']=array();
+            // look for changes in each trigger field
+            foreach ($band['triggerFields'] as $triggerField) {
+              if (!isset($band['triggerValues'][$triggerField]) || $band['triggerValues'][$triggerField]!=$row[$triggerField])
+                // one of the trigger fields has changed value, so it means the band gets output
+                $outputBand=true;
+              // store the last value to compare against next time
+              $band['triggerValues'][$triggerField] = $row[$triggerField];
+            }
+          }
+          // output the band only if it has been triggered, or has no trigger fields specified.
+          if ($outputBand)
+            $r .= self::apply_replacements_to_template($band['content'], $row);
+        }
+      }
+      // add a footer
+      $r .= $options['footer'].'</div>';
+    }
+    return $r;
+  }
   
  /**
   * Function to output a report onto a map rather than a grid.
@@ -852,7 +948,6 @@ function addDistPoint(features, record, wktCol) {
     }
     if (!empty($extra) && substr($extra, 1, 1)!=='&')
       $extra = '&'.$extra;
-    // We request limit 1 higher than actually needed, so we know if the next page link is required.
     $request = parent::$base_url.'index.php/services/'.
         $serviceCall.
         'mode=json&nonce='.$options['readAuth']['nonce'].
