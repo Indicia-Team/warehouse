@@ -49,6 +49,15 @@ class iform_my_dot_map {
     return array_merge(
       iform_map_get_map_parameters(),
       array(
+        array(
+          'name' => 'hide_grid',
+          'caption' => 'Hide grid',
+          'description' => 'Check this box to hide the grid of the records just entered.',
+          'type' => 'checkbox',
+          'group' => 'Other IForm Parameters' ,
+          'required' => false,
+          'default' => false,
+        ),
         // Distribution layer 1
         array(
           'name' => 'wms_dist_1_title',
@@ -319,14 +328,16 @@ class iform_my_dot_map {
       if ($layerName) $options['layers'][] = $layerName;
       // This is not a map used for input
       $options['editLayer']=false;
-      // Now output a grid of the occurrences that were just saved.
-      $r .= "<table class=\"submission\"><thead><tr><th>".lang::get('Species')."</th><th>".lang::get('Latin Name')."</th><th>".lang::get('Date')."</th><th>".lang::get('Spatial Ref')."</th></tr></thead>\n";
-      $r .= "<tbody>\n";
-      foreach ($occurrence as $record) {
-        $r .= '<tr class="biota"><td>'.$record['lt4_taxon'].'</td><td class="binomial"><em>'.$record['lt7_taxon'].'</em></td><td>'.$record['lt0_date_start'].'</td><td>'.$record['lt0_entered_sref']."</td></tr>\n";
+      
+      if ($args['hide_grid'] == false) {
+        // Now output a grid of the occurrences that were just saved.
+        $r .= "<table class=\"submission\"><thead><tr><th>".lang::get('Species')."</th><th>".lang::get('Latin Name')."</th><th>".lang::get('Date')."</th><th>".lang::get('Spatial Ref')."</th></tr></thead>\n";
+        $r .= "<tbody>\n";
+        foreach ($occurrence as $record) {
+          $r .= '<tr class="biota"><td>'.$record['lt4_taxon'].'</td><td class="binomial"><em>'.$record['lt7_taxon'].'</em></td><td>'.$record['lt0_date_start'].'</td><td>'.$record['lt0_entered_sref']."</td></tr>\n";
+        }
+        $r .= "</tbody></table>\n";
       }
-
-      $r .= "</tbody></table>\n";
     }
     $r .= '<div>';
     $r .= map_helper::layer_list(array(
