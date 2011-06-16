@@ -63,7 +63,7 @@ class iform_form_name {
    * @return Form HTML.
    * @todo: Implement this method 
    */
-  public static function get_form($args, $node, $response=null)
+  public static function get_form($args, $node, $response=null) {
     
   }
   

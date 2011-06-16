@@ -656,7 +656,7 @@ class report_helper extends helper_base {
   * Text to output as the footer of the report.</li>
   * <li><b>bands</b><br/>
   * Array of bands to output per row. Each band is itself an array, with at least an
-  * item called 'content' which contains a template for the output of the band. The
+  * item called 'content' which contains an HTML template for the output of the band. The
   * template can contain replacements for each field value in the row, e.g. the
   * replacement {survey} is replaced with the value of the field called survey. In
   * addition, the band array can contain a triggerFields element, which contains an
@@ -666,13 +666,14 @@ class report_helper extends helper_base {
   * trigger fields the band acts as a group header band.</li>
   */
   public static function freeform_report($options) {
+    $options = self::get_report_grid_options($options);
     $options = array_merge(array(
       'header' => '',
       'footer' => '',
       'bands' => array(),
       'class' => 'banded-report'
     ), $options);
-
+    $r = '';
     $response = self::get_report_data($options);
     if (isset($response['error'])) return $response['error'];
     if (isset($response['parameterRequest'])) {
@@ -690,7 +691,7 @@ class report_helper extends helper_base {
     }
 
     if (!isset($records))
-      return '';
+      return $r;
     if (count($records)>0) {
       // add a header
       $r .= '<div class="'.$options['class'].'">'.$options['header'];
