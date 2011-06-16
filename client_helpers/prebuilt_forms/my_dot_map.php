@@ -284,8 +284,10 @@ class iform_my_dot_map {
    */
   public static function get_form($args) {
     global $user;
-    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
+    $lang = isset($user) ? iform_lang_iso_639_2($user->lang) : 'eng';
+    require_once dirname(dirname(__FILE__)) . '/map_helper.php';
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    $r = '';
     // setup the map options
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
@@ -296,7 +298,7 @@ class iform_my_dot_map {
         'dataSource'=>'reports_for_prebuilt_forms/my_dot_map/occurrences_list',
         'mode'=>'report',
         'readAuth' => $readAuth,
-        'extraParams' => array('sample_id' => $_GET['id'], 'language'=>iform_lang_iso_639_2($user->lang))
+        'extraParams' => array('sample_id' => $_GET['id'], 'language'=>$lang)
       );
       // @todo Error handling on the response
       $occurrence = data_entry_helper::get_report_data($fetchOpts);
