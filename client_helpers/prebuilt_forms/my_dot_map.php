@@ -339,7 +339,7 @@ class iform_my_dot_map {
         $r .= "</tbody></table>\n";
       }
     }
-    $r .= '<div>';
+    $r .= '<div id="mapandlegend">';
     $r .= map_helper::layer_list(array(
       'id'=>'legend',
       'includeSwitchers' => false,
