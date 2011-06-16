@@ -30,6 +30,7 @@ global $indicia_templates;
  * @package	Client
  */
 $indicia_templates = array(
+  'blank' => '',
   'prefix' => '',
   'label' => '<label for="{id}"{labelClass}>{label}:</label>'."\n",
   'suffix' => "<br/>\n",
@@ -615,8 +616,8 @@ class helper_base extends helper_config {
           $bufferInput .= data_entry_helper::text_input(array(
             'label'=>'Buffer (m)',
             'fieldname'=>'geom_buffer',
-            'prefix'=>'',
-            'suffix'=>'',
+            'prefixTemplate'=>'blank', // revert to default
+            'suffixTemplate'=>'blank', // revert to default
             'class'=>'control-width-1',
             'default'=>isset($_POST['geom_buffer']) ? $_POST['geom_buffer'] : 0
           ));

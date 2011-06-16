@@ -150,7 +150,6 @@ class iform_report_grid {
    */
   public static function get_form($args, $node, $response) {
     require_once drupal_get_path('module', 'iform').'/client_helpers/report_helper.php';
-    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams
