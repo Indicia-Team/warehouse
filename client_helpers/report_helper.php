@@ -32,6 +32,46 @@ require_once('helper_base.php');
 class report_helper extends helper_base {
 
   /**
+  
+  * <li><b>readAuth</b><br/>
+  * Read authorisation tokens.</li>
+  */
+  public static function report_picker($options) {
+    self::add_resource('reportPicker');
+    $options = array_merge(array(
+      'id'=>'report-picker'
+    ), $options);
+    $r = '<div id="'.$options['id']."\" class=\"report-picker-container\">\n";
+    $response = self::http_post(self::$base_url.'index.php/services/report/report_list?nonce='.
+        $options['readAuth']['nonce'].'&auth_token='.$options['readAuth']['auth_token']);
+    if (isset($response['output'])) {
+      $output = json_decode($response['output'], true);
+      $r .= self::get_report_list_level($output);
+    }
+    self::$javascript .= '$("#'.$options['id'].' > ul").treeview({collapsed: true});'."\n";
+    $r .= "<div class=\"report-metadata\"></div><div class=\"ui-helper-clearfix\"></div></div>\n";
+    report_helper::$javascript .= "indiciaData.reportList=".$response['output'].";\n";
+    return $r;
+  }
+  
+  private static function get_report_list_level($list) {
+    $r = '';
+    foreach($list as $name=>$content) {
+      if ($content['type']=='report')
+        $r .= "<li><span onclick=\"displayReportMetadata('".$content['path']."');\">".$content['title']."</span></li>\n";
+      else {
+        $r .= "<li><strong>$name</strong>\n";
+        $r .= self::get_report_list_level($content['content']);
+        $r .= "</li>\n";
+      }
+    }
+    if (!empty($r)) {
+      $r = "<ul>\n$r\n</ul>\n";
+    }
+    return $r;
+  }
+
+  /**
    * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the 
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    */
@@ -1084,7 +1124,7 @@ function addDistPoint(features, record, wktCol) {
       // The form must use POST, because polygon parameters can be too large for GET.
       if ($options['completeParamsForm']==true) {
         $cls = $options['paramsInMapToolbar'] ? 'no-border' : '';
-        $r .= '<form action="'.$_SERVER['REQUEST_URI'].'" method="post" id="'.$options['id'].'-params">'."\n<fieldset class=\"$cls\">";
+        $r .= '<form action="'.$_SERVER['REQUEST_URI'].'" method="post" id="'.$options['reportGroup'].'-params">'."\n<fieldset class=\"$cls\">";
         if (!$options['paramsInMapToolbar']) 
           // don't use the fieldset legend in toolbar mode
           $r .= '<legend>'.lang::get('Report Parameters').'</legend>';

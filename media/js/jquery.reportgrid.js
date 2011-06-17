@@ -54,7 +54,7 @@
       // Extract any parameters from the attached form
       $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
         if (input.type!=='submit') {
-          paramName = $(input).attr('name').replace('param-'+div.settings.reportGroup+'-', '');
+          paramName = $(input).attr('name').replace(div.settings.reportGroup+'-', '');
           request += '&' + paramName + '=' + $(input).attr('value');
         }
       });

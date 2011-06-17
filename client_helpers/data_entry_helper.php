@@ -2087,7 +2087,7 @@ class data_entry_helper extends helper_base {
     global $indicia_templates;
     $options = self::check_arguments(func_get_args(), array('fieldname', 'table', 'captionField', 'valueField',
         'topField', 'topValue', 'parentField', 'default', 'extraParams', 'class'));
-    self::add_resource('treeview');
+    self::add_resource('treeview_async');
     // Declare the data service
     $url = parent::$base_url."index.php/services/data";
     // Setup some default values
@@ -3438,24 +3438,6 @@ if (errors.length>0) {
       $r = $default;
     }
     return $r;
-  }
-
-  /**
-   * Causes the default_site.css stylesheet to be included in the list of resources on the
-   * page. This gives a basic form layout.
-   * This also adds default JavaScript to the page to cause buttons to highlight when you
-   * hover the mouse over them.
-   */
-  public static function link_default_stylesheet() {
-    // make buttons highlight when hovering over them
-    self::$javascript .= "
-$('.ui-state-default').live('mouseover', function() {
-  $(this).addClass('ui-state-hover');
-});
-$('.ui-state-default').live('mouseout', function() {
-  $(this).removeClass('ui-state-hover');
-});\n";
-    self::$default_styles = true;
   }
 
   /**
