@@ -45,7 +45,7 @@ $config['defaultPersonId'] = 1;
 /**
  * Directory containing reports on this server.
  */
-$config['localReportDir'] = 'reports';
+$config['localReportDir'] = DOCROOT.'reports';
 
 /**
  * Name of the theme folder in the media/themes directory used by this warehouse instance.
