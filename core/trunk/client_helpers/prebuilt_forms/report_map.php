@@ -58,13 +58,14 @@ class iform_report_map {
           'name' => 'layer_picker',
           'caption' => 'Include Layer Picker',
           'description' => 'Choose whether to include a layer picker and where to include it. Use the '.
-              'CSS id map-layer-picker for styling.',
+              'CSS id map-layer-picker for styling. Note that including the layer picker automatically removes the '.
+              'layerSwitcher control from the map.',
           'type' => 'select',
           'required' => true,
           'options' => array(
             'none'=>'Exclude the layer picker',
             'before'=>'Include the layer picker before the map.',
-            'after'=>'Include the layer picker after the map.',
+            'after'=>'Include the layer picker after the map.'
           ),
           'default'=>'none',
           'group'=>'Report Map Settings'
@@ -162,7 +163,8 @@ class iform_report_map {
       if ($args['layer_picker']=='before')
         $r .= map_helper::layer_list($picker);
       // as we have a layer picker, we can drop the layerSwitcher from the OL map.
-      $options['standardControls']=array('panZoom');
+      if (array_search('layerSwitcher', $options['standardControls'])!==false)
+        unset($options['standardControls'][array_search('layerSwitcher', $options['standardControls'])]);
     }
     if ($args['legend']!='none') {
       $legend = array(
@@ -176,6 +178,7 @@ class iform_report_map {
     }
     if (isset($args['map_toolbar_pos']))
       $options['toolbarDiv'] = $args['map_toolbar_pos'];
+      
     $r .= map_helper::map_panel($options, $olOptions);
     if ($args['layer_picker']=='after')
       $r .= map_helper::layer_list($picker);

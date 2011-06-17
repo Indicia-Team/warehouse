@@ -739,8 +739,7 @@ mapInitialisationHooks = [];
       var align = (div.settings.toolbarDiv=='map') ? '' : 'left ';
       $.each(div.settings.standardControls, function(i, ctrl) {
         // Add a layer switcher if there are multiple layers
-        if (ctrl=='layerSwitcher' &&
-            (div.settings.presetLayers.length + div.settings.layers.length + div.settings.tilecacheLayers.length) > 1) {
+        if (ctrl=='layerSwitcher') {
           div.map.addControl(new OpenLayers.Control.LayerSwitcher());
         } else if (ctrl=='zoomBox') {
           div.map.addControl(new OpenLayers.Control.ZoomBox());

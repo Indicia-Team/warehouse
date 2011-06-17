@@ -563,7 +563,7 @@ class helper_base extends helper_config {
    * <li><b>readAuth</b><br/>
    * Read authorisation array.
    * </li>
-   * <li><b>field_name_prefix</b><br/>
+   * <li><b>fieldNamePrefix</b><br/>
    * Optional prefix for form field names.
    * </li>
    * <li><b>defaults</b><br/>
@@ -600,7 +600,7 @@ class helper_base extends helper_config {
         $r .= self::get_params_form_control($key, $info, $options, $tools);
       // If the form has defined any tools to add to the map, we need to create JavaScript to add them to the map.
       if (count($tools)) {
-        $fieldname=(isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '').$key;
+        $fieldname=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '') .$key;
         self::add_resource('spatialReports');
         self::add_resource('clearLayer');
         if (isset($info['allow_buffer']) && $info['allow_buffer']=='true')
@@ -668,7 +668,7 @@ class helper_base extends helper_config {
   }
   
   private static function get_params_form_control($key, $info, $options, &$tools) {
-    $fieldPrefix = (isset($options['field_name_prefix']) ? $options['field_name_prefix'].'-' : '') . (isset($options['id']) ? $options['id'].'-' : '');
+    $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
     $ctrlOptions = array(
       'label' => $info['display'],
       'helpText' => $options['helpText'] ? $info['description'] : '', // note we can't fit help text in the toolbar versions of a params form
