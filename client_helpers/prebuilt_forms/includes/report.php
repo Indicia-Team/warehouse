@@ -72,6 +72,14 @@ function iform_report_get_report_parameters() {
       'default' => 'default',
       'group'=>'Report Settings'
     ), array(
+      'name' => 'report_group',
+      'caption' => 'Report group',
+      'description' => 'When using several reports on a single page (e.g. <a href="http://code.google.com/p/indicia/wiki/DrupalDashboardReporting">dashboard reporting</a>) '.
+          'you must ensure that all reports that share a set of input parameters have the same report group as the parameters report.',
+      'type' => 'text_input',
+      'default' => 'report',
+      'group' => 'Report Settings'
+    ), array(
       'name' => 'params_in_map_toolbar',
       'caption' => 'Params in map toolbar',
       'description' => 'Should the report input parameters be inserted into a map toolbar instead of displaying a panel of input parameters at the top? '.
@@ -131,6 +139,7 @@ function iform_report_get_report_options($args, $auth) {
     $columns = json_decode($args['columns_config'], true);
   $reportOptions = array(
     'id' => 'report-grid',
+    'reportGroup' => $args['report_group'],
     'class' => '',
     'thClass' => '',
     'dataSource' => $args['report_name'],
@@ -144,17 +153,15 @@ function iform_report_get_report_options($args, $auth) {
     'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true,
     'paramsInMapToolbar'=>isset($args['params_in_map_toolbar']) ? $args['params_in_map_toolbar'] : false
   );
+  
   if (empty($args['output']) || $args['output']=='default') {
     $reportOptions['autoParamsForm'] = true;
-    $reportOptions['id'] = 'report-grid';
   } elseif ($args['output']=='form') {
     $reportOptions['autoParamsForm'] = true;
     $reportOptions['paramsOnly'] = true;
-    $reportOptions['id'] = 'params-form';
   } else {
     $reportOptions['autoParamsForm'] = false;
     $reportOptions['id'] = $args['report_name'];
-    $reportOptions['paramsFormId'] = 'params-form';
   }
   // Set up a page refresh for dynamic update of the report at set intervals
   if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection

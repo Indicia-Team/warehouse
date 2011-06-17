@@ -60,10 +60,10 @@ class report_helper extends helper_base {
   * Optional unique identifier for the grid's container div. This is required if there is more than
   * one grid on a single web page to allow separation of the page and sort $_GET parameters in the URLs
   * generated.</li>
-  * <li><b>paramsFormId</b><br/>
+  * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report. This will only work when all parameters required by this report are covered by the other report's
-  * parameters form.</li>
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
   * <li><b>readAuth</b><br/>
@@ -318,7 +318,7 @@ class report_helper extends helper_base {
   nonce: '".$options['readAuth']['nonce']."',
   callback: '".$options['callback']."',
   url: '".parent::$base_url."',
-  paramsFormId: '".$options['paramsFormId']."',
+  reportGroup: '".$options['reportGroup']."',
   autoParamsForm: '".$options['autoParamsForm']."',
   rootFolder: '".dirname($_SERVER['PHP_SELF'])."/',
   imageFolder: '".self::get_uploaded_image_folder()."',
@@ -448,6 +448,10 @@ class report_helper extends helper_base {
   * CSS class to apply to the outer div.</li>
   * <li><b>headerClass</b><br/>
   * CSS class to apply to the box containing the header.</li>
+  * <li><b>reportGroup</b><br/>
+  * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>height</b><br/>
   * Chart height in pixels.</li>
   * <li><b>width</b><br/>
@@ -650,6 +654,10 @@ class report_helper extends helper_base {
   * Name of the report file or table/view(s) to retrieve underlying data.</li>
   * <li><b>class</b><br/>
   * CSS class to apply to the outer div. Default is banded-report.</li>
+  * <li><b>reportGroup</b><br/>
+  * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>header</b><br/>
   * Text to output as the header of the report.</li>
   * <li><b>footer</b><br/>
@@ -745,10 +753,10 @@ class report_helper extends helper_base {
   * one different report (grid, chart or map) on a single web page to allow separation
   * of the page and sort $_GET parameters in the URLs
   * generated.</li>
-  * <li><b>paramsFormId</b><br/>
+  * <li><b>reportGroup</b><br/>
   * When joining multiple reports together, this can be used on a report that has autoParamsForm set to false to bind the report to the
-  * parameters form from a different report. This will only work when all parameters required by this report are covered by the other report's
-  * parameters form.</li>
+  * parameters form from a different report by giving both report controls the same reportGroup string. This will only work when all 
+  * parameters required by this report are covered by the other report's parameters form.</li>
   * <li><b>mode</b><br/>
   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
   * <li><b>readAuth</b><br/>
@@ -835,7 +843,7 @@ class report_helper extends helper_base {
     }
   
     if (!isset($wktCol))
-      $r .= "<p>".lang::get("The report does not contain any mappable data")."</p>";
+      $r .= "<p>".lang::get("The report's configuration does not output any mappable data")."</p>";
 
     report_helper::$javascript.= "
 /**
@@ -1091,7 +1099,9 @@ function addDistPoint(features, record, wktCol) {
         if (substr($key,0,6)!='param-')
           $r .= "<input type=\"hidden\" value=\"$value\" name=\"$key\" />\n";
       }
-      $r .= self::build_params_form(array_merge(array('form'=>$response['parameterRequest'], 'field_name_prefix'=>'param', 'defaults'=>$params), $options));
+      if ($options['paramsInMapToolbar'])
+        $options['helpText']=false;
+      $r .= self::build_params_form(array_merge(array('form'=>$response['parameterRequest'], 'fieldPamePrefix'=>'param', 'defaults'=>$params), $options));
       if ($options['completeParamsForm']==true) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
             '</fieldset></form>';
@@ -1209,7 +1219,8 @@ function addDistPoint(features, record, wktCol) {
     ), $options);
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
     // use the current report as the params form by default
-    if (!isset($options['paramsFormId'])) $options['paramsFormId'] = $options['id'];
+    if (!isset($options['reportGroup'])) $options['reportGroup'] = $options['id'];
+    if (!isset($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
     return $options;
   }
 
@@ -1255,7 +1266,7 @@ function addDistPoint(features, record, wktCol) {
       }
     }
     // Are there any parameters embedded in the URL, e.g. after submitting the params form?
-    $paramKey = 'param-' . (isset($options['paramsFormId']) ? $options['paramsFormId'] : '').'-';
+    $paramKey = (isset($options['reportGroup']) ? $options['reportGroup'] : '').'-';
     foreach ($_POST as $key=>$value) {
       if (substr($key, 0, strlen($paramKey))==$paramKey) {
         // We have found a parameter, so put it in the request to the report service

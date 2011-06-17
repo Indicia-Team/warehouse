@@ -52,9 +52,9 @@
       var paramName, request = getRequest(div);
       request += '&offset=' + div.settings.offset;
       // Extract any parameters from the attached form
-      $('form#'+div.settings.paramsFormId+'-params input, form#'+div.settings.paramsFormId+'-params select').each(function(idx, input) {
+      $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
         if (input.type!=='submit') {
-          paramName = $(input).attr('name').replace('param-'+div.settings.paramsFormId+'-', '');
+          paramName = $(input).attr('name').replace('param-'+div.settings.reportGroup+'-', '');
           request += '&' + paramName + '=' + $(input).attr('value');
         }
       });
