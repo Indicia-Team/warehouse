@@ -778,8 +778,7 @@ mapInitialisationHooks = [];
           toolbarControls.push(click);
         }
         var toolbarOpts = {
-           displayClass: 'olControlEditingToolbar',
-           defaultControl: toolbarControls[0]
+           displayClass: 'olControlEditingToolbar'
         };
         if (div.settings.toolbarDiv!='map') {
           toolbarOpts.div = document.getElementById(div.settings.toolbarDiv);

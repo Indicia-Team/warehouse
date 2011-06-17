@@ -438,3 +438,19 @@ tfoot td div{
   margin: 0;
   padding: 0;
 }
+
+.report-picker-container {  
+  height: 200px;
+}
+
+.report-picker-container > ul {
+  float: left;
+  width: 49%;
+  height: 100%;
+  overflow: scroll;
+}
+
+.report-picker-container > div {
+  float: right;
+  width: 50%
+}

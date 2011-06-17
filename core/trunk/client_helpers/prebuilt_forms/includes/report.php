@@ -161,7 +161,6 @@ function iform_report_get_report_options($args, $auth) {
     $reportOptions['paramsOnly'] = true;
   } else {
     $reportOptions['autoParamsForm'] = false;
-    $reportOptions['id'] = $args['report_name'];
   }
   // Set up a page refresh for dynamic update of the report at set intervals
   if ($args['refresh_timer']!==0 && is_numeric($args['refresh_timer'])) { // is_numeric prevents injection

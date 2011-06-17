@@ -358,7 +358,7 @@ class helper_base extends helper_config {
     if (self::$resource_list===null) {
       $base = parent::$base_url;
       if (!self::$js_path) {
-        self::$js_path =$base.'media/js/';
+        self::$js_path = $base.'media/js/';
       } else if (substr(self::$js_path,-1)!="/") {
         // ensure a trailing slash
         self::$js_path .= "/";
@@ -395,8 +395,9 @@ class helper_base extends helper_config {
         'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
         'jquery_ui_fr' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path."jquery.ui.datepicker-fr.js")),
         'json' => array('javascript' => array(self::$js_path."json2.js")),
-        'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js", self::$js_path."jquery.treeview.async.js",
-            self::$js_path."jquery.treeview.edit.js")),
+        'reportPicker' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."reportPicker.js")),
+        'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js")),
+        'treeview_async' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."jquery.treeview.async.js", self::$js_path."jquery.treeview.edit.js")),
         'googlemaps' => array('javascript' => array("http://maps.google.com/maps?file=api&amp;v=2&amp;sensor=false&amp;key=".parent::$google_api_key)),
         'multimap' => array('javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
@@ -429,6 +430,24 @@ class helper_base extends helper_config {
       );
     }
     return self::$resource_list;
+  }
+  
+    /**
+   * Causes the default_site.css stylesheet to be included in the list of resources on the
+   * page. This gives a basic form layout.
+   * This also adds default JavaScript to the page to cause buttons to highlight when you
+   * hover the mouse over them.
+   */
+  public static function link_default_stylesheet() {
+    // make buttons highlight when hovering over them
+    self::$javascript .= "
+$('.ui-state-default').live('mouseover', function() {
+  $(this).addClass('ui-state-hover');
+});
+$('.ui-state-default').live('mouseout', function() {
+  $(this).removeClass('ui-state-hover');
+});\n";
+    self::$default_styles = true;
   }
 
   /**
@@ -476,7 +495,7 @@ class helper_base extends helper_config {
   /**
    * Sends a POST using the cUrl library
    */
-  public static function http_post($url, $postargs, $output_errors=true) {
+  public static function http_post($url, $postargs=null, $output_errors=true) {
     $session = curl_init();
     // Set the POST options.
     curl_setopt ($session, CURLOPT_URL, $url);
