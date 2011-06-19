@@ -105,22 +105,28 @@ class Report_Controller extends Data_Service_Base_Controller {
   }
 
   public function report_list() {
-    $this->authenticate();
-    $path = DOCROOT . Kohana::config('indicia.localReportDir');
-    echo json_encode($this->internal_report_list($path));
+    $this->authenticate('read');
+    echo json_encode($this->internal_report_list('/'));
   }
 
   public function internal_report_list($path) {
     $files = array();
-    if (!is_dir($path))
-      throw new Exception("Failed to open reports folder");
-    $dir = opendir($path);
+    $fullPath = DOCROOT . Kohana::config('indicia.localReportDir') . $path;
+    if (!is_dir($fullPath))
+      throw new Exception("Failed to open reports folder ".DOCROOT . Kohana::config('indicia.localReportDir') . $path);
+    $dir = opendir($fullPath);
+    
     while (false !== ($file = readdir($dir))) {
       if ($file != '.' && $file != '..' && $file != '.svn') {
-        if (is_dir($path . '/' . $file))
-          $files[$file] = $this->internal_report_list($path . '/' . $file);
-        else
-          $files[$file] = 'report';
+        if (is_dir("$fullPath$file"))
+          $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list("$path$file/"));
+        else {
+          kohana::log('debug', "loading $fullPath$file");
+          $metadata = XMLReportReader::loadMetadata("$fullPath$file");
+          $file = basename($file, '.xml');
+          $reportPath = ltrim("$path$file", '/');
+          $files[$file] = array('type'=>'report','title'=>$metadata['title'],'description'=>$metadata['description'],'path'=>$reportPath);
+        }
       }
     }
     closedir($dir);

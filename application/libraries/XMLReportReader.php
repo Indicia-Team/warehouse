@@ -41,6 +41,25 @@ class XMLReportReader_Core implements ReportReader
   private $automagic = false;
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
+  
+  /** 
+   * Returns a simple array containing the title and description of a report. Static so you don't have to load the full report object to get this
+   * information.
+   */
+  public static function loadMetadata($report) {
+    $reader = new XMLReader();
+    $reader->open($report);
+    $metadata = array();
+    while($reader->read()) {
+      if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='report') {
+        $metadata['title'] = $reader->getAttribute('title');
+        $metadata['description'] = $reader->getAttribute('description');
+        break;
+      }
+    }
+    $reader->close();
+    return $metadata;
+  }
 
   /**
   * <p> Constructs a reader for the specified report. </p>
@@ -638,7 +657,7 @@ class XMLReportReader_Core implements ReportReader
 
     $i1 = $nextFrom - $i0;
     $colString = substr($this->query, $i0, $i1);
-    
+
     // Now divide up the list of columns, which are comma separated, but ignore
     // commas nested in brackets
     $colStart = 0;
@@ -661,7 +680,6 @@ class XMLReportReader_Core implements ReportReader
     }
     //extract final column
     $cols[] = substr($colString, $colStart);
-
     
     // We have cols, which may either be of the form 'x' or of the form 'x as y'
     foreach ($cols as $col)
