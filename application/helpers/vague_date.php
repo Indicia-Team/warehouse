@@ -472,7 +472,7 @@ class vague_date {
    */
   protected static function vague_date_to_day($start, $end)
   {
-    self::check($start==$end, 'Day vague dates should have the same date for the start and end of the date range');
+    self::check(self::are_dates_equal($start, $end), 'Day vague dates should have the same date for the start and end of the date range');
     return $start->format(Kohana::lang('dates.format'));
   }
 
@@ -481,7 +481,7 @@ class vague_date {
    */
   protected static function vague_date_to_days($start, $end)
   {
-    self::check($start<$end, 'Day ranges should be presented in vague dates in the correct sequence.');
+    self::check(self::is_first_date_first($start, $end), 'Day ranges should be presented in vague dates in the correct sequence.');
     return 	$start->format(Kohana::lang('dates.format')).
       Kohana::lang('dates.range_separator').
       $end->format(Kohana::lang('dates.format'));
@@ -502,7 +502,7 @@ class vague_date {
    */
   protected static function vague_date_to_months_in_year($start, $end)
   {
-    self::check(self::is_month_start($start) && self::is_month_end($end) && $start<$end,
+    self::check(self::is_month_start($start) && self::is_month_end($end) && self::is_first_date_first($start, $end),
       'Month ranges should be represented by the first day of the first month and last day of the last month.');
     return 	$start->format(Kohana::lang('dates.format_m_y')).
       Kohana::lang('dates.range_separator').
@@ -532,7 +532,7 @@ class vague_date {
    */
   protected static function vague_date_to_years($start, $end)
   {
-    self::check(self::is_year_start($start) && self::is_year_end($end) && $start<$end,
+    self::check(self::is_year_start($start) && self::is_year_end($end) && self::is_first_date_first($start, $end),
       'Year ranges should be represented by the first day of the first year to the last day of the last year.');
     return $start->format('Y').Kohana::lang('dates.range_separator').$end->format('Y');
   }
@@ -600,7 +600,7 @@ class vague_date {
    */
   protected static function vague_date_to_centuries($start, $end)
   {
-    self::check(self::is_century_start($start) && self::is_century_end($end) && $start<$end,
+    self::check(self::is_century_start($start) && self::is_century_end($end) && self::is_first_date_first($start, $end),
       'Century ranges should be represented by the first day of the first century and the last day of the last century');
     return 	sprintf(Kohana::lang('dates.century', ($start->format('Y')-1)/100+1)).
       Kohana::lang('dates.range_separator').
@@ -646,6 +646,22 @@ class vague_date {
   }
 
   /**
+   * Returns true if the supplied dates are the same. Early versions of PHP5.2 do not have valid binary comparison functions
+   */
+  protected static function are_dates_equal($date1, $date2)
+  {
+    return (!strcmp($date1->format('Ymd'),$date2->format('Ymd')));
+  }
+
+  /**
+   * Returns true if the first supplied date is before second. Early versions of PHP5.2 do not have valid binary comparison functions
+   */
+  protected static function is_first_date_first($date1, $date2)
+  {
+    return (strcmp($date1->format('Ymd'),$date2->format('Ymd'))<0);
+  }
+
+  /**
    * Returns true if the supplied dates are in the same month
    */
   protected static function is_same_month($date1, $date2)
@@ -674,7 +690,7 @@ class vague_date {
    */
   protected static function is_same_year($date1, $date2)
   {
-    return ($date1->format('y')==$date2->format('y'));
+    return ($date1->format('Y')==$date2->format('Y'));
   }
 
   /**
