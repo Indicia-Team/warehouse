@@ -445,12 +445,26 @@ tfoot td div{
 
 .report-picker-container > ul {
   float: left;
-  width: 49%;
+  width: 59%;
   height: 100%;
   overflow: scroll;
 }
 
 .report-picker-container > div {
   float: right;
-  width: 50%
+  width: 40%
+}
+
+.report-picker-container input, .report-picker-container label {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.report-picker-container input {
+  margin-right: 0.2em;
+}
+
+.report-picker-container li {
+  padding-top: 0;
+  padding-bottom: 0;
 }

@@ -228,7 +228,8 @@ $('#load-params').click(function(evt) {
         'sep' => '<br/>',
         'class' => '',
         'blankText'=>'<'.lang::get('please select').'>',
-        'extraParams' => array()
+        'extraParams' => array(),
+        'readAuth'=>$options['readAuth']
       ), $control);
       $type = self::map_type($control);
 
@@ -242,7 +243,13 @@ $('#load-params').click(function(evt) {
         $ctrlOptions['class'] .= ' control-width-6';
       if (!isset($fieldsets[$fieldset])) 
         $fieldsets[$fieldset]='';
-      $fieldsets[$fieldset] .= data_entry_helper::$type($ctrlOptions);
+      // form controls can specify the report helper class
+      if (substr($type, 0, 15)=='report_helper::') {
+        $type=substr($type, 15);
+        require_once('report_helper.php');
+        $fieldsets[$fieldset] .= report_helper::$type($ctrlOptions);
+      } else
+        $fieldsets[$fieldset] .= data_entry_helper::$type($ctrlOptions);
     }
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
     foreach($fieldsets as $fieldset=>$content) { 
