@@ -31,43 +31,69 @@ require_once('helper_base.php');
  */
 class report_helper extends helper_base {
 
-  /**
-  
-  * <li><b>readAuth</b><br/>
-  * Read authorisation tokens.</li>
+ /**
+  * Control which outputs a treeview of the reports available on the warehouse, with
+  * radio buttons for selecting a report. The title and description of the currently selected
+  * report are displayed alongside.
+  *
+  * @param array $options Options array which accepts the following standard options: id,
+  * fieldname, class, default, readAuth.
   */
   public static function report_picker($options) {
     self::add_resource('reportPicker');
     $options = array_merge(array(
-      'id'=>'report-picker'
+      'id'=>'report-picker',
+      'fieldname' => 'report_name',
+      'default' => '',
+      'class' => ''
     ), $options);
-    $r = '<div id="'.$options['id']."\" class=\"report-picker-container\">\n";
+    // add class rather than replacing existing
+    $options['class'] .= ' report-picker-container control-box ui-widget ui-widget-content';
+    $reports = '';
     $response = self::http_post(self::$base_url.'index.php/services/report/report_list?nonce='.
         $options['readAuth']['nonce'].'&auth_token='.$options['readAuth']['auth_token']);
     if (isset($response['output'])) {
       $output = json_decode($response['output'], true);
-      $r .= self::get_report_list_level($output);
+      $reports .= self::get_report_list_level($options['fieldname'], $options['default'], $output);
     }
     self::$javascript .= '$("#'.$options['id'].' > ul").treeview({collapsed: true});'."\n";
-    $r .= "<div class=\"report-metadata\"></div><div class=\"ui-helper-clearfix\"></div></div>\n";
-    report_helper::$javascript .= "indiciaData.reportList=".$response['output'].";\n";
-    return $r;
+    self::$javascript .= "indiciaData.reportList=".$response['output'].";\n";
+    self::$javascript .= '$(\'#'.$options['id'].' > ul input[checked="checked"]\').click();'."\n";
+    self::$javascript .= '$(\'#'.$options['id'].' > ul input[checked="checked"]\').parents("#'.$options['id'].' ul").show();'."\n";
+    $options['reports']=$reports;
+    return self::apply_template('report_picker', $options);
   }
-  
-  private static function get_report_list_level($list) {
+
+  /**
+   * Outputs a single level of the hierarchy of available reports, then iterates into sub-
+   * folders.
+   * @param string $fieldname The fieldname for the report_picker control (=HTML form value)
+   * @param string $default Name of the report to be initially selected
+   * @param array $list Array of the reports and folders within the level to be output.
+   * @return HTML for the unordered list containing the level.
+   * @access private
+   */
+  private static function get_report_list_level($fieldname, $default, $list) {
     $r = '';
-    foreach($list as $name=>$content) {
-      if ($content['type']=='report')
-        $r .= "<li><span onclick=\"displayReportMetadata('".$content['path']."');\">".$content['title']."</span></li>\n";
+    foreach($list as $name=>$item) {
+      $id = 'opt_'.str_replace('/','_',$item['path']);
+      if ($item['type']=='report') {
+        $checked = $item['path']==$default ? ' checked="checked"' : '';
+        $r .= '<li><label class="ui-helper-reset auto">'.
+            '<input type="radio" id="'.$id.'" name="'.$fieldname.'" value="'.$item['path'].
+            '" onclick="displayReportMetadata(\''.$item['path'].'\');" '.$checked.'>'.
+            $item['title'].
+            "</input></label></li>\n";
+      }
       else {
-        $r .= "<li><strong>$name</strong>\n";
-        $r .= self::get_report_list_level($content['content']);
+        $name = ucwords(str_replace('_', ' ', $name));
+        $r .= "<li>$name\n";
+        $r .= self::get_report_list_level($fieldname, $default, $item['content']);
         $r .= "</li>\n";
       }
     }
-    if (!empty($r)) {
+    if (!empty($r)) 
       $r = "<ul>\n$r\n</ul>\n";
-    }
     return $r;
   }
 

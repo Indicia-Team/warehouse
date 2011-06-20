@@ -35,8 +35,8 @@ function iform_report_get_report_parameters() {
     array(
       'name'=>'report_name',
       'caption'=>'Report Name',
-      'description'=>'The name of the report file to load into the verification grid, excluding the .xml suffix.',
-      'type'=>'string',
+      'description'=>'Select the report to provide the output for this page.',
+      'type'=>'report_helper::report_picker',
       'group'=>'Report Settings'
     ), array(
       'name' => 'param_presets',
