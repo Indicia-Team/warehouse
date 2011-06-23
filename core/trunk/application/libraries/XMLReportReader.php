@@ -635,7 +635,6 @@ class XMLReportReader_Core implements ReportReader
     $this->query=preg_replace("/\b(from)\b/i", ' from ', $this->query);
     $this->query=preg_replace("/\b(as)\b/i", ' as ', $this->query);
     $i0 = strpos($this->query, ' select ') + 7;
-
     $nesting = 1;
     $offset = $i0;
     do {
@@ -681,23 +680,16 @@ class XMLReportReader_Core implements ReportReader
     //extract final column
     $cols[] = substr($colString, $colStart);
     
-    // We have cols, which may either be of the form 'x' or of the form 'x as y'
+    // We have cols, which may either be of the form 'x', 'table.x' or 'x as y'. Either way the column name is the part after the last 
+    // space and full stop.
     foreach ($cols as $col)
     {
-      $a = explode(' as ', strtolower($col));
-      if (count($a) == 2)
-      {
-        // Okay, we have an 'as' clause
-        $this->mergeColumn(trim($a[1]));
-      }
-      else
-      {
-        // Treat this as a single thing
-        // But it might have a . in it if it's a multi-table query, so look at the last bit
-        $b = explode('.' , $a[0]);
-        $b = $b[count($b) - 1];
-        $this->mergeColumn(trim($b));
-      }
+      // break down by spaces
+      $b = explode(' ' , trim($col));
+      // break down the part after the last space, by 
+      $c = explode('.' , array_pop($b));
+      $d = array_pop($c);
+      $this->mergeColumn(trim($d));
     }
 
     // Okay, now we need to find parameters, which we do with regex.
@@ -731,6 +723,7 @@ class XMLReportReader_Core implements ReportReader
       }
     }
     while ($nesting > 0);
+    kohana::log('debug', "haystack $haystack from $open to $offset");
     return $offset -1;
   }
 }
