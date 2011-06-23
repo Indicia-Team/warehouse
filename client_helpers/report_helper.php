@@ -424,23 +424,34 @@ class report_helper extends helper_base {
     return $r;
   }
   
+  /**
+   * Creates the HTML for the simple version of the pager.
+   */
   private static function simple_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl) {
-    $r = '';
-    // If not on first page, we can go back.
-    if ($sortAndPageUrlParams['page']['value']>0) {
-      $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
-      $r .= "<a class=\"pag-prev pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">previous</a> \n";
-    } else 
-      $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">previous</span> \n";
-    // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
-    if (count($response['records'])>$options['itemsPerPage']) {
-      $next = $sortAndPageUrlParams['page']['value'] + 1;
-      $r .= "<a class=\"pag-next pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">next &#187</a> \n";
-    } else 
-      $r .= "<span class=\"pag-next ui-state-disabled pager-button\">next</span> \n";
-    return $r;
+    // skip pager if all records fit on one page
+    if ($sortAndPageUrlParams['page']['value']==0 && count($response['records'])<=$options['itemsPerPage'])
+      return '';
+    else {
+      $r = '';
+      // If not on first page, we can go back.
+      if ($sortAndPageUrlParams['page']['value']>0) {
+        $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
+        $r .= "<a class=\"pag-prev pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">previous</a> \n";
+      } else 
+        $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">previous</span> \n";
+      // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
+      if (count($response['records'])>$options['itemsPerPage']) {
+        $next = $sortAndPageUrlParams['page']['value'] + 1;
+        $r .= "<a class=\"pag-next pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">next &#187</a> \n";
+      } else 
+        $r .= "<span class=\"pag-next ui-state-disabled pager-button\">next</span> \n";
+      return $r;
+    }
   }
   
+  /**
+   * Creates the HTML for the advanced version of the pager.
+   */
   private static function advanced_pager($options, $pageUrl, $sortAndPageUrlParams, $response, $pagLinkUrl) {
     global $indicia_templates;
     $r = '';

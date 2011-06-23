@@ -163,15 +163,17 @@
       if (div.settings.offset!==0) {
         pagerContent += '<a class="pag-prev pager-button" href="#">previous</a> ';
       } else {
-        pagerContent += '<span class="pag-prev pager-button ui-state-disabled">previous</a> ';
+        pagerContent += '<span class="pag-prev pager-button ui-state-disabled">previous</span> ';
       }
       
       if (hasMore) {
         pagerContent += '<a class="pag-next pager-button" href="#">next</a>';
       } else {
-        pagerContent += '<span class="pag-next pager-button ui-state-disabled">next</a>';
+        pagerContent += '<span class="pag-next pager-button ui-state-disabled">next</span>';
       }
-      pager.append(pagerContent);
+      if (div.settings.offset!==0 || hasMore) {
+        pager.append(pagerContent);
+      }
     };
     
     advancedPager = function(pager, div, hasMore) {
