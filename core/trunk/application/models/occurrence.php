@@ -100,7 +100,7 @@ class Occurrence_Model extends ORM
   }
 
   // Override preSubmit to add in the verifier (verified_by_id) and verification date (verified_on) if the
-  // occurrence is being set to status=V(erified).
+  // occurrence is being set to status=V(erified) or R(ejected).
   protected function preSubmit()
   {
     if (array_key_exists('record_status', $this->submission['fields']))
@@ -108,7 +108,7 @@ class Occurrence_Model extends ORM
       $rs = $this->submission['fields']['record_status']['value'];
       // If we are making it verified in the submitted data, but we don't already have a verifier in
       // the database
-      if ($rs == 'V' && !$this->verified_by_id)
+      if (($rs == 'V' || $rs == 'R') && !$this->verified_by_id)
       {
         $defaultUserId = Kohana::config('indicia.defaultPersonId');
         // Set the verifier to the logged in user, or the default user ID from config if not logged
