@@ -324,13 +324,15 @@ class data_entry_helper extends helper_base {
       if (self::$validated_form_id!==null) {
         if (!isset($options['default']) || $options['default']=='')
           $options['default']=lang::get('click here');
-        self::$javascript .= "jQuery.validator.addMethod('customDate',
-  function(value, element) {
-    // parseDate throws exception if the value is invalid
-    try{jQuery.datepicker.parseDate( '".$options['dateFormat']."', value);return true;}
-    catch(e){return false;}
-  }, '".lang::get('Please enter a valid date')."'
-);\n";
+        self::$javascript .= "if (typeof jQuery.validator !== \"undefined\") {
+  jQuery.validator.addMethod('customDate',
+    function(value, element) {
+      // parseDate throws exception if the value is invalid
+      try{jQuery.datepicker.parseDate( '".$options['dateFormat']."', value);return true;}
+      catch(e){return false;}
+    }, '".lang::get('Please enter a valid date')."'
+  );
+}\n";
       }
       self::$javascript .= "jQuery('#$escaped_id').datepicker({
     dateFormat : '".$options['dateFormat']."',
