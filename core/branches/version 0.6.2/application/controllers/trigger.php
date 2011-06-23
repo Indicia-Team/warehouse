@@ -85,7 +85,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
   */
   protected function prepareOtherViewData($values) {
     $files = Array();    
-    $templateDir = Kohana::config('indicia.localReportDir').'/trigger_templates/';
+    $templateDir = DOCROOT.Kohana::config('indicia.localReportDir').'/trigger_templates/';
     $dh = opendir($templateDir);
     while ($file = readdir($dh))  {
       if ($file != '..' && $file != '.' && is_file($templateDir.$file))
