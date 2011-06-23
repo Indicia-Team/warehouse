@@ -133,7 +133,8 @@ class XMLReportReader_Core implements ReportReader
               	    $reader->getAttribute('tablename'),
               	    $reader->getAttribute('separator'),
                     $reader->getAttribute('where'),
-                    $reader->getAttribute('display'));
+                    $reader->getAttribute('display'),
+                    $reader->getAttribute('visible'));
               	break;
               }
               break;
