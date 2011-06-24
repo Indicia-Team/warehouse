@@ -974,15 +974,16 @@ function addDistPoint(features, record, wktCol) {
   div.map.addControl(selectControl);
   selectControl.activate();
   */\n";
-  } else {
-    $replacements = array();
-    foreach(array_keys($currentParamValues) as $key)
-      $replacements[] = "#$key#";
-    $options['cqlTemplate'] = str_replace($replacements, $currentParamValues, $options['cqlTemplate']);
-    $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
-    $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
-    map_helper::$javascript .= "  var reportMapLayer = new OpenLayers.Layer.WMS('Report output',
-      div.settings.indiciaGeoSvc + 'wms', { layers: '".$options['geoserverLayer']."', transparent: true,
+    } else {
+      $replacements = array();
+      foreach(array_keys($currentParamValues) as $key)
+        $replacements[] = "#$key#";
+      $options['cqlTemplate'] = str_replace($replacements, $currentParamValues, $options['cqlTemplate']);
+      $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
+      $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
+      $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url;
+      map_helper::$javascript .= "  var reportMapLayer = new OpenLayers.Layer.WMS('Report output',
+      '$layerUrl' + 'wms', { layers: '".$options['geoserverLayer']."', transparent: true,
           cql_Filter: '".$options['cqlTemplate']."'$style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});
   div.map.addLayer(reportMapLayer);";
@@ -1000,6 +1001,8 @@ function addDistPoint(features, record, wktCol) {
    * </li>
    * <li><b>dataSource</b><br/>
    * Name of the report or entity being queried.
+   * <li><b>mode</b><br/>
+   * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
    * </li>
    * <li><b>readAuth</b><br/>
    * Read authentication tokens.

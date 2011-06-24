@@ -146,6 +146,11 @@ class iform_report_map {
     $reportOptions['geoserverLayer'] = $args['geoserver_layer'];
     $reportOptions['geoserverLayerStyle'] = $args['geoserver_layer_style'];
     $reportOptions['cqlTemplate'] = $args['cql_template'];
+    // if in Drupal, and IForm proxy is installed, then use this path as proxy for layers added to map
+    if (defined('DRUPAL_BOOTSTRAP_CONFIGURATION') && module_exists('iform_proxy')) {
+      global $base_url;
+      $reportOptions['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
+    }
     $r .= '<br/>'.report_helper::report_map($reportOptions);
     $options = iform_map_get_map_options($args, $readAuth);
     $olOptions = iform_map_get_ol_options($args);
