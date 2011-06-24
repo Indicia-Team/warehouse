@@ -2604,8 +2604,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     if (array_key_exists('nonce', $cacheOpts)) {
       unset($cacheOpts['nonce']);
     }
-    if (self::$nocache || isset($_GET['nocache']) || (isset($options['nocache']) && $options['nocache']))
+    if (self::$nocache || isset($_GET['nocache']) || (isset($options['nocache']) && $options['nocache'])) {
+      $cacheFile = false;
       $response = self::http_post($request, null);
+    }
     else {
       $cacheTimeOut = self::_getCacheTimeOut($options);
       $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
