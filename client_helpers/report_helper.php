@@ -233,8 +233,7 @@ class report_helper extends helper_base {
     self::add_resource('fancybox');
     self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
     $options = self::get_report_grid_options($options);
-    // Output a div to keep the grid and pager together
-    $r = '<div id="'.$options['id'].'">';
+    $r = '';
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
     // specify the view variant to load, if loading from a view
@@ -366,15 +365,17 @@ class report_helper extends helper_base {
       if ($rowInProgress)
         $r .= '</tr>';
     }
-    
     $r .= "</tbody></table>\n";
-    $r .= "</div>\n";
-
-    // Now AJAXify the grid
-    self::add_resource('reportgrid');
-    $uniqueName = 'grid_' . preg_replace( "/[^a-z]+/", "_", $options['id']);
-    global $indicia_templates;
-    self::$javascript .= $uniqueName . " = $('#".$options['id']."').reportgrid({
+    // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
+    // In which case we don't need to output anything.
+    if (!empty($r)) {
+      // Output a div to keep the grid and pager together
+      $r = "<div id=\"".$options['id']."\">$r</div>\n";
+      // Now AJAXify the grid
+      self::add_resource('reportgrid');
+      $uniqueName = 'grid_' . preg_replace( "/[^a-z]+/", "_", $options['id']);
+      global $indicia_templates;
+      self::$javascript .= $uniqueName . " = $('#".$options['id']."').reportgrid({
   id: '".$options['id']."',
   mode: '".$options['mode']."',
   dataSource: '".str_replace('\\','/',$options['dataSource'])."',
@@ -392,19 +393,20 @@ class report_helper extends helper_base {
   galleryColCount: ".$options['galleryColCount'].",
   pagingTemplate: '".$indicia_templates['paging']."',
   altRowClass: '".$options['altRowClass']."'";
-    if (isset($options['extraParams']))
-      self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
-    if (isset($options['filters']))
-      self::$javascript .= ",\n  filters: ".json_encode($options['filters']);
-    if (isset($orderby))
-      self::$javascript .= ",\n  orderby: '".$orderby."'";
-    if (isset($sortdir))
-      self::$javascript .= ",\n  sortdir: '".$sortdir."'";
-    if (isset($response['count']))
-      self::$javascript .= ",\n  recordCount: ".$response['count'];
-    if (isset($options['columns']))
-      self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
+      if (isset($options['extraParams']))
+        self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
+      if (isset($options['filters']))
+        self::$javascript .= ",\n  filters: ".json_encode($options['filters']);
+      if (isset($orderby))
+        self::$javascript .= ",\n  orderby: '".$orderby."'";
+      if (isset($sortdir))
+        self::$javascript .= ",\n  sortdir: '".$sortdir."'";
+      if (isset($response['count']))
+        self::$javascript .= ",\n  recordCount: ".$response['count'];
+      if (isset($options['columns']))
+        self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
 });\n";
+    }
     return $r;
   }
   
