@@ -156,6 +156,7 @@ class iform_report_grid {
     if (!isset($args['download_link']) || $args['download_link'])
       $r .= '<br/>'.report_helper::report_download_link($reportOptions);
     // now the grid
+    $reportOptions['id']='grid-'.$node->nid;
     $r .= '<br/>'.report_helper::report_grid($reportOptions);
     return $r;
   }
