@@ -185,13 +185,8 @@ function _get_initial_vals($type, $args) {
       if (!empty($param)) {
         $tokens = explode('=', $param);
         if (count($tokens)==2) {
-          // perform any replacements on the intiial values
-          if (trim($tokens[1])=='{user_id}') {
-            $tokens[1]=$user->uid;
-          } else if (trim($tokens[1])=='{username}') {
-            $tokens[1]=$user->name;
-          }
-          $r[$tokens[0]]=trim($tokens[1]);
+          // perform any replacements on the initial values and copy to the output array
+          $r[$tokens[0]]=trim(str_replace(array('{user_id}', '{username}'), array($user->uid, $user->name), $tokens[1]));
         } else {
           throw new Exception('Some of the preset or default parameters defined for this page are not of the form param=value.');
         }
