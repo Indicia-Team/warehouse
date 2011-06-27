@@ -819,7 +819,7 @@ $.extend($.validator, {
 		var rules = {};
     if (element.form!==undefined) {
       var validator = $.data(element.form, 'validator');
-      if (validator.settings.rules) {
+      if (validator && validator.settings.rules) {
         rules = $.validator.normalizeRule(validator.settings.rules[element.name]) || {};
       }
     }
