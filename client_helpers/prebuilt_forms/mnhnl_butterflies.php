@@ -742,7 +742,7 @@ add_section_species_row = function(speciesID){
   if(jQuery('.sectionlist').find('[taxonID='+speciesID+']').length > 0) return;
   var remButton = jQuery('<img src=\"/misc/watchdog-error.png\" alt=\"Delete\"/>').click(function(){
     delete_section_species_row(jQuery(this).parent().parent()); // image, td, tr
-  });;
+  });
   var name = jQuery('<span class=\"seclistspecname\"></span>').attr('taxonID',speciesID);
   var cell = jQuery('<td></td>').append(remButton).append(name);
   var row = jQuery('<tr></tr>').data('taxonID',speciesID).insertBefore('.seclistspecrow').append(cell);

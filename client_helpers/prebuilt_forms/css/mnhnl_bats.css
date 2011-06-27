@@ -5,3 +5,10 @@
   width: auto;
 }
 
+.scOccAttrCell label {
+  margin-right: 15px;
+  width: auto;
+}
+.scOccAttrCell input[type='radio'] {
+  width: auto;
+}

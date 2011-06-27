@@ -75,9 +75,7 @@ $custom_terms = array(
 	'Overall Comment' => 'Comment',
 
 	'LANG_Tab_species' => 'Species',
-	'excrement' => 'Excrement',
-	'corpse' => 'Corpses',
-	'sleepy' => 'Lethargic',
+	'Bats Obs Type' => "Observation Type",
 	'Number: previous area' => 'Number of individuals in previously explored area',
 	'Number: new area' => 'Number of individuals in newly explored area',
 

@@ -145,6 +145,10 @@ $('.remove-row').live('click', function(e) {
     row.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled');
     row.find('a').remove();
   }
+  // Allow forms to hook into the event of a row being deleted
+  if (typeof hook_species_checklist_delete_row !== "undefined") {
+    hook_species_checklist_delete_row();
+  }
 });
 
 /**

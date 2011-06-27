@@ -1490,6 +1490,8 @@ class data_entry_helper extends helper_base {
   * Optional. If specified, specifies the name of the template (in global $indicia_templates) to use
   * for each cell containing an attribute input control. Valid replacements are {label}, {class} and {content}.
   * Default is attribute_cell.</li>
+  * <li><b>language</b><br/>
+  * language used to filter lookup list items in attributes..</li>
   * <li><b>PHPtaxonLabel</b></li>
   * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each
   * taxon's label. Otherwise the template should be plain HTML. Defaults to false.
@@ -1923,7 +1925,8 @@ class data_entry_helper extends helper_base {
         'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['caption']) .
             (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
         'extraParams' => $options['readAuth'],
-        'suffixTemplate' => 'nosuffix'
+        'suffixTemplate' => 'nosuffix',
+        'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
       // Don't want captions in the grid
       unset($attrDef['caption']);
