@@ -21,37 +21,46 @@
 function Georeferencer(mapdiv, callback) {
   
   this.georeference = function(searchtext) {
-    var request = mapdiv.georefOpts.proxy +  
-        '?url=http://map.geoportal.lu/locationsearch&query=' + searchtext + '&lang=' + mapdiv.georefOpts.georefLang +
-            '&subtype=Commune,Localité';
-    $.getJSON(request, function(data){
-          // an array to store the responses in the required country, because GeoPlanet will not limit to a country
-          var places = [];
-          var converted={};
-          jQuery.each(data.results, function(i,place) {
-            converted = {
-              name : place.label,
-              display : place.listlabel,
-              epsg: 2169,
-              centroid: {
-                x: (place.bbox[0] + place.bbox[2])/2,
-                y: (place.bbox[1] + place.bbox[3])/2
+    // Send a request to the geoportal web service. Note we use the $.ajax call rather than $.getJSON since the former allows you to force Utf8 encoding
+    // for the sent Localité parameter value. Otherwise it breaks in IE8.
+    $.ajax({
+      type: "GET",
+      url: mapdiv.georefOpts.proxy,
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      data: {"url":"http://map.geoportal.lu/locationsearch","query":searchtext,"lang":mapdiv.georefOpts.georefLang,"subtype":"Commune,Localité"},
+      success: function(data) {
+        // an array to store the responses in the required country, because responses will not limit to a country
+        var places = [];
+        var converted={};
+        jQuery.each(data.results, function(i,place) {
+          converted = {
+            name : place.label,
+            display : place.listlabel,
+            epsg: 2169,
+            centroid: {
+              x: (place.bbox[0] + place.bbox[2])/2,
+              y: (place.bbox[1] + place.bbox[3])/2
+            },
+            boundingBox: {
+              southWest: {
+                x: place.bbox[0], 
+                y: place.bbox[1]
               },
-              boundingBox: {
-                southWest: {
-                  x: place.bbox[0], 
-                  y: place.bbox[1]
-                },
-                northEast: {
-                  x: place.bbox[2], 
-                  y: place.bbox[3]
-                }
+              northEast: {
+                x: place.bbox[2], 
+                y: place.bbox[3]
               }
-            };
-            places.push(converted);
-          });
-          callback(mapdiv, places);
+            }
+          };
+          places.push(converted);
         });
+        callback(mapdiv, places);
+      },
+      error: function (xhr, textStatus, errorThrown) {
+     
+      }
+    });
   };
 }
 
