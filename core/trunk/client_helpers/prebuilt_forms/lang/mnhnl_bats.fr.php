@@ -35,6 +35,7 @@ $custom_terms = array(
 	'LANG_Add_Sample' => 'Ajouter Nouvel échantillon',
 	'LANG_Add_Sample_Single' => 'Add Unique',
 	'LANG_Add_Sample_Grid' => 'Ajouter plusieurs occurrences',
+	'LANG_Save' => 'Enregistrer',
 	// 'Site' tab heading left alone
 	'Existing Locations' => 'Sites existants',
 	'LANG_Location_Code_Label' => 'Code',
@@ -54,12 +55,12 @@ $custom_terms = array(
 
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',
+	'Recoder names' => 'Observateur(s)',
 	'General' => 'Général',
 	'Physical' => 'Caractéristiques de la cavité',
 	'Microclimate' => 'Conditions microclimatiques',
 	'Visit' => 'Visite',
 	'Bat Visit' => 'Visite',
-	'Observers' => 'Observateur(s)',
 	'cavity entrance' => 'Entrée de la cavité',
 	'disturbances' => 'Perturbations',
 	'Human Frequentation' => 'Fréquentation humaine du site',
@@ -77,11 +78,9 @@ $custom_terms = array(
 
 	'LANG_Tab_species' => 'Espèces',
 	'species_checklist.species'=>'Espèces',
-	'excrement' => 'Excréments',
-	'corpse' => 'Cadavre(s)',
-	'sleepy' => 'Léthargie',
-	'Number: previous area' => 'Nombre d’individus: Partie antérieurement explorée',
-	'Number: new area' => 'Nombre d’individus: Partie nouvellement explorée',
+	'Bats Obs Type' => "Type d'observation",
+	'Number: previous area' => "Nombre d'individus: Partie antérieurement explorée",
+	'Number: new area' => "Nombre d'individus: Partie nouvellement explorée",
 	'No Observation' => 'Aucune observation',
 	'Comment' => 'Commentaires',
 

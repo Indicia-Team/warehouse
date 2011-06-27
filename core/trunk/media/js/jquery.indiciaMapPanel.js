@@ -312,6 +312,12 @@ mapInitialisationHooks = [];
       var corner2xy = corner2.split(', ');
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
       _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
+      if(div.settings.searchUpdatesSref && !div.settings.searchLayer){ // if no separate search layer, ensure sref matches feature in editlayer, if requested.
+          $('#'+opts.srefId).val(ref);
+          $('#'+opts.srefLatId).val(refxy[0]);
+          $('#'+opts.srefLongId).val(refxy[1]);
+          $('#'+opts.geomId).val(dataref);
+      }
     }
 
     /**
@@ -849,6 +855,7 @@ $.fn.indiciaMapPanel.defaults = {
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
     searchLayer: false, // determines whether we have a separate layer for the display of location searches, eg georeferencing. Defaults to editLayer.
+    searchUpdatesSref: false,
     searchLayerName: 'Search layer',
     searchLayerInSwitcher: false,
     initialFeatureWkt: null,

@@ -885,7 +885,8 @@ class iform_mnhnl_dynamic_1 {
           'occurrenceComment'=>$args['occurrence_comment'],
           'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
-          'PHPtaxonLabel' => true
+          'PHPtaxonLabel' => true,
+          'language' => iform_lang_iso_639_2($user->lang) // used for termlists in attributes
       ), $options);
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
       if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
@@ -1143,7 +1144,7 @@ class iform_mnhnl_dynamic_1 {
    /**
    * Get the recorder names control
    */
-  private static function get_control_recordernames($auth, $args, $tabalias, $options) {
+  protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>'sample:recorder_names',
       'label'=>lang::get('Recorder names')

@@ -65,7 +65,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   }
 
   public static function get_perms($nid) {
-    return array('IForm n'.$nid.' admin');
+    return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
   }
   
   // user_access('IForm n'.$node->nid.' admin')
@@ -86,19 +86,24 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@sep= \r\n".
               "[spatial reference]\r\n".
               "@fieldname=location:centroid_sref\r\n".
+              "@srefField=location:centroid_sref\r\n".
+              "@splitLatLong=true\r\n".
               "[place search]\r\n".
               "[map]\r\n".
+              "@scroll_wheel_zoom=false\r\n".
+              "@searchUpdatesSref=true\r\n".
               "[location comment]\r\n".
               "[*]\r\n".
              "=Other Information=\r\n".
               "[date]\r\n".
               "@dateFormat=yy-mm-dd\r\n".
+              "[recorder names]\r\n".
               "[*]\r\n".
               "@sep= \r\n".
               "@lookUpKey=meaning_id\r\n".
               "[sample comment]\r\n".
              "=Species=\r\n".
-              "[species]\r\n".
+              "[species]\r\n". //@view=detail
               "@rowInclusionCheck=hasData\r\n".
               "[species attributes]\r\n".
               "[*]\r\n";
@@ -155,6 +160,13 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'type' => 'int',
           'group' => 'User Interface'
         );
+    $retVal[] = array(
+          'name' => 'removeBreakIDs',
+          'caption' => 'Attributes to remove the break after',
+          'description' => 'The Attributes to remove the break after. This text field holds a colon separated list of Indicia attribute ids',
+          'type' => 'string',
+          'group' => 'User Interface'
+        );
         
     return $retVal;
   }
@@ -167,38 +179,16 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
     if(lang::get('validation_required')!='validation_required'){
       if(lang::get('validation_required') != 'validation_required')
-        data_entry_helper::$javascript .= "
+        data_entry_helper::$late_javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
       if(lang::get('validation_max') != 'validation_max')
-        data_entry_helper::$javascript .= "
+        data_entry_helper::$late_javascript .= "
 $.validator.messages.max = $.validator.format(\"".lang::get('validation_max')."\");";
       if(lang::get('validation_min') != 'validation_min')
-        data_entry_helper::$javascript .= "
+        data_entry_helper::$late_javascript .= "
 $.validator.messages.min = $.validator.format(\"".lang::get('validation_min')."\");";
     }
     data_entry_helper::$javascript .= "
-// possible clash with link_species_popups, so latter disabled.
-hook_species_checklist_new_row=function(rowData) {
-  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
-            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(mdata) {
-    if(mdata instanceof Array && mdata.length>0){
-      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list' +
-            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&taxon_meaning_id='+mdata[0].taxon_meaning_id+'&callback=?', function(data) {
-        var taxaList = '';
-        if(data instanceof Array && data.length>0){
-          for (var i=0;i<data.length;i++){
-            if(data[i].id != mdata[0].id){
-              if(data[i].preferred == 'f')
-                taxaList += (taxaList == '' ? '' : ', ')+data[i].taxon;
-              else
-                taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
-            }
-          }
-        }
-        jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('.extraCommonNames');
-      });
-    }});
-}
 checkRadioStatus = function(){
   jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
     if(this.checked)
@@ -245,6 +235,7 @@ checkCheckStatus = function(){
 jQuery('[name^=smpAttr]').filter(':checkbox').change(checkCheckStatus);
 checkCheckStatus();
 
+// put lat and long side by side, and set labels to auto width so they fit in.
 jQuery('#imp-sref-lat').next().remove();
 jQuery('#imp-sref-lat').prev().css('width', 'auto');
 jQuery('#imp-sref-long').prev().css('width', 'auto');
@@ -267,20 +258,13 @@ jQuery('#imp-sref-system').change(function(){
   if(jQuery('#map')[0].map) jQuery('#map')[0].map.editLayer.destroyFeatures();
 });
 checkSystemStatus();
-
 ";
-    data_entry_helper::$late_javascript .= "
-$.validator.addMethod('no_observation', function(arg1, arg2){
-var numChecked = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').filter(':checkbox').filter('[checked=true]').length;
-var numFilledIn = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').not(':checkbox').filter('[value!=]').length;
-if(jQuery('[name='+jQuery(arg2).attr('name')+']').not(':hidden').filter('[checked=true]').length>0)
- // is checked.
- return(numChecked==0&&numFilledIn==0)
-else
- return(numChecked>0||numFilledIn>0)
-},
-  \"".lang::get('validation_no_observation')."\");
-";
+    // Move the Temperature and Humidity fields side by side.
+    $removeBreakIDs = explode(':', $args['removeBreakIDs']);
+    foreach($removeBreakIDs as $removeBreakID){
+      data_entry_helper::$javascript .= "
+jQuery('[name=smpAttr\\:".$removeBreakID."],[name^=smpAttr\\:".$removeBreakID."\\:]').css('margin-right', '20px').nextAll('br').eq(0).remove();";
+    }
     if (!empty($args['attributeValidation'])) {
       $rules = array();
       $argRules = explode(';', $args['attributeValidation']);
@@ -296,7 +280,49 @@ else
 jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').attr('".$details[0]."',".$details[1].");";
           } else if($rule[$i]=='no_observation'){
                data_entry_helper::$late_javascript .= "
-jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').filter(':checkbox').rules('add', {no_observation: true});";
+jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').filter(':checkbox').rules('add', {no_observation: true});
+// possible clash with link_species_popups, so latter disabled.
+hook_species_checklist_new_row=function(rowData) {
+  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
+            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(mdata) {
+    if(mdata instanceof Array && mdata.length>0){
+      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list' +
+            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&taxon_meaning_id='+mdata[0].taxon_meaning_id+'&callback=?', function(data) {
+        var taxaList = '';
+        if(data instanceof Array && data.length>0){
+          for (var i=0;i<data.length;i++){
+            if(data[i].id != mdata[0].id){
+              if(data[i].preferred == 'f')
+                taxaList += (taxaList == '' ? '' : ', ')+data[i].taxon;
+              else
+                taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
+            }
+          }
+        }
+        jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('.extraCommonNames');
+      });
+    }})
+  jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').not(':hidden').attr('disabled','disabled').removeAttr('checked');;
+}
+hook_species_checklist_delete_row=function() {
+  var rows=jQuery('.species-grid').find('tbody').find('tr').not(':hidden').not('.scClonableRow').length;
+  if(rows==0)
+    jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').removeAttr('disabled','disabled');
+}
+$.validator.addMethod('no_observation', function(arg1, arg2){
+var numChecked = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').filter(':radio').filter('[checked=true]').length;
+var numFilledIn = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').not(':radio').filter('[value!=]').length;
+if(jQuery('[name='+jQuery(arg2).attr('name')+']').not(':hidden').filter('[checked=true]').length>0)
+ // is checked.
+ return(numChecked==0&&numFilledIn==0)
+else if(numChecked>0||numFilledIn>0)
+ return true;
+// there are no rows filled in, in which case ensure no obs can be filled in.
+jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').removeAttr('disabled','disabled');
+return false;
+},
+  \"".lang::get('validation_no_observation')."\");
+";
           }
     }
 //    $url = data_entry_helper::$geoserver_url.'wms';
@@ -462,7 +488,7 @@ clearLocation = function(enableFields){
     enableItems = enableItems + ',[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom';
   jQuery(enableItems).removeAttr('disabled');
   jQuery(disableItems).attr('disabled',true);
-  jQuery('[name=location\\:id],[name=location\\:code],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom').val('');
+  jQuery('[name=location\\:id],[name=location\\:code],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-lat,#imp-sref-long,#imp-geom').val('');
   // first need to remove any hidden multiselect checkbox unclick fields
   jQuery('[name^=locAttr\\:]').filter('.multiselect').remove();
   // rename, to be safe, removing any [] at the end or any attribute value id
@@ -576,6 +602,31 @@ clearLocation(false);";
       $r .= '<label for="location:code">'.lang::get('LANG_Location_Code_Label').':</label><input type="text" id="location:code" name="location:code" disabled="disabled" value="'.data_entry_helper::$entity_to_load['location:code'].'" /><br/>';
     
     return $r;
+  }
+
+   /**
+   * Get the recorder names control
+   */
+  protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
+    $userlist = array();
+    $results = db_query('SELECT uid, name FROM {users}');
+    while($result = db_fetch_object($results)){
+  		$account = user_load($result->uid);
+		if($account->uid != 1 && user_access('IForm n'.self::$node->nid.' user', $account)){
+			$userlist[$result->name] = $result->name;
+		}
+    }
+    $r = data_entry_helper::listbox(array_merge(array(
+      'fieldname'=>'sample:recorder_names',
+      'label'=>lang::get('Recorder names'),
+      'size'=>6,
+      'multiselect'=>true,
+      'default'=>array(),
+      'lookupValues'=>$userlist
+    ), $options));
+    return $r;
+//    'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{options}</select>',
+//  'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
   }
   
   /**
