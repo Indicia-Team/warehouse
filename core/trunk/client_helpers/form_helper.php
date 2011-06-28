@@ -41,6 +41,11 @@ class form_helper extends helper_base {
    * <li><b>includeOutputDiv</b><br/>
    * Set to true to generate a div after the controls which will receive the form parameter
    * controls when a form is selected.</li>
+   * <li><b>needWebsiteInputs</b><br/>
+   * Defaults to false. In this state, the website ID and password controls are not displayed
+   * when both the values are already specified, though hidden inputs are put into the form.
+   * When set to true, the website ID and password input controls are always included in the form output.
+   * </li>
    * </ul>
    */
   public static function prebuilt_form_picker($options) {
@@ -90,18 +95,24 @@ class form_helper extends helper_base {
       $value = lang::get($value);
     }
     asort($categories);
-    $r .= data_entry_helper::text_input(array(
-      'label' => lang::get('Website ID'),
-      'fieldname' => 'website_id',
-      'helpText' => lang::get('Enter the ID of the website record on the Warehouse you are using.'),
-      'default' => isset($options['website_id']) ? $options['website_id'] : ''
-    ));
-    $r .= data_entry_helper::text_input(array(
-      'label' => lang::get('Password'),
-      'fieldname' => 'password',
-      'helpText' => lang::get('Enter the password for the website record on the Warehouse you are using.'),
-      'default' => isset($options['password']) ? $options['password'] : ''
-    ));
+    if (isset($options['needWebsiteInputs']) && !$options['needWebsiteInputs']
+        && !empty($options['website_id']) && !empty($options['password'])) {
+      $r .= '<input type="hidden" id="website_id" name="website_id" value="'.$options['website_id'].'">';
+      $r .= '<input type="hidden" id="password" name="password" value="'.$options['password'].'">';
+    } else {
+      $r .= data_entry_helper::text_input(array(
+        'label' => lang::get('Website ID'),
+        'fieldname' => 'website_id',
+        'helpText' => lang::get('Enter the ID of the website record on the Warehouse you are using.'),
+        'default' => isset($options['website_id']) ? $options['website_id'] : ''
+      ));
+      $r .= data_entry_helper::text_input(array(
+        'label' => lang::get('Password'),
+        'fieldname' => 'password',
+        'helpText' => lang::get('Enter the password for the website record on the Warehouse you are using.'),
+        'default' => isset($options['password']) ? $options['password'] : ''
+      ));
+    }
     $r .= data_entry_helper::select(array(
       'id' => 'form-category-picker',
       'label' => lang::get('Select Form Category'),
