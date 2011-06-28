@@ -195,14 +195,6 @@ class iform_mnhnl_dynamic_1 {
           'group' => 'User Interface'
         ),
         array(
-          'name'=>'attributeValidation',
-          'caption'=>'Attribute Validation Rules',
-          'description'=>'TBD.',
-          'type'=>'textarea',
-          'required' => false,
-          'group' => 'User Interface'
-        ),
-        array(
           'name'=>'attribute_termlist_language_filter',
           'caption'=>'Attribute Termlist Language filter',
           'description'=>'Enable filtering of termlists for attributes using the iso language.',
