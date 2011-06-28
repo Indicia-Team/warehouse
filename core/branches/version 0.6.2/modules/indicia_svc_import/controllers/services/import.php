@@ -233,7 +233,12 @@ class Import_Controller extends Service_Base_Controller {
       
       // An AJAX upload request will just receive the number of records uploaded and progress
       $this->auto_render=false;
-      echo "{uploaded:$count,progress:$progress}";      
+      $r = "{uploaded:$count,progress:$progress}";
+      // allow for a JSONP cross-site request
+      if (array_key_exists('callback', $_GET)) {
+        $r = $_GET['callback']."(".$r.")";
+      }
+      echo $r;
       $cache->set(basename($csvTempFile).'previousSupermodels', $this->previousCsvSupermodel);      
     }
   }
