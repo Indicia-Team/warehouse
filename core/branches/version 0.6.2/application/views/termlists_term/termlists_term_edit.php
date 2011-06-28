@@ -37,7 +37,6 @@ $term_id=html::initial_value($values, 'termlists_term:term_id');
 <input type="hidden" name="termlists_term:preferred" value="t" />
 <ol>
 <li>
-<input type="hidden" name="term_id" id="term_id" value="<?php echo $term_id; ?>" />
 <label for="term">Term Name</label>
 <input id="term" name="term:term" value="<?php echo html::initial_value($values, 'term:term'); ?>"/>
 <?php echo html::error_message($model->getError('term:term')); ?>
