@@ -2628,6 +2628,21 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     self::_purgeImages();
     return $r;
   }
+  
+  /**
+   * Helper function to clear the Indicia cache files.
+   */
+  public function clear_cache() {
+    $cacheFolder = self::relative_client_helper_path() . (isset(parent::$cache_folder) ? parent::$cache_folder : 'cache/');
+    if(!$dh = @opendir($cacheFolder)) {
+      return;
+    }
+    while (false !== ($obj = readdir($dh))) {
+      if($obj != '.' && $obj != '..') 
+        @unlink($cacheFolder . '/' . $obj);
+    }
+    closedir($dh);
+  }
 
   /**
    * Internal function to ensure old cache files are purged periodically.
