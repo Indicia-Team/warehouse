@@ -45,7 +45,7 @@ function refreshGrid(gridId){
  */
 function refreshPager(gridId){
   var pagerString = queryString;
-  if (pagerString.charAt(pagerString.length) == '?'){
+  if (pagerString.charAt(pagerString.length - 1) == '?'){
     pagerString = pagerString + 'type=pager';
   } else {
     pagerString = pagerString + '&type=pager';
