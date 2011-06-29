@@ -30,12 +30,20 @@
 ?>
 <div class="gvFilter">
 <form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
+<?php 
+$filter_text = array_key_exists('filters', $_GET) ? $_GET['filters'] : null;
+$filter_col = array_key_exists('columns', $_GET) ? $_GET['columns'] : null;
+?>
 Filter for
-<input type="text" name="filters" class="filterInput"/>
+<input type="text" name="filters" class="filterInput" 
+  <?php if(!is_null($filter_text)) echo 'value="' . $filter_text . '"'; ?>
+/>
 in <select name="columns" class="filterSelect">
 <?php foreach ($columns as $name => $newname) {
   if (!$newname) $newname = $name;
-  echo "<option value='".$name."'>".$newname."</option>";
+  echo '<option value="' . $name. '" '. 
+    (($filter_col == $name)? 'selected="selected"' : '') . '>' . $newname.
+    '</option>';
 }
 ?>
 </select>
