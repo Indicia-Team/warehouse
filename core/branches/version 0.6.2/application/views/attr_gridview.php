@@ -126,7 +126,7 @@ $survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
 
 <select id="filter_type" name="filter_type" onchange="filter_selection_changed(this);">
 <option value="1"<?php if ($filter_type=="1") echo ' selected="selected"'; ?>>Filter by Website</option>
-<option value="2"<?php if ($filter_type=="2") echo ' selected="selected"'; ?>>Public Attributes</option>
+<option value="2"<?php if ($filter_type=="2" || is_null($filter_type)) echo ' selected="selected"'; ?>>Public Attributes</option>
 <option value="3"<?php if ($filter_type=="3") echo ' selected="selected"'; ?>>Created by me</option>
 <?php
   if (is_null($this->auth_filter))
@@ -141,7 +141,7 @@ $survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
 
   echo "<label for=\"website_id\">Website</label>\r\n";
   echo '<select id="website_id" name="website_id" ';
-  if ($filter_type && $filter_type!="1") {
+  if ($filter_type!="1") {
     echo 'disabled="disabled" ';
   }
   echo 'onchange="website_selection_changed(this);"><option value="-1">&lt;Please select&gt;</option>';
