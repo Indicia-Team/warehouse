@@ -20,6 +20,7 @@
  */
 
 var filter = new HashArray();
+var attrfilter = new HashArray();
 var sort = new HashArray();
 var queryString;
 
@@ -120,7 +121,11 @@ function buildQueryString(url) {
     + ((sortCols != '') ? 'orderby=' + sortCols
       + '&direction=' + sortDirs + '&': '')
     + ((filterCols != '') ?    'columns=' + filterCols
-      + '&filters=' + encodeURIComponent(filterStrings) : '');
+      + '&filters=' + encodeURIComponent(filterStrings) + '&' : '');
+
+  for (var i = 0; i < attrfilter.size(); i++){
+    queryString += attrfilter.getKeyAtIndex(i) + '=' + attrfilter.getValueAtIndex(i) + '&';
+  }
 };
 
 $(document).ready(function(){
@@ -166,4 +171,24 @@ $(document).ready(function(){
     filter.unshift($('#filterForm-' + gridId + ' select').val(), $('#filterForm-' + gridId + ' input:first').val());
     refresh(gridId, url);
   });
-});
+    
+  // Alternative filtration for custom attributes
+  // kill the live handler, as document ready is called again when the AJAX tab loads
+  $('.gvAttrFilter form').die();
+  $('.gvAttrFilter form').live('submit', function(e) {
+    e.preventDefault();
+    // find the unique ID for this grid so we refresh the correct one.
+    var gridId = $(this).attr('id').split('-')[1];
+    url = buildAjaxUrl($(this).attr('action'));    
+    attrfilter.clear();
+    var value = $('#filter_type').val()
+    attrfilter.unshift('filter_type', value);
+    var value = $('#website_id').val()
+    if(value != -1)
+      attrfilter.unshift('website_id', value);
+    var value = $('#survey_id').val()
+    if(value != -1)
+      attrfilter.unshift('survey_id', value);
+    refresh(gridId, url);
+  });
+ });

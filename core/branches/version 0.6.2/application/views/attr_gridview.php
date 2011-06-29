@@ -114,7 +114,7 @@ jQuery(document).ready(function() {
 </script>
 
 
-<div>
+<div class="gvAttrFilter">
 <form action='<?php echo url::site(Router::$routed_uri); ?>' method="get" id="filterForm-<?php echo $id; ?>">
 <fieldset class="filter">
 <?php 
