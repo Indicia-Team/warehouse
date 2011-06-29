@@ -130,7 +130,7 @@ $survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
 <option value="3"<?php if ($filter_type=="3") echo ' selected="selected"'; ?>>Created by me</option>
 <?php
   if (is_null($this->auth_filter))
-    echo '<option value="4">All Distinct Attributes</option>';
+    echo '<option value="4"'. (($filter_type=="4") ? ' selected="selected"' : '') .'>All Distinct Attributes</option>';
 ?>
 </select><br />
 <?php
