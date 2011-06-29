@@ -43,7 +43,6 @@ class Sample_attribute_Controller extends Attr_Gridview_Base_Controller {
       'caption'=>'',
       'data_type'=>'Data type');
     $this->pagetitle = "Sample Attributes List";
-    $this->model = ORM::factory('sample_attribute');
     $this->auth_filter = $this->gen_auth_filter;
   }
 
