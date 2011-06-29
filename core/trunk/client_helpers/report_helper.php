@@ -984,7 +984,7 @@ function addDistPoint(features, record, wktCol) {
       $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url;
       map_helper::$javascript .= "  var reportMapLayer = new OpenLayers.Layer.WMS('Report output',
       '$layerUrl' + 'wms', { layers: '".$options['geoserverLayer']."', transparent: true,
-          cql_Filter: '".$options['cqlTemplate']."'$style},
+          cql_Filter: '".urlencode($options['cqlTemplate'])."'$style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});
   div.map.addLayer(reportMapLayer);";
     }
