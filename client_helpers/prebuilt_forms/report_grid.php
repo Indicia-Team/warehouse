@@ -152,13 +152,15 @@ class iform_report_grid {
     require_once drupal_get_path('module', 'iform').'/client_helpers/report_helper.php';
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
-    // now the grid
+    // get the grid output before outputting the download link, so we can check if the download link is needed.
     $reportOptions['id']='grid-'.$node->nid;
-    // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams
-    if (!isset($args['download_link']) || $args['download_link'])
+    $grid = report_helper::report_grid($reportOptions); 
+    // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams/
+    // The download link can be skipped if the grid did not return a table (i.e. params not complete)
+    if ((!isset($args['download_link']) || $args['download_link']) && strpos($grid, '<table')!==false)
       $r .= '<br/>'.report_helper::report_download_link($reportOptions);
-    
-    $r .= '<br/>'.report_helper::report_grid($reportOptions);
+    // put the grid after the link
+    $r .= '<br/>'.$grid;
     return $r;
   }
 
