@@ -130,6 +130,13 @@ print form::hidden('occurrence:taxa_taxon_list_id', html::initial_value($values,
 echo html::error_message($model->getError('occurrence:taxa_taxon_list_id')); ?>
 </li>
 <li>
+<label for='occurrence:comment'>Comment:</label>
+<?php
+print form::textarea('occurrence:comment', html::initial_value($values, 'occurrence:comment'));
+echo html::error_message($model->getError('occurrence:comment'));
+?>
+</li>
+<li>
 <label for='determiner'>Determiner:</label>
 <?php
 $fname = $model->determiner_id ? $model->determiner->first_name : '';
