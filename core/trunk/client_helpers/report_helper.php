@@ -100,6 +100,8 @@ class report_helper extends helper_base {
   /**
    * Returns a simple HTML link to download the contents of a report defined by the options. The options arguments supported are the same as for the 
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
+   * If this download link is to be displayed alongside a report_grid to provide a download of the same data, set the id
+   * option to the same value for both the report_download_link and report_grid controls to link them together.
    */
   public static function report_download_link($options) {
     $options = array_merge(array(
@@ -263,10 +265,11 @@ class report_helper extends helper_base {
       }
       $records = $response['records'];
     }
-    // return the params form, if that is all that is being requested.
-    if ($options['paramsOnly']) return $r;
+    // return the params form, if that is all that is being requested, or the parameters are not complete.
+    if ($options['paramsOnly'] || !isset($records)) return $r;
     
     self::report_grid_get_columns($response, $options);
+    
     $pageUrl = self::report_grid_get_reload_url($sortAndPageUrlParams);
     $thClass = $options['thClass'];
     $r .= "\n<table class=\"".$options['class']."\">";
@@ -985,18 +988,21 @@ function addDistPoint(features, record, wktCol) {
   selectControl.activate();
   */\n";
     } else {
-      $replacements = array();
-      foreach(array_keys($currentParamValues) as $key)
-        $replacements[] = "#$key#";
-      $options['cqlTemplate'] = str_replace($replacements, $currentParamValues, $options['cqlTemplate']);
-      $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
-      $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
-      $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url;
-      map_helper::$javascript .= "  var reportMapLayer = new OpenLayers.Layer.WMS('Report output',
+      // don't load the WMS layer if not all parameters are filled in
+      if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
+        $replacements = array();
+        foreach(array_keys($currentParamValues) as $key)
+          $replacements[] = "#$key#";
+        $options['cqlTemplate'] = str_replace($replacements, $currentParamValues, $options['cqlTemplate']);
+        $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
+        $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
+        $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url;
+        map_helper::$javascript .= "  var reportMapLayer = new OpenLayers.Layer.WMS('Report output',
       '$layerUrl' + 'wms', { layers: '".$options['geoserverLayer']."', transparent: true,
           cql_Filter: '".urlencode($options['cqlTemplate'])."'$style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});
   div.map.addLayer(reportMapLayer);";
+      }
     }
     report_helper::$javascript.= "});\n";
     return $r;
