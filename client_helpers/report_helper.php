@@ -102,15 +102,20 @@ class report_helper extends helper_base {
    * report_grid method. Pagination information will be ignored (e.g. itemsPerPage).
    */
   public static function report_download_link($options) {
+    $options = array_merge(array(
+      'caption' => 'Download this report', // a reasonable maximum
+    ), $options);
     $options = self::get_report_grid_options($options);
-    $options['itemsPerPage'] = 10000; // a reasonable maximum
+    $options['itemsPerPage'] = 10000;
+    $options['linkOnly'] = true;
     $currentParamValues = self::get_report_grid_current_param_values($options);
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
     // don't want to paginate the download link
     unset($sortAndPageUrlParams['page']);
-    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
-    $options['linkOnly']=true;
-    return '<a href="'.self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv">'.lang::get('Download this report').'</a>';
+    $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);    
+    $link = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true), true). '&mode=csv';
+    global $indicia_templates;
+    return str_replace(array('{link}','{caption}'), array($link, lang::get($options['caption'])), $indicia_templates['report_download_link']);;
   }
   
   /**
@@ -892,38 +897,43 @@ class report_helper extends helper_base {
    */
   public static function report_map($options) {
     $options = self::get_report_grid_options($options);
-    // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
-    // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
-    // parameters form if needed, else the report data. 
-    $response = self::get_report_data($options);
-    if (isset($response['error'])) return $response['error'];
-    if (isset($response['parameterRequest'])) {
+    if (empty($options['geoserverLayer'])) {
+      // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
+      // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
+      // parameters form if needed, else the report data. 
+      $response = self::get_report_data($options);
+      if (isset($response['error'])) return $response['error'];
+      if (isset($response['parameterRequest'])) {
+        $currentParamValues = self::get_report_grid_current_param_values($options);
+        $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+        // if we have a complete set of parameters in the URL, we can re-run the report to get the data
+        if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
+          $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
+          if (isset($response['error'])) return $response['error'];
+          $records = $response['records'];
+        }
+      } else {
+        // because we did not ask for columns, the records are at the root of the response
+        $records = $response;
+      }
+    
+      if (!isset($records))
+        return $r;
+      // find the geom column
+      foreach($response['columns'] as $col=>$cfg) {
+        if ($cfg['mappable']=='true') {
+          $wktCol = $col;
+          break;
+        }
+      }
+      if (!isset($wktCol))
+        $r .= "<p>".lang::get("The report's configuration does not output any mappable data")."</p>";
+    } else {
+      // using geoserver, so we just need to know the param values. 
+      $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantRecords=0&wantParameters=1');
       $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
-      // if we have a complete set of parameters in the URL, we can re-run the report to get the data
-      if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
-        $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
-        if (isset($response['error'])) return $response['error'];
-        $records = $response['records'];
-      }
-    } else {
-      // because we did not ask for columns, the records are at the root of the response
-      $records = $response;
     }
-    
-    if (!isset($records))
-      return $r;
-    // find the geom column
-    foreach($response['columns'] as $col=>$cfg) {
-      if ($cfg['mappable']=='true') {
-        $wktCol = $col;
-        break;
-      }
-    }
-  
-    if (!isset($wktCol))
-      $r .= "<p>".lang::get("The report's configuration does not output any mappable data")."</p>";
-
     report_helper::$javascript.= "
 /**
  * Selecting a feature on a vector reporting layer displays a popup.
@@ -1061,9 +1071,10 @@ function addDistPoint(features, record, wktCol) {
       foreach ($options['extraParams'] as $key=>$value)
         // Must urlencode the parameters, as things like spaces cause curl to hang
         $request .= "&$key=".urlencode($value);
-    }
-    if (isset($options['linkOnly']) && $options['linkOnly'])
+    }    
+    if (isset($options['linkOnly']) && $options['linkOnly']) {
       return $request;
+    }
     else {
       $response = self::http_post($request, null);
       $decoded = json_decode($response['output'], true);
