@@ -128,67 +128,80 @@ function buildQueryString(url) {
   }
 };
 
+function ajaxFilterSubmit(e){
+  e.preventDefault();
+  // find the unique ID for this grid so we refresh the correct one.
+  var gridId = $(this).attr('id').split('-')[1];
+  url = buildAjaxUrl($(this).attr('action'));    
+  filter.clear();
+  filter.unshift($('#filterForm-' + gridId + ' select').val(), $('#filterForm-' + gridId + ' input:first').val());
+  refresh(gridId, url);
+}
+
+function ajaxAttrFilterSubmit(e){
+  e.preventDefault();
+  // find the unique ID for this grid so we refresh the correct one.
+  var gridId = $(this).attr('id').split('-')[1];
+  url = buildAjaxUrl($(this).attr('action'));    
+  attrfilter.clear();
+  var value = $('#filter_type').val();
+  attrfilter.unshift('filter_type', value);
+  value = $('#website_id').val();
+  if(value != -1)
+    attrfilter.unshift('website_id', value);
+  value = $('#survey_id').val();
+  if(value != -1)
+    attrfilter.unshift('survey_id', value);
+  refresh(gridId, url);
+}
+
+function ajaxSort(e){
+  e.preventDefault();
+  var h = $(this).attr('id').toLowerCase();
+  var a = sort.get(h);
+  if (a != undefined) {
+    if (a == 'asc') {
+      sort.unshift(h,'desc');
+      $(this).removeClass('gvColAsc');
+      $(this).addClass('gvColDesc');
+    } else {
+      sort.unshift(h,'asc');
+      $(this).removeClass('gvColDesc');
+      $(this).addClass('gvCol');
+    }
+  } else {
+    sort.unshift(h, 'asc');
+    $(this).removeClass('gvCol');
+    $(this).addClass('gvColAsc');
+  }
+  var gridId = $(this).parent().parent().parent().attr('id').split('-')[1];
+  // Because the column header is not a link, we don't know the URL to go to. So we use the filterForm's action to get the URL.
+  url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
+  refresh(gridId, url);
+  
+}
+
 $(document).ready(function(){
 
   // Paging
   pagerLinks();
 
   // Sorting
-  $('thead th.gvSortable').live('click', function(e) {
-    e.preventDefault();
-    var h = $(this).attr('id').toLowerCase();
-    var a = sort.get(h);
-    if (a != undefined) {
-      if (a == 'asc') {
-        sort.unshift(h,'desc');
-        $(this).removeClass('gvColAsc');
-        $(this).addClass('gvColDesc');
-      } else {
-        sort.unshift(h,'asc');
-        $(this).removeClass('gvColDesc');
-        $(this).addClass('gvCol');
-      }
-    } else {
-      sort.unshift(h, 'asc');
-      $(this).removeClass('gvCol');
-      $(this).addClass('gvColAsc');
-    }
-    var gridId = $(this).parent().parent().parent().attr('id').split('-')[1];
-    // Because the column header is not a link, we don't know the URL to go to. So we use the filterForm's action to get the URL.
-    url = buildAjaxUrl($('#filterForm-'+gridId).attr('action'));
-    refresh(gridId, url);
-  });  
+  $('thead th.gvSortable').live('click', ajaxSort);
 
   // Filtration
-  // kill the live handler, as document ready is called again when the AJAX tab loads
-  $('.gvFilter form').die();
-  $('.gvFilter form').live('submit', function(e) {
-    e.preventDefault();
-    // find the unique ID for this grid so we refresh the correct one.
-    var gridId = $(this).attr('id').split('-')[1];
-    url = buildAjaxUrl($(this).attr('action'));    
-    filter.clear();
-    filter.unshift($('#filterForm-' + gridId + ' select').val(), $('#filterForm-' + gridId + ' input:first').val());
-    refresh(gridId, url);
-  });
+  var $filter = $('.gvFilter form');
+  if ($filter.length){
+    // kill the live handler, as document ready is called again when the AJAX tab loads
+    $filter.die();
+    $filter.live('submit', ajaxFilterSubmit);  
+  }
     
   // Alternative filtration for custom attributes
-  // kill the live handler, as document ready is called again when the AJAX tab loads
-  $('.gvAttrFilter form').die();
-  $('.gvAttrFilter form').live('submit', function(e) {
-    e.preventDefault();
-    // find the unique ID for this grid so we refresh the correct one.
-    var gridId = $(this).attr('id').split('-')[1];
-    url = buildAjaxUrl($(this).attr('action'));    
-    attrfilter.clear();
-    var value = $('#filter_type').val()
-    attrfilter.unshift('filter_type', value);
-    var value = $('#website_id').val()
-    if(value != -1)
-      attrfilter.unshift('website_id', value);
-    var value = $('#survey_id').val()
-    if(value != -1)
-      attrfilter.unshift('survey_id', value);
-    refresh(gridId, url);
-  });
+  $filter = $('.gvAttrFilter form');
+  if ($filter.length){
+    // kill the live handler, as document ready is called again when the AJAX tab loads
+     $filter.die();
+    $filter.live('submit', ajaxAttrFilterSubmit);  
+  }
  });
