@@ -177,8 +177,8 @@ jQuery('#{parentControlId}').change();\n",
   'paging_container' => "<div class=\"pager ui-helper-clearfix\">\n{paging}\n</div>\n",
   'paging' => '<div class="left">{first} {prev} {pagelist} {next} {last}</div><div class="right">{showing}</div>',
   'jsonwidget' => '<div id="{id}" {class}></div>',
-  'report_picker' => '<div id="{id}" {class}>{reports}<div class="report-metadata"></div><div class=\"ui-helper-clearfix\"></div></div>',
-  'report_download_link' => "<div class=\"report-download-link\"><a href=\"{link}\">{caption}</a><div>\n"
+  'report_picker' => '<div id="{id}" {class}>{reports}<div class="report-metadata"></div><div class="ui-helper-clearfix"></div></div>',
+  'report_download_link' => '<div class="report-download-link"><a href="{link}">{caption}</a></div>'
 );
 
 
