@@ -165,7 +165,7 @@ $survey_id = array_key_exists('survey_id', $_GET) ? $_GET['survey_id'] : null;
 <tr class="headingRow">
 <?php
 foreach ($columns as $name => $dbtype) {
-  echo "<th class='gvSortable gvCol'>".str_replace('_', ' ', ucwords($name))."</th>";
+  echo "<th class='gvSortable gvCol' id='$name'>".str_replace('_', ' ', ucwords($name))."</th>";
 }
 foreach ($actionColumns as $name => $action) {
   echo "<th class='gvAction'>".str_replace('_', ' ', ucwords($name))."</th>";
