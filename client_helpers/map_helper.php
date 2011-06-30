@@ -212,6 +212,7 @@ class map_helper extends helper_base {
 
       //width and height may be numeric, which is interpreted as pixels, or a css string, e.g. '50%'
       //width in % is causing problems with panning in Firefox currently. 13/3/2010.
+
       if (is_numeric($options['height']))
         $options['height'] .= 'px';
       if (is_numeric($options['width']))
@@ -365,7 +366,7 @@ class map_helper extends helper_base {
       self::$javascript .= "if (layer.isBaseLayer) {
     layerHtml += '<img src=\"".self::getRootFolder() . self::relative_client_helper_path()."../media/images/map.png\" width=\"16\" height=\"16\"/>';
   } else if (layer instanceof OpenLayers.Layer.WMS) {
-    layerHtml += '<img src=\"' + div.settings.indiciaGeoSvc + 'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
+    layerHtml += '<img src=\"' + layer.url + 'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
       '&STYLE='+layer.params.STYLES +'\" alt=\"'+layer.name+'\"/>';
   } else if (layer instanceof OpenLayers.Layer.Vector) {
     var style=layer.styleMap.styles['default']['defaultStyle'];

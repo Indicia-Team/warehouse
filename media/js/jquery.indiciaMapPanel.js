@@ -403,11 +403,9 @@ mapInitialisationHooks = [];
       
       this.settings.boundaryStyle=new style();
 
-      // Sizes the div
+      // Sizes the div. Width sized by outer div.
       $(this).css('height', this.settings.height);
-      if(this.settings.width != 'auto') {
-        $(this).css('width', this.settings.width);
-      }
+      $(this).css('width', '100%');
 
       // If we're using a proxy
       if (this.settings.proxy)

@@ -21,6 +21,7 @@
  */
 
 require_once('helper_config.php');
+require_once('lang.php');
 
 global $indicia_templates;
 

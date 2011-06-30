@@ -55,9 +55,9 @@ function iform_map_get_map_parameters() {
     ),
     array(
       'name'=>'map_width',
-      'caption'=>'Map Width (px)',
-      'description'=>'Width in pixels of the map.',
-      'type'=>'int',
+      'caption'=>'Map Width',
+      'description'=>'Width in pixels of the map, or a css specification for the width, e.g. 75%.',
+      'type'=>'text_input',
       'group'=>'Initial Map View',
       'default'=>500
     ),
@@ -221,8 +221,8 @@ function iform_map_get_map_options($args, $readAuth) {
     'initial_lat'=>$args['map_centroid_lat'],
     'initial_long'=>$args['map_centroid_long'],
     'initial_zoom'=>(int) $args['map_zoom'],
-    'width'=>(int) $args['map_width'],
-    'height'=>(int) $args['map_height'],
+    'width'=>$args['map_width'],
+    'height'=>$args['map_height'],
     'standardControls'=>array('layerSwitcher','panZoom')
   );
   // If they have defined a custom base layer, add it
