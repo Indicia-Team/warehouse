@@ -43,7 +43,7 @@
         $surveys = ORM::factory('survey')->where('website_id', $website->id)->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
         $option_list = array();
         foreach ($surveys as $survey) {
-          $option_list[] = 'new Array('.$survey->id.', "'.$survey->title.'")';
+          $option_list[] = 'new Array('.$survey->id.', "'. str_replace('"', '\"',$survey->title) .'")';
         }
         echo implode(",", $option_list).');';
       }
