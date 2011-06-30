@@ -22,7 +22,6 @@
 /**
  * Link in other required php files.
  */
-require_once('lang.php');
 require_once('helper_config.php');
 require_once('helper_base.php');
 require_once('submission_builder.php');
