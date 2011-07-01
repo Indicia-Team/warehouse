@@ -949,13 +949,15 @@ onFeatureSelect = function(feature) {
       content += '<tr><td style=\"font-weight:bold;\">' + name + '</td><td>' + value + '</td></tr>';
     }
   });
-  popup = new OpenLayers.Popup.FramedCloud('popup', 
+  if (typeof indicia_popup!=='undefined') {
+    feature.layer.map.removePopup(indicia_popup);
+  }
+  indicia_popup = new OpenLayers.Popup.FramedCloud('popup', 
                            feature.geometry.getBounds().getCenterLonLat(),
                            null,
                            '<table style=\"font-size:.8em\">' + content + '</table>',
                            null, true);
-  feature.popup = popup;
-  feature.layer.map.addPopup(popup);
+  feature.layer.map.addPopup(indicia_popup);
 };
     
 function addDistPoint(features, record, wktCol) {
@@ -965,7 +967,11 @@ function addDistPoint(features, record, wktCol) {
 }\n\n";
   report_helper::$javascript.= "mapInitialisationHooks.push(function(div) {\n";
   if (empty($options['geoserverLayer'])) {
-    report_helper::$javascript.= "  var layer = new OpenLayers.Layer.Vector('Report output');
+    // @todo: Make this styleMap configurable.
+    report_helper::$javascript.= "  var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
+          {fillOpacity: 0.3, fillColor: '#ff0000', strokeColor: '#ff0000#'},
+          OpenLayers.Feature.Vector.style['default']));
+  var layer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
   features = [];\n";
     foreach ($records as $record) {
       report_helper::$javascript.= "  addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
@@ -974,8 +980,7 @@ function addDistPoint(features, record, wktCol) {
   div.map.addLayer(layer);
   if (layer.getDataExtent()!==null)
     div.map.zoomToExtent(layer.getDataExtent());
-  /*
-  @todo Implement clicking on vectors
+  
   // create a control for selecting features and displaying popups
   var selectControl = new OpenLayers.Control.SelectFeature(layer,
     {clickout: true, toggle: false,
@@ -985,8 +990,7 @@ function addDistPoint(features, record, wktCol) {
                         box: true, onSelect: onFeatureSelect
   });
   div.map.addControl(selectControl);
-  selectControl.activate();
-  */\n";
+  selectControl.activate();\n";
     } else {
       // don't load the WMS layer if not all parameters are filled in
       if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
