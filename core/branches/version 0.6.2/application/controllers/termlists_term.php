@@ -39,6 +39,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $this->base_filter['parent_id']=null;
     $this->base_filter['preferred']='t';
     $this->columns = array(
+      'sort_order'=>'',
       'term'=>'',
       'language'=>'',
       );
