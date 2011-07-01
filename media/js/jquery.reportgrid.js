@@ -308,14 +308,15 @@
     };
     
     mergeParamsIntoTemplate = function(div, params, template) {
-      var regex;
+      var regex, regexEsc, regexEscDbl, r;
       $.each(params, function(param) {
         regex = new RegExp('\\{'+param+'\\}','g');
-        if (params[param]!==null) {
-          template = template.replace(regex, params[param]);
-        } else {
-          template = template.replace(regex, '');
-        }
+        regexEsc = new RegExp('\\{'+param+'\-escape\-quote\\}','g');
+        regexEscDbl = new RegExp('\\{'+param+'\-escape\-dblquote\\}','g');
+        r = params[param] || '';
+        template = template.replace(regex, r);
+        template = template.replace(regexEsc, r.replace("'","\\'"));
+        template = template.replace(regexEscDbl, r.replace('"','\\"'));
       });
       // Also do some standard params from the settings, for various paths/urls
       regex = new RegExp('\\{rootFolder\\}','g');
@@ -326,7 +327,6 @@
       template = template.replace(regex, div.settings.currentUrl);
       return template;
     };
-    
     
     // Sets up various clickable things like the filter button on a direct report, or the pagination links.
     setupReloadLinks = function(div) {
