@@ -75,7 +75,7 @@ class Scheduled_Tasks_Controller extends Controller {
 
       if (count($data['content']['data']>0)) {
         $parsedData = $this->parseData($data);
-        echo count($data['content']['data']). " records found<br/>";
+        echo $trigger->name . ": " . count($data['content']['data']) . " records found<br/>";
         //Note escaping disabled in where clause to permit use of CAST expression
         $actions = $this->db
             ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
@@ -132,6 +132,7 @@ class Scheduled_Tasks_Controller extends Controller {
   * Takes any notifications stored in the database and builds emails to send for any that are now due.
   */
   private function doDigestNotifications($swift) {
+    echo "<br/>Checking notifications<br/>";
     // First, build a list of the notifications we are going to do
     $digestTypes = array('I');
     $date = getdate();
@@ -147,21 +148,28 @@ class Scheduled_Tasks_Controller extends Controller {
       ->from('notifications')
       ->where('acknowledged','f')
       ->in('notifications.digest_mode', $digestTypes)
-      ->orderby('notifications.user_id', 'ASC')
+      ->orderby('notifications.user_id', 'notifications.cc', 'ASC')
       ->get();
+    $nrNotifications = count($notifications);
+    if($nrNotifications > 0)
+      echo "Found $nrNotifications notifications<br/>";
+    else 
+      echo "No notifications found<br/>";
+    
     $currentUserId = null;
+    $currentCc = null;
     $emailContent='';
     $notificationIds = array();
     foreach ($notifications as $notification) {
       $notificationIds[] = $notification->id;
-      if ($currentUserId!=$notification->user_id) {
+      if (($currentUserId != $notification->user_id) || ($currentCc != $notification->cc)) {        
         if ($currentUserId) {
           // send current email data
-          $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $notification->cc);
+          $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
           $notificationIds = array();
         }
         $currentUserId = $notification->user_id;
-        $cc = $notification->cc;
+        $currentCc = $notification->cc;
         $emailContent = kohana::lang('misc.notification_intro', kohana::config('email.server_name')) . '<br/><br/>';
       }
       $emailContent .= self::unparseData($notification->data);
@@ -169,7 +177,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // make sure we send the email to the last person in the list
     if ($currentUserId!==null) {
       // send current email data
-      $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $cc);
+      $this->sendEmail($notificationIds, $swift, $currentUserId, $emailContent, $currentCc);
     }
   }
 
@@ -207,6 +215,7 @@ class Scheduled_Tasks_Controller extends Controller {
         }
         // send the email
         $swift->send($message, $recipients, $email_config['address']);
+        kohana::log('info', 'Email notification sent to '. $user->email_address);        
       }
     } catch (Exception $e) {
       // Email not sent, so undo marking of notification as complete.
