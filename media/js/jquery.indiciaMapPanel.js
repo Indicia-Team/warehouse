@@ -603,12 +603,12 @@ mapInitialisationHooks = [];
                     "popup",
                     div.map.getLonLatFromPixel(div.settings.lastclick),
                     null,
-                    div.settings.clickableLayersOutputFns.WMS(response.features, div),
+                    div.settings.clickableLayersOutputFnWMS(response.features, div),
                     null,
                     true
                 ));
               } else {
-                $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFns.WMS(response.features, div));
+                $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFnWMS(response.features, div));
               }
             }
           });
@@ -620,7 +620,7 @@ mapInitialisationHooks = [];
               clickout: true, toggle: false, 
               hover: false, displayClass: align + 'olControlSelectFeature',
               multiple: false,
-              onSelect: div.settings.clickableLayersOutputFns.Vector
+              onSelect: div.settings.clickableLayersOutputFnVector
           });
           toolbarControls.push(infoVectorControl);
         }
@@ -866,7 +866,8 @@ $.fn.indiciaMapPanel.defaults = {
     layers: [],
     clickableLayers: [],
     clickableLayersOutputMode: 'popup', // options are popup or div
-    clickableLayersOutputFns: {WMS:format_getinfo_gml, Vector:format_getinfo_feature},
+    clickableLayersOutputFnWMS: format_getinfo_gml,
+    clickableLayersOutputFnVector: format_getinfo_feature,
     clickableLayersOutputDiv: '',
     clickableLayersOutputColumns: [],
     locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
@@ -978,7 +979,7 @@ $.fn.indiciaMapPanel.convertFilterToText = function(filter) {
 
 /**
  * Function that formats the response from a WMSGetFeatureInfo request.
- * Can be replaced through the setting clickableLayersOutputFns.WMS.
+ * Can be replaced through the setting clickableLayersOutputFnWMS.
  */
 function format_getinfo_gml(features, div) {
   if (features.length===0) {
@@ -1010,7 +1011,7 @@ function format_getinfo_gml(features, div) {
 
 /**
  * Function that formats the response from a SelectFeature action.
- * Can be replaced through the setting clickableLayersOutputFns.Vector.
+ * Can be replaced through the setting clickableLayersOutputFnVector.
  */
 function format_getinfo_feature(feature) {
   var content='';

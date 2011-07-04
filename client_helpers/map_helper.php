@@ -100,9 +100,12 @@ class map_helper extends helper_base {
   * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point. 
   * If ommitted, then all columns are output using their original field names.
   * </li>
-  * <li><b>clickableLayersOutputFn</b><br/>
-  * To override the appearance of the output when clicking on the map, set this to a JavaScript function name which takes a list of
-  * features and the map div as parameters, then returns the HTML to output.
+  * <li><b>clickableLayersOutputFnWMS</b><br/>
+  * Allows overridding of the appearance of the output when clicking on the map for WMS layers. Should be set to a JavaScript function name 
+  * which takes a list of features and the map div as parameters, then returns the HTML to output.</li>
+  * <li><b>clickableLayersOutputFnVector</b><br/>
+  * Allows overridding of the appearance of the output when clicking on the map for Vector layers. Should be set to a JavaScript function name 
+  * which takes a list of features or a single feature, then returns the HTML to output.
   * <li><b>locationLayerName</b><br/>
   * If using a location select or autocomplete control, then set this to the name of a feature type exposed on GeoServer which contains the id, name and boundary
   * geometry of each location that can be selected. Then when the user clicks on the map the system is able to automatically populate the locations control with the 
@@ -264,10 +267,14 @@ class map_helper extends helper_base {
           unset($options[$entity]);
         }
       }
-      // Same for 'clickableLayersOutputFn' except it is not an array
-      if (array_key_exists('clickableLayersOutputFn', $options)) {
-        $json_insert .= ',"clickableLayersOutputFn":'.$options['clickableLayersOutputFn'];
-        unset($options['clickableLayersOutputFn']);
+      // Same for 'clickableLayersOutputFnWMS' & 'clickableLayersOutputFnVector'
+      if (isset($options['clickableLayersOutputFnWMS'])) {
+        $json_insert .= ',"clickableLayersOutputFnWMS":'.$options['clickableLayersOutputFnWMS'];
+        unset($options['clickableLayersOutputFnWMS']);
+      }
+      if (isset($options['clickableLayersOutputFnVector'])) {
+        $json_insert .= ',"clickableLayersOutputFnVector":'.$options['clickableLayersOutputFnVector'];
+        unset($options['clickableLayersOutputFnVector']);
       }
       
       // make a copy of the options to pass into JavaScript, with a few entries removed.
