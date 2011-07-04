@@ -268,10 +268,13 @@ function iform_map_get_map_options($args, $readAuth) {
  */
 function iform_map_get_ol_options($args) {
   if ($args['openlayers_options']) {
-    return json_decode($args['openlayers_options'], true);
+    $opts = json_decode($args['openlayers_options'], true);
   } else {
-    return null;
+    $opts = array();
   }
+  if (!isset($opts['theme']))
+    $opts['theme'] = data_entry_helper::$js_path . 'theme/default/style.css';
+  return $opts;
 }
 
 /**
