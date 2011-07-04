@@ -540,7 +540,6 @@ mapInitialisationHooks = [];
               var handlerOptions = {
                 'single': true,
                 'double': false,
-                'pixelTolerance': 0,
                 'stopSingle': false,
                 'stopDouble': false
               };
@@ -569,7 +568,8 @@ mapInitialisationHooks = [];
                   QUERY_LAYERS: clickableWMSLayerNames,
                   WIDTH: div.map.size.w,
                   HEIGHT: div.map.size.h,
-                  SRS: div.map.projection
+                  SRS: div.map.projection,
+                  BUFFER: div.settings.clickPixelTolerance
               };
               if (div.settings.clickableLayers[0].params.CQL_FILTER!==undefined) {
                 if (div.settings.clickableLayers.length>1) {
@@ -870,6 +870,7 @@ $.fn.indiciaMapPanel.defaults = {
     clickableLayersOutputFnVector: format_getinfo_feature,
     clickableLayersOutputDiv: '',
     clickableLayersOutputColumns: [],
+    clickPixelTolerance: 5,
     locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
