@@ -369,11 +369,10 @@ class map_helper extends helper_base {
   layerHtml += '<input type=\"' + type + '\" name=\"' + name + '\" class=\"layer-switcher\" id=\"switch-'+layer.id.replace(/\./g,'-')+'\" ' + checked + '/>';\n  ";
     }
     if ($options['includeIcons']) 
-      // @todo support base layers and WFS layers
       self::$javascript .= "if (layer.isBaseLayer) {
     layerHtml += '<img src=\"".self::getRootFolder() . self::relative_client_helper_path()."../media/images/map.png\" width=\"16\" height=\"16\"/>';
   } else if (layer instanceof OpenLayers.Layer.WMS) {
-    layerHtml += '<img src=\"' + layer.url + 'wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
+    layerHtml += '<img src=\"' + layer.url + '?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&WIDTH=16&HEIGHT=16&LAYER='+layer.params.LAYERS+'&Format=image/jpeg'+
       '&STYLE='+layer.params.STYLES +'\" alt=\"'+layer.name+'\"/>';
   } else if (layer instanceof OpenLayers.Layer.Vector) {
     var style=layer.styleMap.styles['default']['defaultStyle'];
