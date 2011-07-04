@@ -937,63 +937,31 @@ class report_helper extends helper_base {
       $currentParamValues = self::get_report_grid_current_param_values($options);
       $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
     }
-    report_helper::$javascript.= "
-/**
- * Selecting a feature on a vector reporting layer displays a popup.
- */
-onFeatureSelect = function(feature) {
-  selectedFeature = feature;
-  var content='';
-  $.each(feature.data, function(name, value) {
-    if (name.substr(0, 5)!=='date_') {
-      content += '<tr><td style=\"font-weight:bold;\">' + name + '</td><td>' + value + '</td></tr>';
-    }
-  });
-  if (typeof indicia_popup!=='undefined') {
-    feature.layer.map.removePopup(indicia_popup);
-  }
-  indicia_popup = new OpenLayers.Popup.FramedCloud('popup', 
-                           feature.geometry.getBounds().getCenterLonLat(),
-                           null,
-                           '<table style=\"font-size:.8em\">' + content + '</table>',
-                           null, true);
-  feature.layer.map.addPopup(indicia_popup);
-};
-    
+    // don't load the report layer if not all parameters are filled in
+    if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
+      if (empty($options['geoserverLayer'])) {  
+        // we are doing vector reporting via indicia services
+  
+        report_helper::$javascript.= "
+       
 function addDistPoint(features, record, wktCol) {
   var geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
   delete record[wktCol];
   features.push(new OpenLayers.Feature.Vector(geom, record));
-}\n\n";
-  report_helper::$javascript.= "mapInitialisationHooks.push(function(div) {\n";
-  if (empty($options['geoserverLayer'])) {
-    // @todo: Make this styleMap configurable.
-    report_helper::$javascript.= "  var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
-          {fillOpacity: 0.3, fillColor: '#ff0000', strokeColor: '#ff0000#'},
-          OpenLayers.Feature.Vector.style['default']));
-  var layer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
-  features = [];\n";
-    foreach ($records as $record) {
-      report_helper::$javascript.= "  addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
-    }
-    report_helper::$javascript.= "  layer.addFeatures(features);
-  div.map.addLayer(layer);
-  if (layer.getDataExtent()!==null)
-    div.map.zoomToExtent(layer.getDataExtent());
-  
-  // create a control for selecting features and displaying popups
-  var selectControl = new OpenLayers.Control.SelectFeature(layer,
-    {clickout: true, toggle: false,
-                        multiple: false, hover: false,
-                        toggleKey: \"ctrlKey\", // ctrl key removes from selection
-                        multipleKey: \"shiftKey\", // shift key adds to selection
-                        box: true, onSelect: onFeatureSelect
-  });
-  div.map.addControl(selectControl);
-  selectControl.activate();\n";
-    } else {
-      // don't load the WMS layer if not all parameters are filled in
-      if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
+}";
+        // @todo: Make this styleMap configurable.
+        report_helper::$javascript.= "
+var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
+  {fillOpacity: 0.3, fillColor: '#ff0000', strokeColor: '#ff0000#'},
+  OpenLayers.Feature.Vector.style['default']));
+var reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
+features = [];\n";
+        foreach ($records as $record)
+          report_helper::$javascript.= "addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
+        report_helper::$javascript.= "  
+reportlayer.addFeatures(features);\n";
+      } else {
+        // doing WMS reporting via GeoServer
         $replacements = array();
         foreach(array_keys($currentParamValues) as $key)
           $replacements[] = "#$key#";
@@ -1001,14 +969,21 @@ function addDistPoint(features, record, wktCol) {
         $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
         $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
         $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url;
-        map_helper::$javascript .= "  var reportMapLayer = new OpenLayers.Layer.WMS('Report output',
+        map_helper::$javascript .= "  reportlayer = new OpenLayers.Layer.WMS('Report output',
       '$layerUrl' + 'wms', { layers: '".$options['geoserverLayer']."', transparent: true,
           cql_Filter: '".urlencode($options['cqlTemplate'])."'$style},
-      {singleTile: true, isBaseLayer: false, sphericalMercator: true});
-  div.map.addLayer(reportMapLayer);";
+      {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
-    }
-    report_helper::$javascript.= "});\n";
+      report_helper::$javascript.= "
+mapSettingsHooks.push(function(opts) {
+  opts.layers.push(reportlayer);
+  opts.clickableLayers.push(reportlayer);
+});\n";
+    } 
+  
+  //if (layer.getDataExtent()!==null)
+    //div.map.zoomToExtent(layer.getDataExtent());
+  
     return $r;
   }
   
