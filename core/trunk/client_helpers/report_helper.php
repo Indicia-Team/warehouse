@@ -971,9 +971,9 @@ reportlayer.addFeatures(features);\n";
         $options['cqlTemplate'] = str_replace($replacements, $currentParamValues, $options['cqlTemplate']);
         $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
         $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
-        $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url;
+        $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url . 'wms';
         map_helper::$javascript .= "  reportlayer = new OpenLayers.Layer.WMS('Report output',
-      '$layerUrl' + 'wms', { layers: '".$options['geoserverLayer']."', transparent: true,
+      '$layerUrl', { layers: '".$options['geoserverLayer']."', transparent: true,
           cql_Filter: '".urlencode($options['cqlTemplate'])."'$style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
