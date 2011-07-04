@@ -951,9 +951,12 @@ function addDistPoint(features, record, wktCol) {
 }";
         // @todo: Make this styleMap configurable.
         report_helper::$javascript.= "
-var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
-  {fillOpacity: 0.3, fillColor: '#ff0000', strokeColor: '#ff0000#'},
-  OpenLayers.Feature.Vector.style['default']));
+var styleMap = new OpenLayers.StyleMap({'default' : OpenLayers.Util.applyDefaults(
+  {fillOpacity: 0.3, fillColor: '#ff0000', strokeColor: '#ff0000'},
+  OpenLayers.Feature.Vector.style['default']),
+  'select' : OpenLayers.Util.applyDefaults(
+  {fillOpacity: 0.5, fillColor: '#0000ff', strokeColor: '#0000ff'},
+  OpenLayers.Feature.Vector.style['select'])});
 var reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
 features = [];\n";
         foreach ($records as $record)

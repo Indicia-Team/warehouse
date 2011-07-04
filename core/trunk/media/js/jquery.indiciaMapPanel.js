@@ -616,13 +616,11 @@ mapInitialisationHooks = [];
           toolbarControls.push(infoWMSCtrl);
         }
         if (clickableVectorLayers.length>0) {
-          var infoVectorControl = new OpenLayers.Control.SelectFeature(clickableVectorLayers,
-            {clickout: true, toggle: false, 
-                                hover: false, displayClass: align + 'olControlSelectFeature',
-                                onSelect: div.settings.clickableLayersOutputFns.Vector /*multiple: false, 
-                                toggleKey: "ctrlKey", // ctrl key removes from selection
-                                multipleKey: "shiftKey", // shift key adds to selection
-                                box: true, */
+          var infoVectorControl = new OpenLayers.Control.SelectFeature(clickableVectorLayers, {
+              clickout: true, toggle: false, 
+              hover: false, displayClass: align + 'olControlSelectFeature',
+              multiple: false,
+              onSelect: div.settings.clickableLayersOutputFns.Vector
           });
           toolbarControls.push(infoVectorControl);
         }
@@ -1015,7 +1013,6 @@ function format_getinfo_gml(features, div) {
  * Can be replaced through the setting clickableLayersOutputFns.Vector.
  */
 function format_getinfo_feature(feature) {
-  selectedFeature = feature;
   var content='';
   $.each(feature.data, function(name, value) {
     if (name.substr(0, 5)!=='date_') {
