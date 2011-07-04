@@ -433,6 +433,14 @@ tfoot td div{
   background-image: url("../images/nuvola/no-22px.png") !important;
 }
 
+.olControlSelectFeatureItemInactive {
+  background-image: url("../images/nuvola/quiz-22px-inactive.png") !important;
+}
+
+.olControlSelectFeatureItemActive {
+  background-image: url("../images/nuvola/quiz-22px.png") !important;
+}
+
 .no-border {
   border: none;
   margin: 0;
