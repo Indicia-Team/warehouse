@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
  *
- * @package	Core
+ * @package  Core
  * @subpackage Controllers
- * @author	Indicia Team
- * @license	http://www.gnu.org/licenses/gpl.html GPL
- * @link 	http://code.google.com/p/indicia/
+ * @author  Indicia Team
+ * @license  http://www.gnu.org/licenses/gpl.html GPL
+ * @link   http://code.google.com/p/indicia/
  */
 
  defined('SYSPATH') or die('No direct script access.');
@@ -34,10 +34,9 @@
 class Scheduled_Tasks_Controller extends Controller {
   private $last_run_date;  
   
-  public function __construct()
-	{
-		parent::__construct();
-	}
+  public function __construct() {
+    parent::__construct();
+  }
   
   /** 
    * The index method is the default method called when you access this controller, so we can use this 
@@ -63,10 +62,7 @@ class Scheduled_Tasks_Controller extends Controller {
   */
   protected function checkTriggers() {
     echo "Checking triggers<br/>";
-    // Override escaping in the database config, since we don't want it for our queries.
-    $dbConfig = Kohana::config('database.default');
-    $dbConfig['escape'] = false;    
-    $this->db = new Database($dbConfig);    
+    $this->db = new Database();    
     // Get a list of all the triggers that have at least one action
     $result = $this->getTriggerQuery();
     $reportEngine = new ReportEngine();
@@ -80,6 +76,7 @@ class Scheduled_Tasks_Controller extends Controller {
       if (count($data['content']['data']>0)) {        
         $parsedData = $this->parseData($data);               
         echo count($data['content']['data']). " records found<br/>";
+        //Note escaping disabled in where clause to permit use of CAST expression
         $actions = $this->db
             ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
             ->from('trigger_actions, users')            
@@ -91,7 +88,7 @@ class Scheduled_Tasks_Controller extends Controller {
                 'trigger_actions.deleted' => "'f'",
                 'users.deleted' => "'f'",
                 'people.deleted' => "'f'"
-            ))
+            ), NULL, false)
             ->get();        
         foreach ($actions as $action) {          
           if ($action->core_role_id!==1) {
@@ -117,13 +114,13 @@ class Scheduled_Tasks_Controller extends Controller {
           }
           if (count($allowedData)>0) {
             $this->db->insert('notifications', array(
-              'source' => "'$trigger->name'",
-              'source_type' => "'T'",
-              'data' => "'".json_encode(array('headings'=>$parsedData['headingData'], 'data' => $allowedData))."'",
+              'source' => $trigger->name,
+              'source_type' => 'T',
+              'data' => json_encode(array('headings'=>$parsedData['headingData'], 'data' => $allowedData)),
               'user_id' => $action->param1,
               // use digest mode the user selected for this notification, or their default if not specific
-              'digest_mode' => "'" . ($action->param2===null ? $action->default_digest_mode : $action->param2) . "'",
-              'cc' => "'" . $action->param3 . "'"
+              'digest_mode' => ($action->param2===null ? $action->default_digest_mode : $action->param2),
+              'cc' => $action->param3
             ));
           }
         }        
@@ -148,7 +145,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $notifications = $this->db
       ->select('id, source, source_type, data, user_id, cc')
       ->from('notifications')      
-      ->where('acknowledged',"'f'")
+      ->where('acknowledged','f')
       ->in('notifications.digest_mode', $digestTypes)
       ->orderby('notifications.user_id', 'ASC')
       ->get();
@@ -182,7 +179,7 @@ class Scheduled_Tasks_Controller extends Controller {
     $this->db->begin();
     try {      
       $this->db
-          ->set('acknowledged', "'t'")
+          ->set('acknowledged', 't')
           ->from('notifications')
           ->in('id', $notificationIds)
           ->update();
@@ -297,13 +294,13 @@ class Scheduled_Tasks_Controller extends Controller {
         ->join('samples', 'samples.id', 'occurrences.sample_id')
         ->join('surveys', 'surveys.id', 'samples.survey_id')
         ->join('sample_attribute_values as sav1', 'sav1.sample_id', 'samples.id')
-        ->join('sample_attributes sa1', 'sa1.id', 'sav1.sample_attribute_id')
+        ->join('sample_attributes as sa1', 'sa1.id', 'sav1.sample_attribute_id')
         ->join('sample_attribute_values as sav2', 'sav2.sample_id', 'samples.id')
-        ->join('sample_attributes sa2', 'sa2.id', 'sav2.sample_attribute_id')
+        ->join('sample_attributes as sa2', 'sa2.id', 'sav2.sample_attribute_id')
         ->where(array(
-            'sa1.caption'=>'\'Email me a copy of the record\'', 
-            'sa2.caption'=>'\'Email\'', 
-            'samples.created_on>=' => '\''.$this->last_run_date.'\''
+            'sa1.caption'=>'Email me a copy of the record', 
+            'sa2.caption'=>'Email', 
+            'samples.created_on>=' => $this->last_run_date
         ))
         ->get();
     
@@ -315,9 +312,9 @@ class Scheduled_Tasks_Controller extends Controller {
     $occurrences = $this->db
         ->select('o.id, ttl.taxon, s.date_start, s.date_end, s.date_type, s.entered_sref as spatial_reference, '.
             's.location_name, o.comment as sample_comment, o.comment as occurrence_comment')
-        ->from('samples s')
-        ->join('occurrences o','o.sample_id','s.id')
-        ->join('list_taxa_taxon_lists ttl','ttl.id','o.taxa_taxon_list_id')
+        ->from('samples as s')
+        ->join('occurrences as o','o.sample_id','s.id')
+        ->join('list_taxa_taxon_lists as ttl','ttl.id','o.taxa_taxon_list_id')
         ->in('o.id',$recordsToFetch)
         ->get();
     // Copy the occurrences to an array so we can build a structured list of data, keyed by ID
@@ -329,9 +326,9 @@ class Scheduled_Tasks_Controller extends Controller {
     // Get the sample attributes
     $attrValues = $this->db
         ->select('o.id, av.caption, av.value')
-        ->from('list_sample_attribute_values av')
-        ->join('samples s','s.id','av.sample_id')
-        ->join('occurrences o','o.sample_id','s.id')        
+        ->from('list_sample_attribute_values as av')
+        ->join('samples as s','s.id','av.sample_id')
+        ->join('occurrences as o','o.sample_id','s.id')        
         ->in('o.id',$recordsToFetch)
         ->get();
     foreach ($attrValues as $attrValue) {
