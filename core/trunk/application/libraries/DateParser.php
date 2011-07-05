@@ -351,10 +351,9 @@ class DateParser_Core {
       $aStart['tm_mday'] = 0;
       $aStart['tm_mon'] += 1;
     }
-
-    return date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], $aStart['tm_year']));
-
-
+    // Because dates before 1970 can't be handled by mktime, we use 2000 as a dummy date then swap it for the real year
+    $date = date("Y-m-d", mktime(0,0,0,$aStart['tm_mon'] + 1, $aStart['tm_mday'], 2000));
+    return str_replace('2000', $aStart['tm_year'], $date);
   }
 
   /**
