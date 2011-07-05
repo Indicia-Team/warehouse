@@ -34,13 +34,21 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
     $this->assertEquals(null, $vd[0]);
     $this->assertEquals('2001-12-31', $vd[1]);
     $this->assertEquals('-Y', $vd[2]);
+    // add this test because -1899 has been known to parse as 01-01-1970!
+    $vd = vague_date::string_to_vague_date('-1899');
+    $this->assertEquals(null, $vd[0]);
+    $this->assertEquals('1899-12-31', $vd[1]);
+    $this->assertEquals('-Y', $vd[2]);
   }
   
   public function testConvertVagueDate_To_YearTo() {
     $vd = array(null, new DateTime('2001-12-31'), '-Y');
     $s = vague_date::vague_date_to_string($vd);
     $this->assertEquals('To 2001', $s);
-    $vd = array(null, '2001-12-31', '-Y');
+    $vd = array('', '2001-12-31', '-Y');
+    $s = vague_date::vague_date_to_string($vd);
+    $this->assertEquals('To 2001', $s);
+    $vd = array('', '2001-12-31', '-Y');
     $s = vague_date::vague_date_to_string($vd);
     $this->assertEquals('To 2001', $s);
   }
@@ -58,12 +66,12 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
   }
   
   public function testConvertVagueDate_To_YearFrom() {
-    $vd = array(null, new DateTime('2001-12-31'), '-Y');
+    $vd = array(new DateTime('2001-01-01'), null, 'Y-');
     $s = vague_date::vague_date_to_string($vd);
-    $this->assertEquals('To 2001', $s);
-    $vd = array(null, '2001-12-31', '-Y');
+    $this->assertEquals('From 2001', $s);
+    $vd = array('2001-01-01', '', 'Y-');
     $s = vague_date::vague_date_to_string($vd);
-    $this->assertEquals('To 2001', $s);
+    $this->assertEquals('From 2001', $s);
   }
 
 }
