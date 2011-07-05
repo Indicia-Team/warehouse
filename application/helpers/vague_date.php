@@ -28,31 +28,38 @@ class vague_date {
    * List of regex strings used to try to capture date ranges. The regex key should, naturally,
    * point to the regular expression. Start should point to the backreference for the string to
    * be parsed for the 'start' date, 'end' to the backreference of the string to be parsed
-   * for the 'end' date. Types are not determined here. Should either 'start' or 'end' contain
+   * for the 'end' date. -1 means grab the text before the match, 1 means after, 0 means set the 
+   * value to empty. Types are not determined here. Should either 'start' or 'end' contain
    * the string '...', this will be interpreted as one-ended range.
    */
-  private static function dateRangeStrings() { return Array(
-  array(
-      'regex' => '/( to | - )/i', // date to date
-      'start' => -1,
-      'end' => 1
-  ),
-  array(
-      'regex' => '/(to|pre|before[\.]?)/i',
-      'start' => 0,
-      'end' => 1
-  ),
-  array(
-      'regex' => '/(from|after)/i',
-      'start' => 1,
-      'end' => 0
-  ),
-  array(
-      'regex' => '/-$/',
-      'start' => -1,
-      'end' => 0
-  ),
-  );
+  private static function dateRangeStrings() { 
+    return Array(
+      array(
+          'regex' => '/( to | - )/i', // date to date
+          'start' => -1,
+          'end' => 1
+      ),
+      array(
+          'regex' => '/(to|pre|before[\.]?)/i',
+          'start' => 0,
+          'end' => 1
+      ),
+      array(
+          'regex' => '/(from|after)/i',
+          'start' => 1,
+          'end' => 0
+      ),
+      array(
+          'regex' => '/-$/',
+          'start' => -1,
+          'end' => 0
+      ),
+      array(
+          'regex' => '/^-/',
+          'start' => 0,
+          'end' => 1
+      ),
+    );
   }
 
   /**
@@ -172,8 +179,10 @@ class vague_date {
     }
   }
 
+  /**
+   * Convert a string into a vague date. Returns an array with 3 entries, the start date, end date and date type.
+   */
   public static function string_to_vague_date($string) {
-
     $parseFormats = array_merge(
       self::singleDayFormats(),
       self::singleMonthInYearFormats(),
@@ -192,11 +201,7 @@ class vague_date {
     $startDate = false;
     $endDate = false;
     $matched = false;
-    $vagueDate = array(
-      'start' => '',
-      'end' => '',
-      'type' => ''
-    );
+    $vagueDate = array('', '', '');
     foreach (self::dateRangeStrings() as $a) {
       if (preg_match($a['regex'], $string, $regs) != false) {
         switch ($a['start']) {
@@ -254,13 +259,16 @@ class vague_date {
       }
     }
     if (!$matched) {
-      return null;
+      if (trim($string)=='U' || trim($string)==Kohana::lang('dates.unknown'))
+        return array(null, null, 'U');
+      else {
+        return null;
+      }
     }
     // Okay, now we try to determine the type - we look mostly at $endDate because
     // this is more likely to contain more info e.g. 15 - 18 August 2008
     // Seasons are parsed specially - i.e. we'll have seen the word 'Summer'
     // or the like.
-
     try {
 
       if ($endDate->tm_season != null){
@@ -269,17 +277,17 @@ class vague_date {
         if ($endDate->tm_year != null){
           // We're a P
           $vagueDate = array(
-            'start' => $endDate->getImpreciseDateStart(),
-            'end' => $endDate->getImpreciseDateEnd(),
-            'type' => 'P'
+            $endDate->getImpreciseDateStart(),
+            $endDate->getImpreciseDateEnd(),
+            'P'
           );
           return $vagueDate;
         } else {
           // No year, so we're an S
           $vagueDate = array(
-            'start' => $endDate->getImpreciseDateStart(),
-            'end' => $endDate->getImpreciseDateEnd(),
-            'type' => 'S'
+            $endDate->getImpreciseDateStart(),
+            $endDate->getImpreciseDateEnd(),
+            'S'
           );
           return $vagueDate;
         }
@@ -290,9 +298,9 @@ class vague_date {
         if (!$range) {
           // We're a D
           $vagueDate = array(
-            'start' => $endDate->getIsoDate(),
-            'end' => $endDate->getIsoDate(),
-            'type' => 'D'
+            $endDate->getIsoDate(),
+            $endDate->getIsoDate(),
+            'D'
           );
           return $vagueDate;
         } else {
@@ -300,9 +308,9 @@ class vague_date {
           // start date.
           if ($startDate->getPrecision() == $endDate->getPrecision()){
             $vagueDate = array(
-              'start' => $startDate->getImpreciseDateStart(),
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => 'DD'
+              $startDate->getImpreciseDateStart(),
+              $endDate->getImpreciseDateEnd(),
+              'DD'
             );
           } else {
             // Less precision in the start date -
@@ -328,17 +336,17 @@ class vague_date {
           if ($endDate->tm_year != null) {
             // Then we have a month in a year- type O
             $vagueDate = array(
-              'start' => $endDate->getImpreciseDateStart(),
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => 'O'
+              $endDate->getImpreciseDateStart(),
+              $endDate->getImpreciseDateEnd(),
+              'O'
             );
             return $vagueDate;
           } else {
             // Month without a year - type M
             $vagueDate = array(
-              'start' => $endDate->getImpreciseDateStart(),
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => 'M'
+              $endDate->getImpreciseDateStart(),
+              $endDate->getImpreciseDateEnd(),
+              'M'
             );
             return $vagueDate;
           }
@@ -347,9 +355,9 @@ class vague_date {
           if ($endDate->tm_year != null){
             // We have a year - so this is OO
             $vagueDate = array(
-              'start' => $startDate->getImpreciseDateStart(),
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => 'OO'
+              $startDate->getImpreciseDateStart(),
+              $endDate->getImpreciseDateEnd(),
+              'OO'
             );
             return $vagueDate;
           } else {
@@ -370,73 +378,73 @@ class vague_date {
         if (!$range){
           // Type C
           $vagueDate = array(
-            'start' => $endDate->getImpreciseDateStart(),
-            'end' => $endDate->getImpreciseDateEnd(),
-            'type' => 'C'
+            $endDate->getImpreciseDateStart(),
+            $endDate->getImpreciseDateEnd(),
+            'C'
           );
           return $vagueDate;
         } else {
           if ($start && $end) {
             // We're CC
             $vagueDate = array(
-              'start' => $startDate->getImpreciseDateStart(),
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => 'CC'
+              $startDate->getImpreciseDateStart(),
+              $endDate->getImpreciseDateEnd(),
+              'CC'
             );
             return $vagueDate;
           } else if ($start && !$end) {
             // We're C-
             $vagueDate = array(
-              'start' => $endDate->getImpreciseDateStart(),
-              'end' => null,
-              'type' => 'C-'
+              $endDate->getImpreciseDateStart(),
+              null,
+              'C-'
             );
             return $vagueDate;
           } else if ($end && !$start) {
             // We're -C
             $vagueDate = array(
-              'start' => null,
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => '-C'
+              null,
+              $endDate->getImpreciseDateEnd(),
+              '-C'
             );
             return $vagueDate;
           }
         }
       }
 
-      //Okay, we're one of the year representations, or else unknown.
+      //Okay, we're one of the year representations.
       if ($endDate->tm_year != null){
         if (!$range){
           // We're Y
           $vagueDate = array(
-            'start' => $endDate->getImpreciseDateStart(),
-            'end' => $endDate->getImpreciseDateEnd(),
-            'type' => 'Y'
+            $endDate->getImpreciseDateStart(),
+            $endDate->getImpreciseDateEnd(),
+            'Y'
           );
           return $vagueDate;
         } else {
           if ($start && $end){
             // We're YY
             $vagueDate = array(
-              'start' => $startDate->getImpreciseDateStart(),
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => 'YY'
+              $startDate->getImpreciseDateStart(),
+              $endDate->getImpreciseDateEnd(),
+              'YY'
             );
             return $vagueDate;
           } else if ($start && !$end){
             // We're Y-
             $vagueDate = array(
-              'start' => $startDate->getImpreciseDateStart(),
-              'end' => null,
-              'type' => 'Y-'
+              $startDate->getImpreciseDateStart(),
+              null,
+              'Y-'
             );
             return $vagueDate;
           } else if ($end && !$start){
             // We're -Y
             $vagueDate = array(
-              'start' => null,
-              'end' => $endDate->getImpreciseDateEnd(),
-              'type' => '-Y'
+              null,
+              $endDate->getImpreciseDateEnd(),
+              '-Y'
             );
             return $vagueDate;
           }
@@ -553,7 +561,7 @@ class vague_date {
   protected static function vague_date_to_year_to($start, $end)
   {
     self::check($start===null && self::is_year_end($end),
-      'To year date should be represented by just the last day of the last year.');
+      'To year date should be represented by just the last day of the last year. ');
     return sprintf(Kohana::lang('dates.to_date'), $end->format('Y'));
   }
 

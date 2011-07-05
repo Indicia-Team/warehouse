@@ -690,6 +690,7 @@ $('.ui-state-default').live('mouseout', function() {
   }
   
   private static function get_params_form_control($key, $info, $options, &$tools) {
+    $r = '';
     $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
     $ctrlOptions = array(
       'label' => $info['display'],
