@@ -896,6 +896,9 @@ class report_helper extends helper_base {
   * according to the parameters of the report. For example, if you are using the report called
   * <em>map_occurrences_by_survey</em> then you can set the geoserver_layer to the indicia:detail_occurrences
   * layer and set this to <em>INTERSECTS(geom, #searchArea#) AND survey_id=#survey#</em>.</li>
+  * <li>proxy<br/>
+  * URL of a proxy on the local server to direct GeoServer WMS requests to. This proxy must be able to
+  * cache filters in the same way as the iform_proxy Drupal module.</li>
   * </ul>
    */
   public static function report_map($options) {
@@ -971,10 +974,20 @@ reportlayer.addFeatures(features);\n";
         $options['cqlTemplate'] = str_replace($replacements, $currentParamValues, $options['cqlTemplate']);
         $options['cqlTemplate'] = str_replace("'", "\'", $options['cqlTemplate']);
         $style = empty($options['geoserverLayerStyle']) ? '' : ", STYLES: '".$options['geoserverLayerStyle']."'";
-        $layerUrl = (isset($options['proxy']) ? $options['proxy'] : '') . self::$geoserver_url . 'wms';
+        if (isset($options['proxy'])) {
+          $proxyResponse = self::http_post($options['proxy'], array(
+            'cql_Filter' => urlencode($options['cqlTemplate'])
+          ));
+          $filter = 'CACHE_ID: "'.$proxyResponse['output'].'"';
+          $proxy = $options['proxy'];
+        } else {
+          $filter = "cql_Filter: '".$options['cqlTemplate']."'";
+          $proxy = '';
+        }
+        $layerUrl = $proxy . self::$geoserver_url . 'wms';
         map_helper::$javascript .= "  reportlayer = new OpenLayers.Layer.WMS('Report output',
       '$layerUrl', { layers: '".$options['geoserverLayer']."', transparent: true,
-          cql_Filter: '".urlencode($options['cqlTemplate'])."'$style},
+          $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
       report_helper::$javascript.= "
