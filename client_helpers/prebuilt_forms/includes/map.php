@@ -255,7 +255,7 @@ function iform_map_get_map_options($args, $readAuth) {
   // if in Drupal, and IForm proxy is installed, then use this path as OpenLayers proxy
   if (defined('DRUPAL_BOOTSTRAP_CONFIGURATION') && module_exists('iform_proxy')) {
     global $base_url;
-    $options['proxy'] = $base_url . '?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
+    $options['proxy'] = $base_url . '/?q=' . variable_get('iform_proxy_path', 'proxy') . '&url=';
   }
   return $options;
 }
