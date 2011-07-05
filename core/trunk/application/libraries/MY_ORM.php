@@ -138,8 +138,8 @@ class ORM extends ORM_Core {
     {
       $vd = vague_date::vague_date_to_string(array
       (
-        date_create($this->object['date_start']),
-        date_create($this->object['date_end']),
+        $this->object['date_start'],
+        $this->object['date_end'],
         $this->object['date_type']
       ));
       $this->object['date'] = $vd;
@@ -957,13 +957,13 @@ class ORM extends ORM_Core {
         // Date
         if (!empty($value)) {
           $vd=vague_date::string_to_vague_date($value);
-          $attrValueModel->date_start_value = $vd['start'];
-          $attrValueModel->date_end_value = $vd['end'];
-          $attrValueModel->date_type_value = $vd['type'];
+          $attrValueModel->date_start_value = $vd[0];
+          $attrValueModel->date_end_value = $vd[1];
+          $attrValueModel->date_type_value = $vd[2];
         } else {
           $attrValueModel->date_start_value = null;
           $attrValueModel->date_end_value = null;
-          $attrValueModel->date_type_value = 0;
+          $attrValueModel->date_type_value = null;
         }
         break;
       default:

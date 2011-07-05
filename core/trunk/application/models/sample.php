@@ -125,9 +125,9 @@ class Sample_Model extends ORM_Tree
   { 
     if (array_key_exists('date', $this->submission['fields'])) {
       $vague_date=vague_date::string_to_vague_date($this->submission['fields']['date']['value']);
-      $this->submission['fields']['date_start']['value'] = $vague_date['start'];
-      $this->submission['fields']['date_end']['value'] = $vague_date['end'];
-      $this->submission['fields']['date_type']['value'] = $vague_date['type'];      
+      $this->submission['fields']['date_start']['value'] = $vague_date[0];
+      $this->submission['fields']['date_end']['value'] = $vague_date[1];
+      $this->submission['fields']['date_type']['value'] = $vague_date[2];      
     }
     // Allow a sample to be submitted with a spatial ref and system but no Geom. If so we
     // can work out the Geom    
