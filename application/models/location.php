@@ -110,5 +110,32 @@ class Location_Model extends ORM_Tree {
       'joinsTo' => array('websites')        
     );
   } 
+  
+  /** 
+   * Handle the case where a new record is created with a centroid_sref but without the geom being pre-calculated.
+   * E.g. when importing from a shape file, or when JS is disabled on the client. 
+   */
+  protected function preSubmit()
+  { 
+    // Allow a location to be submitted with a spatial ref and system but no centroid_geom. If so we
+    // can work out the Geom
+    if (!empty($this->submission['fields']['centroid_sref']['value']) &&
+        !empty($this->submission['fields']['centroid_sref_system']['value']) &&
+        empty($this->submission['fields']['centroid_geom']['value'])) {
+      
+      try {
+        $this->submission['fields']['centroid_geom']['value'] = spatial_ref::sref_to_internal_wkt(
+            $this->submission['fields']['centroid_sref']['value'],
+            $this->submission['fields']['centroid_sref_system']['value']
+        );
+      } catch (Exception $e) {
+        $this->errors['centroid_sref'] = $e->getMessage();
+      }
+    }
+    // Empty boundary geom is allowed but must be null
+    if (empty($this->submission['fields']['boundary_geom']['value']))
+      $this->submission['fields']['boundary_geom']['value'] = null;
+    return parent::presubmit();
+  }
 
 }
