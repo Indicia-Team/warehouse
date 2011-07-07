@@ -97,6 +97,32 @@ class iform_report_map {
           'group' => 'Report Map Settings'
         ),
         array(
+          'name' => 'click_on_map_mode',
+          'caption' => 'Click to query map',
+          'description' => 'Choose the behaviour you want when clicking on distribution points on the map. The output can display as a popup, '.
+              'or can be loaded into the div specified in the next parameter. If you select to filter Indicia '.
+              'report grids, then this assumes you have built a page containing other report grids e.g. by following '.
+              '<a href="http://code.google.com/p/indicia/wiki/DrupalDashboardReporting">this tutorial</a>.',
+          'type' => 'select',
+          'options' => array(
+            'none' => 'No action',
+            'popup' => 'Display output in a popup',
+            'div' => 'Display output in a div',
+            'report' => 'Filter any Indicia report grids with the same report group setting'
+          ),
+          'default' => 'popup',
+          'group' => 'Report Map Settings'
+        ),
+        array(
+          'name' => 'click_on_map_div',
+          'caption' => 'Click to query map output div',
+          'description' => 'If you choose to display a data grid when clicking on the map distribution points, specify the name of the div '.
+              'to display the output in here. ',
+          'type' => 'text_input',
+          'required' => false,
+          'group' => 'Report Map Settings'
+        ),
+        array(
           'name' => 'geoserver_layer',
           'caption' => 'GeoServer Layer',
           'description' => 'For improved mapping performance, specify a layer on GeoServer which '.
@@ -134,7 +160,7 @@ class iform_report_map {
    * Return the Indicia form code
    * @param array $args Input parameters.
    * @param array $node Drupal node object
-   * @param array $response Response from Indicia services after posting a verification.
+   * @param array $response Response from Indicia services after posting.
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
@@ -146,6 +172,11 @@ class iform_report_map {
     $reportOptions['geoserverLayer'] = $args['geoserver_layer'];
     $reportOptions['geoserverLayerStyle'] = $args['geoserver_layer_style'];
     $reportOptions['cqlTemplate'] = $args['cql_template'];
+    $reportOptions['clickable'] = $args['click_on_map_mode']<>'none';
+    $reportOptions['clickableLayersOutputDiv'] = $args['click_on_map_div'];
+    if ($args['click_on_map_mode']<>'none')
+      $reportOptions['clickableLayersOutputMode'] = $args['click_on_map_mode'];
+    
     // Use the proxy module if enabled, to get round limitations in URL length for 
     // filtered WMS requests.
     if (defined('DRUPAL_BOOTSTRAP_CONFIGURATION') && module_exists('iform_proxy')) {

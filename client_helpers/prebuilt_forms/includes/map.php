@@ -70,6 +70,14 @@ function iform_map_get_map_parameters() {
       'default'=>600
     ),
     array(
+      'name'=>'remember_pos',
+      'caption'=>'Remember Position',
+      'description'=>'Tick this box to get the map to remember it\'s last position when reloading the page.',
+      'type'=>'checkbox',
+      'required'=>false,
+      'group'=>'Initial Map View'
+    ),
+    array(
       'name'=>'preset_layers',
       'caption'=>'Preset Base Layers',
       'description'=>'Select the preset base layers that are available for the map.',
@@ -223,7 +231,8 @@ function iform_map_get_map_options($args, $readAuth) {
     'initial_zoom'=>(int) $args['map_zoom'],
     'width'=>$args['map_width'],
     'height'=>$args['map_height'],
-    'standardControls'=>array('layerSwitcher','panZoom')
+    'standardControls'=>array('layerSwitcher','panZoom'),
+    'rememberPos'=>isset($args['remember_pos']) ? $args['remember_pos'] : false
   );
   // If they have defined a custom base layer, add it
   if ($args['wms_base_title'] && $args['wms_base_url'] && $args['wms_base_layer']) {

@@ -45,6 +45,12 @@
       });
     };
     
+    this.reload = function() {
+      $.each($(this), function(idx, div) {
+        load(div);
+      });
+    } 
+    
     /**
      * Function to make a service call to load the grid data.
      */
@@ -86,7 +92,7 @@
             if (clearExistingRows) {
               tbody.children().remove();
             }
-            var row, rows = eval(response), rowclass='', count=0, hasMore=false, value, rowInProgress=false, rowOutput;            
+            var row, rows = eval(response), rowclass='', hasMore=false, value, rowInProgress=false, rowOutput;            
             $.each(rows, function(rowidx, row) {
               // We asked for one too many rows. If we got it, then we can add a next page button
               if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
