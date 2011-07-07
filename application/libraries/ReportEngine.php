@@ -668,8 +668,14 @@ class ReportEngine {
       if ($value==='')
         // empty integer params should be handled as 0 (null would be ideal, but we can't test for it in the same fashion as a number).
         $query = preg_replace("/#$name#/", $paramDefs[$name]['emptyvalue'], $query);
-      else
-        $query = preg_replace("/#$name#/", $value, $query);
+      else {
+        if ($paramDefs[$name]['datatype']=='idlist')
+          // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
+          // of ids for a report.
+          $query = preg_replace("/#$name#/", "AND ".$paramDefs[$name]['fieldname']." IN ($value)", $query);
+        else 
+          $query = preg_replace("/#$name#/", $value, $query);
+      }
     }
     // allow the URL to provide a sort order override
     if (!$counting) {
