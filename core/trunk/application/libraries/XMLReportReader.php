@@ -120,6 +120,8 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('display'),
                     $reader->getAttribute('datatype'),
                     $reader->getAttribute('allow_buffer'),
+                    $reader->getAttribute('fieldname'),
+                    $reader->getAttribute('alias'),
                     $reader->getAttribute('emptyvalue'),
                     $reader->getAttribute('description'),
                     $reader->getAttribute('query'),
@@ -131,6 +133,7 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('name'),
                     $reader->getAttribute('display'),
                     $reader->getAttribute('style'),
+                    $reader->getAttribute('feature_style'),
                     $reader->getAttribute('class'),
                     $reader->getAttribute('visible'),
                     $reader->getAttribute('img'),
@@ -159,6 +162,7 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('func'),
                     $reader->getAttribute('display'),
                     $reader->getAttribute('style'),
+                    $reader->getAttribute('feature_style'),
                     $reader->getAttribute('class'),
                     $reader->getAttribute('visible'),
                     false
@@ -234,7 +238,7 @@ class XMLReportReader_Core implements ReportReader
     }
     $query = "SELECT ";
     $j=0;
-  for($i = 0; $i < count($this->tables); $i++){
+    for($i = 0; $i < count($this->tables); $i++){
     // In download mode make sure that the occurrences id is in the list
 
       foreach($this->tables[$i]['columns'] as $column){
@@ -442,13 +446,15 @@ class XMLReportReader_Core implements ReportReader
     return $query;
   }
 
-  private function mergeParam($name, $display = '', $type = '', $allow_buffer='',$emptyvalue='', $description = '', $query='', $lookup_values='', $population_call='')
+  private function mergeParam($name, $display = '', $type = '', $allow_buffer='', $fieldname='', $alias='', $emptyvalue='', $description = '', $query='', $lookup_values='', $population_call='')
   {
     if (array_key_exists($name, $this->params))
     {
       if ($display != '') $this->params[$name]['display'] = $display;
       if ($type != '') $this->params[$name]['datatype'] = $type;
       if ($allow_buffer != '') $this->params[$name]['allow_buffer'] = $allow_buffer;
+      if ($fieldname != '') $this->params[$name]['fieldname'] = $fieldname;
+      if ($alias != '') $this->params[$name]['alias'] = $alias;
       if ($emptyvalue != '') $this->params[$name]['emptyvalue'] = $emptyvalue;
       if ($description != '') $this->params[$name]['description'] = $description;
       if ($query != '') $this->params[$name]['query'] = $query;
@@ -460,6 +466,8 @@ class XMLReportReader_Core implements ReportReader
       $this->params[$name] = array(
         'datatype'=>$type,
         'allow_buffer'=>$allow_buffer,
+        'fieldname'=>$fieldname,
+        'alias'=>$alias,
         'emptyvalue'=>$emptyvalue,
         'display'=>$display, 
         'description'=>$description, 
@@ -470,12 +478,13 @@ class XMLReportReader_Core implements ReportReader
     }
   }
 
-  private function mergeColumn($name, $display = '', $style = '', $class='', $visible='', $img='', $orderby='', $mappable='false', $autodef=true)
+  private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='false', $autodef=true)
   {
     if (array_key_exists($name, $this->columns))
     {
       if ($display != '') $this->columns[$name]['display'] = $display;
       if ($style != '') $this->columns[$name]['style'] = $style;
+      if ($feature_style != '') $this->columns[$name]['feature_style'] = $feature_style;
       if ($class != '') $this->columns[$name]['class'] = $class;
       if ($visible == 'false' || $this->columns[$name]['visible'] == 'false')
         $this->columns[$name]['visible'] = 'false';
@@ -491,6 +500,7 @@ class XMLReportReader_Core implements ReportReader
       $this->columns[$name] = array(
           'display' => $display,
           'style' => $style,
+          'feature_style' => $feature_style,
           'class' => $class,
           'visible' => $visible == '' ? 'true' : $visible,
           'img' => $img == '' ? 'false' : $img,
@@ -545,7 +555,7 @@ class XMLReportReader_Core implements ReportReader
     $this->nextTableIndex++;
   }
 
-  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $class='', $visible='', $autodef=false)
+  private function mergeTabColumn($name, $func = '', $display = '', $style = '', $feature_style = '', $class='', $visible='', $autodef=false)
   {
     $found = false;
     for($r = 0; $r < count($this->tables[$this->tableIndex]['columns']); $r++){
@@ -567,7 +577,7 @@ class XMLReportReader_Core implements ReportReader
     // force visible if the column is already declared as visible. This prevents the id field from being forced to hidden if explicitly included.
     if (isset($this->columns['lt'.$this->tableIndex."_".$name]['visible']) && $this->columns['lt'.$this->tableIndex."_".$name]['visible']=='true')
       $visible = 'true';
-    $this->mergeColumn('lt'.$this->tableIndex."_".$name, $display, $style, $class, $visible, 'false', $autodef);
+    $this->mergeColumn('lt'.$this->tableIndex."_".$name, $display, $style, $feature_style, $class, $visible, 'false', $autodef);
   }
 
   private function setMergeTabColumn($name, $tablename, $separator, $where = '', $display = '')
@@ -723,7 +733,6 @@ class XMLReportReader_Core implements ReportReader
       }
     }
     while ($nesting > 0);
-    kohana::log('debug', "haystack $haystack from $open to $offset");
     return $offset -1;
   }
 }

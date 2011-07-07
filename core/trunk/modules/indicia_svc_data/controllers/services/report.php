@@ -55,7 +55,8 @@ class Report_Controller extends Data_Service_Base_Controller {
 
   public function __construct($suppress = false)
   {
-    $this->reportEngine = new ReportEngine();
+    $this->authenticate('read');
+    $this->reportEngine = new ReportEngine(array($this->website_id));
     parent::__construct();
   }
 
@@ -105,7 +106,6 @@ class Report_Controller extends Data_Service_Base_Controller {
   }
 
   public function report_list() {
-    $this->authenticate('read');
     echo json_encode($this->internal_report_list('/'));
   }
 
