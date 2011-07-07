@@ -489,7 +489,7 @@ class vague_date {
    */
   protected static function vague_date_to_days($start, $end)
   {
-    self::check(self::is_first_date_first($start, $end), 'Day ranges should be presented in vague dates in the correct sequence.');
+    self::check(self::is_first_date_first_or_equal($start, $end), 'Day ranges should be presented in vague dates in the correct sequence. Start was %s, end was %s.', $start, $end);
     return 	$start->format(Kohana::lang('dates.format')).
       Kohana::lang('dates.range_separator').
       $end->format(Kohana::lang('dates.format'));
@@ -501,7 +501,7 @@ class vague_date {
   protected static function vague_date_to_month_in_year($start, $end)
   {
     self::check(self::is_month_start($start) && self::is_month_end($end) && self::is_same_month($start, $end),
-      'Month dates should be represented by the first day and last day of the same month.');
+      'Month dates should be represented by the first day and last day of the same month. Start was %s, end was %s.', $start, $end);
     return $start->format(Kohana::lang('dates.format_m_y'));
   }
 
@@ -511,7 +511,7 @@ class vague_date {
   protected static function vague_date_to_months_in_year($start, $end)
   {
     self::check(self::is_month_start($start) && self::is_month_end($end) && self::is_first_date_first($start, $end),
-      'Month ranges should be represented by the first day of the first month and last day of the last month.');
+      'Month ranges should be represented by the first day of the first month and last day of the last month. Start was %s, end was %s.', $start, $end);
     return 	$start->format(Kohana::lang('dates.format_m_y')).
       Kohana::lang('dates.range_separator').
       $end->format(Kohana::lang('dates.format_m_y'));
@@ -531,7 +531,7 @@ class vague_date {
   protected static function vague_date_to_year($start, $end)
   {
     self::check(self::is_year_start($start) && self::is_year_end($end) && self::is_same_year($start, $end),
-      'Years should be represented by the first day and last day of the same year.');
+      'Years should be represented by the first day and last day of the same year. Start was %s, end was %s.', $start, $end);
     return $start->format('Y');
   }
 
@@ -541,7 +541,7 @@ class vague_date {
   protected static function vague_date_to_years($start, $end)
   {
     self::check(self::is_year_start($start) && self::is_year_end($end) && self::is_first_date_first($start, $end),
-      'Year ranges should be represented by the first day of the first year to the last day of the last year.');
+      'Year ranges should be represented by the first day of the first year to the last day of the last year. Start was %s, end was %s.', $start, $end);
     return $start->format('Y').Kohana::lang('dates.range_separator').$end->format('Y');
   }
 
@@ -561,7 +561,7 @@ class vague_date {
   protected static function vague_date_to_year_to($start, $end)
   {
     self::check($start===null && self::is_year_end($end),
-      'To year date should be represented by just the last day of the last year. ');
+      "To year date should be represented by just the last day of the last year. Start was %s and end was %s.", $start, $end);
     return sprintf(Kohana::lang('dates.to_date'), $end->format('Y'));
   }
 
@@ -668,6 +668,15 @@ class vague_date {
   {
     return (strcmp($date1->format('Ymd'),$date2->format('Ymd'))<0);
   }
+  
+  /**
+   * Returns true if the first supplied date is before second or they are the same. Early versions of PHP5.2 do not have valid 
+   * binary comparison functions
+   */
+  protected static function is_first_date_first_or_equal($date1, $date2)
+  {
+    return $date1==$date2 || (strcmp($date1->format('Ymd'),$date2->format('Ymd'))<0);
+  }
 
   /**
    * Returns true if the supplied dates are in the same month
@@ -762,10 +771,30 @@ class vague_date {
 
   }
 
+  /**
+   * Tests that a check passed, and if not throws an exception containing the message. Replacements
+   * in the message can be supplied as additional string parameters, with %s used in the message. The
+   * replacements can also be null or datetime objects which are then converted to strings.
+   */
   protected static function check($pass, $message)
   {
-    if (!$pass)
-      throw new Exception($message);
+    if (!$pass) {
+      $args = func_get_args();
+      // any args after the message are string format inputs for the message
+      unset($args[0]);
+      unset($args[1]);
+      $inputs = array();
+      foreach ($args as $arg) {
+        kohana::log('debug', 'arg '.gettype($arg));
+        if (gettype($arg)=='object')
+          $inputs[] = $arg->format(Kohana::lang('dates.format'));
+        elseif (gettype($arg)=='NULL')
+          $inputs[] = 'null';
+        else 
+          $inputs[] = $arg;
+      }
+      throw new Exception(vsprintf($message, $inputs));
+    }
   }
 
 }
