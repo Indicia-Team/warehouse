@@ -1,4 +1,5 @@
 
+
 /* Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -361,6 +362,215 @@ mapInitialisationHooks = [];
       }
       return r;
     }
+    
+    /*
+     * Selects the features in the contents of a bounding box
+     */
+    function selectBox(position, layers, div) {
+      if (position instanceof OpenLayers.Bounds) {
+        var minXY = div.map.getLonLatFromPixel(
+            new OpenLayers.Pixel(position.left, position.bottom)
+        );
+        var maxXY = div.map.getLonLatFromPixel(
+            new OpenLayers.Pixel(position.right, position.top)
+        );
+        var bounds = new OpenLayers.Bounds(
+            minXY.lon, minXY.lat, maxXY.lon, maxXY.lat
+        );
+        var layer;
+        for(var l=0; l<layers.length; ++l) {
+          layer = layers[l];
+          $.each(layer.selectedFeatures, function(idx, feature) {
+            layer.drawFeature(feature, 'default');
+          });
+          layer.selectedFeatures = [];
+          for(var i=0, len = layer.features.length; i<len; ++i) {
+            var feature = layer.features[i];
+            // check if the feature is displayed
+            if (!feature.getVisibility()) {
+              continue;
+            }
+            if (bounds.toGeometry().intersects(feature.geometry)) {
+              if (OpenLayers.Util.indexOf(layer.selectedFeatures, feature) == -1) {
+                layer.selectedFeatures.push(feature);
+                layer.drawFeature(feature, 'select');
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    /** 
+     * Create tools required to click on features to drill into the data etc.
+     */
+    function setupClickableLayers(div, align, toolbarControls) {
+      if (div.settings.clickableLayers.length!==0) {
+        var clickableWMSLayerNames = [], clickableVectorLayers = [], wmsUrl='';
+        // find out which of the clickable layers are WMS or Vector, since we handle them differently.
+        $.each(div.settings.clickableLayers, function(i, item) {
+          if (item.CLASS_NAME==='OpenLayers.Layer.WMS') {
+            if (wmsUrl==='') {
+              // store just the first wms layer's URL since all clickable layers must be from the same url.
+              wmsUrl = item.url;
+            }
+            clickableWMSLayerNames.push(item.params.LAYERS);
+          } else if (item.CLASS_NAME==='OpenLayers.Layer.Vector')
+            clickableVectorLayers.push(item);           
+        });
+        
+        clickableWMSLayerNames = clickableWMSLayerNames.join(',');
+        // Create a control that can handle both WMS and vector layer clicks.
+        var infoCtrl = new OpenLayers.Control({
+          displayClass: align + 'olControlSelectFeature',
+          lastclick: {},
+          activate: function() {
+            var handlerOptions = {
+              'single': true,
+              'double': false,
+              'stopSingle': false,
+              'stopDouble': true
+            };
+
+            // allow click or bounding box actions
+            this.handlers = { click: new OpenLayers.Handler.Click(this, {
+                'click': this.onGetInfo
+              }, handlerOptions)
+            };
+            this.handlers.box = new OpenLayers.Handler.Box(
+                this, {done: this.onGetInfo},
+                {boxDivClassName: "olHandlerBoxSelectFeature"}
+            );
+            this.handlers.click.activate();
+            this.handlers.box.activate();
+            // create a protocol for the WMS getFeatureInfo requests if we need to
+            if (wmsUrl!=='') {
+              this.protocol = new OpenLayers.Protocol.HTTP({
+                url: wmsUrl,
+                format: new OpenLayers.Format.WMSGetFeatureInfo()
+              });
+            }
+            OpenLayers.Control.prototype.activate.call(this);
+          },
+          // handler for the click or bounding box action
+          onGetInfo: function(position) {
+            var bounds, xy;
+            // we could have a point or a bounds
+            if (position instanceof OpenLayers.Bounds) {
+              bounds = position;
+              // use box centre as click point
+              this.lastclick.x = (position.left + position.right) / 2;
+              this.lastclick.y = (position.bottom + position.top) / 2;
+            } else {
+              // create a bounds from the click point
+              bounds = new OpenLayers.Bounds(position.x, position.y, position.x, position.y);
+              this.lastclick = position;
+            }
+            if (clickableWMSLayerNames!=='') {
+              // Do a WMS request
+              var params={
+                  REQUEST: "GetFeatureInfo",
+                  EXCEPTIONS: "application/vnd.ogc.se_xml",
+                  VERSION: "1.1.0",
+                  STYLES: '',
+                  BBOX: div.map.getExtent().toBBOX(),
+                  X: this.lastclick.x,
+                  Y: this.lastclick.y,
+                  INFO_FORMAT: 'application/vnd.ogc.gml',
+                  LAYERS: clickableWMSLayerNames,
+                  QUERY_LAYERS: clickableWMSLayerNames,
+                  WIDTH: div.map.size.w,
+                  HEIGHT: div.map.size.h,
+                  SRS: div.map.projection,
+                  BUFFER: div.settings.clickPixelTolerance
+              };
+              if (div.settings.clickableLayers[0].params.CQL_FILTER!==undefined) {
+                if (div.settings.clickableLayers.length>1) {
+                  alert('Multiple layers are clickable with filters defined. This is not supported at present');
+                  exit;
+                }
+                params.CQL_FILTER = div.settings.clickableLayers[0].params.CQL_FILTER;
+              }
+              // hack: Because WMS layers don't support the proxyHost setting in OL, but we need to, WMS layers will have
+              // the proxy URL built into their URL. But OL will use proxyHost for a protocol request. Therefore temporarily 
+              // disable proxyHost during this request.
+              var oldPh = OpenLayers.ProxyHost;
+              OpenLayers.ProxyHost = "";
+              try {
+                this.protocol.read({
+                  params: params,
+                  callback: this.onResponse,
+                  scope: this
+                });
+              } finally {
+                OpenLayers.ProxyHost = oldPh;
+              }
+            }
+            // now handle any vector clickable layers
+            if (clickableVectorLayers.length>0) {
+              // select all the features that were clicked or boxed.
+              selectBox(bounds, clickableVectorLayers, div);
+              // build an array of all selected features in one
+              features = [];
+              $.each(clickableVectorLayers, function(idx, layer) {
+                features = features.concat(layer.selectedFeatures);
+              });
+              // now filter the report, or display output in a popup or div depending on settings.
+              if (div.settings.clickableLayersOutputMode==='report' && div.settings.reportGroup!==null) {
+                // grab the feature ids
+                ids = [];
+                $.each(features, function(idx, feature) {
+                  ids.push(feature.attributes[div.settings.featureIdField]);
+                });
+                $('.'+div.settings.reportGroup+'-idlist-param').val(ids.join(','));
+                // find the associated reports, charts etc and reload them to show the selected data
+                $.each(indiciaData.reports[div.settings.reportGroup], function(name, report) {
+                  report[0].settings.recordCount = features.length;
+                  report[0].settings.offset=0;
+                  report.reload();
+                });
+              } else if (div.settings.clickableLayersOutputMode==='div') {
+                $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFn(features, div));
+              } else {
+                for (var i=0; i<div.map.popups.length; i++) {
+                  div.map.removePopup(div.map.popups[i]);
+                }
+                div.map.addPopup(new OpenLayers.Popup.FramedCloud(
+                    "popup",
+                    div.map.getLonLatFromPixel(this.lastclick),
+                    null,
+                    div.settings.clickableLayersOutputFn(features, div),
+                    null,
+                    true
+                ));
+              }
+            }
+          },
+          // handler for response from a WMS call.
+          // todo: support div or report filters.
+          onResponse: function(response) {
+            if (div.settings.clickableLayersOutputDiv==='') {
+              for (var i=0; i<div.map.popups.length; i++) {
+                div.map.removePopup(div.map.popups[i]);
+              }
+              div.map.addPopup(new OpenLayers.Popup.FramedCloud(
+                  "popup",
+                  div.map.getLonLatFromPixel(this.lastclick),
+                  null,
+                  div.settings.clickableLayersOutputFn(response.features, div),
+                  null,
+                  true
+              ));
+            } else {
+              $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFn(response.features, div));
+            }
+          }
+          
+        });
+
+        toolbarControls.push(infoCtrl);
+      }
+    }
 
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
@@ -426,7 +636,16 @@ mapInitialisationHooks = [];
 
       // Constructs the map
       div.map = new OpenLayers.Map($(this)[0], olOptions);
-
+      
+      // setup the map to save the last position
+      if (typeof $.cookie !== "undefined") {
+        div.map.events.register('moveend', null, function() {
+          $.cookie('mapzoom', div.map.zoom, {expires: 7});
+          $.cookie('maplon', div.map.center.lon, {expires: 7});
+          $.cookie('maplat', div.map.center.lat, {expires: 7});
+        });
+      }
+      
       // and prepare a georeferencer
       div.georefOpts = $.extend({}, $.fn.indiciaMapPanel.georeferenceDriverSettings, $.fn.indiciaMapPanel.georeferenceLookupSettings);
       if (typeof Georeferencer !== "undefined") {
@@ -470,12 +689,29 @@ mapInitialisationHooks = [];
 
       div.map.addLayers(this.settings.layers);
 
-      // Centre the map
-      var center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
-      if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
-        center.transform(div.map.displayProjection, div.map.projection);
+      // Centre the map, using cookie if remembering position, otherwise default setting.
+      var zoom=null;
+      var center = {};
+      if (typeof $.cookie !== "undefined" && div.settings.rememberPos!==false) {
+        zoom=$.cookie('mapzoom');
+        center.lon = $.cookie('maplon');
+        center.lat = $.cookie('maplat');
+        if (center.lon!==null && center.lat!==null) {
+          center = new OpenLayers.LonLat(center.lon, center.lat);
+        } else {
+          center = {};
+        }
       }
-      div.map.setCenter(center, this.settings.initial_zoom);
+      if (zoom===null) {
+        zoom = this.settings.initial_zoom;
+      }
+      if (typeof center.lat === "undefined") {
+        center = new OpenLayers.LonLat(this.settings.initial_long, this.settings.initial_lat);
+        if (div.map.displayProjection.getCode()!=div.map.projection.getCode()) {
+          center.transform(div.map.displayProjection, div.map.projection);
+        }
+      }
+      div.map.setCenter(center, zoom);
 
       // This hack fixes an IE8 bug where it won't display Google layers when switching using the Layer Switcher.
       div.map.events.register('changebaselayer', null, function(e) {
@@ -519,112 +755,11 @@ mapInitialisationHooks = [];
       // Add any map controls
       $.each(this.settings.controls, function(i, item) {
         div.map.addControl(item);
-      });
-      var toolbarControls = [];
+      });      
       // specify a class to align edit buttons left if they are on a toolbar somewhere other than the map.
       var align = (div.settings.toolbarDiv=='map') ? '' : 'left ';
-      if (this.settings.clickableLayers.length!==0) {
-        var clickableWMSLayerNames = [];
-        var clickableVectorLayers = [];
-        $.each(div.settings.clickableLayers, function(i, item) {
-          if (item.CLASS_NAME==='OpenLayers.Layer.WMS')
-            clickableWMSLayerNames.push(item.params.LAYERS);
-          else if (item.CLASS_NAME==='OpenLayers.Layer.Vector')
-            clickableVectorLayers.push(item);           
-        });
-        if (clickableWMSLayerNames.length>0) {
-          clickableWMSLayerNames = clickableWMSLayerNames.join(',');
-          var infoWMSCtrl = new OpenLayers.Control({
-            displayClass: align + 'olControlSelectFeature',
-            activate: function() {
-              var handlerOptions = {
-                'single': true,
-                'double': false,
-                'stopSingle': false,
-                'stopDouble': false
-              };
-              this.handler = new OpenLayers.Handler.Click(this, {
-                'click': this.onClick
-              }, handlerOptions);
-              this.protocol = new OpenLayers.Protocol.HTTP({
-                url: div.settings.clickableLayers[0].url,
-                format: new OpenLayers.Format.WMSGetFeatureInfo()
-              });
-              OpenLayers.Control.prototype.activate.call(this);
-            },
-
-            onClick: function(e) {
-              div.settings.lastclick = e.xy;
-              var params={
-                  REQUEST: "GetFeatureInfo",
-                  EXCEPTIONS: "application/vnd.ogc.se_xml",
-                  VERSION: "1.1.0",
-                  STYLES: '',
-                  BBOX: div.map.getExtent().toBBOX(),
-                  X: e.xy.x,
-                  Y: e.xy.y,
-                  INFO_FORMAT: 'application/vnd.ogc.gml',
-                  LAYERS: clickableWMSLayerNames,
-                  QUERY_LAYERS: clickableWMSLayerNames,
-                  WIDTH: div.map.size.w,
-                  HEIGHT: div.map.size.h,
-                  SRS: div.map.projection,
-                  BUFFER: div.settings.clickPixelTolerance
-              };
-              if (div.settings.clickableLayers[0].params.CQL_FILTER!==undefined) {
-                if (div.settings.clickableLayers.length>1) {
-                  alert('Multiple layers are clickable with filters defined. This is not supported at present');
-                  exit;
-                }
-                params.CQL_FILTER = div.settings.clickableLayers[0].params.CQL_FILTER;
-              }
-              // hack: Because WMS layers don't support the proxyHost setting in OL, but we need to, WMS layers will have
-              // the proxy URL built into their URL. But OL will use proxyHost for a protocol request. Therefore temporarily 
-              // disable proxyHost during this request.
-              var oldPh = OpenLayers.ProxyHost;
-              OpenLayers.ProxyHost = "";
-              try {
-                this.protocol.read({
-                  params: params,
-                  callback: this.onResponse,
-                  scope: this
-                });
-              } finally {
-                OpenLayers.ProxyHost = oldPh;
-              }
-            },
-
-            onResponse: function(response) {
-              if (div.settings.clickableLayersOutputDiv==='') {
-                for (var i=0; i<div.map.popups.length; i++) {
-                  div.map.removePopup(div.map.popups[i]);
-                }
-                div.map.addPopup(new OpenLayers.Popup.FramedCloud(
-                    "popup",
-                    div.map.getLonLatFromPixel(div.settings.lastclick),
-                    null,
-                    div.settings.clickableLayersOutputFnWMS(response.features, div),
-                    null,
-                    true
-                ));
-              } else {
-                $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFnWMS(response.features, div));
-              }
-            }
-          });
-
-          toolbarControls.push(infoWMSCtrl);
-        }
-        if (clickableVectorLayers.length>0) {
-          var infoVectorControl = new OpenLayers.Control.SelectFeature(clickableVectorLayers, {
-              clickout: true, toggle: false, 
-              hover: false, displayClass: align + 'olControlSelectFeature',
-              multiple: false,
-              onSelect: div.settings.clickableLayersOutputFnVector
-          });
-          toolbarControls.push(infoVectorControl);
-        }
-      }
+      var toolbarControls = [];
+      setupClickableLayers(div, align, toolbarControls);
 
       if (div.settings.locationLayerName) {
         var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', {
@@ -659,7 +794,6 @@ mapInitialisationHooks = [];
           },
 
           onClick: function(e) {
-            div.settings.lastclick = e.xy;
             var params={
                 REQUEST: "GetFeatureInfo",
                 EXCEPTIONS: "application/vnd.ogc.se_xml",
@@ -866,11 +1000,13 @@ $.fn.indiciaMapPanel.defaults = {
     layers: [],
     clickableLayers: [],
     clickableLayersOutputMode: 'popup', // options are popup or div
-    clickableLayersOutputFnWMS: format_getinfo_gml,
-    clickableLayersOutputFnVector: format_getinfo_feature,
+    clickableLayersOutputFn: format_selected_features,
     clickableLayersOutputDiv: '',
+    clickableLayersOutputMode: 'popup', // popup, div or report
     clickableLayersOutputColumns: [],
+    featureIdField: '',
     clickPixelTolerance: 5,
+    reportGroup: null, // name of the collection of report outputs that this map is linked to when doing dashboard reporting
     locationLayerName: '', // define a feature type that can be used to auto-populate the location control when clicking on a location
     controls: [],
     standardControls: ['layerSwitcher','panZoom'],
@@ -931,7 +1067,8 @@ $.fn.indiciaMapPanel.defaults = {
     strokeColorSearch: '#ee0000',
 
     // Are we using the OpenLayers defaults, or are they all provided?
-    useOlDefaults: true
+    useOlDefaults: true,
+    rememberPos: false // set to true to enable restoring the map position when the page is reloaded. Requires jquery.cookie plugin.
 
 };
 
@@ -979,27 +1116,30 @@ $.fn.indiciaMapPanel.convertFilterToText = function(filter) {
 };
 
 /**
- * Function that formats the response from a WMSGetFeatureInfo request.
- * Can be replaced through the setting clickableLayersOutputFnWMS.
+ * Function that formats the response from a SelectFeature action.
+ * Can be replaced through the setting clickableLayersOutputFn.
  */
-function format_getinfo_gml(features, div) {
+function format_selected_features(features, div) {
   if (features.length===0) {
     return div.settings.msgGetInfoNothingFound;
   } else {
     var html='<table><thead><tr>';
     // use normal for (in) to get object properties
     for(var attr in features[0].attributes) {
-      if (div.settings.clickableLayersOutputColumns.length===0) {
-        html += '<th>' + attr + '</th>';
-      } else if (div.settings.clickableLayersOutputColumns[attr]!=undefined) {
-        html += '<th>' + div.settings.clickableLayersOutputColumns[attr] + '</th>';
+      // skip vague date component columns
+      if (attr.substr(0, 5)!=='date_') {
+        if (div.settings.clickableLayersOutputColumns.length===0) {
+          html += '<th>' + attr + '</th>';
+        } else if (div.settings.clickableLayersOutputColumns[attr]!=undefined) {
+          html += '<th>' + div.settings.clickableLayersOutputColumns[attr] + '</th>';
+        }
       }
     };
     html += '</tr></thead><tbody>';
     $.each(features, function(i, item) {
       html += '<tr>';
       for(var attr in item.attributes) {
-        if (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!=undefined) {
+        if (attr.substr(0, 5)!=='date_' && (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!=undefined)) {
           html += '<td>' + item.attributes[attr] + '</td>';
         }
       };
@@ -1008,30 +1148,5 @@ function format_getinfo_gml(features, div) {
     html += '</tbody></table>';
     return html;
   }
-}
-
-/**
- * Function that formats the response from a SelectFeature action.
- * Can be replaced through the setting clickableLayersOutputFnVector.
- */
-function format_getinfo_feature(feature) {
-  var content='';
-  $.each(feature.data, function(name, value) {
-    if (name.substr(0, 5)!=='date_') {
-      if (feature.layer.map.div.settings.clickableLayersOutputColumns.length===0) {
-        content += '<tr><td style=\"font-weight:bold;\">' + name + '</td><td>' + value + '</td></tr>';
-      } else if (feature.layer.map.div.settings.clickableLayersOutputColumns[name]!=undefined) {
-        content += '<tr><td style=\"font-weight:bold;\">' + name + '</td><td>' + value + '</td></tr>';
-      }
-    }
-  });
-  if (typeof indicia_popup!=='undefined') {
-    feature.layer.map.removePopup(indicia_popup);
-  }
-  indicia_popup = new OpenLayers.Popup.FramedCloud('popup', 
-                           feature.geometry.getBounds().getCenterLonLat(),
-                           null,
-                           '<table style=\"font-size:.8em\">' + content + '</table>',
-                           null, true);
-  feature.layer.map.addPopup(indicia_popup);
+  
 };

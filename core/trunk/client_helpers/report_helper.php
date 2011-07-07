@@ -381,9 +381,14 @@ class report_helper extends helper_base {
       $r = "<div id=\"".$options['id']."\">$r</div>\n";
       // Now AJAXify the grid
       self::add_resource('reportgrid');
-      $uniqueName = 'grid_' . preg_replace( "/[^a-z]+/", "_", $options['id']);
+      $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
+      $group = $options['reportGroup'];
       global $indicia_templates;
-      self::$javascript .= $uniqueName . " = $('#".$options['id']."').reportgrid({
+      
+      self::$javascript .= "
+if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
+if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
+indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   id: '".$options['id']."',
   mode: '".$options['mode']."',
   dataSource: '".str_replace('\\','/',$options['dataSource'])."',
@@ -899,10 +904,22 @@ class report_helper extends helper_base {
   * <li>proxy<br/>
   * URL of a proxy on the local server to direct GeoServer WMS requests to. This proxy must be able to
   * cache filters in the same way as the iform_proxy Drupal module.</li>
+  * <li>clickable<br/>
+  * Set to true to enable clicking on the data points to see the underlying data. Default true.</li>
+  * <li>clickableLayersOutputMode<br/>
+  * Set popup, div or report to display popups, output data to a div, or filter associated reports when clicking on data points
+  * with the query tool selected.</li>
+  * <li>clickableLayersOutputDiv<br/>
+  * Set to the id of a div to display the clicked data in, or leave blank to display a popup.</li>
   * </ul>
    */
   public static function report_map($options) {
     $options = self::get_report_grid_options($options);
+    $options = array_merge(array(
+      'clickable' => true,
+      'clickableLayersOutputMode' => 'popup',
+      'clickableLayersOutputDiv' => '',
+    ), $options);
     if (empty($options['geoserverLayer'])) {
       // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
       // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
@@ -944,22 +961,39 @@ class report_helper extends helper_base {
     if (!isset($response['parameterRequest']) || count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
       if (empty($options['geoserverLayer'])) {  
         // we are doing vector reporting via indicia services
-  
+        // first we need to build a style object which respects columns in the report output that define style settings for each vector.
+        $settings=array();
+        foreach($response['columns'] as $col=>$def) {
+          if (!empty($def['feature_style'])) {
+            // found a column that outputs data to input into a feature style parameter. ${} syntax is explained at http://docs.openlayers.org/library/feature_styling.html.
+            $settings[$def['feature_style']] = "'\$\{$col\}'";
+          }
+        }
+        // default features are color red by default
+        $defsettings = array_merge(array(
+          'fillColor'=> "'#ff0000'",
+          'strokeColor'=> "'#ff0000'",
+        ), $settings);
+        // selected features are color blue by default
+        $selsettings = array_merge(array(
+          'fillColor'=> "'#0000ff'",
+          'strokeColor'=> "'#0000ff'",
+        ), $settings);
+        // convert these styles into a JSON definition ready to feed into JS.
+        $defsettings = '{'.implode(',', array_map(create_function('$key, $value', 'return $key.":".$value;'), array_keys($defsettings), array_values($defsettings))).'}';
+        $selsettings = '{'.implode(',', array_map(create_function('$key, $value', 'return $key.":".$value;'), array_keys($selsettings), array_values($selsettings))).'}';
         report_helper::$javascript.= "
        
 function addDistPoint(features, record, wktCol) {
   var geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
   delete record[wktCol];
   features.push(new OpenLayers.Feature.Vector(geom, record));
-}";
-        // @todo: Make this styleMap configurable.
-        report_helper::$javascript.= "
-var styleMap = new OpenLayers.StyleMap({'default' : OpenLayers.Util.applyDefaults(
-  {fillOpacity: 0.3, fillColor: '#ff0000', strokeColor: '#ff0000'},
-  OpenLayers.Feature.Vector.style['default']),
-  'select' : OpenLayers.Util.applyDefaults(
-  {fillOpacity: 0.5, fillColor: '#0000ff', strokeColor: '#0000ff'},
-  OpenLayers.Feature.Vector.style['select'])});
+}
+
+var defaultStyle = OpenLayers.Util.applyDefaults($defsettings, OpenLayers.Feature.Vector.style['default']);
+var selectStyle = OpenLayers.Util.applyDefaults($selsettings, OpenLayers.Feature.Vector.style['select']);
+  
+var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
 var reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
 features = [];\n";
         foreach ($records as $record)
@@ -992,13 +1026,15 @@ reportlayer.addFeatures(features);\n";
       }
       report_helper::$javascript.= "
 mapSettingsHooks.push(function(opts) {
-  opts.layers.push(reportlayer);
-  opts.clickableLayers.push(reportlayer);
-});\n";
-    } 
-  
-  //if (layer.getDataExtent()!==null)
-    //div.map.zoomToExtent(layer.getDataExtent());
+  opts.reportGroup = '".$options['reportGroup']."';
+  opts.layers.push(reportlayer);\n";
+      if ($options['clickable'])
+        report_helper::$javascript .= "  opts.clickableLayers.push(reportlayer);\n";
+      report_helper::$javascript .= "  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
+      if ($options['clickableLayersOutputDiv'])
+        report_helper::$javascript .= "  opts.clickableLayersOutputDiv='".$options['clickableLayersOutputDiv']."';\n";
+      report_helper::$javascript .= "});\n";
+    }
   
     return $r;
   }
@@ -1201,6 +1237,17 @@ mapSettingsHooks.push(function(opts) {
             '</fieldset></form>';
       } else 
         $suffix = '';
+      // look for idlist parameters with an alias. If we find one, we need to pass this information to any map panel, because the 
+      // alias provides the name of the key field in the features loaded onto the map. E.g. if you click on the feature, the alias
+      // allows the map to find the primary key value and therefore filter the report to show the matching feature.
+      foreach($response['parameterRequest'] as $key=>$param) {
+        if (!empty($param['alias']) && $param['datatype']=='idlist')
+          $alias = $param['alias'];
+          data_entry_helper::$javascript .= "
+mapSettingsHooks.push(function(opts) {
+  opts.featureIdField='$alias';
+});\n";
+      }
       if ($options['paramsInMapToolbar']) {
         $toolbarControls = str_replace(array('<br/>', "\n"), '', $r);
         data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarPrefix+='$toolbarControls';\n";

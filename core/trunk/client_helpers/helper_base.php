@@ -390,7 +390,7 @@ class helper_base extends helper_config {
         'graticule' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."indiciaGraticule.js")),
         'clearLayer' => array('deps' =>array('openlayers'), 'javascript' => array(self::$js_path."clearLayer.js")),
         'addrowtogrid' => array('javascript' => array(self::$js_path."addRowToGrid.js")),
-        'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
+        'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js", self::$js_path."jquery.cookie.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
         'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
@@ -615,8 +615,8 @@ $('.ui-state-default').live('mouseout', function() {
       'helpText' => true
     ), $options);
     $r = '';
-    $tools = array();
     foreach($options['form'] as $key=>$info) {
+      $tools = array(); 
       // Skip parameters if we have been asked to ignore them
       if (!isset($options['ignoreParams']) || !in_array($key, $options['ignoreParams'])) 
         $r .= self::get_params_form_control($key, $info, $options, $tools);
@@ -691,6 +691,7 @@ $('.ui-state-default').live('mouseout', function() {
   
   private static function get_params_form_control($key, $info, $options, &$tools) {
     $r = '';
+    
     $fieldPrefix=(isset($options['fieldNamePrefix']) ? $options['fieldNamePrefix'].'-' : '');
     $ctrlOptions = array(
       'label' => $info['display'],
@@ -702,8 +703,11 @@ $('.ui-state-default').live('mouseout', function() {
       $ctrlOptions['default'] = $options['defaults'][$key];
     elseif (isset($info['default']))
       $ctrlOptions['default'] = $info['default'];
-    if (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
-      $r .= "<input type=\"hidden\" name=\"$key\" value=\"".$options['presetParams'][$key]."\" />\n";
+    if ($info['datatype']=='idlist') {
+      // idlists are not for human input so use a hidden. 
+      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".$options['presetParams'][$key]."\" class=\"".$fieldPrefix."idlist-param\" />\n";
+    } elseif (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
+      $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".$options['presetParams'][$key]."\" />\n";
     } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
       // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
       $popOpts = explode(':', $info['population_call']);
@@ -1036,7 +1040,10 @@ $('.ui-state-default').live('mouseout', function() {
     }
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
       $script = "<script type='text/javascript'>/* <![CDATA[ */
-indiciaData = {windowLoaded:false};
+if (typeof indiciaData==='undefined') {
+  indiciaData = {};
+}
+indiciaData.windowLoaded=false;
 jQuery(document).ready(function() {
 $javascript
 $late_javascript
