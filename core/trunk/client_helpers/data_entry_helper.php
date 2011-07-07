@@ -3088,16 +3088,24 @@ if (errors.length>0) {
       if ($submission == null)
         $submission = submission_builder::wrap($_POST, $entity);
       if ($remembered_fields !== null) {
-        // if there are any fields to remember, put them in a cookie with a 30 day expiry
-        $arr=array();
-        foreach ($remembered_fields as $field) {
-          $arr[$field]=$_POST[$field];
+        // the form is configured to remember fields
+        if ( (!isset($_POST['cookie_optin'])) || ($_POST['cookie_optin'] === '1') ) {
+          // if given a choice, the user opted for fields to be remembered
+          $arr=array();
+          foreach ($remembered_fields as $field) {
+            $arr[$field]=$_POST[$field];
+          }
+            // put them in a cookie with a 30 day expiry
+          setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
+          // cookies are only set when the page is loaded. So if we are reloading the same form after submission,
+          // we need to fudge the cookie
+          $_COOKIE['indicia_remembered'] = serialize($arr);
+        } else {
+          // the user opted out of having a cookie - delete one if present.
+          setcookie('indicia_remembered', '');
         }
-        setcookie('indicia_remembered', serialize($arr), time()+60*60*24*30);
-        // cookies are only set when the page is loaded. So if we are reloading the same form after submission,
-        // we need to fudge the cookie
-        $_COOKIE['indicia_remembered'] = serialize($arr);
       }
+      
       $images = self::extract_image_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
@@ -4014,6 +4022,31 @@ if (errors.length>0) {
    */
   public static function set_remembered_fields($arr) {
     self::$remembered_fields = $arr;
+  }
+
+  /**
+  * While cookies may be offered for the convenience of clients, an option to prevent
+  * the saving of personal data should also be present.
+  * 
+  * Helper function to output an HTML checkbox control. Defaults to false unless
+  * values are loaded from cookie.
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>template</b><br/>
+  * Optional. Name of the template entry used to build the HTML for the control. Defaults to checkbox.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the cookie optin control.
+  */
+  public static function remembered_fields_optin($options) {
+    $options['fieldname'] = 'cookie_optin';
+    $options = self::check_options($options);
+    $options['checked'] = array_key_exists('indicia_remembered', $_COOKIE) ? ' checked="checked"' : '';
+    $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
+    return self::apply_template($options['template'], $options);
   }
 
 }
