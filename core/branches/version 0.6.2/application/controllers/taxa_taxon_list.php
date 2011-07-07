@@ -39,6 +39,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     $this->base_filter['parent_id']=null;
     $this->base_filter['preferred']='t';
     $this->columns = array(
+      'taxonomic_sort_order'=>'Sort Order',
       'taxon'=>'',
       'authority'=>'',
       'taxon_group'=>'Taxon Group',
