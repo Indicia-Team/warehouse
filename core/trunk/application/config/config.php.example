@@ -129,5 +129,6 @@ $config['modules'] = array
          MODPATH.'indicia_svc_spatial',   // Spatial services
          MODPATH.'indicia_setup',         // Setup procedures
          MODPATH.'sref_osgb',             // OSGB grid notation
+         MODPATH.'sref_osie',             // Irish grid notation (TM75)   
          MODPATH.'demo',                  // Demo and test pages
 );
