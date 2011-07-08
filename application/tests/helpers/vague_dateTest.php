@@ -47,8 +47,8 @@ class Helper_Vague_Date_Test extends PHPUnit_Framework_TestCase {
     $this->assertEquals('2001-03-28', $vd[1]);    
     $this->assertEquals('DD', $vd[2]);
     $vd = vague_date::string_to_vague_date('26/03/2008 - 26/03/2008');
-    $this->assertEquals('2001-03-26', $vd[0]);
-    $this->assertEquals('2001-03-26', $vd[1]);    
+    $this->assertEquals('2008-03-26', $vd[0]);
+    $this->assertEquals('2008-03-26', $vd[1]);    
     $this->assertEquals('DD', $vd[2]);
     $vd = vague_date::string_to_vague_date('28/03/1999 - 14/11/2007');
     $this->assertEquals('1999-03-28', $vd[0]);
