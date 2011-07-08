@@ -204,13 +204,10 @@ class Service_Base_Controller extends Controller {
    * Defaults to xml. Other options are json and csv, or a view loaded from the views folder.
    */
   protected function get_output_mode() {
-    if (array_key_exists('mode', $_GET))
-      $result = $_GET['mode'];
-    elseif (array_key_exists('mode', $_POST))
-      $result = $_POST['mode'];
+    if (isset($_REQUEST['mode']))
+      return $_REQUEST['mode'];
     else
-      $result='xml';
-    return $result;
+      return 'xml';
   }
 
   /**
