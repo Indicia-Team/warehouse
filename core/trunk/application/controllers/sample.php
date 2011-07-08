@@ -35,6 +35,7 @@ class Sample_Controller extends Gridview_Base_Controller
     $this->pagetitle = 'Samples';
     $this->columns = array
     (
+      'id' => 'ID',
       'website' => 'Website',
       'survey' => 'Survey',
       'entered_sref' => 'Spatial Ref.',

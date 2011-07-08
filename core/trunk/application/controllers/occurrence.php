@@ -42,6 +42,7 @@ class Occurrence_controller extends Gridview_Base_Controller {
     );
     $this->columns = array
     (
+      'id' => 'ID',
       'website' => 'Website',
       'survey' => 'Survey',
       'taxon' => 'Taxon',
