@@ -141,8 +141,8 @@ class Report_Controller extends Data_Service_Base_Controller {
    * @return array Array of records.
    */
   protected function read_records() {
-    $src = $this->input->get('reportSource', null);
-    $rep = $this->input->get('report', null);
+    $src = $_REQUEST['reportSource'];
+    $rep = $_REQUEST['report'];
     $params = json_decode($this->input->post('params', '{}'), true);
     // NB that for JSON requests (eg from datagrids) the parameters do not get posted, but appear in the url.
     if(empty($params)){
