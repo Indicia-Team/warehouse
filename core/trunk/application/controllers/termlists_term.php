@@ -40,6 +40,7 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
     $this->columns = array(
       'term'=>'',
       'language'=>'',
+      'sort_order'=>'Sort Order'
       );
     $this->pagetitle = "Terms";
   }

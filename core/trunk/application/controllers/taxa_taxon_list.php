@@ -40,6 +40,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       'authority'=>'',
       'taxon_group'=>'Taxon Group',
       'language'=>'',
+      'taxonomic_sort_order'=>'Sort Order'
     );
     $this->pagetitle = "Species";
   }
