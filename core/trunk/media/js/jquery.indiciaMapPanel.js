@@ -404,7 +404,7 @@ mapInitialisationHooks = [];
     /** 
      * Create tools required to click on features to drill into the data etc.
      */
-    function setupClickableLayers(div, align, toolbarControls) {
+    function getClickableLayersControl(div, align) {
       if (div.settings.clickableLayers.length!==0) {
         var clickableWMSLayerNames = [], clickableVectorLayers = [], wmsUrl='';
         // find out which of the clickable layers are WMS or Vector, since we handle them differently.
@@ -424,6 +424,7 @@ mapInitialisationHooks = [];
         var infoCtrl = new OpenLayers.Control({
           displayClass: align + 'olControlSelectFeature',
           lastclick: {},
+          allowBox: false,
           activate: function() {
             var handlerOptions = {
               'single': true,
@@ -437,12 +438,15 @@ mapInitialisationHooks = [];
                 'click': this.onGetInfo
               }, handlerOptions)
             };
-            this.handlers.box = new OpenLayers.Handler.Box(
+            this.handlers.click.activate();
+            if (clickableVectorLayers.length>0) {
+              this.handlers.box = new OpenLayers.Handler.Box(
                 this, {done: this.onGetInfo},
                 {boxDivClassName: "olHandlerBoxSelectFeature"}
-            );
-            this.handlers.click.activate();
-            this.handlers.box.activate();
+              );
+              this.handlers.box.activate();
+              this.allowBox = true;
+            }
             // create a protocol for the WMS getFeatureInfo requests if we need to
             if (wmsUrl!=='') {
               this.protocol = new OpenLayers.Protocol.HTTP({
@@ -462,9 +466,13 @@ mapInitialisationHooks = [];
               this.lastclick.x = (position.left + position.right) / 2;
               this.lastclick.y = (position.bottom + position.top) / 2;
             } else {
-              // create a bounds from the click point
-              bounds = new OpenLayers.Bounds(position.x, position.y, position.x, position.y);
-              this.lastclick = position;
+              // create a bounds from the click point. It may have xy if from WMS click, or not from Vector click
+              if (typeof position.xy!=="undefined") {
+                this.lastclick = position.xy;
+              } else {
+                this.lastclick = position;
+              }
+              bounds = new OpenLayers.Bounds(this.lastclick.x, this.lastclick.y, this.lastclick.x, this.lastclick.y);
             }
             if (clickableWMSLayerNames!=='') {
               // Do a WMS request
@@ -568,7 +576,9 @@ mapInitialisationHooks = [];
           
         });
 
-        toolbarControls.push(infoCtrl);
+        return infoCtrl;
+      } else {
+        return null;
       }
     }
 
@@ -759,7 +769,7 @@ mapInitialisationHooks = [];
       // specify a class to align edit buttons left if they are on a toolbar somewhere other than the map.
       var align = (div.settings.toolbarDiv=='map') ? '' : 'left ';
       var toolbarControls = [];
-      setupClickableLayers(div, align, toolbarControls);
+      var clickInfoCtrl = getClickableLayersControl(div, align);
 
       if (div.settings.locationLayerName) {
         var layer = new OpenLayers.Layer.WMS('Locations', div.settings.indiciaGeoSvc + 'wms', {
@@ -933,6 +943,13 @@ mapInitialisationHooks = [];
         var click = new OpenLayers.Control.Click({'displayClass':align + 'olControlNavigation'});
         div.map.editLayer.clickControl = click;
       }
+      if (clickInfoCtrl !== null) {
+        // When using a click for info control, if it allows boxes then it needs to go on the toolbar so it can be disabled.
+        // This is because the bounding boxes break the navigation (you can't pan the map).
+        if (clickInfoCtrl.allowBox || toolbarControls.length>0) {
+          toolbarControls.push(clickInfoCtrl);
+        }
+      }
       if (toolbarControls.length>0) {
         // Add the click control to the toolbar alongside the other controls.
         if (typeof click!=="undefined") {
@@ -957,6 +974,10 @@ mapInitialisationHooks = [];
         if (typeof click!=="undefined") {
           div.map.addControl(click);
           click.activate();
+        }
+        if (clickInfoCtrl !== null) {
+          div.map.addControl(clickInfoCtrl);
+          clickInfoCtrl.activate();
         }
       }
 
