@@ -130,5 +130,7 @@ $config['modules'] = array
          MODPATH.'indicia_setup',         // Setup procedures
          MODPATH.'sref_osgb',             // OSGB grid notation
          MODPATH.'sref_osie',             // Irish grid notation (TM75)   
+         MODPATH.'sref_channel_islands',  // Jersey and Guernsey grid notations
+         MODPATH.'sref_utm',              // UTM grid notation
          MODPATH.'demo',                  // Demo and test pages
 );
