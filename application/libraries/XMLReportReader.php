@@ -48,7 +48,8 @@ class XMLReportReader_Core implements ReportReader
    */
   public static function loadMetadata($report) {
     $reader = new XMLReader();
-    $reader->open($report);
+    if ($reader->open($report)===false)
+      throw new Exception("Report $report could not be opened.");
     $metadata = array();
     while($reader->read()) {
       if ($reader->nodeType==XMLREADER::ELEMENT && $reader->name=='report') {

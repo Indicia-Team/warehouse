@@ -528,7 +528,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Returns some information about the table - at least list of columns and
-  * number of records. This is required for the external datagrid control.
+  * number of records. 
   */
   public function info_table($tablename)
   {

@@ -41,7 +41,7 @@
   <params>
     <param name='survey' display='Survey' description='Select the survey to return data for' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' emptyvalue="0" />
-    <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
+    <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' emptyvalue='POINT(0 0)' />
   </params>
   <columns for="Occurrences List">
     <column name='title' display='Survey' />

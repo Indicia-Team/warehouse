@@ -12,6 +12,9 @@ $lang = array (
     'required' => 'The spatial reference must be supplied.',
     'sref' => 'The spatial reference is not recognised.',
   ),
+  'comment' => Array (
+    'required' => 'Please provide a comment.',
+  ),
   'data_type' => Array (
     'required' => 'The data type must be supplied.',
   ),

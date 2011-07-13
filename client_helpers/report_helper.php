@@ -1337,11 +1337,9 @@ mapSettingsHooks.push(function(opts) {
   }
 
   private static function get_report_grid_options($options) {
-    // Generate a unique number for this grid, in case there are 2 on a page.
-    $uniqueId = rand(0,10000);
     $options = array_merge(array(
       'mode' => 'report',
-      'id' => 'grid-'.$uniqueId,
+      'id' => 'report-output', // this needs to be set explicitly when more than one report on a page
       'itemsPerPage' => 20,
       'class' => 'ui-widget ui-widget-content report-grid',
       'thClass' => 'ui-widget-header',

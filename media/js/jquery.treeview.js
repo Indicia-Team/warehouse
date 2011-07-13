@@ -237,7 +237,7 @@
 		lastCollapsable: "lastCollapsable",
 		lastExpandable: "lastExpandable",
 		last: "last",
-		hitarea: "hitarea",	
+		hitarea: "hitarea"	
 	});
 	
 	// provide backwards compability
