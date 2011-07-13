@@ -239,7 +239,7 @@ $('#load-params').click(function(evt) {
       // skip hidden controls or non-site specific controls when displaying the reduced site specific
       // version of the form
       if ((isset($control['visible']) && !$control['visible']) ||
-          ($options['siteSpecific'] && !isset($control['siteSpecific']) || !$control['siteSpecific']))
+          ($options['siteSpecific'] && !(isset($control['siteSpecific']) && $control['siteSpecific'])))
         continue;
       $fieldset = isset($control['group']) ? $control['group'] : 'Other IForm Parameters';
       // apply default options to the control
