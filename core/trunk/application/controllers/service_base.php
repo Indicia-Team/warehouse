@@ -89,7 +89,7 @@ class Service_Base_Controller extends Controller {
     // Read calls are done using get values, so we merge the two arrays
     $array = array_merge($_POST, $_GET);
     $authentic = FALSE; // default
-    kohana::log('debug', 'authenticating, '.print_r($array, true));
+    kohana::log('debug', "$mode authenticating ".print_r($array, true));
     if (array_key_exists('nonce', $array) && array_key_exists('auth_token',$array))
     {
       $nonce = $array['nonce'];

@@ -117,16 +117,13 @@ class Report_Controller extends Data_Service_Base_Controller {
     $dir = opendir($fullPath);
     
     while (false !== ($file = readdir($dir))) {
-      if ($file != '.' && $file != '..' && $file != '.svn') {
-        if (is_dir("$fullPath$file"))
-          $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list("$path$file/"));
-        else {
-          kohana::log('debug', "loading $fullPath$file");
-          $metadata = XMLReportReader::loadMetadata("$fullPath$file");
-          $file = basename($file, '.xml');
-          $reportPath = ltrim("$path$file", '/');
-          $files[$file] = array('type'=>'report','title'=>$metadata['title'],'description'=>$metadata['description'],'path'=>$reportPath);
-        }
+      if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file"))
+        $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list("$path$file/"));
+      elseif (substr($file, -4)=='.xml') {
+        $metadata = XMLReportReader::loadMetadata("$fullPath$file");
+        $file = basename($file, '.xml');
+        $reportPath = ltrim("$path$file", '/');
+        $files[$file] = array('type'=>'report','title'=>$metadata['title'],'description'=>$metadata['description'],'path'=>$reportPath);
       }
     }
     closedir($dir);

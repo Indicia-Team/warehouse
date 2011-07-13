@@ -60,9 +60,12 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $this->authenticate('read');
     kohana::log('debug', 'read records');
     $records=$this->read_records();
-    kohana::log('debug', 'got records');
     $mode = $this->get_output_mode();
     $responseStruct = $this->get_response_structure($records);
+    if (isset($responseStruct['parameterRequest']))
+      kohana::log('debug', 'parameters requested');
+    else
+      kohana::log('debug', 'got records');
     switch ($mode)
     {
       case 'json':
