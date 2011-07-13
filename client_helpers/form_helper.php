@@ -218,6 +218,10 @@ $('#load-params').click(function(evt) {
    * Associative array of default values to load into the form controls.</li>
    * <li><b>expandFirst</b>
    * Optional. If set to true, then the first fieldset on the form is initially expanded.</li>
+   * <li><b>siteSpecific</b>
+   * Optional. Defaults to false. If true then only parameters marked as specific to a site
+   * are loaded. Used to provide a reduced version of the params form after migrating a
+   * form between sites (e.g. when installing a Drupal feature).</li>
    * </ul>
    */
   public static function prebuilt_form_params_form($options) {
@@ -225,12 +229,17 @@ $('#load-params').click(function(evt) {
     // temporarily disable caching because performance is not as important as reflecting
     // the latest available parameters, surveys etc. in the drop downs
     $oldnocache = self::$nocache;
+    if (!isset($options['siteSpecific']))
+      $options['siteSpecific']=false;
     self::$nocache = true;
     $formparams = self::get_form_parameters($options['form']);
     $fieldsets = array();
     $r = '';
     foreach ($formparams as $control) {
-      if (isset($control['visible']) && !$control['visible'])
+      // skip hidden controls or non-site specific controls when displaying the reduced site specific
+      // version of the form
+      if ((isset($control['visible']) && !$control['visible']) ||
+          ($options['siteSpecific'] && !isset($control['siteSpecific']) || !$control['siteSpecific']))
         continue;
       $fieldset = isset($control['group']) ? $control['group'] : 'Other IForm Parameters';
       // apply default options to the control
@@ -328,7 +337,7 @@ $('#load-params').click(function(evt) {
   }
   
   /** 
-   * retrieve the parameters for an iform. this is defined by each iform individually.
+   * Retrieve the parameters for an iform. This is defined by each iform individually.
    * @param object $node the node that the iform is linked to. 
    * @return array list of parameter definitions.
    */
@@ -337,18 +346,18 @@ $('#load-params').click(function(evt) {
     require_once $path."prebuilt_forms/$form.php";
     // first some parameters that are always required to configure the website
     $params = array(
-        array(
-          'fieldname'=>'view_access_control',
-          'label'=>'View access control',
-          'helpText'=>'If ticked, then a Drupal permission is created for this form to allow you to specify which '.
-              'roles are able to view the form.',
-          'type'=>'checkbox',
-          'required'=>false
-        )
+      array(
+        'fieldname'=>'view_access_control',
+        'label'=>'View access control',
+        'helpText'=>'If ticked, then a Drupal permission is created for this form to allow you to specify which '.
+            'roles are able to view the form.',
+        'type'=>'checkbox',
+        'required'=>false
+      )
     );
     // now get the specific parameters from the form
     if (!is_callable(array('iform_'.$form, 'get_parameters'))) 
-      throw new Exception('Form does not implement the get_parameters method.');
+      throw new Exception("Form $form does not implement the get_parameters method.");
     $formParams = self::map_control_options(call_user_func(array('iform_'.$form, 'get_parameters')));
     $params = array_merge($params, $formParams);
     // add in a standard parameter for specifying a redirection.

@@ -327,7 +327,8 @@ class iform_mnhnl_dynamic_1 {
           'valueField'=>'id',
           'captionField'=>'title',
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species',
+          'siteSpecific'=>true
         ),
         array(
           'fieldname'=>'extra_list_id',
@@ -339,7 +340,8 @@ class iform_mnhnl_dynamic_1 {
           'valueField'=>'id',
           'captionField'=>'title',
           'required'=>false,
-          'group'=>'Species'
+          'group'=>'Species',
+          'siteSpecific'=>true
         ),
         array(
           'name'=>'species_names_filter',
@@ -379,7 +381,8 @@ class iform_mnhnl_dynamic_1 {
           'type'=>'select',
           'table'=>'survey',
           'captionField'=>'title',
-          'valueField'=>'id'
+          'valueField'=>'id',
+          'siteSpecific'=>true
         ),        
         array(
           'name'=>'defaults',
