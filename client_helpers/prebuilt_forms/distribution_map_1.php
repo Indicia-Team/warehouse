@@ -236,6 +236,7 @@ class iform_distribution_map_1 {
       $layerTitle = lang::get('All species occurrences');
     else
       $layerTitle = str_replace('{species}', $taxonRecords[0]['taxon'], $args['layer_title']);
+    $layerTitle = str_replace("'","\'",$layerTitle);
     map_helper::$onload_javascript .= "\n    var distLayer = new OpenLayers.Layer.WMS(
           '".$layerTitle."',
           '$url',
