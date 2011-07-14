@@ -154,6 +154,12 @@ class map_helper extends helper_base {
   * </li>
   * <li><b>msgGeorefNothingFound</b><br/>
   * </li>
+  * <li><b>msgSrefOutsideGrid</b><br/>
+  * Message displayed when point outside of grid reference range is clicked.
+  * </li>
+  * <li><b>msgSrefNotRecognised</b><br/>
+  * Message displayed when a grid reference is typed that is not recognised.
+  * </li>
   * <li><b>maxZoom</b><br/>
   * Limit the maximum zoom used when clicking on the map to set a point spatial reference. Use this to prevent over zooming on
   * background maps.</li>
