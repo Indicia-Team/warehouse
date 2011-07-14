@@ -193,11 +193,18 @@ mapInitialisationHooks = [];
             "?sref=" + value +
             "&system=" + _getSystem() +
             "&callback=?", function(data) {
-              // store value in saved field?
-              if (div.map.editLayer) {
-                _showWktFeature(div, data.wkt, div.map.editLayer, null);
+              if(typeof data.error != 'undefined')
+                if(data.error == 'Spatial reference is not a recognisable grid square.')
+                  alert(div.settings.msgSrefNotRecognised);
+                else
+                  alert(data.error);
+              else {
+                // store value in saved field?
+                if (div.map.editLayer) {
+                  _showWktFeature(div, data.wkt, div.map.editLayer, null);
+                }
+                $('#'+opts.geomId).val(data.wkt);
               }
-              $('#'+opts.geomId).val(data.wkt);
             }
         );
       }
@@ -901,7 +908,13 @@ mapInitialisationHooks = [];
                       "&output=" + div.settings.latLongFormat +
                       "&callback=?", function(data)
                 {
-                  _setClickPoint(data, div);
+                  if(typeof data.error != 'undefined')
+                    if(data.error == 'wkt_to_sref translation is outside range of grid.')
+                      alert(div.settings.msgSrefOutsideGrid);
+                    else
+                      alert(data.error);
+                  else
+                    _setClickPoint(data, div);
                 }
               );
             }
@@ -1055,6 +1068,8 @@ $.fn.indiciaMapPanel.defaults = {
     msgGeorefSelectPlace: 'Select from the following places that were found matching your search, then click on the map to specify the exact location:',
     msgGeorefNothingFound: 'No locations found with that name. Try a nearby town name.',
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
+    msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
+    msgSrefNotRecognised: 'The grid reference is not recognised.',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
 
