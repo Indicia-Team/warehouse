@@ -128,8 +128,8 @@ $('.remove-row').live('click', function(e) {
   // @todo unbind all event handlers
   var row = $(e.target.parentNode);
   if (row.next().find('.file-box').length>0) {
-    // hide the row containing the uploader, since removing it causes plupload errors
-    row.next().css('display','none');
+    // remove the uploader row
+    row.next().remove();
   }
   if (row.hasClass('added-row')) {
     row.remove();
