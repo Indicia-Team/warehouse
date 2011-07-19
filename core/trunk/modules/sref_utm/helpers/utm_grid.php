@@ -141,7 +141,7 @@ class utm_grid {
     $index = ord('S') + $hundredKmE - 1;
     $firstLetter = chr($index);
 
-    if ($hundredKmN < 5500000)
+    if ($hundredKmN < 55)
       $index = ord('U') + $hundredKmN - 53;
     else
       $index = ord('A') + $hundredKmN - 55;
