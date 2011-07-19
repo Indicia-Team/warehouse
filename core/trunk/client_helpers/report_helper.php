@@ -76,8 +76,8 @@ class report_helper extends helper_base {
   private static function get_report_list_level($fieldname, $default, $list) {
     $r = '';
     foreach($list as $name=>$item) {
-      $id = 'opt_'.str_replace('/','_',$item['path']);
       if ($item['type']=='report') {
+        $id = 'opt_'.str_replace('/','_',$item['path']);
         $checked = $item['path']==$default ? ' checked="checked"' : '';
         $r .= '<li><label class="ui-helper-reset auto">'.
             '<input type="radio" id="'.$id.'" name="'.$fieldname.'" value="'.$item['path'].
