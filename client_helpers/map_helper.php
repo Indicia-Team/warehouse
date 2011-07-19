@@ -137,8 +137,10 @@ class map_helper extends helper_base {
   * Override the format for display of lat long references. Select from D (decimal degrees, the default), DM (degrees and decimal minutes)
   * or DMS (degrees, minutes and decimal seconds).</li>
   * <li><b>srefId</b><br/>
+  * Override the id of the control that has the grid reference value
   * </li>
   * <li><b>srefSystemId</b><br/>
+  * Override the id of the control that has the spatial reference system value
   * </li>
   * <li><b>geomId</b><br/>
   * </li>
