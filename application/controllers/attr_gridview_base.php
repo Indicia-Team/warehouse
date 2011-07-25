@@ -110,9 +110,7 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
       if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)
         $rules[] = 'maximum['.$_POST['valid_max_value'].']';
 
-      if (!empty($rules)) {
-        $_POST[$this->model->object_name.':validation_rules'] = implode("\r\n", $rules);
-      }
+      $_POST[$this->model->object_name.':validation_rules'] = implode("\r\n", $rules);
       // Make sure checkboxes have a value as unchecked values don't appear in $_POST
       // @todo: If we use Indicia client helper controls for the attribute edit page, this becomes unnecessary
       if (!array_key_exists($this->model->object_name.':public', $_POST)) $_POST[$this->model->object_name.':public'] = '0';

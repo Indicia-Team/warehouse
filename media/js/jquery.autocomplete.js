@@ -240,6 +240,8 @@ $.Autocompleter = function(input, options) {
         currentValue = currentValue.toLowerCase();
       request(currentValue, receiveData, hideResultsNow);
     } else {
+      // trigger events based on there being no matches at this point. Clears the id hidden input.
+      var parsed = options.parse && options.parse({}) || parse({});
       stopLoading();
       select.hide();
     }

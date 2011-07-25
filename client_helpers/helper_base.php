@@ -160,12 +160,12 @@ jQuery('#{parentControlId}').change();\n",
   'postcode_textbox' => '<input type="text" name="{fieldname}" id="{id}"{class} value="{default}" '.
         'onblur="javascript:decodePostcode(\'{linkedAddressBoxId}\');" />',
   'sref_textbox' => '<input type="text" id="{id}" name="{fieldname}" {class} {disabled} value="{default}" />' .
-        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />',
+        '<input type="hidden" id="imp-geom" name="{geomFieldname}" value="{defaultGeom}" />',
   'sref_textbox_latlong' => '<label for="{idLat}">{labelLat}:</label>'.
         '<input type="text" id="{idLat}" name="{fieldnameLat}" {class} {disabled} value="{defaultLat}" /><br />' .
         '<label for="{idLong}">{labelLong}:</label>'.
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{defaultLong}" />' .
-        '<input type="hidden" id="imp-geom" name="{table}:geom" value="{defaultGeom}" />'.
+        '<input type="hidden" id="imp-geom" name="geomFieldname" value="{defaultGeom}" />'.
         '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />',
   'attribute_cell' => "\n<td class=\"scOccAttrCell ui-widget-content {class}\">{content}</td>",
   'taxon_label_cell' => "\n<td class=\"scTaxonCell ui-state-default\"{colspan}>{content}</td>",

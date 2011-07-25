@@ -57,7 +57,6 @@ abstract class Attribute_Value_ORM extends ORM {
         break;
       case 'I':
         $vf = 'int_value';
-        $array->add_rules('int_value', 'digit');
         break;
       case 'F':
         $vf = 'float_value';
@@ -87,6 +86,7 @@ abstract class Attribute_Value_ORM extends ORM {
         foreach ($rules as $a){
           $array->add_rules($vf, trim($a));
         }
+        
       }
       // Now get the survey specific custom attribute validation rules for the attribute
       if (method_exists($this, 'get_survey_specific_rules')) {

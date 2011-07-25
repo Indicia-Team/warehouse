@@ -223,10 +223,19 @@ mapInitialisationHooks = [];
         $('#'+opts.srefLatId).val(parts[0]);
         $('#'+opts.srefLongId).val(parts[1]);
       }
-      div.map.editLayer.destroyFeatures();
+      // remove all features except a boundary feature which is not controlled by the click point.
+      // This functionality allows a location to havea centroid and separate boundary.
+      var toRemove = [];
+      $.each(div.map.editLayer.features, function(idx, feature) {
+        if (feature.attributes.type!=="boundary") {
+          toRemove.push(feature);
+        }
+      });
+      div.map.editLayer.removeFeatures(toRemove, {});
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(data.wkt);
+      feature.attributes = {type:"clickPoint"};
       feature.style = new style(false);
       if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
         feature.geometry.transform(div.indiciaProjection, div.map.projection);
@@ -946,6 +955,9 @@ mapInitialisationHooks = [];
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
               {'displayClass': align + ' olControlClearLayer', 'title':'Clear selection'}));
+        }  else if (ctrl=='modifyFeature' && div.settings.editLayer) {
+          toolbarControls.push(new OpenLayers.Control.ModifyFeature(div.map.editLayer,
+              {'displayClass': align + 'olControlModifyFeature', 'title':'Modify a feature'}));
         } else if (ctrl=='graticule') {
           var graticule = new OpenLayers.Control.IndiciaGraticule({projection: div.settings.graticuleProjection, bounds: div.settings.graticuleBounds});
           div.map.addControl(graticule);

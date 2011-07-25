@@ -20,125 +20,134 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
- echo html::script(array(
-  'media/js/jquery.ajaxQueue.js',
-  'media/js/jquery.bgiframe.min.js',
-  'media/js/jquery.autocomplete.js',
-  'media/js/OpenLayers.js',
-  'media/js/spatial-ref.js'
-), FALSE); 
+
 $id = html::initial_value($values, 'location:id');
 $parent_id = html::initial_value($values, 'location:parent_id');
 $boundary_geom = html::initial_value($values, 'location:boundary_geom');
 $centroid_geom = html::initial_value($values, 'location:centroid_geom');
+require_once(DOCROOT.'client_helpers/map_helper.php');
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+require_once(DOCROOT.'client_helpers/form_helper.php');
+if (isset($_POST))
+  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <script type="text/javascript" src="http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1"></script>
 <script type="text/javascript">
 
-jQuery(document).ready(function() {
-  init_map('<?php echo url::base(); ?>', <?php 
-      if ($id && $boundary_geom) 
-        echo "'$boundary_geom'"; 
-      elseif ($id && $centroid_geom) 
-        echo "'$centroid_geom'";
-      else echo 'null';
-    ?>, 'centroid_sref', 'centroid_geom', true, null, null, <?php 
-      echo kohana::config('indicia.default_map_y').', '.kohana::config('indicia.default_map_x').', '.
-      kohana::config('indicia.default_map_zoom');
-    ?>);
+function setAsBoundaryFeature(feature) {
+  feature.attributes = {type:"boundary"};
+  feature.style.fillOpacity = 0;
+  feature.style.strokeColor = "#0000ff";
+  feature.style.strokeWidth = 3;
+}
 
-  jQuery("input#parent").autocomplete("<?php echo url::site() ?>index.php/services/data/location", {
-    minChars : 1,
-    mustMatch : true,
-    extraParams : {
-      orderby : "name",
-      mode : "json"
-    },
-    parse: function(data) {
-      var results = [];
-      var obj = JSON.parse(data);
-      jQuery.each(obj, function(i, item) {
-        results[results.length] = {
-          'data' : item,
-          'value' : item.id,
-          'result' : item.name };
+jQuery(document).ready(function() {
+
+  mapInitialisationHooks.push(function(mapdiv) {
+    
+    jQuery('form.cmxform').submit(function() {
+      $.each(mapdiv.map.editLayer.features, function(idx, feature) {
+        if (feature.attributes.type=="boundary") {
+          $('#boundary_geom').val(feature.geometry.toString());
+        }
       });
-      return results;
-    },
-    formatItem: function(item) {
-      return item.name;
-    },
-    formatResult: function(item) {
-      return item.id;
-    }
+
+    }); 
+
+<?php if ($boundary_geom) : ?>
+    var parser = new OpenLayers.Format.WKT();
+    var feature = parser.read('<?php echo $boundary_geom; ?>');
+    mapdiv.map.editLayer.addFeatures([feature]);
+    setAsBoundaryFeature(feature);
+    mapdiv.map.editLayer.redraw();
+<?php endif; ?>
+    mapdiv.map.editLayer.events.on({'featureadded': function(evt) {
+      if (evt.feature.attributes.type!=='clickPoint') {
+        var toRemove = [];
+        $.each(mapdiv.map.editLayer.features, function(idx, feature) {
+          if (feature.attributes.type=="boundary") {
+            toRemove.push(feature);
+          }
+        });
+        mapdiv.map.editLayer.removeFeatures(toRemove, {});
+        setAsBoundaryFeature(evt.feature);
+        mapdiv.map.editLayer.redraw();
+      }
+    }});
   });
-  jQuery("input#parent").result(function(event, data){
-    jQuery("input#parent_id").attr('value', data.id);
-  });
-  jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});    
-  jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
 });
 </script>
 <p>This page allows you to specify the details of a location.</p>
-<form class="cmxform" action="<?php echo url::site().'location/save'; ?>" method="post">
+<form class="cmxform" action="<?php echo url::site().'location/save'; ?>" method="post" id="location-edit">
 <div id="details">
 <?php echo $metadata; ?>
 <fieldset>
-<input type="hidden" name="location:id" value="<?php echo html::initial_value($values, 'location:id'); ?>" />
 <legend>Location details</legend>
-<ol>
-<li>
-<label for="name">Name</label>
-<input id="name" name="location:name" value="<?php echo html::initial_value($values, 'location:name'); ?>" />
-<?php echo html::error_message($model->getError('location:name')); ?>
-</li>
-<li>
-<label for="code">Code</label>
-<input id="code" name="location:code" value="<?php echo html::initial_value($values, 'location:code'); ?>" />
-<?php echo html::error_message($model->getError('location:code')); ?>
-</li>
-<li>
- <label for='location:location_type_id'>Location Type:</label>
- <?php
- echo form::dropdown('location:location_type_id', $other_data['type_terms'], html::initial_value($values, 'location:location_type_id'));
- echo html::error_message($model->getError('location:location_type_id'));
- ?>
- </li>
- <li>
-<label for="centroid_sref">Spatial Ref:</label>
-<input id="centroid_sref" class="narrow" name="location:centroid_sref"
-  value="<?php echo html::initial_value($values, 'location:centroid_sref'); ?>"
-  onblur="exit_sref();"
-  onclick="enter_sref();"/>
-<select class="narrow" id="centroid_sref_system" name="centroid_sref_system">
-<?php foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption) {
-  if (html::initial_value($values, 'location:centroid_sref_system')==$notation)
-    $selected=' selected="selected"';
-  else
-    $selected = '';
-  echo "<option value=\"$notation\"$selected>$caption</option>";}
+<input type="hidden" name="location:id" value="<?php echo html::initial_value($values, 'location:id'); ?>" />
+<?php
+echo data_entry_helper::text_input(array(
+  'label' => 'Name',
+  'fieldname' => 'location:name',
+  'default' => html::initial_value($values, 'location:name'),
+  'class' => 'required'
+));
+echo data_entry_helper::text_input(array(
+  'label' => 'Code',
+  'fieldname' => 'location:code',
+  'default' => html::initial_value($values, 'location:code')
+));
+echo data_entry_helper::select(array(
+  'label' => 'Type',
+  'fieldname' => 'location:location_type_id',
+  'default' => html::initial_value($values, 'location:location_type_id'),
+  'lookupValues' => $other_data['type_terms']
+));
+echo data_entry_helper::sref_and_system(array(
+    'label' => 'Spatial Ref',
+    'fieldname' => 'location:centroid_sref',
+    'geomFieldname' => 'location:centroid_geom',
+    'default' => html::initial_value($values, 'location:centroid_sref'),
+    'defaultGeom' => html::initial_value($values, 'location:centroid_geom'),
+    'systems' => kohana::config('sref_notations.sref_notations')
+));
 ?>
-</select>
-<input type="hidden" name="location:centroid_geom" id="centroid_geom" value="<?php echo $centroid_geom; ?>"/>
 <input type="hidden" name="location:boundary_geom" id="boundary_geom" value="<?php echo $boundary_geom; ?>"/>
-<?php echo html::error_message($model->getError('location:centroid_sref')); ?>
-<?php echo html::error_message($model->getError('location:centroid_sref_system')); ?>
 <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
 spatial reference. The more you zoom in, the more accurate the reference will be.</p>
-<div id="map" class="smallmap" style="width: 600px; height: 350px;"></div>
-</li>
-<li>
-<input type="hidden" name="location:parent_id" value="<?php echo $parent_id; ?>" />
-<label for="parent">Parent Location</label>
-<input id="parent" name="location:parent" value="<?php echo (($parent_id != null) ? html::specialchars(ORM::factory('location', $parent_id)->name) : ''); ?>" />
-</li>
-</ol>
+<?php
+$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+echo map_helper::map_panel(array(
+    'readAuth' => $readAuth,
+    'presetLayers' => array('virtual_earth'),
+    'editLayer' => true,
+    'layers' => array(),
+    'initial_lat'=>52,
+    'initial_long'=>-2,
+    'initial_zoom'=>7,
+    'width'=>870,
+    'height'=>400,
+    'standardControls'=>array('layerSwitcher','panZoom'),
+    'initialFeatureWkt' => $centroid_geom,
+    'standardControls' => array('layerSwitcher','panZoom','drawPolygon', 'modifyFeature')
+));
+echo data_entry_helper::autocomplete(array(
+  'label' => 'Parent location',
+  'fieldname' => 'location:parent_id',
+  'table' => 'location',
+  'captionField' => 'name',
+  'valueField' => 'id',
+  'extraParams' => $readAuth,
+  'default' => html::initial_value($values, 'location:parent_id'),
+  'defaultCaption' => html::initial_value($values, 'parent:name')
+));
+?>
 </fieldset>
 <fieldset>
 <legend>Location Websites</legend>
 <ol>
 <?php
-  $websiteIds = $this->get_allowed_website_id_list('editor');  
+  $websiteIds = $this->get_allowed_website_id_list('editor');
+  $linkedWebsites = array();
   if (!is_null($websiteIds))
     $websites = ORM::factory('website')->in('id', $websiteIds)->orderby('title','asc')->find_all();
   else
@@ -147,7 +156,10 @@ spatial reference. The more you zoom in, the more accurate the reference will be
     echo '<li><label for="website_'.$website->id.'" class="wide">'.$website->title.'</label>';
     echo '<input type="checkbox" name="joinsTo:website:'.$website->id.'" ';
     if(!is_null($id)){      
-      if (array_key_exists('joinsTo:website:'.$website->id, $values)) echo "checked=\"checked\"";
+      if (array_key_exists('joinsTo:website:'.$website->id, $values)) {
+        echo "checked=\"checked\"";
+        $linkedWebsites[] = $website->id;
+      }
     }
     echo '></li>';
   }  
@@ -165,25 +177,37 @@ foreach ($values['attributes'] as $attr) {
   $name = 'locAttr:'.$attr['location_attribute_id'];
   // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
   if ($attr['id']) $name .= ':'.$attr['id'];
-  echo '<li><label for="">'.$attr['caption']."</label>\n";
   switch ($attr['data_type']) {
     case 'Specific Date':
-      echo form::input($name, $attr['value'], 'class="date-picker"');
-      break;
     case 'Vague Date':
-      echo form::input($name, $attr['value'], 'class="vague-date-picker"');
+      echo data_entry_helper::date_picker(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
       break;
-    case 'Lookup List':     
-      echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);
+    case 'Lookup List':
+      echo data_entry_helper::date_picker(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['raw_value'],
+        'lookupValues' => $values['terms_'.$attr['termlist_id']]
+      ));
       break;
     case 'Boolean':
-      echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);
+      echo data_entry_helper::checkbox(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
       break;
     default:
-      echo form::input($name, $attr['value']);
+      echo data_entry_helper::text_input(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
   }
-  echo '<br/>'.html::error_message($model->getError($name)).'</li>';
-  
 }
  ?>
  </ol>
@@ -192,6 +216,11 @@ foreach ($values['attributes'] as $attr) {
 <?php 
 endif;
 echo html::form_buttons(html::initial_value($values, 'location:id')!=null);
+data_entry_helper::$dumped_resources[] = 'jquery';
+data_entry_helper::$dumped_resources[] = 'jquery_ui';
+data_entry_helper::$dumped_resources[] = 'fancybox';
+data_entry_helper::enable_validation('location-edit');
+echo data_entry_helper::dump_javascript();
 ?>
 </form>
   

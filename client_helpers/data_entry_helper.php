@@ -145,6 +145,9 @@ class data_entry_helper extends helper_base {
   * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
+  * <li><b>defaultCaption</b><br/>
+  * Optional. The default caption to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>table</b><br/>
@@ -1358,10 +1361,15 @@ class data_entry_helper extends helper_base {
   * <li><b>default</b><br/>
   * Optional. The default value to assign to the control. This is overridden when reloading a
   * record with existing data for this control.</li>
+  * <li><b>defaultGeom</b><br/>
+  * Optional. The default geom (wkt) to store in a hidden input posted with the form data.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>splitLatLong</b><br/>
   * Optional. If set to true, then 2 boxes are created, one for the latitude and one for the longitude.</li>
+  * <li><b>geomFieldname</b><br/>
+  * Optional. Fieldname to use for the geom (table:fieldname format) where the geom field is not
+  * just called geom, e.g. location:centroid_geom.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the spatial reference control.
@@ -1376,7 +1384,7 @@ class data_entry_helper extends helper_base {
         'systemfield'=>'sample:entered_sref_system',
         'hiddenFields'=>true,
         'id'=>'imp-sref',
-        'table'=>$tokens[0],
+        'geomFieldname'=>$tokens[0].':geom',
         'default'=>self::check_default_value($options['fieldname']),
         'defaultGeom'=>self::check_default_value($tokens[0].':geom'),
         'splitLatLong'=>false
@@ -3603,23 +3611,41 @@ if (errors.length>0) {
   * Helper function to fetch details of attributes associated with a survey.
   * This can be used to auto-generated the forum structure for a survey for example.
   * @todo at moment this assumes non multiplevalue attributes.
-  * @todo Improved documentation
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>suvey_id</b><br/>
+  * Optional. The survey that custom attributes are to tbe loaded for.</li>
+  * <li><b>website_ids</b><br/>
+  * Optional. Used instead of survey_id, allows retrieval of all possible custom attributes
+  * for a set of websites.</li>
+  * <li><b>attrtable</b><br/>
+  * Required. Singular name of the table containing the attributes, e.g. sample_attribute.</li>
+  * <li><b>valuetable</b><br/>
+  * Required. Singular name of the table containing the attribute values, e.g. sample_attribute_value.</li>
+  * <li><b>fieldprefix</b><br/>
+  * Required. Prefix to be given to the returned control names, e.g. locAttr:</li>
+  * <li><b>extraParams</b><br/>
+  * Required. Additional parameters used in the web service call, including the read authorisation.</li>
+  * </ul>
   *
   * @return array of attributes.
   */
   public static function getAttributes($options) {
     $retVal = array();
     self::add_resource('json');
-    $surveys = array(NULL);
-    if (isset($options['survey_id']))
-      $surveys[] = $options['survey_id'];
-
+    if (isset($options['website_ids'])) {
+      $query = urlencode(json_encode(array('in'=>array('website_id', $options['website_ids']))));
+    } else {
+      $surveys = array(NULL);
+      if (isset($options['survey_id']))
+        $surveys[] = $options['survey_id'];
+      $query = urlencode(json_encode(array('in'=>array('restrict_to_survey_id', $surveys))));
+    }
     $attrOptions = array(
           'table'=>$options['attrtable'],
            'extraParams'=> $options['extraParams']+ array(
              'deleted' => 'f',
              'website_deleted' => 'f',
-             'query'=>urlencode(json_encode(array('in'=>array('restrict_to_survey_id', $surveys)))),
+             'query'=>$query,
              'orderby'=>'weight'
            )
     );
