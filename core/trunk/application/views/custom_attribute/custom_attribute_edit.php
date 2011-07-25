@@ -31,7 +31,6 @@ $enabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
   value="<?php echo html::initial_value($values, $model->object_name.':id'); ?>" />
 <input type="hidden" name="metaFields:disabled_input"
   value="<?php echo $disabled_input; ?>" />
-<?php print_r($model->getAllErrors()); ?>
 <fieldset
 <?php if ($disabled_input=='YES') echo ' class="ui-state-disabled"'; ?>>
 <legend><?php echo $other_data['name']; ?> Attribute details</legend>

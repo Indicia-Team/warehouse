@@ -127,7 +127,7 @@ class map_helper extends helper_base {
   * </li>
   * <li><b>standardControls</b>
   * An array of predefined controls that are added to the map. Select from layerSwitcher, drawPolygon,
-  *    drawLine, drawPoint, zoomBox, panZoom, panZoomBar. Default is layerSwitcher, panZoom and graticule.
+  *    drawLine, drawPoint, zoomBox, panZoom, panZoomBar, modifyFeature. Default is layerSwitcher, panZoom and graticule.
   * </li>
   * <li><b>initialFeatureWkt</b><br/>
   * </li>

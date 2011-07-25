@@ -636,9 +636,9 @@ class ORM extends ORM_Core {
         // Remove any joins that are to records that should no longer be joined.
         foreach ($to_delete as $id) {
           // @todo: This could be optimised by not using ORM to do the deletion.
-          $joinModel = ORM::factory($joinModel,
+          $delModel = ORM::factory($joinModel,
             array($this->object_name.'_id' => $this->id, $model.'_id' => $id));
-          $joinModel->delete();
+          $delModel->delete();
         }
         // And add any new joins
         foreach ($to_add as $id) {
@@ -659,8 +659,9 @@ class ORM extends ORM_Core {
    */
   private function checkRequiredAttributes() {
     $r = true;
-    // Test if this model has an attributes sub-table.
-    if ($this->has_attributes) {
+    // Test if this model has an attributes sub-table. Also to have required attributes, we must be posting into a
+    // specified survey or website at least.
+    if ($this->has_attributes && ($this->identifiers['website_id'] || $this->identifiers['survey_id'])) {
       $got_values=array();
       $empties = array();
       if (isset($this->submission['metaFields'][$this->attrs_submission_name]))
