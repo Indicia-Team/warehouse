@@ -136,6 +136,13 @@ class iform_report_grid {
           'default' => 1,
           'required' => false,
           'group'=>'Report Settings'
+        ), array(
+          'name' => 'footer',
+          'caption' => 'Footer',
+          'description' => 'Additional HTML to include in the report footer area.',
+          'type' => 'textarea',
+          'required' => false,
+          'group' => 'Report Settings'
         )
       )
     );
@@ -154,6 +161,9 @@ class iform_report_grid {
     $reportOptions = iform_report_get_report_options($args, $auth);
     // get the grid output before outputting the download link, so we can check if the download link is needed.
     $reportOptions['id']='grid-'.$node->nid;
+    if (isset($args['footer']))
+      $reportOptions['footer'] = $args['footer'];
+    $reportOptions['downloadLink'] = (!isset($args['download_link']) || $args['download_link']);
     $grid = report_helper::report_grid($reportOptions); 
     // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams/
     // The download link can be skipped if the grid did not return a table (i.e. params not complete)

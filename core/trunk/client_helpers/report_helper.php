@@ -230,6 +230,13 @@ class report_helper extends helper_base {
   * If set to true, then the parameters for this report are not output, but are passed to a map_panel control
   * (which must therefore exist on the same web page) and are output as part of the map's toolbar.
   * </li>
+  * <li><b>footer</b>
+  * Additional HTML to include in the report footer area. {currentUrl} is replaced by the
+  * current page's URL, {rootFolder} is replaced by the folder on the server that the current PHP page 
+  * is running from.</li>
+  * </li>
+  * <li><b>downloadLink</b>
+  * Should a download link be included in the report footer? Defaults to false.</li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -309,13 +316,24 @@ class report_helper extends helper_base {
       }
       $r .= "</tr></thead>\n";
     }
-    
-    $r .= '<tfoot><tr><td colspan="'.count($options['columns']).'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr></tfoot>';
+    $currentUrl = self::get_reload_link_parts();
+    $r .= '<tfoot>';
+    $r .= '<tr><td colspan="'.count($options['columns']).'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
+    $extraFooter = '';
+    if (isset($options['footer']) && !empty($options['footer'])) {
+      $footer = str_replace(array('{rootFolder}', '{currentUrl}'), 
+          array(dirname($_SERVER['PHP_SELF']) . '/', $currentUrl['path']), $options['footer']);
+      $extraFooter .= '<div class="left">'.$footer.'</div>';
+    }
+    if (isset($options['downloadLink']) && $options['downloadLink'])
+      $extraFooter .= '<div class="right">'.self::report_download_link($options).'</div>';
+    if (!empty($extraFooter))
+      $r .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
+    $r .= '</tfoot>';
     $r .= "<tbody>\n";
     $rowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
-    $currentUrl = self::get_reload_link_parts();
     $relpath = self::relative_client_helper_path();
     if (count($records)>0) {
       $rowInProgress=false;
