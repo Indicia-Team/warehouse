@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="UKBMS sites list" description="Lists sites - temporary report.">
+      <query>
+      SELECT  l.id, l.name, COUNT(DISTINCT o.id) as occurrences, COUNT(DISTINCT ttl.taxon_meaning_id) AS taxa
+      FROM report_websites w
+      JOIN surveys su on su.website_id=w.id
+      JOIN locations_websites lw ON lw.website_id=w.id
+      JOIN locations l ON l.id=lw.location_id
+      LEFT JOIN (samples s
+        JOIN occurrences o on o.sample_id=s.id AND o.deleted='f'
+        JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
+      ) on s.survey_id=su.id
+      WHERE #website_filter#
+      GROUP BY l.id, l.name
+      #order_by#
+      </query>
+      <order_bys>
+            <order_by>occurrences DESC</order_by>
+            <order_by>taxa DESC</order_by>
+      </order_bys>
+      <params>
+        <param name='own_sites' display='Own Sites' description='Filter the site list to your sites only?' datatype='boolean'
+            emptyvalue="1" />
+        <param name='own_region' display='Own Region' description='Filter the site list to your region only?' datatype='boolean'
+            emptyvalue="1" />
+      </params>
+      <columns>
+            <column name="id" visible="false" />
+            <column name="name" display="Site Name" style="background-color: #e7e7e7;" />
+            <column name="occurrences" display="No. of Occurrences" />
+            <column name="taxa" display="No. of Taxa" />
+      </columns>
+</report>
