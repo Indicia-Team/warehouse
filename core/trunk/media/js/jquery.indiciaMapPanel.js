@@ -626,7 +626,7 @@ mapInitialisationHooks = [];
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       
       if (this.settings.toolbarDiv!='map') {
-        var toolbar='<div id="map-toolbar-outer">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
+        var toolbar='<div id="map-toolbar-outer" class="ui-helper-clearfix">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
         if (this.settings.toolbarDiv=='top') {
           $(this).before(toolbar);
         } else if (this.settings.toolbarDiv=='bottom') {
@@ -952,6 +952,12 @@ mapInitialisationHooks = [];
           toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
               {'displayClass': align + 'olControlDrawFeaturePoint', 'title':'Draw points by clicking on the map'}));
+        } else if (ctrl=='selectFeature' && div.settings.editLayer) {
+          toolbarControls.push(new OpenLayers.Control.SelectFeature(div.map.editLayer));
+        } else if (ctrl=='hoverFeatureHighlight' && div.settings.editLayer) {
+          var highlighter = new OpenLayers.Control.SelectFeature(div.map.editLayer, {hover: true, highlightOnly: true});
+          div.map.addControl(highlighter);
+          highlighter.activate();
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
               {'displayClass': align + ' olControlClearLayer', 'title':'Clear selection'}));
