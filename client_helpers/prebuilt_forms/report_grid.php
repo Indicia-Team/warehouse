@@ -164,14 +164,8 @@ class iform_report_grid {
     if (isset($args['footer']))
       $reportOptions['footer'] = $args['footer'];
     $reportOptions['downloadLink'] = (!isset($args['download_link']) || $args['download_link']);
-    $grid = report_helper::report_grid($reportOptions); 
-    // Add a download link - get_report_data does not use paramDefaults but needs all settings in the extraParams/
-    // The download link can be skipped if the grid did not return a table (i.e. params not complete)
-    if ((!isset($args['download_link']) || $args['download_link']) && strpos($grid, '<table')!==false)
-      $r .= '<br/>'.report_helper::report_download_link($reportOptions);
-    // put the grid after the link
-    $r .= '<br/>'.$grid;
-    return $r;
+    $grid = report_helper::report_grid($reportOptions);
+    return $grid;
   }
 
 }

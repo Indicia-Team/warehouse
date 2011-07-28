@@ -1386,9 +1386,10 @@ class data_entry_helper extends helper_base {
         'id'=>'imp-sref',
         'geomFieldname'=>$tokens[0].':geom',
         'default'=>self::check_default_value($options['fieldname']),
-        'defaultGeom'=>self::check_default_value($tokens[0].':geom'),
         'splitLatLong'=>false
     ), $options);
+    if (!isset($options['defaultGeom']))
+      $options['defaultGeom']=self::check_default_value($options['geomFieldname']);
     $options = self::check_options($options);
     if ($options['splitLatLong']) {
       // Outputting separate lat and long fields, so we need a few more options
