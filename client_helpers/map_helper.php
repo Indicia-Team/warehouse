@@ -126,8 +126,19 @@ class map_helper extends helper_base {
   * <li><b>editLayerName</b><br/>
   * </li>
   * <li><b>standardControls</b>
-  * An array of predefined controls that are added to the map. Select from layerSwitcher, drawPolygon,
-  *    drawLine, drawPoint, zoomBox, panZoom, panZoomBar, modifyFeature. Default is layerSwitcher, panZoom and graticule.
+  * An array of predefined controls that are added to the map. Select from:<br/>
+  *    layerSwitcher - a button in the corner of the map which opens a panel allowing selection of the visible layers.<br/>
+  *    drawPolygon - a tool for drawing polygons onto the map edit layer.<br/>
+  *    drawLine - a tool for drawing lines onto the map edit layer.<br/>
+  *    drawPoint - a tool for drawing points onto the map edit layer.<br/>
+  *    zoomBox - allow zooming to a bounding box, drawn whilst holding the shift key down. This functionality is provided by the panZoom and panZoomBar controls as well
+  *    so is only relevant when they are not selected. 
+  *    panZoom - simple controls in the corner of the map for panning and zooming.
+  *    panZoomBar - controls in the corner of the map for panning and zooming, including a slide bar for zooming.
+  *    modifyFeature - a tool for selecting a feature on the map edit layer then editing the vertices of the feature.
+  *    selectFeature - a tool for selecting a feature on the map edit layer.
+  *    hoverFeatureHighlight - highlights the feature on the map edit layer which is under the mouse cursor position.
+  * Default is layerSwitcher, panZoom and graticule.
   * </li>
   * <li><b>initialFeatureWkt</b><br/>
   * </li>
