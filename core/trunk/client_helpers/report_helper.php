@@ -325,7 +325,7 @@ class report_helper extends helper_base {
           array(dirname($_SERVER['PHP_SELF']) . '/', $currentUrl['path']), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
-    if (isset($options['downloadLink']) && $options['downloadLink'])
+    if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0)
       $extraFooter .= '<div class="right">'.self::report_download_link($options).'</div>';
     if (!empty($extraFooter))
       $r .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';

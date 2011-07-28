@@ -353,6 +353,16 @@ $('#load-params').click(function(evt) {
             'roles are able to view the form.',
         'type'=>'checkbox',
         'required'=>false
+      ),
+      array(
+        'fieldname'=>'permission_name',
+        'label'=>'Permission name for view access control',
+        'helpText'=>'If you want to use a default permission name when using view access control, leave this blank. Otherwise, specify the name of '.
+            'a permission to define for accessing this form. One use of this is to create a single permission which is shared between several forms '.
+            '(e.g. a permission could be called "Online Recording". Another situation where this should be used is when creating a feature for Instant Indicia '.
+            'so the permission name can be consistent across sites which share this form.',
+        'type'=>'text_input',
+        'required'=>false
       )
     );
     // now get the specific parameters from the form
@@ -361,18 +371,25 @@ $('#load-params').click(function(evt) {
     $formParams = self::map_control_options(call_user_func(array('iform_'.$form, 'get_parameters')));
     $params = array_merge($params, $formParams);
     // add in a standard parameter for specifying a redirection.
-    array_push($params, 
-      array(
-        'fieldname'=>'redirect_on_success',
-        'label'=>'Redirect to page after successful data entry',
-        'helpText'=>'The url of the page that will be navigated to after a successful data entry. '.
-            'leave blank to just display a success message on the same page so further records can be entered. if the site is internationalised, '.
-            'make sure that the page you want to go to has a url specified that is the same for all language versions. also ensure your site uses '.
-            'a path prefix for the language negotiation (administer > site configuration > languages > configure). then, specify the url that you attached to the node '.
-            'so that the language prefix is not included.',
-        'type'=>'text_input',
-        'required'=>false
-      )
+    $params[] = array(
+      'fieldname'=>'redirect_on_success',
+      'label'=>'Redirect to page after successful data entry',
+      'helpText'=>'The url of the page that will be navigated to after a successful data entry. '.
+          'leave blank to just display a success message on the same page so further records can be entered. if the site is internationalised, '.
+          'make sure that the page you want to go to has a url specified that is the same for all language versions. also ensure your site uses '.
+          'a path prefix for the language negotiation (administer > site configuration > languages > configure). then, specify the url that you attached to the node '.
+          'so that the language prefix is not included.',
+      'type'=>'text_input',
+      'required'=>false
+    );
+    $params[] = array(
+      'fieldname'=>'message_after_redirect',
+      'label'=>'Display notification after redirect',
+      'helpText'=>'If using the redirect option above, then should a message be added to the page stating that the record has been saved? This should be left '.
+          'unchecked if the page redirected to has information about the record being saved inherent in the page content. However if this page is a general purpose '.
+          'page then ticking this box can help to make it clear that a record was saved.',
+      'type'=>'checkbox',
+      'required'=>false
     );
     return $params;
   }
