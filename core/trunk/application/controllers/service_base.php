@@ -27,21 +27,6 @@
  * @package	Core
  */
 class ArrayException extends Kohana_Exception {
-  /**
-   * @var boolean Defines if the user is logged into the warehouse.
-   */
-  protected $in_warehouse = false;
-
-  /**
-   * @var int Id of the website calling the service. Obtained when performing read authentication and used
-   * to filter the response. A value of 0 indicates the warehouse.
-   */
-  protected $website_id = null;
-
-  /**
-   * @var boolean Flag set to true when user has core admin rights. Only applies when the request originates from the warehouse.
-   */
-  protected $user_is_core_admin = false;
 
   private $errors = array();
 
@@ -77,7 +62,23 @@ class ServiceError extends Kohana_Exception {
  */
 class Service_Base_Controller extends Controller {
 
-/**
+  /**
+   * @var boolean Defines if the user is logged into the warehouse.
+   */
+  protected $in_warehouse = false;
+
+  /**
+   * @var int Id of the website calling the service. Obtained when performing read authentication and used
+   * to filter the response. A value of 0 indicates the warehouse.
+   */
+  protected $website_id = null;
+
+  /**
+   * @var boolean Flag set to true when user has core admin rights. Only applies when the request originates from the warehouse.
+   */
+  protected $user_is_core_admin = false;
+
+  /**
   * Before a request is accepted, this method ensures that the POST data contains the
   * correct digest token so we know the request was from the website.
   *
