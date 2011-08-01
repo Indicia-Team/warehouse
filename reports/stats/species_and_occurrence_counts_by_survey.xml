@@ -9,6 +9,7 @@
       JOIN samples s on s.id=o.sample_id and s.deleted=false
       JOIN surveys su on su.id=s.survey_id and su.deleted=false
       WHERE o.website_id=#website_id#
+      AND o.record_status&lt;&gt;'R'
       AND o.deleted=false     
       AND (CAST(t.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
@@ -22,6 +23,7 @@
       JOIN taxa t ON ttl2.taxon_id = t.id AND t.deleted=false
       JOIN samples s on s.id=o.sample_id and s.deleted=false
       WHERE o.website_id=#website_id#
+      AND o.record_status&lt;&gt;'R'
       AND o.deleted=false 
       AND (CAST(t.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))

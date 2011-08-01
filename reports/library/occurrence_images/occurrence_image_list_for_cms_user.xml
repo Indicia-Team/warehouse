@@ -1,10 +1,10 @@
   <report
-      title="Latest images"
-      description="Outputs a list of recent occurrence images"
+      title="Occurrence images for a CMS user"
+      description="Outputs a list of occurrence images filtered according to the ID of the user when logged into the content management system."
       row_class="biota"
   >
-    <query>
-    SELECT oi.id, oi.path, oi.caption, tpref.taxon, tcommon.taxon as common, tg.title as taxon_group
+    <query website_filter_field="o.website_id">
+    SELECT #field_sql#
     FROM occurrences o
     JOIN samples s ON s.id=o.sample_id AND s.deleted=false
     JOIN occurrence_images oi ON oi.occurrence_id=o.id AND oi.deleted=false
@@ -12,28 +12,33 @@
     JOIN taxa_taxon_lists ttlpref ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id AND ttlpref.preferred='t' AND ttlpref.deleted=false
     JOIN taxa tpref ON tpref.id=ttlpref.taxon_id AND tpref.deleted=false
     LEFT JOIN taxa tcommon ON tcommon.id=ttlpref.common_taxon_id AND tcommon.deleted=false
-    JOIN taxon_groups tg ON tg.id=tpref.taxon_group_id  
+    JOIN taxon_groups tg ON tg.id=tpref.taxon_group_id
+    JOIN (sample_attribute_values sav
+      JOIN sample_attributes sa ON sa.id=sav.sample_attribute_id AND sa.deleted=false AND sa.caption='CMS User ID'
+    ) ON sav.sample_id=s.id AND sav.deleted=false
     WHERE o.deleted=false
-    AND o.website_id=#website_id#
+    AND #website_filter#
     AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
     AND o.record_status NOT IN ('I','T','R')
     AND (CAST(tpref.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
     AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
         AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+    AND CAST(sav.int_value AS character varying)='#user_id#'
     #order_by#
     </query>
+    <field_sql>oi.id, oi.path, oi.caption, tpref.taxon, tcommon.taxon as common, tg.title as taxon_group</field_sql>
     <order_bys>
       <order_by>oi.created_on DESC</order_by>
       <order_by>s.date_start DESC</order_by>
     </order_bys>
     <params>
-      <param name='website_id' display='Website' description='Enter the website ID' datatype='int' />
       <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
           population_call='direct:survey:id:title' />
       <param name='date_from' display='Date From' datatype='date' />
       <param name='date_to' display='Date To' datatype='date' />
       <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
           population_call='direct:taxon_group:id:title' />
+      <param name='user_id' display='CMS User ID' description='Enter the ID of the CMS' datatype='int' />
     </params>
     <columns>
       <column name='id' visible='false' />
