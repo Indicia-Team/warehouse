@@ -9,6 +9,7 @@
       JOIN samples s on s.id=o.sample_id and s.deleted=false 
       JOIN locations l on l.id=#location_id# AND st_intersects(l.boundary_geom, s.geom)      
       WHERE o.website_id=#website_id#
+      AND o.record_status&lt;&gt;'R'
       AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))

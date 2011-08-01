@@ -48,12 +48,8 @@ class Location_Model extends ORM_Tree {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('name', 'required');
-    if (isset($orig_values['centroid_sref_system'])) {
-      $system = $orig_values['centroid_sref_system'];
-      $array->add_rules('centroid_sref', 'required', "sref[$system]");
-    } else {
-      $array->add_rules('centroid_sref', 'required');
-    }
+    $system = $orig_values['centroid_sref_system'];
+    $array->add_rules('centroid_sref', 'required', "sref[$system]");
     $array->add_rules('centroid_sref_system', 'required', 'sref_system');
 
     // Explicitly add those fields for which we don't do validation
@@ -91,7 +87,7 @@ class Location_Model extends ORM_Tree {
   {
     $value = parent::__get($column);
 
-    if  (substr($column,-5) == '_geom' && $value !== null) {
+    if  (substr($column,-5) == '_geom' && !empty($value)) {
       $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
       $value = $row->wkt;
     }
@@ -131,6 +127,18 @@ class Location_Model extends ORM_Tree {
       } catch (Exception $e) {
         $this->errors['centroid_sref'] = $e->getMessage();
       }
+    } elseif (empty($this->submission['fields']['centroid_sref']['value']) &&
+        empty($this->submission['fields']['centroid_geom']['value']) && 
+        !empty($this->submission['fields']['boundary_geom']['value'])) {
+      kohana::log('debug', 'working out centroid from boundary');
+      // if the geom is supplied for the boundary, but not the centroid sref, then calculate it.
+      // First, convert the boundary geom to a centroid using LatLong (EPSG:4326)
+      $boundary = $this->submission['fields']['boundary_geom']['value'];
+      $row = $this->db->query("SELECT ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid').")) AS geom, ".
+          "ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid')."))) AS wkt")->current();
+      $this->submission['fields']['centroid_geom']['value'] = $row->geom;
+      $this->submission['fields']['centroid_sref']['value'] = spatial_ref::internal_wkt_to_sref($row->wkt, 4326);
+      $this->submission['fields']['centroid_sref_system']['value'] = '4326';
     }
     // Empty boundary geom is allowed but must be null
     if (empty($this->submission['fields']['boundary_geom']['value']))

@@ -1,35 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report title="Species &amp; Occurrence Counts by Taxon Group" description="Lists taxon groups and the number of species and occurrences within them. Optional date range and survey filters.">
-      <query>
-      SELECT tg.title as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      <query website_filter_field="o.website_id">
+      SELECT tg.title as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
       FROM occurrences o
-      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id
-      JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.preferred='t'
-      JOIN taxa t ON ttl2.taxon_id = t.id
-      JOIN taxon_groups tg ON t.taxon_group_id = tg.id
-      JOIN samples s on s.id=o.sample_id and s.deleted=false
-      WHERE o.website_id=#website_id#
-      AND o.record_status&lt;&gt;'R'
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.preferred='t' AND ttl2.deleted=false
+      JOIN taxa t ON ttl2.taxon_id = t.id AND t.deleted=false
+      JOIN taxon_groups tg ON t.taxon_group_id = tg.id AND tg.deleted=false
+      JOIN samples s on s.id=o.sample_id AND s.deleted=false
+      WHERE o.deleted=false
+      AND #website_filter#
       AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       GROUP BY taxongroup
     UNION
-      SELECT 'Total' as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      SELECT 'Total' as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
       FROM occurrences o
-      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id
-      JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.preferred='t'
-      JOIN taxa t ON ttl2.taxon_id = t.id
-      JOIN samples s on s.id=o.sample_id and s.deleted=false      
-      WHERE o.website_id=#website_id#
-      AND o.record_status&lt;&gt;'R'
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.preferred='t' AND ttl2.deleted=false
+      JOIN taxa t ON ttl2.taxon_id = t.id AND t.deleted=false
+      JOIN samples s on s.id=o.sample_id AND s.deleted=false      
+      WHERE o.deleted=false
+      AND #website_filter#
       AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       AND '#include_total#'!='no'
       </query>
   <params>
-    <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
     <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
@@ -43,6 +42,5 @@
             <column name="taxongroup" display="Taxon Group" style="background-color: #e7e7e7;" />
             <column name="species_count" display="Total no. of Species" />
             <column name="occurrences_count" display="Total no. of Occurrences" />
-            <column name="website_id" visible="false" />
       </columns>
 </report>
