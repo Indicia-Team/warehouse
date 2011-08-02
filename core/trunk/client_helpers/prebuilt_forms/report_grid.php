@@ -100,7 +100,7 @@ class iform_report_grid {
           }]
         },
         "visible": {"type":"bool","desc":"Should this column be shown? Hidden columns can still be used in templates or actions."},
-        "template": {"type":"str","desc":"Allows you to create columns that contain dynamic content using a template, rather than just the output '.
+        "template": {"type":"txt","desc":"Allows you to create columns that contain dynamic content using a template, rather than just the output '.
         'of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values. '.
         'Note that template columns cannot be sorted by clicking grid headers." }
       }

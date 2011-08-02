@@ -721,8 +721,7 @@ class data_entry_helper extends helper_base {
     self::add_resource('jsonwidget');
     extract($options, EXTR_PREFIX_ALL, 'opt');
     if (!isset($opt_default)) $opt_default = '';
-    $opt_default = str_replace("\r", '\r', $opt_default);
-    $opt_default = str_replace("\n", '\n', $opt_default);
+    $opt_default = str_replace(array("\r","\n", "'"), array('\r','\n',"\'"), $opt_default);
     self::$javascript .= "$('#".$options['id']."').jsonedit({schema: $opt_schema, default: '$opt_default', fieldname: \"$opt_fieldname\"});\n";
 
     return self::apply_template('jsonwidget', $options);

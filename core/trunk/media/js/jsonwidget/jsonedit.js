@@ -65,6 +65,7 @@ jsonwidget.getNewValueForType = function(thistype) {
   break;
 
   case 'str':
+  case 'txt':
   var newvalue = "";
   break;
 
@@ -349,6 +350,7 @@ jsonwidget.editor = function () {
   this.getPropnameSpan = jsonwidget.editor.getPropnameSpan;
   this.attachSimplePropertyInput = jsonwidget.editor.attachSimplePropertyInput;
   this.getStringInput = jsonwidget.editor.getStringInput;
+  this.getTextAreaInput = jsonwidget.editor.getTextAreaInput;
   this.getBoolInput = jsonwidget.editor.getBoolInput;
   this.getNumberInput = jsonwidget.editor.getNumberInput;
   this.getTypeSelectInput = jsonwidget.editor.getTypeSelectInput;
@@ -455,6 +457,9 @@ jsonwidget.editor.attachHandlers = function () {
     }
     else {
     if(nodetype == 'str') {
+      var value = event.target.value;
+    }
+    else if(nodetype == 'txt') {
       var value = event.target.value;
     }
     else if(nodetype == 'number') {
@@ -851,6 +856,10 @@ jsonwidget.editor.attachSimplePropertyInput = function (jsonref) {
   case 'str':
   var inputelement = this.getStringInput(jsonref);
   break;
+  
+  case 'txt':
+  var inputelement = this.getTextAreaInput(jsonref);
+  break;
 
   case 'bool':
   var inputelement = this.getBoolInput(jsonref);
@@ -950,6 +959,22 @@ jsonwidget.editor.getStringInput = function (jsonref) {
     this.setNode(jsonref, jsonref.schemaref.node['enum'][0]);
   }
   }
+  return inputelement;
+}
+
+jsonwidget.editor.getTextAreaInput = function (jsonref) {
+  var control = '';
+  var curvalue = jsonref.node;
+  var jsoneditobj = this;
+  var inputid = 'inputid.'+jsonref.fullindex;
+
+  //switching to DOM creation in hopes of preventing injection problems
+  var inputelement = document.createElement("textarea");
+  inputelement.className = "jeclass";
+  inputelement.id=inputid;
+  inputelement.cols=50;
+  inputelement.rows=4;
+  inputelement.appendChild(document.createTextNode(curvalue));
   return inputelement;
 }
 
