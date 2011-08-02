@@ -369,8 +369,9 @@ class iform_mnhnl_dynamic_1 {
         ),
         array(
           'name'=>'spatial_systems',
-          'caption'=>'Allowed Spatial Ref Systems',      
-          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
+          'caption'=>'Allowed Spatial Ref Systems',
+          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326). '.
+              'Set to "default" to use the settings defined in the IForm Settings page.',
           'type'=>'string',
           'group'=>'Other Map Settings'
         ),
@@ -807,7 +808,10 @@ class iform_mnhnl_dynamic_1 {
    * structure, or by custom attributes.
    */
   protected static function get_all_tabs($structure, $attrTabs) {
-    $structureArr = explode("\r\n", $structure);
+    // tolerate any line ending format
+    $structure = str_replace("\r\n", "\n", $structure);
+    $structure = str_replace("\r", "\n", $structure);
+    $structureArr = explode("\n", trim($structure));
     $structureTabs = array();
     foreach ($structureArr as $component) {
       if (preg_match('/^=[A-Za-z0-9 \-\*\?]+=$/', trim($component), $matches)===1) {
@@ -1130,8 +1134,13 @@ class iform_mnhnl_dynamic_1 {
    * Get the location search control.
    */
   private static function get_control_placesearch($auth, $args, $tabalias, $options) {
+    $georefOpts = iform_map_get_georef_options($args);
+    if (($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key)) 
+        || ($georefOpts['driver']=='google_search_api' && empty(helper_config::$google_search_api_key)))
+      // can't use place search without the driver API key
+      return '';
     return data_entry_helper::georeference_lookup(array_merge(
-      iform_map_get_georef_options($args),
+      $georefOpts,
       $options
     ));
   }

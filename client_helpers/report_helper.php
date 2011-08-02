@@ -318,7 +318,7 @@ class report_helper extends helper_base {
     }
     $currentUrl = self::get_reload_link_parts();
     $r .= '<tfoot>';
-    $r .= '<tr><td colspan="'.count($options['columns']).'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
+    $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
       $footer = str_replace(array('{rootFolder}', '{currentUrl}'), 
@@ -400,7 +400,7 @@ class report_helper extends helper_base {
       // Now AJAXify the grid
       self::add_resource('reportgrid');
       $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
-      $group = $options['reportGroup'];
+      $group = preg_replace( "/[^a-z0-9]+/", "_", $options['reportGroup']);
       global $indicia_templates;
       
       self::$javascript .= "
@@ -518,10 +518,14 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       $replacements['next'] = "<span class=\"pag-next pager-button ui-state-disabled\">".lang::get('next')."</span>\n";
       $replacements['last'] = "<span class=\"pag-last pager-button ui-state-disabled\">".lang::get('last')."</span>\n";
     }
-    $replacements['showing'] = '<span class="pag-showing">'.lang::get('Showing records {1} to {2} of {3}', 
-        ($page-1)*$options['itemsPerPage']+1, 
-        min($page*$options['itemsPerPage'], $response['count']),
-        $response['count']).'</span>';
+    if ($response['count']) {
+      $replacements['showing'] = '<span class="pag-showing">'.lang::get('Showing records {1} to {2} of {3}', 
+          ($page-1)*$options['itemsPerPage']+1, 
+          min($page*$options['itemsPerPage'], $response['count']),
+          $response['count']).'</span>';
+    } else {
+      $replacements['showing'] = lang::get('No records');
+    }
     $r = $indicia_templates['paging'];
     foreach($replacements as $search => $replace)
       $r = str_replace('{'.$search.'}', $replace, $r);
@@ -1262,9 +1266,11 @@ mapSettingsHooks.push(function(opts) {
         if (!empty($param['alias']) && $param['datatype']=='idlist')
           $alias = $param['alias'];
           data_entry_helper::$javascript .= "
-mapSettingsHooks.push(function(opts) {
-  opts.featureIdField='$alias';
-});\n";
+if (typeof(mapSettingsHooks)!=='undefined') {
+  mapSettingsHooks.push(function(opts) {
+    opts.featureIdField='$alias';
+  });
+}\n";
       }
       if ($options['paramsInMapToolbar']) {
         $toolbarControls = str_replace(array('<br/>', "\n"), '', $r);

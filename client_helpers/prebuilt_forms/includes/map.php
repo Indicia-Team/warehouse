@@ -35,26 +35,27 @@ function iform_map_get_map_parameters() {
     array(
       'name'=>'map_centroid_lat',
       'caption'=>'Centre of Map Latitude',
-      'description'=>'WGS84 Latitude of the initial map centre point, in decimal form.',
-      'type'=>'string',
+      'description'=>'WGS84 Latitude of the initial map centre point, in decimal form. Set to "default" to use the settings '.
+          'defined in the ">IForm Settings page.',
+      'type'=>'text_input',
       'group'=>'Initial Map View',
-      'siteSpecific'=>true
+      'default'=>'default'
     ),
     array(
       'name'=>'map_centroid_long',
       'caption'=>'Centre of Map Longitude',
-      'description'=>'WGS84 Longitude of the initial map centre point, in decimal form.',
-      'type'=>'string',
+      'description'=>'WGS84 Longitude of the initial map centre point, in decimal form. Set to "default" to use the settings defined in the IForm Settings page.',
+      'type'=>'text_input',
       'group'=>'Initial Map View',
-      'siteSpecific'=>true
+      'default'=>'default'
     ),
     array(
       'name'=>'map_zoom',
       'caption'=>'Map Zoom Level',
-      'description'=>'Zoom level of the initially displayed map.',
-      'type'=>'int',
+      'description'=>'Zoom level of the initially displayed map. Set to "default" to use the settings defined in the IForm Settings page.',
+      'type'=>'text_input',
       'group'=>'Initial Map View',
-      'siteSpecific'=>true
+      'default'=>'default'
     ),
     array(
       'name'=>'map_width',
@@ -62,8 +63,7 @@ function iform_map_get_map_parameters() {
       'description'=>'Width in pixels of the map, or a css specification for the width, e.g. 75%.',
       'type'=>'text_input',
       'group'=>'Initial Map View',
-      'default'=>500,
-      'siteSpecific'=>true
+      'default'=>500
     ),
     array(
       'name'=>'map_height',
@@ -71,8 +71,7 @@ function iform_map_get_map_parameters() {
       'description'=>'Height in pixels of the map.',
       'type'=>'int',
       'group'=>'Initial Map View',
-      'default'=>600,
-      'siteSpecific'=>true
+      'default'=>600
     ),
     array(
       'name'=>'remember_pos',
@@ -239,7 +238,7 @@ function iform_map_get_map_options($args, $readAuth) {
     'width'=>$args['map_width'],
     'height'=>$args['map_height'],
     'standardControls'=>array('layerSwitcher','panZoom'),
-    'rememberPos'=>isset($args['remember_pos']) ? $args['remember_pos'] : false
+    'rememberPos'=>isset($args['remember_pos']) ? ($args['remember_pos']==true) : false
   );
   // If they have defined a custom base layer, add it
   if ($args['wms_base_title'] && $args['wms_base_url'] && $args['wms_base_layer']) {

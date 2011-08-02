@@ -178,7 +178,8 @@ class iform_mnhnl_citizen_science_1 {
         array(
           'name'=>'spatial_systems',
           'caption'=>'Allowed Spatial Ref Systems',
-          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326).',
+          'description'=>'List of allowable spatial reference systems, comma separated. Use the spatial ref system code (e.g. OSGB or the EPSG code number such as 4326). '.
+              'Set to "default" to use the settings defined in the IForm Settings page.',
           'type'=>'string',
           'group'=>'Misc'
         )
