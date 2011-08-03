@@ -24,75 +24,201 @@
  * page refreshes. It does not do the initial grid load operation.
  */
 
-(function($) {
-  $.fn.reportgrid = function(options) {
+(function ($) {
+  $.fn.reportgrid = function (options) {
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
-    var opts = $.extend({}, $.fn.reportgrid.defaults, options);
+    var opts = $.extend({}, $.fn.reportgrid.defaults, options),
+        // flag to prevent double clicks
+        loading=false;
+        
+    function getRequest(div) {
+      var serviceCall, request;
+      if (div.settings.mode==='report') {
+        serviceCall = 'report/requestReport?report='+div.settings.dataSource+'.xml&reportSource=local&';
+      } else if (div.settings.mode==='direct') {
+        serviceCall = 'data/' + div.settings.dataSource + '?';
+      }
+      request = div.settings.url+'index.php/services/' +
+          serviceCall +
+          'mode=json&nonce=' + div.settings.nonce +
+          '&auth_token=' + div.settings.auth_token +
+          '&view=' + div.settings.view +          
+          '&callback=?';
+      return request;
+    }
     
-    // flag to prevent double clicks
-    var loading=false;
-    
-    /**
-     * Public function which adds a list of records to the bottom of the grid, loaded according to a filter.
-     * Typical usage might be to specify an id to add a single record.
-     */
-    this.addRecords = function(filterField, filterValue) {
-      $.each($(this), function(idx, div) {
-        var request = getRequest(div);
-        request += '&' + filterField + '=' + filterValue;
-        loadGridFrom(div, request, false);
+    function mergeParamsIntoTemplate (div, params, template) {
+      var regex, regexEsc, regexEscDbl, r;
+      $.each(params, function(param) {
+        regex = new RegExp('\\{'+param+'\\}','g');
+        regexEsc = new RegExp('\\{'+param+'-escape-quote\\}','g');
+        regexEscDbl = new RegExp('\\{'+param+'-escape-dblquote\\}','g');
+        r = params[param] || '';
+        template = template.replace(regex, r);
+        template = template.replace(regexEsc, r.replace("'","\\'"));
+        template = template.replace(regexEscDbl, r.replace('"','\\"'));
       });
-    };
+      // Also do some standard params from the settings, for various paths/urls
+      regex = new RegExp('\\{rootFolder\\}','g');
+      template = template.replace(regex, div.settings.rootFolder);
+      regex = new RegExp('\\{imageFolder\\}','g');
+      template = template.replace(regex, div.settings.imageFolder);
+      regex = new RegExp('\\{currentUrl\\}','g');
+      template = template.replace(regex, div.settings.currentUrl);
+      return template;
+    }
     
-    this.reload = function() {
-      $.each($(this), function(idx, div) {
-        load(div);
-      });
-    } 
-    
-    /**
-     * Function to make a service call to load the grid data.
-     */
-    load = function(div) {
-      var paramName, request = getRequest(div);
-      request += '&offset=' + div.settings.offset;
-      // Extract any parameters from the attached form
-      $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
-        if (input.type!=='submit') {
-          paramName = $(input).attr('name').replace(div.settings.reportGroup+'-', '');
-          request += '&' + paramName + '=' + $(input).attr('value');
+    function getActions (div, row, actions) {
+      var result='', onclick, href;
+      $.each(actions, function(idx, action) {
+        if (typeof action.visibility_field === "undefined" || row[action.visibility_field]!=='f') {
+          if (typeof action.javascript !== "undefined") {
+            var rowCopy = row;
+            $.each(rowCopy, function(idx) {
+              if (rowCopy[idx]!==null) {
+                rowCopy[idx] = rowCopy[idx].replace(/'/g,"\\'");
+              }
+            });
+            onclick=' onclick="' + mergeParamsIntoTemplate(div, rowCopy, action.javascript) + '"';
+          } else {
+            onclick='';
+          }
+          if (typeof action.url !== "undefined") {
+            var link = action.url;
+            if (typeof action.urlParams !== "undefined") {
+              if (link.indexOf('?')===-1) { link += '?'; }
+              else { link += '&'; }
+              $.each(action.urlParams, function(name, value) {              
+                link += name + '=' + value;
+                link += '&';
+              });
+              if (link.substr(-1)==='&') {
+                link = link.substr(0, link.length-1);
+              }
+            }
+            link = mergeParamsIntoTemplate(div, row, link);
+            href=' href="' + link + '"';
+          } else {
+            href='';
+          }
+          if (result !== '') {
+            result += '<br/>';
+          }
+          result += '<a class="action-button"'+onclick+href+'>'+action.caption+'</a>';
         }
       });
-      if (div.settings.orderby !== null) {
-        request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
+      return result;
+    }
+    
+    function simplePager (pager, div, hasMore) {
+      var pagerContent='';
+      if (div.settings.offset!==0) {
+        pagerContent += '<a class="pag-prev pager-button" href="#">previous</a> ';
+      } else {
+        pagerContent += '<span class="pag-prev pager-button ui-state-disabled">previous</span> ';
       }
-      // Ask for one more row than we need so we know if the next page link is available
-      if (div.settings.itemsPerPage !== null) {
-        request += '&limit=' + (div.settings.itemsPerPage+1);
+      
+      if (hasMore) {
+        pagerContent += '<a class="pag-next pager-button" href="#">next</a>';
+      } else {
+        pagerContent += '<span class="pag-next pager-button ui-state-disabled">next</span>';
       }
-      if (typeof div.settings.extraParams !== "undefined") {
-        $.each(div.settings.extraParams, function(key, value) {
-          // skip sorting params if the grid has its own sort applied by clicking a column title
-          if ((key!=='orderby' && key!=='sortdir') || div.settings.orderby === null) {
-            request += '&' + key + '=' + value;
+      if (div.settings.offset!==0 || hasMore) {
+        pager.append(pagerContent);
+      }
+    }
+    
+    function advancedPager (pager, div, hasMore) {
+      var pagerContent=div.settings.pagingTemplate, pagelist = '', page, showing = div.settings.langShowing;
+      if (div.settings.offset!==0) {
+        pagerContent = pagerContent.replace('{prev}', '<a class="pag-prev pager-button" href="#">'+div.settings.langPrev+'</a> ');
+        pagerContent = pagerContent.replace('{first}', '<a class="pag-first pager-button" href="#">'+div.settings.langFirst+'</a> ');
+      } else {
+       pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
+       pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
+      }
+      
+      if (hasMore)  {
+        pagerContent = pagerContent.replace('{next}', '<a class="pag-next pager-button" href="#">'+div.settings.langNext+'</a> ');
+        pagerContent = pagerContent.replace('{last}', '<a class="pag-last pager-button" href="#">'+div.settings.langLast+'</a> ');
+      } else {
+        pagerContent = pagerContent.replace('{next}', '<span class="pag-next pager-button ui-state-disabled">'+div.settings.langNext+'</span> ');
+        pagerContent = pagerContent.replace('{last}', '<span class="pag-last pager-button ui-state-disabled">'+div.settings.langLast+'</span> ');
+      }
+
+      for (page=Math.max(1, div.settings.offset/div.settings.itemsPerPage-4); 
+          page<=Math.min(div.settings.offset/div.settings.itemsPerPage+6, Math.round(div.settings.recordCount / div.settings.itemsPerPage)); 
+          page += 1) {
+        if (page===div.settings.offset/div.settings.itemsPerPage+1) {
+          pagelist += '<span class="pag-page pager-button ui-state-disabled" id="page-' + div.settings.id+ '-'+page+'">'+page+'</span> ';
+        } else {
+          pagelist += '<a href="#" class="pag-page pager-button" id="page-' + div.settings.id+ '-'+page+'">'+page+'</a> ';
+        }
+      }
+      pagerContent = pagerContent.replace('{pagelist}', pagelist);
+      showing = showing.replace('{1}', div.settings.offset+1);
+      showing = showing.replace('{2}', Math.min(div.settings.offset + div.settings.itemsPerPage, div.settings.recordCount));
+      showing = showing.replace('{3}', div.settings.recordCount);
+      pagerContent = pagerContent.replace('{showing}', showing);
+
+      pager.append(pagerContent);
+    }
+        
+    // recreate the pagination footer
+    function updatePager (div, hasMore) {
+      var pager=$(div).find('.pager');
+      pager.empty();
+      if (typeof div.settings.recordCount==="undefined") {
+        simplePager(pager, div, hasMore);
+      } else {
+        advancedPager(pager, div, hasMore);
+      }
+    }
+    
+    /**
+     * Returns the query parameter, which filters the output based on the filters and filtercol/filtervalue.
+     */
+    function getQueryParam (div) {
+      var query={}, needQuery = false;
+      if (div.settings.filterCol !== null && div.settings.filterValue !== null) {
+        query.like = {};
+        query.like[div.settings.filterCol] = div.settings.filterValue;
+        needQuery = true;
+      }
+      // were any predefined parameter values supplied?
+      if (typeof div.settings.filters !== "undefined") {
+        $.each(div.settings.filters, function(name, value) {
+          if ($.isArray(value)) {
+            if (typeof query['in']==="undefined") {
+              query['in'] = {};
+            }
+            query['in'][name] = value;
+          } else {
+            if (typeof query.where==="undefined") {
+              query.where = {};
+            }
+            query.where[name] = value;
           }
+          needQuery = true;
         });
       }
-      request += getQueryParam(div);
-      loadGridFrom(div, request, true);
-    };
+      if (needQuery) {
+        return '&query=' + JSON.stringify(query);
+      } else {
+        return '';
+      }
+    }
     
-    loadGridFrom = function(div, request, clearExistingRows) {      
+        function loadGridFrom (div, request, clearExistingRows) {      
       $.getJSON(request,
           null,
           function(response) {
-            var tbody = $(div).find('tbody');
+            var tbody = $(div).find('tbody'), row, rows = eval(response), rowclass='', hasMore=false, value, rowInProgress=false, rowOutput;            
             // clear current grid rows
             if (clearExistingRows) {
               tbody.children().remove();
             }
-            var row, rows = eval(response), rowclass='', hasMore=false, value, rowInProgress=false, rowOutput;            
             $.each(rows, function(rowidx, row) {
               // We asked for one too many rows. If we got it, then we can add a next page button
               if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
@@ -151,191 +277,42 @@
             }
           }
       );
-    };
-    
-    // recreate the pagination footer
-    updatePager = function(div, hasMore) {
-      var pager=$(div).find('.pager');
-      pager.empty();
-      if (typeof div.settings.recordCount==="undefined") {
-        simplePager(pager, div, hasMore);
-      } else {
-        advancedPager(pager, div, hasMore);
-      }
-    };
-      
-    simplePager = function(pager, div, hasMore) {
-      var pagerContent='';
-      if (div.settings.offset!==0) {
-        pagerContent += '<a class="pag-prev pager-button" href="#">previous</a> ';
-      } else {
-        pagerContent += '<span class="pag-prev pager-button ui-state-disabled">previous</span> ';
-      }
-      
-      if (hasMore) {
-        pagerContent += '<a class="pag-next pager-button" href="#">next</a>';
-      } else {
-        pagerContent += '<span class="pag-next pager-button ui-state-disabled">next</span>';
-      }
-      if (div.settings.offset!==0 || hasMore) {
-        pager.append(pagerContent);
-      }
-    };
-    
-    advancedPager = function(pager, div, hasMore) {
-      var pagerContent=div.settings.pagingTemplate;
-      if (div.settings.offset!==0) {
-        pagerContent = pagerContent.replace('{prev}', '<a class="pag-prev pager-button" href="#">'+div.settings.langPrev+'</a> ');
-        pagerContent = pagerContent.replace('{first}', '<a class="pag-first pager-button" href="#">'+div.settings.langFirst+'</a> ');
-      } else {
-       pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
-       pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
-      }
-      
-      if (hasMore)  {
-        pagerContent = pagerContent.replace('{next}', '<a class="pag-next pager-button" href="#">'+div.settings.langNext+'</a> ');
-        pagerContent = pagerContent.replace('{last}', '<a class="pag-last pager-button" href="#">'+div.settings.langLast+'</a> ');
-      } else {
-        pagerContent = pagerContent.replace('{next}', '<span class="pag-next pager-button ui-state-disabled">'+div.settings.langNext+'</span> ');
-        pagerContent = pagerContent.replace('{last}', '<span class="pag-last pager-button ui-state-disabled">'+div.settings.langLast+'</span> ');
-      }
-      
-      var pagelist = '', page;
-      for (page=Math.max(1, div.settings.offset/div.settings.itemsPerPage-4); 
-          page<=Math.min(div.settings.offset/div.settings.itemsPerPage+6, Math.round(div.settings.recordCount / div.settings.itemsPerPage)); 
-          page++) {
-        if (page===div.settings.offset/div.settings.itemsPerPage+1) {
-          pagelist += '<span class="pag-page pager-button ui-state-disabled" id="page-' + div.settings.id+ '-'+page+'">'+page+'</span> ';
-        } else {
-          pagelist += '<a href="#" class="pag-page pager-button" id="page-' + div.settings.id+ '-'+page+'">'+page+'</a> ';
-        }
-      }
-      pagerContent = pagerContent.replace('{pagelist}', pagelist);
-      
-      var showing = div.settings.langShowing;
-      showing = showing.replace('{1}', div.settings.offset+1);
-      showing = showing.replace('{2}', Math.min(div.settings.offset + div.settings.itemsPerPage, div.settings.recordCount));
-      showing = showing.replace('{3}', div.settings.recordCount);
-      pagerContent = pagerContent.replace('{showing}', showing);
-
-      pager.append(pagerContent);
-    };
-    
-    getRequest = function(div) {
-      var serviceCall;
-      if (div.settings.mode==='report') {
-        serviceCall = 'report/requestReport?report='+div.settings.dataSource+'.xml&reportSource=local&';
-      } else if (div.settings.mode==='direct') {
-        serviceCall = 'data/' + div.settings.dataSource + '?';
-      }
-      var request = div.settings.url+'index.php/services/' +
-          serviceCall +
-          'mode=json&nonce=' + div.settings.nonce +
-          '&auth_token=' + div.settings.auth_token +
-          '&view=' + div.settings.view +          
-          '&callback=?';
-      return request;
-    };
+    }
     
     /**
-     * Returns the query parameter, which filters the output based on the filters and filtercol/filtervalue.
+     * Function to make a service call to load the grid data.
      */
-    getQueryParam = function(div) {
-      var query={}, needQuery = false;
-      if (div.settings.filterCol !== null && div.settings.filterValue !== null) {
-        query.like = {};
-        query.like[div.settings.filterCol] = div.settings.filterValue;
-        needQuery = true;
-      }
-      // were any predefined parameter values supplied?
-      if (typeof div.settings.filters !== "undefined") {
-        $.each(div.settings.filters, function(name, value) {
-          if ($.isArray(value)) {
-            if (typeof query.in==="undefined") {
-              query.in = {};
-            }
-            query.in[name] = value;
-          } else {
-            if (typeof query.where==="undefined") {
-              query.where = {};
-            }
-            query.where[name] = value;
-          }
-          needQuery = true;
-        });
-      }
-      if (needQuery) {
-        return '&query=' + JSON.stringify(query);
-      } else {
-        return '';
-      }
-    };
-    
-    getActions = function(div, row, actions) {
-      var result='', onclick, href;
-      $.each(actions, function(idx, action) {
-        if (typeof action.visibility_field === "undefined" || row[action.visibility_field]!=='f') {
-          if (typeof action.javascript !== "undefined") {
-            var rowCopy = row;
-            $.each(rowCopy, function(idx) {
-              if (rowCopy[idx]!==null) {
-                rowCopy[idx] = rowCopy[idx].replace(/'/g,"\\'");
-              }
-            });
-            onclick=' onclick="' + mergeParamsIntoTemplate(div, rowCopy, action.javascript) + '"';
-          } else {
-            onclick='';
-          }
-          if (typeof action.url !== "undefined") {
-            var link = action.url;
-            if (typeof action.urlParams !== "undefined") {
-              if (link.indexOf('?')===-1) { link += '?'; }
-              else { link += '&'; }
-              $.each(action.urlParams, function(name, value) {              
-                link += name + '=' + value;
-                link += '&';
-              });
-              if (link.substr(-1)==='&') {
-                link = link.substr(0, link.length-1);
-              }
-            }
-            link = mergeParamsIntoTemplate(div, row, link);
-            href=' href="' + link + '"';
-          } else {
-            href='';
-          }
-          if (result !== '') {
-            result += '<br/>';
-          }
-          result += '<a class="action-button"'+onclick+href+'>'+action.caption+'</a>';
+    function load (div) {
+      var paramName, request = getRequest(div);
+      request += '&offset=' + div.settings.offset;
+      // Extract any parameters from the attached form
+      $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
+        if (input.type!=='submit') {
+          paramName = $(input).attr('name').replace(div.settings.reportGroup+'-', '');
+          request += '&' + paramName + '=' + $(input).attr('value');
         }
       });
-      return result;
-    };
-    
-    mergeParamsIntoTemplate = function(div, params, template) {
-      var regex, regexEsc, regexEscDbl, r;
-      $.each(params, function(param) {
-        regex = new RegExp('\\{'+param+'\\}','g');
-        regexEsc = new RegExp('\\{'+param+'\-escape\-quote\\}','g');
-        regexEscDbl = new RegExp('\\{'+param+'\-escape\-dblquote\\}','g');
-        r = params[param] || '';
-        template = template.replace(regex, r);
-        template = template.replace(regexEsc, r.replace("'","\\'"));
-        template = template.replace(regexEscDbl, r.replace('"','\\"'));
-      });
-      // Also do some standard params from the settings, for various paths/urls
-      regex = new RegExp('\\{rootFolder\\}','g');
-      template = template.replace(regex, div.settings.rootFolder);
-      regex = new RegExp('\\{imageFolder\\}','g');
-      template = template.replace(regex, div.settings.imageFolder);
-      regex = new RegExp('\\{currentUrl\\}','g');
-      template = template.replace(regex, div.settings.currentUrl);
-      return template;
-    };
+      if (div.settings.orderby !== null) {
+        request += '&orderby=' + div.settings.orderby + '&sortdir=' + div.settings.sortdir;
+      }
+      // Ask for one more row than we need so we know if the next page link is available
+      if (div.settings.itemsPerPage !== null) {
+        request += '&limit=' + (div.settings.itemsPerPage+1);
+      }
+      if (typeof div.settings.extraParams !== "undefined") {
+        $.each(div.settings.extraParams, function(key, value) {
+          // skip sorting params if the grid has its own sort applied by clicking a column title
+          if ((key!=='orderby' && key!=='sortdir') || div.settings.orderby === null) {
+            request += '&' + key + '=' + value;
+          }
+        });
+      }
+      request += getQueryParam(div);
+      loadGridFrom(div, request, true);
+    }
     
     // Sets up various clickable things like the filter button on a direct report, or the pagination links.
-    setupReloadLinks = function(div) {
+    function setupReloadLinks (div) {
       // Define pagination clicks.
       if (div.settings.itemsPerPage!==null) {
         $(div).find('.pager .pag-next').click(function(e) {
@@ -405,6 +382,24 @@
           $(div).find('.run-filter').click();
         });
       }
+    }
+    
+    /**
+     * Public function which adds a list of records to the bottom of the grid, loaded according to a filter.
+     * Typical usage might be to specify an id to add a single record.
+     */
+    this.addRecords = function(filterField, filterValue) {
+      $.each($(this), function(idx, div) {
+        var request = getRequest(div);
+        request += '&' + filterField + '=' + filterValue;
+        loadGridFrom(div, request, false);
+      });
+    };
+    
+    this.reload = function() {
+      $.each($(this), function(idx, div) {
+        load(div);
+      });
     };
     
     return this.each(function() {
