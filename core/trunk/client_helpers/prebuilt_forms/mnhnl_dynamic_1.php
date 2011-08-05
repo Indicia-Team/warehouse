@@ -554,7 +554,11 @@ class iform_mnhnl_dynamic_1 {
     ));
     //// Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
-    $reloadPath = $_SERVER['REQUEST_URI'];
+    unset($reload['params']['sample_id']);
+    unset($reload['params']['occurrence_id']);
+    unset($reload['params']['newSample']);
+    $reloadPath = $reload['path'];
+    if(count($reload['params'])) $reloadPath .= '?'.http_build_query($reload['params']);
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadPath\">\n";
     // Get authorisation tokens to update the Warehouse, plus any other hidden data.
     $hiddens = $auth['write'].
@@ -1072,6 +1076,8 @@ class iform_mnhnl_dynamic_1 {
       $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
       data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
     }
+    if($args['language'] != 'en')
+      data_entry_helper::add_resource('jquery_ui_'.$args['language']); // this will autoload the jquery_ui resource. The date_picker does not have access to the args.
     return data_entry_helper::date_picker(array_merge(array(
       'label'=>lang::get('LANG_Date'),
       'fieldname'=>'sample:date',

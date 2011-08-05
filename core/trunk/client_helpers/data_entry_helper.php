@@ -896,7 +896,7 @@ class data_entry_helper extends helper_base {
       ),
       $options
     );
-    if($options['multiselect'] && $options['multiselect']!=false && $options['multiselect']!='false')
+    if(isset($options['multiselect']) && $options['multiselect']!=false && $options['multiselect']!=='false')
       $options['multiple']='multiple';
     return self::select_or_listbox($options);
   }
@@ -2735,7 +2735,12 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         );
       }
       foreach ($lookupItems as $value => $template){
-        $item['selected'] = (isset($options['default']) && $options['default'] == $value) ? 'selected' : '';
+        if(isset($options['default'])){
+          if(is_array($options['default'])){
+            $item['selected'] = in_array($value, $options['default']) ? 'selected' : '';
+          } else
+            $item['selected'] = ($options['default'] == $value) ? 'selected' : '';
+        } else $item['selected'] = '';
         $opts .= self::mergeParamsIntoTemplate($item, $template, true);
       }
       $options['items'] = $opts;

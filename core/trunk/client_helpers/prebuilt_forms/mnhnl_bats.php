@@ -36,7 +36,7 @@
  * checks on species list re adding existing taxon
  * 
  * On Installation:
- * Need to set attributeValidation required for locAttrs for Village, site type, site follow up, and smpAttrs Visit, Observers, human freq, microclimate (including min, max) 
+ * Need to set attributeValidation required for locAttrs for Village, site type, site follow up, and smpAttrs Visit, human freq, microclimate (including min, max) 
  * Need to manually set the term list sort order on non-default language tems.
  * Need to set the control of Visit to a select, and for the cavity entrance to a checkbox group.
  */
@@ -68,8 +68,6 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     return array('IForm n'.$nid.' admin', 'IForm n'.$nid.' user');
   }
   
-  // user_access('IForm n'.$node->nid.' admin')
-  
   public static function get_parameters() {   
     $parentVal = parent::get_parameters();
     $retVal = array();
@@ -96,15 +94,15 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[*]\r\n".
              "=Other Information=\r\n".
               "[date]\r\n".
-              "@dateFormat=yy-mm-dd\r\n".
               "[recorder names]\r\n".
               "[*]\r\n".
               "@sep= \r\n".
               "@lookUpKey=meaning_id\r\n".
               "[sample comment]\r\n".
              "=Species=\r\n".
-              "[species]\r\n". //@view=detail
-              "@rowInclusionCheck=hasData\r\n".
+              "[species]\r\n". 
+              "@view=detail\r\n".
+              "@rowInclusionCheck=alwaysRemovable\r\n".
               "[species attributes]\r\n".
               "[*]\r\n";
       }
@@ -167,6 +165,15 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'type' => 'string',
           'group' => 'User Interface'
         );
+    $retVal[] = array(
+          'name'=>'attributeValidation',
+          'caption'=>'Attribute Validation Rules',
+          'description'=>'Client Validation rules to be enforced on attributes: allows more options than allowed by straight class led validation.',
+          'type'=>'textarea',
+          'required' => false,
+          'group' => 'User Interface'
+        );
+        
         
     return $retVal;
   }
@@ -177,7 +184,9 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
    * Does not include any HTML.
    */
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
-    if(lang::get('validation_required')!='validation_required'){
+    $reload = data_entry_helper::get_reload_link_parts();
+    $reloadPath = $reload['path'];
+  	if(lang::get('validation_required')!='validation_required'){
       if(lang::get('validation_required') != 'validation_required')
         data_entry_helper::$late_javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
@@ -187,8 +196,15 @@ $.validator.messages.max = $.validator.format(\"".lang::get('validation_max')."\
       if(lang::get('validation_min') != 'validation_min')
         data_entry_helper::$late_javascript .= "
 $.validator.messages.min = $.validator.format(\"".lang::get('validation_min')."\");";
+     if(lang::get('validation_number') != 'validation_number')
+        data_entry_helper::$late_javascript .= "
+$.validator.messages.number = $.validator.format(\"".lang::get('validation_number')."\");";
     }
+    $numRows=3;
+    $numCols=2;
+    $startPos=2;
     data_entry_helper::$javascript .= "
+jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\">".lang::get('LANG_Cancel')."</a></span></div>').appendTo('.buttons');
 checkRadioStatus = function(){
   jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
     if(this.checked)
@@ -258,7 +274,88 @@ jQuery('#imp-sref-system').change(function(){
   if(jQuery('#map')[0].map) jQuery('#map')[0].map.editLayer.destroyFeatures();
 });
 checkSystemStatus();
+// Two aspects: need to find scClonableRow, and then do existing rows in grid, and clear row being added.
+var occAttrs = jQuery('.scClonableRow').find('.scOccAttrCell');
+var newTable = jQuery('<table class=\"fullWidth\">');
+var newElem = jQuery('<td class=\"noPadding\" >').append(newTable).insertBefore(occAttrs.filter(':first'));
+for (var i=0;i<$numRows;i++){
+	switch(i){";
+    for($i=0; $i<$numRows; $i++){
+    	data_entry_helper::$javascript .= "
+		case($i): jQuery(\"<tr><td class='scOccAttrCell ui-widget-content'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
+    }
+    data_entry_helper::$javascript .= "
+	}
+}
+for (var i=0;i<occAttrs.length;i++){
+	jQuery(occAttrs[i]).find('input').addClass('number').attr('min',0);
+	if(i%$numRows == 0){
+		newTable = jQuery('<table class=\"fullWidth\">');
+		newElem = jQuery('<td class=\"noPadding\">').append(newTable).insertAfter(newElem);
+	}
+	jQuery('<tr>').append(occAttrs[i]).appendTo(newTable);
+}
+var CRgroup = jQuery('.scClonableRow').find('table').find('td');
+// Do main table header
+occAttrs = jQuery('.species-grid > thead').find('th');
+var newElem = jQuery('<th>').insertBefore(occAttrs.filter(':eq($startPos)'));
+for (var i=0;i<$numRows*$numCols;i++){
+	jQuery(occAttrs[i+$startPos]).remove();
+}
+for (var i=0;i<$numCols;i++){
+	switch(i){";
+    for($i=0; $i<$numCols; $i++){
+    	data_entry_helper::$javascript .= "
+		case($i): newElem = jQuery(\"<th>".lang::get('SCLabel_Col'.($i+1))."</th>\").insertAfter(newElem); break;";
+    }
+    data_entry_helper::$javascript .= "
+	}
+}
+// Main table existing entries
+speciesRows = jQuery('.species-grid > tbody').find('tr');
+for(var j=0; j<speciesRows.length; j++){
+	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
+	newTable = jQuery('<table class=\"fullWidth\">');
+	newElem = jQuery('<td class=\"noPadding\" >').append(newTable).insertBefore(occAttrs.filter(':first'));
+	for (var i=0;i<$numRows;i++){
+		switch(i){";
+    for($i=0; $i<$numRows; $i++){
+    	data_entry_helper::$javascript .= "
+			case($i): jQuery(\"<tr><td class='scOccAttrCell ui-widget-content'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
+    }
+    data_entry_helper::$javascript .= "
+		}
+	}
+	for (var i=0;i<occAttrs.length;i++){
+		jQuery(occAttrs[i]).find('input').addClass('number').attr('min',0);
+		if(i%$numRows == 0){
+			newTable = jQuery('<table class=\"fullWidth\">');
+			newElem = jQuery('<td class=\"noPadding\" >').append(newTable).insertAfter(newElem);
+		}
+		jQuery('<tr>').append(occAttrs[i]).appendTo(newTable);
+	}
+	var group = jQuery(speciesRows[j]).find('table').find('td');
+	var tallest = 0;
+	group.each(function(){ tallest = Math.max($(this).outerHeight(), tallest); });
+	group.each(function(){ 
+		$(this).height(tallest); });
+	CRgroup.each(function(){ 
+		$(this).height(tallest); });
+}
 ";
+    if (isset($args['col_widths']) && $args['col_widths']){
+       $colWidths=explode(',', $args['col_widths']);
+       for($i=0; $i<count($colWidths); $i++){
+       		data_entry_helper::$javascript .= "
+jQuery('.species-grid > thead').find('th').filter(':eq(".$i.")').width('";
+       	if($colWidths[$i]==''){
+       		data_entry_helper::$javascript .= "auto');";
+       	} else {
+       		data_entry_helper::$javascript .= $colWidths[$i]."%');";
+       	}
+       }
+    }
+    
     // Move the Temperature and Humidity fields side by side.
     $removeBreakIDs = explode(':', $args['removeBreakIDs']);
     foreach($removeBreakIDs as $removeBreakID){
@@ -281,6 +378,13 @@ jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').attr('".$details[0]."',".$
           } else if($rule[$i]=='no_observation'){
                data_entry_helper::$late_javascript .= "
 jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').filter(':checkbox').rules('add', {no_observation: true});
+hook_species_checklist_delete_row=function() {
+  var rows=jQuery('.species-grid > tbody > tr').not(':hidden').not('.scClonableRow').length;
+  if(rows==0)
+    jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').removeAttr('disabled');
+  else
+    jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').attr('disabled','disabled').removeAttr('checked');
+};
 // possible clash with link_species_popups, so latter disabled.
 hook_species_checklist_new_row=function(rowData) {
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
@@ -289,6 +393,7 @@ hook_species_checklist_new_row=function(rowData) {
       jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list' +
             '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&taxon_meaning_id='+mdata[0].taxon_meaning_id+'&callback=?', function(data) {
         var taxaList = '';
+        var duplicate=false;
         if(data instanceof Array && data.length>0){
           for (var i=0;i<data.length;i++){
             if(data[i].id != mdata[0].id){
@@ -297,18 +402,20 @@ hook_species_checklist_new_row=function(rowData) {
               else
                 taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
             }
+            if(jQuery('[name^=sc\\:'+data[i].id+'\\:]').length > 0)
+              duplicate=true;
           }
+          if(duplicate){
+            alert(\"".lang::get('LANG_Duplicate_Taxon')."\");
+            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').remove();
+          } else
+            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('extraCommonNames');
         }
-        jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('.extraCommonNames');
       });
     }})
-  jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').not(':hidden').attr('disabled','disabled').removeAttr('checked');;
+    hook_species_checklist_delete_row();;
 }
-hook_species_checklist_delete_row=function() {
-  var rows=jQuery('.species-grid').find('tbody').find('tr').not(':hidden').not('.scClonableRow').length;
-  if(rows==0)
-    jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').removeAttr('disabled','disabled');
-}
+hook_species_checklist_delete_row();
 $.validator.addMethod('no_observation', function(arg1, arg2){
 var numChecked = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').filter(':radio').filter('[checked=true]').length;
 var numFilledIn = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').not(':radio').filter('[value!=]').length;
@@ -322,20 +429,9 @@ jQuery('[name=".$rule[0]."],[name^=".$rule[0]."\\:]').removeAttr('disabled','dis
 return false;
 },
   \"".lang::get('validation_no_observation')."\");
-";
+  ";
           }
     }
-//    $url = data_entry_helper::$geoserver_url.'wms';
-//    // Get the style if there is one selected
-//    $style = $args["wms_style"] ? ", styles: '".$args["wms_style"]."'" : '';   
-//    data_entry_helper::$javascript .= "\n    var filter='website_id=".$args['website_id']."';";
-//    data_entry_helper::$javascript .= "\n    var locLayer = new OpenLayers.Layer.WMS(
-//          'Selectable locations', // TBD from options?
-//          '$url',
-//          {layers: 'detail_locations', // TBD from options?
-//            transparent: true, CQL_FILTER: filter $style},
-//          {isBaseLayer: false, sphericalMercator: true, singleTile: true}
-//    );\n";
     return '';
   }
   
@@ -477,17 +573,22 @@ return false;
     }
     $isAdmin = user_access('IForm n'.$node->nid.' admin');
     data_entry_helper::$javascript .= "
-clearLocation = function(enableFields){
+setLocationEditable = function(enableFields){
   var enableItems;
   var disableItems;
   disableItems = '[name=location\\:id],[name=location\\:code]'; //clearing the location so no ID, so disable 
   enableItems = '[name=locations_website\\:website_id]'; // but have to activate website record 
-  if(!enableFields)
+  if(!enableFields){
+    if(jQuery('#map')[0].map != undefined) jQuery('#map')[0].map.editLayer.clickControl.deactivate()
     disableItems = disableItems + ',[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom';
-  else
+  } else {
+    if(jQuery('#map')[0].map != undefined) jQuery('#map')[0].map.editLayer.clickControl.activate()
     enableItems = enableItems + ',[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom';
+  }
   jQuery(enableItems).removeAttr('disabled');
   jQuery(disableItems).attr('disabled',true);
+};
+clearLocation = function(){
   jQuery('[name=location\\:id],[name=location\\:code],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-lat,#imp-sref-long,#imp-geom').val('');
   // first need to remove any hidden multiselect checkbox unclick fields
   jQuery('[name^=locAttr\\:]').filter('.multiselect').remove();
@@ -514,14 +615,20 @@ clearLocation = function(enableFields){
   checkRadioStatus();
 };
 loadLocation = function(myValue){
-  clearLocation(".($isAdmin ? "true" : "false").");
   if (myValue!=='') {
     // Change the location control requests the location's geometry to place on the map.
-    jQuery('[name=location\\:id]').val(myValue).removeAttr('disabled');
-    jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location/'+myValue +
+    jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?location_id='+myValue +
+            '&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(sdata) {
+      ".($isAdmin ? "": "
+      // Count returns: if only one, then normal bods can edit
+      if (sdata instanceof Array && sdata.length==1) {
+        setLocationEditable(true);
+      }")."
+      jQuery('[name=location\\:id]').val(myValue).removeAttr('disabled');
+      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location/'+myValue +
             '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(data) {
-      // store value in saved field?
-      if (data instanceof Array && data.length>0) {
+       // store value in saved field?
+       if (data instanceof Array && data.length>0) {
         jQuery('[name=location\\:code]').val(data[0].code);
         jQuery('[name=location\\:name]').val(data[0].name);
         jQuery('[name=location\\:comment]').val(data[0].comment);
@@ -533,12 +640,12 @@ loadLocation = function(myValue){
         var refx = refxy[0].split(',');
         jQuery('#imp-sref-lat').val(refx[0]);
         jQuery('#imp-sref-long').val(refxy[1]).change();
-        jQuery('[name=locations_website\\:website_id]').attr('disabled');
-      }
-    });
-    jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
+        jQuery('[name=locations_website\\:website_id]').attr('disabled','disabled');
+       }
+      });
+      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
             '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_id='+myValue+'&callback=?', function(data) {
-      if(data instanceof Array && data.length>0){
+       if(data instanceof Array && data.length>0){
         for (var i=0;i<data.length;i++){
           if (data[i].id) { // && (data[i].iso == null || data[i].iso == '' || data[i].iso == '".$language."')
             var radiobuttons = jQuery('[name=locAttr\\:'+data[i]['location_attribute_id']+'],[name^=locAttr\\:'+data[i]['location_attribute_id']+'\\:]').filter(':radio');
@@ -560,21 +667,27 @@ loadLocation = function(myValue){
             }
           }
         }
-      }
-      checkRadioStatus();
+       }
+       checkRadioStatus();
+      });
     });
-  }
+  } else
+    setLocationEditable(false);
 };
 jQuery('#imp-location-name').change(function(){
   var myValue = jQuery('#imp-location-name').val();
   jQuery('#imp-location').val(myValue).change();
   jQuery('#imp-location-code').val(myValue);
+  clearLocation();
+  setLocationEditable(".($isAdmin ? "true" : "false").");
   loadLocation(myValue);
   });
 jQuery('#imp-location-code').change(function(){
   var myValue = jQuery('#imp-location-code').val();
   jQuery('#imp-location').val(myValue).change();
   jQuery('#imp-location-name').val(myValue);
+  clearLocation();
+  setLocationEditable(".($isAdmin ? "true" : "false").");
   loadLocation(myValue);
 });
 newLocation = function(){
@@ -582,17 +695,45 @@ newLocation = function(){
   jQuery('#imp-location').attr('disabled');
   jQuery('#imp-location-name').val('');
   jQuery('#imp-location-code').val('');
-  clearLocation(true);
+  clearLocation();
+  setLocationEditable(true);
 };
 jQuery('#imp-location').change(function(){
   jQuery('#imp-location').removeAttr('disabled');
 });
 ";
-
-    if(self::$mode == 1 )// newSample
-        data_entry_helper::$javascript .= "
-clearLocation(false);";
-
+    if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)) {
+      if($isAdmin || !array_key_exists('sample:location_id', data_entry_helper::$entity_to_load))
+      // existing sample, either admin or not existing location (validation error situation)
+        data_entry_helper::$onload_javascript .= "
+setLocationEditable(true);";
+      else 
+            data_entry_helper::$onload_javascript .= "
+setLocationEditable(false);
+jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?location_id=".data_entry_helper::$entity_to_load['sample:location_id']."' +
+            '&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(sdata) {
+      // Count returns: if only one, then normal bods can edit
+      if (sdata instanceof Array && sdata.length==1) {
+        setLocationEditable(true);
+      }});";
+  } else { // newSample
+    if(self::$mode == 1 )// newSample mode rather than error situation
+        data_entry_helper::$onload_javascript .= "
+clearLocation();
+setLocationEditable(false);";
+    else if($isAdmin || !array_key_exists('sample:location_id', data_entry_helper::$entity_to_load))
+        data_entry_helper::$onload_javascript .= "
+setLocationEditable(true);";
+      else 
+            data_entry_helper::$onload_javascript .= "
+setLocationEditable(false);
+jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?location_id=".data_entry_helper::$entity_to_load['sample:location_id']."' +
+            '&mode=json&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(sdata) {
+      // Count returns: if only one, then normal bods can edit
+      if (sdata instanceof Array && sdata.length==1) {
+        setLocationEditable(true);
+      }});";
+  }
     $r .= '<input type="button" value="'.lang::get('Create New Location').'" onclick="newLocation();">'.
       '<input type="hidden" id="locations_website:website_id" name="locations_website:website_id" value="'.$args['website_id'].'" disabled="'.(array_key_exists('location:id', data_entry_helper::$entity_to_load) ? 'disabled' : ''). '" />'.
       '</fieldset>'.
@@ -608,7 +749,8 @@ clearLocation(false);";
    * Get the recorder names control
    */
   protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
-    $userlist = array();
+    $values = array();
+  	$userlist = array();
     $results = db_query('SELECT uid, name FROM {users}');
     while($result = db_fetch_object($results)){
   		$account = user_load($result->uid);
@@ -616,17 +758,26 @@ clearLocation(false);";
 			$userlist[$result->name] = $result->name;
 		}
     }
+    if (isset(data_entry_helper::$entity_to_load['sample:recorder_names'])){
+      if(!is_array(data_entry_helper::$entity_to_load['sample:recorder_names']))
+        $values = explode("\r\n", data_entry_helper::$entity_to_load['sample:recorder_names']);
+      else
+        $values[] = data_entry_helper::$entity_to_load['sample:recorder_names'];
+    }
+    foreach($values as $value){
+      $userlist[$value] = $value;
+    }
     $r = data_entry_helper::listbox(array_merge(array(
-      'fieldname'=>'sample:recorder_names',
+      'id'=>'sample:recorder_names',
+      'fieldname'=>'sample:recorder_names[]',
       'label'=>lang::get('Recorder names'),
       'size'=>6,
       'multiselect'=>true,
-      'default'=>array(),
-      'lookupValues'=>$userlist
+      'default'=>$values,
+      'lookupValues'=>$userlist,
+      'validation'=>array('required')
     ), $options));
     return $r;
-//    'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{options}</select>',
-//  'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
   }
   
   /**
@@ -685,8 +836,6 @@ clearLocation(false);";
         '$r .= " - ".$taxaList;'."\n".
         'return $r;'."\n";
     // Set it into the indicia templates
-//    var_dump($php);
-//    throw(1);
     $indicia_templates['taxon_label'] = $php;
   }
   
@@ -697,6 +846,11 @@ clearLocation(false);";
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    if (isset($values['sample:recorder_names'])){
+      if(is_array($values['sample:recorder_names'])){
+        $values['sample:recorder_names'] = implode("\r\n", $values['sample:recorder_names']);
+      }
+    } // else just load the string
     if (isset($values['gridmode']))
       $occurrences = data_entry_helper::wrap_species_checklist($values);
     else
@@ -708,6 +862,10 @@ clearLocation(false);";
           $sampleMod['subModels'] = $occurrences;
       $locationMod = submission_builder::wrap_with_images($values, 'location');
       $locationMod['subModels'] = array(array('fkId' => 'location_id', 'model' => $sampleMod));
+      if(array_key_exists('locations_website:website_id', $_POST)){
+        $lw = submission_builder::wrap_with_images($values, 'locations_website');
+        $locationMod['subModels'][] = array('fkId' => 'location_id', 'model' => $lw);
+      }
       return $locationMod;
     }
     $values['sample:location_id'] = $values['location:id'];
