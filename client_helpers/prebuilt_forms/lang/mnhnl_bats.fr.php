@@ -36,6 +36,11 @@ $custom_terms = array(
 	'LANG_Add_Sample_Single' => 'Add Unique',
 	'LANG_Add_Sample_Grid' => 'Ajouter plusieurs occurrences',
 	'LANG_Save' => 'Enregistrer',
+	'save'=>'Enregistrer',
+	'LANG_Cancel' => 'Annuler',
+	'next step'=>'Suivant',
+	'prev step'=>'Précédente',
+
 	// 'Site' tab heading left alone
 	'Existing Locations' => 'Sites existants',
 	'LANG_Location_Code_Label' => 'Code',
@@ -55,7 +60,7 @@ $custom_terms = array(
 
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',
-	'Recoder names' => 'Observateur(s)',
+	'Recorder names' => 'Observateur(s)',
 	'General' => 'Général',
 	'Physical' => 'Caractéristiques de la cavité',
 	'Microclimate' => 'Conditions microclimatiques',
@@ -79,14 +84,19 @@ $custom_terms = array(
 	'LANG_Tab_species' => 'Espèces',
 	'species_checklist.species'=>'Espèces',
 	'Bats Obs Type' => "Type d'observation",
-	'Number: previous area' => "Nombre d'individus: Partie antérieurement explorée",
-	'Number: new area' => "Nombre d'individus: Partie nouvellement explorée",
+	'SCLabel_Col1' => "Nombre d'individus: Partie antérieurement explorée",
+	'SCLabel_Col2' => "Nombre d'individus: Partie nouvellement explorée",
+	'SCLabel_Row1' => 'Léthargie',
+	'SCLabel_Row2' => 'Cadavre(s)',
+	'SCLabel_Row3' => 'Excréments', 
 	'No Observation' => 'Aucune observation',
 	'Comment' => 'Commentaires',
+	'LANG_Duplicate_Taxon' => 'Vous avez sélectionné un taxon qui a déjà une entrée.',
 
 	'validation_required' => 'Veuillez entrer une valeur pour ce champ',
 	'validation_max' => "S'il vous plaît entrer une valeur inférieure ou égale à {0}.",
-	'validation_min' => "S'il vous plaît entrez une valeur supérieure ou égale à {0}.",
+	'validation_min' => "S'il vous plaît entrer une valeur supérieure ou égale à {0}.",
+	'validation_number' => "S'il vous plaît entrer un numéro valide.",
 	'validation_no_observation' => "Le <strong>Aucune observation</strong> doit être cochée si et seulement si il n'existe pas de données dans la grille des espèces."
 
 );

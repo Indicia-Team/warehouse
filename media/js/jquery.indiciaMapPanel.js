@@ -330,10 +330,32 @@ mapInitialisationHooks = [];
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
       _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
       if(div.settings.searchUpdatesSref && !div.settings.searchLayer){ // if no separate search layer, ensure sref matches feature in editlayer, if requested.
-          $('#'+opts.srefId).val(ref);
-          $('#'+opts.srefLatId).val(refxy[0]);
-          $('#'+opts.srefLongId).val(refxy[1]);
           $('#'+opts.geomId).val(dataref);
+          $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
+                  "?wkt=" + dataref +
+                  "&system=" + _getSystem() +
+                  "&precision=8" +
+                  "&output=" + div.settings.latLongFormat +
+                  "&callback=?", function(data)
+            {
+              if(typeof data.error != 'undefined')
+                if(data.error == 'wkt_to_sref translation is outside range of grid.')
+                  alert(div.settings.msgSrefOutsideGrid);
+                else
+                  alert(data.error);
+              else {
+                  $('#'+opts.srefId).val(data.sref);
+                  // If the sref is in two parts, then we might need to split it across 2 input fields for lat and long
+                  if (data.sref.indexOf(' ')!==-1) {
+                    var parts=data.sref.split(' ');
+                    // part 1 may have a comma at the end, so remove
+                    parts[0]=parts[0].split(',')[0];
+                    $('#'+opts.srefLatId).val(parts[0]);
+                    $('#'+opts.srefLongId).val(parts[1]);
+                  }
+              }
+             }
+          );
       }
     }
 

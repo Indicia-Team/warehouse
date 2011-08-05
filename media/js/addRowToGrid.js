@@ -84,7 +84,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     // put this inside the new row template in place of the species label.
     $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
     // add the row to the bottom of the grid
-    newRow.appendTo('table#' + gridId +' tbody').removeAttr('id');
+    newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
   
     // Attach auto-complete code to the input
     ctrl = $('#' + selectorId).autocomplete(url+'/taxa_taxon_list', {

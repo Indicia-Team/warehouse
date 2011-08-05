@@ -38,6 +38,7 @@ $custom_terms = array(
 	'LANG_Location_Name' => 'Site Name',
 	
 	'LANG_Save' => 'Save',
+	'LANG_Cancel' => 'Cancel',
 
 	'validation_required' => 'Please enter a value for this field',
 
