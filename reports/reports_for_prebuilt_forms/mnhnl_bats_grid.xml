@@ -16,9 +16,7 @@
   								WHERE sav.sample_id = s.id
   								AND sav.sample_attribute_id = #userID_attr_id#
   								AND sav.int_value = #userID#))
-  		OR (#userID# &lt;= 0 AND NOT EXISTS (SELECT id FROM sample_attribute_values sav
-  								WHERE sav.sample_id = s.id
-  								AND sav.sample_attribute_id = #userID_attr_id#)))
+  		OR (#userID# &lt;= 0))
   #order_by#
   </query>
   <order_bys>

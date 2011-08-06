@@ -178,6 +178,61 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     return $retVal;
   }
 
+  protected static function getSampleListGrid($args, $node, $auth, $attributes) {
+    global $user;
+    // get the CMS User ID attribute so we can filter the grid to this user
+    foreach($attributes as $attrId => $attr) {
+      if (strcasecmp($attr['caption'],'CMS User ID')==0) {
+        $userIdAttr = $attrId;
+        break;
+      }
+    }
+    if ($user->uid===0) {
+      // Return a login link that takes you back to this form when done.
+      return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
+    }
+    if (!isset($userIdAttr)) {
+      return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
+          'be tagged against the user.');
+    }
+    if (isset($args['grid_report']))
+      $reportName = $args['grid_report'];
+    else
+      // provide a default in case the form settings were saved in an old version of the form
+      $reportName = 'reports_for_prebuilt_forms/simple_sample_list_1';
+    if(method_exists(get_called_class(), 'getSampleListGridPreamble'))
+      $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
+    else
+      $r = '';
+    $isAdmin = user_access('IForm n'.$node->nid.' admin');
+    $extraparams = array('survey_id'=>$args['survey_id'],
+        'userID_attr_id'=>$userIdAttr);
+    if($isAdmin) {
+      $extraparams['userID'] = -1;
+    } else {
+      $extraparams['userID'] = $user->uid;
+    }
+    $r .= data_entry_helper::report_grid(array(
+      'id' => 'samples-grid',
+      'dataSource' => $reportName,
+      'mode' => 'report',
+      'readAuth' => $auth['read'],
+      'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
+      'itemsPerPage' =>10,
+      'autoParamsForm' => true,
+      'extraParams' => $extraparams
+    ));    
+    $r .= '<form>';    
+    if (isset($args['multiple_occurrence_mode']) && $args['multiple_occurrence_mode']=='either') {
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Single').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample_Grid').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample&gridmode')).'\'">';
+    } else {
+      $r .= '<input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSample')).'\'">';    
+    }
+    $r .= '</form>';
+    return $r;
+  }
+
   /**
    * Insert any custom JS for this form: this may be related to attributes, which are included
    * as part of inherited generic code.
