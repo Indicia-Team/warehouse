@@ -659,6 +659,7 @@ class ORM extends ORM_Core {
    */
   private function checkRequiredAttributes() {
     $r = true;
+    $typeFilter = null;
     // Test if this model has an attributes sub-table. Also to have required attributes, we must be posting into a
     // specified survey or website at least.
     if ($this->has_attributes && ($this->identifiers['website_id'] || $this->identifiers['survey_id'])) {
@@ -673,6 +674,11 @@ class ORM extends ORM_Core {
             array_push($got_values, $attr['fields'][$this->object_name.'_attribute_id']);
           }
         }
+        // check for location type or sample method which can be used to filter the attributes available
+        foreach($this->submission['fields'] as $field => $content)
+          // if we have a location type or sample method, we will use it as a filter on the attribute list
+          if ($field=='location_type_id' || $field=='sample_method_id')
+            $typeFilter = $content['value'];
       } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
         foreach($this->submission['fields'] as $field => $content) {
@@ -689,11 +695,14 @@ class ORM extends ORM_Core {
               $empties[$baseAttrName[0]] = $field;
             }
           }
+          // if we have a location type or sample method, we will use it as a filter on the attribute list
+          if ($field=='location_type_id' || $field=='sample_method_id')
+            $typeFilter = $content['value'];
         }
       }
       $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
       // setup basic query to get custom attrs
-      $this->setupDbToQueryAttributes(); 
+      $this->setupDbToQueryAttributes(false, $typeFilter);
       $attr_entity = $this->object_name.'_attribute';
       // We only want globally or locally required ones
       if ($this->identifiers['website_id'] || $this->identifiers['survey_id']) 
@@ -724,8 +733,10 @@ class ORM extends ORM_Core {
    * Prepares the db object query builder to query the list of custom attributes for this model.
    * @param boolean $required Optional. Set to true to only return required attributes (requires 
    * the website and survey identifier to be set).
+   * @param int @typeFilter Specify a location type meaning id or a sample method meaning id to
+   * filter the returned attributes to those which apply to the given type or method.
    */
-  protected function setupDbToQueryAttributes($required = false) {
+  protected function setupDbToQueryAttributes($required = false, $typeFilter = null) {
     $attr_entity = $this->object_name.'_attribute';
     $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
     $this->db->from($attr_entity.'s');
@@ -739,6 +750,22 @@ class ORM extends ORM_Core {
         $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       if ($required) {
         $this->db->like($attr_entity.'s_websites.validation_rules', '%required%');
+      }
+      // ensure that only attrs for the record's sample method or location type, or unrestricted attrs,
+      // are returned
+      if ($this->object_name=='location' || $this->object_name=='sample') {
+        if ($this->object_name=='location')
+          $this->db->join('termlists_terms as tlt', 'tlt.id',
+              'location_attributes_websites.restrict_to_location_type_id', 'left');
+        elseif ($this->object_name=='sample') {
+          $this->db->join('termlists_terms as tlt', 'tlt.id',
+              'sample_attributes_websites.restrict_to_sample_method_id', 'left');
+        }
+        $this->db->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt.meaning_id', 'left');
+        $ttlIds = array(null);
+        if ($typeFilter)
+          $ttlIds[] = $typeFilter;
+        $this->db->in('tlt2.id', $ttlIds);
       }
     }
   }
@@ -756,8 +783,10 @@ class ORM extends ORM_Core {
    * @param boolean $fk
    * @param integer $website_id If set then custom attributes are limited to those for this website.
    * @param integer $survey_id If set then custom attributes are limited to those for this survey.
+   * @param int @attrTypeFilter Specify a location type meaning id or a sample method meaning id to
+   * filter the returned attributes to those which apply to the given type or method.
    */
-  public function getSubmittableFields($fk = false, $website_id=null, $survey_id=null) {
+  public function getSubmittableFields($fk = false, $website_id=null, $survey_id=null, $attrTypeFilter=null) {
     if ($website_id!==null) 
       $this->identifiers['website_id']=$website_id;
     if ($website_id!==null) 
@@ -766,7 +795,7 @@ class ORM extends ORM_Core {
     $struct = $this->get_submission_structure();
     if (array_key_exists('superModels', $struct)) {
       foreach ($struct['superModels'] as $super=>$content) {
-        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $website_id, $survey_id));
+        $fields = array_merge($fields, ORM::factory($super)->getSubmittableFields($fk, $website_id, $survey_id, $attrTypeFilter));
       }
     }
     if (array_key_exists('metaFields', $struct)) {
@@ -775,7 +804,7 @@ class ORM extends ORM_Core {
       }
     }    
     if ($this->has_attributes) {
-      $this->setupDbToQueryAttributes();
+      $this->setupDbToQueryAttributes(false, $attrTypeFilter);
       $result = $this->db->get();
       foreach($result as $row) {
         $fieldname = $this->attrs_field_prefix.':'.$row->id;
@@ -789,9 +818,10 @@ class ORM extends ORM_Core {
   /**
    * Retrieves a list of the required fields for this model and its related models.
    * @param <type> $fk
-   * @param <type> $website_id
-   * @param <type> $survey_id
-   * @return <type>
+   * @param int $website_id
+   * @param int $survey_id
+   *
+   * @return array List of the fields which are required.
    */
   public function getRequiredFields($fk = false, $website_id=null, $survey_id=null) {
     if ($website_id!==null) 

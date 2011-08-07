@@ -80,7 +80,8 @@ class Sample_Model extends ORM_Tree
       'deleted',
       'recorder_names',
       'parent_id',
-      'comment'
+      'comment',
+      'sample_method_id'
     );
     
     $array->add_rules('date_type', 'required', 'length[1,2]');

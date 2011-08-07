@@ -149,18 +149,38 @@ echo data_entry_helper::outputAttribute(array(
   )
 );
 ?>
-<label for="control_type_id">Default control type:</label>
-<select name="<?php echo $model->object_name; ?>:control_type_id" id="control_type_id">
-<option value="">&lt;Not specified&gt;</option>
 <?php
 $controlTypeId = html::initial_value($values, $_GET['type'].'_attributes_website:control_type_id');
-foreach ($other_data['controlTypes'] as $controlType) {
-  $selected = ($controlType->id==$controlTypeId) ? ' selected="selected"' : '';
-  echo "<option value=\"$controlType->id\"$selected>$controlType->control</option>";
+$types = array(''=>'&lt;Not specified&gt;');
+
+foreach ($other_data['controlTypes'] as $controlType)
+  $types[$controlType->id] = $controlType->control;
+echo data_entry_helper::select(array(
+  'label'=>'Default control type',
+  'fieldname' => $model->object_name.':control_type_id',
+  'lookupValues' => $types,
+  'default'=>$controlTypeId
+));
+
+if ($_GET['type']=='location') {
+  $terms = array(''=>'&lt;Not specified&gt;')+$this->get_termlist_terms('indicia:location_types');
+  echo data_entry_helper::select(array(
+    'label' => 'Location Type',
+    'fieldname' => 'location_attributes_website:restrict_to_location_type_id',
+    'lookupValues' => $terms,
+    'default' => html::initial_value($values, 'location_attributes_website:restrict_to_location_type_id'),
+    'helpText' => 'If you want this attribute to only apply for locations of a certain type, select the type here.'
+  ));
+} elseif ($_GET['type']=='sample') {
+  $terms = array(''=>'&lt;Not specified&gt;')+$this->get_termlist_terms('indicia:sample_methods');
+  echo data_entry_helper::select(array(
+    'label' => 'Sample Method',
+    'fieldname' => 'sample_attributes_website:restrict_to_sample_method_id',
+    'lookupValues' => $terms,
+    'default' => html::initial_value($values, 'sample_attributes_website:restrict_to_sample_method_id'),
+    'helpText' => 'If you want this attribute to only apply for samples of a certain method, select the method here.'
+  ));
 }
-?>
-</select>
-<?php
 echo $metadata;
 echo html::form_buttons(html::initial_value($values, 'custom_attribute:id')!=null, false, false);
 ?></fieldset></form>
