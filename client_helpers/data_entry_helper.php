@@ -3617,11 +3617,19 @@ if (errors.length>0) {
   * This can be used to auto-generated the forum structure for a survey for example.
   * @todo at moment this assumes non multiplevalue attributes.
   * @param array $options Options array with the following possibilities:<ul>
-  * <li><b>suvey_id</b><br/>
+  * <li><b>survey_id</b><br/>
   * Optional. The survey that custom attributes are to tbe loaded for.</li>
   * <li><b>website_ids</b><br/>
   * Optional. Used instead of survey_id, allows retrieval of all possible custom attributes
   * for a set of websites.</li>
+  * <li><b>sample_method_id</b><br/>
+  * Optional. Can be set to the id of a sample method when loading just the attributes that are restricted to
+  * that sample method or are unrestricted, otherwise only loads unrestricted attributes. Ignored unless
+  * loading sample attributes.</li>
+  * <li><b>location_type_id</b><br/>
+  * Optional. Can be set to the id of a location_type when loading just the attributes that are restricted to
+  * that type or are unrestricted, otherwise only loads unrestricted attributes. Ignored unless
+  * loading location attributes.</li>
   * <li><b>attrtable</b><br/>
   * Required. Singular name of the table containing the attributes, e.g. sample_attribute.</li>
   * <li><b>valuetable</b><br/>
@@ -3636,15 +3644,34 @@ if (errors.length>0) {
   */
   public static function getAttributes($options) {
     $retVal = array();
+    $query = array();
     self::add_resource('json');
     if (isset($options['website_ids'])) {
-      $query = urlencode(json_encode(array('in'=>array('website_id', $options['website_ids']))));
+      $query['in']=array('website_id'=>$options['website_ids']);
     } else {
       $surveys = array(NULL);
       if (isset($options['survey_id']))
         $surveys[] = $options['survey_id'];
-      $query = urlencode(json_encode(array('in'=>array('restrict_to_survey_id', $surveys))));
+      $query['in']=array('restrict_to_survey_id'=>$surveys);
     }
+    if ($options['attrtable']=='sample_attribute') {
+      // for sample attributes, we want all which have null in the restrict_to_sample_method_id,
+      // or where the supplied sample method matches the attribute's.
+      $methods = array(null);
+      if (isset($options['sample_method_id']))
+        $methods[] = $options['sample_method_id'];
+      $query['in']['restrict_to_sample_method_id'] = $methods;
+    }
+    if ($options['attrtable']=='location_attribute') {
+      // for location attributes, we want all which have null in the restrict_to_location_type_id,
+      // or where the supplied location type matches the attribute's.
+      $methods = array(null);
+      if (isset($options['location_type']))
+        $methods[] = $options['location_type_id'];
+      $query['in']['restrict_to_location_type_id'] = $methods;
+    }
+    if (count($query))
+      $query = urlencode(json_encode($query));
     $attrOptions = array(
           'table'=>$options['attrtable'],
            'extraParams'=> $options['extraParams']+ array(
