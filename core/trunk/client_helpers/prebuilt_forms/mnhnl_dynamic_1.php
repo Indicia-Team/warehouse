@@ -384,7 +384,18 @@ class iform_mnhnl_dynamic_1 {
           'captionField'=>'title',
           'valueField'=>'id',
           'siteSpecific'=>true
-        ),        
+        ),
+        array(
+          'name' => 'sample_method_id',
+          'caption' => 'Sample Method',
+          'type' => 'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:sample_methods'),
+          'required' => false,
+          'helpText' => 'The sample method that will be used for created samples.'
+        ),
         array(
           'name'=>'defaults',
           'caption'=>'Default Values',
@@ -542,8 +553,8 @@ class iform_mnhnl_dynamic_1 {
       if ($loadedSampleId)
         data_entry_helper::load_existing_record($auth['read'], 'sample', $loadedSampleId);
     }
-    // atributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
-    $attributes = data_entry_helper::getAttributes(array(
+    // attributes must be fetched after the entity to load is filled in - this is because the id gets filled in then!
+    $attrOpts = array(
         'id' => data_entry_helper::$entity_to_load['sample:id']
        ,'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
@@ -551,7 +562,12 @@ class iform_mnhnl_dynamic_1 {
        ,'fieldprefix'=>'smpAttr'
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
-    ));
+    );
+    // select only the custom attributes that are for this sample method or all sample methods, if this
+    // form is for a specific sample method.
+    if (!empty($args['sample_method_id']))
+      $attrOpts['sample_method_id']=$args['sample_method_id'];
+    $attributes = data_entry_helper::getAttributes($attrOpts);
     //// Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
     unset($reload['params']['sample_id']);
@@ -564,6 +580,9 @@ class iform_mnhnl_dynamic_1 {
     $hiddens = $auth['write'].
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />\n".
           "<input type=\"hidden\" id=\"survey_id\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";
+    if (!empty($args['sample_method_id'])) {
+      $hiddens .= '<input type="hidden" name="sample:sample_method_id" value="'.$args['sample_method_id'].'"/>';
+    }
     if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $hiddens .= "<input type=\"hidden\" id=\"sample:id\" name=\"sample:id\" value=\"".data_entry_helper::$entity_to_load['sample:id']."\" />\n";    
     }
@@ -576,7 +595,6 @@ class iform_mnhnl_dynamic_1 {
       $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C'; 
       $hiddens .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"$value\" />\n";    
     }
-    
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
