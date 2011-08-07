@@ -52,7 +52,8 @@ class Sample_attributes_website_Model extends Valid_ORM
         'default_date_start_value',
         'default_date_end_value',
         'default_date_type_value',
-	      'control_type_id');
+	      'control_type_id',
+        'restrict_to_sample_method_id');
     return parent::validate($array, $save);
   }
   
