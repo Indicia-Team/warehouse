@@ -99,7 +99,8 @@ class XMLReportReader_Core implements ReportReader
                         unset($websiteIds[$key]);
                     }  
                   }
-                  $filter = $websiteFilterField.' in ('.implode($websiteIds, ',').')';
+                  $idList = implode($websiteIds, ',');
+                  $filter = "($websiteFilterField in ($idList) or $websiteFilterField is null)";
                   $this->query = str_replace('#website_filter#', $filter, $this->query);
                 } else
                   // use a dummy filter to return all websites if core admin

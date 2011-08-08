@@ -22,7 +22,8 @@
         AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
     #order_by#
     </query>
-    <field_sql>oi.id, oi.path, oi.caption, tpref.taxon, tcommon.taxon as common, tg.title as taxon_group</field_sql>
+    <vagueDate enableProcessing='true' /> 
+    <field_sql>oi.id, oi.path, oi.caption, tpref.taxon, tcommon.taxon as common, tg.title as taxon_group, s.date_start, s.date_end, s.date_type</field_sql>
     <order_bys>
       <order_by>oi.created_on DESC</order_by>
       <order_by>s.date_start DESC</order_by>
@@ -42,5 +43,8 @@
       <column name='taxon' display='Taxon' />
       <column name='common' display='Common' />
       <column name='taxon_group' display='Taxon Group' />
+      <column name='date_start' display='Date Start' />
+      <column name='date_end' display='Date End' />
+      <column name='date_type' display='Date Type' />
     </columns>
   </report>
