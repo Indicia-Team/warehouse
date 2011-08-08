@@ -13,6 +13,7 @@
       ) on s.survey_id=su.id
       WHERE #website_filter#
       AND (CAST(su.id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (CAST(l.location_type_id AS character varying)='#location_type_id#' OR '#location_type_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       GROUP BY l.id, l.name
@@ -27,6 +28,8 @@
         <param name='date_to' display='Date To' datatype='date' />
         <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
             query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='location_type_id' display='Location Type' description='Select the location type, or leave blank to not filter by location type.' datatype='lookup'
+            population_call='report:library/terms/terms_list:id:term:termlist_external_key=indicia:location_types,termlist_id=' />
       </params>
       <columns>
             <column name="id" visible="false" />

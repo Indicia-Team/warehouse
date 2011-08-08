@@ -104,5 +104,21 @@ abstract class Attribute_Value_ORM extends ORM {
       
     }
   }
+  
+  public function save() {
+    if ($this->delete_if_empty())
+      return $this;
+    else
+      return parent::save();
+  }
+  
+  protected function delete_if_empty() {
+    foreach ($this->as_array() as $field => $content) {
+      if (substr($field, -6)=='_value' && !empty($content))
+        return false;
+    }
+    $this->deleted='t';
+    return true;
+  }
 
 }
