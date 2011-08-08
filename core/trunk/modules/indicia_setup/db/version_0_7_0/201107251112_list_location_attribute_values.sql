@@ -32,9 +32,9 @@ CREATE OR REPLACE VIEW list_location_attribute_values AS
             ELSE NULL::text
         END AS raw_value, la.termlist_id, ln.iso, law.website_id
    FROM locations l
-   JOIN indicia.locations_websites lw ON lw.location_id = l.id AND lw.deleted = false
-   JOIN indicia.location_attributes_websites law on law.website_id=lw.website_id AND law.deleted=false
-   JOIN indicia.location_attributes la ON la.id = law.location_attribute_id AND la.deleted = false
+   JOIN locations_websites lw ON lw.location_id = l.id AND lw.deleted = false
+   JOIN location_attributes_websites law on law.website_id=lw.website_id AND law.deleted=false
+   JOIN location_attributes la ON la.id = law.location_attribute_id AND la.deleted = false
    LEFT JOIN location_attribute_values lav ON lav.location_attribute_id = la.id AND lav.location_id = l.id AND lav.deleted = false
    LEFT JOIN (termlists_terms tt
    JOIN terms t ON t.id = tt.term_id
