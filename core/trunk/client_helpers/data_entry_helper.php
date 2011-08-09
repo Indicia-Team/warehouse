@@ -2528,8 +2528,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   private static function _cacheResponse($file, $response, $options)
   {
-  	// need to create the file as a binary event - so create a temp file and move across.
-    if ($file && !is_file($file)) {
+    // need to create the file as a binary event - so create a temp file and move across.
+    if ($file && !is_file($file) && isset($response['output'])) {
       $handle = fopen($file.getmypid(), 'wb');
       fputs($handle, self::array_to_query_string($options)."\n");
       fwrite($handle, $response['output']);
@@ -2631,7 +2631,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       throw new Exception('Invalid response received from Indicia Warehouse. '.print_r($response, true));
     }
     // Only cache valid responses
-    self::_cacheResponse($cacheFile, $response, $cacheOpts);
+    if (!isset($r['error']))
+      self::_cacheResponse($cacheFile, $response, $cacheOpts);
     self::_purgeCache();
     self::_purgeImages();
     return $r;
@@ -3615,7 +3616,7 @@ if (errors.length>0) {
   /**
   * Helper function to fetch details of attributes associated with a survey.
   * This can be used to auto-generated the forum structure for a survey for example.
-  * @todo at moment this assumes non multiplevalue attributes.
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>survey_id</b><br/>
   * Optional. The survey that custom attributes are to tbe loaded for.</li>
@@ -3638,12 +3639,16 @@ if (errors.length>0) {
   * Required. Prefix to be given to the returned control names, e.g. locAttr:</li>
   * <li><b>extraParams</b><br/>
   * Required. Additional parameters used in the web service call, including the read authorisation.</li>
+  * <li><b>multiValue</b><br/>
+  * Defaults to false, in which case this assumes that each attribute only allows one value, and the response array is keyed
+  * by attribute ID. If set to true, multiple values are enabled and the response array is keyed by <attribute ID>:<attribute value ID>
+  * in the cases where there is any data for the attribute.
   * </ul>
   *
   * @return array of attributes.
   */
   public static function getAttributes($options) {
-    $retVal = array();
+    $attrs = array();
     $query = array();
     self::add_resource('json');
     if (isset($options['website_ids'])) {
@@ -3666,7 +3671,7 @@ if (errors.length>0) {
       // for location attributes, we want all which have null in the restrict_to_location_type_id,
       // or where the supplied location type matches the attribute's.
       $methods = array(null);
-      if (isset($options['location_type']))
+      if (isset($options['location_type_id']))
         $methods[] = $options['location_type_id'];
       $query['in']['restrict_to_location_type_id'] = $methods;
     }
@@ -3691,11 +3696,14 @@ if (errors.length>0) {
       $item['untranslatedCaption']=$item['caption'];
       $item['caption']=lang::get($item['caption']);
       $item['default'] = self::attributes_get_default($item);
-      $retVal[$itemId] = $item;
+      $item['attributeId'] = $itemId;
+      $attrs[$itemId] = $item;
     }
+    // if we are not loading an existing record, no need to continue and look for values
     if(!isset($options['id']))
-      return $retVal;
+      return $attrs;      
 
+    $attrsWithValues = array();
     $options['extraParams'][$options['key']] = $options['id'];
     $existingValuesOptions = array(
         'table'=>$options['valuetable'],
@@ -3705,15 +3713,19 @@ if (errors.length>0) {
     if (array_key_exists('error', $response))
       return $response;
     foreach ($response as $item){
-      if(isset($retVal[$item[$options['attrtable'].'_id']])){
+      $attrId = $item[$options['attrtable'].'_id'];
+      if(isset($attrs[$attrId])){
         if(isset($item['id'])){
-          $retVal[$item[$options['attrtable'].'_id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
-          $retVal[$item[$options['attrtable'].'_id']]['default'] = $item['raw_value'];
-          $retVal[$item[$options['attrtable'].'_id']]['displayValue'] = $item['value'];
+          $attrsWithValues["$attrId:".$item['id']] = $attrs[$attrId];
+          $attrsWithValues["$attrId:".$item['id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
+          $attrsWithValues["$attrId:".$item['id']]['default'] = $item['raw_value'];
+          $attrsWithValues["$attrId:".$item['id']]['displayValue'] = $item['value'];
+        } else {
+          $attrsWithValues["$attrId:"] = $attrs[$attrId];
         }
       }
     }
-    return $retVal;
+    return $attrsWithValues;
   }
 
   /**
