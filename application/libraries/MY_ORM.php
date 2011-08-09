@@ -40,8 +40,14 @@ class ORM extends ORM_Core {
   
   public $submission = array();
   
+  /** 
+   * @var array Describes the list of nested models that are present after a submission. E.g. the list of 
+   * occurrences in a sample.
+   */
+  private $nestedModelIds = array();
+  
   /**
-   * The default field that is searchable is called title. Override this when a different field name is used.
+   * @var string The default field that is searchable is called title. Override this when a different field name is used.
    */
   public $search_field='title';
 
@@ -49,19 +55,19 @@ class ORM extends ORM_Core {
   protected $identifiers = array('website_id'=>null,'survey_id'=>null);
 
   /**
-   * unvalidatedFields allows a list of fields which are not validated in anyway to be declared
+   * @var array unvalidatedFields allows a list of fields which are not validated in anyway to be declared
    * by a model. If not declared then the model will not transfer them to the saved data when
    * posting a record.
    */
   protected $unvalidatedFields = array();
   
   /**
-  * An array which a model can populate to declare additional fields that can be submitted for csv upload.
-  */
+   * @var array An array which a model can populate to declare additional fields that can be submitted for csv upload.
+   */
   protected $additional_csv_fields=array();
   
   /**
-   * Does the model have custom attributes? Defaults to false.
+   * @var boolean Does the model have custom attributes? Defaults to false.
    */
   protected $has_attributes = false;
   
@@ -117,6 +123,20 @@ class ORM extends ORM_Core {
     } else {
       kohana::log('debug', 'skipped constructor for '.strtolower(substr(get_class($this), 0, -6)));
     }
+  }
+  
+  /**
+   * Returns an array structure which describes this model and saved ID, plus the saved child models that were created
+   * during a submission operation.
+   */
+  public function get_submitted_ids() {
+    $r = array(
+      'model' => $this->object_name,
+      'id' => $this->id,
+    );
+    if (count($this->nestedModelIds))
+      $r['children'] = $this->nestedModelIds;
+    return $r;
   }
 
   /**
@@ -605,6 +625,7 @@ class ORM extends ORM_Core {
         // copy down the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
+        $this->nestedModelIds[] = $m->get_submitted_ids();
 
         if (!$result) {
           $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
@@ -1037,6 +1058,7 @@ class ORM extends ORM_Core {
     }
 
     $attrValueModel->save();
+    $this->nestedModelIds[] = $attrValueModel->get_submitted_ids();
 
     return true;
   }
