@@ -1,0 +1,16 @@
+table#transect-input {
+  width: auto;
+}
+
+table#transect-input td, table#transect-input input{
+  margin: 0;
+  padding: 0
+}
+
+table#transect-input input {
+  width: 50px;
+}
+
+table .alt-row {
+  background-color: #e7e7e7;
+}
