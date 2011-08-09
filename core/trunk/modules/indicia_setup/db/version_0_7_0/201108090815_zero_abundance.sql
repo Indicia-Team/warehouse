@@ -1,5 +1,24 @@
-﻿ALTER TABLE occurrences
-   ADD COLUMN zero_abundance boolean NOT NULL DEFAULT 'f';
+﻿-- use a procedure to add the column so it can do if not exists
+
+CREATE FUNCTION addcol()
+RETURNS void 
+AS $BODY$
+BEGIN
+  IF NOT EXISTS(
+    SELECT * FROM information_schema.COLUMNS
+    WHERE COLUMN_NAME='zero_abundance' AND TABLE_NAME='occurrences'
+  )
+  THEN
+    ALTER TABLE occurrences
+      ADD COLUMN zero_abundance boolean NOT NULL DEFAULT 'f';
+  END IF;
+RETURN;
+END;
+$BODY$ LANGUAGE plpgsql;
+
+SELECT addcol();
+
+DROP FUNCTION addcol();
 
 COMMENT ON COLUMN occurrences.zero_abundance IS 'Flag that is set to true when a record indicates the absence of something rather than presence of something.';
 
