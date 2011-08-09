@@ -397,6 +397,7 @@ class helper_base extends helper_config {
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
         'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
         'jquery_ui_fr' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path."jquery.ui.datepicker-fr.js")),
+        'jquery_form' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path."jquery.form.js")),
         'json' => array('javascript' => array(self::$js_path."json2.js")),
         'reportPicker' => array('deps' => array('treeview'), 'javascript' => array(self::$js_path."reportPicker.js")),
         'treeview' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.treeview.css"), 'javascript' => array(self::$js_path."jquery.treeview.js")),
@@ -709,13 +710,25 @@ $('.ui-state-default').live('mouseout', function() {
     } elseif (isset($options['presetParams']) && array_key_exists($key, $options['presetParams'])) {
       $r .= "<input type=\"hidden\" name=\"$fieldPrefix$key\" value=\"".$options['presetParams'][$key]."\" />\n";
     } elseif ($info['datatype']=='lookup' && isset($info['population_call'])) {
-      // population call is colon separated, of the form direct|report:table|view|report:idField:captionField
+      // population call is colon separated, of the form direct|report:table|view|report:idField:captionField:params(key=value,key=value,...)
       $popOpts = explode(':', $info['population_call']);
+      $extras = array();
+      // if there are any extra parameters on the report lookup call, apply them
+      if (count($popOpts) >= 5) {
+        // because any extra params might contain colons, any colons from item 5 onwards are considered part of the extra params. So we 
+        // have to take the remaining items and re-implode them, then split them by commas instead. E.g. population call could be set to
+        // direct:term:id:term:term=a:b - in this case option 5 (term=a:b) is not to be split by colons.
+        $extraItems = explode(',', implode(':', array_slice($popOpts, 4)));
+        foreach ($extraItems as $extraItem) {
+          $extraItem = explode('=', $extraItem);
+          $extras[$extraItem[0]] = $extraItem[1];
+        }
+      }
       $ctrlOptions = array_merge($ctrlOptions, array(
         'valueField'=>$popOpts[2],
         'captionField'=>$popOpts[3],
         'blankText'=>'<'.lang::get('please select').'>',
-        'extraParams'=>$options['readAuth']
+        'extraParams'=>$options['readAuth'] + $extras
       ));
       if ($popOpts[0]=='direct')
         $ctrlOptions['table']=$popOpts[1];
@@ -1211,6 +1224,39 @@ indiciaData.windowLoaded=true;
   public static function enable_validation($form_id) {
     self::$validated_form_id = $form_id;
     self::add_resource('validation');
+  }
+  
+  /**
+   * Utility function to load a list of terms from a termlist. 
+   * @param array $auth Read authorisation array.
+   * @param mixed $termlist Either the id or external_key of the termlist to load. 
+   * @param array $filter List of the terms that are required, or null for all terms.
+   * @return array Output of the Warehouse data services request for the terms.
+   */
+  public static function get_termlist_terms($auth, $termlist, $filter=null) {
+    if (!is_int($termlist)) {      
+      $termlistFilter=array('external_key' => $termlist);
+      $list = data_entry_helper::get_population_data(array(
+        'table' => 'termlist',
+        'extraParams' => $auth['read'] + $termlistFilter
+      ));
+      if (count($list)==0)
+        throw new Exception("Termlist $termlist not available on the Warehouse");
+      if (count($list)>1)
+        throw new Exception("Multiple termlists identified by $termlist found on the Warehouse");
+      $termlist = $list[0]['id'];
+    }
+    $extraParams = $auth['read'] + array(
+      'termlist_id' => $termlist
+    );
+    // apply a filter for the actual list of terms, if required.
+    if ($filter)
+      $extraParams['query'] = urlencode(json_encode(array('in'=>array('term', $filter))));
+    $terms = data_entry_helper::get_population_data(array(
+      'table' => 'termlists_term',
+      'extraParams' => $extraParams
+    ));
+    return $terms;
   }
 
  /**

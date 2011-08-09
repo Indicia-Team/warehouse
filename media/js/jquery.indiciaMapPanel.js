@@ -56,6 +56,20 @@ mapInitialisationHooks = [];
         MMDataResolver.setDataPreferences( MM_WORLD_MAP, prefs );
       }
     }
+    
+    /**
+     * Remove all features except a boundary feature which is not controlled by the click point.
+     * This functionality allows a location to havea centroid and separate boundary.
+     */
+    function _removeAllFeaturesExcept(layer, type) {
+      var toRemove = [];
+      $.each(layer.features, function(idx, feature) {
+        if (feature.attributes.type!=="boundary") {
+          toRemove.push(feature);
+        }
+      });
+      layer.removeFeatures(toRemove, {});
+    }
 
     /**
      * Add a well known text definition of a feature to the map.
@@ -64,10 +78,8 @@ mapInitialisationHooks = [];
     function _showWktFeature(div, wkt, layer, invisible) {
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
-      if ( opts.searchLayer && layer == div.map.searchLayer) {
-        feature.style = new style(true);
-      }
-      layer.destroyFeatures();
+      feature.style = new style(opts.searchLayer && layer == div.map.searchLayer);
+      _removeAllFeaturesExcept(layer, 'boundary');
       var features = [feature];
 
       if(invisible !== null){
@@ -223,15 +235,7 @@ mapInitialisationHooks = [];
         $('#'+opts.srefLatId).val(parts[0]);
         $('#'+opts.srefLongId).val(parts[1]);
       }
-      // remove all features except a boundary feature which is not controlled by the click point.
-      // This functionality allows a location to havea centroid and separate boundary.
-      var toRemove = [];
-      $.each(div.map.editLayer.features, function(idx, feature) {
-        if (feature.attributes.type!=="boundary") {
-          toRemove.push(feature);
-        }
-      });
-      div.map.editLayer.removeFeatures(toRemove, {});
+      _removeAllFeaturesExcept(div.map.editLayer, 'boundary');
       $('#'+opts.geomId).val(data.wkt);
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(data.wkt);
