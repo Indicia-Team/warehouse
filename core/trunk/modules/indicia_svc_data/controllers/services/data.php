@@ -89,7 +89,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function language()
   {
-  $this->handle_call('language');
+    $this->handle_call('language');
   }
 
   /**
@@ -839,10 +839,10 @@ class Data_Controller extends Data_Service_Base_Controller {
             $s = json_decode($_POST['submission'], true);
         }
         kohana::log('info', 'submission '.print_r($_POST['submission'], true));
-        $id = $this->submit($s);
+        $response = $this->submit($s);
       }
       // return a success message plus the id of the topmost record, e.g. the sample created.
-      echo json_encode(array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$id));
+      echo json_encode(array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$response['id'], 'struct'=>$response['struct']));
       $this->delete_nonce();
     }
     catch (Exception $e)
@@ -861,12 +861,12 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (array_key_exists('submission_list',$s)) {
       foreach ($s['submission_list']['entries'] as $m)
       {
-        $id = $this->submit_single($m);
+        $r = $this->submit_single($m);
       }
     } else {
-      $id = $this->submit_single($s);
+      $r = $this->submit_single($s);
     }
-    return $id;
+    return $r;
   }
 
   /**
@@ -877,14 +877,12 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->check_update_access($item['id'], $item);
     $model->submission = $item;
     $result = $model->submit();
-    $id = $model->id;
     if (!$result)
     {
       Throw new ArrayException('Validation error', $model->getAllErrors());
     }
-    // return the first model
-    if (!isset($this->model))
-      return $model->id;
+    // return the outermost model's id
+    return array('id'=>$model->id, 'struct'=>$model->get_submitted_ids());
   }
 
  /**
