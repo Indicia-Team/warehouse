@@ -45,7 +45,8 @@
       ELSE 1
     END as sref_size,
     length(s.entered_sref) / 24.0 as fillopacity,
-    length(s.entered_sref) / 3 as strokewidth
+    length(s.entered_sref) / 3 as strokewidth,
+    o.zero_abundance
   </field_sql>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -70,7 +71,8 @@
     <column name='taxon_group' display='Taxon Group' />
     <column name='location_name' display='Site name' />
     <column name='entered_sref' display='SRef' />
-    <column name='date' display='Date' />    
+    <column name='date' display='Date' />
+    <column name='zero_abundance' display='Zero Abundance' />
     <column name='geom' visible='false' mappable="true" />
     <column name='sref_size' visible='false' />
     <column name='strokewidth' visible='false' feature_style="strokeWidth" />

@@ -31,7 +31,8 @@
       tpref.taxon,
       tcommon.taxon as common,
       tg.title as taxon_group,
-      st_astext(s.geom) as geom
+      st_astext(s.geom) as geom,
+      o.zero_abundance
   </field_sql>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -54,6 +55,7 @@
     <column name='location_name' display='Site name' />
     <column name='entered_sref' display='SRef' />
     <column name='date' display='Date' />
+    <column name='zero_abundance' display='Zero Abundance' />
     <column name='taxon_group' display='Taxon Group' />
     <column name='geom' visible='false' mappable="true" />
   </columns>

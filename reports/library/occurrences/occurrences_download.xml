@@ -42,6 +42,7 @@
             <tabColumn name='id' visible="true" />
             <tabColumn name='record_status' />
             <tabColumn name='confidential' />
+            <tabColumn name='zero_abundance' />
             <tabColumn name='external_key' />
 		    <tabColumn name='comment' />
 		    <subTable tablename='taxa_taxon_lists' join='LEFT' where="#this#.deleted = FALSE" >

@@ -6,6 +6,7 @@
       JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
       JOIN samples s on s.id=o.sample_id and s.deleted=false
       WHERE o.deleted=false
+      AND o.zero_abundance='f'
       AND #website_filter#
       AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
@@ -18,6 +19,7 @@
       JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
       JOIN samples s on s.id=o.sample_id and s.deleted=false
       WHERE o.deleted=false
+      AND o.zero_abundance='f'
       AND #website_filter#
       AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
