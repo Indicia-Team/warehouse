@@ -163,15 +163,22 @@ abstract class Attr_Gridview_Base_Controller extends Indicia_Controller {
           array_push($rules, $rule);
         }
       }
-      if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1)   $rules[] = 'length['.$_POST['valid_length_min'].','.$_POST['valid_length_max'].']';
-      if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1) $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
-      if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)		 $rules[] = 'regex['.$_POST['valid_regex_format'].']';
-      if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)		     $rules[] = 'minimum['.$_POST['valid_min_value'].']';
-      if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)		     $rules[] = 'maximum['.$_POST['valid_max_value'].']';
+      if (array_key_exists('valid_length', $_POST) && $_POST['valid_length']==1)
+        $rules[] = 'length['.$_POST['valid_length_min'].','.$_POST['valid_length_max'].']';
+      if (array_key_exists('valid_decimal', $_POST) && $_POST['valid_decimal']==1) 
+        $rules[] = 'decimal['.$_POST['valid_dec_format'].']';
+      if (array_key_exists('valid_regex', $_POST) && $_POST['valid_regex']==1)
+        $rules[] = 'regex['.$_POST['valid_regex_format'].']';
+      if (array_key_exists('valid_min', $_POST) && $_POST['valid_min']==1)
+        $rules[] = 'minimum['.$_POST['valid_min_value'].']';
+      if (array_key_exists('valid_max', $_POST) && $_POST['valid_max']==1)
+        $rules[] = 'maximum['.$_POST['valid_max_value'].']';
 
       if (!empty($rules)) {
         $_POST['custom_attribute:validation_rules'] = implode("\r\n", $rules);        
         kohana::log('debug', 'Posted rules '.$_POST['custom_attribute:validation_rules']);
+      } else {
+        $_POST['custom_attribute:validation_rules'] = '';
       }
       // Make sure checkboxes have a value
       if (!array_key_exists('custom_attribute:public', $_POST)) $_POST['custom_attribute:public'] = '0'; 
