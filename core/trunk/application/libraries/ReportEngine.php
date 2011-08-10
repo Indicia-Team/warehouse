@@ -60,6 +60,11 @@ class ReportEngine {
   const rowsPerUpdate = 50;
   private $websiteIds = null;
 
+  /**
+   * @var array A list of additional columns identified from custom attribute parameters.
+   */
+  private $attrColumns = array();
+
   public function __construct($websiteIds = null)
   {
     $this->websiteIds = $websiteIds;
@@ -284,7 +289,10 @@ class ReportEngine {
    */
   private function prepareColumns() {
     if (!isset($this->columns)) {
-      $this->columns = $this->reportReader->getColumns();
+      $this->columns = array_merge(
+         $this->reportReader->getColumns(),
+         $this->attrColumns
+      );
     }
   }
   /**
@@ -391,9 +399,9 @@ class ReportEngine {
     foreach($attributeDefns as $attributeDefn){
         $subquery = $attributeDefn->query;
         foreach ($providedParams as $name => $value)
-      {
-        $subquery = preg_replace("/#$name#/", $value, $subquery);
-      }
+        {
+          $subquery = preg_replace("/#$name#/", $value, $subquery);
+        }
         $response = $this->reportDb->query($subquery);
         $attrData = $response->result_array(FALSE);
         $newColumns = array();
@@ -408,34 +416,34 @@ class ReportEngine {
                   'column' => $newColName,
                   'multi_value' => $multiValue);
             switch ($row["data_type"]) {
-                  case 'D':
-                case 'V':
-                    $this->columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-                    $this->columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-                    $this->columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
-                    if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
-                      $this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
-                    }
+              case 'D':
+              case 'V':
+                $this->columns[$newColName."_date_start"] = array('display'=>$row[$attributeDefn->caption]." Start", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+                $this->columns[$newColName."_date_end"] = array('display'=>$row[$attributeDefn->caption]." End", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+                $this->columns[$newColName."_date_type"] = array('display'=>$row[$attributeDefn->caption]." Type", 'class'=>'', 'style'=>'', 'autodef' => ($vagueDateProcessing && $attributeDefn->hideVagueDateFields == 'true'));
+                if($vagueDateProcessing){  // if vague date processing enable for the report, add the extra column.
+                  $this->columns[$newColName."_date"] = array('display'=>$row[$attributeDefn->caption]." Date", 'class'=>'', 'style'=>'');
+                }
                 for ($r=0; $r<$dataCount; $r++) {
                   $data[$r][$newColName.'_date_start'] = '';
                   $data[$r][$newColName.'_date_end'] = '';
                   $data[$r][$newColName.'_date_type'] = '';
                   $data[$r][$newColName.'_date'] = '';
                 }
-                    break;
-                  case 'L':
-                      // Lookup
-                      $termResponse = $this->reportDb->query("select t.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by t.id;");
+                break;
+              case 'L':
+                // Lookup
+                $termResponse = $this->reportDb->query("select t.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by t.id;");
                 $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
-                       // allow follow through so Lookup follows normal format of a singular field.
-                default:
-                    $this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
+                // allow follow through so Lookup follows normal format of a singular field.
+              default:
+                $this->columns[$newColName] = array('display'=>$row[$attributeDefn->caption], 'class'=>'', 'style'=>'');
                 for ($r=0; $r<$dataCount; $r++) {
                   $data[$r][$newColName] = $multiValue ? array() : '';
                 }
-                    break;
+                break;
             }
-           }
+          }
         }
         // Build an index of the attribute data: nb that the attribute data has been sorted in main_id order.
         // We need the index of first record for each main_id value (there may be many)
@@ -673,10 +681,18 @@ class ReportEngine {
           // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
           // of ids for a report.
           $query = preg_replace("/#$name#/", "AND ".$paramDefs[$name]['fieldname']." IN ($value)", $query);
+        elseif ($paramDefs[$name]['datatype']=='smpattrs')
+          $query = $this->mergeAttrListParam($query, 'sample', $value);
+        elseif ($paramDefs[$name]['datatype']=='occattrs')
+          $query = $this->mergeAttrListParam($query, 'occurrence', $value);
+        elseif ($paramDefs[$name]['datatype']=='locattrs')
+          $query = $this->mergeAttrListParam($query, 'location', $value);
         else 
           $query = preg_replace("/#$name#/", $value, $query);
       }
     }
+    // remove the marker left in the query to show where to insert joins
+    $query = str_replace(array('#joins#','#fields#'), array('',''), $query);
     // allow the URL to provide a sort order override
     if (!$counting) {
       if (isset($this->orderby))
@@ -691,6 +707,8 @@ class ReportEngine {
         if ($count==0) {
           $query .= " ORDER BY $order_by";
         }
+      } else {
+        $query = preg_replace("/#order_by#/",  "", $query);
       }
       if ($this->limit)
         $query .= ' LIMIT '.$this->limit;
@@ -701,7 +719,80 @@ class ReportEngine {
     }
     return $query;
   }
-  
+
+  /**
+   * When a parameter is found which defines a list of additional custom attributes to add to a report,
+   * this method merges the parameter information into the query, adding in joins and fields to return the
+   * selected attributes.
+   * @param string $query SQL query to process
+   * @param string $type Either occurrence, location or sample depending on the type of attributes being loaded.
+   * @param string $ids parameter value, which should be a comma separated list of attribute IDs.
+   * @return string Processed query.
+   */
+  private function mergeAttrListParam($query, $type, $ids) {
+    $attrs = $this->reportDb
+        ->select('id, data_type, caption, validation_rules')
+        ->from($type.'_attributes')
+        ->in('id', $ids)
+        ->get();
+    foreach($attrs as $attr) {
+      $id = $attr->id;
+      // can only use an inner join for definitely required fields. If they are required
+      // only at the per-survey level, we must use left joins as the survey could vary per record.
+      $join = strpos($attr->validation_rules, 'required')===false ? 'LEFT JOIN' : 'JOIN';
+      // find out what alias and field name the query uses for the table & field we need to join to
+      // (samples.id, occurrences.id or locations.id).
+      $rootIdAttr = inflector::plural($type).'_id_field';
+      $rootId = $this->reportReader->$rootIdAttr;
+      // construct a join to the attribute values table so we can get the value out.
+      $query = str_replace('#joins#', "$join ".$type."_attribute_values $type$id ON $type$id.".$type."_id=$rootId AND $type$id.".$type."_attribute_id=$id\n #joins#", $query);
+      // find the query column(s) required for the attribute
+      switch($attr->data_type) {
+        case 'F' :
+          $cols = array('float_value'=>'');
+          break;
+        case 'T' :
+          $cols = array('text_value'=>'');
+          break;
+        case 'D' :
+          $cols = array('date_start_value'=>'');
+          break;
+        case 'V' :
+          $cols = array('date_start_value'=>' start','date_end_value'=>' end','date_type_value'=>' type');
+          break;
+        case 'L' :
+          // no cols for lookups - we handle these manually later
+          $cols=array();
+          break;
+        default:
+          $cols = array('int_value'=>'');
+      }
+      // create the fields required in the SQL
+      foreach($cols as $col=>$suffix) {
+        $alias = preg_replace('/\_value$/', '', "attr_$type$id$col");
+        // use the #fields# token in the SQL to work out where to put the field
+        $query = str_replace('#fields#', ", $type$id.$col as $alias#fields#", $query);
+        $this->attrColumns[$alias] = array(
+          'display' => $attr->caption.$suffix
+        );
+      }
+      // add a column to set the caption for vague date processed columns
+      if ($attr->data_type=='V') {
+        $this->attrColumns["attr_$type$id".'date'] = array(
+          'display' => $attr->caption
+        );
+      }
+      // lookups need special processing for additional joins
+      elseif ($attr->data_type=='L') {
+        $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
+        $query = str_replace('#fields#', ", ltt$id.term as attr_$type$id#fields#", $query);
+        $this->attrColumns["attr_$type$id"] = array(
+          'display' => $attr->caption
+        );
+      }
+    }
+    return $query;
+  }
   /**
    * If sorting on the date column (the extra column added by vague date processing) then
    * switch the sort order back to use date_start.
