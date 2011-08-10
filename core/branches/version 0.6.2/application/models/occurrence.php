@@ -86,7 +86,8 @@ class Occurrence_Model extends ORM
       'verified_on',
       'confidential',
       'use_determination',
-      'external_key'
+      'external_key',
+      'zero_abundance'
     );
     if(array_key_exists('id', $fieldlist)) {
       $existingRecord = ORM::factory('occurrence', $fieldlist['id']);

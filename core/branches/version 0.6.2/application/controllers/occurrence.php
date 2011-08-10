@@ -91,7 +91,11 @@ class Occurrence_controller extends Gridview_Base_Controller {
   
   public function save()
   {
-    $_POST['confidential'] = isset($_POST['confidential']) ? 't' : 'f';
+    // unchecked check boxes are not in POST, so set false values.
+    if (!isset($_POST['occurrence:confidential']))
+      $_POST['occurrence:confidential']='f';
+    if (!isset($_POST['occurrence:zero_abundance']))
+      $_POST['occurrence:zero_abundance']='f';
     parent::save();
   }
   

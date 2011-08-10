@@ -146,10 +146,17 @@ print form::hidden('occurrence:determiner_id', html::initial_value($values, 'occ
 echo html::error_message($model->getError('occurrence:determiner_id')); ?>
 </li>
 <li>
-<label for='occurrence:confidential'>Confidential?:</label>
+<label for='occurrence:confidential'>Confidential:</label>
 <?php
-print form::checkbox('occurrence:confidential', 'true', html::initial_value($values, 'occurrence:confidential')=='t' ? 1 : 0);
+print form::checkbox('occurrence:confidential', 't', html::initial_value($values, 'occurrence:confidential')=='t' ? 1 : 0);
 echo html::error_message($model->getError('occurrence:confidential'));
+?>
+</li>
+<li>
+<label for='occurrence:zero_abundance'>Zero abundance:</label>
+<?php
+print form::checkbox('occurrence:zero_abundance', 't', html::initial_value($values, 'occurrence:zero_abundance')=='t' ? 1 : 0);
+echo html::error_message($model->getError('occurrence:zero_abundance'));
 ?>
 </li>
 <li>
