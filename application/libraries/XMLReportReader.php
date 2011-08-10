@@ -90,6 +90,15 @@ class XMLReportReader_Core implements ReportReader
                 if (!$websiteFilterField = $reader->getAttribute('website_filter_field'))
                   // default field name for filtering against websites
                   $websiteFilterField = 'w.id';
+                if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
+                  // default table alias for the samples table, so we can join to the id
+                  $this->samples_id_field = 's.id';
+                if (!$this->occurrences_id_field = $reader->getAttribute('occurrences_id_field'))
+                  // default table alias for the occurrences table, so we can join to the id
+                  $this->occurrences_id_field = 'o.id';
+                if (!$this->locations_id_field = $reader->getAttribute('locations_id_field'))
+                  // default table alias for the locations table, so we can join to the id
+                  $this->locations_id_field = 'l.id';
                 $reader->read();
                 $this->query = $reader->value;
                 if ($websiteIds) {
@@ -109,6 +118,8 @@ class XMLReportReader_Core implements ReportReader
               case 'field_sql':
                 $reader->read();
                 $this->field_sql = $reader->value;
+                // drop a marker in so we can insert custom attr fields later
+                $this->field_sql .= '#fields#';
                 $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
                 $this->query = str_replace('#field_sql#', $this->field_sql, $this->query);
                 break;
@@ -667,7 +678,8 @@ class XMLReportReader_Core implements ReportReader
     while ($nesting > 0);
 
     $i1 = $nextFrom - $i0;
-    $colString = substr($this->query, $i0, $i1);
+    // get the columns list, ignoring the marker to show where additional columns can be inserted
+    $colString = str_replace('#fields#', '', substr($this->query, $i0, $i1));
 
     // Now divide up the list of columns, which are comma separated, but ignore
     // commas nested in brackets

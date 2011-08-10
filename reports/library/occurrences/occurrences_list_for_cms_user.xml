@@ -15,6 +15,7 @@
   JOIN (sample_attribute_values sav
     JOIN sample_attributes sa ON sa.id=sav.sample_attribute_id AND sa.deleted=false AND sa.caption='CMS User ID'
   ) ON sav.sample_id=s.id AND sav.deleted=false
+  #joins#
   WHERE o.deleted = FALSE
   AND #website_filter#
   AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
@@ -48,7 +49,9 @@
     <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
         query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
     <param name='user_id' display='CMS User ID' description='Enter the ID of the CMS user' datatype='int' />
-  </params>
+    <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
+    <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
+    </params>
   <columns>
     <column name='occurrence_id' display='ID' />
     <column name='sample_id' visible='false' />
