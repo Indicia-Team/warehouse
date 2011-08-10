@@ -36,7 +36,7 @@ class Sample_comment_model extends ORM {
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('comment','required', 'length[1,1000]');
+    $array->add_rules('comment','required');
     $array->add_rules('sample_id', 'required');
 
     // Explicitly add those fields for which we don't do validation
