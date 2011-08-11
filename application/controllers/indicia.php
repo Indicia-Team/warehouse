@@ -517,11 +517,23 @@ class Indicia_Controller extends Template_Controller {
     $arr=array();
     if (!is_numeric($termlist)) {
       // termlist is a string so check the termlist from the external key field
-      $termlist = ORM::factory('termlist')->where('external_key', $termlist)->find();
+      $query = $this->db
+          ->select('id')
+          ->from('termlists')
+          ->where('external_key', $termlist)
+          ->get()->as_array();
+      $row=$query[0];
+      $termlist = $row->id;
     }
-    $terms = ORM::factory('termlists_term')->where(array('termlist_id' => $termlist, 'deleted' => 'f'))->find_all();
+    $terms = $this->db
+        ->select('termlists_terms.id, term')
+        ->from('termlists_terms')
+        ->join('terms', 'terms.id', 'termlists_terms.term_id')
+        ->where(array('termlists_terms.termlist_id' => $termlist, 'termlists_terms.deleted' => 'f', 'terms.deleted' => 'f'))
+        ->orderby(array('termlists_terms.sort_order'=>'ASC', 'terms.term'=>'ASC'))
+        ->get();
     foreach ($terms as $term) {
-      $arr[$term->id] = $term->term->term;
+      $arr[$term->id] = $term->term;
     }
     return $arr;
   }
