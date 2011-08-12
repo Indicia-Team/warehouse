@@ -14,7 +14,6 @@
   #joins#
   WHERE s.deleted = FALSE
   AND #website_filter#
-  AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
   AND (CAST(ttl2.id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR t.term='#sample_method_id#')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
@@ -34,8 +33,7 @@
     <order_by>s.date_start DESC</order_by>
   </order_bys>
   <params>
-    <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
-        population_call='direct:survey:id:title' />
+    <param name='sample_id' display='Parent Sample ID' description='The ID of the parent sample to load the sub-samples for' datatype='text' />
     <param name='date_from' display='Date From' datatype='date' />
     <param name='date_to' display='Date To' datatype='date' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
