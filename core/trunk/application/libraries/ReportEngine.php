@@ -767,9 +767,18 @@ class ReportEngine {
         default:
           $cols = array('int_value'=>'');
       }
-      // create the fields required in the SQL
+      // create the fields required in the SQL. First the attribute ID.
+      $alias = preg_replace('/\_value$/', '', "attr_id_$type$id");
+      $query = str_replace('#fields#', ", $type$id.id as $alias#fields#", $query);
+      $this->attrColumns[$alias] = array(
+        'visible' => 'false'
+      );
+      // then the attribute data col(s).
       foreach($cols as $col=>$suffix) {
-        $alias = preg_replace('/\_value$/', '', "attr_$type$id$col");
+        $alias = preg_replace('/\_value$/', '', "attr_$type$id");
+        // vague date cols need to distinguish the different column types.
+        if ($attr->data_type=='V') 
+          $alias += $col;
         // use the #fields# token in the SQL to work out where to put the field
         $query = str_replace('#fields#', ", $type$id.$col as $alias#fields#", $query);
         $this->attrColumns[$alias] = array(
