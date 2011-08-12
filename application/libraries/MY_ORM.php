@@ -997,6 +997,14 @@ class ORM extends ORM_Core {
     $dataType = $dt[0]->data_type;
     $vf = null;
     
+    $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
+    // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
+    // the table and field name as normal.
+    $fieldId = $fieldPrefix.$this->attrs_field_prefix.':'.$attrId;
+    if ($attrValueModel->id) {
+      $fieldId .= ':' . $attrValueModel->id;
+    }
+    
     switch ($dataType) {
       case 'T':
         $vf = 'text_value';
@@ -1009,9 +1017,15 @@ class ORM extends ORM_Core {
         // Date
         if (!empty($value)) {
           $vd=vague_date::string_to_vague_date($value);
-          $attrValueModel->date_start_value = $vd[0];
-          $attrValueModel->date_end_value = $vd[1];
-          $attrValueModel->date_type_value = $vd[2];
+          if ($vd) {
+            $attrValueModel->date_start_value = $vd[0];
+            $attrValueModel->date_end_value = $vd[1];
+            $attrValueModel->date_type_value = $vd[2];
+          } else {
+            $this->errors[$fieldId] = "Invalid value $value for attribute";
+            kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
+            return false;
+          }
         } else {
           $attrValueModel->date_start_value = null;
           $attrValueModel->date_end_value = null;
@@ -1022,9 +1036,20 @@ class ORM extends ORM_Core {
         // Lookup in list, int or boolean
         $vf = 'int_value';
         break;
-    }
+    }    
 
-    if ($vf != null) $attrValueModel->$vf = $value;
+    if ($vf != null) {
+      $attrValueModel->$vf = $value;
+      // Test that ORM accepted the new value - it will reject if the wrong data type for example. Use a string compare to get a
+      // proper test but with type tolerance.
+      if (strcmp($attrValueModel->$vf,$value)!==0) {
+        $this->errors[$fieldId] = "Invalid value $value for attribute";
+        kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
+        return false;
+      } else {
+        kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
+      }
+    }
 
     // Hook to the owning entity (the sample, location or occurrence)
     $thisFk = $this->object_name.'_id';
@@ -1039,17 +1064,10 @@ class ORM extends ORM_Core {
       $v=$attrValueModel->validate(new Validation($attrValueModel->as_array()));
     } catch (Exception $e) {
         $v=false;
-        $this->errors['general']=$e->getMessage();
+        $this->errors[$fieldId]=$e->getMessage();
         error::log_error('Exception during validation', $e);
     }
     if (!$v) {
-      $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
-      // For attribute value errors, we need to report e.g smpAttr:attrId[:attrValId] as the error key name, not
-      // the table and field name as normal.
-      $fieldId = $fieldPrefix.$this->attrs_field_prefix.':'.$attrId;
-      if ($attrValueModel->id) {
-        $fieldId .= ':' . $attrValueModel->id;
-      }
       foreach($attrValueModel->errors as $key=>$value) {
         // concatenate the errors if more than one per field.
         $this->errors[$fieldId] = array_key_exists($fieldId, $this->errors) ? $this->errors[$fieldId] . '  ' . $value : $value;
