@@ -840,9 +840,13 @@ class Data_Controller extends Data_Service_Base_Controller {
         }
         kohana::log('info', 'submission '.print_r($_POST['submission'], true));
         $response = $this->submit($s);
+        // return a success message plus the id of the topmost record, e.g. the sample created, plus a summary structure of any other records created.
+        $response = array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$response['id'], 'struct'=>$response['struct']);
+        // if the saved form contained a transaction Id, return it.
+        if (isset($s['fields']['transaction_id']['value']))
+          $response['transaction_id'] = $s['fields']['transaction_id']['value'];
+        echo json_encode($response);
       }
-      // return a success message plus the id of the topmost record, e.g. the sample created.
-      echo json_encode(array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$response['id'], 'struct'=>$response['struct']));
       $this->delete_nonce();
     }
     catch (Exception $e)
