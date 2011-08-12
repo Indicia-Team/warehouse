@@ -87,7 +87,7 @@ class iform_sectioned_transects_input_sample {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
-    if (isset($_POST['page']) && $_POST['page']=='sample' && !isset(data_entry_helper::$validation_errors)) {
+    if (isset($_REQUEST['page']) && $_REQUEST['page']=='grid' && !isset(data_entry_helper::$validation_errors)) {
       // we have just saved the sample page, so move on to the occurrences list
       return self::get_occurrences_form($args, $node, $response);
     } else {
@@ -106,7 +106,7 @@ class iform_sectioned_transects_input_sample {
     } else {
       $locationId = isset($_GET['site']) ? $_GET['site'] : null;
     }
-    $r = '<form method="post">';
+    $r = '<form method="post" id="input-grid">';
     $r .= $auth['write'];
     // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
     // without an additional (expensive) warehouse call, so it can get location details.
@@ -116,7 +116,8 @@ class iform_sectioned_transects_input_sample {
     if (isset(data_entry_helper::$entity_to_load['sample:id']))
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
-    $r .= '<input type="hidden" name="page" value="sample"/>';
+    // pass a param that sets the next page to display
+    $r .= '<input type="hidden" name="page" value="grid"/>';
     if ($locationId) {
       $site = data_entry_helper::get_population_data(array(
         'table' => 'location',
@@ -147,6 +148,7 @@ class iform_sectioned_transects_input_sample {
       'label' => lang::get('Date'),
       'fieldname' => 'sample:date',
     ));
+    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
     $attributes = data_entry_helper::getAttributes(array(
       'id' => $sampleId,
       'valuetable'=>'sample_attribute_value',
@@ -154,9 +156,11 @@ class iform_sectioned_transects_input_sample {
       'key'=>'sample_id',
       'fieldprefix'=>'smpAttr',
       'extraParams'=>$auth['read'],
-      'survey_id'=>$args['survey_id']
+      'survey_id'=>$args['survey_id'],
+      'sample_method_id'=>$sampleMethods[0]['id']
     ));
     $r .= get_attribute_html($attributes, $args, array());
+    $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
     $r .= '</form>';
     return $r;
@@ -166,19 +170,117 @@ class iform_sectioned_transects_input_sample {
     if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
     data_entry_helper::add_resource('jquery_form');
-    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-    $parentId = $_POST['sample:location_id'];
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);    
+    // did the parent sample previously exist? Default is no.
+    $existing=false;
+    if (isset($_POST['sample:id'])) {
+      // have just posted an edit to the existing parent sample, so can use it to get the parent location id.
+      $parentSampleId = $_POST['sample:id'];
+      $parentLocId = $_POST['sample:location_id'];
+      $date = $_POST['sample:date'];
+      $existing=true;
+    } else {
+      if (isset($response['outer_id']))
+        // have just posted a new parent sample, so can use it to get the parent location id.
+        $parentSampleId = $response['outer_id'];
+      else {
+        $parentSampleId = $_GET['sample_id'];
+        $existing=true;
+      }
+      $sample = data_entry_helper::get_population_data(array(
+        'table' => 'sample',
+        'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentSampleId,'deleted'=>'f')
+      ));
+      $sample=$sample[0];
+      $parentLocId = $sample['location_id'];
+      $date=$sample['date_start'];
+    }
+    // find any attributes that apply to transect section samples.
+    $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect Section'));
+    $attributes = data_entry_helper::getAttributes(array(
+      'id' => $sampleId,
+      'valuetable'=>'sample_attribute_value',
+      'attrtable'=>'sample_attribute',
+      'key'=>'sample_id',
+      'fieldprefix'=>'smpAttr',
+      'extraParams'=>$auth['read'],
+      'survey_id'=>$args['survey_id'],
+      'sample_method_id'=>$sampleMethods[0]['id'],
+      'multiValue'=>false // ensures that array_keys are the list of attribute IDs.
+    ));
+    if ($existing) {
+      // as the parent sample exists, we need to load the sub-samples and occurrences
+      $subSamples = data_entry_helper::get_population_data(array(
+        'report' => 'library/samples/samples_list_for_parent_sample',
+        'extraParams' => $auth['read'] + array('sample_id'=>$parentSampleId,'date_from'=>'','date_to'=>'', 'smpattrs'=>implode(',', array_keys($attributes))),
+        'nocache'=>true
+      ));
+      // transcribe the response array into a couple of forms that are useful elsewhere - one for outputting JSON so the JS knows about
+      // the samples, and another for lookup of sample data by code later.
+      $subSampleJson = array();
+      $subSamplesByCode = array();
+      foreach ($subSamples as $subSample) {
+        $subSampleJson[] = '"'.$subSample['code'].'": '.$subSample['sample_id'];
+        $subSamplesByCode[$subSample['code']] = $subSample;
+      }
+      data_entry_helper::$javascript .= "indiciaData.samples = { ".implode(', ', $subSampleJson)."};\n";
+      $o = data_entry_helper::get_population_data(array(
+        'report' => 'library/occurrences/occurrences_list_for_parent_sample',
+        'extraParams' => $auth['read'] + array('view'=>'detail','sample_id'=>$parentSampleId,'survey_id'=>'','date_from'=>'','date_to'=>'','taxon_group_id'=>'',
+            'smpattrs'=>'', 'occattrs'=>$args['occurrence_attribute_id']),
+        // don't cache as this is live data
+        'nocache' => true 
+      ));
+      // build an array keyed for easy lookup
+      $occurrences = array();      
+      foreach($o as $occurrence) {
+        $occurrences[$occurrence['sample_id'].':'.$occurrence['taxa_taxon_list_id']] = array(
+          'value'=>$occurrence['attr_occurrence'.$args['occurrence_attribute_id']],
+          'o_id'=>$occurrence['occurrence_id'],
+          'a_id'=>$occurrence['attr_id_occurrence'.$args['occurrence_attribute_id']]
+        );
+      }
+      // store it in data for JS to read when populating the grid
+      data_entry_helper::$javascript .= "indiciaData.existingOccurrences = ".json_encode($occurrences).";\n";
+    } else {
+      data_entry_helper::$javascript .= "indiciaData.samples = {};\n";
+      data_entry_helper::$javascript .= "indiciaData.existingOccurrences = {};\n";
+    }
     $sections = data_entry_helper::get_population_data(array(
       'table' => 'location',
-      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentId,'deleted'=>'f')
+      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f','orderby'=>'code')
     ));
-    $r = '<table id="transect-input" class="ui-widget navigateable"><thead class="ui-widget-header"><tr>';
-    $r .= '<th>' . lang::get('species') . '</th>';
+    $r = '<table id="transect-input" class="ui-widget"><thead>';
+    $r .= '<tr><th rowspan="2" class="ui-widget-header">' . lang::get('Species') . '</th>';
+    $r .= '<th colspan="'.count($sections).'" class="ui-widget-header">'.lang::get('Sections').'</th>';
+    $r .= '</tr><tr>';
     foreach ($sections as $section) {
-      $r .= '<th>' . $section['code'] . '</th>';
+      $r .= '<th class="ui-widget-header">' . $section['code'] . '</th>';
     }
     $r .= '</tr></thead>';
-    $r .= '<tbody class="ui-widget-content"></tbody>';
+    $r .= '<tbody class="ui-widget-content">';
+    // output rows at the top for any transect section level sample attributes
+    $rowClass='';
+    foreach ($attributes as $attr) {
+      $r .= '<tr '.$rowClass.'><td>'.$attr['caption'].'</td>';
+      $rowClass=$rowClass=='' ? 'class="alt-row"':'';
+      unset($attr['caption']);
+      foreach ($sections as $section) {
+        // output a cell with the attribute - tag it with a class & id to make it easy to find from JS.
+        $attrOpts = array('class' => 'smp-input smpAttr-'.$section['code'], 'id' => $attr['fieldname'].':'.$section['code']);
+        // if there is an existing value, set it and also ensure the attribute name reflects the attribute value id.
+        if (isset($subSamplesByCode[$section['code']])) {
+          $attrOpts['fieldname'] = $attr['fieldname'] . ':' . $subSamplesByCode[$section['code']]['attr_id_sample'.$attr['attributeId']];
+          $attr['default'] = $subSamplesByCode[$section['code']]['attr_sample'.$attr['attributeId']];
+        } else {
+          $attr['default']=isset($_POST[$attr['fieldname']]) ? $_POST[$attr['fieldname']] : '';
+        }
+        $r .= '<td>' . data_entry_helper::outputAttribute($attr, $attrOpts) . '</td>';
+      }
+      $r .= '</tr>';
+    }
+    $r .= '</tbody>';
+    $r .= '<tbody class="ui-widget-content" id="occs-body"></tbody>';
     $r .= '</table>';
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
@@ -187,30 +289,33 @@ class iform_sectioned_transects_input_sample {
     $r .= '<input name="occurrence:taxa_taxon_list_id" id="ttlid" />';
     $r .= '<input name="occurrence:sample_id" id="occ_sampleid"/>';
     $r .= '<input name="occAttr:' . $args['occurrence_attribute_id'] . '" id="occattr"/>';
+    $r .= '<input name="transaction_id" id="transaction_id"/>';
     $r .= '</form>';
     // A stub form for AJAX posting when we need to create a sample
     $r .= '<form style="display: none" id="smp-form" method="post" action="'.iform_ajaxproxy_url($node, 'sample').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
-    $r .= '<input name="sample:parent_id" value="'.$_POST['sample:id'].'" />';
+    $r .= '<input name="sample:parent_id" value="'.$parentSampleId.'" />';
     $r .= '<input name="sample:survey_id" value="'.$args['survey_id'].'" />';
+    $r .= '<input name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input name="sample:entered_sref" id="smpsref" />';
     $r .= '<input name="sample:entered_sref_system" id="smpsref_system" />';
     $r .= '<input name="sample:location_id" id="smploc" />';
-    $r .= '<input name="sample:date" value="'.$_POST['sample:date'].'" />';
+    $r .= '<input name="sample:date" value="'.$date.'" />';
+    // include a stub input for each transect section sample attribute
+    foreach ($attributes as $attr) {
+      $r .= '<input id="'.$attr['fieldname'].'" />';
+    }
     $r .= '</form>';
-    $r .= print_r($_POST, true);
     // tell the Javascript where to get species from.
     // @todo handle diff species lists.
     data_entry_helper::$javascript .= "indiciaData.initSpeciesList = 9;\n";
     // allow js to do AJAX by passing in the information it needs to post forms
+    data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";
-    data_entry_helper::$javascript .= "indiciaData.transect = ".$parentId.";\n";
-    data_entry_helper::$javascript .= "indiciaData.parentSample = ".$_POST['sample:id'].";\n";
+    data_entry_helper::$javascript .= "indiciaData.transect = ".$parentLocId.";\n";
+    data_entry_helper::$javascript .= "indiciaData.parentSample = ".$parentSampleId.";\n";
     data_entry_helper::$javascript .= "indiciaData.sections = ".json_encode($sections).";\n";
-    data_entry_helper::$javascript .= "indiciaData.occAttrId = ".$args['occurrence_attribute_id'] .";\n";    
-    
-    // @todo output the existing sample ids into indiciaData.samples.s1, s2 etc.
-    data_entry_helper::$javascript .= "indiciaData.samples = [];\n";
+    data_entry_helper::$javascript .= "indiciaData.occAttrId = ".$args['occurrence_attribute_id'] .";\n";
     
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();\n";

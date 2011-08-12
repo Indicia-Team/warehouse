@@ -11,6 +11,19 @@ table#transect-input input {
   width: 50px;
 }
 
+thead th {
+  text-align: center;
+}
+
 table .alt-row {
   background-color: #e7e7e7;
+}
+
+
+input.edited[type="text"], input.edited[type="password"], select.edited {
+  border: solid green 1px;
+}
+
+input.saving[type="text"], input.saving[type="password"], select.saving {
+  border: solid yellow 1px;
 }
