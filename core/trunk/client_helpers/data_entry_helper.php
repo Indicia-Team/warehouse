@@ -3645,7 +3645,7 @@ if (errors.length>0) {
   * in the cases where there is any data for the attribute.
   * </ul>
   *
-  * @return array of attributes.
+  * @return Associative array of attributes, keyed by the attribute ID (multiValue=false) or <attribute ID>:<attribute value ID> if multiValue=true.
   */
   public static function getAttributes($options) {
     $attrs = array();
@@ -3715,13 +3715,16 @@ if (errors.length>0) {
     foreach ($response as $item){
       $attrId = $item[$options['attrtable'].'_id'];
       if(isset($attrs[$attrId])){
-        if(isset($item['id'])){
-          $attrsWithValues["$attrId:".$item['id']] = $attrs[$attrId];
-          $attrsWithValues["$attrId:".$item['id']]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
-          $attrsWithValues["$attrId:".$item['id']]['default'] = $item['raw_value'];
-          $attrsWithValues["$attrId:".$item['id']]['displayValue'] = $item['value'];
+        if ($multiValue) {
+          $key = "$attrId:".(isset($item['id']) ? $item['id'] : '');
         } else {
-          $attrsWithValues["$attrId:"] = $attrs[$attrId];
+          $key = $attrId;
+        }
+        $attrsWithValues[$key] = $attrs[$attrId];
+        if(isset($item['id'])){
+          $attrsWithValues[$key]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
+          $attrsWithValues[$key]['default'] = $item['raw_value'];
+          $attrsWithValues[$key]['displayValue'] = $item['value'];
         }
       }
     }
@@ -3910,7 +3913,7 @@ if (errors.length>0) {
             break;
     }
 
-    return $output; // str_replace("\n", "", $output);
+    return $output;
   }
 
   /**

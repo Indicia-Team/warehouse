@@ -1234,7 +1234,7 @@ indiciaData.windowLoaded=true;
    * @return array Output of the Warehouse data services request for the terms.
    */
   public static function get_termlist_terms($auth, $termlist, $filter=null) {
-    if (!is_int($termlist)) {      
+    if (!is_int($termlist)) {
       $termlistFilter=array('external_key' => $termlist);
       $list = data_entry_helper::get_population_data(array(
         'table' => 'termlist',
