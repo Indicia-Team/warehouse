@@ -335,6 +335,8 @@ class report_helper extends helper_base {
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
     $relpath = self::relative_client_helper_path();
+    // automatic handling for Drupal clean urls.
+    $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
     if (count($records)>0) {
       $rowInProgress=false;
       foreach ($records as $rowIdx => $row) {
@@ -360,7 +362,7 @@ class report_helper extends helper_base {
           if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
-            $value = self::get_report_grid_actions($field['actions'],$row);
+            $value = self::get_report_grid_actions($field['actions'],$row, $pathParam);
             $classes[]='actions';
           } elseif (isset($field['template'])) {
             $value = self::mergeParamsIntoTemplate($row, $field['template'], true, true);
@@ -423,6 +425,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   currentUrl: '".$currentUrl['path']."',
   galleryColCount: ".$options['galleryColCount'].",
   pagingTemplate: '".$indicia_templates['paging']."',
+  pathParam: '".$pathParam."',
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['extraParams']))
         self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
@@ -1320,7 +1323,14 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
   }
 
-  private static function get_report_grid_actions($actions, $row) {
+  /**
+   * Retrieve the HTML for the actions in a grid row.
+   * @param array $actions
+   * @param array $row
+   * @param string $dirtyUrlParam Set to the name of a URL param used to pass the path to this page. E.g. in Drupal
+   * with clean urls disabled, this is set to q. Otherwise leave empty.
+   */   
+  private static function get_report_grid_actions($actions, $row, $pathParam='') {
     $jsReplacements = array();
     foreach ($row as $key=>$value) {
       $jsReplacements[$key]=$value;
@@ -1329,11 +1339,16 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     }
     $links = array();
     $currentUrl = self::get_reload_link_parts(); // needed for params
+    if (!empty($pathParam)) 
+      unset($currentUrl['params'][$pathParam]);
     foreach ($actions as $action) {
       // skip any actions which are marked as invisible for this row.
       if (isset($action['visibility_field']) && $row[$action['visibility_field']]==='f')
         continue;
       if (isset($action['url'])) {
+        if (!empty($pathParam) && strpos($action['url'], "?$pathParam=")===false)
+          $row['rootFolder'] .="?$pathParam=";
+        $actionUrl = self::mergeParamsIntoTemplate($row, $action['url'], true);
         // include any $_GET parameters to reload the same page, except the parameters that are specified by the action
         if (isset($action['urlParams']))
           $urlParams = array_merge($currentUrl['params'], $action['urlParams']);
@@ -1343,9 +1358,9 @@ if (typeof(mapSettingsHooks)!=='undefined') {
         else
           $urlParams = array_merge($currentUrl['params']);
         if (count($urlParams)>0) {
-          $action['url'].= (strpos($action['url'], '?')===false) ? '?' : '&';
+          $actionUrl.= (strpos($actionUrl, '?')===false) ? '?' : '&';
         }
-        $href=' href="'.self::mergeParamsIntoTemplate($row, $action['url'].self::array_to_query_string($urlParams), true).'"';
+        $href=' href="'.$actionUrl.self::mergeParamsIntoTemplate($row, self::array_to_query_string($urlParams), true).'"';
       } else {
         $href='';
       }

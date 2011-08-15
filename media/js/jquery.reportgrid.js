@@ -85,19 +85,22 @@
             onclick='';
           }
           if (typeof action.url !== "undefined") {
-            var link = action.url;
-            if (typeof action.urlParams !== "undefined") {
-              if (link.indexOf('?')===-1) { link += '?'; }
-              else { link += '&'; }
-              $.each(action.urlParams, function(name, value) {              
-                link += name + '=' + value;
-                link += '&';
-              });
-              if (link.substr(-1)==='&') {
-                link = link.substr(0, link.length-1);
-              }
+            var link = action.url, linkParams=[];
+            if (div.settings.pathParam!=='' && link.indexOf('?'+div.settings.pathParam+'=')) {
+              row.rootFolder = div.settings.rootFolder + '?'+div.settings.pathParam+'=';
             }
             link = mergeParamsIntoTemplate(div, row, link);
+            if (typeof action.urlParams !== "undefined") {
+              if (link.indexOf('?')===-1) { 
+                link += '?';
+              } else { 
+                link += '&'; 
+              }
+              $.each(action.urlParams, function(name, value) {
+                linkParams.push(name + '=' + value);
+              });
+            }
+            link = link + mergeParamsIntoTemplate(div, row, linkParams.join('&'));
             href=' href="' + link + '"';
           } else {
             href='';
