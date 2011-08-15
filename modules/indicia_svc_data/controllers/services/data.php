@@ -838,7 +838,6 @@ class Data_Controller extends Data_Service_Base_Controller {
           case 'json':
             $s = json_decode($_POST['submission'], true);
         }
-        kohana::log('info', 'submission '.print_r($_POST['submission'], true));
         $response = $this->submit($s);
         // return a success message plus the id of the topmost record, e.g. the sample created, plus a summary structure of any other records created.
         $response = array('success'=>'multiple records', 'outer_table'=>$s['id'], 'outer_id'=>$response['id'], 'struct'=>$response['struct']);
