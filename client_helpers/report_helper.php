@@ -317,12 +317,14 @@ class report_helper extends helper_base {
       $r .= "</tr></thead>\n";
     }
     $currentUrl = self::get_reload_link_parts();
+    // automatic handling for Drupal clean urls.
+    $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
     $r .= '<tfoot>';
     $r .= '<tr><td colspan="'.count($options['columns'])*$options['galleryColCount'].'">'.self::output_pager($options, $pageUrl, $sortAndPageUrlParams, $response).'</td></tr>'.
     $extraFooter = '';
     if (isset($options['footer']) && !empty($options['footer'])) {
       $footer = str_replace(array('{rootFolder}', '{currentUrl}'), 
-          array(dirname($_SERVER['PHP_SELF']) . '/', $currentUrl['path']), $options['footer']);
+          array(dirname($_SERVER['PHP_SELF']) . ($pathParam=='' ? '/' : "?$pathParam="), $currentUrl['path']), $options['footer']);
       $extraFooter .= '<div class="left">'.$footer.'</div>';
     }
     if (isset($options['downloadLink']) && $options['downloadLink'] && count($records)>0)
@@ -335,8 +337,6 @@ class report_helper extends helper_base {
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
     $relpath = self::relative_client_helper_path();
-    // automatic handling for Drupal clean urls.
-    $pathParam = (function_exists('variable_get') && variable_get('clean_url', 0)=='0') ? 'q' : '';
     if (count($records)>0) {
       $rowInProgress=false;
       foreach ($records as $rowIdx => $row) {
