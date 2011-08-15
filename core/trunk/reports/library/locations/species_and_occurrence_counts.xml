@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Species and occurrence counts by site" description="Lists locations and the number of species and occurrences within them.">
+<report title="Species and occurrence counts by site" description="Lists locations and the number of species and occurrences within them. This report relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
       <query>
-      SELECT  l.id, l.name, COUNT(DISTINCT o.id) as occurrences, COUNT(DISTINCT ttl.taxon_meaning_id) AS taxa
+      SELECT  l.id, l.name, COUNT(DISTINCT o.id) as occurrences, COUNT(DISTINCT ttl.taxon_meaning_id) AS taxa, COUNT(DISTINCT tx.taxon_group_id) AS groups
       FROM report_websites w
       JOIN surveys su on su.website_id=w.id
       JOIN locations_websites lw ON lw.website_id=w.id
       JOIN locations l ON l.id=lw.location_id
       LEFT JOIN (termlists_terms ttl1
-        INNER JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
-        INNER JOIN terms t ON t.id=ttl2.term_id
+        JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
+        JOIN terms t ON t.id=ttl2.term_id
       ) ON ttl1.id=l.location_type_id
       LEFT JOIN (samples s
         JOIN occurrences o on o.sample_id=s.id AND o.deleted='f'
         JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
+        JOIN taxa tx ON tx.id=ttl.taxon_id AND tx.deleted=false
       ) on s.survey_id=su.id AND s.location_id=l.id
       WHERE #website_filter#
       AND (o.zero_abundance='f' OR o.id IS NULL)
@@ -41,5 +42,6 @@
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" />
             <column name="occurrences" display="No. of Occurrences" />
             <column name="taxa" display="No. of Taxa" />
+            <column name="groups" display="No. of Taxon Groups" />
       </columns>
 </report>
