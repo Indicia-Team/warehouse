@@ -2,7 +2,7 @@
 
 <report title="Species and occurrence counts by site" description="Lists locations and the number of species and occurrences within them. This report relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
       <query>
-      SELECT  l.id, l.name, COUNT(DISTINCT o.id) as occurrences, COUNT(DISTINCT ttl.taxon_meaning_id) AS taxa, COUNT(DISTINCT tx.taxon_group_id) AS groups
+      SELECT #field_sql#
       FROM report_websites w
       JOIN surveys su on su.website_id=w.id
       JOIN locations_websites lw ON lw.website_id=w.id
@@ -25,6 +25,9 @@
       GROUP BY l.id, l.name
       #order_by#
       </query>
+      <field_sql>
+      l.id, l.name, COUNT(DISTINCT o.id) as occurrences, COUNT(DISTINCT ttl.taxon_meaning_id) AS taxa, COUNT(DISTINCT tx.taxon_group_id) AS groups
+      </field_sql>
       <order_bys>
             <order_by>occurrences DESC</order_by>
             <order_by>taxa DESC</order_by>
