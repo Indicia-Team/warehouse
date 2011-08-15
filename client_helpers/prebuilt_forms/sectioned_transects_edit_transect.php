@@ -143,6 +143,7 @@ class iform_sectioned_transects_edit_transect {
     if ($locationId)
       $r .= "<input type=\"hidden\" name=\"location:id\" value=\"$locationId\" />\n";
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
+    $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";    
     $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$locationTypes[0]['id']."\" />\n";
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'location:name',
@@ -225,20 +226,20 @@ class iform_sectioned_transects_edit_transect {
     $users = array();
     while ($user = db_fetch_object($query)) 
       $users[$user->uid] = $user->name;
-    $r = '<fieldset><legend>'.lang::get('Allocate recorders to the site').'</legend>';
+    $r = '<fieldset id="alloc-recorders"><legend>'.lang::get('Allocate recorders to the site').'</legend>';
     $r .= data_entry_helper::select(array(
       'label' => lang::get('Select user'),
       'fieldname' => 'cmsUserId',
       'lookupValues' => $users,
-      'afterControl' => '<span id="add-user" class="ui-state-default">'.lang::get('Add').'</span>'
+      'afterControl' => '<span id="add-user" class="ui-state-default ui-corner-all">'.lang::get('Add').'</span>'
     ));
-    $r .= '<table id="user-list">';
+    $r .= '<table id="user-list" style="width: auto">';
     
     foreach ($cmsUserAttrs as $attr) {
       if (isset($attr['displayValue'])) 
         $r .= '<tr><td id="user-'.$attr['displayValue'].'"><input type="hidden" name="'.$attr['fieldname'].':'.
             $attr['displayValue'].'" value="'.$attr['displayValue'].'"/>'.
-            $users[$attr['displayValue']].'</td><td><span class="remove-user ui-state-default ui-corner-all">x</span></td></tr>';
+            $users[$attr['displayValue']].'</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></td></div></tr>';
     }
     $r .= '</table>';
     $r .= '</fieldset>';
