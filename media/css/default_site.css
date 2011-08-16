@@ -429,18 +429,6 @@ tfoot td div{
   vertical-align: middle;
 }
 
-.olControlClearLayerItemInactive {
-  background-image: url("../images/nuvola/no-22px.png") !important;
-}
-
-.olControlSelectFeatureItemInactive {
-  background-image: url("../images/nuvola/quiz-22px-inactive.png") !important;
-}
-
-.olControlSelectFeatureItemActive {
-  background-image: url("../images/nuvola/quiz-22px.png") !important;
-}
-
 .no-border {
   border: none;
   margin: 0;
@@ -475,4 +463,76 @@ tfoot td div{
 .report-picker-container li {
   padding-top: 0;
   padding-bottom: 0;
+}
+
+#map-toolbar.olControlEditingToolbar div {
+  background-image: url("../images/map-toolbar.png");
+  background-color: #ff0000;
+  width: 24px;
+  height: 22px;
+  margin: 5px 2px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlNavigationItemInactive {
+  background-position: 0px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlNavigationItemActive {
+  background-position: 0px -23px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePolygonItemInactive {
+    background-position: -25px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePolygonItemActive {
+    background-position: -25px -23px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePathItemInactive {
+    background-position: -50px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePathItemActive {
+    background-position: -50px -23px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePointItemInactive {
+    background-position: -75px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePointItemActive {
+    background-position: -75px -23px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlSelectFeatureItemInactive {
+    background-position: -100px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlSelectFeatureItemActive {
+    background-position: -100px -23px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlModifyFeatureItemInactive {
+    background-position: -125px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlModifyFeatureItemActive {
+    background-position: -125px -23px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlClearLayerItemInactive {
+    background-position: -150px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlClearLayerItemActive {
+    background-position: -150px -23px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlClickSrefItemInactive {
+    background-position: -175px 0px;
+}
+
+#map-toolbar.olControlEditingToolbar .olControlClickSrefItemActive {
+    background-position: -175px -23px;
 }

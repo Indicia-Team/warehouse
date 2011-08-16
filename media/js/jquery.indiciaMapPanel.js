@@ -1007,7 +1007,7 @@ mapInitialisationHooks = [];
         }
       });
       if (div.settings.editLayer && div.settings.clickForSpatialRef) {
-        var click = new OpenLayers.Control.Click({'displayClass':align + 'olControlNavigation'});
+        var click = new OpenLayers.Control.Click({'displayClass':align + 'olControlClickSref'});
         div.map.editLayer.clickControl = click;
       }
       if (clickInfoCtrl !== null) {
