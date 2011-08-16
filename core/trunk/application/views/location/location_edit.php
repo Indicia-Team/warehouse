@@ -108,7 +108,8 @@ echo data_entry_helper::sref_and_system(array(
     'geomFieldname' => 'location:centroid_geom',
     'default' => html::initial_value($values, 'location:centroid_sref'),
     'defaultGeom' => html::initial_value($values, 'location:centroid_geom'),
-    'systems' => kohana::config('sref_notations.sref_notations')
+    'systems' => kohana::config('sref_notations.sref_notations'),
+    'defaultSystem' => html::initial_value($values, 'location:centroid_sref_system'),
 ));
 ?>
 <input type="hidden" name="location:boundary_geom" id="boundary_geom" value="<?php echo $boundary_geom; ?>"/>
