@@ -126,9 +126,8 @@ echo map_helper::map_panel(array(
     'initial_zoom'=>7,
     'width'=>870,
     'height'=>400,
-    'standardControls'=>array('layerSwitcher','panZoom'),
     'initialFeatureWkt' => $centroid_geom,
-    'standardControls' => array('layerSwitcher','panZoom','drawPolygon', 'modifyFeature')
+    'standardControls' => array('layerSwitcher','panZoom','drawPolygon','drawLine','modifyFeature')
 ));
 echo data_entry_helper::autocomplete(array(
   'label' => 'Parent location',
@@ -220,6 +219,7 @@ data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
 data_entry_helper::$dumped_resources[] = 'fancybox';
 data_entry_helper::enable_validation('location-edit');
+data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>
