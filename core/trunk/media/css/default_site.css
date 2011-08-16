@@ -465,74 +465,73 @@ tfoot td div{
   padding-bottom: 0;
 }
 
-#map-toolbar.olControlEditingToolbar div {
+div.olControlEditingToolbar div {
   background-image: url("../images/map-toolbar.png");
-  background-color: #ff0000;
   width: 24px;
   height: 22px;
   margin: 5px 2px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlNavigationItemInactive {
+div.olControlEditingToolbar .olControlNavigationItemInactive {
   background-position: 0px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlNavigationItemActive {
+div.olControlEditingToolbar .olControlNavigationItemActive {
   background-position: 0px -23px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePolygonItemInactive {
+div.olControlEditingToolbar .olControlDrawFeaturePolygonItemInactive {
     background-position: -25px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePolygonItemActive {
+div.olControlEditingToolbar .olControlDrawFeaturePolygonItemActive {
     background-position: -25px -23px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePathItemInactive {
+div.olControlEditingToolbar .olControlDrawFeaturePathItemInactive {
     background-position: -50px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePathItemActive {
+div.olControlEditingToolbar .olControlDrawFeaturePathItemActive {
     background-position: -50px -23px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePointItemInactive {
+div.olControlEditingToolbar .olControlDrawFeaturePointItemInactive {
     background-position: -75px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlDrawFeaturePointItemActive {
+div.olControlEditingToolbar .olControlDrawFeaturePointItemActive {
     background-position: -75px -23px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlSelectFeatureItemInactive {
+div.olControlEditingToolbar .olControlSelectFeatureItemInactive {
     background-position: -100px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlSelectFeatureItemActive {
+div.olControlEditingToolbar .olControlSelectFeatureItemActive {
     background-position: -100px -23px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlModifyFeatureItemInactive {
+div.olControlEditingToolbar .olControlModifyFeatureItemInactive {
     background-position: -125px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlModifyFeatureItemActive {
+div.olControlEditingToolbar .olControlModifyFeatureItemActive {
     background-position: -125px -23px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlClearLayerItemInactive {
+div.olControlEditingToolbar .olControlClearLayerItemInactive {
     background-position: -150px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlClearLayerItemActive {
+div.olControlEditingToolbar .olControlClearLayerItemActive {
     background-position: -150px -23px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlClickSrefItemInactive {
+div.olControlEditingToolbar .olControlClickSrefItemInactive {
     background-position: -175px 0px;
 }
 
-#map-toolbar.olControlEditingToolbar .olControlClickSrefItemActive {
+div.olControlEditingToolbar .olControlClickSrefItemActive {
     background-position: -175px -23px;
 }
