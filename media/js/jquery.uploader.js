@@ -35,7 +35,19 @@ checkSubmitInProgress = function () {
   $.fn.uploader = function(options) {
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
-    var opts = $.extend({}, $.fn.uploader.defaults, options);
+    var opts = $.extend({}, $.fn.uploader.defaults, options), html5OK=false;
+    
+    if (/Firefox[\/\s](\d+\.\d+)/.test(navigator.userAgent)){ //test for Firefox/x.x or Firefox x.x (ignoring remaining digits);
+      var ffversion=new Number(RegExp.$1) // capture x.x portion and store as a number
+      if (ffversion>=3.5) {
+        // Browser is not FF3.5+, so Html5 is a good runtime as HTML5 resize only works on FF3.5+. 
+        html5OK = true;
+      }
+    } 
+    if (!html5OK) {
+      // browser not FF3.5+. This replacement does not remove html5 if already the last runtime. 
+      opts.runtimes = opts.runtimes.replace('html5,','');
+    }
     
     if (typeof opts.jsPath == "undefined") {
       alert('The file_box control requires a jsPath setting to operate correctly. It should point to the URL '+
