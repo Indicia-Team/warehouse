@@ -1275,6 +1275,10 @@ class data_entry_helper extends helper_base {
   * Optional. List of spatial reference systems to display. Associative array with the key
   * being the EPSG code for the system or the notation abbreviation (e.g. OSGB), and the value being
   * the description to display.</li>
+  * <li><b>defaultSystem</b>
+  * Optional. Code for the default system value to load.</li>
+  * <li><b>defaultGeom</b>
+  * Optional. WKT value for the default geometry to load (hidden).</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the spatial reference and system selection control.
@@ -1299,6 +1303,8 @@ class data_entry_helper extends helper_base {
       $r .= "<input type=\"hidden\" id=\"imp-sref-system\" name=\"".$options['fieldname']."\" value=\"".$keys[0]."\" />\n";
     }
     else {
+      if (isset($options['defaultSystem']))
+        $options['default']=$options['defaultSystem'];
       $r .= self::sref_system_select($options);
     }
     return $r;
