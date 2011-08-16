@@ -68,19 +68,30 @@ class iform_form_name {
   }
   
   /**
-   * Handles the construction of a submission array from a set of form values.
+   * Optional. Handles the construction of a submission array from a set of form values. 
+   * Can be ommitted when the prebuilt form does not submit data via a form post.
    * For example, the following represents a submission structure for a simple
-   * sample and 1 occurrence submission
+   * sample and 1 occurrence submission.
    * return data_entry_helper::build_sample_occurrence_submission($values);
    * @param array $values Associative array of form data values. 
    * @param array $args iform parameters. 
    * @return array Submission structure.
-   * @todo: Implement this method
+   * @todo: Implement or remove this method
    */
   public static function get_submission($values, $args) {
         
+  }
+  
+  /**
+   * Optional method to override the page that is redirected to after a successful save operation.
+   * This allows the destination to be chosen dynamically.
+   * @param array $values Associative array of form data values. 
+   * @param array $args iform parameters. 
+   * @return string Destination URL.
+   * @todo: Implement or remove this method
+   */
+  public static function get_redirect_on_success($values, $args) {
+        
   }  
-  
-  
-  
+
 }
