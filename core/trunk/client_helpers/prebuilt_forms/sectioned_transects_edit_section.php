@@ -94,7 +94,7 @@ class iform_sectioned_transects_edit_section {
   public static function get_form($args, $node, $response=null) {
     require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-    $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section'));
+    $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect Section'));
     $locationId = isset($_GET['section_id']) ? $_GET['section_id'] : null;
     $parentId = isset($_GET['transect_id']) ? $_GET['transect_id'] : null;
     if ($parentId) {
@@ -132,7 +132,7 @@ class iform_sectioned_transects_edit_section {
     if ($locationId)
       $r .= "<input type=\"hidden\" name=\"location:id\" value=\"$locationId\" />\n";
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$locationTypes[1]['id']."\" />\n";
+    $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$locationTypes[0]['id']."\" />\n";
     $r .= "<input type=\"hidden\" name=\"location:parent_id\" value=\"$parentId\" />\n";
     // force a blank centroid, so that the Warehouse will recalculate it from the boundary
     $r .= "<input type=\"hidden\" name=\"location:centroid_geom\" value=\"\" />\n";
@@ -188,7 +188,7 @@ class iform_sectioned_transects_edit_section {
    * @param array $args iform parameters. 
    * @return array Submission structure.
    */
-  public static function get_submission($values, &$args) {
+  public static function get_submission($values, $args) {
     $s = submission_builder::build_submission($values, 
       array(
         'model' => 'location'
@@ -206,11 +206,15 @@ class iform_sectioned_transects_edit_section {
           )
         )
       );
-    if (!empty($values['from']) && $values['from']=='transect' && !empty($args['transect_edit_path']))
-      $args['redirect_on_success'] = $args['transect_edit_path'] . '?site='.$values['location:parent_id'];
     return $s;
   }  
   
-  
-  
+  /** 
+   * Dynamically redirect after a successful save. This lets us redirect back to the parent transect.
+   */
+  public static function get_redirect_on_success($values, $args) {
+    if (!empty($values['from']) && $values['from']=='transect' && !empty($args['transect_edit_path']))
+      return $args['transect_edit_path'] . '?site='.$values['location:parent_id'];
+  }
+
 }
