@@ -29,7 +29,7 @@
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
 class Sample_comment_model extends ORM {
-  public static $search_field = 'comment';
+  public $search_field = 'comment';
 
   protected $belongs_to = array('created_by'=>'user', 'updated_by'=>'user', 'sample');
 
