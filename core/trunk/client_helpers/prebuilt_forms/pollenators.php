@@ -931,6 +931,11 @@ $('#cc-1-collection-details').ajaxForm({
 		async: false,
         dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
+        	// if location id filled in but sample id is not -> error
+        	if(data.length == 15 || (data.length > 15 && data[15].value == '')){
+        		alertIndiciaError({error : 'Internal error : sample id not filled in, so not safe to save collection'});
+				return false;
+			}
         	clearErrors('form#cc-1-collection-details');
         	var valid = true;
         	if (!jQuery('form#cc-1-collection-details > input').valid()) { valid = false; }
@@ -958,16 +963,18 @@ $('#cc-1-collection-details').ajaxForm({
         	    jQuery('#cc-2-floral-station > input[name=location\\:id]').removeAttr('disabled').val(data.outer_id);
         	    $.getJSON(\"".$svcUrl."\" + \"/data/sample\" +
 			          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-			          \"&location_id=\"+data.outer_id+\"&parent_id=NULL&callback=?\", function(data) {
-					if(!(data instanceof Array)){
-   						alertIndiciaError(data);
-   					} else if (data.length>0) {
-			       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[0].id);
-			        	    jQuery('#cc-1-collection-details > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
-			        	    jQuery('#cc-2-floral-station > input[name=sample\\:id]').removeAttr('disabled').val(data[0].id);
+			          \"&location_id=\"+data.outer_id+\"&parent_id=NULL&callback=?\", function(sdata) {
+					if(!(sdata instanceof Array)){
+   						alertIndiciaError(sdata);
+   					} else if (sdata.length>0) {
+			       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+sdata[0].id);
+			        	    jQuery('#cc-1-collection-details > input[name=sample\\:id]').removeAttr('disabled').val(sdata[0].id);
+			        	    jQuery('#cc-2-floral-station > input[name=sample\\:id]').removeAttr('disabled').val(sdata[0].id);
 			        	    // In this case we use loadAttributes to set the names of the attributes to include the attribute_value id. Must ensure the 
-   	       					loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data[0].id, 'smpAttr', true);
-						}
+   	       					loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', sdata[0].id, 'smpAttr', true);
+					} else {
+						alertIndiciaError({error : 'Internal Error : no sample data returned for location id '+data.outer_id});
+					}
 				});
 			   	checkProtocolStatus(true);
         		$('#cc-1').foldPanel();
@@ -990,6 +997,11 @@ $('#cc-1-delete-collection').ajaxForm({
        		data[3].value = jQuery('#cc-1-collection-details input[name=sample\\:date]').val();
        		data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
         	if(data[2].value == '') return false;
+        	// double check that location id is filled in
+			if(data[4].value == ''){
+				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to delete collection.'});
+				return false;
+			}
   			jQuery('#cc-1-reinit-button').addClass('loading-button');
         	return true;
   		},
@@ -1633,16 +1645,25 @@ $('#cc-2-floral-station').ajaxForm({
    							alertIndiciaError(imgdata);
    						} else if (imgdata.length>0) {
 		        			jQuery('#cc-2-floral-station > input[name=occurrence_image\\:id]').removeAttr('disabled').val(imgdata[0].id);
-		        		}});
-		        }});
+		        		} else {
+   							alertIndiciaError({error : 'Internal error : no flower image data returned for flower '+occdata[0].id});
+   						}
+					});
+		        } else {
+   					alertIndiciaError({error : 'Internal error : no flower data returned for collection '+data.outer_id});
+  				}
+  			});
 			$.getJSON(\"".$svcUrl."/data/location_image/\" +
        				\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
        				\"&location_id=\"+location_id+\"&callback=?\", function(data) {
 				if(!(data instanceof Array)){
-   					alertIndiciaError(data);
+					alertIndiciaError(data);
    				} else if (data.length>0) {
 		        	jQuery('#cc-2-floral-station > input[name=location_image\\:id]').removeAttr('disabled').val(data[0].id);
-		        }});
+		        } else {
+					alertIndiciaError({error : 'Internal error : no environment image data returned for location id '+location_id});
+				}
+			});
 			jQuery('#cc-2').foldPanel();
 			if(showSessionsPanel) { jQuery('#cc-3').showPanel(); }
 			showSessionsPanel = true;
@@ -1704,11 +1725,17 @@ $('#cc-2-valid-button').click(function() {
 $('#cc-3-delete-session').ajaxForm({ 
 		async: false,
 		dataType:  'json', 
-        beforeSubmit:   function(data, obj, options){
-  			// Warning this assumes that the data is fixed position:
-       		data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
-        	if(data[2].value == '') return false;
-        	return true;
+		beforeSubmit:   function(data, obj, options){
+			// Warning this assumes that the data is fixed position:
+			data[4].value = jQuery('#cc-1-collection-details input[name=location\\:id]').val();
+			if(data[2].value == '') return false;
+			// double check that location id is filled in
+			if(data[4].value == ''){
+				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to save session.'});
+				return false;
+			}
+			// don't have to worry about parent_id
+			return true;
   		},
         success:   function(data){
         	if(data.success != 'multiple records' || data.outer_table != 'sample')
@@ -1894,7 +1921,16 @@ addSession = function(){
    		async: false,
     	dataType:  'json',
     	beforeSubmit:   function(data, obj, options){
-    		var valid = true;
+			// double check that location id and sample id are filled in
+			if(jQuery('#cc-1-collection-details input[name=location\\:id]').val() == ''){
+				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to save session.'});
+				return false;
+			}
+			if(jQuery('#cc-1-collection-details input[name=sample\\:id]').val() == ''){
+				alertIndiciaError({error : 'Internal Error: sample id not set, so unsafe to save session.'});
+				return false;
+			}
+	    	var valid = true;
     		clearErrors(obj);
     		if (!obj.find('input').valid()) {
     			valid = false; }
@@ -2248,6 +2284,8 @@ loadInsect = function(id){
    		} else if (data.length>0) {
 	        jQuery('form#cc-4-main-form > [name=occurrence\\:sample_id]').val(data[0].sample_id);
 			jQuery('form#cc-4-main-form > textarea[name=occurrence\\:comment]').val(data[0].comment);
+  		} else {
+   			alertIndiciaError({error : 'Internal error : no insect data available for id '+id});
   		}
 	});
 	$.getJSON(\"".$svcUrl."/data/determination?occurrence_id=\" + id +
@@ -2287,8 +2325,9 @@ addNewToPhotoReel = function(occId){
 			var container = jQuery('[occId='+imageData[0].occurrence_id+']');
 			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
-		}
-	});
+		} else {
+			alertIndiciaError({error : 'Internal Error : image could not be loaded into photoreel for insect '+occId});
+		}});
 }
 
 addExistingToPhotoReel = function(occId){
@@ -2312,7 +2351,7 @@ addExistingToPhotoReel = function(occId){
    				alertIndiciaError(detData);
    			} else if (detData.length>0) {
 	    		jQuery('[occId='+detData[0].occurrence_id+']').find('.thumb-text').remove();
-	    	}
+	    	} // is conceivable that insect is not identified yet -> does not have determinations
   		}, 
     	dataType: 'json' 
     });
@@ -2326,6 +2365,8 @@ addExistingToPhotoReel = function(occId){
 			var container = jQuery('[occId='+imageData[0].occurrence_id+']');
 			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
+		} else {
+			alertIndiciaError({error : 'Internal Error : image could not be loaded into photoreel for existing insect '+occId});
 		}
 	});
 }
@@ -2425,7 +2466,11 @@ $('#cc-4-delete-insect').ajaxForm({
         beforeSubmit:   function(data, obj, options){
   			// Warning this assumes that the data is fixed position:
         	if(data[2].value == '') return false;
-  			jQuery('#cc-4-delete-insect').addClass('loading-button');
+			if(data[3].value == ''){
+				alertIndiciaError({error : 'Internal Error: sample id not set, so unsafe to save insect.'});
+				return false;
+			}
+        	jQuery('#cc-4-delete-insect').addClass('loading-button');
         	return true;
   		},
         success:   function(data){
@@ -2492,7 +2537,16 @@ $('#cc-5-collection').ajaxForm({
 		async: false,
 		dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
-  			jQuery('#cc-5-complete-collection').addClass('loading-button');
+            // double check that location id and sample id are filled in
+			if(jQuery('#cc-1-collection-details input[name=location\\:id]').val() == ''){
+				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to save collection.'});
+				return false;
+			}
+			if(jQuery('#cc-1-collection-details input[name=sample\\:id]').val() == ''){
+				alertIndiciaError({error : 'Internal Error: sample id not set, so unsafe to save collection.'});
+				return false;
+			}
+			jQuery('#cc-5-complete-collection').addClass('loading-button');
         	data[2].value = jQuery('#cc-1-collection-details input[name=sample\\:id]').val();
 			data[3].value = '';
 			data[4].value = '';
@@ -2621,7 +2675,7 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 					}
 				}
 			}
-		  }
+		  } // may have no attributes.
 		  checkProtocolStatus('leave');
 		  populateSessionSelect();
 		  checkForagingStatus(true);
@@ -2642,6 +2696,8 @@ loadImage = function(imageTable, key, keyName, keyValue, target, ratio){
 			jQuery('[name='+imageTable+'\\:id]', form).val(imageData[0].id).removeAttr('disabled');
 			jQuery('[name='+imageTable+'\\:path]', form).val(imageData[0].path);
 	        insertImage('med-'+imageData[0].path, jQuery(target), ratio);
+		} else {
+			alertIndiciaError({error : 'Internal Error : could not load '+imageTable+' '+keyName+' '+keyValue});
 		}
 	});
 }
@@ -2711,7 +2767,7 @@ jQuery.ajax({
     success: function(data) {
 	  if(!(data instanceof Array)){
    		alertIndiciaError(data);
-   	  } else if (data.length>0) {
+   	  } else if (data.length>0) { // could have zero length
 		var i;
        	for ( i=0;i<data.length;i++) {
        		if(data[i].completed == '0'){
@@ -2753,6 +2809,8 @@ jQuery.ajax({
 							jQuery('input[name=place\\:long]').val(parts[1]);
 							jQuery('#imp-sref').change();
   						}
+					  } else {
+						alertIndiciaError({error : 'Internal error : could not load data for location '+data[i].location_id});
 					  }
   					}, 
 					data: {}, 
@@ -2796,7 +2854,7 @@ jQuery.ajax({
 							success: function(sessiondata) {
 	    			  		  if(!(sessiondata instanceof Array)){
    								alertIndiciaError(sessiondata);
-   					  		  } else if (sessiondata.length>0) {
+   					  		  } else if (sessiondata.length>0) { // may have zero sessions
 								sessionCounter = 0;
 								jQuery('#cc-3-body').empty();
 								for (var i=0;i<sessiondata.length;i++){
@@ -2814,7 +2872,7 @@ jQuery.ajax({
           									\"&sample_id=\"+sessiondata[i].id+\"&deleted=f&callback=?\", function(insectData) {
 		    							if(!(insectData instanceof Array)){
    											alertIndiciaError(insectData);
-   					  		  			} else if (insectData.length>0) {
+   					  		  			} else if (insectData.length>0) { // each session may have zero insects.
  											for (var j=0;j<insectData.length;j++){
 												addExistingToPhotoReel(insectData[j].id);
 											}
