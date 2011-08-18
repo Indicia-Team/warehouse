@@ -65,12 +65,12 @@ class Scheduled_Tasks_Controller extends Controller {
     $this->db = new Database();    
     // Get a list of all the triggers that have at least one action
     $result = $this->getTriggerQuery();
-    $reportEngine = new ReportEngine();
     // For each trigger, we need to get the output of the report file which defines the trigger
     foreach ($result as $trigger)
     {       
       $params = json_decode($trigger->params_json, true);      
       $params['date'] = $this->last_run_date;
+      $reportEngine = new ReportEngine();
       $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);      
       
       if (count($data['content']['data']>0)) {        
