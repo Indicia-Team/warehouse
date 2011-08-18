@@ -64,6 +64,11 @@ class ReportEngine {
    * @var array A list of additional columns identified from custom attribute parameters.
    */
   private $attrColumns = array();
+  
+  /**
+   * @var array A list of the actual custom attributes, along with a link to the cols they include.
+   */
+  private $customAttributes = array();
 
   public function __construct($websiteIds = null)
   {
@@ -142,10 +147,13 @@ class ReportEngine {
     $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
     $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : null;
     $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : null;
-    // ensure that only those expected params are passed through to the report.
+    // ensure that only those expected params are passed through to the report. We leave the custom attribute
+    // params in place as they are not in the declared params list (they are implied by the presence of the attribute parameter).
     foreach($this->providedParams as $key => $value){
       if(!isset($this->expectedParams[$key])){
-        unset($this->providedParams[$key]);
+        if (!preg_match('/attr:[\d]+$/', $key)) {
+          unset($this->providedParams[$key]);
+        }
       }
     }
     return array(
@@ -673,26 +681,52 @@ class ReportEngine {
     $paramDefs = $this->reportReader->getParams();
     foreach ($this->providedParams as $name => $value)
     {
-      if ($value==='')
-        // empty integer params should be handled as 0 (null would be ideal, but we can't test for it in the same fashion as a number).
-        $query = preg_replace("/#$name#/", $paramDefs[$name]['emptyvalue'], $query);
-      else {
-        if ($paramDefs[$name]['datatype']=='idlist')
-          // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
-          // of ids for a report.
-          $query = preg_replace("/#$name#/", "AND ".$paramDefs[$name]['fieldname']." IN ($value)", $query);
-        elseif ($paramDefs[$name]['datatype']=='smpattrs')
-          $query = $this->mergeAttrListParam($query, 'sample', $value);
-        elseif ($paramDefs[$name]['datatype']=='occattrs')
-          $query = $this->mergeAttrListParam($query, 'occurrence', $value);
-        elseif ($paramDefs[$name]['datatype']=='locattrs')
-          $query = $this->mergeAttrListParam($query, 'location', $value);
-        else 
-          $query = preg_replace("/#$name#/", $value, $query);
+      if (isset($paramDefs[$name])) {
+        if ($value==='')
+          // empty integer params should be handled as 0 (null would be ideal, but we can't test for it in the same fashion as a number).
+          $query = preg_replace("/#$name#/", $paramDefs[$name]['emptyvalue'], $query);
+        else {
+          if ($paramDefs[$name]['datatype']=='idlist')
+            // idlist is a special parameter type which creates an IN (...) clause. Lets you optionally provide a list
+            // of ids for a report.
+            $query = preg_replace("/#$name#/", "AND ".$paramDefs[$name]['fieldname']." IN ($value)", $query);
+          elseif ($paramDefs[$name]['datatype']=='smpattrs')
+            $query = $this->mergeAttrListParam($query, 'sample', $value);
+          elseif ($paramDefs[$name]['datatype']=='occattrs')
+            $query = $this->mergeAttrListParam($query, 'occurrence', $value);
+          elseif ($paramDefs[$name]['datatype']=='locattrs')
+            $query = $this->mergeAttrListParam($query, 'location', $value);
+          else 
+            $query = preg_replace("/#$name#/", $value, $query);
+        }
+      } elseif (preg_match('/(?P<name>\w+):(?P<id>\d+)$/', $name, $matches)) {
+        $alias = '';
+        switch($matches['name']) {
+          case 'smpattr':
+            $alias='sample';
+            break;
+          case 'occattr':
+            $alias='sample';
+            break;
+          case 'locattr':
+            $alias='location';
+            break;
+        }
+        $id=$matches['id'];
+        // At this point we need to know the data type of the field to filter in tha av table
+        if (!isset($this->customAttributes["$alias$id"])) 
+          throw new exception("Report requested filter on unknown parameter $name");
+        $field=$this->customAttributes["$alias$id"]['fields'][0];
+        if ($field=='text_value' || substr($field, 0, 5)=='date_') {
+          // needs quoting
+          $value = "'$value'";
+        }
+        if (!empty($alias)) 
+          $query = str_replace('#filters#', "AND $alias$id.$field=$value\n#filters#", $query);
       }
     }
     // remove the marker left in the query to show where to insert joins
-    $query = str_replace(array('#joins#','#fields#'), array('',''), $query);
+    $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);
     // allow the URL to provide a sort order override
     if (!$counting) {
       if (isset($this->orderby))
@@ -770,8 +804,12 @@ class ReportEngine {
       // create the fields required in the SQL. First the attribute ID.
       $alias = preg_replace('/\_value$/', '', "attr_id_$type$id");
       $query = str_replace('#fields#', ", $type$id.id as $alias#fields#", $query);
+      $query = str_replace('#group_bys#', ", $type$id.id#group_bys#", $query);
       $this->attrColumns[$alias] = array(
-        'visible' => 'false'
+        'visible' => 'false',
+      );
+      $this->customAttributes["$type$id"] = array(
+        'fields' => array_keys($cols)
       );
       // then the attribute data col(s).
       foreach($cols as $col=>$suffix) {
@@ -779,8 +817,9 @@ class ReportEngine {
         // vague date cols need to distinguish the different column types.
         if ($attr->data_type=='V') 
           $alias += $col;
-        // use the #fields# token in the SQL to work out where to put the field
+        // use the #fields# token in the SQL to work out where to put the field, plus #group_bys# for any grouping
         $query = str_replace('#fields#', ", $type$id.$col as $alias#fields#", $query);
+        $query = str_replace('#group_bys#', ", $type$id.$col#group_bys#", $query);
         $this->attrColumns[$alias] = array(
           'display' => $attr->caption.$suffix
         );
@@ -795,6 +834,7 @@ class ReportEngine {
       elseif ($attr->data_type=='L') {
         $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
         $query = str_replace('#fields#', ", ltt$id.term as attr_$type$id#fields#", $query);
+        $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
         $this->attrColumns["attr_$type$id"] = array(
           'display' => $attr->caption
         );

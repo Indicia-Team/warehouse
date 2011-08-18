@@ -128,7 +128,6 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $array = array();
       if ($wantRecords) $array['records'] = $records;
       if ($wantColumns) $array['columns'] = $this->view_columns;
-      
       if ($wantCount) {
         $count = $this->record_count();
         if ($count!==false)

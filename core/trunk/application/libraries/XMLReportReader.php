@@ -42,6 +42,18 @@ class XMLReportReader_Core implements ReportReader
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
   
+  /**
+   * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the 
+   * sql for the columns list.
+   */
+  private $hasColumnsSql = false;
+  
+  /**
+   * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
+   * the other fields.
+   */
+  private $hasAggregates = false;
+  
   /** 
    * Returns a simple array containing the title and description of a report. Static so you don't have to load the full report object to get this
    * information.
@@ -142,18 +154,7 @@ class XMLReportReader_Core implements ReportReader
                     $reader->getAttribute('population_call'));
                 break;
               case 'column':
-                $this->mergeColumn(
-                    $reader->getAttribute('name'),
-                    $reader->getAttribute('display'),
-                    $reader->getAttribute('style'),
-                    $reader->getAttribute('feature_style'),
-                    $reader->getAttribute('class'),
-                    $reader->getAttribute('visible'),
-                    $reader->getAttribute('img'),
-                    $reader->getAttribute('orderby'),
-                    $reader->getAttribute('mappable'),
-                    false
-                );
+                $this->mergeXmlColumn($reader);
                 break;
               case 'table':
                 $this->automagic = true;
@@ -215,14 +216,56 @@ class XMLReportReader_Core implements ReportReader
         }
       }
       $reader->close();
-      // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
-      if ($this->query)
+      if ($this->hasColumnsSql) {
+        // column sql is defined in the list of column elements, so autogenerate the query.
+        $this->autogenColumns();
+        if ($this->hasAggregates) {
+          $this->buildGroupBy();
+        } 
+      } elseif ($this->query)
+        // column SQL is part of the SQL statement, or defined in a field_sql element.
+        // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
         $this->inferFromQuery();
     }
     catch (Exception $e)
     {
       throw new Exception("Report: $report\n".$e->getMessage());
     }
+  }
+  
+  /**
+   * Use the sql attributes from the list of columns to auto generate the columns SQL.
+   */
+  private function autogenColumns() {
+    $sql = array();
+    foreach ($this->columns as $col=>$def) {
+      if (isset($def['sql'])) {
+        $sql[] = $def['sql'] . ' as ' . $col;
+      }
+    }
+    // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to 
+    // add custom attribute fields.
+    $this->query = str_replace('#columns#', implode(', ', $sql) . '#fields#', $this->query);
+  }
+  
+  /**
+   * If there are columns marked with the aggregate attribute, then we can build a group by clause
+   * using all the non-aggregate column sql. 
+   * This is done dynamically leaving us with the ability to automatically extend the group by field list,
+   * e.g. if some custom attribute columns have been added to the report.
+   */
+  private function buildGroupBy() {
+    $sql = array();
+    foreach ($this->columns as $col=>$def) {
+      if (isset($def['sql']) && (!isset($def['aggregate']) || $def['aggregate']!='true')) {
+        $sql[] = $def['sql'];
+      }
+    }
+    // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
+    // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
+    // There is also a token to mark where additional filters can insert in the WHERE clause.
+    if (count($sql)>0)
+      $this->query .= "#filters#\nGROUP BY " . implode(', ', $sql) . '#group_bys#';
   }
 
   /**
@@ -490,6 +533,36 @@ class XMLReportReader_Core implements ReportReader
       );
     }
   }
+  
+  /**
+   * Merges a column definition pointed to by an XML reader into the list of columns.  
+   */
+  private function mergeXmlColumn($reader) {
+    $name = $reader->getAttribute('name');
+    if (!array_key_exists($name, $this->columns))
+    {
+      // set a default column setup
+      $this->columns[$name] = array(
+        'visible' => 'true',
+        'img' => 'false',
+        'autodef' => false
+      );
+    }
+    // build a definition from the XML
+    $def = array();
+    if ($reader->moveToFirstAttribute()) {
+      do {
+        if ($reader->name!='name')
+          $def[$reader->name] = $reader->value;
+      } while ($reader->moveToNextAttribute());
+    }
+    // move back up to where we started
+    $reader->moveToElement();
+    $this->columns[$name] = array_merge($this->columns[$name], $def);
+    // remember if we have info required to auto-build the column SQL, plus aggregate fields
+    $this->hasColumnsSql = $this->hasColumnsSql || isset($this->columns[$name]['sql']); 
+    $this->hasAggregates = $this->hasAggregates || (isset($this->columns[$name]['aggregate']) && $this->columns[$name]['aggregate']=='true'); 
+  }
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='false', $autodef=true)
   {
@@ -505,7 +578,7 @@ class XMLReportReader_Core implements ReportReader
         $this->columns[$name]['visible'] = 'true';
       if ($img == 'true' || $this->columns[$name]['img'] == 'true') $this->columns[$name]['img'] = 'true';
       if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
-      if ($this->columns[$name]['mappable'] == 'true' || $mappable == 'true') $this->columns[$name]['mappable'] = 'true';
+      if ($mappable != '') $this->columns[$name]['mappable'] = $mappable;
       if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
     }
     else
