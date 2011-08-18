@@ -77,6 +77,11 @@
 <input id="website_url" name="person:website_url" value="<?php echo html::initial_value($values, 'person:website_url');?>" />
 <?php echo html::error_message($model->getError('person:website_url')); ?>
 </li>
+<li>
+<label for="external_key">External key</label>
+<input id="external_key" name="person:external_key" value="<?php echo html::initial_value($values, 'person:external_key'); ?>" />
+<?php echo html::error_message($model->getError('person:external_key')); ?>
+</li>
 </ol>
 </fieldset>
 <?php 
