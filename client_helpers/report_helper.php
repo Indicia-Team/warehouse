@@ -1109,7 +1109,7 @@ mapSettingsHooks.push(function(opts) {
     } else {
       throw new Exception('Invalid mode parameter for call to report_grid');
     }
-    if (!empty($extra) && substr($extra, 1, 1)!=='&')
+    if (!empty($extra) && substr($extra, 0, 1)!=='&')
       $extra = '&'.$extra;
     $request = parent::$base_url.'index.php/services/'.
         $serviceCall.
@@ -1129,11 +1129,11 @@ mapSettingsHooks.push(function(opts) {
     }
     if (!empty($query))
       $request .= "&query=".urlencode(json_encode($query));
-    if (isset($options['extraParams'])) {
+    if (isset($options['extraParams'])) { 
       foreach ($options['extraParams'] as $key=>$value)
-        // Must urlencode the parameters, as things like spaces cause curl to hang
-        $request .= "&$key=".urlencode($value);
-    }    
+        // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
+        $request .= '&'.urlencode($key).'='.urlencode($value);
+    }
     if (isset($options['linkOnly']) && $options['linkOnly']) {
       return $request;
     }
