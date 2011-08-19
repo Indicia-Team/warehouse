@@ -1,7 +1,7 @@
 function loadSpeciesList() {
   var lastCell=null, lastCellValue = '', submittingSample='';
-  
-  /** 
+
+  /**
    * Creates the sample required for a section, if it does not exist yet.
    * Returns true if a sample was created. False if it already existed.
    */
@@ -26,14 +26,16 @@ function loadSpeciesList() {
       return false;
     }
   }
-  
+
   $.ajax({
     'url': 'http://localhost/indicia/index.php/services/data/taxa_taxon_list',
     'data': {
         'taxon_list_id': indiciaData.initSpeciesList,
+        'preferred': 't',
         'auth_token': indiciaData.readAuth.auth_token,
         'nonce': indiciaData.readAuth.nonce,
-        'mode': 'json'
+        'mode': 'json',
+        'allow_data_entry': 't'
     },
     'dataType': 'jsonp',
     'success': function(data) {
@@ -66,11 +68,11 @@ function loadSpeciesList() {
         row += '</tr>';
         $('table#transect-input tbody#occs-body').append(row);
       });
-  
+
       $('.count-input').keypress(function (evt) {
         var targetRow = [], code, parts=evt.target.id.split('-');
         code=parts[2];
-        
+
         // down arrow or enter key
         if (evt.keyCode===13 || evt.keyCode===40) {
           targetRow = $(evt.target).parents('tr').next('tr');
@@ -78,7 +80,7 @@ function loadSpeciesList() {
         // up arrow
         if (evt.keyCode===38) {
           targetRow = $(evt.target).parents('tr').prev('tr');
-        }        
+        }
         if (targetRow.length>0) {
           $('#value-' + targetRow[0].id.substr(4) + '-' + code).focus();
         }
@@ -141,7 +143,7 @@ function loadSpeciesList() {
               } else {
                 alert('sample could not be saved');
               }
-              
+
               // store the actual abundance value we want to save.
               $('#occattr').val($(selector).val());
               // does this cell already have an occurrence?
@@ -176,7 +178,7 @@ function loadSpeciesList() {
       });
     }
   });
-  
+
   function checkErrors(data) {
     if (typeof data.error!=="undefined") {
       if (typeof data.errors!=="undefined") {
@@ -195,15 +197,15 @@ function loadSpeciesList() {
       return true;
     }
   }
-  
-  jQuery('#occ-form').ajaxForm({  
+
+  jQuery('#occ-form').ajaxForm({
     async: true,
     dataType:  'json',
     success:   function(data, status, form){
       var selector = '#'+data.transaction_id.replace(/:/g, '\\:');
       $(selector).removeClass('saving');
       if (checkErrors(data)) {
-        
+
         if ($(data.transaction_id +'-id').length===0) {
           // this is a new occurrence, so keep a note of the id in a hidden input
           $(selector).after('<input type="hidden" id="'+data.transaction_id +'-id" value="'+data.outer_id+'"/>');
@@ -212,16 +214,16 @@ function loadSpeciesList() {
           // this is a new attribute, so keep a note of the id in a hidden input
           $(selector).after('<input type="hidden" id="'+data.transaction_id +'-attrId" value="'+data.struct.children[0].id+'"/>');
         }
-        
+
         $(selector).removeClass('edited');
       }
     }
   });
-  
+
   jQuery('#smp-form').ajaxForm({
     // must be synchronous, otherwise lastCell could change.
     async: false,
-    dataType:  'json', 
+    dataType:  'json',
     complete: function() {
       var selector = '#'+lastCell.replace(/:/g, '\\:');
       $(selector).removeClass('saving');
@@ -245,7 +247,7 @@ function loadSpeciesList() {
                   // we know - parts[2] = S2
                   // attr.sample_attribute_id & attr.id
                   // src control id=smpAttr:1:S2 (smpAttr:sample_attribute_id:sectioncode)
-                  // need to change src control name to 
+                  // need to change src control name to
                 });
               }
             );
@@ -253,5 +255,5 @@ function loadSpeciesList() {
         }
       }
     }
-  });  
+  });
 };

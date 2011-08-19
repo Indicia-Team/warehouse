@@ -72,7 +72,17 @@ class iform_sectioned_transects_input_sample {
         'captionField'=>'caption',
         'valueField'=>'id',
         'siteSpecific'=>true
-      )
+      ),
+      array(
+        'name'=>'taxon_list_id',
+        'caption'=>'Species List',
+        'description'=>'The species checklist used to populate the grid.',
+        'type'=>'select',
+        'table'=>'taxon_list',
+        'captionField'=>'title',
+        'valueField'=>'id',
+        'siteSpecific'=>true
+      ),
     );
   }
   
@@ -212,9 +222,10 @@ class iform_sectioned_transects_input_sample {
       // as the parent sample exists, we need to load the sub-samples and occurrences
       $subSamples = data_entry_helper::get_population_data(array(
         'report' => 'library/samples/samples_list_for_parent_sample',
-        'extraParams' => $auth['read'] + array('sample_id'=>$parentSampleId,'date_from'=>'','date_to'=>'', 'smpattrs'=>implode(',', array_keys($attributes))),
+        'extraParams' => $auth['read'] + array('sample_id'=>$parentSampleId,'date_from'=>'','date_to'=>'', 'sample_method_id'=>'', 'smpattrs'=>implode(',', array_keys($attributes))),
         'nocache'=>true
       ));
+    
       // transcribe the response array into a couple of forms that are useful elsewhere - one for outputting JSON so the JS knows about
       // the samples, and another for lookup of sample data by code later.
       $subSampleJson = array();
@@ -308,7 +319,7 @@ class iform_sectioned_transects_input_sample {
     $r .= '</form>';
     // tell the Javascript where to get species from.
     // @todo handle diff species lists.
-    data_entry_helper::$javascript .= "indiciaData.initSpeciesList = 9;\n";
+    data_entry_helper::$javascript .= "indiciaData.initSpeciesList = ".$args['taxon_list_id'].";\n";
     // allow js to do AJAX by passing in the information it needs to post forms
     data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
     data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";
