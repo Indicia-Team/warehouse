@@ -17,6 +17,7 @@
   AND (CAST(ttl2.id AS character varying)='#sample_method_id#' OR '#sample_method_id#'='' OR t.term='#sample_method_id#')
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+  AND s.parent_id=#sample_id#
   #order_by#
   </query>
   <field_sql>
