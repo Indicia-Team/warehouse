@@ -1290,6 +1290,7 @@ class data_entry_helper extends helper_base {
     // Force no separate lines for the 2 controls
     if (!array_key_exists('systems',$options) || count($options['systems'])!=1) {
       $srefOptions = array_merge($options, array('suffixTemplate'=>'nosuffix'));
+      $srefOptions = array_merge($options, array('requiredsuffixTemplate'=>'requirednosuffix'));
     } else {
       $srefOptions = $options;
     }
