@@ -67,6 +67,7 @@ $default_terms = array(
   // Spatial reference systems
   'OSGB'=>'British National Grid',
   'OSIE'=>'Irish Grid',
+  'UTM30N_ED50'=>'Channel Islands Grid (UTM ED50)',
   '4326'=>'WGS84 (decimal lat,long)',
   '2169'=>'LUREF (x,y)',
   
