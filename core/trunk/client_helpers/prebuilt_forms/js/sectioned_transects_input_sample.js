@@ -28,7 +28,7 @@ function loadSpeciesList() {
   }
 
   $.ajax({
-    'url': 'http://localhost/indicia/index.php/services/data/taxa_taxon_list',
+    'url': indiciaData.indiciaSvc+'index.php/services/data/taxa_taxon_list',
     'data': {
         'taxon_list_id': indiciaData.initSpeciesList,
         'preferred': 't',
