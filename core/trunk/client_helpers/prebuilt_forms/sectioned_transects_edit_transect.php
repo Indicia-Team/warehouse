@@ -111,6 +111,9 @@ class iform_sectioned_transects_edit_transect {
    */
   public static function get_form($args, $node, $response=null) {
     require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
+    if (function_exists('url')) {
+      $args['section_edit_path'] = url($args['section_edit_path']);
+    }
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section'));
     $locationId = isset($_GET['site']) ? $_GET['site'] : null;
@@ -183,13 +186,17 @@ class iform_sectioned_transects_edit_transect {
         'lookupValues' => $sectionArr,
         'suffixTemplate' => 'nosuffix'
       ));
-      $options['toolbarPrefix'] .= '<a id = "section-edit" style="display: none" href="'.$args['section_edit_path'].'?from=transect&transect_id='.$locationId.'&section_id=0">' . lang::get('Edit') . '</a> | ';
+      $options['toolbarPrefix'] .= '<a id = "section-edit" style="display: none" href="'.$args['section_edit_path'].
+          (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
+          '?from=transect&transect_id='.$locationId.'&section_id=0">' . lang::get('Edit') . '</a> | ';
       // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
       $options['standardControls'][] = 'selectFeature';
       $options['standardControls'][] = 'hoverFeatureHighlight';
     }
     if ($locationId) {
-      $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].'?from=transect&transect_id='.$locationId.'">' . lang::get('Add Section') . '</a>';
+      $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].
+          (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
+          'from=transect&transect_id='.$locationId.'">' . lang::get('Add Section') . '</a>';
     }
     $r .= get_attribute_html($attributes, $args, array());
     $olOptions = iform_map_get_ol_options($args);
