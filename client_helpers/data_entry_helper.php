@@ -2580,9 +2580,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    */
   public static function get_population_data($options) {
     if (isset($options['report']))
-      $serviceCall = 'report/requestReport?report='.$options['report'].'.xml&reportSource=local&mode=json&';
+      $serviceCall = 'report/requestReport?report='.$options['report'].'.xml&reportSource=local&mode=json';
     elseif (isset($options['table']))
-      $serviceCall = 'data/'.$options['table'].'?mode=json&';
+      $serviceCall = 'data/'.$options['table'].'?mode=json';
     $request = parent::$base_url."index.php/services/$serviceCall";
     if (array_key_exists('extraParams', $options)) {
       // make a copy of the extra params
