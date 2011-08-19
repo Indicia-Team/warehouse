@@ -73,7 +73,7 @@ class Report_Controller extends Data_Service_Base_Controller {
   *
   */
   public function requestReport()
-  {
+  { 
     try {
       $this->entity = 'record';
       $this->handle_request();
@@ -144,7 +144,7 @@ class Report_Controller extends Data_Service_Base_Controller {
     // NB that for JSON requests (eg from datagrids) the parameters do not get posted, but appear in the url.
     if(empty($params)){
       // no params posted so look on URL
-      $params = $_GET;
+      $params = $this->getRawGET();
     }
     $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
     if (isset($data['content']['columns']))
@@ -155,6 +155,25 @@ class Report_Controller extends Data_Service_Base_Controller {
       // A parameter request, since the report is being called without sufficient info
       return $data['content'];
   }
+  
+  /**
+   * Report parameters can contain spaces in the names, for example smpattr:CMS User ID=3, which means filter on the attribute
+   * called CMS User ID for value 3. Unfortunately PHP mangles incoming $_GET key names, replacing spaces and dots with underscores. So
+   * rather than use $_GET we have to try the raw input from the $_SERVER variable.
+   * @return array Assoc array matching $_GET without the name mangling.
+   */
+  private function getRawGET() {
+    
+    $pairs = explode("&", $_SERVER['QUERY_STRING']);
+    $vars = array();
+    foreach ($pairs as $pair) {
+        $nv = explode("=", $pair);
+        $name = urldecode($nv[0]);
+        $value = urldecode($nv[1]);
+        $vars[$name] = $value;
+    }
+    return $vars;
+}
 
   /**
    * When a report was requested, but the report needed parameter inputs which were requested,

@@ -151,7 +151,7 @@ class ReportEngine {
     // params in place as they are not in the declared params list (they are implied by the presence of the attribute parameter).
     foreach($this->providedParams as $key => $value){
       if(!isset($this->expectedParams[$key])){
-        if (!preg_match('/attr:[\d]+$/', $key)) {
+        if (!preg_match('/[loc|smp|occ]attr:/', $key)) {
           unset($this->providedParams[$key]);
         }
       }
@@ -513,11 +513,11 @@ class ReportEngine {
   }
 
   private function mergeColumnData(&$data, $value){
-  if(is_array($data)){
-    $data[] = $value;
-  } else {
-    $data = $value;
-  }
+    if(is_array($data)){
+      $data[] = $value;
+    } else {
+      $data = $value;
+    }
   }
 
   /* The following function is the only method by which the reports can update the contents of the database. As a consequence
@@ -699,7 +699,9 @@ class ReportEngine {
           else 
             $query = preg_replace("/#$name#/", $value, $query);
         }
-      } elseif (preg_match('/(?P<name>\w+):(?P<id>\d+)$/', $name, $matches)) {
+      } elseif (preg_match('/(?P<name>\w+):(?P<id>[\d ]+)$/', $name, $matches)) {
+        // user has provided a parameter filter value such as locattr:n=value. This is a specially handled parameter,
+        // since the filterable field is implied by the custom attribute being added to the report.
         $alias = '';
         switch($matches['name']) {
           case 'smpattr':
@@ -760,15 +762,31 @@ class ReportEngine {
    * selected attributes.
    * @param string $query SQL query to process
    * @param string $type Either occurrence, location or sample depending on the type of attributes being loaded.
-   * @param string $ids parameter value, which should be a comma separated list of attribute IDs.
+   * @param string $attrList parameter value, which should be a comma separated list of attribute IDs or attribute names.
    * @return string Processed query.
    */
-  private function mergeAttrListParam($query, $type, $ids) {
-    $attrs = $this->reportDb
+  private function mergeAttrListParam($query, $type, $attrList) {
+    $this->reportDb
         ->select('id, data_type, caption, validation_rules')
-        ->from($type.'_attributes')
-        ->in('id', $ids)
-        ->get();
+        ->from('list_'.$type.'_attributes');
+    if ($this->websiteIds)
+      $this->reportDb->in('website_id', $this->websiteIds);
+    $ids = array();
+    $captions = array();
+    $attrList = explode(',',$attrList);
+    foreach($attrList as $attr) {
+      if (is_numeric($attr))
+        $ids[] = $attr;
+      else
+        $captions[] = $attr;
+    }
+    if (count($ids)>0) {
+      $this->reportDb->in('id', $ids);
+      if (count($captions)>0) 
+        throw new exception('Cannot mix numeric IDs and captions in the list of requested custom attributes');
+    } elseif (count($captions)>0) 
+      $this->reportDb->in('caption', $captions);
+    $attrs = $this->reportDb->get();
     foreach($attrs as $attr) {
       $id = $attr->id;
       // can only use an inner join for definitely required fields. If they are required
