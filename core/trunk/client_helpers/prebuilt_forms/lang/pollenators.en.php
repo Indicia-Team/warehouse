@@ -124,7 +124,7 @@ $custom_terms = array(
 	,'LANG_Trailer_Point_3' => "you may modify the identification of the insects through 'My Collections'"
 	,'LANG_Trailer_Point_4' => "you may create a new collection"
 	,'LANG_Final_1' => 'This collection has been registered and added to your set of collections'
-	,'LANG_Final_2' => "This collection may be accessed through 'My Collections', where you may change the identification of your insects"
+	,'LANG_Final_2' => "This collection may be accessed through 'My Collections', where you may change the identification of your insects (your collection may not be visible immediately in the galleries, but may take up to 1h15min to appear. Do not re-enter it)."
 	,'LANG_Consult_Collection' => 'View this Collection'
 	,'LANG_Create_New_Collection' => 'Create New Collection'
 	
