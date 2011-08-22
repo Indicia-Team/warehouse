@@ -163,14 +163,17 @@ class Report_Controller extends Data_Service_Base_Controller {
    * @return array Assoc array matching $_GET without the name mangling.
    */
   private function getRawGET() {
-    
-    $pairs = explode("&", $_SERVER['QUERY_STRING']);
     $vars = array();
-    foreach ($pairs as $pair) {
-        $nv = explode("=", $pair);
-        $name = urldecode($nv[0]);
-        $value = urldecode($nv[1]);
-        $vars[$name] = $value;
+    if (!empty($_SERVER['QUERY_STRING'])) {
+      $pairs = explode('&', $_SERVER['QUERY_STRING']);
+      foreach ($pairs as $pair) {
+        if (!empty($pair)) {
+          $nv = explode("=", $pair);
+          $name = urldecode($nv[0]);
+          $value = urldecode($nv[1]);
+          $vars[$name] = $value;
+        }
+      }
     }
     return $vars;
 }
