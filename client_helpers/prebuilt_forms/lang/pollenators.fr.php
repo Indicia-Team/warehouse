@@ -142,7 +142,7 @@ $custom_terms = array(
 	,'click here'=>'Cliquez ici'
 	
 	,'LANG_Final_1' => 'Cette collection a été enregistrée et ajoutée à votre galerie'
-	,'LANG_Final_2' => "Cette collection peut être consultée dans la rubrique «Mes collections», où vous pouvez modifier l'identification de vos insectes"
+	,'LANG_Final_2' => "Cette collection peut être consultée dans la rubrique «Mes collections», où vous pouvez modifier l'identification de vos insectes (Votre collection peut ne pas être visible dans les galeries immédiatement mais le sera, au maximum, dans 1h15min. Ne la ressaisissez-pas)."
 	,'LANG_Consult_Collection' => 'Voir cette collection'
 	,'LANG_Create_New_Collection' => 'Créer une collection'
 	
