@@ -136,7 +136,7 @@ class iform_sectioned_transects_edit_section {
     $r .= "<input type=\"hidden\" name=\"location:parent_id\" value=\"$parentId\" />\n";
     // force a blank centroid, so that the Warehouse will recalculate it from the boundary
     $r .= "<input type=\"hidden\" name=\"location:centroid_geom\" value=\"\" />\n";
-    $r .= '<fieldset class="left"><legend>'.lang::get('Section Details').'</legend>';
+    $r .= '<div class="left" style="width: 45%"><fieldset><legend>'.lang::get('Section Details').'</legend>';
     $sectionName = lang::get('{1} - section {2}', $parent['name'], str_replace('S', '', data_entry_helper::$entity_to_load['location:code']));
     $r .= "<input type=\"hidden\" name=\"location:name\" value=\"$sectionName\" />\n";
     $r .= "<input type=\"hidden\" name=\"location:code\" id=\"location_code\" value=\"".data_entry_helper::$entity_to_load['location:code']."\" />\n";
@@ -165,8 +165,11 @@ class iform_sectioned_transects_edit_section {
     $r .= get_attribute_html($attributes, $args, array());
     $olOptions = iform_map_get_ol_options($args);
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="ui-state-default ui-corner-all" />';
-    $r .= '</fieldset>';
-    $r .= '<div class="right" style="border: solid silver 1px">';
+    $r .= '</fieldset></div>';
+    $r .= '<div class="right" style="width: '.$options['width'].'px;">';
+    $help = lang::get('Use the Draw Lines tool to draw the section by clicking on the map. Double click to finish the line. You can edit an '.
+        'existing line by selecting the Modify Feature tool then dragging the markers to change the line shape.');
+    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>';
     $r .='</form>';
@@ -175,7 +178,7 @@ class iform_sectioned_transects_edit_section {
       $breadcrumb = array();
       $breadcrumb[] = l('Home', '<front>');
       $breadcrumb[] = l('Sites', $args['sites_list_path']);
-      $breadcrumb[] = l($parent['name'], $args['transect_edit_path'], array('query'=>array('site'=>$parentId)));
+      $breadcrumb[] = l($parent['name'], $args['transect_edit_path'], array('query'=>array('id'=>$parentId)));
       $breadcrumb[] = $locationId ? data_entry_helper::$entity_to_load['location:name'] : lang::get('new section');
       drupal_set_breadcrumb($breadcrumb);
     }
@@ -214,7 +217,7 @@ class iform_sectioned_transects_edit_section {
    */
   public static function get_redirect_on_success($values, $args) {
     if (!empty($values['from']) && $values['from']=='transect' && !empty($args['transect_edit_path']))
-      return $args['transect_edit_path'] . '?site='.$values['location:parent_id'];
+      return $args['transect_edit_path'] . '?id='.$values['location:parent_id'];
   }
 
 }

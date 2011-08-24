@@ -20,6 +20,7 @@
  * @link  http://code.google.com/p/indicia/
  */
 
+require_once 'includes/map.php';
 require_once 'includes/form_generation.php';
  
 /**
@@ -51,38 +52,41 @@ class iform_sectioned_transects_input_sample {
    * @todo: Implement this method
    */
   public static function get_parameters() {   
-    return array(
+    return array_merge(
+      iform_map_get_map_parameters(),
       array(
-        'name'=>'survey_id',
-        'caption'=>'Survey',
-        'description'=>'The survey that data will be posted into.',
-        'type'=>'select',
-        'table'=>'survey',
-        'captionField'=>'title',
-        'valueField'=>'id',
-        'siteSpecific'=>true
-      ),
-      array(
-        'name'=>'occurrence_attribute_id',
-        'caption'=>'Occurrence Attribute',
-        'description'=>'The attribute (typically an abundance attribute) that will be presented in the grid for input. Entry of an attribute value will create '.
-            ' an occurrence.',
-        'type'=>'select',
-        'table'=>'occurrence_attribute',
-        'captionField'=>'caption',
-        'valueField'=>'id',
-        'siteSpecific'=>true
-      ),
-      array(
-        'name'=>'taxon_list_id',
-        'caption'=>'Species List',
-        'description'=>'The species checklist used to populate the grid.',
-        'type'=>'select',
-        'table'=>'taxon_list',
-        'captionField'=>'title',
-        'valueField'=>'id',
-        'siteSpecific'=>true
-      ),
+        array(
+          'name'=>'survey_id',
+          'caption'=>'Survey',
+          'description'=>'The survey that data will be posted into.',
+          'type'=>'select',
+          'table'=>'survey',
+          'captionField'=>'title',
+          'valueField'=>'id',
+          'siteSpecific'=>true
+        ),
+        array(
+          'name'=>'occurrence_attribute_id',
+          'caption'=>'Occurrence Attribute',
+          'description'=>'The attribute (typically an abundance attribute) that will be presented in the grid for input. Entry of an attribute value will create '.
+              ' an occurrence.',
+          'type'=>'select',
+          'table'=>'occurrence_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'siteSpecific'=>true
+        ),
+        array(
+          'name'=>'taxon_list_id',
+          'caption'=>'Species List',
+          'description'=>'The species checklist used to populate the grid.',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'captionField'=>'title',
+          'valueField'=>'id',
+          'siteSpecific'=>true
+        )
+      )
     );
   }
   
@@ -97,6 +101,8 @@ class iform_sectioned_transects_input_sample {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
+    if (isset($response['error']))
+      data_entry_helper::dump_errors($response);
     if (isset($_REQUEST['page']) && $_REQUEST['page']=='grid' && !isset(data_entry_helper::$validation_errors)) {
       // we have just saved the sample page, so move on to the occurrences list
       return self::get_occurrences_form($args, $node, $response);
@@ -106,8 +112,10 @@ class iform_sectioned_transects_input_sample {
   }
   
   public static function get_sample_form($args, $node, $response) {
+    global $user;
     if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
+    require_once dirname(dirname(__FILE__)) . '/map_helper.php';
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
     if ($sampleId) {
@@ -116,15 +124,17 @@ class iform_sectioned_transects_input_sample {
     } else {
       $locationId = isset($_GET['site']) ? $_GET['site'] : null;
     }
-    $r = '<form method="post" id="input-grid">';
+    $r = '<div class="left">';
+    $r .= '<form method="post" id="sample">';
     $r .= $auth['write'];
     // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
     // without an additional (expensive) warehouse call, so it can get location details.
     $r .= '<input type="hidden" name="read_nonce" value="'.$auth['read']['nonce'].'"/>';
     $r .= '<input type="hidden" name="read_auth_token" value="'.$auth['read']['auth_  token'].'"/>';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
-    if (isset(data_entry_helper::$entity_to_load['sample:id']))
+    if (isset(data_entry_helper::$entity_to_load['sample:id'])) {
       $r .= '<input type="hidden" name="sample:id" value="'.data_entry_helper::$entity_to_load['sample:id'].'"/>';
+    }
     $r .= '<input type="hidden" name="sample:survey_id" value="'.$args['survey_id'].'"/>';
     // pass a param that sets the next page to display
     $r .= '<input type="hidden" name="page" value="grid"/>';
@@ -137,21 +147,33 @@ class iform_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:location_id" value="'.$locationId.'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref" value="'.$site['centroid_sref'].'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
-      // @todo County/Region
       $r .= '<label>Site name:</label><span>'.$site['name'].'</span><br/>';
     } else {
-      // @todo filter to the locations for the current user
-      // @todo County/Region
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that 
       // we always use the same warehouse call and therefore it uses the cache.
       $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section'));
+      $availableSites = data_entry_helper::get_population_data(array(
+        'report'=>'library/locations/locations_list',
+        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id'], 
+            'locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid),
+        'nocache' => true
+      ));
+      // convert the report data to an array for the lookup, plus one to pass to the JS so it can keep the hidden sref fields updated
+      $sitesLookup = array();
+      $sitesJs = array();
+      foreach ($availableSites as $site) {
+        $sitesLookup[$site['location_id']]=$site['name'];
+        $sitesJs[$site['location_id']] = $site;
+      }
+      data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
       $r .= data_entry_helper::location_select(array(
-        'fieldname' => 'sample:location_id',
-        'id' => 'location_select',
         'label' => lang::get('Site'),
         'validation' => array('required'),
-        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id'])
+        'blankText'=>lang::get('please select'),
+        'lookupValues' => $sitesLookup
       ));
+      $r .= '<input type="hidden" name="sample:entered_sref" value="" id="entered_sref"/>';
+      $r .= '<input type="hidden" name="sample:entered_sref_system" value="" id="entered_sref_system"/>';
       // sref values for the sample will be populated automatically when the submission is built.
     }
     $r .= data_entry_helper::date_picker(array(
@@ -173,6 +195,16 @@ class iform_sectioned_transects_input_sample {
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
     $r .= '</form>';
+    $r .= '</div>';
+    $r .= '<div class="right" style="border: solid silver 1px">';
+    $options = iform_map_get_map_options($args, $auth['read']);
+    $olOptions = iform_map_get_ol_options($args);
+    if ($locationId) {
+      $options['initialFeatureWkt'] = $site['centroid_geom'];
+    }
+    $r .= map_helper::map_panel($options, $olOptions);
+    data_entry_helper::enable_validation('sample');
+    $r .= '</div>';
     return $r;
   }
   
@@ -246,9 +278,9 @@ class iform_sectioned_transects_input_sample {
       $occurrences = array();      
       foreach($o as $occurrence) {
         $occurrences[$occurrence['sample_id'].':'.$occurrence['taxa_taxon_list_id']] = array(
-          'value'=>$occurrence['attr_occurrence'.$args['occurrence_attribute_id']],
+          'value'=>$occurrence['attr_occurrence_'.$args['occurrence_attribute_id']],
           'o_id'=>$occurrence['occurrence_id'],
-          'a_id'=>$occurrence['attr_id_occurrence'.$args['occurrence_attribute_id']]
+          'a_id'=>$occurrence['attr_id_occurrence_'.$args['occurrence_attribute_id']]
         );
       }
       // store it in data for JS to read when populating the grid
@@ -261,10 +293,23 @@ class iform_sectioned_transects_input_sample {
       'table' => 'location',
       'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f','orderby'=>'code')
     ));
-    $r = '<table id="transect-input" class="ui-widget"><thead>';
-    $r .= '<tr><th rowspan="2" class="ui-widget-header">' . lang::get('Species') . '</th>';
-    $r .= '<th colspan="'.count($sections).'" class="ui-widget-header">'.lang::get('Sections').'</th>';
-    $r .= '</tr><tr>';
+    
+    $r = "<form method=\"post\"><div id=\"tabs\">\n";
+    $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
+    $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
+    $r .= '<input type="hidden" name="survey_id" value="'.$args['survey_id'].'"/>';
+    $r .= '<input type="hidden" name="page" value="grid"/>';
+    $r .= data_entry_helper::tab_header(array('tabs'=>array(
+        '#grid'=>lang::get('Enter Transect Data'),
+        '#notes'=>lang::get('Notes')
+    )));
+    data_entry_helper::enable_tabs(array(
+        'divId'=>'tabs',
+        'style'=>$args['interface']
+    ));
+    $r .= "<div id=\"grid\">\n";
+    $r .= '<table id="transect-input" class="ui-widget"><thead>';
+    $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
     foreach ($sections as $section) {
       $r .= '<th class="ui-widget-header">' . $section['code'] . '</th>';
     }
@@ -293,6 +338,15 @@ class iform_sectioned_transects_input_sample {
     $r .= '</tbody>';
     $r .= '<tbody class="ui-widget-content" id="occs-body"></tbody>';
     $r .= '</table>';
+    $r .= '</div>';
+    $r .= "<div id=\"notes\">\n";
+    $r .= data_entry_helper::textarea(array(
+      'fieldname'=>'sample:comment',
+      'label'=>lang::get('Notes'),
+      'helpText'=>"Use this space to input comments about this week's walk."
+    ));
+    $r .= '<input type="submit" value="'.lang::get('Save').'"/>';
+    $r .= '</div></div></form>';
     // A stub form for AJAX posting when we need to create an occurrence
     $r .= '<form style="display: none" id="occ-form" method="post" action="'.iform_ajaxproxy_url($node, 'occurrence').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
@@ -345,21 +399,24 @@ class iform_sectioned_transects_input_sample {
    * @todo: Implement this method
    */
   public static function get_submission($values, $args) {
-    if (!isset($values['sample:entered_sref'])) {
-      // the sample does not have sref data, as the user has just picked a transect site at this point. Copy the 
-      // site's centroid across to the sample.
-      $read = array(
-        'nonce' => $values['read_nonce'],
-        'auth_token' => $values['read_auth_token']
-      );
-      $site = data_entry_helper::get_population_data(array(
-        'table' => 'location',
-        'extraParams' => $read + array('view'=>'detail','id'=>$values['sample:location_id'],'deleted'=>'f')
-      ));
-      $site = $site[0];
-      $values['sample:entered_sref'] = $site['centroid_sref'];
-      $values['sample:entered_sref_system'] = $site['centroid_sref_system'];
-      
+    if (!isset($values['page']) || $values['page']!='grid') {
+      // submitting the first page, with top level sample details
+      if (!isset($values['sample:entered_sref'])) {
+        // the sample does not have sref data, as the user has just picked a transect site at this point. Copy the 
+        // site's centroid across to the sample.
+        $read = array(
+          'nonce' => $values['read_nonce'],
+          'auth_token' => $values['read_auth_token']
+        );
+        $site = data_entry_helper::get_population_data(array(
+          'table' => 'location',
+          'extraParams' => $read + array('view'=>'detail','id'=>$values['sample:location_id'],'deleted'=>'f')
+        ));
+        $site = $site[0];
+        $values['sample:entered_sref'] = $site['centroid_sref'];
+        $values['sample:entered_sref_system'] = $site['centroid_sref_system'];
+        
+      }
     }
     $submission = submission_builder::build_submission($values, array('model' => 'sample'));
     return($submission);
