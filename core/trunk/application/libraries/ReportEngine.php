@@ -69,6 +69,11 @@ class ReportEngine {
    * @var array A list of the actual custom attributes, along with a link to the cols they include.
    */
   private $customAttributes = array();
+  
+  /**
+   * @var array A list mappings from known custom attribute captions to the IDs.
+   */
+  private $customAttributeCaptions = array();
 
   public function __construct($websiteIds = null)
   {
@@ -147,15 +152,6 @@ class ReportEngine {
     $this->offset = isset($this->providedParams['offset']) ? $this->providedParams['offset'] : null;
     $this->orderby = isset($this->providedParams['orderby']) ? $this->providedParams['orderby'] : null;
     $this->sortdir = isset($this->providedParams['sortdir']) ? $this->providedParams['sortdir'] : null;
-    // ensure that only those expected params are passed through to the report. We leave the custom attribute
-    // params in place as they are not in the declared params list (they are implied by the presence of the attribute parameter).
-    foreach($this->providedParams as $key => $value){
-      if(!isset($this->expectedParams[$key])){
-        if (!preg_match('/[loc|smp|occ]attr:/', $key)) {
-          unset($this->providedParams[$key]);
-        }
-      }
-    }
     return array(
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
       'content' => $this->compileReport()
@@ -699,32 +695,11 @@ class ReportEngine {
           else 
             $query = preg_replace("/#$name#/", $value, $query);
         }
-      } elseif (preg_match('/(?P<name>\w+):(?P<id>[\d ]+)$/', $name, $matches)) {
-        // user has provided a parameter filter value such as locattr:n=value. This is a specially handled parameter,
-        // since the filterable field is implied by the custom attribute being added to the report.
-        $alias = '';
-        switch($matches['name']) {
-          case 'smpattr':
-            $alias='sample';
-            break;
-          case 'occattr':
-            $alias='sample';
-            break;
-          case 'locattr':
-            $alias='location';
-            break;
-        }
-        $id=$matches['id'];
-        // At this point we need to know the data type of the field to filter in tha av table
-        if (!isset($this->customAttributes["$alias$id"])) 
-          throw new exception("Report requested filter on unknown parameter $name");
-        $field=$this->customAttributes["$alias$id"]['fields'][0];
-        if ($field=='text_value' || substr($field, 0, 5)=='date_') {
-          // needs quoting
-          $value = "'$value'";
-        }
-        if (!empty($alias)) 
-          $query = str_replace('#filters#', "AND $alias$id.$field=$value\n#filters#", $query);
+      }      
+      elseif (isset($this->customAttributes[$name])) {
+        // request includes a custom attribute column being used as a filter.
+        $field=$this->customAttributes[$name]['field'];
+        $query = str_replace('#filters#', "AND $field=$value\n#filters#", $query);
       }
     }
     // remove the marker left in the query to show where to insert joins
@@ -786,6 +761,7 @@ class ReportEngine {
         throw new exception('Cannot mix numeric IDs and captions in the list of requested custom attributes');
     } elseif (count($captions)>0) 
       $this->reportDb->in('caption', $captions);
+    $usingCaptions=count($captions)>0;
     $attrs = $this->reportDb->get();
     foreach($attrs as $attr) {
       $id = $attr->id;
@@ -810,7 +786,7 @@ class ReportEngine {
           $cols = array('date_start_value'=>'');
           break;
         case 'V' :
-          $cols = array('date_start_value'=>' start','date_end_value'=>' end','date_type_value'=>' type');
+          $cols = array('date_start_value'=>'_start','date_end_value'=>'_end','date_type_value'=>'_type');
           break;
         case 'L' :
           // no cols for lookups - we handle these manually later
@@ -819,19 +795,20 @@ class ReportEngine {
         default:
           $cols = array('int_value'=>'');
       }
-      // create the fields required in the SQL. First the attribute ID.
-      $alias = preg_replace('/\_value$/', '', "attr_id_$type$id");
+      // We use the attribute ID or the attribute caption to create the column alias, depending on how it was requested.
+      $uniqueId = $usingCaptions ? preg_replace('/\W/', '_', strtolower($attr->caption)) : $id;
+      // create the fields required in the SQL. First the attribute ID. 
+      $alias = preg_replace('/\_value$/', '', "attr_id_$type"."_$uniqueId");
       $query = str_replace('#fields#', ", $type$id.id as $alias#fields#", $query);
+      // this field should also be inserted into any group by part of the query
       $query = str_replace('#group_bys#', ", $type$id.id#group_bys#", $query);
+      // hide the ID column
       $this->attrColumns[$alias] = array(
         'visible' => 'false',
       );
-      $this->customAttributes["$type$id"] = array(
-        'fields' => array_keys($cols)
-      );
       // then the attribute data col(s).
       foreach($cols as $col=>$suffix) {
-        $alias = preg_replace('/\_value$/', '', "attr_$type$id");
+        $alias = preg_replace('/\_value$/', '', "attr_$type"."_$uniqueId");
         // vague date cols need to distinguish the different column types.
         if ($attr->data_type=='V') 
           $alias += $col;
@@ -841,10 +818,12 @@ class ReportEngine {
         $this->attrColumns[$alias] = array(
           'display' => $attr->caption.$suffix
         );
+        // the first column is normally used as the filter.
+        $filterCol = $col;
       }
       // add a column to set the caption for vague date processed columns
       if ($attr->data_type=='V') {
-        $this->attrColumns["attr_$type$id".'date'] = array(
+        $this->attrColumns["attr_$type"."_$uniqueId".'date'] = array(
           'display' => $attr->caption
         );
       }
@@ -857,6 +836,13 @@ class ReportEngine {
           'display' => $attr->caption
         );
       }
+      // keep a list of the custom attribute columns with a link to the fieldname to filter against, if this column
+      // gets used in a filter
+      $this->customAttributes["attr_$type"."_$uniqueId"] = array(
+        'field' => "$type$id.$filterCol"
+      );
+      // if we know an attribute caption, we want to be able to lookup the ID.
+      $this->customAttributeCaptions["$type:".$attr->caption] = $id;
     }
     return $query;
   }

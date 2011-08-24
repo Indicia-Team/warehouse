@@ -216,6 +216,13 @@ class XMLReportReader_Core implements ReportReader
         }
       }
       $reader->close();
+      // Add a token to mark where additional filters can insert in the WHERE clause.
+      if ($this->query && strpos($this->query, '#filters#')===false) {
+        if (strpos($this->query, '#order_by#')!==false)
+          $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
+        else
+            $this->query .= '#filters#';
+      }
       if ($this->hasColumnsSql) {
         // column sql is defined in the list of column elements, so autogenerate the query.
         $this->autogenColumns();
@@ -263,9 +270,8 @@ class XMLReportReader_Core implements ReportReader
     }
     // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
     // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
-    // There is also a token to mark where additional filters can insert in the WHERE clause.
     if (count($sql)>0)
-      $this->query .= "#filters#\nGROUP BY " . implode(', ', $sql) . '#group_bys#';
+      $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys#';    
   }
 
   /**
