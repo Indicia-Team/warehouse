@@ -383,13 +383,14 @@ $('#load-params').click(function(evt) {
       'required'=>false
     );
     $params[] = array(
-      'fieldname'=>'message_after_redirect',
-      'label'=>'Display notification after redirect',
-      'helpText'=>'If using the redirect option above, then should a message be added to the page stating that the record has been saved? This should be left '.
-          'unchecked if the page redirected to has information about the record being saved inherent in the page content. However if this page is a general purpose '.
-          'page then ticking this box can help to make it clear that a record was saved.',
+      'fieldname'=>'message_after_save',
+      'label'=>'Display notification after save',
+      'helpText'=>'After saving an input form, should a message be added to the page stating that the record has been saved? This should be left '.
+          'unchecked if the page is redirected to a page that has information about the record being saved inherent in the page content. Otherwise ticking '.
+          'this box can help to make it clear that a record was saved.',
       'type'=>'checkbox',
-      'required'=>false
+      'required'=>false,
+      'default'=>true
     );
     return $params;
   }

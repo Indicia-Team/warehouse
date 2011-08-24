@@ -771,7 +771,10 @@ class data_entry_helper extends helper_base {
   * Outputs a select control that is dedicated to listing locations and which is bound to any map panel
   * added to the page. Although it is possible to set all the options of a normal select control, generally
   * the table, valueField, captionField, id should be left uninitialised and the fieldname will default to the
-  * sample's location_id field so can normally also be left.
+  * sample's location_id field so can normally also be left. If you need to use a report to populate the list of
+  * locations, for example when filtering by a custom attribute, then set the report option to the report name
+  * (e.g. library/reports/locations_list) and provide report parameters in extraParams. You can also override
+  * the captionField and valueField if required.
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
@@ -1197,6 +1200,9 @@ class data_entry_helper extends helper_base {
   * Optional. CSS class names to add to the control.</li>  *
   * <li><b>table</b><br/>
   * Table name to get data from for the select options if the select is being populated by a service call.</li>
+  * <li><b>report</b><br/>
+  * Report name to get data from for the select options if the select is being populated by a service call using a report. 
+  * Mutually exclusive with the table option.</li>
   * <li><b>captionField</b><br/>
   * Field to draw values to show in the control from if the select is being populated by a service call.</li>
   * <li><b>valueField</b><br/>
@@ -2573,7 +2579,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   /**
    * Issue a post request to get the population data required for a control. Depends on the
    * options' table and extraParams values what is requested. This is now cacheable.
-   * NB that this function only uses the 'table' and 'extraParams' of $options. If $options
+   * NB that this function only uses the 'table', 'report' and 'extraParams' of $options. If $options
    * contains a value for nocache=true then caching is skipped as well.
    * When generating the cache for this data we need to use the table and
    * any extra params, excluding the read_auth and the nonce. The cache should be
@@ -2605,9 +2611,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       }
       // use advanced querying technique if we need to
       if (isset($filterToEncode['in']))
-        $request .= '&query='.json_encode($filterToEncode).'&'.self::array_to_query_string($otherParams);
+        $request .= '&query='.json_encode($filterToEncode).'&'.self::array_to_query_string($otherParams, true);
       else
-        $request .= '&'.self::array_to_query_string($options['extraParams']);
+        $request .= '&'.self::array_to_query_string($options['extraParams'], true);
     } else
       $cacheOpts = array();
     if (isset($options['report']))

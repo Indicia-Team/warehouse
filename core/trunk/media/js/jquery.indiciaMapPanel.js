@@ -661,7 +661,7 @@ mapInitialisationHooks = [];
       // wrap the map in a div container
       $(this).wrap('<div id="map-container" style="width:'+opts.width+'" >');
       
-      if (this.settings.toolbarDiv!='map') {
+      if (this.settings.toolbarDiv!='map' && (opts.toolbarPrefix!=='' || opts.toolbarSuffix!=='')) {
         var toolbar='<div id="map-toolbar-outer" class="ui-helper-clearfix">' + opts.toolbarPrefix + '<div class="olControlEditingToolbar" id="map-toolbar"></div>' + opts.toolbarSuffix + '</div>';
         if (this.settings.toolbarDiv=='top') {
           $(this).before(toolbar);
