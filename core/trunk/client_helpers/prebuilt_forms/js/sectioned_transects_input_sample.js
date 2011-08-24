@@ -1,3 +1,10 @@
+$(document).ready(function() {
+  $('#imp-location').change(function(evt) {
+    $('#entered_sref').val(indiciaData.sites[evt.target.value].centroid_sref);
+    $('#entered_sref_system').val(indiciaData.sites[evt.target.value].centroid_sref_system);
+  });
+});
+
 function loadSpeciesList() {
   var lastCell=null, lastCellValue = '', submittingSample='';
 

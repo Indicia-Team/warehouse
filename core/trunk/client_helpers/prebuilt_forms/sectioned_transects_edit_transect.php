@@ -59,6 +59,7 @@ class iform_sectioned_transects_edit_transect {
     iform_load_helpers(array('data_entry_helper'));  
     return array_merge(
         iform_map_get_map_parameters(),
+        iform_map_get_georef_parameters(),
         array(
           array(
             'name' => 'maxSectionCount',
@@ -116,7 +117,7 @@ class iform_sectioned_transects_edit_transect {
     }
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section'));
-    $locationId = isset($_GET['site']) ? $_GET['site'] : null;
+    $locationId = isset($_GET['id']) ? $_GET['id'] : null;
     if ($locationId) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $locationId);
       $sections = data_entry_helper::get_population_data(array(
@@ -139,19 +140,17 @@ class iform_sectioned_transects_edit_transect {
     ));
     if (false==$cmsUserAttrs = self::extract_cms_user_attrs($attributes))
       return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
-    $r = '<form method="post">';
-    $r .= '<div class="left">';
+    $r = '<form method="post" id="input-form">';
+    $r .= '<div class="left" style="width: 45%">';
     $r .= $auth['write'];
     $r .= '<fieldset><legend>'.lang::get('Transect Details').'</legend>';
-    if ($locationId)
-      $r .= "<input type=\"hidden\" name=\"location:id\" value=\"$locationId\" />\n";
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";    
     $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$locationTypes[0]['id']."\" />\n";
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'location:name',
       'label' => lang::get('Transect Name'),
-      'class' => 'control-width-4'
+      'class' => 'control-width-4 required'
     ));
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     foreach($list as $system) {
@@ -161,7 +160,8 @@ class iform_sectioned_transects_edit_transect {
       'fieldname' => 'location:centroid_sref',
       'geomFieldname' => 'location:centroid_geom',
       'label' => 'Grid Ref.',
-      'systems' => $systems
+      'systems' => $systems,
+      'class' => 'required'
     ));
 
     $r .= '<div id="section-geoms">';
@@ -177,7 +177,7 @@ class iform_sectioned_transects_edit_transect {
     $options['toolbarDiv'] = 'top';
     if (!empty($sections)) {
       // if we have an existing site with sections, output a selector for the current section.
-      $sectionArr = array('' => htmlspecialchars(lang::get('<please select>')));
+      $sectionArr = array('' => htmlspecialchars(lang::get('<select>')));
       for ($i=1; $i<=count($sections); $i++)
         $sectionArr[$i] = $i;
       $options['toolbarPrefix'] = data_entry_helper::select(array(
@@ -186,9 +186,10 @@ class iform_sectioned_transects_edit_transect {
         'lookupValues' => $sectionArr,
         'suffixTemplate' => 'nosuffix'
       ));
-      $options['toolbarPrefix'] .= '<a id = "section-edit" style="display: none" href="'.$args['section_edit_path'].
+      $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].
           (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
-          '?from=transect&transect_id='.$locationId.'&section_id=0">' . lang::get('Edit') . '</a> | ';
+          'from=transect&transect_id='.$locationId.'&section_id=0" id="section-edit" style="display: none"><button type="button">' . 
+          lang::get('Edit') . '</button></a>';
       // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
       $options['standardControls'][] = 'selectFeature';
       $options['standardControls'][] = 'hoverFeatureHighlight';
@@ -196,7 +197,7 @@ class iform_sectioned_transects_edit_transect {
     if ($locationId) {
       $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].
           (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
-          'from=transect&transect_id='.$locationId.'">' . lang::get('Add Section') . '</a>';
+          'from=transect&transect_id='.$locationId.'"><button type="button">' . lang::get('Add Section') . '</button></a>';
     }
     $r .= get_attribute_html($attributes, $args, array());
     $olOptions = iform_map_get_ol_options($args);
@@ -210,16 +211,40 @@ class iform_sectioned_transects_edit_transect {
     }
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="ui-state-default ui-corner-all" />';
     $r .= "</div>";
-    $r .= '<div class="right" style="border: solid silver 1px">';
+    $r .= '<div class="right" style="width: '.$options['width'].'px;">';
+    if ($locationId) {
+      $help = lang::get('Use the Add Section button to create each section of your transect in turn.');
+      if (count($sections)>0)
+        $help .= ' '.lang::get('For existing sections, select a section from the drop down list then click Edit to make changes. '.
+            'You can also select a section using the query tool to click on the section lines, or reset the transect centroid grid reference '.
+            'using the Click Grid Ref tool.');
+      $r .= "<input type=\"hidden\" name=\"location:id\" value=\"$locationId\" />\n";
+    } else {
+      $help = t('Use the search box to find a nearby town or village, then drag the map to pan and click on the map to set the centre grid reference of the transect. '.
+          'Alternatively if you know the grid reference you can enter it in the Grid Ref box on the left.');
+    }
+    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
+    if (!$locationId) {
+      $r .= data_entry_helper::georeference_lookup(array(
+        'label' => lang::get('Search for place'),
+        'driver'=>$args['georefDriver'],
+        'georefPreferredArea' => $args['georefPreferredArea'],
+        'georefCountry' => $args['georefCountry'],
+        'georefLang' => $args['language']
+      ));
+    }
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>';
     $r .='</form>';
-    data_entry_helper::link_default_stylesheet();
+    data_entry_helper::enable_validation('input-form');
     if (function_exists('drupal_set_breadcrumb')) {
       $breadcrumb = array();
-      $breadcrumb[] = l('Home', '<front>');
-      $breadcrumb[] = l('Sites', $args['sites_list_path']);
-      $breadcrumb[] = data_entry_helper::$entity_to_load['location:name'];
+      $breadcrumb[] = l(lang::get('Home'), '<front>');
+      $breadcrumb[] = l(lang::get('Sites'), $args['sites_list_path']);
+      if ($locationId)
+        $breadcrumb[] = data_entry_helper::$entity_to_load['location:name'];
+      else
+        $breadcrumb[] = lang::get('New Site');
       drupal_set_breadcrumb($breadcrumb);
     }
     return $r;
@@ -238,7 +263,7 @@ class iform_sectioned_transects_edit_transect {
       'label' => lang::get('Select user'),
       'fieldname' => 'cmsUserId',
       'lookupValues' => $users,
-      'afterControl' => '<span id="add-user" class="ui-state-default ui-corner-all">'.lang::get('Add').'</span>'
+      'afterControl' => '<button id="add-user" type="button">'.lang::get('Add').'</button>'
     ));
     $r .= '<table id="user-list" style="width: auto">';
     
@@ -301,7 +326,16 @@ class iform_sectioned_transects_edit_transect {
         )
       );
     return $s;
-  }  
+  }
+  
+  /**
+   * After saving a transect, reload the transect so that the user can continue to save the sections.
+   */
+  public static function get_redirect_on_success($values, $args) {
+    if (!isset($values['location:id'])) {
+      return 'site-details';
+    }
+  } 
   
   
   

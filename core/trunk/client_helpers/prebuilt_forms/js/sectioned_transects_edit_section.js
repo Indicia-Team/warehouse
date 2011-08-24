@@ -8,15 +8,17 @@ $(document).ready(function() {
     div.map.editLayer.style = null;
     div.map.editLayer.styleMap = new OpenLayers.StyleMap({
       'default':{
+        pointRadius: 5,
         strokeColor: "#0000FF",
-        strokeWidth: 3,
+        strokeWidth: 2,
         fontSize: "16px",
         fontFamily: "Verdana, Arial, Helvetica,sans-serif",
         fontWeight: "bold",
         fontColor: "#FF0000",
         labelAlign: "cm",
-        strokeDashstyle: "dash"
+        strokeDashstyle: "solid"
       }, 'select':{
+        pointRadius: 5,
         strokeColor: "#00FFFF",
         strokeWidth: 5,
         label : "${section}",
@@ -25,7 +27,7 @@ $(document).ready(function() {
         fontWeight: "bold",
         fontColor: "#FF0000",
         labelAlign: "cm",
-        strokeDashstyle: "dash"
+        strokeDashstyle: "solid"
       }
     });
 
@@ -54,7 +56,7 @@ $(document).ready(function() {
       if (control.CLASS_NAME==='OpenLayers.Control.ModifyFeature') {
         control.standalone = true;
         control.events.on({'activate':function() {
-          control.selectFeature(selected);  
+          control.selectFeature(selected);
         }});
       }
     });
@@ -81,6 +83,7 @@ $(document).ready(function() {
       }
       evt.feature.attributes = {'section':currentLocCode};
       evt.feature.renderIntent = 'select';
+      selected = evt.feature;
       // store the geom for form posting
       $('#'+currentLocCode).val(evt.feature.geometry.toString());
       $('#boundary_geom').val(evt.feature.geometry.toString());

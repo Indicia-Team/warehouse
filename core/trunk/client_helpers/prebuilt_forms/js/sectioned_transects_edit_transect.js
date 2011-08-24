@@ -3,7 +3,6 @@ $(document).ready(function() {
   var mapdiv, selectFeature, doingSelection=false;
   
   function selectSection() {
-    console.log('in select section');
     var current = $('#current-section').val();
     selectFeature.unselectAll();
     if (current!=='') {
@@ -31,9 +30,7 @@ $(document).ready(function() {
       if (control.CLASS_NAME==='OpenLayers.Control.SelectFeature') {
         selectFeature = control;
         div.map.editLayer.events.on({'featureselected': function(evt) {
-          console.log('in feature selected');
           if ($('#current-section').val() != evt.feature.attributes.section) {
-            console.log('switching to '+evt.feature.attributes.section);
             $('#current-section').val(evt.feature.attributes.section);
             selectSection();
           }
@@ -83,7 +80,7 @@ $(document).ready(function() {
     var user=($('#cmsUserId')[0]).options[$('#cmsUserId')[0].selectedIndex];
     if ($('#user-'+user.value).length===0) {
       $('#user-list').append('<tr><td id="user-'+user.value+'"><input type="hidden" name="locAttr:'+indiciaData.locCmsUsrAttr+'::'+user.value+'" value="'+user.value+'"/>'+
-          user.text+'</td><td><span class="remove-user ui-state-default ui-corner-all">x</span></td></tr>');
+          user.text+'</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>');
     }
   });
   
