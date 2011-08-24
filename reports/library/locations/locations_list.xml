@@ -5,7 +5,7 @@
   <query website_filter_field="lw.website_id">
   SELECT #field_sql#
   FROM locations l
-  JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
+  LEFT JOIN locations_websites lw on lw.location_id=l.id AND lw.deleted=false
   LEFT JOIN (termlists_terms ttl1
     JOIN terms tinput ON tinput.id=ttl1.term_id
     JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
