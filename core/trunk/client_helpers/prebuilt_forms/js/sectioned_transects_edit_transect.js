@@ -12,7 +12,7 @@ $(document).ready(function() {
         }
       });
       var link = $('#section-edit').attr('href');
-      link = link.replace(/[0-9]+$/, $('#id-s'+current).val());
+      link = link.replace(/[0-9]+$/, indiciaData.sections['s'+current].id);
       $('#section-edit').attr('href',link);
       $('#section-edit').show();
     } else {
@@ -67,8 +67,8 @@ $(document).ready(function() {
     });
     // add the loaded section geoms to the map. Do this before hooking up to the featureadded event.
     var f = [];
-    $.each($('#section-geoms input'), function(idx, input) {
-      f.push(new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT($(input).val()), {section:input.id.substr(1), type:"boundary"}));
+    $.each(indiciaData.sections, function(idx, section) {
+      f.push(new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(section.geom), {section:idx.substr(1), type:"boundary"}));
     });
     div.map.editLayer.addFeatures(f);
     if (f.length>0) {

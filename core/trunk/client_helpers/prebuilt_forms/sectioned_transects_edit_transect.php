@@ -125,6 +125,11 @@ class iform_sectioned_transects_edit_transect {
         'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$locationId,'deleted'=>'f'),
         'nocache' => true
       ));
+      data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
+      foreach($sections as $section) {
+        $code = strtolower($section['code']);
+        data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."'};\n";
+      }
     } else {
       $sections=array();
     }
@@ -140,8 +145,8 @@ class iform_sectioned_transects_edit_transect {
     ));
     if (false==$cmsUserAttrs = self::extract_cms_user_attrs($attributes))
       return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
-    $r = '<form method="post" id="input-form">';
-    $r .= '<div class="left" style="width: 45%">';
+    $r = '<div class="left" style="width: 45%">';
+    $r .= '<form method="post" id="input-form">';
     $r .= $auth['write'];
     $r .= '<fieldset><legend>'.lang::get('Transect Details').'</legend>';
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
@@ -163,14 +168,6 @@ class iform_sectioned_transects_edit_transect {
       'systems' => $systems,
       'class' => 'required'
     ));
-
-    $r .= '<div id="section-geoms">';
-    foreach($sections as $section) {
-      $code = strtolower($section['code']);
-      $r .= '<input type="hidden" id="'.$code.'" name="'.$code.'" value="' . $section['boundary_geom'] . '"/>';
-      $r .= '<input type="hidden" id="id-'.$code.'" name="id-'.$code.'" value="' . $section['id'] . '"/>';
-    }
-    $r .= '</div>';
     
     // setup the map options
     $options = iform_map_get_map_options($args, $auth['read']);
@@ -181,6 +178,7 @@ class iform_sectioned_transects_edit_transect {
       for ($i=1; $i<=count($sections); $i++)
         $sectionArr[$i] = $i;
       $options['toolbarPrefix'] = data_entry_helper::select(array(
+        'fieldname'=>'',
         'id' => 'current-section',
         'label' => lang::get('Select section'),
         'lookupValues' => $sectionArr,
@@ -210,6 +208,7 @@ class iform_sectioned_transects_edit_transect {
       $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
     }
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="ui-state-default ui-corner-all" />';
+    $r .='</form>';
     $r .= "</div>";
     $r .= '<div class="right" style="width: '.$options['width'].'px;">';
     if ($locationId) {
@@ -235,7 +234,6 @@ class iform_sectioned_transects_edit_transect {
     }
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>';
-    $r .='</form>';
     data_entry_helper::enable_validation('input-form');
     if (function_exists('drupal_set_breadcrumb')) {
       $breadcrumb = array();
