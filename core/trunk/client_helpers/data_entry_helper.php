@@ -973,7 +973,7 @@ class data_entry_helper extends helper_base {
   * <li><b>wkt</b><br/>
   * Well Known Text of a spatial object to add to the map at startup.</li>
   * <li><b>tabDiv</b><br/>
-  * If the map is on a tab or wizard interface, specify the div the aap loads on.</li>
+  * If the map is on a tab or wizard interface, specify the div the map loads on.</li>
   * </ul>
   */
   public static function map() {
