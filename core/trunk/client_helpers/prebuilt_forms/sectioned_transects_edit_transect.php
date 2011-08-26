@@ -152,6 +152,8 @@ class iform_sectioned_transects_edit_transect {
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";    
     $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$locationTypes[0]['id']."\" />\n";
+    if ($locationId)
+      $r .= "<input type=\"hidden\" name=\"location:id\" value=\"$locationId\" />\n";
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'location:name',
       'label' => lang::get('Transect Name'),
@@ -217,7 +219,6 @@ class iform_sectioned_transects_edit_transect {
         $help .= ' '.lang::get('For existing sections, select a section from the drop down list then click Edit to make changes. '.
             'You can also select a section using the query tool to click on the section lines, or reset the transect centroid grid reference '.
             'using the Click Grid Ref tool.');
-      $r .= "<input type=\"hidden\" name=\"location:id\" value=\"$locationId\" />\n";
     } else {
       $help = t('Use the search box to find a nearby town or village, then drag the map to pan and click on the map to set the centre grid reference of the transect. '.
           'Alternatively if you know the grid reference you can enter it in the Grid Ref box on the left.');
