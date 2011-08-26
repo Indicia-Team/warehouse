@@ -344,8 +344,13 @@ class map_helper extends helper_base {
   * <li><b>includeSwitchers/b><br/>
   * </li>
   * <li><b>includeHiddenLayers</b><br/>
+  * True or false to include layers that are not currently visible on the map. Default is false.
   * </li>
   * <li><b>layerTypes</b><br/>
+  * Array of layer types to include, options are base or overlay. Default is both.
+  * </li>
+  * <li><b>class</b><br/>
+  * Class to add to the outer div.
   * </li>
   * </ul>
   */
@@ -355,10 +360,15 @@ class map_helper extends helper_base {
       'includeIcons' => true,
       'includeSwitchers' => false,
       'includeHiddenLayers' => false,
-      'layerTypes' => array('base','overlay')
+      'layerTypes' => array('base','overlay'),
+      'class'=>'',
+      'prefix'=>'',
+      'suffix'=>''
     ), $options);
-    $r .= '<div class="layer-list" id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all"><ul>';
-    $r .= '</ul></div>';
+    $options['class'] .= (empty($options['class']) ? '' : ' ').'layer_list';
+    $r .= '<div class="'.$options['class'].'" id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all">';
+    $r .= $options['prefix']."\n<ul>";
+    $r .= "</ul>\n".$options['suffix']."</div>";
     $funcSuffix = str_replace('-','_',$options['id']);
     self::$javascript .= "function getLayerHtml_$funcSuffix(layer, div) {\n  ";
     if (!$options['includeHiddenLayers']) 
