@@ -251,7 +251,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     // {person_id=>1, person=>James Brown} then the xml output for the id is <person id="1">James Brown</person>.
     // There is no need to output the person separately so it gets flagged in this array for skipping.
     $to_skip=array();
-
+    // create the model on demand, because it can tell us about relationships between things
+    if (!isset($this->model))
+      $this->model=ORM::factory($this->entity);
     if (!$recursion)
     {
       // if we are outputting a specific record, root is singular

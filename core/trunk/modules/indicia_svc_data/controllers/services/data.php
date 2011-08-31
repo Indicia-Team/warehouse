@@ -474,7 +474,6 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected function read_records() {
     // Store the entity in class member, so less recursion overhead when building XML
     $this->viewname = $this->get_view_name();
-    $this->model=ORM::factory($this->entity);
     $this->db = new Database();
     $this->view_columns=$this->db->list_fields($this->viewname);
     $result=$this->build_query_results();
