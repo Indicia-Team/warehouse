@@ -773,7 +773,7 @@ class ReportEngine {
       $rootIdAttr = inflector::plural($type).'_id_field';
       $rootId = $this->reportReader->$rootIdAttr;
       // construct a join to the attribute values table so we can get the value out.
-      $query = str_replace('#joins#', "$join ".$type."_attribute_values $type$id ON $type$id.".$type."_id=$rootId AND $type$id.".$type."_attribute_id=$id\n #joins#", $query);
+      $query = str_replace('#joins#', "$join ".$type."_attribute_values $type$id ON $type$id.".$type."_id=$rootId AND $type$id.".$type."_attribute_id=$id AND $type$id.deleted=false\n #joins#", $query);
       // find the query column(s) required for the attribute
       switch($attr->data_type) {
         case 'F' :
@@ -829,7 +829,7 @@ class ReportEngine {
       }
       // lookups need special processing for additional joins
       elseif ($attr->data_type=='L') {
-        $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
+        $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value AND ltt$id.deleted=false\n #joins#", $query);
         $query = str_replace('#fields#', ", ltt$id.term as attr_$type$id#fields#", $query);
         $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
         $this->attrColumns["attr_$type$id"] = array(
