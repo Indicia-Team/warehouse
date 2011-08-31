@@ -4,14 +4,16 @@ require_once 'client_helpers/report_helper.php';
 
 class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
 
-  private $readAuth;
-  private $locationId;
-  private $locationTypeId;
-  private $locationAttributeId;
-  private $locationWebsiteId;
+  protected $auth;
+  protected $locationId;
+  protected $locationTypeId;
+  protected $locationAttributeId;
+  protected $locationAttrWebsiteId;
 
   public function setup() {
-    $this->readAuth = report_helper::get_read_auth(1, 'password');
+    $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
+    // make the tokens re-usable
+    $this->auth['write_tokens']['persist_auth']=true;
     // set up a tiny bit of data. First pick a termlists_term_id to use which is never going to be a valid location type,
     // so we can filter for just our test location.
     $this->db = new Database();
@@ -41,13 +43,13 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
     $locwebsite->location_attribute_id=$this->locationAttributeId;
     $locwebsite->set_metadata();
     $locwebsite->save();
-    $this->locationWebsiteId=$locwebsite->id;
+    $this->locationAttrWebsiteId=$locwebsite->id;
   }
   
   public function tearDown() {
     $loc = ORM::Factory('location', $this->locationId);
     $loc->delete();
-    $locwebsite = ORM::Factory('location_attributes_website', $this->locationWebsiteId);
+    $locwebsite = ORM::Factory('location_attributes_website', $this->locationAttrWebsiteId);
     $locwebsite->delete();
     $locattr = ORM::Factory('location_attribute', $this->locationAttributeId);
     $locattr->delete();
@@ -58,8 +60,8 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
       'report'=>'occurrences_by_website.xml',
       'reportSource'=>'local',
       'mode'=>'json',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce']
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport?'.http_build_query($params, '', '&');
     
@@ -78,8 +80,8 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
       'report'=>'occurrences_by_website.xml',
       'reportSource'=>'local',
       'mode'=>'json',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce']
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
     
@@ -100,8 +102,8 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
       'report'=>'occurrences_by_website.xml',
       'reportSource'=>'local',
       'mode'=>'xml',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce']
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport?'.http_build_query($params, '', '&');
     
@@ -121,8 +123,8 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
       'report'=>'occurrences_by_website.xml',
       'reportSource'=>'local',
       'mode'=>'xml',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce']
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
     
@@ -146,8 +148,8 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
       'report'=>'library/locations/locations_list.xml',
       'reportSource'=>'local',
       'mode'=>'json',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce'],
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce'],
       'params'=>json_encode(array('locattrs'=>'UnitTest', 'location_type_id'=>$this->locationTypeId))
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
@@ -170,13 +172,14 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
   /**
    * Repeat check for advanced report output, this time requesting an attribute by ID rather than name.
    */
+   
   public function testAdvancedReportByAttrId() {
     $params = array(
       'report'=>'library/locations/locations_list.xml',
       'reportSource'=>'local',
       'mode'=>'json',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce'],
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce'],
       'params'=>json_encode(array('locattrs'=>$this->locationAttributeId, 'location_type_id'=>$this->locationTypeId))
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
@@ -198,8 +201,8 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
       'report'=>'library/locations/locations_list.xml',
       'reportSource'=>'local',
       'mode'=>'json',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce']
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
     
@@ -222,8 +225,8 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
       'report'=>'invalid.xml',
       'reportSource'=>'local',
       'mode'=>'json',
-      'auth_token'=>$this->readAuth['auth_token'],
-      'nonce'=>$this->readAuth['nonce']
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce']
     );
     $url = report_helper::$base_url.'index.php/services/report/requestReport';
     
