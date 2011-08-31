@@ -11,9 +11,9 @@
 <div id="wrap">
 <h1>Indicia Species Checklist Test</h1>
 <?php
-include '../../../client_helpers/data_entry_helper.php';
-include '../data_entry_config.php';
-$javascript = '';
+require_once '../../../client_helpers/data_entry_helper.php';
+require_once '../data_entry_config.php';
+
 // Catch and submit POST data.
 if ($_POST){
   $submission = data_entry_helper::build_sample_occurrences_list_submission($_POST);
@@ -33,7 +33,7 @@ if ($_POST){
 <input type='hidden' name='website_id' value='<?php echo $config['website_id']; ?>' />
 <input type='hidden' name='survey_id' value='<?php echo $config['survey_id']; ?>' />
 <input type='hidden' name='occurrence:record_status' value='C' />
-<?php 
+<?php
 echo data_entry_helper::date_picker(array(
     'label'=>'Date',
     'fieldname'=>'sample:date'
@@ -44,12 +44,12 @@ echo data_entry_helper::sref_and_system(array(
 ));
 ?>
 <div class="smaller">
-<?php 
+<?php
 echo data_entry_helper::species_checklist(array(
     'listId'=>$config['species_checklist_taxon_list'],
     'lookupListId'=>$config['species_checklist_alt_list'],
     'extraParams'=>$readAuth,
-	  'survey_id'=>$config['survey_id']
+    'survey_id'=>$config['survey_id']
 ));
 ?>
 </div>
