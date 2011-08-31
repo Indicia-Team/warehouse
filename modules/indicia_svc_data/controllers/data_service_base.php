@@ -251,9 +251,6 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     // {person_id=>1, person=>James Brown} then the xml output for the id is <person id="1">James Brown</person>.
     // There is no need to output the person separately so it gets flagged in this array for skipping.
     $to_skip=array();
-    // create the model on demand, because it can tell us about relationships between things
-    if (!isset($this->model))
-      $this->model=ORM::factory($this->entity);
     if (!$recursion)
     {
       // if we are outputting a specific record, root is singular
@@ -289,8 +286,13 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
           {
             $element = $this->entity;
           }
-          if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)))
+          // Check if we can provide links to the related models. $this->entity is not set for reports, where this cannot be done.
+          if ((substr($element, -3)=='_id') && (array_key_exists(substr($element, 0, -3), $array)) && isset($this->entity))
           {
+            // create the model on demand, because it can tell us about relationships between things, but we don't want the overhead
+            // of creation when not required.
+            if (!isset($this->model))
+              $this->model=ORM::factory($this->entity);
             $element = substr($element, 0, -3);
             // This is a foreign key described by another field, so create an xlink path
             if (array_key_exists($element, $this->model->belongs_to))
