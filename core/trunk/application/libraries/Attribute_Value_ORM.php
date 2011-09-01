@@ -118,6 +118,7 @@ abstract class Attribute_Value_ORM extends ORM {
         return false;
     }
     $this->deleted='t';
+    parent::save();
     return true;
   }
 

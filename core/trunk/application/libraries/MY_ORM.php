@@ -1074,7 +1074,6 @@ class ORM extends ORM_Core {
       }
       return false;
     }
-
     $attrValueModel->save();
     $this->nestedModelIds[] = $attrValueModel->get_submitted_ids();
 
