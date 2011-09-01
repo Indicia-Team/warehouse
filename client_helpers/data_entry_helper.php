@@ -3886,7 +3886,8 @@ if (errors.length>0) {
           if(!array_key_exists('noBlankText', $options)){
             $attrOptions = $attrOptions + array('blankText' => '');
           }
-          $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
+          if (array_key_exists('class', $options))
+            $attrOptions['class'] = $options['class'];
           $dataSvcParams = array('termlist_id' => $item['termlist_id'], 'view' => 'detail');
           if (array_key_exists('language', $options)) {
             $dataSvcParams = $dataSvcParams + array('iso'=>$options['language']);
