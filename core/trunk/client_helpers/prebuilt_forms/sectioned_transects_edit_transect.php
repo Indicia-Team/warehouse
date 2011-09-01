@@ -200,8 +200,12 @@ class iform_sectioned_transects_edit_transect {
           (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
           'from=transect&transect_id='.$locationId.'"><button type="button">' . lang::get('Add Section') . '</button></a>';
     }
-    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']));
-    $olOptions = iform_map_get_ol_options($args);
+    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read'])); 
+    $r .= data_entry_helper::textarea(array(
+      'label' => lang::get('Notes'),
+      'fieldname' => 'location:comment',
+      'class' => 'control-width-4'      
+    ));    
     $r .= '</fieldset>';
     if (user_access('indicia data admin'))
       $r .= self::get_user_assignment_control($auth['read'], $cmsUserAttrs, $args);
@@ -234,6 +238,7 @@ class iform_sectioned_transects_edit_transect {
         'georefLang' => $args['language']
       ));
     }
+    $olOptions = iform_map_get_ol_options($args);
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>';
     data_entry_helper::enable_validation('input-form');
