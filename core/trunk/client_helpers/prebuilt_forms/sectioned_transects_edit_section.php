@@ -162,7 +162,7 @@ class iform_sectioned_transects_edit_section {
     $options['standardControls'][] = 'modifyFeature';
     $options['clickForSpatialRef'] = false;
     $options['toolbarDiv'] = 'top';
-    $r .= get_attribute_html($attributes, $args, array());
+    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']));
     $olOptions = iform_map_get_ol_options($args);
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="ui-state-default ui-corner-all" />';
     $r .= '</fieldset></div>';

@@ -200,7 +200,7 @@ class iform_sectioned_transects_edit_transect {
           (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
           'from=transect&transect_id='.$locationId.'"><button type="button">' . lang::get('Add Section') . '</button></a>';
     }
-    $r .= get_attribute_html($attributes, $args, array());
+    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']));
     $olOptions = iform_map_get_ol_options($args);
     $r .= '</fieldset>';
     if (user_access('indicia data admin'))
