@@ -266,6 +266,10 @@ li.ui-state-error {
   vertical-align: middle;
 }
 
+.control-box label {
+  width: auto;
+}
+
 .tree-browser {
   padding: 0.5em;
   display:inline-block;
