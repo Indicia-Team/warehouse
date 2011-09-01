@@ -141,7 +141,8 @@ class iform_sectioned_transects_edit_transect {
         'fieldprefix'=>'locAttr',
         'extraParams'=>$auth['read'],
         'survey_id'=>$args['survey_id'],
-        'location_type_id' => $locationTypes[0]['id']
+        'location_type_id' => $locationTypes[0]['id'],
+        'multiValue' => true
     ));
     if (false==$cmsUserAttrs = self::extract_cms_user_attrs($attributes))
       return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
