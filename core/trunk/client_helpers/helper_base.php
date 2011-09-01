@@ -953,7 +953,7 @@ $('.ui-state-default').live('mouseout', function() {
   * @return Returns an array containing:
   * 'read' => the read authorisation array,
   * 'write' => the write authorisation input controls to insert into your form.
-  * 'writeTokens' => the write authorisation array, if needed as separate tokens rather than just placing in form.
+  * 'write_tokens' => the write authorisation array, if needed as separate tokens rather than just placing in form.
   */
   public static function get_read_write_auth($website_id, $password) {
     self::$website_id = $website_id; /* Store this for use with data caching */

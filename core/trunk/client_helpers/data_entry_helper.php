@@ -3728,7 +3728,7 @@ if (errors.length>0) {
     foreach ($response as $item){
       $attrId = $item[$options['attrtable'].'_id'];
       if(isset($attrs[$attrId])){
-        if ($multiValue) {
+        if ($options['multiValue']) {
           $key = "$attrId:".(isset($item['id']) ? $item['id'] : '');
         } else {
           $key = $attrId;
