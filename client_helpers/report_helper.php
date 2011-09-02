@@ -505,7 +505,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
     $pagelist = '';
     $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0)+1;
-    for ($i=max(1, $page-5); $i<=min($response['count']/$options['itemsPerPage'], $page+5); $i++) {
+    for ($i=max(1, $page-5); $i<=min(ceil($response['count']/$options['itemsPerPage']), $page+5); $i++) {
       if ($i===$page) 
         $pagelist .= "<span class=\"pag-page pager-button ui-state-disabled\" id=\"page-".$options['id']."-$i\">$i</span>\n";
       else
