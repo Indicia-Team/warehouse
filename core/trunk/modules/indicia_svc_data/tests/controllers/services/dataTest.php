@@ -10,6 +10,8 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
   protected $locationTypeId;
   protected $locationAttributeId;
   protected $locationAttrWebsiteId;
+  protected $locationAttributeId2;
+  protected $locationAttrWebsiteId2;
 
   public function setup() {
     $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
@@ -45,6 +47,19 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     $locwebsite->set_metadata();
     $locwebsite->save();
     $this->locationAttrWebsiteId=$locwebsite->id;
+    $locattr = ORM::Factory('location_attribute');
+    $locattr->caption='UnitTestInt';
+    $locattr->data_type='I';
+    $locattr->public='f';
+    $locattr->set_metadata();
+    $locattr->save();
+    $this->locationAttributeId2=$locattr->id;
+    $locwebsite = ORM::Factory('location_attributes_website');
+    $locwebsite->website_id=1;
+    $locwebsite->location_attribute_id=$this->locationAttributeId2;
+    $locwebsite->set_metadata();
+    $locwebsite->save();
+    $this->locationAttrWebsiteId2=$locwebsite->id;
   }
   
   public function tearDown() {
@@ -52,10 +67,14 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     $loc->delete();
     $locwebsite = ORM::Factory('location_attributes_website', $this->locationAttrWebsiteId);
     $locwebsite->delete();
+    $locwebsite = ORM::Factory('location_attributes_website', $this->locationAttrWebsiteId2);
+    $locwebsite->delete();
     $locattr = ORM::Factory('location_attribute', $this->locationAttributeId);
     $locattr->delete();
+    $locattr = ORM::Factory('location_attribute', $this->locationAttributeId2);
+    $locattr->delete();
   }
-  
+  /*
   public function testRequestDataGetRecordByDirectId() {
     $params = array(
       'mode'=>'json',
@@ -121,7 +140,7 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
   
   /**
    * Rapidly repeat some calls
-   */
+   *
   public function testRepeat50() {
     for ($i=0; $i<50; $i++) {
       self::testRequestDataGetRecordByIndirectId();
@@ -189,6 +208,37 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     $locAttr->delete();
     ORM::Factory('location', $locId)->delete();
   }  
+  */
+  public function testSaveInt() {
+    // post a location with an attribute value.
+    $array = array(
+      'location:name' => 'UnitTest2',
+      'location:centroid_sref'=>'SU0101',
+      'location:centroid_sref_system'=>'osgb',
+      'locAttr:'.$this->locationAttributeId2=>'not an int'
+    );
+    $s = submission_builder::build_submission($array, array('model'=>'location'));
+    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    // check we got the required output - showing an error on the int field
+    $this->assertTrue(isset($r['error']), 'Submitting a location with invalid int attr did not return error response');
+    $this->assertTrue(isset($r['errors']['locAttr:'.$this->locationAttributeId2]), 'Submitting a location with invalid int attr did not return error for field');
+    // now submit with a valid value
+    $array = array(
+      'location:name' => 'UnitTest2',
+      'location:centroid_sref'=>'SU0101',
+      'location:centroid_sref_system'=>'osgb',
+      'locAttr:'.$this->locationAttributeId2=>0
+    );
+    $s = submission_builder::build_submission($array, array('model'=>'location'));
+    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a location with int attr did not return success response');
+    $locId = $r['success'];
+    $locAttr = ORM::Factory('location_attribute_value')->where(array('location_id'=>$locId))->find();
+    $this->assertEquals(0, $locAttr->int_value, 'Submitting a location with zero int attr did not save');
+    // cleanup
+    $locAttr->delete();
+    ORM::Factory('location', $locId)->delete();
+  }
  
 }
 ?>
