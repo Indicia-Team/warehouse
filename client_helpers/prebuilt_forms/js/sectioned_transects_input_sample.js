@@ -76,7 +76,7 @@ function loadSpeciesList() {
         $('table#transect-input tbody#occs-body').append(row);
       });
 
-      $('.count-input').keypress(function (evt) {
+      $('.count-input').keydown(function (evt) {
         var targetRow = [], code, parts=evt.target.id.split('-');
         code=parts[2];
 
@@ -93,7 +93,7 @@ function loadSpeciesList() {
         }
         var targetInput = [];
         // right arrow - move to next cell if at end of text
-        if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.textLength) {
+        if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
           targetInput = $(evt.target).parents('td').next('td').find('input');
           if (targetInput.length===0) {
             // end of row, so move down to next if there is one
