@@ -147,7 +147,7 @@ class iform_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:location_id" value="'.$locationId.'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref" value="'.$site['centroid_sref'].'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
-      $r .= '<label>Site name:</label><span>'.$site['name'].'</span><br/>';
+      $r .= '<label>'.lang::get('Transect').':</label><span>'.$site['name'].'</span><br/>';
     } else {
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that 
       // we always use the same warehouse call and therefore it uses the cache.
@@ -167,7 +167,7 @@ class iform_sectioned_transects_input_sample {
       }
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
       $r .= data_entry_helper::location_select(array(
-        'label' => lang::get('Site'),
+        'label' => lang::get('Select Transect'),
         'validation' => array('required'),
         'blankText'=>lang::get('please select'),
         'lookupValues' => $sitesLookup
@@ -191,7 +191,7 @@ class iform_sectioned_transects_input_sample {
       'survey_id'=>$args['survey_id'],
       'sample_method_id'=>$sampleMethods[0]['id']
     ));
-    $r .= get_attribute_html($attributes, $args, array());
+    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']));
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
     $r .= '</form>';
