@@ -121,3 +121,23 @@ function get_fieldset_id($outerBlock, $innerBlock='') {
   $r = strtolower(preg_replace('/\s+/', '-', $r));
   return $r;
 }
+
+/**
+ * Finds the list of tab names that are going to be required by the custom attributes.
+ * @param array $attributes List of attributes. Any attributes with no outer structure block are assigned
+ * to a tab called Other Information.
+ */
+function get_attribute_tabs(&$attributes) {
+  $r = array();
+  foreach($attributes as &$attribute) {
+    if (!isset($attribute['handled']) || $attribute['handled']!=true) {
+      // Assign any ungrouped attributes to a block called Other Information 
+      if (empty($attribute['outer_structure_block'])) 
+        $attribute['outer_structure_block']='Other Information';
+      if (!array_key_exists($attribute['outer_structure_block'], $r))
+        // Create a tab for this structure block and mark it with [*] so the content goes in
+        $r[$attribute['outer_structure_block']] = array("[*]");
+    }
+  }
+  return $r;
+}
