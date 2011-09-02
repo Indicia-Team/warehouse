@@ -151,7 +151,7 @@
       }
 
       for (page=Math.max(1, div.settings.offset/div.settings.itemsPerPage-4); 
-          page<=Math.min(div.settings.offset/div.settings.itemsPerPage+6, Math.round(div.settings.recordCount / div.settings.itemsPerPage)); 
+          page<=Math.min(div.settings.offset/div.settings.itemsPerPage+6, Math.ceil(div.settings.recordCount / div.settings.itemsPerPage)); 
           page += 1) {
         if (page===div.settings.offset/div.settings.itemsPerPage+1) {
           pagelist += '<span class="pag-page pager-button ui-state-disabled" id="page-' + div.settings.id+ '-'+page+'">'+page+'</span> ';
