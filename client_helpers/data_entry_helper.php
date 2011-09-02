@@ -2854,12 +2854,13 @@ $('div#$escaped_divId').indiciaTreeBrowser({
         'sep' => '',
         'template' => 'check_or_radio_group',
         'itemTemplate' => 'check_or_radio_group_item',
-        'id' => $options['fieldname']
+        'id' => $options['fieldname'],
+        'class' => ''
       ),
       $options
     );
     // class picks up a default of blank, so we can't use array_merge to overwrite it
-    if (!$options['class']) $options['class']='control-box';
+    $options['class'] = trim($options['class'] . ' control-box');
     // We want to apply validation to the inner items, not the outer control
     if (array_key_exists('validation', $options)) {
       $itemClass = self::build_validation_class($options);
