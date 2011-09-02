@@ -70,10 +70,12 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     {
       case 'json':
         $a =  json_encode($responseStruct);
-        $this->content_type = 'Content-Type: application/json';
         if (array_key_exists('callback', $_GET))
         {
           $a = $_GET['callback']."(".$a.")";
+          $this->content_type = 'Content-Type: application/javascript';
+        } else {
+          $this->content_type = 'Content-Type: application/json';
         }
         $this->response = $a;
         break;
