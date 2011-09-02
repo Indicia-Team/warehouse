@@ -2,20 +2,29 @@
 
 <report title="Species and occurrence counts by site" description="Lists locations and the number of species and occurrences within them. This report relies on the record being input with a link to the site and will not pick up records where the spatial reference is in the site boundary but without a direct reference to the site.">
       <query>
+      WITH RECURSIVE search_samples(top_id, id, location_id, survey_id, date_start, date_end, depth) AS (
+        SELECT s.id, s.id, s.location_id, s.survey_id, s.date_start, s.date_end, 1
+        FROM samples s
+        WHERE s.deleted=false
+      UNION ALL
+        SELECT ss.id, s.id, ss.location_id, ss.survey_id, s.date_start, s.date_end, ss.depth+1
+        FROM samples s, search_samples ss
+        WHERE s.parent_id = ss.id AND s.deleted=false
+      )
       SELECT #columns#
       FROM websites w
       JOIN surveys su on su.website_id=w.id
-      JOIN locations_websites lw ON lw.website_id=w.id
-      JOIN locations l ON l.id=lw.location_id
+      JOIN locations_websites lw ON lw.website_id=w.id and lw.deleted=false
+      JOIN locations l ON l.id=lw.location_id and l.deleted=false
       LEFT JOIN (termlists_terms ttl1
-        JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id
-        JOIN terms t ON t.id=ttl2.term_id
-      ) ON ttl1.id=l.location_type_id
-      LEFT JOIN (samples s
+        JOIN termlists_terms ttl2 ON ttl2.meaning_id=ttl1.meaning_id and ttl2.deleted=false
+        JOIN terms t ON t.id=ttl2.term_id and t.deleted=false
+      ) ON ttl1.id=l.location_type_id and ttl1.deleted=false
+      LEFT JOIN (search_samples s
         JOIN occurrences o on o.sample_id=s.id AND o.deleted='f'
         JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
         JOIN taxa tx ON tx.id=ttl.taxon_id AND tx.deleted=false
-      ) on s.survey_id=su.id AND s.location_id=l.id
+      ) on s.survey_id=su.id AND s.location_id=l.id 
       #joins#
       WHERE w.deleted=false
       AND #website_filter#
