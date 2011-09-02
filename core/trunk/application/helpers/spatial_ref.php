@@ -131,8 +131,14 @@ class spatial_ref {
 
   /*
    * Converts a internal WKT value to any output sref - either a notation, or a transformed WKT
+   * @param string $wkt Well-known text string.
+   * @param string $sref_system Spatial reference system code to convert to.
+   * @param int $precision For systems which define accuracy in a reducing 10*10 grid (e.g. osgb), the number of digits to return.
+   * @param string $output
+   * @param float $metresAccuracy Approximate number of metres the point can be expected to be accurate by. E.g.
+   * may be set according to the current zoom scale of the map. Provided as an alternative to $precision.
    */
-  public static function internal_wkt_to_sref($wkt, $sref_system, $precision=null, $output=null)
+  public static function internal_wkt_to_sref($wkt, $sref_system, $precision=null, $output=null, $metresAccuracy=null)
   {
     $system = strtolower($sref_system);
     if (is_numeric($system))
@@ -151,7 +157,7 @@ class spatial_ref {
       else
         return self::point_to_x_y($result->wkt, $system);
     } else
-      return call_user_func("$system::wkt_to_sref", $result->wkt, $precision, $output);
+      return call_user_func("$system::wkt_to_sref", $result->wkt, $precision, $output, $metresAccuracy);
   }
 
   /**
