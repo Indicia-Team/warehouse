@@ -918,7 +918,7 @@ mapInitialisationHooks = [];
             }
             // enforce precision limits if specified in the settings
             if (div.settings.clickedSrefPrecisionMin!=='') {
-            precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+              precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
             }
             if (div.settings.clickedSrefPrecisionMax!=='') {
               precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
@@ -950,6 +950,7 @@ mapInitialisationHooks = [];
                       "?wkt=" + wkt +
                       "&system=" + outputSystem +
                       "&precision=" + precision +
+                      "&metresAccuracy=" + metres +
                       "&output=" + div.settings.latLongFormat +
                       "&callback=?", function(data)
                 {

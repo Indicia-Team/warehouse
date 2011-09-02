@@ -39,11 +39,15 @@ class Spatial_Controller extends Service_Base_Controller {
         $precision = $_GET['precision'];
       else
         $precision = null;
+      if (array_key_exists('metresAccuracy',$_GET))
+        $metresAccuracy = $_GET['metresAccuracy'];
+      else
+        $metresAccuracy = null;
       if (array_key_exists('output',$_GET))
         $output = $_GET['output'];
       else
         $output = null;
-      $sref = spatial_ref::internal_wkt_to_sref($_GET['wkt'], $_GET['system'], $precision, $output);
+      $sref = spatial_ref::internal_wkt_to_sref($_GET['wkt'], $_GET['system'], $precision, $output, $metresAccuracy);
       // Note we also need to return the wkt of the actual sref, which may be a square now.
       $wkt = spatial_ref::sref_to_internal_wkt($sref, $_GET['system']);
       $r = json_encode(array('sref'=>$sref,'wkt'=>$wkt));
@@ -75,7 +79,11 @@ class Spatial_Controller extends Service_Base_Controller {
         $precision = $_GET['precision'];
       else
         $precision = null;
-      echo spatial_ref::internal_wkt_to_sref($wkt, $_GET['to_system'], $precision);
+      if (array_key_exists('metresAccuracy',$_GET))
+        $metresAccuracy = $_GET['metresAccuracy'];
+      else
+        $metresAccuracy = null;
+      echo spatial_ref::internal_wkt_to_sref($wkt, $_GET['to_system'], $precision, null, $metresAccuracy);
     }
     catch (Exception $e)
     {
