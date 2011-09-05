@@ -33,8 +33,8 @@ $config['sref_notations'] = array
   'osie'=>'Irish Grid (TM75)',
   'guernsey'=>'Guernsey Grid',
   'jersey'=>'Jersey Grid',
-  'utm30n_ed50'=>'UTM 30N (ED50)',
-  'utm30n_wgs84'=>'UTM 30N (WGS84)',
+  'utm30ed50'=>'UTM 30N (ED50)',
+  'utm30wgs84'=>'UTM 30N (WGS84)',
   '4326'=>'Latitude and Longitude (WGS84)',
   'mtbqqq'=>'Messtischblattquadranten'
 );
