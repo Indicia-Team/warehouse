@@ -241,8 +241,8 @@ class iform_sectioned_transects_edit_transect {
       ));
       $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].
           (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
-          'from=transect&transect_id='.$settings['locationId'].'&section_id=0" id="section-edit" style="display: none"><button type="button">' . 
-          lang::get('Edit') . '</button></a>';
+          'from=transect&transect_id='.$settings['locationId'].'&section_id=0" id="section-edit" style="display: none" class="ui-state-default ui-corner-all indicia-button">' . 
+          lang::get('Edit') . '</a>';
       // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
       $options['standardControls'][] = 'selectFeature';
       $options['standardControls'][] = 'hoverFeatureHighlight';
@@ -250,7 +250,7 @@ class iform_sectioned_transects_edit_transect {
     if ($settings['locationId']) {
       $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].
           (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
-          'from=transect&transect_id='.$settings['locationId'].'"><button type="button">' . lang::get('Add Section') . '</button></a>';
+          'from=transect&transect_id='.$settings['locationId'].'" class="ui-state-default ui-corner-all indicia-button">'.lang::get('Add Section') . '</a>';
     }
     $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Site'); 
     $r .= data_entry_helper::textarea(array(
@@ -292,6 +292,8 @@ class iform_sectioned_transects_edit_transect {
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>'; // right
     $r .= '</div>'; // site
+    // This must go after the map panel, so it has created its toolbar
+    data_entry_helper::$onload_javascript .= "$('#current-section').change(selectSection);\n";
     return $r;
   }
   
