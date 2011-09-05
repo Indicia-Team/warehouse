@@ -146,10 +146,10 @@ class iform_sectioned_transects_edit_transect {
         'location_type_id' => $settings['locationTypes'][0]['id'],
         'multiValue' => true
     ));
-    if (false==$settings['cmsUserAttrs'] = extract_cms_user_attrs($settings['attributes']))
+    if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
       return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
     // keep a copy of the location_attribute_id so we can use it later.
-    self::$cmsUserAttrId = $settings['cmsUserAttrs'][0]['attributeId'];
+    self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
     $r = '<form method="post" id="input-form">';
     $r .= $auth['write'];
     $r .= '<div id="controls">';
@@ -189,7 +189,7 @@ class iform_sectioned_transects_edit_transect {
       $breadcrumb = array();
       $breadcrumb[] = l(lang::get('Home'), '<front>');
       $breadcrumb[] = l(lang::get('Sites'), $args['sites_list_path']);
-      if ($locationId)
+      if ($settings['locationId'])
         $breadcrumb[] = data_entry_helper::$entity_to_load['location:name'];
       else
         $breadcrumb[] = lang::get('New Site');
@@ -260,7 +260,7 @@ class iform_sectioned_transects_edit_transect {
     ));    
     $r .= '</fieldset>';
     if (user_access('indicia data admin'))
-      $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttrs'], $args);
+      $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
     elseif (!$settings['locationId']) {
       // for a new record, we need to link the current user to the location if they are not admin.
       global $user;
@@ -298,7 +298,7 @@ class iform_sectioned_transects_edit_transect {
   /**
    * If the user has permissions, then display a control so that they can specify the list of users associated with this site.
    */
-  private static function get_user_assignment_control($readAuth, $cmsUserAttrs, $args) {
+  private static function get_user_assignment_control($readAuth, $cmsUserAttr, $args) {
     $query = db_query("select uid, name from {users} where name<>'' order by name");
     $users = array();
     while ($user = db_fetch_object($query)) 
@@ -312,12 +312,10 @@ class iform_sectioned_transects_edit_transect {
     ));
     $r .= '<table id="user-list" style="width: auto">';
     $rows = '';
-    foreach ($cmsUserAttrs as $attr) {
-      if (isset($attr['displayValue'])) 
-        $rows .= '<tr><td id="user-'.$attr['displayValue'].'"><input type="hidden" name="'.$attr['fieldname'].':'.
-            $attr['displayValue'].'" value="'.$attr['displayValue'].'"/>'.
-            $users[$attr['displayValue']].'</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></td></div></tr>';
-    }
+    if (isset($cmsUserAttr['displayValue'])) 
+      $rows .= '<tr><td id="user-'.$cmsUserAttr['displayValue'].'"><input type="hidden" name="'.$cmsUserAttr['fieldname'].':'.
+          $cmsUserAttr['displayValue'].'" value="'.$cmsUserAttr['displayValue'].'"/>'.
+          $users[$cmsUserAttr['displayValue']].'</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></td></div></tr>';
     if (empty($rows))
       $rows = '<tr><td colspan="2"></td></tr>';
     $r .= "$rows</table>\n";
