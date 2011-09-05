@@ -3707,6 +3707,7 @@ if (errors.length>0) {
       $itemId=$item['id'];
       unset($item['id']);
       $item['fieldname']=$options['fieldprefix'].':'.$itemId.($item['multi_value'] == 't' ? '[]' : '');
+      $item['id']=$options['fieldprefix'].':'.$itemId;
       $item['untranslatedCaption']=$item['caption'];
       $item['caption']=lang::get($item['caption']);
       $item['default'] = self::attributes_get_default($item);
@@ -3829,6 +3830,7 @@ if (errors.length>0) {
     ), $options);
     $attrOptions = array(
         'fieldname'=>$item['fieldname'],
+        'id'=>$item['id'],
         'disabled'=>'');
     if (isset($item['caption']))
       $attrOptions['label']=$item['caption'];
