@@ -141,3 +141,24 @@ function get_attribute_tabs(&$attributes) {
   }
   return $r;
 }
+
+/** 
+ * Find the attribute(s) called CMS User ID, or return false.
+ * @param array $attributes List of attributes returned by a call to data_entry_helper::getAttributes.
+ * @param bool $unset If true (default) then the CMS User ID attributes are removed from the array.
+ * @return array List of attribute definitions, or false if none found.
+ */
+function extract_cms_user_attrs(&$attributes, $unset=true) {
+  $r = array();
+  foreach($attributes as $idx => $attr) {
+    if (strcasecmp($attr['caption'], 'CMS User ID')===0) {
+      $r[$idx] = $attr;
+      if ($unset)
+        unset($attributes[$idx]);
+    }
+  }
+  if (count($r)) 
+    return $r;
+  else
+    return false;
+}

@@ -146,8 +146,10 @@ class iform_sectioned_transects_edit_transect {
         'location_type_id' => $settings['locationTypes'][0]['id'],
         'multiValue' => true
     ));
-    if (false==$settings['cmsUserAttrs'] = self::extract_cms_user_attrs($settings['attributes']))
+    if (false==$settings['cmsUserAttrs'] = extract_cms_user_attrs($settings['attributes']))
       return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
+    // keep a copy of the location_attribute_id so we can use it later.
+    self::$cmsUserAttrId = $settings['cmsUserAttrs'][0]['attributeId'];
     $r = '<form method="post" id="input-form">';
     $r .= $auth['write'];
     $r .= '<div id="controls">';
@@ -323,26 +325,6 @@ class iform_sectioned_transects_edit_transect {
     // tell the javascript which attr to save the user ID into
     data_entry_helper::$javascript .= "indiciaData.locCmsUsrAttr = " . self::$cmsUserAttrId . ";\n";
     return $r;
-  }
-  
-  /** 
-   * Find the attribute(s) called CMS User ID, or return false.
-   * @return array List of attribute definitions
-   */
-  private static function extract_cms_user_attrs(&$attributes) {
-    $r = array();
-    foreach($attributes as $idx => $attr) {
-      if (strcasecmp($attr['caption'], 'CMS User ID')===0) {
-        $r[$idx] = $attr;
-        // keep a copy of the location_attribute_id so we can use it later.
-        self::$cmsUserAttrId = $attr['attributeId'];
-        unset($attributes[$idx]);
-      }
-    }
-    if (count($r)) 
-      return $r;
-    else
-      return false;
   }
   
   /**
