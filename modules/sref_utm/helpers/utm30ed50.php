@@ -26,14 +26,23 @@
  * @subpackage UTM Grid References
  * @author  Indicia Team
  */
-class utm30n_wgs84 extends utm_grid{
+class utm30ed50 extends utm_grid{
 
   /**
   * Return the underying EPSG code for the datum this notation is based on.
   */
   public static function get_srid()
   {
-    return 32630;
+    return 23030;
+    /* IMPORTANT
+     * Because there are many possible datum shifts available for this projection
+     * by default PostGIS does none. I have applied the mean shift by updating the
+     * spatial_ref_sys table as follows:
+     *   update spatial_ref_sys 
+     *   set proj4text = '+proj=utm +zone=30 +ellps=intl +units=m +no_defs +towgs84=-87,-98,-121'
+     *   where srid = 23030;
+     * The datum shift was taken from http://earth-info.nga.mil/GandG/coordsys/onlinedatum/CountryEuropeTable.html
+     */
   }
 
 
