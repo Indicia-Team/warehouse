@@ -120,6 +120,7 @@ class iform_sectioned_transects_edit_transect {
       'locationTypes' => helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section')),
       'locationId' => isset($_GET['id']) ? $_GET['id'] : null
     );
+    data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
     if ($settings['locationId']) {
       data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
       $settings['sections'] = data_entry_helper::get_population_data(array(
@@ -127,7 +128,6 @@ class iform_sectioned_transects_edit_transect {
         'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$settings['locationId'],'deleted'=>'f'),
         'nocache' => true
       ));
-      data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
       foreach($settings['sections'] as $section) {
         $code = strtolower($section['code']);
         data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."'};\n";
