@@ -1,34 +1,32 @@
+function selectSection() {
+  var current = $('#current-section').val();
+  indiciaData.selectFeature.unselectAll();
+  if (current!=='') {
+    $.each(indiciaData.mapdiv.map.editLayer.features, function(idx, feature) {
+      if (feature.attributes.section==current && feature.renderIntent != 'select') {
+        indiciaData.selectFeature.select(feature);
+      }
+    });
+    var link = $('#section-edit').attr('href');
+    link = link.replace(/[0-9]+$/, indiciaData.sections['s'+current].id);
+    $('#section-edit').attr('href',link);
+    $('#section-edit').show();
+  } else {
+    $('#section-edit').hide();
+  }
+  indiciaData.mapdiv.map.editLayer.redraw();
+}
+
 $(document).ready(function() {
 
-  var mapdiv, selectFeature, doingSelection=false;
-  
-  function selectSection() {
-    var current = $('#current-section').val();
-    selectFeature.unselectAll();
-    if (current!=='') {
-      $.each(mapdiv.map.editLayer.features, function(idx, feature) {
-        if (feature.attributes.section==current && feature.renderIntent != 'select') {
-          selectFeature.select(feature);
-        }
-      });
-      var link = $('#section-edit').attr('href');
-      link = link.replace(/[0-9]+$/, indiciaData.sections['s'+current].id);
-      $('#section-edit').attr('href',link);
-      $('#section-edit').show();
-    } else {
-      $('#section-edit').hide();
-    }
-    mapdiv.map.editLayer.redraw();
-  }
-  
-  $('#current-section').live('change', selectSection);
+  var doingSelection=false; 
   
   // trap drawing of any vector onto the layer
   mapInitialisationHooks.push(function(div) {
     // find the selectFeature control so we can interact with it later
     $.each(div.map.controls, function(idx, control) {
       if (control.CLASS_NAME==='OpenLayers.Control.SelectFeature') {
-        selectFeature = control;
+        indiciaData.selectFeature = control;
         div.map.editLayer.events.on({'featureselected': function(evt) {
           if ($('#current-section').val() != evt.feature.attributes.section) {
             $('#current-section').val(evt.feature.attributes.section);
@@ -37,7 +35,7 @@ $(document).ready(function() {
         }});
       }
     });
-    mapdiv = div;
+    indiciaData.mapdiv = div;
     
     div.map.editLayer.style = null;
     div.map.editLayer.styleMap = new OpenLayers.StyleMap({
