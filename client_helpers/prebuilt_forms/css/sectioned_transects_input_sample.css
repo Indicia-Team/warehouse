@@ -1,3 +1,7 @@
+label {
+  width: 140px;
+}
+
 table#transect-input {
   width: auto;
 }
