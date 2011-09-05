@@ -94,50 +94,96 @@ class iform_sectioned_transects_edit_section {
   public static function get_form($args, $node, $response=null) {
     require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
-    $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect Section'));
-    $locationId = isset($_GET['section_id']) ? $_GET['section_id'] : null;
-    $parentId = isset($_GET['transect_id']) ? $_GET['transect_id'] : null;
-    if ($parentId) {
+    $settings = array(
+      'locationTypes' => helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect Section')),
+      'locationId' => isset($_GET['section_id']) ? $_GET['section_id'] : null,
+      'parentId' => isset($_GET['transect_id']) ? $_GET['transect_id'] : null
+    );
+    if ($settings['parentId']) {
       $parent = data_entry_helper::get_population_data(array(
         'table' => 'location',
-        'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$parentId,'deleted'=>'f'),
+        'extraParams' => $auth['read'] + array('view'=>'detail','id'=>$settings['parentId'],'deleted'=>'f'),
         'nocache' => true
       ));
-      $parent = $parent[0];
+      $settings['parent'] = $parent[0];
     }
     else
       return 'This form must be called with a parent transect_id parameter.';
-    $sections = data_entry_helper::get_population_data(array(
+    $settings['sections'] = data_entry_helper::get_population_data(array(
       'table' => 'location',
-      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentId,'deleted'=>'f'),
+      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$settings['parentId'],'deleted'=>'f'),
       'nocache' => true
     ));
-    if ($locationId) 
-      data_entry_helper::load_existing_record($auth['read'], 'location', $locationId);
+    if ($settings['locationId']) 
+      data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
     else
-      data_entry_helper::$entity_to_load['location:code'] = 'S'.(count($sections)+1);
-    $attributes = data_entry_helper::getAttributes(array(
-        'id' => $locationId,
+      data_entry_helper::$entity_to_load['location:code'] = 'S'.(count($settings['sections'])+1);
+    $settings['attributes'] = data_entry_helper::getAttributes(array(
+        'id' => $settings['locationId'],
         'valuetable'=>'location_attribute_value',
         'attrtable'=>'location_attribute',
         'key'=>'location_id',
         'fieldprefix'=>'locAttr',
         'extraParams'=>$auth['read'],
         'survey_id'=>$args['survey_id'],
-        'location_type_id'=>$locationTypes[0]['id']
+        'location_type_id'=>$settings['locationTypes'][0]['id']
     ));
     if (data_entry_helper::$entity_to_load['location:code'])
-    $r = '<form method="post">';
+    $r = '<form method="post" id="input-form">';    
     $r .= $auth['write'];
-    if ($locationId)
-      $r .= "<input type=\"hidden\" name=\"location:id\" value=\"$locationId\" />\n";
+    $r .= '<div id="controls">';
+    $customAttributeTabs = array_merge(array(
+      'Site' => array('[*]'),
+    ), get_attribute_tabs($settings['attributes']));
+    if (count($customAttributeTabs)>1) {
+      $headerOptions = array('tabs'=>array());
+      foreach($customAttributeTabs as $tab=>$content) {
+        $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
+        $headerOptions['tabs']['#'.$alias] = lang::get($tab); 
+      }
+      $r .= data_entry_helper::tab_header($headerOptions);
+      data_entry_helper::enable_tabs(array(
+          'divId'=>'controls',
+          'style'=>$args['interface'],
+          'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
+      ));
+    }
+    foreach($customAttributeTabs as $tab=>$content) {
+      if ($tab=='Site')
+        $r .= self::get_section_tab($auth, $args, $settings);
+      else {
+        $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
+        $r .= "\n<div id=\"$alias\">\n";
+        $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), $tab); 
+        $r .= "</div>\n";
+      }
+        
+    }
+    $r .= '</div>'; // controls
+    $r .='</form>';
+    data_entry_helper::link_default_stylesheet();
+    if (function_exists('drupal_set_breadcrumb')) {
+      $breadcrumb = array();
+      $breadcrumb[] = l('Home', '<front>');
+      $breadcrumb[] = l('Sites', $args['sites_list_path']);
+      $breadcrumb[] = l($settings['parent']['name'], $args['transect_edit_path'], array('query'=>array('id'=>$settings['parentId'])));
+      $breadcrumb[] = $settings['locationId'] ? data_entry_helper::$entity_to_load['location:name'] : lang::get('new section');
+      drupal_set_breadcrumb($breadcrumb);
+    }
+    return $r;
+  }
+    
+  private function get_section_tab($auth, $args, $settings) {
+    $r = '<div id="site" class="ui-helper-clearfix">';  
+    if ($settings['locationId'])
+      $r .= '<input type="hidden" name="location:id" value="'.$settings['locationId']."\" />\n";
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
-    $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$locationTypes[0]['id']."\" />\n";
-    $r .= "<input type=\"hidden\" name=\"location:parent_id\" value=\"$parentId\" />\n";
+    $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$settings['locationTypes'][0]['id']."\" />\n";
+    $r .= '<input type="hidden" name="location:parent_id" value="'.$settings['parentId']."\" />\n";
     // force a blank centroid, so that the Warehouse will recalculate it from the boundary
     $r .= "<input type=\"hidden\" name=\"location:centroid_geom\" value=\"\" />\n";
     $r .= '<div class="left" style="width: 45%"><fieldset><legend>'.lang::get('Section Details').'</legend>';
-    $sectionName = lang::get('{1} - section {2}', $parent['name'], str_replace('S', '', data_entry_helper::$entity_to_load['location:code']));
+    $sectionName = lang::get('{1} - section {2}', $settings['parent']['name'], str_replace('S', '', data_entry_helper::$entity_to_load['location:code']));
     $r .= "<input type=\"hidden\" name=\"location:name\" value=\"$sectionName\" />\n";
     $r .= "<input type=\"hidden\" name=\"location:code\" id=\"location_code\" value=\"".data_entry_helper::$entity_to_load['location:code']."\" />\n";
     // if the from (calling) page is defined in the url, store this for use after the post
@@ -146,9 +192,9 @@ class iform_sectioned_transects_edit_section {
     $r .= '<h2>'.$sectionName.'</h2>';   
     $list = explode(',', str_replace(' ', '', $args['spatial_systems']));
     // output a hidden to contain the parent Geom, so we have something to zoom to if nothing else
-    $r .= '<input type="hidden" id="parent-geom" value="'.$parent['centroid_geom'].'" />';
+    $r .= '<input type="hidden" id="parent-geom" value="'.$settings['parent']['centroid_geom'].'" />';
     $r .= '<div id="section-geoms">';
-    foreach($sections as $section) {
+    foreach($settings['sections'] as $section) {
       $code = $section['code'];
       $r .= '<input type="hidden" id="'.$code.'" name="'.$code.'" value="' . $section['boundary_geom'] . '"/>';
     }
@@ -162,7 +208,7 @@ class iform_sectioned_transects_edit_section {
     $options['standardControls'][] = 'modifyFeature';
     $options['clickForSpatialRef'] = false;
     $options['toolbarDiv'] = 'top';
-    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']));
+    $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Site');
     $olOptions = iform_map_get_ol_options($args);
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="ui-state-default ui-corner-all" />';
     $r .= '</fieldset></div>';
@@ -171,17 +217,7 @@ class iform_sectioned_transects_edit_section {
         'existing line by selecting the Modify Feature tool then dragging the markers to change the line shape.');
     $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
     $r .= map_helper::map_panel($options, $olOptions);
-    $r .= '</div>';
-    $r .='</form>';
-    data_entry_helper::link_default_stylesheet();
-    if (function_exists('drupal_set_breadcrumb')) {
-      $breadcrumb = array();
-      $breadcrumb[] = l('Home', '<front>');
-      $breadcrumb[] = l('Sites', $args['sites_list_path']);
-      $breadcrumb[] = l($parent['name'], $args['transect_edit_path'], array('query'=>array('id'=>$parentId)));
-      $breadcrumb[] = $locationId ? data_entry_helper::$entity_to_load['location:name'] : lang::get('new section');
-      drupal_set_breadcrumb($breadcrumb);
-    }
+    $r .= '</div></div>';
     return $r;
   }
   
