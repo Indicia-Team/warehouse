@@ -174,7 +174,7 @@ class iform_sectioned_transects_edit_section {
   }
     
   private function get_section_tab($auth, $args, $settings) {
-    $r = '<div id="site" class="ui-helper-clearfix">';  
+    $r = '<div id="section" class="ui-helper-clearfix">';  
     if ($settings['locationId'])
       $r .= '<input type="hidden" name="location:id" value="'.$settings['locationId']."\" />\n";
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";

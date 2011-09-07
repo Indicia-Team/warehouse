@@ -199,7 +199,7 @@ class iform_sectioned_transects_edit_transect {
   }
   
   private static function get_site_tab($auth, $args, $settings) {
-    $r = '<div id="site" class="ui-helper-clearfix">';
+    $r = '<div id="sitedetails" class="ui-helper-clearfix">';
     $r .= '<div class="left" style="width: 44%">';
     $r .= '<fieldset><legend>'.lang::get('Transect Details').'</legend>';
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
@@ -318,7 +318,7 @@ class iform_sectioned_transects_edit_transect {
     if (isset($cmsUserAttr['displayValue'])) 
       $rows .= '<tr><td id="user-'.$cmsUserAttr['displayValue'].'"><input type="hidden" name="'.$cmsUserAttr['fieldname'].':'.
           $cmsUserAttr['displayValue'].'" value="'.$cmsUserAttr['displayValue'].'"/>'.
-          $users[$cmsUserAttr['displayValue']].'</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></td></div></tr>';
+          $users[$cmsUserAttr['displayValue']].'</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>';
     if (empty($rows))
       $rows = '<tr><td colspan="2"></td></tr>';
     $r .= "$rows</table>\n";
