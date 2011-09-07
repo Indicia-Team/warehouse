@@ -149,12 +149,18 @@ function get_attribute_tabs(&$attributes) {
  * @return array Single attribute definition, or false if none found.
  */
 function extract_cms_user_attr(&$attributes, $unset=true) {
+  $found=false;
   foreach($attributes as $idx => $attr) {
     if (strcasecmp($attr['caption'], 'CMS User ID')===0) {
+      // found will pick up just the first one
+      if (!$found)
+        $found=$attr;
       if ($unset)
         unset($attributes[$idx]);
-      return $attr;
+      else
+        // don't bother looking further if not unsetting them all
+        break;
     }
   }
-  return false;
+  return $found;
 }
