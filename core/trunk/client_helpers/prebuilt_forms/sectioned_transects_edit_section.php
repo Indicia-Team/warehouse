@@ -133,7 +133,7 @@ class iform_sectioned_transects_edit_section {
     $r .= $auth['write'];
     $r .= '<div id="controls">';
     $customAttributeTabs = array_merge(array(
-      'Site' => array('[*]'),
+      'Section' => array('[*]'),
     ), get_attribute_tabs($settings['attributes']));
     if (count($customAttributeTabs)>1) {
       $headerOptions = array('tabs'=>array());
@@ -149,7 +149,7 @@ class iform_sectioned_transects_edit_section {
       ));
     }
     foreach($customAttributeTabs as $tab=>$content) {
-      if ($tab=='Site')
+      if ($tab=='Section')
         $r .= self::get_section_tab($auth, $args, $settings);
       else {
         $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
@@ -208,7 +208,7 @@ class iform_sectioned_transects_edit_section {
     $options['standardControls'][] = 'modifyFeature';
     $options['clickForSpatialRef'] = false;
     $options['toolbarDiv'] = 'top';
-    $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Site');
+    $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Section');
     $olOptions = iform_map_get_ol_options($args);
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="ui-state-default ui-corner-all" />';
     $r .= '</fieldset></div>';

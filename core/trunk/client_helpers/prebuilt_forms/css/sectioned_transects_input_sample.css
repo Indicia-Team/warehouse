@@ -2,6 +2,10 @@ label {
   width: 140px;
 }
 
+.helpText {
+  margin-left: 144px;
+}
+
 table#transect-input {
   width: auto;
 }

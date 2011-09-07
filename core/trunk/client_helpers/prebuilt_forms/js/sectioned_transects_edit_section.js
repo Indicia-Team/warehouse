@@ -64,6 +64,7 @@ $(document).ready(function() {
       $('#'+currentLocCode).val(evt.feature.geometry.toString());
       $('#boundary_geom').val(evt.feature.geometry.toString());
       evt.feature.renderIntent = 'select';
+      alert(evt.feature.geometry.getLength());
       div.map.editLayer.redraw();
     }});
     div.map.editLayer.events.on({'featureadded': function(evt) {

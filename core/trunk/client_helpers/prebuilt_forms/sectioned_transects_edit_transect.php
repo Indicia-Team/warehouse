@@ -154,7 +154,7 @@ class iform_sectioned_transects_edit_transect {
     $r .= $auth['write'];
     $r .= '<div id="controls">';
     $customAttributeTabs = array_merge(array(
-      'Site' => array('[*]'),
+      'Site Details' => array('[*]'),
     ), get_attribute_tabs($settings['attributes']));
     if (count($customAttributeTabs)>1) {
       $headerOptions = array('tabs'=>array());
@@ -171,7 +171,7 @@ class iform_sectioned_transects_edit_transect {
     }
     
     foreach($customAttributeTabs as $tab=>$content) {
-      if ($tab=='Site')
+      if ($tab=='Site Details')
         $r .= self::get_site_tab($auth, $args, $settings);
       else {
         $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
@@ -221,7 +221,8 @@ class iform_sectioned_transects_edit_transect {
       'geomFieldname' => 'location:centroid_geom',
       'label' => 'Grid Ref.',
       'systems' => $systems,
-      'class' => 'required'
+      'class' => 'required',
+      'helpText' => lang::get('Click on the map to set the grid reference.')      
     ));
     
     // setup the map options
@@ -252,7 +253,7 @@ class iform_sectioned_transects_edit_transect {
           (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
           'from=transect&transect_id='.$settings['locationId'].'" class="ui-state-default ui-corner-all indicia-button">'.lang::get('Add Section') . '</a>';
     }
-    $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Site'); 
+    $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Site Details'); 
     $r .= data_entry_helper::textarea(array(
       'label' => lang::get('Notes'),
       'fieldname' => 'location:comment',
