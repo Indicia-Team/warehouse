@@ -53,7 +53,6 @@ class iform_sectioned_transects_input_sample {
    */
   public static function get_parameters() {   
     return array_merge(
-      iform_map_get_map_parameters(),
       array(
         array(
           'name'=>'survey_id',
@@ -123,8 +122,11 @@ class iform_sectioned_transects_input_sample {
       $locationId = data_entry_helper::$entity_to_load['sample:location_id'];
     } else {
       $locationId = isset($_GET['site']) ? $_GET['site'] : null;
+      // location ID also might be in the $_POST data after a validation save of a new record
+      if (!$locationId && isset($_POST['sample:location_id']))
+        $locationId = $_POST['sample:location_id'];
+        
     }
-    $r = '<div class="left">';
     $r .= '<form method="post" id="sample">';
     $r .= $auth['write'];
     // we pass through the read auth. This makes it possible for the get_submission method to authorise against the warehouse
@@ -147,6 +149,9 @@ class iform_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:location_id" value="'.$locationId.'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref" value="'.$site['centroid_sref'].'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
+    }
+    if ($locationId && isset(data_entry_helper::$entity_to_load['sample:id'])) {
+      // for reload of existing, don't let the user switch the transect as that would mess everything up.
       $r .= '<label>'.lang::get('Transect').':</label><span>'.$site['name'].'</span><br/>';
     } else {
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that 
@@ -166,12 +171,17 @@ class iform_sectioned_transects_input_sample {
         $sitesJs[$site['location_id']] = $site;
       }
       data_entry_helper::$javascript .= "indiciaData.sites = ".json_encode($sitesJs).";\n";
-      $r .= data_entry_helper::location_select(array(
+      $options = array(
         'label' => lang::get('Select Transect'),
         'validation' => array('required'),
         'blankText'=>lang::get('please select'),
-        'lookupValues' => $sitesLookup
-      ));
+        'lookupValues' => $sitesLookup,
+      );
+      if ($locationId) 
+        $options['default'] = $locationId;
+      $r .= data_entry_helper::location_select($options);
+    }
+    if (!$locationId) {
       $r .= '<input type="hidden" name="sample:entered_sref" value="" id="entered_sref"/>';
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="" id="entered_sref_system"/>';
       // sref values for the sample will be populated automatically when the submission is built.
@@ -195,16 +205,7 @@ class iform_sectioned_transects_input_sample {
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
     $r .= '</form>';
-    $r .= '</div>';
-    $r .= '<div class="right" style="border: solid silver 1px">';
-    $options = iform_map_get_map_options($args, $auth['read']);
-    $olOptions = iform_map_get_ol_options($args);
-    if ($locationId) {
-      $options['initialFeatureWkt'] = $site['centroid_geom'];
-    }
-    $r .= map_helper::map_panel($options, $olOptions);
     data_entry_helper::enable_validation('sample');
-    $r .= '</div>';
     return $r;
   }
   
@@ -323,11 +324,15 @@ class iform_sectioned_transects_input_sample {
       unset($attr['caption']);
       foreach ($sections as $section) {
         // output a cell with the attribute - tag it with a class & id to make it easy to find from JS.
-        $attrOpts = array('class' => 'smp-input smpAttr-'.$section['code'], 'id' => $attr['fieldname'].':'.$section['code']);
+        $attrOpts = array(
+            'class' => 'smp-input smpAttr-'.$section['code'], 
+            'id' => $attr['fieldname'].':'.$section['code'],
+            'extraParams'=>$auth['read']
+        );
         // if there is an existing value, set it and also ensure the attribute name reflects the attribute value id.
         if (isset($subSamplesByCode[$section['code']])) {
-          $attrOpts['fieldname'] = $attr['fieldname'] . ':' . $subSamplesByCode[$section['code']]['attr_id_sample'.$attr['attributeId']];
-          $attr['default'] = $subSamplesByCode[$section['code']]['attr_sample'.$attr['attributeId']];
+          $attrOpts['fieldname'] = $attr['fieldname'] . ':' . $subSamplesByCode[$section['code']]['attr_id_sample_'.$attr['attributeId']];
+          $attr['default'] = $subSamplesByCode[$section['code']]['attr_sample_'.$attr['attributeId']];
         } else {
           $attr['default']=isset($_POST[$attr['fieldname']]) ? $_POST[$attr['fieldname']] : '';
         }
@@ -359,6 +364,7 @@ class iform_sectioned_transects_input_sample {
     // A stub form for AJAX posting when we need to create a sample
     $r .= '<form style="display: none" id="smp-form" method="post" action="'.iform_ajaxproxy_url($node, 'sample').'">';
     $r .= '<input name="website_id" value="'.$args['website_id'].'"/>';
+    $r .= '<input name="sample:id" id="smpid" />';
     $r .= '<input name="sample:parent_id" value="'.$parentSampleId.'" />';
     $r .= '<input name="sample:survey_id" value="'.$args['survey_id'].'" />';
     $r .= '<input name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
