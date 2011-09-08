@@ -33,10 +33,11 @@ $custom_terms = array(
 	'LANG_Add_Sample_Single' => 'Add Single Occurrence',
 	'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
 
-	'LANG_SRef_Label' => 'Spatial Ref',
 	'LANG_Location_Label' => 'Location',
 	'LANG_Location_Name' => 'Site Name',
-	
+	'Latitude' => 'Coordinates : X ',
+	'Longitude' => 'Y ',
+
 	'LANG_Save' => 'Save',
 	'LANG_Cancel' => 'Cancel',
 
@@ -77,8 +78,6 @@ $custom_terms = array(
 
 	'LANG_Tab_species' => 'Species',
 	'Bats Obs Type' => "Observation Type",
-	'Number: previous area' => 'Number of individuals in previously explored area',
-	'Number: new area' => 'Number of individuals in newly explored area',
 
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid."
 

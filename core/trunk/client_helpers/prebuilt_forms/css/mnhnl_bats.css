@@ -1,7 +1,9 @@
 .deh-required {
   color:red;
 }
-
+.control-box {
+  display:inline  !important;
+}
 .scOccAttrCell label {
   margin-right: 15px;
   width: auto;
@@ -23,4 +25,9 @@ p.inline-error {
 .fullWidth {
   width: 100%;
 }
-
+.data {
+  margin-right: 15px;	
+}
+.remove-row {
+  color:red !important;
+}

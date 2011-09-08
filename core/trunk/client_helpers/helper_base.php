@@ -55,7 +55,7 @@ $indicia_templates = array(
   'listbox' => '<select id="{id}" name="{fieldname}"{class} {disabled} size="{size}" multiple="{multiple}" {title}>{items}</select>',
   'listbox_item' => '<option value="{value}" {selected} >{caption}</option>',
   'list_in_template' => '<ul{class} {title}>{items}</ul>',
-  'check_or_radio_group' => '<div{class}>{items}</div>',
+  'check_or_radio_group' => '<span {class}>{items}</span>',
   'check_or_radio_group_item' => '<nobr><span><input type="{type}" name="{fieldname}" id="{itemId}" value="{value}"{class}{checked} {disabled}/><label for="{itemId}">{caption}</label></span></nobr>{sep}',
   'map_panel' => "<script type=\"text/javascript\">\n/* <![CDATA[ */\n".
     "document.write('<div id=\"{divId}\" style=\"width: {width}; height: {height};\"{class}></div>');\n".
@@ -842,7 +842,7 @@ $('.ui-state-default').live('mouseout', function() {
       if (!is_array($value) && !is_object($value)) {
         array_push($replaceTags, '{'.$param.'}');
         // allow sep to have <br/>
-        $value = ($param == 'sep' || $allowHtml) ? $value : htmlSpecialChars($value);
+        $value = ($param == 'sep' || $allowHtml) ? $value : htmlentities($value);
         // HTML attributes get automatically wrapped
         if (in_array($param, self::$html_attributes) && !empty($value))
           $value = " $param=\"$value\"";

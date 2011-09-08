@@ -2848,6 +2848,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Internal method to output either a checkbox group or a radio group.
    */
   private static function check_or_radio_group($options, $type) {
+    // checkboxes are inherantly multivalue, whilst radio buttons are single value
     global $indicia_templates;
     $options = array_merge(
       array(
@@ -2872,11 +2873,20 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     $items = "";
     $idx = 0;
     foreach ($lookupItems as $value => $template) {
+      $fieldName = $options['fieldname'];
       if (isset($options['default'])) {
         if (is_array($options['default'])) {
-          $checked = in_array($value, $options['default']);
+          $checked = false;
+          foreach ($options['default'] as $defVal) {
+            if(is_array($defVal)){
+              if($defVal['default'] == $value) {
+                $checked = true;
+                $fieldName = $defVal['fieldname'];
+              }
+            } else if($value == $defVal) $checked = true;
+          }
         } else
-          $checked = $options['default'] == $value;
+          $checked = ($options['default'] == $value);
       } else
         $checked=false;
       $item = array_merge(
@@ -2890,6 +2900,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
           'itemId' => $options['id'].':'.$idx
         )
       );
+      $item['fieldname']=$fieldName;
       $items .= self::mergeParamsIntoTemplate($item, $template, true, true);
       $idx++;
     }
@@ -2897,6 +2908,9 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     // We don't want to output for="" in the top label, as it is not directly associated to a button
     $lblTemplate = $indicia_templates['label'];
     $indicia_templates['label'] = str_replace(' for="{id}"', '', $lblTemplate);
+    if (isset($itemClass) && !empty($itemClass) && strpos($itemClass, 'required')!==false) {
+      $options['suffixTemplate'] = 'requiredsuffix';
+    }
     $r = self::apply_template($options['template'], $options);
     // reset the old template
     $indicia_templates['label'] = $lblTemplate;
@@ -3658,10 +3672,12 @@ if (errors.length>0) {
   * by attribute ID. If set to true, multiple values are enabled and the response array is keyed by <attribute ID>:<attribute value ID>
   * in the cases where there is any data for the attribute.
   * </ul>
+  * @param optional boolean $indexedArray default true. Determines whether the return value is an array indexed by PK, or whether it
+  * is ordered as it comes from the database (ie block weighting). Needs to be set false if data is to be used by get_attribute_html.
   *
   * @return Associative array of attributes, keyed by the attribute ID (multiValue=false) or <attribute ID>:<attribute value ID> if multiValue=true.
   */
-  public static function getAttributes($options) {
+  public static function getAttributes($options, $indexedArray = true) {
     $attrs = array();
     $query = array();
     self::add_resource('json');
@@ -3703,6 +3719,17 @@ if (errors.length>0) {
     $response = self::get_population_data($attrOptions);
     if (array_key_exists('error', $response))
       return $response;
+    if(isset($options['id'])){
+      $options['extraParams'][$options['key']] = $options['id'];
+      $existingValuesOptions = array(
+        'table'=>$options['valuetable'],
+        'cachetimeout' => 0, // can't cache
+        'extraParams'=> $options['extraParams']);
+      $valueResponse = self::get_population_data($existingValuesOptions);
+      if (array_key_exists('error', $valueResponse))
+        return $valueResponse;
+    } else
+      $valueResponse = array();
     foreach ($response as $item){
       $itemId=$item['id'];
       unset($item['id']);
@@ -3712,38 +3739,38 @@ if (errors.length>0) {
       $item['caption']=lang::get($item['caption']);
       $item['default'] = self::attributes_get_default($item);
       $item['attributeId'] = $itemId;
-      $attrs[$itemId] = $item;
-    }
-    // if we are not loading an existing record, no need to continue and look for values
-    if(!isset($options['id']))
-      return $attrs;      
-
-    $attrsWithValues = array();
-    $options['extraParams'][$options['key']] = $options['id'];
-    $existingValuesOptions = array(
-        'table'=>$options['valuetable'],
-        'cachetimeout' => 0, // can't cache
-        'extraParams'=> $options['extraParams']);
-    $response = self::get_population_data($existingValuesOptions);
-    if (array_key_exists('error', $response))
-      return $response;
-    foreach ($response as $item){
-      $attrId = $item[$options['attrtable'].'_id'];
-      if(isset($attrs[$attrId])){
-        if ($options['multiValue']) {
-          $key = "$attrId:".(isset($item['id']) ? $item['id'] : '');
-        } else {
-          $key = $attrId;
-        }
-        $attrsWithValues[$key] = $attrs[$attrId];
-        if(isset($item['id'])){
-          $attrsWithValues[$key]['fieldname'] = $options['fieldprefix'].':'.$item[$options['attrtable'].'_id'].':'.$item['id'];
-          $attrsWithValues[$key]['default'] = $item['raw_value'];
-          $attrsWithValues[$key]['displayValue'] = $item['value'];
+      $item['values'] = array();
+      if(count($valueResponse) > 0){
+        foreach ($valueResponse as $value){
+          $attrId = $value[$options['attrtable'].'_id'];
+          if($attrId == $itemId && $value['id']) {
+            // for multilanguage look ups we get > 1 record for the same attribute.
+            $fieldname = $options['fieldprefix'].':'.$itemId.':'.$value['id'];
+            $found = false;
+            foreach ($item['values'] as $prev)
+              if($prev['fieldname'] == $fieldname && $prev['default'] == $value['raw_value'])
+                $found = true;
+            if(!$found)
+              $item['values'][] = array('fieldname' => $options['fieldprefix'].':'.$itemId.':'.$value['id'],
+                                'default' => $value['raw_value']);
+            $item['displayValue'] = $value['value']; //bit of a bodge but not using multivalue for this at the moment.
+          }
         }
       }
+      if(count($item['values'])==1 && $item['multi_value'] != 't'){
+        $item['fieldname'] = $item['values'][0]['fieldname'];
+        $item['default'] = $item['values'][0]['default'];
+      }
+      if($item['multi_value'] == 't'){
+        $item['default'] = $item['values'];
+      }
+      unset($item['values']);
+      if($indexedArray)
+        $attrs[$itemId] = $item;
+      else
+        $attrs[] = $item;
     }
-    return $attrsWithValues;
+    return $attrs;
   }
 
   /**

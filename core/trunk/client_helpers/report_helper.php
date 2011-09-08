@@ -472,15 +472,15 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       // If not on first page, we can go back.
       if ($sortAndPageUrlParams['page']['value']>0) {
         $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
-        $r .= "<a class=\"pag-prev pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">previous</a> \n";
+        $r .= "<a class=\"pag-prev pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">".lang::get('previous')."</a> \n";
       } else 
-        $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">previous</span> \n";
+        $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">".lang::get('previous')."</span> \n";
       // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
       if (count($response['records'])>$options['itemsPerPage']) {
         $next = $sortAndPageUrlParams['page']['value'] + 1;
-        $r .= "<a class=\"pag-next pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">next &#187</a> \n";
+        $r .= "<a class=\"pag-next pager-button\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">".lang::get('next')." &#187</a> \n";
       } else 
-        $r .= "<span class=\"pag-next ui-state-disabled pager-button\">next</span> \n";
+        $r .= "<span class=\"pag-next ui-state-disabled pager-button\">".lang::get('next')."</span> \n";
       return $r;
     }
   }
