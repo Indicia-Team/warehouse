@@ -125,6 +125,10 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
 
 $('.remove-row').live('click', function(e) {
   e.preventDefault();
+  // Allow forms to hook into the event of a row being deleted, most likely use would be to have a confirmation dialog
+  if (typeof hook_species_checklist_pre_delete_row !== "undefined") {
+    if(!hook_species_checklist_pre_delete_row(e)) return;
+  }
   // @todo unbind all event handlers
   var row = $(e.target.parentNode);
   if (row.next().find('.file-box').length>0) {

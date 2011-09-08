@@ -483,7 +483,7 @@ class iform_mnhnl_dynamic_1 {
        ,'fieldprefix'=>'smpAttr'
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
-      ));
+      ), false);
       $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
       if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
         $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
@@ -567,7 +567,7 @@ class iform_mnhnl_dynamic_1 {
     // form is for a specific sample method.
     if (!empty($args['sample_method_id']))
       $attrOpts['sample_method_id']=$args['sample_method_id'];
-    $attributes = data_entry_helper::getAttributes($attrOpts);
+    $attributes = data_entry_helper::getAttributes($attrOpts, false);
     //// Make sure the form action points back to this page
     $reload = data_entry_helper::get_reload_link_parts();
     unset($reload['params']['sample_id']);
@@ -1035,7 +1035,7 @@ class iform_mnhnl_dynamic_1 {
         // if we have a single occurrence Id to load, use it to get attribute values
         $attrArgs['id'] = self::$occurrenceIds[0];
       }
-      $attributes = data_entry_helper::getAttributes($attrArgs);
+      $attributes = data_entry_helper::getAttributes($attrArgs, false);
       $defAttrOptions = array('extraParams'=>$auth['read']);
       $r = get_attribute_html($attributes, $args, $defAttrOptions);
       if ($args['occurrence_comment'])
