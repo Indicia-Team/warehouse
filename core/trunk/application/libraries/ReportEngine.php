@@ -788,9 +788,9 @@ class ReportEngine {
         case 'V' :
           $cols = array('date_start_value'=>'_start','date_end_value'=>'_end','date_type_value'=>'_type');
           break;
-        case 'L' :
-          // no cols for lookups - we handle these manually later
-          $cols=array();
+        case 'L' :          
+          $cols= array('int_value'=>'');
+          // lookups will have the join inserted later
           break;
         default:
           $cols = array('int_value'=>'');
@@ -829,8 +829,9 @@ class ReportEngine {
       }
       // lookups need special processing for additional joins
       elseif ($attr->data_type=='L') {
-        $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value AND ltt$id.deleted=false\n #joins#", $query);
-        $query = str_replace('#fields#', ", ltt$id.term as attr_$type$id#fields#", $query);
+        $query = str_replace('#joins#', "$join list_termlists_terms ltt$id ON ltt$id.id=$type$id.int_value\n #joins#", $query);
+        $alias = preg_replace('/\_value$/', '', "attr_$type"."_term_$uniqueId");
+        $query = str_replace('#fields#', ", ltt$id.term as $alias#fields#", $query);
         $query = str_replace('#group_bys#', ", ltt$id.term#group_bys#", $query);
         $this->attrColumns["attr_$type$id"] = array(
           'display' => $attr->caption
