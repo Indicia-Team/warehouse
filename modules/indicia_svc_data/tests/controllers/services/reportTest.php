@@ -11,7 +11,7 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
   protected $locationAttrWebsiteId;
 
   public function setup() {
-    $this->auth = data_entry_helper::get_read_write_auth(1, 'password');
+    $this->auth = report_helper::get_read_write_auth(1, 'password');
     // make the tokens re-usable
     $this->auth['write_tokens']['persist_auth']=true;
     // set up a tiny bit of data. First pick a termlists_term_id to use which is never going to be a valid location type,
@@ -47,12 +47,9 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
   }
   
   public function tearDown() {
-    $loc = ORM::Factory('location', $this->locationId);
-    $loc->delete();
-    $locwebsite = ORM::Factory('location_attributes_website', $this->locationAttrWebsiteId);
-    $locwebsite->delete();
-    $locattr = ORM::Factory('location_attribute', $this->locationAttributeId);
-    $locattr->delete();
+    ORM::Factory('location')->delete($this->locationId);
+    ORM::Factory('location_attributes_website')->delete($this->locationAttrWebsiteId);
+    ORM::Factory('location_attribute')->delete($this->locationAttributeId);
   }
   
   public function testRequestReportGetJson() {
@@ -172,7 +169,6 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
   /**
    * Repeat check for advanced report output, this time requesting an attribute by ID rather than name.
    */
-   
   public function testAdvancedReportByAttrId() {
     $params = array(
       'report'=>'library/locations/locations_list.xml',
@@ -215,8 +211,6 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
     curl_setopt ($session, CURLOPT_POSTFIELDS, $params);
     // valid json response will decode
     $response = json_decode(curl_exec($session), true);
-    kohana::log('debug', 'response');
-    kohana::log('debug', print_r($response, true));
     $this->assertEquals(true, isset($response['parameterRequest']), 'Report should request parameters');
   }
 
@@ -241,6 +235,66 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
     $response = json_decode(curl_exec($session), true);
     $this->assertEquals(true, isset($response['error']), 'Invalid report request should return error');
   }
-
+  
+  public function testLookupCustomAttrs() {
+    // create an attribute to link to our location, for counties
+    $qry = $this->db->select('id')
+        ->from('termlists')
+        ->where(array('external_key'=>'indicia:counties'))
+        ->get()->result_array(false);
+    
+    $locattr = ORM::Factory('location_attribute');
+    $locattr->caption='CountyTest';
+    $locattr->data_type='L';
+    $locattr->termlist_id=$qry[0]['id'];
+    $locattr->public='f';
+    $locattr->set_metadata();
+    $locattr->save();    
+    $locwebsite = ORM::Factory('location_attributes_website');
+    $locwebsite->website_id=1;
+    $locwebsite->location_attribute_id=$locattr->id;
+    $locwebsite->set_metadata();
+    $locwebsite->save();
+    
+    // find a term
+    $county = $this->db->select('id')
+        ->from('list_termlists_terms')
+        ->where(array('termlist_external_key'=>'indicia:counties','term'=>'Dorset'))
+        ->get()->result_array(false);
+          
+    $locattrval = ORM::Factory('location_attribute_value');
+    $locattrval->location_id=$this->locationId;
+    $locattrval->location_attribute_id=$locattr->id;
+    $locattrval->int_value=$county[0]['id'];
+    $locattrval->set_metadata();
+    $locattrval->save();
+    
+    $params = array(
+      'report'=>'library/locations/locations_list.xml',
+      'reportSource'=>'local',
+      'mode'=>'json',
+      'auth_token'=>$this->auth['read']['auth_token'],
+      'nonce'=>$this->auth['read']['nonce'],
+      'params'=>json_encode(array('locattrs'=>'CountyTest', 'location_type_id'=>$this->locationTypeId))
+    );
+    $url = report_helper::$base_url.'index.php/services/report/requestReport';
+    $session = curl_init();
+    curl_setopt ($session, CURLOPT_URL, $url);
+    curl_setopt($session, CURLOPT_HEADER, false);
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt ($session, CURLOPT_POST, true);
+    curl_setopt ($session, CURLOPT_POSTFIELDS, $params);
+    // valid json response will decode
+    $response = json_decode(curl_exec($session), true);
+    $this->assertEquals(1, count($response), 'Report response should only include 1 record');    
+    $this->assertEquals(true, array_key_exists('attr_location_countytest', $response[0]), 'County report should return column for CountyTest');
+    $this->assertEquals(true, array_key_exists('attr_location_term_countytest', $response[0]), 'County report should return column for CountyTest Term');
+    
+    $this->assertEquals('Dorset', $response[0]['attr_location_term_countytest'], 'County report did not return correct attribute value');
+    $locattrval->delete();
+    $locwebsite->delete();
+    $locattr->delete();
+  }
+  
 }
 ?>
