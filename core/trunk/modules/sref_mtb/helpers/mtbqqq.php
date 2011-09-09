@@ -43,7 +43,7 @@ class mtbqqq {
   public static function is_valid($sref)
   {
     $sref = self::clean($sref);
-    return preg_match('/^\d\d\d\d(/[1-4][1-4]?[1-4]?)?$/', $sref);
+    return preg_match('/^\d\d\d\d(\/[1-4][1-4]?[1-4]?)?$/', $sref)<>0;
   }
 
   /**
