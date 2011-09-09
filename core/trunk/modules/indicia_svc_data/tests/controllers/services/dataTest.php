@@ -74,7 +74,7 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     $locattr = ORM::Factory('location_attribute', $this->locationAttributeId2);
     $locattr->delete();
   }
-  /*
+  
   public function testRequestDataGetRecordByDirectId() {
     $params = array(
       'mode'=>'json',
@@ -140,7 +140,7 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
   
   /**
    * Rapidly repeat some calls
-   *
+   */
   public function testRepeat50() {
     for ($i=0; $i<50; $i++) {
       self::testRequestDataGetRecordByIndirectId();
@@ -208,7 +208,7 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     $locAttr->delete();
     ORM::Factory('location', $locId)->delete();
   }  
-  */
+  
   public function testSaveInt() {
     // post a location with an attribute value.
     $array = array(
