@@ -25,7 +25,7 @@ class Model_Upgrade_Test extends PHPUnit_Framework_TestCase {
    * Test an initial upgrade against a folder with no ___ file in it.
    */
   public function testFirstUpgrade() {
-    $this->model->execute_sql_scripts('test_scripts');
+    $this->model->execute_sql_scripts(MODPATH.'indicia_setup/','test_scripts');
     // Check the file tracking
     $this->assertFileExists(MODPATH.'indicia_setup/db/test_scripts/____200912271517_test1____');
     // and check the SQL actually ran
@@ -48,7 +48,7 @@ class Model_Upgrade_Test extends PHPUnit_Framework_TestCase {
     fclose($handle); 
     
     // run the upgrade
-    $this->model->execute_sql_scripts('test_scripts');
+    $this->model->execute_sql_scripts(MODPATH.'indicia_setup/','test_scripts');
     // Check the file tracking    
     $this->assertFalse(file_exists(MODPATH.'indicia_setup/db/test_scripts/____200912271517_test1____'));
     $this->assertFileExists(MODPATH.'indicia_setup/db/test_scripts/____200912271528_test2____');
