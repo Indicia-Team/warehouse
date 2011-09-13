@@ -208,13 +208,11 @@ class map_helper extends helper_base {
         if (parent::$multimap_api_key != '') {
           $defaultLayers [] = 'multimap_landranger';
         }
-        if (parent::$google_api_key != '') {
-          $presetLayers[] = 'google_satellite';
-          $presetLayers[] = 'google_hybrid';
-          $presetLayers[] = 'google_physical';
-        }
+        $presetLayers[] = 'google_satellite';
+        $presetLayers[] = 'google_hybrid';
+        $presetLayers[] = 'google_physical';
         // Fallback as we don't need a key for this.
-        $presetLayers[] = 'bing_aerial';
+        $presetLayers[] = 'virtual_earth';
       }
       $options = array_merge(array(
           'indiciaSvc'=>self::$base_url,
@@ -295,6 +293,8 @@ class map_helper extends helper_base {
       $jsoptions = array_merge($options);
       unset($jsoptions['setupJs']);
       unset($jsoptions['tabDiv']);
+      if (isset(self::$bing_api_key))
+        $jsoptions['bing_api_key'] = self::$bing_api_key;
       $json=substr(json_encode($jsoptions), 0, -1).$json_insert.'}';
       if ($olOptions) {
         $json .= ','.json_encode($olOptions);
