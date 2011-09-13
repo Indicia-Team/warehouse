@@ -389,28 +389,28 @@ mapInitialisationHooks = [];
     /**
     * Some pre-configured layers that can be added to the map.
     */
-    function _getPresetLayers() {
+    function _getPresetLayers(settings) {
       var r={
         openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true}); },
         nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true}); },
         virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
-        bing_aerial : function() { return new OpenLayers.Layer.VirtualEarth('Bing Aerial', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
-        bing_hybrid : function() { return new OpenLayers.Layer.VirtualEarth('Bing Hybrid', {'type': VEMapStyle.Hybrid, 'sphericalMercator': true}); },
-        bing_shaded : function() { return new OpenLayers.Layer.VirtualEarth('Bing Shaded', {'type': VEMapStyle.Shaded, 'sphericalMercator': true}); },
+        bing_aerial : function() { return new OpenLayers.Layer.Bing({name: 'Bing Aerial', 'type': 'Aerial', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
+        bing_hybrid : function() { return new OpenLayers.Layer.Bing({name: 'Bing Hybrid', 'type': 'AerialWithLabels', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
+        bing_shaded : function() { return new OpenLayers.Layer.Bing({name: 'Bing Shaded', 'type': 'road', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
         multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
         multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
       };
       // To protect ourselves against exceptions because the Google script would not link up, we
       // only enable these layers if the Google constants are available.
-      if (typeof G_PHYSICAL_MAP != "undefined") {
+      if (typeof google !== "undefined" && typeof google.maps !== "undefined") {
         r.google_physical =
-            function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': true}); };
+            function() { return new OpenLayers.Layer.Google('Google Physical', {type: google.maps.MapTypeId.TERRAIN, 'sphericalMercator': true}); };
         r.google_streets =
             function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
         r.google_hybrid =
-            function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+            function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20, 'sphericalMercator': true}); };
         r.google_satellite =
-            function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+            function() { return new OpenLayers.Layer.Google('Google Satellite', {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 20, 'sphericalMercator': true}); };
       }
       return r;
     }
@@ -722,7 +722,7 @@ mapInitialisationHooks = [];
       });
 
       // Iterate over the preset layers, adding them to the map
-      var presetLayers=_getPresetLayers();
+      var presetLayers=_getPresetLayers(this.settings);
       $.each(this.settings.presetLayers, function(i, item)
       {
         // Check whether this is a defined layer
@@ -1081,6 +1081,7 @@ $.fn.indiciaMapPanel.defaults = {
     initial_long: -2,
     initial_zoom: 5,
     scroll_wheel_zoom: true,
+    bing_api_key: '',
     proxy: '',
     presetLayers: [],
     tilecacheLayers: [],

@@ -6,7 +6,7 @@ class helper_config {
   static $geoserver_url = '';
   static $geoplanet_api_key='';
   static $google_search_api_key='';
-  static $google_api_key='';
+  static $bing_api_key='';
   static $multimap_api_key='';
   static $flickr_api_key='';
   static $flickr_api_secret='';
