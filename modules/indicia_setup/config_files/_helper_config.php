@@ -34,7 +34,7 @@ class helper_config {
   static $geoserver_url = '*geoserver_url*';
   static $geoplanet_api_key='*geoplanet_api_key*';
   static $google_search_api_key='*google_search_api_key*';
-  static $google_api_key='*google_api_key*';
+  static $bing_api_key='*bing_api_key*';
   static $multimap_api_key='*multimap_api_key*';
   static $flickr_api_key='*flickr_api_key*';
   static $flickr_api_secret='*flickr_api_secret*';
