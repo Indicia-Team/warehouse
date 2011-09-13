@@ -30,18 +30,11 @@ if ($error!=null) {
       <input name="google_search_api_key" type="text"/>
     </li>
     <li class="ui-widget-content ui-corner-all page-notice" style="margin: 1em;">
-      <div class="ui-widget-header ui-corner-all">Google Maps API</div>
-      <p>The Google Maps API key allows Indicia to use Google Map data in pages that are accessible to the public.
-      You can <a href="http://code.google.com/apis/maps/signup.html">sign Up for the Google Maps API</a>.</p>
-      <label for="google_api_key">Google API Key:</label>
-      <input name="google_api_key" type="text"/>
-    </li>
-    <li class="ui-widget-content ui-corner-all page-notice" style="margin: 1em;">
-      <div class="ui-widget-header ui-corner-all">MultiMap Open API</div>
-      <p>The MultiMap Open API key allows Indicia to use MultiMap Map data in pages that are accessible to the public.
-      You can <a href="https://www.multimap.com/my/register/?openapi_create=1">sign Up for the MultiMap Open API</a>.</p>
-      <label for="multimap_api_key">MultiMap API Key:</label>
-      <input name="multimap_api_key" type="text"/>
+      <div class="ui-widget-header ui-corner-all">Bing Maps API</div>
+      <p>The Bing Maps API key allows Indicia to use Bing Maps as background layers on the maps.
+      You can <a href="http://www.bingmapsportal.com/">sign Up for the Bing Maps API</a>.</p>
+      <label for="bing_api_key">Bing API Key:</label>
+      <input name="bing_api_key" type="text"/>
     </li>
     <li class="ui-widget-content ui-corner-all page-notice" style="margin: 1em;">
       <div class="ui-widget-header ui-corner-all">Flickr API</div>
