@@ -176,7 +176,7 @@ class iform_sectioned_transects_edit_transect {
       else {
         $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
         $r .= "\n<div id=\"$alias\">\n";
-        $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), $tab); 
+        $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), $tab);    
         $r .= "</div>\n";
       }
         
@@ -254,11 +254,6 @@ class iform_sectioned_transects_edit_transect {
           'from=transect&transect_id='.$settings['locationId'].'" class="ui-state-default ui-corner-all indicia-button">'.lang::get('Add Section') . '</a>';
     }
     $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Site Details'); 
-    $r .= data_entry_helper::textarea(array(
-      'label' => lang::get('Notes'),
-      'fieldname' => 'location:comment',
-      'class' => 'control-width-4'      
-    ));    
     $r .= '</fieldset>';
     if (user_access('indicia data admin'))
       $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
