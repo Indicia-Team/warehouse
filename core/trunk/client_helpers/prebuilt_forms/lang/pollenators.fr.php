@@ -129,6 +129,7 @@ $custom_terms = array(
 	,'validation_session_date_error' => "Vos sessions s'échelonnent sur une durée supérieure à 3 jours. Veuillez vérifier les dates et heures de vos sessions."
 	
 	,'ajax_error' => "Une erreur s'est produite dans le transfert de données."
+	,'ajax_error_bumpf' => "Maintenant nous ne sommes pas sûr que les données sur le serveur est la même que celle de notre formulaire. S'il vous plaît, actualisez la page."
 	,'validation_integer' => "Entrez un nombre entier, laissez en blanc si inconnu."
 	,'LANG_Invalid_Location' => "Le format donné pour ce Lat / Long combinaison n'est pas valide"
 	,'LANG_Session_Error' => "Une erreur interne s'est produite. Il ne semble pas être une session jointe à la présente collection."
@@ -142,11 +143,36 @@ $custom_terms = array(
 	,'click here'=>'Cliquez ici'
 	
 	,'LANG_Final_1' => 'Cette collection a été enregistrée et ajoutée à votre galerie'
-	,'LANG_Final_2' => "Cette collection peut être consultée dans la rubrique «Mes collections», où vous pouvez modifier l'identification de vos insectes (Votre collection peut ne pas être visible dans les galeries immédiatement mais le sera, au maximum, dans 1h15min. Ne la ressaisissez-pas)."
+	,'LANG_Final_2' => "Cette collection peut être consultée dans la rubrique «Mes collections», où vous pouvez modifier l'identification de vos insectes (Votre collection peut ne pas être visible dans les galeries immédiatement mais le sera, au maximum, dans 5min. Ne la ressaisissez-pas)."
 	,'LANG_Consult_Collection' => 'Voir cette collection'
 	,'LANG_Create_New_Collection' => 'Créer une collection'
 	
 	,'LANG_Indicia_Warehouse_Error' => 'Erreur renvoyée par Indicia Warehouse'
 	,'loading' => 'Chargement'
-	
+	,'Internal Error 1: sample id not filled in, so not safe to save collection' => "Erreur interne 1: Identifiant collection n'est pas remplie, il n'est donc pas sûr de valider la collection"
+	,'Internal Error 2: no sample data returned for location id ' => "Erreur interne 2: pas de collection de données retourné pour emplacement id "
+	,'Internal Error 3: location id not set, so unsafe to delete collection.' => "Erreur interne 3: l'identifiant l'emplacement n'est pas défini, de sorte qu'il est dangereux de supprimer la collection."
+	,'Internal Error 4: no flower image data returned for flower ' => "Erreur interne 4: aucune image de fleur retourné pour fleur "
+	,'Internal Error 5: no flower data returned for collection ' => "Erreur interne 5: pas de données de fleurs retournés pour la collection "
+	,'Internal Error 6: no environment image data returned for location id ' => "Erreur interne 6: aucune image de l'environnement retourné pour id emplacement "
+	,'Internal Error 7: location id not set, so unsafe to delete session.' => "Erreur interne 7: l'id emplacement n'est pas fixé, de sorte qu'il est dangereux de supprimer la session."
+	,'Internal Error 8: location id not set, so unsafe to save session.' => "Erreur interne 8: l'id emplacement n'est pas fixé, il n'est donc pas sûr de valider la session"
+	,'Internal Error 9: sample id not set, so unsafe to save session.' => "Erreur interne 9: Identifiant collection n'est pas remplie, il n'est donc pas sûr de valider la session"
+	,'Internal Error 10: no insect data available for id ' => "Erreur interne 10: pas de données disponibles pour les insectes Identifiant "
+	,'Internal Error 11: image could not be loaded into photoreel for insect ' => "Erreur interne 11: l'image n'a pas pu être chargée dans photoreel pour id insectes "
+	,'Internal Error 12: image could not be loaded into photoreel for existing insect ' => "Erreur interne 12: l'image n'a pas pu être chargée dans photoreel pour id insectes existants "
+	,'Internal Error 13: sample id not set, so unsafe to save insect.' => "Erreur interne 13: Identifiant collection n'est pas remplie, il n'est donc pas sûr de valider insectes"
+	,'Internal Error 14: location id not set, so unsafe to save collection.' => "Erreur interne 14: l'id emplacement n'est pas fixé, il n'est donc pas sûr de valider la collection"
+	,'Internal Error 15: sample id not set, so unsafe to save collection.' => "Erreur interne 15: Identifiant collection n'est pas remplie, il n'est donc pas sûr de valider la collection"
+	,'Internal Error 16: could not load attributes ' => "Erreur interne 16: n'a pas pu charger les attributs "
+	,'Internal Error 17: could not load ' => "Erreur interne 17: n'a pas pu charger "
+	,'Internal Error 18: could not load data for location ' => "Erreur interne 18: n'a pas pu charger les données de localisation "
+	,'Internal Error 19: could not load data for location ' => "Erreur interne 19: n'a pas pu charger les données de localisation "
+	,'Internal Error 20: could not load attributes for sample ' => "Erreur interne 20: n'a pas pu charger les attributs de la collection "
+	,'Internal Error 21: could not load flower data for collection ' => "Erreur interne 21: n'a pas pu charger les données de fleurs pour la collection "
+	,'Internal Error 22: could not load environment attributes for location ' => "Erreur interne 22: n'a pas pu charger attributs d'environnement pour la localisation "
+	,'Internal Error 23: could not load environment image for location ' => "Erreur interne 23: n'a pas pu charger l'image l'environnement pour la localisation "
+	,'Internal Error 24: could not load image for flower ' => "Erreur interne 24: n'a pas pu charger l'image pour la fleur "
+	,'Internal Error 25: could not load attributes for flower ' => "Erreur interne 25: n'a pas pu charger les attributs de fleur "
+	,'Internal Error 26: could not load attributes for session ' => "Erreur interne 26: n'a pas pu charger les attributs de la session "
 );

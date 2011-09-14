@@ -111,6 +111,7 @@ $custom_terms = array(
 	,'validation_session_date_error' => 'Your sessions are spread over a period exceeding three days. Please check the dates and times for your sessions.'
 	
 	,'ajax_error' => 'An error has occurred in the data transfer.'
+	,'ajax_error_bumpf' => 'At this point we are not sure that the data in the database matches that in our form. You will be asked to refresh this page.'
 	,'validation_integer' => "Please provide a integer, leave blank if unknown."
 	,'LANG_Invalid_Location' => 'The format given for this Lat/Long combination is invalid'
 	,'LANG_Session_Error' => "An internal error has occurred. There does not seem to be a session attached to this collection."
@@ -124,7 +125,7 @@ $custom_terms = array(
 	,'LANG_Trailer_Point_3' => "you may modify the identification of the insects through 'My Collections'"
 	,'LANG_Trailer_Point_4' => "you may create a new collection"
 	,'LANG_Final_1' => 'This collection has been registered and added to your set of collections'
-	,'LANG_Final_2' => "This collection may be accessed through 'My Collections', where you may change the identification of your insects (your collection may not be visible immediately in the galleries, but may take up to 1h15min to appear. Do not re-enter it)."
+	,'LANG_Final_2' => "This collection may be accessed through 'My Collections', where you may change the identification of your insects (your collection may not be visible immediately in the galleries, but may take up to 5min to appear. Do not re-enter it)."
 	,'LANG_Consult_Collection' => 'View this Collection'
 	,'LANG_Create_New_Collection' => 'Create New Collection'
 	

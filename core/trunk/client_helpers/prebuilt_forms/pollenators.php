@@ -545,8 +545,12 @@ jQuery('#".$id."').click(function(){
         '<div class="latLongDiv"><label for="{idLong}">{labelLong}:</label>'.
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{default}" /></div>';
     
-	$r .= data_entry_helper::loading_block_start();
-
+	$r .= '<script type="text/javascript">
+/* <![CDATA[ */
+document.write("<div class=\"ui-widget ui-widget-content ui-corner-all loading-panel\" ><img src=\"'.helper_config::$base_url.'media/images/ajax-loader2.gif\" />'.lang::get('loading').'...<span class=\"poll-loading-extras\">0</span></div>");
+document.write("<div class=\"poll-loading-hide\">");
+/* ]]> */</script>
+';
     data_entry_helper::$javascript .= "var flowerTaxa = [";
 	$extraParams = $readAuth + array('taxon_list_id' => $args['flower_list_id'], 'view'=>'list');
     $species_data_def=array('table'=>'taxa_taxon_list','extraParams'=>$extraParams);
@@ -650,7 +654,7 @@ jQuery('#".$id."').click(function(){
 $.validator.messages.required = \"".lang::get('validation_required')."\";
 var sessionCounter = 0;
 jQuery('#imp-georef-search-btn').removeClass('indicia-button').addClass('search-button');
-jQuery('.loading-hide').hide().addClass('my-loading-hide').removeClass('loading-hide');
+jQuery('.poll-loading-hide').hide();
 // can't use shuffle to side as dynamic generated code does like it in IE7
 
 $.fn.foldPanel = function(){
@@ -759,9 +763,10 @@ alertIndiciaError = function(data){
 	// the most likely cause is authentication failure - eg the read authentication has timed out.
 	// prevent further use of the form:
 	$('.loading-panel').remove();
-	$('.loading-hide').removeClass('loading-hide');
+	$('.poll-loading-hide').show();
 	jQuery('#cc-1').hide();
 	jQuery('#refresh-message').show();
+	throw('WAREHOUSE ERROR');
 };
 			
 checkProtocolStatus = function(display){
@@ -909,8 +914,14 @@ insertImage = function(path, target, ratio){
 $('#cc-1').ajaxError(function(event, request, settings){
 	var insectURL = insectIDstruc.pollURL+insectIDstruc.pollFile;
 	var flowerURL = flowerIDstruc.pollURL+flowerIDstruc.pollFile;
-	if(settings.url != flowerURL && settings.url != insectURL){
-	   alert(\"".lang::get('ajax_error')."\");
+	if(settings.url != flowerURL && settings.url != insectURL){ // these urls may not be present.
+		alert(\"".lang::get('ajax_error')."\" + '\\n' + settings.url + '\\n' + request.status + ' ' + request.statusText + '\\n' + \"".lang::get('ajax_error_bumpf')."\");
+		// unknown data state so prevent further use of the form:
+		$('.loading-panel').remove();
+		$('.poll-loading-hide').show();
+		jQuery('#cc-1').hide();
+		jQuery('#refresh-message').show();
+		throw('AJAX ERROR');
 	}
 });
  
@@ -932,8 +943,8 @@ $('#cc-1-collection-details').ajaxForm({
         dataType:  'json', 
         beforeSubmit:   function(data, obj, options){
         	// if location id filled in but sample id is not -> error
-        	if(data.length == 15 || (data.length > 15 && data[15].value == '')){
-        		alertIndiciaError({error : 'Internal error : sample id not filled in, so not safe to save collection'});
+        	if(data.length == 15 && data[14].value == ''){
+        		alertIndiciaError({error : \"".lang::get('Internal Error 1: sample id not filled in, so not safe to save collection')."\"});
 				return false;
 			}
         	clearErrors('form#cc-1-collection-details');
@@ -971,9 +982,9 @@ $('#cc-1-collection-details').ajaxForm({
 			        	    jQuery('#cc-1-collection-details > input[name=sample\\:id]').removeAttr('disabled').val(sdata[0].id);
 			        	    jQuery('#cc-2-floral-station > input[name=sample\\:id]').removeAttr('disabled').val(sdata[0].id);
 			        	    // In this case we use loadAttributes to set the names of the attributes to include the attribute_value id. Must ensure the 
-   	       					loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', sdata[0].id, 'smpAttr', true);
+   	       					loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', sdata[0].id, 'smpAttr', true, true);
 					} else {
-						alertIndiciaError({error : 'Internal Error : no sample data returned for location id '+data.outer_id});
+						alertIndiciaError({error : \"".lang::get('Internal Error 2: no sample data returned for location id ')."\"+data.outer_id});
 					}
 				});
 			   	checkProtocolStatus(true);
@@ -999,7 +1010,7 @@ $('#cc-1-delete-collection').ajaxForm({
         	if(data[2].value == '') return false;
         	// double check that location id is filled in
 			if(data[4].value == ''){
-				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to delete collection.'});
+				alertIndiciaError({error : \"".lang::get('Internal Error 3: location id not set, so unsafe to delete collection.')."\"});
 				return false;
 			}
   			jQuery('#cc-1-reinit-button').addClass('loading-button');
@@ -1629,7 +1640,7 @@ $('#cc-2-floral-station').ajaxForm({
        	if(data.success == 'multiple records' && data.outer_table == 'sample'){
        		// the sample and location ids are already fixed, so just need to populate the occurrence and image IDs, and rename the location and occurrence attribute.
 		    var location_id = jQuery('#cc-2-floral-station > input[name=location\\:id]').val();
-       		loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', location_id, 'locAttr', true);
+       		loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', location_id, 'locAttr', true, true);
        		$.getJSON(\"".$svcUrl."\" + \"/data/occurrence\" +
 		          \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
 		          \"&sample_id=\"+data.outer_id+\"&deleted=f&callback=?\", function(occdata) {
@@ -1637,7 +1648,7 @@ $('#cc-2-floral-station').ajaxForm({
    					alertIndiciaError(occdata);
    				} else if (occdata.length>0) {
 		        	jQuery('#cc-2-floral-station > input[name=occurrence\\:id]').removeAttr('disabled').val(occdata[0].id);
-       				loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', occdata[0].id, 'occAttr', false);
+       				loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', occdata[0].id, 'occAttr', false, true);
 					$.getJSON(\"".$svcUrl."/data/occurrence_image/\" +
        						\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
        						\"&occurrence_id=\"+occdata[0].id+\"&callback=?\", function(imgdata) {
@@ -1646,11 +1657,11 @@ $('#cc-2-floral-station').ajaxForm({
    						} else if (imgdata.length>0) {
 		        			jQuery('#cc-2-floral-station > input[name=occurrence_image\\:id]').removeAttr('disabled').val(imgdata[0].id);
 		        		} else {
-   							alertIndiciaError({error : 'Internal error : no flower image data returned for flower '+occdata[0].id});
+   							alertIndiciaError({error : \"".lang::get('Internal Error 4: no flower image data returned for flower ')."\"+occdata[0].id});
    						}
 					});
 		        } else {
-   					alertIndiciaError({error : 'Internal error : no flower data returned for collection '+data.outer_id});
+   					alertIndiciaError({error : \"".lang::get('Internal Error 5: no flower data returned for collection ')."\"+data.outer_id});
   				}
   			});
 			$.getJSON(\"".$svcUrl."/data/location_image/\" +
@@ -1661,7 +1672,7 @@ $('#cc-2-floral-station').ajaxForm({
    				} else if (data.length>0) {
 		        	jQuery('#cc-2-floral-station > input[name=location_image\\:id]').removeAttr('disabled').val(data[0].id);
 		        } else {
-					alertIndiciaError({error : 'Internal error : no environment image data returned for location id '+location_id});
+					alertIndiciaError({error : \"".lang::get('Internal Error 6: no environment image data returned for location id ')."\"+location_id});
 				}
 			});
 			jQuery('#cc-2').foldPanel();
@@ -1731,7 +1742,7 @@ $('#cc-3-delete-session').ajaxForm({
 			if(data[2].value == '') return false;
 			// double check that location id is filled in
 			if(data[4].value == ''){
-				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to save session.'});
+				alertIndiciaError({error : \"".lang::get('Internal Error 7: location id not set, so unsafe to delete session.')."\"});
 				return false;
 			}
 			// don't have to worry about parent_id
@@ -1923,11 +1934,11 @@ addSession = function(){
     	beforeSubmit:   function(data, obj, options){
 			// double check that location id and sample id are filled in
 			if(jQuery('#cc-1-collection-details input[name=location\\:id]').val() == ''){
-				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to save session.'});
+				alertIndiciaError({error : \"".lang::get('Internal Error 8: location id not set, so unsafe to save session.')."\"});
 				return false;
 			}
 			if(jQuery('#cc-1-collection-details input[name=sample\\:id]').val() == ''){
-				alertIndiciaError({error : 'Internal Error: sample id not set, so unsafe to save session.'});
+				alertIndiciaError({error : \"".lang::get('Internal Error 9: sample id not set, so unsafe to save session.')."\"});
 				return false;
 			}
 	    	var valid = true;
@@ -1948,7 +1959,7 @@ addSession = function(){
    	    	var thisSession = form.parents('.poll-session');
     		if(data.success == 'multiple records' && data.outer_table == 'sample'){
    	    	    form.children('input[name=sample\\:id]').removeAttr('disabled').val(data.outer_id);
-   	    	    loadAttributes(form, 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data.outer_id, 'smpAttr', true);
+   	    	    loadAttributes(form, 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data.outer_id, 'smpAttr', true, true);
 				thisSession.show();
 				thisSession.children(':first').show().find('*').show();
 				thisSession.children().not(':first').hide();
@@ -2275,8 +2286,8 @@ clearInsect = function(){
 loadInsect = function(id){
 	clearInsect();
 	jQuery('form#cc-4-main-form > input[name=occurrence\\:id]').removeAttr('disabled').val(id);
-	loadAttributes('form#cc-4-main-form', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', id, 'occAttr', true);
-	loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', id, '#cc-4-insect-image', ".$args['Insect_Image_Ratio'].");
+	loadAttributes('form#cc-4-main-form', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', id, 'occAttr', true, true);
+	loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', id, '#cc-4-insect-image', ".$args['Insect_Image_Ratio'].", true);
 	$.getJSON(\"".$svcUrl."/data/occurrence/\" + id +
           \"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&callback=?\", function(data) {
 	    if(!(data instanceof Array)){
@@ -2285,7 +2296,7 @@ loadInsect = function(id){
 	        jQuery('form#cc-4-main-form > [name=occurrence\\:sample_id]').val(data[0].sample_id);
 			jQuery('form#cc-4-main-form > textarea[name=occurrence\\:comment]').val(data[0].comment);
   		} else {
-   			alertIndiciaError({error : 'Internal error : no insect data available for id '+id});
+   			alertIndiciaError({error : \"".lang::get('Internal Error 10: no insect data available for id ')."\"+id});
   		}
 	});
 	$.getJSON(\"".$svcUrl."/data/determination?occurrence_id=\" + id +
@@ -2326,7 +2337,7 @@ addNewToPhotoReel = function(occId){
 			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
 		} else {
-			alertIndiciaError({error : 'Internal Error : image could not be loaded into photoreel for insect '+occId});
+			alertIndiciaError({error : \"".lang::get('Internal Error 11: image could not be loaded into photoreel for insect ')."\"+occId});
 		}});
 }
 
@@ -2366,7 +2377,7 @@ addExistingToPhotoReel = function(occId){
 			jQuery(img).attr('src', '".(data_entry_helper::$base_url).(data_entry_helper::$indicia_upload_path)."thumb-'+imageData[0].path)
 			    .attr('width', container.width()).attr('height', container.height()).addClass('thumb-image').appendTo(container);
 		} else {
-			alertIndiciaError({error : 'Internal Error : image could not be loaded into photoreel for existing insect '+occId});
+			alertIndiciaError({error : \"".lang::get('Internal Error 12: image could not be loaded into photoreel for existing insect ')."\"+occId});
 		}
 	});
 }
@@ -2467,7 +2478,7 @@ $('#cc-4-delete-insect').ajaxForm({
   			// Warning this assumes that the data is fixed position:
         	if(data[2].value == '') return false;
 			if(data[3].value == ''){
-				alertIndiciaError({error : 'Internal Error: sample id not set, so unsafe to save insect.'});
+				alertIndiciaError({error : \"".lang::get('Internal Error 13: sample id not set, so unsafe to save insect.')."\"});
 				return false;
 			}
         	jQuery('#cc-4-delete-insect').addClass('loading-button');
@@ -2539,11 +2550,11 @@ $('#cc-5-collection').ajaxForm({
         beforeSubmit:   function(data, obj, options){
             // double check that location id and sample id are filled in
 			if(jQuery('#cc-1-collection-details input[name=location\\:id]').val() == ''){
-				alertIndiciaError({error : 'Internal Error: location id not set, so unsafe to save collection.'});
+				alertIndiciaError({error : \"".lang::get('Internal Error 14: location id not set, so unsafe to save collection.')."\"});
 				return false;
 			}
 			if(jQuery('#cc-1-collection-details input[name=sample\\:id]').val() == ''){
-				alertIndiciaError({error : 'Internal Error: sample id not set, so unsafe to save collection.'});
+				alertIndiciaError({error : \"".lang::get('Internal Error 15: sample id not set, so unsafe to save collection.')."\"});
 				return false;
 			}
 			jQuery('#cc-5-complete-collection').addClass('loading-button');
@@ -2611,11 +2622,15 @@ $('#cc-5-complete-collection').click(function(){
     <a href="'.url('node/'.$node->nid).'" class="ui-state-default ui-corner-all link-button">'.lang::get('LANG_Create_New_Collection').'</a>
   </div>
 </div>
-</div></div>';
+</div></div>
+<script type="text/javascript">
+/* <![CDATA[ */
+document.write("</div>");
+/* ]]> */</script>
+';
  
 data_entry_helper::$javascript .= "
-// 
-loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, prefix, reset_timeout){
+loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, prefix, reset_timeout, required){
 	// first need to remove any hidden multiselect checkbox unclick fields
 	jQuery(formsel).find('[name^='+prefix+'\\:]').filter('.multiselect').remove();
 	// rename, to be safe. Then add [] to multiple choice checkboxes.
@@ -2675,7 +2690,9 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 					}
 				}
 			}
-		  } // may have no attributes.
+		  } else if (required){
+			alertIndiciaError({error : \"".lang::get('Internal Error 16: could not load attributes ')."\"+attributeTable+' '+keyName+' '+keyValue});
+		  }
 		  checkProtocolStatus('leave');
 		  populateSessionSelect();
 		  checkForagingStatus(true);
@@ -2684,7 +2701,7 @@ loadAttributes = function(formsel, attributeTable, attributeKey, key, keyValue, 
 	});
 }
 
-loadImage = function(imageTable, key, keyName, keyValue, target, ratio){
+loadImage = function(imageTable, key, keyName, keyValue, target, ratio, required){
 					// location_image, location_id, location:id, 1, #cc-4-insect-image
 	$.getJSON(\"".$svcUrl."/data/\" + imageTable +
    			\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
@@ -2696,8 +2713,8 @@ loadImage = function(imageTable, key, keyName, keyValue, target, ratio){
 			jQuery('[name='+imageTable+'\\:id]', form).val(imageData[0].id).removeAttr('disabled');
 			jQuery('[name='+imageTable+'\\:path]', form).val(imageData[0].path);
 	        insertImage('med-'+imageData[0].path, jQuery(target), ratio);
-		} else {
-			alertIndiciaError({error : 'Internal Error : could not load '+imageTable+' '+keyName+' '+keyValue});
+		} else if(required){
+			alertIndiciaError({error : \"".lang::get('Internal Error 17: could not load ')."\"+imageTable+' '+keyName+' '+keyValue});
 		}
 	});
 }
@@ -2757,45 +2774,39 @@ jQuery('#flower-id-button').data('toolRetValues',[]);
 jQuery('#insect-id-button').data('toolRetValues',[]);
 jQuery('#flower_taxa_list').empty();
 jQuery('#insect_taxa_list').empty();
+preloading=true;
+preloadIDs={location_loaded : false,
+			sessions: []};
+setPreloadStage = function(stage){
+	preloadStage=stage;
+	$('.poll-loading-extras').empty().text(stage);
+};
+setPreloadStage(1);
 
-jQuery.ajax({ 
-    type: 'GET', 
-    url: \"".$svcUrl."\" + \"/report/requestReport?report=reports_for_prebuilt_forms/poll_my_collections.xml&reportSource=local&mode=json\" +
-			\"&auth_token=".$readAuth['auth_token']."&reset_timeout=true&nonce=".$readAuth["nonce"]."\" + 
-			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", 
-    dataType: 'json', 
-    success: function(data) {
-	  if(!(data instanceof Array)){
-   		alertIndiciaError(data);
-   	  } else if (data.length>0) { // could have zero length
-		var i;
-       	for ( i=0;i<data.length;i++) {
-       		if(data[i].completed == '0'){
-       		    jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[i].id);
-       			// load up collection details: existing ID, location name and protocol
-       			jQuery('#cc-1-collection-details,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
-       			// main sample date is only set when collection is completed, so leave default.
-       			loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', data[i].id, 'smpAttr', false);
-				$('#cc-1').foldPanel();
-				checkProtocolStatus(true);
-				$('#cc-2').showPanel();
-  				jQuery.ajax({ 
-					type: 'GET', 
-					url: \"".$svcUrl."/data/location/\" + data[i].location_id +
+jQuery('#cc-1').ajaxStop(function(){
+	if(!preloading) return;
+	switch(preloadStage){
+		case 1: // just finished the report request
+			if(typeof preloadIDs.sample_id == 'undefined' || typeof preloadIDs.location_id == 'undefined'){
+				$('.loading-panel').remove();
+				$('.poll-loading-hide').show();
+				preloading=false;
+				return;
+			}
+			setPreloadStage(2);
+			// main sample date is only set when collection is completed, so don't need to load collection sample itself, and keep date as default 
+			loadAttributes('#cc-1-collection-details,#cc-5-collection', 'sample_attribute_value', 'sample_attribute_id', 'sample_id', preloadIDs.sample_id, 'smpAttr', false, true);
+  			jQuery.getJSON('".$svcUrl."/data/location/' + preloadIDs.location_id +
           					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
           					\"&callback=?\", 
-					dataType: 'json', 
-					success: function(locationdata) {
+					function(locationdata) {
 		    		  if(!(locationdata instanceof Array)){
    						alertIndiciaError(locationdata);
    					  } else if (locationdata.length>0) {
-		    			jQuery('input[name=location\\:id]').val(locationdata[0].id).removeAttr('disabled');
 	    				jQuery('input[name=location\\:name]').val(locationdata[0].name);
        					jQuery('input[name=sample\\:location_name]').val(locationdata[0].name); // make sure the 2 coincide
 	    				jQuery('input[name=locations_website\\:website_id]').attr('disabled', 'disabled');
-	    				loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', locationdata[0].id, 'locAttr', false);
-    	   				loadImage('location_image', 'location_id', 'location\\:id', locationdata[0].id, '#cc-2-environment-image', ".$args['Environment_Image_Ratio'].", false);
-						// The location only holds a valid place if the floral station has been saved: 
+						// The location only holds a valid place if the floral station has been saved: otherwise it holds a default value.
 						// we use the centroid_sref_system to indicate this: when the initial save is done the system is 900913,
 						// but when a user has loaded one it is in 4326
 						// NB the location geometry is stored in centroid, due to restrictions in location model.
@@ -2807,108 +2818,163 @@ jQuery.ajax({
 							var refx = parts[0].split(',');
 							jQuery('input[name=place\\:lat]').val(refx[0]);
 							jQuery('input[name=place\\:long]').val(parts[1]);
-							jQuery('#imp-sref').change();
   						}
+  						preloadIDs.location_loaded=true;
 					  } else {
-						alertIndiciaError({error : 'Internal error : could not load data for location '+data[i].location_id});
-					  }
-  					}, 
-					data: {}, 
-					async: false 
-				});
-  				jQuery.ajax({ 
-					type: 'GET', 
-					url: \"".$svcUrl."/data/occurrence/\" +
+						alertIndiciaError({error : \"".lang::get('Internal Error 18: could not load data for location ')."\"+data[i].location_id});
+					  }});
+			break;
+		case 2: // just finished the collection attributes and the location.
+			if(preloadIDs.location_loaded==false)
+				return alertIndiciaError({error : \"".lang::get('Internal Error 19: could not load data for location ')."\"+preloadIDs.location_id});
+			if(jQuery('[name=smpAttr\\:".$args['protocol_attr_id']."]').length > 0)
+				return alertIndiciaError({error : \"".lang::get('Internal Error 20: could not load attributes for sample ')."\"+preloadIDs.sample_id});
+			$('#cc-1').foldPanel();
+			checkProtocolStatus(true);
+			$('#cc-2').showPanel();
+			setPreloadStage(3);
+			// now load floral station stuff.
+			loadAttributes('#cc-2-floral-station', 'location_attribute_value', 'location_attribute_id', 'location_id', preloadIDs.location_id, 'locAttr', false, false);
+			loadImage('location_image', 'location_id', 'location\\:id', preloadIDs.location_id, '#cc-2-environment-image', ".$args['Environment_Image_Ratio'].", false);
+			jQuery.getJSON(\"".$svcUrl."/data/occurrence/\" +
           					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."\" +
-          					\"&sample_id=\"+data[i].id+\"&deleted=f&callback=?\", 
-					dataType: 'json', 
-					success: function(flowerData) {
+          					\"&sample_id=\"+preloadIDs.sample_id+\"&deleted=f&callback=?\", 
+					function(flowerData) {
           			  // there will only be an occurrence if the floral station panel has previously been displayed & validated. 
 		    		  if(!(flowerData instanceof Array)){
 						alertIndiciaError(flowerData);
-					  } else if (flowerData.length>0) {
-						jQuery('form#cc-2-floral-station > input[name=occurrence\\:sample_id]').val(data[i].id);
+					  } else if (flowerData.length>0) { // do we need another >1 check as well?
+						preloadIDs.flower_id = flowerData[0].id;
+						jQuery('form#cc-2-floral-station > input[name=occurrence\\:sample_id]').val(preloadIDs.sample_id);
 						jQuery('form#cc-2-floral-station > input[name=occurrence\\:id]').val(flowerData[0].id).removeAttr('disabled');
-						loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', flowerData[0].id, 'occAttr', false);
-						loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', flowerData[0].id, '#cc-2-flower-image', ".$args['Flower_Image_Ratio'].");
-						jQuery.ajax({ 
-							type: 'GET', 
-							url: \"".$svcUrl."/data/determination\" + 
-									\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&occurrence_id=\"+flowerData[0].id+\"&orderby=id&deleted=f&callback=?\", 
-							dataType: 'json', 
-							success: function(detData) {
-							  if(!(detData instanceof Array)){
-   								alertIndiciaError(detData);
-   					  		  } else loadDetermination(detData, flowerIDstruc);
-  							}, 
-							data: {}, 
-							async: false 
-						});
-						jQuery('#cc-2').foldPanel();
-						jQuery('#cc-3').showPanel();
-    	   				jQuery.ajax({ 
-							type: 'GET', 
-							url: \"".$svcUrl."/data/sample\" + 
-    	      					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+data[i].id+\"&callback=?\", 
-							dataType: 'json', 
-							success: function(sessiondata) {
-	    			  		  if(!(sessiondata instanceof Array)){
-   								alertIndiciaError(sessiondata);
-   					  		  } else if (sessiondata.length>0) { // may have zero sessions
-								sessionCounter = 0;
-								jQuery('#cc-3-body').empty();
-								for (var i=0;i<sessiondata.length;i++){
-									var thisSession = addSession();
-									jQuery('input[name=sample\\:id]', thisSession).val(sessiondata[i].id).removeAttr('disabled');
-									jQuery('input[name=sample\\:date]', thisSession).val(sessiondata[i].date_start);
-									jQuery('input[name=dummy_date]', thisSession).datepicker('disable').datepicker('setDate', new Date(convertDate(sessiondata[i].date_start))).datepicker('enable');
-									loadAttributes(thisSession, 'sample_attribute_value', 'sample_attribute_id', 'sample_id', sessiondata[i].id, 'smpAttr', false);
-  									// fold this session.
-  									thisSession.show();
-									thisSession.children(':first').show().children().show();
-									thisSession.children().not(':first').hide();
-									$.getJSON(\"".$svcUrl."/data/occurrence/\" +
-          									\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&orderby=id\" +
-          									\"&sample_id=\"+sessiondata[i].id+\"&deleted=f&callback=?\", function(insectData) {
-		    							if(!(insectData instanceof Array)){
-   											alertIndiciaError(insectData);
-   					  		  			} else if (insectData.length>0) { // each session may have zero insects.
- 											for (var j=0;j<insectData.length;j++){
-												addExistingToPhotoReel(insectData[j].id);
-											}
-										}
-		    						});
-								}
- 								$('#cc-3').foldPanel();
- 								$('#cc-4').showPanel();
-								populateSessionSelect();
- 					  		  }
- 					  		}, 
-							data: {}, 
-							async: false 
-						});
-    	   			  }
-  					}, 
-					data: {}, 
-					async: false 
-				});
-  				// only use the first one which is not complete..
-				break;
+    	   			  }});
+			break;
+		case 3: // just finished the location attributes, location image and flower.
+			// all must be present or none at all.
+			if(typeof preloadIDs.flower_id == 'undefined' &&
+					jQuery('[name=location_image\\:id]').val() == '' && 
+					jQuery('[name=locAttr\\:".$args['distance_attr_id']."]').length >0) {
+				$('.loading-panel').remove();
+				$('.poll-loading-hide').show();
+				buildMap();
+				preloading=false;
+				return;
+			}
+			if(typeof preloadIDs.flower_id == 'undefined')
+				return alertIndiciaError({error : \"".lang::get('Internal Error 21: could not load flower data for collection ')."\"+preloadIDs.sample_id});
+			if(jQuery('[name=locAttr\\:".$args['distance_attr_id']."]').length >0)
+				return alertIndiciaError({error : \"".lang::get('Internal Error 22: could not load environment attributes for location ')."\"+preloadIDs.location_id});
+			if(jQuery('[name=location_image\\:id]').val() == '')
+				return alertIndiciaError({error : \"".lang::get('Internal Error 23: could not load environment image for location ')."\"+preloadIDs.location_id});
+			setPreloadStage(4);
+			loadAttributes('#cc-2-floral-station', 'occurrence_attribute_value', 'occurrence_attribute_id', 'occurrence_id', preloadIDs.flower_id, 'occAttr', false, true);
+			loadImage('occurrence_image', 'occurrence_id', 'occurrence\\:id', preloadIDs.flower_id, '#cc-2-flower-image', ".$args['Flower_Image_Ratio'].", true);
+			jQuery.getJSON(\"".$svcUrl."/data/determination\" + 
+					\"?mode=json&view=list&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&occurrence_id=\"+preloadIDs.flower_id+\"&orderby=id&deleted=f&callback=?\", 
+				function(detData) {
+					if(!(detData instanceof Array)){
+   						alertIndiciaError(detData);
+   					 } else loadDetermination(detData, flowerIDstruc);
+  				});
+			break;
+		case 4: // just finished the flower attributes, flower image and optional flower determination. Attrs and image mandatory at this point.
+			if(jQuery('#cc-2-floral-station > input[name=occurrence_image\\:id]').val() == '')
+				return alertIndiciaError({error : \"".lang::get('Internal Error 24: could not load image for flower ')."\"+preloadIDs.flower_id});
+			if(jQuery('[name=occAttr\\:".$args['flower_type_attr_id']."]').length>0)
+				return alertIndiciaError({error : \"".lang::get('Internal Error 25: could not load attributes for flower ')."\"+preloadIDs.flower_id});
+			setPreloadStage(5);
+			jQuery('#cc-2').foldPanel();
+			jQuery('#cc-3').showPanel();
+			jQuery.getJSON(\"".$svcUrl."/data/sample\" + 
+					\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&parent_id=\"+preloadIDs.sample_id+\"&callback=?\", 
+				function(sessiondata) {
+					if(!(sessiondata instanceof Array)){
+						alertIndiciaError(sessiondata);
+					} else if (sessiondata.length>0) { // may have zero sessions
+						sessionCounter = 0;
+						jQuery('#cc-3-body').empty();
+						for (var i=0;i<sessiondata.length;i++){
+							var thisSession = addSession();
+							preloadIDs.sessions.push({id : sessiondata[i].id, div : thisSession});
+							jQuery('input[name=sample\\:id]', thisSession).val(sessiondata[i].id).removeAttr('disabled');
+							jQuery('input[name=sample\\:date]', thisSession).val(sessiondata[i].date_start);
+							jQuery('input[name=dummy_date]', thisSession).datepicker('disable').datepicker('setDate', new Date(convertDate(sessiondata[i].date_start))).datepicker('enable');
+							// fold this session.
+							thisSession.show();
+							thisSession.children(':first').show().children().show();
+							thisSession.children().not(':first').hide();
+						}
+						populateSessionSelect();
+					}});
+			break;
+		case 5: // just finished the sessions. no error situations
+			if(preloadIDs.sessions.length == 0){
+				$('.loading-panel').remove();
+				$('.poll-loading-hide').show();
+				preloading=false;
+				return;
+			}
+			setPreloadStage(6);
+			$('#cc-3').foldPanel();
+			$('#cc-4').showPanel();
+			populateSessionSelect();
+			for (var i=0;i<preloadIDs.sessions.length;i++){
+				loadAttributes(preloadIDs.sessions[i].div, 'sample_attribute_value', 'sample_attribute_id', 'sample_id', preloadIDs.sessions[i].id, 'smpAttr', false, true);
+				$.getJSON(\"".$svcUrl."/data/occurrence/\" +
+						\"?mode=json&view=detail&nonce=".$readAuth['nonce']."&auth_token=".$readAuth['auth_token']."&orderby=id\" +
+						\"&sample_id=\"+preloadIDs.sessions[i].id+\"&deleted=f&callback=?\",
+					function(insectData) {
+						if(!(insectData instanceof Array))
+							return alertIndiciaError(insectData);
+						if (insectData.length>0) // each session may have zero insects.
+							for (var j=0;j<insectData.length;j++)
+								addExistingToPhotoReel(insectData[j].id);
+					});
+			}
+			break;
+		case 6: // just finished the session attributes and insects.
+			// at this point the insects are optional, as are their determinations, so can't check for their presence.
+			for (var i=0;i<preloadIDs.sessions.length;i++){ // check attributes loaded for each session
+				if(jQuery('[name=smpAttr\\:".$args['start_time_attr_id']."]', preloadIDs.sessions[i].div).length>0)
+					return alertIndiciaError({error : \"".lang::get('Internal Error 26: could not load attributes for session ')."\"+preloadIDs.sessions[i].id});
+			}
+			$('.loading-panel').remove();
+			$('.poll-loading-hide').show();
+			preloading=false;
+			break;
+  }
+});
+$('.poll-loading-extras').empty().text('1');
+jQuery.getJSON(\"".$svcUrl."\" + \"/report/requestReport?report=reports_for_prebuilt_forms/poll_my_collections.xml&reportSource=local&mode=json\" +
+			\"&auth_token=".$readAuth['auth_token']."&reset_timeout=true&nonce=".$readAuth["nonce"]."\" + 
+			\"&survey_id=".$args['survey_id']."&userID_attr_id=".$args['uid_attr_id']."&userID=".$uid."&complete_attr_id=".$args['complete_attr_id']."&callback=?\", 
+	function(data) {
+	  if(!(data instanceof Array)){
+   		alertIndiciaError(data);
+   	  } else if (data.length>0) { // could have zero length
+		var i;
+       	for ( i=0;i<data.length;i++) {
+       		if(data[i].completed == '0'){
+       			jQuery('#cc-1-collection-details,#cc-2').find('input[name=sample\\:id]').val(data[i].id).removeAttr('disabled');
+		    	jQuery('input[name=location\\:id]').val(data[0].location_id).removeAttr('disabled');
+       			jQuery('#cc-6-consult-collection').attr('href', '".url('node/'.$args['gallery_node'])."'+'?collection_id='+data[i].id);
+       			preloadIDs.sample_id = data[i].id;
+       			preloadIDs.location_id = data[i].location_id;
+				// only use the first one which is not complete..
+				return;
 			}
 		}
-	  }}, 
-    data: {}, 
-    async: false 
-});
+      }
+    });
   ";
 // because of the use of getJson to retrieve the data - which is asynchronous, the use of the normal loading_block_end
 // is not practical - it will do its stuff before the data is loaded, defeating the purpose. Also it uses hide (display:none)
 // which is a no-no in relation to the map. This means we have to dispense with the slow fade in.
 // it is also complicated by the attibutes and images being loaded asynchronously - and non-linearly.
 // Do the best we can! 
-	data_entry_helper::loading_block_end();
-    data_entry_helper::$onload_javascript = "jQuery('.my-loading-hide').addClass('loading-hide').removeClass('my-loading-hide');\n".data_entry_helper::$onload_javascript."\nbuildMap();";
-    return $r;
+//    data_entry_helper::$onload_javascript = "jQuery('.my-loading-hide').addClass('loading-hide').removeClass('my-loading-hide');\n".data_entry_helper::$onload_javascript."\nbuildMap();";
+	data_entry_helper::$onload_javascript .= "\nbuildMap();";
+	return $r;
   }
 
     /**
