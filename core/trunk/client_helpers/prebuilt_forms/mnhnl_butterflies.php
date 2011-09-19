@@ -148,7 +148,7 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     $reloadPath = $reload['path'];
     if(self::$mode != 0){
       data_entry_helper::$javascript .= "
-jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\>Cancel</a></span></div>').appendTo('.buttons');
+jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\">Cancel</a></span></div>').appendTo('.buttons');
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
       if(!iform_loctools_checkaccess($node,'superuser')){
         data_entry_helper::$javascript .= "
