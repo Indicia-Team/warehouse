@@ -30,15 +30,6 @@ class Upgrade_Model extends Model
      */
     public function run()
     {
-      $messages = array();
-      // upgrades cannot proceed without directory permissions being sorted, because otherwise we cannot write the ____*____ files which 
-      // track the last run script.
-      if (!is_writeable(DOCROOT.'/modules/indicia_setup/db')) {
-        $message = array("You cannot upgrade at the moment until the directory permissions on the Warehouse are corrected. ");
-        foreach($messages as $m)
-          $message[] = $m['description'];
-        throw new Exception(implode("\n", $message));
-      }
       $system = new System_Model();
       // version in the file system
       $new_version = kohana::config('version.version');
@@ -82,6 +73,12 @@ class Upgrade_Model extends Model
             kohana::log('debug', "Method ran for $version_name");
           }
           if (file_exists($baseDir . "db/" . $version_name)) {
+            // upgrades cannot proceed without directory permissions being sorted, because otherwise we cannot write the ____*____ files which
+            // track the last run script.
+            if (!is_writeable($baseDir."db/$version_name")) {
+              throw new Exception("You cannot upgrade at the moment until the directory permissions on the Warehouse are corrected. ".
+                 "Write access is required to the $baseDir/db/$version_name folder on the server.");
+            }
             // start transaction for each folder full of scripts
             $this->begin();
             // we have a folder containing scripts

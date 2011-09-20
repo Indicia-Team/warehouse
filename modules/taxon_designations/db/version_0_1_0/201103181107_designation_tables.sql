@@ -1,6 +1,6 @@
 ﻿-- Table: taxon_designations
 
--- DROP TABLE taxon_designations;
+DROP TABLE IF EXISTS taxon_designations CASCADE;
 
 CREATE TABLE taxon_designations
 (
@@ -39,7 +39,7 @@ COMMENT ON COLUMN taxon_designations.deleted IS 'Identifies if the termlist has 
 
 -- Table: taxa_taxon_designations
 
--- DROP TABLE taxa_taxon_designations;
+DROP TABLE IF EXISTS taxa_taxon_designations CASCADE;
 
 CREATE TABLE taxa_taxon_designations
 (
