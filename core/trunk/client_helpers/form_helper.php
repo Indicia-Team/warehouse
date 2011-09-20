@@ -193,7 +193,8 @@ $('#load-params').click(function(evt) {
         '".self::getRootFolder() . self::relative_client_helper_path()."prebuilt_forms_ajax.php',
         {form: $('#form-picker').val(),
             website_id: $('#website_id').val(),
-            password: $('#password').val()},
+            password: $('#password').val(),
+            base_url: '".self::$base_url."'},
         function(data) {
           $('#form-params').hide().html(data).fadeIn();
           Drupal.attachBehaviors();
