@@ -22,8 +22,11 @@
 /**
  * A simple script to return the parameters form for an input prebuilt form name.
  */
+ 
+// Use iform to load the helpers, so it can set the configuration variables if running in Drupal
 require_once "form_helper.php";
 
+form_helper::$base_url = $_POST['base_url'];
 $readAuth = form_helper::get_read_auth($_POST['website_id'], $_POST['password']);
 
 echo form_helper::prebuilt_form_params_form(array(
