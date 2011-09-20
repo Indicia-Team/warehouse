@@ -168,7 +168,8 @@ class User_Controller extends Gridview_Base_Controller {
     if($person->first_name=='')
       $base_username = $person->surname;
     else
-      $base_username = $person->first_name.'.'.$person->surname;
+      $base_username = $person->first_name.'_'.$person->surname;
+    $base_username = strtolower(preg_replace("/[^A-Za-z]/", "_", $base_username)); 
     if(strlen($base_username) < $minlen)
       $username = sprintf($base_username.'%0'.($minlen-strlen($base_username)).'d', $inc++);
     else {
