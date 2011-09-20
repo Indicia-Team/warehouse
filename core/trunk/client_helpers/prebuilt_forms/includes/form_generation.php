@@ -30,9 +30,10 @@
  * @param array $outerFilter
  * @param array $blockOptions Associative array of control names that have non-default options. Each entry
  * is keyed by the control name and has an array of the options and values to override.
+ * @param array $idPrefix Optional prefix to give to IDs (e.g. for fieldsets) to allow you to ensure they remain unique.
  */
 
-function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null, $blockOptions=null) {
+function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null, $blockOptions=null, $idPrefix='') {
   $lastOuterBlock='';
   $lastInnerBlock='';
   $r = '';
@@ -47,10 +48,10 @@ function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=nu
           $r .= '</fieldset>';
         }
         if (!empty($attribute['outer_structure_block']))
-          $r .= '<fieldset id="'.get_fieldset_id($attribute['outer_structure_block']).
+          $r .= '<fieldset id="'.get_fieldset_id($attribute['outer_structure_block'], $idPrefix).
               '"><legend>'.lang::get($attribute['outer_structure_block']).'</legend>';
         if (!empty($attribute['inner_structure_block']))
-          $r .= '<fieldset id="'.get_fieldset_id($attribute['outer_structure_block'], $attribute['inner_structure_block']).
+          $r .= '<fieldset id="'.get_fieldset_id($attribute['outer_structure_block'], $attribute['inner_structure_block'], $idPrefix).
               '"><legend>'.lang::get($attribute['inner_structure_block']).'</legend>';
       }
       elseif ($lastInnerBlock!=$attribute['inner_structure_block']) {
@@ -58,7 +59,7 @@ function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=nu
           $r .= '</fieldset>';
         }
         if (!empty($attribute['inner_structure_block']))
-          $r .= '<fieldset id="'.get_fieldset_id($lastOuterBlock, $attribute['inner_structure_block']).
+          $r .= '<fieldset id="'.get_fieldset_id($lastOuterBlock, $attribute['inner_structure_block'], $idPrefix).
               '"><legend>'.lang::get($attribute['inner_structure_block']).'</legend>';
       }
       $lastInnerBlock=$attribute['inner_structure_block'];
@@ -111,12 +112,16 @@ function get_attr_validation($attribute, $args) {
  * Function to build an id for a fieldset from the block nesting data. Giving them a unique id helps if 
  * you want to do interesting things with JavaScript for example.
  */
-function get_fieldset_id($outerBlock, $innerBlock='') {
-  $parts = array('fieldset');
-  if (!empty($outerBlock)) $parts[]=$outerBlock;
-  if (!empty($innerBlock)) $parts[]=$innerBlock;
+function get_fieldset_id($outerBlock, $innerBlock='', $idPrefix='') {
+  $parts = array();
+  if (!empty($idPrefix))
+    $parts[] = $idPrefix;
+  $parts[] = 'fieldset';  
+  if (!empty($outerBlock)) 
+    $parts[]=substr($outerBlock, 0, 20);
+  if (!empty($innerBlock)) 
+    $parts[]=substr($innerBlock, 0, 20);
   $r = implode('-', $parts);
-  $r = substr($r, 0, 30);
   // Make it lowercase and no whitespace
   $r = strtolower(preg_replace('/\s+/', '-', $r));
   return $r;
