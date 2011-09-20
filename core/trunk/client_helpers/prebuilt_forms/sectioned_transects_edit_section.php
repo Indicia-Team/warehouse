@@ -68,14 +68,14 @@ class iform_sectioned_transects_edit_section {
             'caption'=>'Site list page path',
             'description'=>'Enter the path to the page which the site list is on.',
             'type'=>'text_input',
-            'group'=>'UKBMS Settings'
+            'group'=>'Navigation Settings'
           ),
           array(
             'name'=>'transect_edit_path',
             'caption'=>'Transect edit page path',
             'description'=>'Enter the path to the page which the transect editor is on.',
             'type'=>'text_input',
-            'group'=>'UKBMS Settings'
+            'group'=>'Navigation Settings'
           ),
         )
     );
