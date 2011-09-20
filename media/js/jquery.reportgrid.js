@@ -217,7 +217,7 @@
       $.getJSON(request,
           null,
           function(response) {
-            var tbody = $(div).find('tbody'), row, rows = eval(response), rowclass='', hasMore=false, value, rowInProgress=false, rowOutput;            
+            var tbody = $(div).find('tbody'), row, rows = eval(response), rowclass='', hasMore=false, value, rowInProgress=false, rowOutput, rowId;            
             // clear current grid rows
             if (clearExistingRows) {
               tbody.children().remove();
@@ -227,9 +227,10 @@
               if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
                 hasMore = true;
               } else {
+                rowId = (div.settings.rowId!=='') ? 'id="row'+row[div.settings.rowId]+'" ' : '';
                 // Initialise a new row, unless this is a gallery with multi-columns and not starting a new line
                 if ((rowidx % div.settings.galleryColCount)===0) {
-                  rowOutput = '<tr' + rowclass + '>';
+                  rowOutput = '<tr ' + rowId + rowclass + '>';
                   rowInProgress=true;
                 }
                 $.each(div.settings.columns, function(idx, col) {
@@ -244,7 +245,7 @@
                     }
                     // clear null value cells
                     value = (value===null || typeof value==="undefined") ? '' : value;
-                    if (col.img === true || col.img==='true') {
+                    if ((col.img === true || col.img==='true') && value!=='') {
                       value = '<a href="'+div.settings.imageFolder+value+'" class="fancybox"><img src="'+div.settings.imageFolder+'thumb-'+value+'" /></a>';
                     }
                     rowOutput += '<td>' + value + '</td>';
