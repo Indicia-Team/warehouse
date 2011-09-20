@@ -268,8 +268,10 @@ $('#load-params').click(function(evt) {
         $type=substr($type, 15);
         require_once('report_helper.php');
         $fieldsets[$fieldset] .= report_helper::$type($ctrlOptions);
-      } else
+      } else {
         $fieldsets[$fieldset] .= data_entry_helper::$type($ctrlOptions);
+      }
+        
     }
     $class=(isset($options['expandFirst']) && $options['expandFirst']) ? 'collapsible' : 'collapsible collapsed';
     foreach($fieldsets as $fieldset=>$content) { 
