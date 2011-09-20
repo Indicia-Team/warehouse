@@ -37,7 +37,7 @@ class Website_Controller extends Gridview_Base_Controller
     parent::__construct('website', 'website/index');
 
     $this->columns = array(
-        'id'          => '',
+        'id'          => 'ID',
         'title'       => '',
         'description' => '',
         'url'         => ''
