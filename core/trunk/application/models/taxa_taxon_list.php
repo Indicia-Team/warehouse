@@ -290,5 +290,25 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
       'taxa_taxon_list:allow_data_entry' => 't'
     );  
   }
+  
+  /**
+   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   */
+  public function fixed_values_form() {
+    return array(
+      'taxon:language_id' => array( 
+        'display'=>'Language', 
+        'description'=>'Select the language to import preferred taxa for.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:language:id:language' 
+      ),
+      'taxon:taxon_group_id' => array( 
+        'display'=>'Taxon Group', 
+        'description'=>'Select the taxon group to import taxa for.',
+        'datatype'=>'lookup',
+        'population_call'=>'direct:taxon_group:id:title'
+      )
+    );
+  }
 
 }
