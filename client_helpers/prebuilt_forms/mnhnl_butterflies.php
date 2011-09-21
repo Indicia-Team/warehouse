@@ -638,7 +638,7 @@ build_transectgrid(".($OCCentity['taxa_taxon_list_id']).",".$X.",".$Y.",".($OCCe
       }
      }
     }
-    $retVal = '<div>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</div><p>'.lang::get('transectgrid:bumpf1').'</p><p>'.lang::get('transectgrid:bumpf2').'</p><div class="transectgrid"></div>';
+    $retVal = $myHidden.'<div>'.call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_list_args).'</div><p>'.lang::get('transectgrid:bumpf1').'</p><p>'.lang::get('transectgrid:bumpf2').'</p><div class="transectgrid"></div>';
     data_entry_helper::$javascript .= "
 // override the default results function - doesn't seem to use value field.
 jQuery('input#transectgrid_taxa_taxon_list_id\\\\:taxon').unbind(\"result\");
