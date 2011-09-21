@@ -188,9 +188,15 @@ jQuery('#{parentControlId}').change();\n",
  * resource management.
  */
 class helper_base extends helper_config {
+ 
+  /**
+   * @var boolean Flag set to true if returning content for an AJAX request. This allows the javascript to be returned
+   * direct rather than embedding in document.ready and window.onload handlers.
+   */
+  public static $is_ajax = false;
 
   /**
-   * @var array Website ID, stored here to assist with caching.
+   * @var integer Website ID, stored here to assist with caching.
    */
   protected static $website_id = null;
 
@@ -1058,15 +1064,18 @@ if (typeof indiciaData==='undefined') {
   indiciaData = {};
 }
 indiciaData.windowLoaded=false;
-jQuery(document).ready(function() {
-$javascript
-$late_javascript
-});\n";
+";
+      if (!self::$is_ajax)
+        $script .= "jQuery(document).ready(function() {\n";
+      $script .= "$javascript\n$late_javascript\n";
+      if (!self::$is_ajax)
+        $script .= "});\n";
       if (!empty($onload_javascript)) {
-        $script .= "window.onload = function() {
-$onload_javascript
-indiciaData.windowLoaded=true;
-};\n";
+        if (!self::$is_ajax)
+          $script .= "window.onload = function() {\n";
+        $script .= "$onload_javascript\nindiciaData.windowLoaded=true;\n";
+        if (!self::$is_ajax)
+          $script .= "};\n";
       }
       $script .= "/* ]]> */</script>";
     } else {

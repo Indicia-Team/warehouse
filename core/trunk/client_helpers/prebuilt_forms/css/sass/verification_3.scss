@@ -33,9 +33,11 @@ table.report-grid tr:hover, table.report-grid tr.odd:hover {
   background-color: $hover-color;
 }
 
-table.report-grid tr.selected {
-  background: $selected-color;
-  color: white;
+table.report-grid {
+  tr.selected, tr.selected td {
+    background-color: $selected-color;
+    color: white;
+  }
 }
 
 ul.gallery li {

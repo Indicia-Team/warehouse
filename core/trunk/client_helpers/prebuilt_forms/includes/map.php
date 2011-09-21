@@ -63,7 +63,7 @@ function iform_map_get_map_parameters() {
       'description'=>'Width in pixels of the map, or a css specification for the width, e.g. 75%.',
       'type'=>'text_input',
       'group'=>'Initial Map View',
-      'default'=>500
+      'default'=>'100%'
     ),
     array(
       'name'=>'map_height',
