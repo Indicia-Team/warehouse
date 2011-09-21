@@ -92,6 +92,13 @@ record_status=C'
             'description' => 'Define a list of columns with various configuration options when you want to override the '.
                 'default output of the report.',
             'type' => 'jsonwidget',
+            'default' => '[
+              {"fieldname":"occurrence_id","template":"<div class=\'status-{record_status}\'>{occurrence_id}<\/div>","display":"ID"},
+              {"fieldname":"taxon","display":"Species","template":"<div class=\'zero-{zero_abundance}\'>{taxon}<br\/>{common}<\/div>"},
+              {"fieldname":"record_status","visible":false},
+              {"fieldname":"common","visible":false},
+              {"fieldname":"zero_abundance","visible":false}
+            ]',
             'schema' => '{
     "type":"seq",
     "title":"Columns List",
@@ -171,7 +178,7 @@ record_status=C'
           'description'=>'If checked, then when changing the status of a record the record is removed from the grid if it no '.
               'longer matches the grid filter.',
           'type'=>'checkbox',
-          'default'=>true,
+          'default'=>'on',
           'required'=>false
         )
       )

@@ -26,6 +26,14 @@
 // Use iform to load the helpers, so it can set the configuration variables if running in Drupal
 require_once "form_helper.php";
 
+// set the path to JS and CSS files. This script runs standalone, so has to do this itself.
+$link = form_helper::get_reload_link_parts();
+$path = dirname(dirname($link['path'])) . '/media';
+form_helper::$js_path = "$path/js/";
+form_helper::$css_path = "$path/css/";
+
+form_helper::$is_ajax = true;
+
 form_helper::$base_url = $_POST['base_url'];
 $readAuth = form_helper::get_read_auth($_POST['website_id'], $_POST['password']);
 

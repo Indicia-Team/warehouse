@@ -25,13 +25,13 @@ table.report-grid tr:hover, table.report-grid tr.odd:hover {
   background-color: #ffffcc;
 }
 
-/* line 36, sass/verification_3.scss */
-table.report-grid tr.selected {
-  background: #027ac6;
+/* line 37, sass/verification_3.scss */
+table.report-grid tr.selected, table.report-grid tr.selected td {
+  background-color: #027ac6;
   color: white;
 }
 
-/* line 41, sass/verification_3.scss */
+/* line 43, sass/verification_3.scss */
 ul.gallery li {
   display: -moz-inline-box;
   -moz-box-orient: vertical;
@@ -42,12 +42,12 @@ ul.gallery li {
   text-align: center;
   background: none;
 }
-/* line 7, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
 ul.gallery li {
   *display: inline;
 }
 
-/* line 48, sass/verification_3.scss */
+/* line 50, sass/verification_3.scss */
 .status-V {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #000700), color-stop(100%, #00a000));
   background: -webkit-linear-gradient(top, #000700, #00a000);
@@ -64,7 +64,7 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 54, sass/verification_3.scss */
+/* line 56, sass/verification_3.scss */
 .status-R {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #070000), color-stop(100%, #a00000));
   background: -webkit-linear-gradient(top, #070000, #a00000);
@@ -81,7 +81,7 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 60, sass/verification_3.scss */
+/* line 62, sass/verification_3.scss */
 .status-S {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #1c4c62), color-stop(100%, #4ba3cc));
   background: -webkit-linear-gradient(top, #1c4c62, #4ba3cc);
@@ -98,13 +98,13 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 66, sass/verification_3.scss */
+/* line 68, sass/verification_3.scss */
 .zero-t {
   font-style: italic;
   text-decoration: line-through;
 }
 
-/* line 71, sass/verification_3.scss */
+/* line 73, sass/verification_3.scss */
 button {
   margin: 0.25em;
   display: inline-block;
@@ -125,7 +125,7 @@ button {
   font-weight: bold;
 }
 
-/* line 77, sass/verification_3.scss */
+/* line 79, sass/verification_3.scss */
 #btn-verify {
   background-color: #00a000;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00a000), color-stop(100%, #003a00));
@@ -138,7 +138,7 @@ button {
   color: white;
   text-shadow: #003000, 0 1px 0;
 }
-/* line 23, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+/* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
 #btn-verify:hover {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00ba00), color-stop(100%, #005300));
   background: -webkit-linear-gradient(#00ba00, #005300);
@@ -148,7 +148,7 @@ button {
   background: linear-gradient(#00ba00, #005300);
 }
 
-/* line 81, sass/verification_3.scss */
+/* line 83, sass/verification_3.scss */
 #btn-reject {
   background-color: #a00000;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #a00000), color-stop(100%, #3a0000));
@@ -161,7 +161,7 @@ button {
   color: white;
   text-shadow: #300000, 0 1px 0;
 }
-/* line 23, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+/* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
 #btn-reject:hover {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ba0000), color-stop(100%, #530000));
   background: -webkit-linear-gradient(#ba0000, #530000);
@@ -171,7 +171,7 @@ button {
   background: linear-gradient(#ba0000, #530000);
 }
 
-/* line 85, sass/verification_3.scss */
+/* line 87, sass/verification_3.scss */
 button.default-button {
   background-color: #4ba3cc;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #4ba3cc), color-stop(100%, #276b8a));
@@ -184,7 +184,7 @@ button.default-button {
   color: white;
   text-shadow: #256482, 0 1px 0;
 }
-/* line 23, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+/* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
 button.default-button:hover {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #5fadd2), color-stop(100%, #2d7a9e));
   background: -webkit-linear-gradient(#5fadd2, #2d7a9e);
@@ -194,109 +194,109 @@ button.default-button:hover {
   background: linear-gradient(#5fadd2, #2d7a9e);
 }
 
-/* line 89, sass/verification_3.scss */
+/* line 91, sass/verification_3.scss */
 #comment-text {
   display: block;
   width: 100%;
 }
 
-/* line 94, sass/verification_3.scss */
+/* line 96, sass/verification_3.scss */
 .popup-form {
   width: 500px;
   line-height: 3;
 }
-/* line 18, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 18, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form label {
   font-weight: bold;
 }
-/* line 19, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 19, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form fieldset {
   padding: 1.4em;
   margin: 0 0 1.5em 0;
 }
-/* line 20, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 20, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form legend {
   font-weight: bold;
   font-size: 1.2em;
 }
-/* line 26, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 26, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form input.text, .popup-form input.title, .popup-form input[type=email], .popup-form input[type=text], .popup-form input[type=password] {
   margin: 0.5em 0;
   background-color: white;
   padding: 5px;
 }
-/* line 27, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 27, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form input.title {
   font-size: 1.5em;
 }
-/* line 29, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 29, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form textarea {
   margin: 0.5em 0;
   padding: 5px;
 }
-/* line 30, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 30, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form select {
   margin: 0.5em 0;
 }
-/* line 55, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 55, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form fieldset {
   border: 1px solid #cccccc;
 }
-/* line 58, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 58, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form input.text, .popup-form input.title, .popup-form input[type=email], .popup-form input[type=text], .popup-form input[type=password],
 .popup-form textarea {
   background-color: #fff;
   border: 1px solid #bbbbbb;
 }
-/* line 61, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 61, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form input.text:focus, .popup-form input.title:focus, .popup-form input[type=email]:focus, .popup-form input[type=text]:focus, .popup-form input[type=password]:focus,
 .popup-form textarea:focus {
   border-color: #666666;
 }
-/* line 65, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 65, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form select {
   background-color: #fff;
   border-width: 1px;
   border-style: solid;
 }
-/* line 44, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 44, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form input.text, .popup-form input.title, .popup-form input[type=email], .popup-form input[type=text], .popup-form input[type=password] {
   width: 360px;
 }
-/* line 46, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 46, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form textarea {
   width: 360px;
   height: 250px;
 }
-/* line 6, ../../../../../../../../../../../../Library/Ruby/Gems/1.8/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
+/* line 6, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/blueprint/stylesheets/blueprint/_form.scss */
 .popup-form p {
   margin-bottom: 0;
 }
-/* line 101, sass/verification_3.scss */
+/* line 103, sass/verification_3.scss */
 .popup-form label {
   width: 120px;
 }
-/* line 103, sass/verification_3.scss */
+/* line 105, sass/verification_3.scss */
 .popup-form label.error {
   width: auto;
   margin: 0 0 0 120px;
   line-height: 1em;
 }
 
-/* line 111, sass/verification_3.scss */
+/* line 113, sass/verification_3.scss */
 .manual-email {
   width: 600px;
 }
-/* line 114, sass/verification_3.scss */
+/* line 116, sass/verification_3.scss */
 .manual-email .left {
   width: 120px;
 }
-/* line 117, sass/verification_3.scss */
+/* line 119, sass/verification_3.scss */
 .manual-email .right {
   width: 450px;
 }
 
-/* line 122, sass/verification_3.scss */
+/* line 124, sass/verification_3.scss */
 #click-record-notice {
   padding: 1em;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #c2e0ee));
