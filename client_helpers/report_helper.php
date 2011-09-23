@@ -304,7 +304,7 @@ class report_helper extends helper_base {
             if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
               $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
             if (!isset($field['img']) || $field['img']!='true')
-              $caption = "<a href=\"$sortLink\" rel="nofollow" title=\"Sort by $caption\">$caption</a>";
+              $caption = "<a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
             // set a style for the sort order
             $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
             $orderStyle .= ' sortable';
@@ -475,13 +475,13 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       // If not on first page, we can go back.
       if ($sortAndPageUrlParams['page']['value']>0) {
         $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
-        $r .= "<a class=\"pag-prev pager-button\" rel="nofollow" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">".lang::get('previous')."</a> \n";
+        $r .= "<a class=\"pag-prev pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$prev\">".lang::get('previous')."</a> \n";
       } else 
         $r .= "<span class=\"pag-prev ui-state-disabled pager-button\">".lang::get('previous')."</span> \n";
       // if the service call returned more records than we are displaying (because we asked for 1 more), then we can go forward
       if (count($response['records'])>$options['itemsPerPage']) {
         $next = $sortAndPageUrlParams['page']['value'] + 1;
-        $r .= "<a class=\"pag-next pager-button\" rel="nofollow" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">".lang::get('next')." &#187</a> \n";
+        $r .= "<a class=\"pag-next pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl".$sortAndPageUrlParams['page']['name']."=$next\">".lang::get('next')." &#187</a> \n";
       } else 
         $r .= "<span class=\"pag-next ui-state-disabled pager-button\">".lang::get('next')."</span> \n";
       return $r;
@@ -500,8 +500,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     // If not on first page, we can include previous link.
     if ($sortAndPageUrlParams['page']['value']>0) {
       $prev = max(0, $sortAndPageUrlParams['page']['value']-1);
-      $replacements['prev'] = "<a class=\"pag-prev pager-button\" rel="nofollow" href=\"$pagLinkUrl=$prev\">".lang::get('previous')."</a> \n";
-      $replacements['first'] = "<a class=\"pag-first pager-button\" rel="nofollow" href=\"$pagLinkUrl=0\">".lang::get('first')."</a> \n";
+      $replacements['prev'] = "<a class=\"pag-prev pager-button\" rel=\"\nofollow\" href=\"$pagLinkUrl=$prev\">".lang::get('previous')."</a> \n";
+      $replacements['first'] = "<a class=\"pag-first pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl=0\">".lang::get('first')."</a> \n";
     } else {
       $replacements['prev'] = "<span class=\"pag-prev pager-button ui-state-disabled\">".lang::get('prev')."</span>\n";
       $replacements['first'] = "<span class=\"pag-first pager-button ui-state-disabled\">".lang::get('first')."</span>\n";
@@ -512,14 +512,14 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if ($i===$page) 
         $pagelist .= "<span class=\"pag-page pager-button ui-state-disabled\" id=\"page-".$options['id']."-$i\">$i</span>\n";
       else
-        $pagelist .= "<a class=\"pag-page pager-button\" rel="nofollow" href=\"$pagLinkUrl=".($i-1)."\" id=\"page-".$options['id']."-$i\">$i</a>\n";
+        $pagelist .= "<a class=\"pag-page pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl=".($i-1)."\" id=\"page-".$options['id']."-$i\">$i</a>\n";
     }
     $replacements['pagelist'] = $pagelist;
     // if not on the last page, display a next link
     if ($page<$response['count']/$options['itemsPerPage']) {
       $next = $sortAndPageUrlParams['page']['value'] + 1;
-      $replacements['next'] = "<a class=\"pag-next pager-button\" rel="nofollow" href=\"$pagLinkUrl=$next\">".lang::get('next')."</a>\n";
-      $replacements['last'] = "<a class=\"pag-last pager-button\" rel="nofollow" href=\"$pagLinkUrl=".round($response['count']/$options['itemsPerPage']-1)."\">".lang::get('last')."</a>\n";
+      $replacements['next'] = "<a class=\"pag-next pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl=$next\">".lang::get('next')."</a>\n";
+      $replacements['last'] = "<a class=\"pag-last pager-button\" rel=\"nofollow\" href=\"$pagLinkUrl=".round($response['count']/$options['itemsPerPage']-1)."\">".lang::get('last')."</a>\n";
     } else {
       $replacements['next'] = "<span class=\"pag-next pager-button ui-state-disabled\">".lang::get('next')."</span>\n";
       $replacements['last'] = "<span class=\"pag-last pager-button ui-state-disabled\">".lang::get('last')."</span>\n";
