@@ -117,13 +117,13 @@
     function simplePager (pager, div, hasMore) {
       var pagerContent='';
       if (div.settings.offset!==0) {
-        pagerContent += '<a class="pag-prev pager-button" href="#">previous</a> ';
+        pagerContent += '<a class="pag-prev pager-button" rel="nofollow" href="#">previous</a> ';
       } else {
         pagerContent += '<span class="pag-prev pager-button ui-state-disabled">previous</span> ';
       }
       
       if (hasMore) {
-        pagerContent += '<a class="pag-next pager-button" href="#">next</a>';
+        pagerContent += '<a class="pag-next pager-button" rel="nofollow" href="#">next</a>';
       } else {
         pagerContent += '<span class="pag-next pager-button ui-state-disabled">next</span>';
       }
@@ -135,16 +135,16 @@
     function advancedPager (pager, div, hasMore) {
       var pagerContent=div.settings.pagingTemplate, pagelist = '', page, showing = div.settings.langShowing;
       if (div.settings.offset!==0) {
-        pagerContent = pagerContent.replace('{prev}', '<a class="pag-prev pager-button" href="#">'+div.settings.langPrev+'</a> ');
-        pagerContent = pagerContent.replace('{first}', '<a class="pag-first pager-button" href="#">'+div.settings.langFirst+'</a> ');
+        pagerContent = pagerContent.replace('{prev}', '<a class="pag-prev pager-button" rel="nofollow" href="#">'+div.settings.langPrev+'</a> ');
+        pagerContent = pagerContent.replace('{first}', '<a class="pag-first pager-button" rel="nofollow" href="#">'+div.settings.langFirst+'</a> ');
       } else {
        pagerContent = pagerContent.replace('{prev}', '<span class="pag-prev pager-button ui-state-disabled">'+div.settings.langPrev+'</span> ');
        pagerContent = pagerContent.replace('{first}', '<span class="pag-first pager-button ui-state-disabled">'+div.settings.langFirst+'</span> ');
       }
       
       if (hasMore)  {
-        pagerContent = pagerContent.replace('{next}', '<a class="pag-next pager-button" href="#">'+div.settings.langNext+'</a> ');
-        pagerContent = pagerContent.replace('{last}', '<a class="pag-last pager-button" href="#">'+div.settings.langLast+'</a> ');
+        pagerContent = pagerContent.replace('{next}', '<a class="pag-next pager-button" rel="nofollow" href="#">'+div.settings.langNext+'</a> ');
+        pagerContent = pagerContent.replace('{last}', '<a class="pag-last pager-button" rel="nofollow" href="#">'+div.settings.langLast+'</a> ');
       } else {
         pagerContent = pagerContent.replace('{next}', '<span class="pag-next pager-button ui-state-disabled">'+div.settings.langNext+'</span> ');
         pagerContent = pagerContent.replace('{last}', '<span class="pag-last pager-button ui-state-disabled">'+div.settings.langLast+'</span> ');
@@ -156,7 +156,7 @@
         if (page===div.settings.offset/div.settings.itemsPerPage+1) {
           pagelist += '<span class="pag-page pager-button ui-state-disabled" id="page-' + div.settings.id+ '-'+page+'">'+page+'</span> ';
         } else {
-          pagelist += '<a href="#" class="pag-page pager-button" id="page-' + div.settings.id+ '-'+page+'">'+page+'</a> ';
+          pagelist += '<a href="#" class="pag-page pager-button" rel="nofollow" id="page-' + div.settings.id+ '-'+page+'">'+page+'</a> ';
         }
       }
       pagerContent = pagerContent.replace('{pagelist}', pagelist);
