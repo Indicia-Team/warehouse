@@ -39,7 +39,8 @@ class iform_verification_3 {
     return array(
       'title'=>'Verification 3',
       'category' => 'Verification',
-      'description'=>'An advanced verification form with built in review of the record, images and comments.'
+      'description'=>'An advanced verification form with built in review of the record, images and comments.',
+      'helpLink' => 'http://code.google.com/p/indicia/wiki/PrebuiltFormVerification3'      
     );
   }
   
