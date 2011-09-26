@@ -111,9 +111,9 @@ class Report_Controller extends Data_Service_Base_Controller {
 
   public function internal_report_list($path) {
     $files = array();
-    $fullPath = DOCROOT . Kohana::config('indicia.localReportDir') . $path;
+    $fullPath = Kohana::config('indicia.localReportDir') . $path;
     if (!is_dir($fullPath))
-      throw new Exception("Failed to open reports folder ".DOCROOT . Kohana::config('indicia.localReportDir') . $path);
+      throw new Exception("Failed to open reports folder ".Kohana::config('indicia.localReportDir') . $path);
     $dir = opendir($fullPath);
     
     while (false !== ($file = readdir($dir))) {
