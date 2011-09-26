@@ -570,7 +570,7 @@ class XMLReportReader_Core implements ReportReader
     $this->hasAggregates = $this->hasAggregates || (isset($this->columns[$name]['aggregate']) && $this->columns[$name]['aggregate']=='true'); 
   }
 
-  private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='false', $autodef=true)
+  private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='', $autodef=true)
   {
     if (array_key_exists($name, $this->columns))
     {
@@ -597,7 +597,7 @@ class XMLReportReader_Core implements ReportReader
           'visible' => $visible == '' ? 'true' : $visible,
           'img' => $img == '' ? 'false' : $img,
           'orderby' => $orderby,
-          'mappable' => $mappable,
+          'mappable' => empty($mappable) ? 'false' : $mappable,
           'autodef' => $autodef);
     }
   }
