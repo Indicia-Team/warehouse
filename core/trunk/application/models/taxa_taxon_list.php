@@ -296,6 +296,12 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
    */
   public function fixed_values_form() {
     return array(
+      'taxa_taxon_list:taxon_list_id' => array( 
+        'display'=>'Species List', 
+        'description'=>'Select the list to import into.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:taxon_list:id:title' 
+      ),
       'taxon:language_id' => array( 
         'display'=>'Language', 
         'description'=>'Select the language to import preferred taxa for.', 
