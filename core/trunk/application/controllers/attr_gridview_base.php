@@ -84,6 +84,10 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
     $this->model->populate_validation_rules();
     return $r;
   }
+  
+  protected function getDefaults() {
+    return array('metaFields:disabled_input'=>'NO');
+  }
 
   public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
