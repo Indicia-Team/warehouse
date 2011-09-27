@@ -54,7 +54,7 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
   
   public function testRequestReportGetJson() {
     $params = array(
-      'report'=>'occurrences_by_website.xml',
+      'report'=>'library/websites/species_and_occurrence_counts.xml',
       'reportSource'=>'local',
       'mode'=>'json',
       'auth_token'=>$this->auth['read']['auth_token'],
@@ -69,12 +69,13 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     // valid json response will decode
     $response = json_decode(curl_exec($session), true);
+    kohana::log('debug', 'response: '.print_r($response, true));
     $this->assertEquals(true, isset($response[0]['title']), 'Report get JSON response not as expected');
   }
   
   public function testRequestReportPostJson() {
     $params = array(
-      'report'=>'occurrences_by_website.xml',
+      'report'=>'library/websites/species_and_occurrence_counts.xml',
       'reportSource'=>'local',
       'mode'=>'json',
       'auth_token'=>$this->auth['read']['auth_token'],
@@ -96,7 +97,7 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
   
   public function testRequestReportGetXML() {
     $params = array(
-      'report'=>'occurrences_by_website.xml',
+      'report'=>'library/websites/species_and_occurrence_counts.xml',
       'reportSource'=>'local',
       'mode'=>'xml',
       'auth_token'=>$this->auth['read']['auth_token'],
@@ -117,7 +118,7 @@ class Controllers_Services_Report_Test extends PHPUnit_Framework_TestCase {
   
   public function testRequestReportPostXML() {
     $params = array(
-      'report'=>'occurrences_by_website.xml',
+      'report'=>'library/websites/species_and_occurrence_counts.xml',
       'reportSource'=>'local',
       'mode'=>'xml',
       'auth_token'=>$this->auth['read']['auth_token'],
