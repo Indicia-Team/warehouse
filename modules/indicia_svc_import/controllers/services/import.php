@@ -233,10 +233,11 @@ class Import_Controller extends Service_Base_Controller {
           $this->previousCsvSupermodel['details'] = array_merge($this->previousCsvSupermodel['details'], $updatedPreviousCsvSupermodelDetails);
           $this->captureSupermodelIds($model);
         }
+        // get file position here otherwise the fgetcsv in the while loop will move it one record too far. 
+        $filepos = ftell($handle);
       }
       // Get percentage progress
-      $progress = ftell($handle) * 100 / filesize($csvTempFile);
-      $filepos = ftell($handle);
+      $progress = $filepos * 100 / filesize($csvTempFile);
       $r = "{uploaded:$count,progress:$progress,filepos:$filepos}";
       // allow for a JSONP cross-site request
       if (array_key_exists('callback', $_GET)) {
