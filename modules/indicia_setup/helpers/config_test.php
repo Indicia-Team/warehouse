@@ -329,7 +329,7 @@ class config_test {
     } else {
       self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'image upload',
           dirname(dirname(dirname(dirname(__file__ )))) . '/upload',
-          'images can be uploaded',
+          'images to be uploaded',
           'images cannot be uploaded');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
@@ -337,7 +337,7 @@ class config_test {
           'the installation settings cannot be stored');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'database update folders',
           dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
-          'the database upgrades can be tracked',
+          'the database upgrades to be tracked',
           'the database upgrades cannot be tracked');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers',
