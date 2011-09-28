@@ -87,10 +87,8 @@ class Report_Controller extends Data_Service_Base_Controller {
           break;
         default : $extension='txt';
       }
-      if (array_key_exists('filename', $_GET))
-        $downloadfilename = $_GET['filename'];
-      elseif (array_key_exists('filename', $_POST))
-        $downloadfilename = $_POST['filename'];
+      if (array_key_exists('filename', $_REQUEST))
+        $downloadfilename = $_REQUEST['filename'];
       else
         $downloadfilename='download';
       header('Content-Disposition: attachment; filename="'.$downloadfilename.'.'.$extension.'"');

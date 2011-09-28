@@ -35,14 +35,13 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   */
   protected function delete_nonce()
   {
-    $array = array_merge($_POST, $_GET);
     // Unless the request explicitly requests that the nonce should persist, delete it as a write nonce is
     // one time only. The exception to this is when a submission contains images which are sent afterwards,
     // in which case the last image will delete the nonce
-    if (!array_key_exists('persist_auth', $array) || $array['persist_auth']!='true') {
-      if (array_key_exists('nonce', $array))
+    if (!array_key_exists('persist_auth', $_REQUEST) || $_REQUEST['persist_auth']!='true') {
+      if (array_key_exists('nonce', $_REQUEST))
       {
-        $nonce = $array['nonce'];
+        $nonce = $_REQUEST['nonce'];
         $this->cache->delete($nonce);
       }
     }
@@ -56,7 +55,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   {
     // Authenticate for a 'read' parameter
     kohana::log('debug', 'Requesting data from Warehouse');
-    kohana::log('debug', print_r($_GET, true));
+    kohana::log('debug', print_r($_REQUEST, true));
     $this->authenticate('read');
     kohana::log('debug', 'read records');
     $records=$this->read_records();
@@ -70,9 +69,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     {
       case 'json':
         $a =  json_encode($responseStruct);
-        if (array_key_exists('callback', $_GET))
+        if (array_key_exists('callback', $_REQUEST))
         {
-          $a = $_GET['callback']."(".$a.")";
+          $a = $_REQUEST['callback']."(".$a.")";
           $this->content_type = 'Content-Type: application/javascript';
         } else {
           $this->content_type = 'Content-Type: application/json';
@@ -80,9 +79,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         $this->response = $a;
         break;
       case 'xml':
-        if (array_key_exists('xsl', $_GET))
+        if (array_key_exists('xsl', $_REQUEST))
         {
-          $xsl = $_GET['xsl'];
+          $xsl = $_REQUEST['xsl'];
           if (!strpos($xsl, '/'))
           // xsl is not a fully qualified path, so point it to the media folder.
           $xsl = url::base().'media/services/stylesheets/'.$xsl;
@@ -112,7 +111,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   }
   
   /** 
-   * By default, a service request returns the records only. This can be controlled by the GET parameters
+   * By default, a service request returns the records only. This can be controlled by the GET or POST parameters
    * wantRecords (default 1), wantColumns (default 0), wantCount (default 0) and wantParameters (default 0). If there is 
    * only one of these set to true, then the requested structure is returned alone. Otherwise the structure returned is 
    * 'records' => $records, 'columns' => $this->view_columns, 'count' => n.
@@ -124,9 +123,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     if (isset($records['parameterRequest'])) {
       return $records;
     } else {
-      $wantRecords = !isset($_GET['wantRecords']) || $_GET['wantRecords']='0';
-      $wantColumns = isset($_GET['wantColumns']) && $_GET['wantColumns']='1';
-      $wantCount = isset($_GET['wantCount']) && $_GET['wantCount']='1';
+      $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']='0';
+      $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns']='1';
+      $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']='1';
       $array = array();
       if ($wantRecords) $array['records'] = $records;
       if ($wantColumns) $array['columns'] = $this->view_columns;

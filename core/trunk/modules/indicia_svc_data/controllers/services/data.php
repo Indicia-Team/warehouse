@@ -557,9 +557,9 @@ class Data_Controller extends Data_Service_Base_Controller {
     {
       case 'json':
         $a = json_encode($return);
-        if (array_key_exists('callback', $_GET))
+        if (array_key_exists('callback', $_REQUEST))
         {
-          $a = $_GET['callback']."(".$a.")";
+          $a = $_REQUEST['callback']."(".$a.")";
         }
         echo $a;
         break;
@@ -621,7 +621,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       kohana::log('error', $this->db->last_query());
       kohana::log('error', 'Request detail:');
       kohana::log('error', $this->uri->string());
-      kohana::log('error', kohana::debug($_GET));
+      kohana::log('error', kohana::debug($_REQUEST));
       throw $e;
     }
   }
@@ -635,9 +635,9 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $table = inflector::plural($this->entity);
     $prefix='';
-    if (array_key_exists('view', $_GET))
+    if (array_key_exists('view', $_REQUEST))
     {
-      $prefix = $_GET['view'];
+      $prefix = $_REQUEST['view'];
     }
     // Check for allowed view prefixes, and use 'list' as the default
     if ($prefix!='gv' && $prefix!='detail')
@@ -648,7 +648,7 @@ class Data_Controller extends Data_Service_Base_Controller {
 
   /**
   * Works out what filter and other options to set on the db object according to the
-  * $_GET parameters currently available, when retrieving a list of items.
+  * $_REQUEST parameters currently available, when retrieving a list of items.
   * @param boolean $count set to true when doing a count query, so the limit and offset are skipped
   */
   protected function apply_get_parameters_to_db($count=false)
@@ -657,7 +657,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     $orderby='';
     $like=array();
     $where=array();
-    foreach ($_GET as $param => $value)
+    foreach ($_REQUEST as $param => $value)
     {
       $value = urldecode($value);
       switch ($param)
