@@ -53,6 +53,8 @@ class mtbqqq {
   public static function sref_to_wkt($sref)
   {
     $sref=self::clean($sref);
+    if (!self::is_valid($sref))
+      throw new Exception('Spatial reference is not a recognisable grid square.');
     // Split the input string main square part into x & y.
     $yy = substr($sref, 0, 2);
     $xx = substr($sref, 2, 2);
