@@ -1057,16 +1057,14 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
       foreach($values as $key => $value){
         $parts = explode(':', $key);
         if ($parts[0] == 'SL' && $parts[2] == (string)$i){
+          // Fieldname is SL:speciesID:section:SectionsampleID:OccID:AttrValID
           $occ = array('fkId' => 'sample_id',
                              'model' => array('id' => 'occurrence', 'fields' => array()));
           $occ['model']['fields']['taxa_taxon_list_id'] = array('value' => $parts[1]);
           $occ['model']['fields']['website_id'] = array('value' => $values['website_id']);
           if($parts[4] != '-') $occ['model']['fields']['id'] = array('value' => $parts[4]);
-          $attrFields = array('occurrence_attribute_id' => $args['quant_dist_attr_id'], 'value' => $value);
-          if($parts[5] != '-') $attrFields['id'] = $parts[5];
-          $occ['model']['metaFields'] = array(
-                    'occAttributes' => array('value' => array(array('id'=>'occurrence', 'fields' => $attrFields))));
-          if($parts[4] != '-' || $value != '') $suboccs[] = $occ;
+          if($parts[4] != '-' || $value != '')
+            $occ['model']['fields']['occAttr:'.$args['quant_dist_attr_id'].($parts[5] != '-' ? ':'.$parts[5]) : ''] = array('value' => $value);
         }
       }
       $sa['model']['subModels'] = $suboccs;

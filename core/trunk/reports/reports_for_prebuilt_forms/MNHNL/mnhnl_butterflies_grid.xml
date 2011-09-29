@@ -54,7 +54,7 @@
   LEFT JOIN detail_termlists_terms tnumber ON tnumber.id=sav3.int_value
   LEFT JOIN detail_termlists_terms twind ON twind.id=sav7.int_value
   LEFT JOIN detail_termlists_terms tcloud ON tcloud.id=sav8.int_value
-  LEFT JOIN detail_termlists_terms tocc ON tocc.id=oav.int_value
+  INNER JOIN detail_termlists_terms tocc ON tocc.id=oav.int_value AND tocc.term != ' '
   WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
   #order_by#
   </query>

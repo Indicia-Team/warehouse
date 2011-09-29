@@ -56,7 +56,7 @@
   INNER JOIN sample_attribute_values sav10
   		ON sav10.sample_id = s2.id AND sav10.sample_attribute_id = #reliability_attr_id# and sav10.deleted = FALSE
   INNER JOIN occurrence_attribute_values oav1
-  		ON oav1.occurrence_id = o.id  and oav1.deleted = FALSE
+  		ON oav1.occurrence_id = o.id  and oav1.deleted = FALSE and oav1.int_value is not null
   LEFT JOIN detail_termlists_terms tmonth ON tmonth.id=sav2.int_value
   LEFT JOIN detail_termlists_terms tnumber ON tnumber.id=sav3.int_value
   LEFT JOIN detail_termlists_terms twind ON twind.id=sav7.int_value
