@@ -18,5 +18,13 @@ class Helpers_mtbqqq_Test extends PHPUnit_Framework_TestCase {
       'Sref to WKT returned an unexpected value'
     );
   }
+  
+  /**
+   * @expectedException InvalidArgumentException
+   */
+  public function testSrefToWktInvalid() {
+    $sref='1846/5';
+    $wkt = mtbqqq::sref_to_wkt($sref);
+  }
 
 }

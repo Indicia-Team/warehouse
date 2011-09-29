@@ -58,7 +58,7 @@ class osgb {
     // ignore any spaces in the grid ref
     $sref = str_replace(' ','',$sref);
     if (!self::is_valid($sref))
-      throw new Exception('Spatial reference is not a recognisable grid square.');
+      throw new InvalidArgumentException('Spatial reference is not a recognisable grid square.');
     $sq_100 = self::get_100k_square($sref);
     if (strlen($sref)==5) {
       // Assume DINTY Tetrad format 2km squares
