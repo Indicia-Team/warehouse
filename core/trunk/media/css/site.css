@@ -31,25 +31,9 @@ p
 {
   background: #000000 url(../images/banner.jpg) no-repeat top right;
   color: #FEFEFE;
-  padding: 16px;
-  height: 94px;
-  width: 934px;
+  height: 126px;
+  width: 966px;
 }
-
-#sitetitle
-{
-  font-family: Tahoma, Geneva, sans-serif;
-  font-size: 2em;
-  margin-left: 70px;
-}
-
-#subtitle
-{
-  font-family: Tahoma, Geneva, sans-serif;
-  font-size: 1.2em;
-  margin-left: 70px;
-}
-
 
 table
 {

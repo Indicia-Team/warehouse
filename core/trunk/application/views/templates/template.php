@@ -97,10 +97,7 @@ echo html::stylesheet(
 <div id="wrapper" class="ui-widget">
 
     <!-- BEGIN: banner -->
-    <div id="banner">
-        <span id="sitetitle">Indicia</span><br/>
-        <span id="subtitle">The NBN OPAL Online Recording Toolkit</span>
-    </div>
+    <div id="banner"></div>
     <!-- END: banner -->
 
     <!-- BEGIN: main menu (jquery/superfish) -->
