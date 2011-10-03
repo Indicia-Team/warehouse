@@ -5,11 +5,15 @@ $lang = array
     'database_setup' => 'Database Setup',
     'description' => 'Before you start, please create a database using the PostGIS template, for example using the script: <br />' .
         '*code*'.
-        'Then, create a user login with full access to modify objects and data in this database. For a development installation you can use this '.
-		'user account for both the database connection user as well as the report user. However for a live server it is recommended that you create '.
-		'a second user and only grant read only privileges to the tables and views you want accessible from reports to use as the report user. '.
-		'The schema you define below will be auto-created by the setup procedure. For more information, see the '.
-		'<a href="http://code.google.com/p/indicia/wiki/Installation">Installation Guide</a>.',
+        'Then, create a user login with full access to modify objects and data in this database, changing the username and password as required. <br/>'.
+        '*code_user*'.
+        'Finally, connect to your new database and run the following script to grant permissions. <br/>'.
+        '*code_perm*'.
+        'For a development installation you can use this '.
+    'user account for both the database connection user as well as the report user. However for a live server it is recommended that you create '.
+    'a second user and only grant read only privileges to the tables and views you want accessible from reports to use as the report user. '.
+    'The schema you define below will be auto-created by the setup procedure. For more information, see the '.
+    '<a href="http://code.google.com/p/indicia/wiki/Installation">Installation Guide</a>.',
     'database'    => 'Database',
     'db_schema'   => 'Schema for Indicia tables',
     'db_host'     => 'Host',
