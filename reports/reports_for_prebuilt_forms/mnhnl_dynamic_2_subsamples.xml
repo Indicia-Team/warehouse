@@ -1,0 +1,30 @@
+<report
+    title="MNHNL Dynamic 2 SubSamples List"
+    description="Form Internal Report: Used by the Subsamples grid to retrieve the subsamples associated with a survey/supersample."
+>
+  <query>
+  SELECT s.id,
+  		s.entered_sref as place,
+  		(ARRAY(select t.taxon
+  				FROM occurrences o 
+  				INNER JOIN taxa_taxon_lists ttl ON ttl.id = o.taxa_taxon_list_id
+  				INNER JOIN taxa t ON ttl.taxon_id = t.id
+  				WHERE o.sample_id = s.id AND o.deleted = FALSE  ))::text as taxa
+  FROM samples s
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id = #parent_id#
+  #order_by#
+  </query>
+  <order_bys>
+    <order_by>id DESC</order_by>
+  </order_bys>
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for?' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+    <param name='parent_id' display='Parent Supersample: ' description='Parent supersample id to return data for?' datatype='int' />
+  </params>
+  <columns>
+    <column name='id' display='ID' />
+    <column name='place' display='Place' />
+    <column name='taxa' display='Taxon' />
+  </columns>
+</report>
