@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Survey Details" description="Details of all occurrences associated with a survey">
+      <params>
+    		<param name='survey' display='Survey' description='Select the survey to return data for' datatype='lookup'
+        		query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title'/>
+            <param name="vagueDate" display="Vague Date Processing" description="Select whether or not to process vague date fields"
+            	datatype='lookup' lookup_values='true:Enable processing,false:Disable processing' />
+            <param name="download" display="Download" description="Carry out as a download... Downloaded records are set to read only"
+            	datatype='lookup' lookup_values='OFF:No,INITIAL:Trial - for data checking,FINAL:Final' />
+      </params>
+      <vagueDate enableProcessing='#vagueDate#' /> // in this case value picked up from parameter, though can be set explicitly as well.
+      // TODO change occurrences so can't change a downloaded record.
+      <download mode="#download#" /> // in this case value picked up from parameter, though can be set explicitly as well.
+      <table tablename="samples" where="#this#.survey_id = #survey# and #this#.deleted = FALSE " >
+		  <subTable tablename="locations" join='LEFT' where="#this#.deleted = FALSE" >
+			<tabColumn name='name' />
+		  </subTable>
+		  <tabColumn name='date_start' />
+		  <tabColumn name='date_end' />
+		  <tabColumn name='date_type' />
+		  <tabColumn name='date' func="''"/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+		  <tabColumn name='entered_sref' />
+		  <tabColumn name='entered_sref_system' />
+		  <tabColumn name='location_name' />
+		  <tabColumn name='comment' />
+		  <tabColumn name='external_key' />
+		  <subTable tablename='termlists_terms' parentKey='sample_method_id' join='LEFT' where=" #this#.deleted = FALSE" >
+		    <subTable tablename='terms' join='LEFT' where="#this#.deleted = FALSE" >
+			  <tabColumn name='term' display='Sample Method' />
+		    </subTable>
+		  </subTable>
+		  <tabColumn name='recorder_names' />
+          <attributes  separator='|' />
+          <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE and #this#.record_status in ('C', 'V')" 
+          			 >          
+		    <subTable tablename='people' parentKey='determiner_id' join='LEFT' where="#this#.deleted = FALSE" >
+		      <subTable tablename='titles' join='LEFT' where="#this#.deleted = FALSE" >
+		        <tabColumn name='determiner' func="(#this#.title||' '||#parent#.first_name||' '||#parent#.surname)" display='Determiner' />
+		      </subTable>
+		    </subTable>
+            <tabColumn name='id' visible="true" />
+            <tabColumn name='record_status' />
+            <tabColumn name='confidential' />
+            <tabColumn name='external_key' />
+		    <tabColumn name='comment' />
+		    <subTable tablename='taxa_taxon_lists' join='LEFT' where="#this#.deleted = FALSE" >
+		      <subTable tablename='taxa' join='LEFT' where="#this#.deleted = FALSE" >
+		        <tabColumn name='taxon' />
+		      </subTable>
+		    </subTable>
+		    <mergeTabColumn name='path' tablename='occurrence_images' separator='|' where="deleted = FALSE" />
+            <attributes where="rt.restrict_to_survey_id = #survey#" separator='|' />  // can set hideVagueDateFields='true' if want to.
+          </subTable>    
+      </table>
+// samples data notes:
+//  id : internal PK, not output
+//  survey_id : used to filter data to output, so not output required
+//  created_on, created_by_id, updated_on, updated_by_id : internal metadata so not output
+//  deleted : used to filter data to output, so not output required
+//  parent_id : used for hierarchical sampling, should not be required to output data.
+// occurrences data notes:
+//  confidential: TODO to be checked whether need to filter against.
+//  created_on, created_by_id, updated_on, updated_by_id, verified_by_id, verified_on : internal metadata so not output
+//  website_id : not required.
+//  deleted : used to filter data to output, so not output required
+</report>
