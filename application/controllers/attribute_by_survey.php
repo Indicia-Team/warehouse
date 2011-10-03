@@ -30,6 +30,8 @@
 class Attribute_By_Survey_Controller extends Indicia_Controller
 {
   private $_survey=null;
+  private $_website_id=null;
+  private $_survey_id=null;  
 
   public function __construct()
   {
@@ -50,13 +52,13 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   public function index() {
     // get the survey id from the segments in the URI
     $segments=$this->uri->segment_array();
-    $this->survey_id = $segments[2];
+    $this->_survey_id = $segments[2];
     $this->pagetitle = 'Attributes for '.$this->getSurvey()->title;
     $this->page_breadcrumbs[] = html::anchor('survey', 'Surveys');
     $this->page_breadcrumbs[] = $this->pagetitle;
     $this->template->content=new View('attribute_by_survey/index');
     $this->template->title=$this->pagetitle;
-    $filter = array('survey_id'=>$this->survey_id);
+    $filter = array('survey_id'=>$this->_survey_id);
     $top_blocks = ORM::factory('form_structure_block')->
         where('parent_id',null)->
         where('type', strtoupper(substr($this->type,0,1)))->
@@ -75,6 +77,13 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
     $this->template->content->existingAttrs=$attrs;
   }
   
+  public function edit($id) {
+    $segments=$this->uri->segment_array();
+    $m = ORM::factory($_GET['type'].'_attributes_website', $segments[3]);
+    $this->_website_id = $m->website_id;
+    return parent::edit($id);    
+  }
+  
   /**
    * Handle the layout_update action, which uses $_POST data to find a list of commands
    * for re-ordering the controls
@@ -82,13 +91,13 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   public function layout_update() {
     // get the survey id from the segments in the URI
     $segments=$this->uri->segment_array();
-    $this->survey_id = $segments[3];
+    $this->_survey_id = $segments[3];
     $structure = json_decode($_POST['layout_updates'],true);
-    $websiteId = ORM::Factory('survey', $this->survey_id)->website_id;
+    $websiteId = ORM::Factory('survey', $this->_survey_id)->website_id;
     $this->saveBlockList($structure['blocks'], null, $websiteId);
     $this->saveControlList($structure['controls'], null, $websiteId);
     $this->session->set_flash('flash_info', "The form layout changes have been saved.");
-    url::redirect('attribute_by_survey/'.$this->survey_id.'?type='.$this->type);
+    url::redirect('attribute_by_survey/'.$this->_survey_id.'?type='.$this->type);
   }
   
   private function saveBlockList($list, $blockId, $websiteId) {
@@ -98,7 +107,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
       if (substr($block['id'], 0, 10)=='new-block-') {
         $model = ORM::factory('form_structure_block');
         $model->name = $block['name'];
-        $model->survey_id=$this->survey_id;
+        $model->survey_id=$this->_survey_id;
         $model->weight=$weight;
         $model->type=strtoupper(substr($_GET['type'], 0, 1));
         $model->parent_id=$blockId;
@@ -145,7 +154,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
         $attrVar = $this->type.'_attribute_id';
         // link the model to the existing attribute we have the ID for
         $model->$attrVar = $attrId;
-        $model->restrict_to_survey_id = $this->survey_id;
+        $model->restrict_to_survey_id = $this->_survey_id;
         $model->website_id = $websiteId;  
         $changed = true;    
       } else {
@@ -275,11 +284,13 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    */
   protected function page_authorised() {
     if (isset($this->auth_filter) && $this->auth_filter['field']=='website_id') {
-      $survey = $this->getSurvey();
-      return in_array($survey->website_id, $this->auth_filter['values']);
+      if (!$this->_website_id) {
+        $survey = $this->getSurvey();
+        $this->_website_id = $survey->website_id;
+      }
+      return in_array($this->_website_id, $this->auth_filter['values']);
     } else
       return true;
-
   }
   
   /**
@@ -287,7 +298,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
    */
   protected function getSurvey() {
     if ($this->_survey===null)
-      $this->_survey = ORM::factory('survey', $this->survey_id);
+      $this->_survey = ORM::factory('survey', $this->_survey_id);
     return $this->_survey;
   }
 

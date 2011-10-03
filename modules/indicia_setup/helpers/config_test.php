@@ -354,7 +354,7 @@ class config_test {
       self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'trigger templates',
           dirname(dirname(dirname(dirname(__file__ )))) . '/reports/trigger_templates',
           'the trigger and notification templates to be accessed',
-          'the trigger and notification templates cannot be aceessed');
+          'the trigger and notification templates cannot be accessed');
 
       if (count($good_dirs)>0 && !$problems_only) {
         array_push($messages, array(

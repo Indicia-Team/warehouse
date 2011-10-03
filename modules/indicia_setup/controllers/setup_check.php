@@ -193,7 +193,7 @@ class Setup_Check_Controller extends Template_Controller {
    * Action to display the acknowledge permissions page.
    */
   public function ack_permissions() {
-    $this->template->title = Kohana::lang('ack_perm_problems');
+    $this->template->title = Kohana::lang('setup.ack_perm_problems');
     $this->template->content = new View('fixers/ack_permissions');
     $messages=array();
     config_test::check_dir_permissions($messages, true);
@@ -241,9 +241,20 @@ class Setup_Check_Controller extends Template_Controller {
       // init and default values of view vars
       $this->view_var = array();
   
-      $this->template->content->description = str_replace('*code*',
-          '<span class="code">CREATE DATABASE indicia TEMPLATE=template_postgis;</span>',
+      $description = str_replace(
+          array('*code*', '*code_user*', '*code_perm*'),
+          array(
+              '<span class="code">CREATE DATABASE indicia TEMPLATE=template_postgis;</span>',
+              '<span class="code">CREATE USER indicia_user WITH PASSWORD \'indicia\';<br/>'.
+                  'GRANT ALL PRIVILEGES ON DATABASE indicia TO indicia_user;</span>',
+              '<span class="code">GRANT ALL PRIVILEGES ON TABLE geometry_columns TO indicia_user;<br/>'.
+                  'GRANT ALL PRIVILEGES ON TABLE spatial_ref_sys TO indicia_user;<br/>'.
+                  'GRANT EXECUTE ON FUNCTION st_astext(geometry) TO indicia_user;<br/>'.
+                  'GRANT EXECUTE ON FUNCTION st_geomfromtext(text, integer) TO indicia_user;<br/>'.
+                  'GRANT EXECUTE ON FUNCTION st_transform(geometry, integer) TO indicia_user;</span>'),
           Kohana::lang('setup.description'));
+      
+      $this->template->content->description = $description;
       // Assign default settings if the user has not yet updated the db config
       $db_config=kohana::config('database');
       if ($db_config['default']['connection']['type']=='mysql') {
