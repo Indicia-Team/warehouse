@@ -1,0 +1,37 @@
+label {
+  width: 140px;
+}
+
+.helpText {
+  margin-left: 144px;
+}
+
+table#transect-input {
+  width: auto;
+}
+
+table#transect-input td, table#transect-input input{
+  margin: 0;
+  padding: 0
+}
+
+table#transect-input input {
+  width: 50px;
+}
+
+thead th {
+  text-align: center;
+}
+
+table .alt-row {
+  background-color: #e7e7e7;
+}
+
+
+input.edited[type="text"], input.edited[type="password"], select.edited {
+  border: solid green 1px;
+}
+
+input.saving[type="text"], input.saving[type="password"], select.saving {
+  border: solid yellow 1px;
+}

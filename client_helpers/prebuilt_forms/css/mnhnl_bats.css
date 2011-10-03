@@ -1,0 +1,33 @@
+.deh-required {
+  color:red;
+}
+.control-box {
+  display:inline  !important;
+}
+.scOccAttrCell label {
+  margin-right: 15px;
+  width: auto;
+}
+.scOccAttrCell input[type='radio'] {
+  width: auto;
+}
+p.inline-error {
+  margin-left: 0;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 20px;	
+  display: inline;  
+}
+.species-grid td.noPadding {
+  padding: 0;
+}
+
+.fullWidth {
+  width: 100%;
+}
+.data {
+  margin-right: 15px;	
+}
+.remove-row {
+  color:red !important;
+}
