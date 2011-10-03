@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species &amp; Occurrence Counts by Content Management System user" description="Lists content management system users and the number of species and occurrences entered by each of them.">
+      <query website_filter_field="o.website_id">
+      SELECT cast(sav_cmsid.int_value as varchar) as cms_user_id, sav_cmsuser.text_value as cms_username, 
+          count(DISTINCT o.id) as occurrences, count(DISTINCT ttl.taxon_meaning_id) as taxa, COUNT(DISTINCT tx.taxon_group_id) AS groups
+      FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      JOIN taxa tx ON tx.id=ttl.taxon_id AND tx.deleted=false
+      JOIN samples s on s.id=o.sample_id AND s.deleted=false
+      JOIN sample_attribute_values sav_cmsid ON sav_cmsid.sample_id=s.id AND sav_cmsid.deleted=false
+      JOIN sample_attributes sa_cmsid ON sa_cmsid.id=sav_cmsid.sample_attribute_id AND sa_cmsid.deleted=false AND sa_cmsid.caption='CMS User ID'
+      LEFT JOIN (sample_attribute_values sav_cmsuser
+        JOIN sample_attributes sa_cmsuser ON sa_cmsuser.id=sav_cmsuser.sample_attribute_id AND sa_cmsuser.deleted=false AND sa_cmsuser.caption='CMS Username'
+      ) ON sav_cmsuser.sample_id=s.id AND sav_cmsuser.deleted=false
+      WHERE o.deleted=false
+      AND (o.zero_abundance='f' OR o.id IS NULL)
+      AND #website_filter#
+      AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      GROUP BY sav_cmsid.int_value, sav_cmsuser.text_value
+    UNION
+      SELECT 'total' as cms_user_id, '' as cms_username, 
+          count(DISTINCT o.id) as occurrences, count(DISTINCT ttl.taxon_meaning_id) as taxa, COUNT(DISTINCT tx.taxon_group_id) AS groups
+      FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      JOIN taxa tx ON tx.id=ttl.taxon_id AND tx.deleted=false
+      JOIN samples s on s.id=o.sample_id AND s.deleted=false
+      JOIN sample_attribute_values sav_cmsid ON sav_cmsid.sample_id=s.id AND sav_cmsid.deleted=false
+      JOIN sample_attributes sa_cmsid ON sa_cmsid.id=sav_cmsid.sample_attribute_id AND sa_cmsid.deleted=false AND sa_cmsid.caption='CMS User ID'
+      LEFT JOIN (sample_attribute_values sav_cmsuser
+        JOIN sample_attributes sa_cmsuser ON sa_cmsuser.id=sav_cmsuser.sample_attribute_id AND sa_cmsuser.deleted=false AND sa_cmsuser.caption='CMS Username'
+      ) ON sav_cmsuser.sample_id=s.id AND sav_cmsuser.deleted=false
+      WHERE o.deleted=false
+      AND (o.zero_abundance='f' OR o.id IS NULL)
+      AND #website_filter#
+      AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND '#include_total#'!='no'
+      </query>
+  <params>
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+    <param name='include_total' display='Include Total' datatype='lookup' lookup_values='yes:Yes,no:No' />
+  </params>
+      <order_bys>
+            <order_by>taxa DESC</order_by>
+      </order_bys>
+      <columns>
+            <column name="cms_user_id" display="User ID" style="background-color: #e7e7e7;" />
+            <column name="cms_username" display="User name" style="background-color: #e7e7e7;" />
+            <column name="occurrences" display="No. of Occurrences" />
+            <column name="taxa" display="No. of Species" />
+            <column name="groups" display="No. of Taxon Groups" />
+      </columns>
+</report>

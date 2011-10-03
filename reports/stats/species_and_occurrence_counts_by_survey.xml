@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="Species &amp; Occurrence Counts by Survey" description="Lists surveys and the number of species and occurrences within them. Optional date range and taxon group filters">
+      <query>
+      SELECT su.title as survey, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id and ttl.deleted=false
+      JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.preferred='t' and ttl2.deleted=false
+      JOIN taxa t ON ttl2.taxon_id = t.id and t.deleted=false
+      JOIN samples s on s.id=o.sample_id and s.deleted=false
+      JOIN surveys su on su.id=s.survey_id and su.deleted=false
+      WHERE o.website_id=#website_id#
+      AND o.record_status&lt;&gt;'R'
+      AND o.deleted=false     
+      AND (CAST(t.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      GROUP BY survey
+    UNION
+      SELECT 'Total' as survey, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count, #website_id# as website_id
+      FROM occurrences o
+      JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
+      JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.preferred='t' AND ttl2.deleted=false
+      JOIN taxa t ON ttl2.taxon_id = t.id AND t.deleted=false
+      JOIN samples s on s.id=o.sample_id and s.deleted=false
+      WHERE o.website_id=#website_id#
+      AND o.record_status&lt;&gt;'R'
+      AND o.deleted=false 
+      AND (CAST(t.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND '#include_total#'!='no'
+      </query>
+  <params>
+    <param name='website_id' display='Website ID' description='Select the website to return data for' datatype='integer' />
+    <param name='date_from' display='Date From' datatype='date' />
+    <param name='date_to' display='Date To' datatype='date' />
+    <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
+        query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
+    <param name='include_total' display='Include Total' datatype='lookup' lookup_values='yes:Yes,no:No' />
+  </params>
+      <order_bys>
+            <order_by>species_count DESC</order_by>
+      </order_bys>
+      <columns>
+            <column name="survey" display="Survey" style="background-color: #e7e7e7;" />
+            <column name="species_count" display="Total no. of Species" />
+            <column name="occurrences_count" display="Total no. of Occurrences" />
+            <column name="website_id" visible="false" />
+      </columns>
+</report>
