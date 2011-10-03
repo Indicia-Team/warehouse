@@ -1,0 +1,2 @@
+﻿INSERT INTO termlists (title, description, created_on, created_by_id, updated_on, updated_by_id, external_key)
+VALUES ('Taxon designation categories', 'List of categories for taxon designations.', now(), 1, now(), 1, 'indicia:taxon_designation_categories');
