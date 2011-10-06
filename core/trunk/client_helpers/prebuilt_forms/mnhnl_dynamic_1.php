@@ -414,6 +414,14 @@ class iform_mnhnl_dynamic_1 {
           'required' => false,
           'default' => false,
           'group' => 'User Interface'
+        ),
+        array(
+          'name'=>'loctoolsLocTypeID',
+          'caption'=>'Location Tools Location Type ID filter',
+          'description'=>'When performing allocation of locations, filter available locations by this location_type_id.',
+          'type'=>'int',
+          'required' => false,
+          'group' => 'User Interface'
         )        
       )
     );
@@ -503,7 +511,7 @@ class iform_mnhnl_dynamic_1 {
   <div id="setLocations">
     <form method="post">
       <input type="hidden" id="mnhnld1" name="mnhnld1" value="mnhnld1" /><table border="1"><tr><td></td>';
-        $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&parent_id=NULL&orderby=name";
+        $url = $svcUrl.'/data/location?mode=json&view=detail&auth_token='.$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&parent_id=NULL&orderby=name".(isset($args['loctoolsLocTypeID'])&&$args['loctoolsLocTypeID']<>''?'&location_type_id='.$args['loctoolsLocTypeID']:'');
         $session = curl_init($url);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
         $entities = json_decode(curl_exec($session), true);
