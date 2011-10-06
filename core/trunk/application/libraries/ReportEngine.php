@@ -437,7 +437,20 @@ class ReportEngine {
                 break;
               case 'L':
                 // Lookup
-                $termResponse = $this->reportDb->query("select t.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by t.id;");
+                if(isset($attributeDefn->meaningIdLanguage))
+                  $termResponse = $this->reportDb->query("select tt.meaning_id as id, t.term from terms t, termlists_terms tt, languages l".
+                  										 " where tt.termlist_id =".$row["termlist_id"].
+                  										 " and tt.term_id = t.id ".
+                  										 " and t.language_id = l.id ".
+                  										 " and t.deleted=FALSE ".
+                  										 " and tt.deleted = FALSE ".
+                  										 " and l.deleted=FALSE ".
+                  										 ($attributeDefn->meaningIdLanguage== "preferred" ?
+                  											" and tt.preferred = true " :
+                  											" and l.iso = '".$attributeDefn->meaningIdLanguage."'").
+                  										 "ORDER by tt.meaning_id;");
+                else
+                  $termResponse = $this->reportDb->query("select t.id, t.term from terms t, termlists_terms tt where tt.termlist_id =".$row["termlist_id"]." and tt.term_id = t.id and t.deleted=FALSE and tt.deleted = FALSE ORDER by t.id;");
                 $newColumns[$row[$attributeDefn->id]]['lookup'] = $termResponse->result_array(FALSE);
                 // allow follow through so Lookup follows normal format of a singular field.
               default:

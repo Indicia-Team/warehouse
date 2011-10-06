@@ -186,7 +186,8 @@ class XMLReportReader_Core implements ReportReader
                 $this->setAttributes(
                     $reader->getAttribute('where'),
                     $reader->getAttribute('separator'),
-                    $reader->getAttribute('hideVagueDateFields')); // determines whether to hide the main vague date fields for attributes.
+                    $reader->getAttribute('hideVagueDateFields'),// determines whether to hide the main vague date fields for attributes.
+                    $reader->getAttribute('meaningIdLanguage'));//if not set, lookup lists use term_id. If set, look up lists use meaning_id, with value either 'preferred' or the 3 letter iso language to use.
                 break;
               case 'vagueDate': // This switches off vague date processing.
                 $this->vagueDateProcessing = $reader->getAttribute('enableProcessing');
@@ -549,7 +550,7 @@ class XMLReportReader_Core implements ReportReader
     {
       // set a default column setup
       $this->columns[$name] = array(
-        'visible' => 'true',
+        'visible' => 'provisional_true',
         'img' => 'false',
         'autodef' => false
       );
@@ -578,9 +579,10 @@ class XMLReportReader_Core implements ReportReader
       if ($style != '') $this->columns[$name]['style'] = $style;
       if ($feature_style != '') $this->columns[$name]['feature_style'] = $feature_style;
       if ($class != '') $this->columns[$name]['class'] = $class;
-      if ($visible == 'false' || $this->columns[$name]['visible'] == 'false')
-        $this->columns[$name]['visible'] = 'false';
-      else
+      if ($visible == 'false') {
+        if($this->columns[$name]['visible'] != 'true') // allows a false to override a provisional_true, but not a true.
+          $this->columns[$name]['visible'] = 'false'; 
+      } else
         $this->columns[$name]['visible'] = 'true';
       if ($img == 'true' || $this->columns[$name]['img'] == 'true') $this->columns[$name]['img'] = 'true';
       if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
@@ -697,20 +699,20 @@ class XMLReportReader_Core implements ReportReader
     $this->mergeTabColumn('id', '', '', '', '', 'false', true);
   }
 
-  private function setAttributes($where, $separator, $hideVagueDateFields)
+  private function setAttributes($where, $separator, $hideVagueDateFields, $meaningIdLanguage)
   {
     $thisDefn = new stdClass;
     $thisDefn->caption = 'caption'; // caption is the name of the column in the subquery holding the attribute caption.
     $thisDefn->main_id = 'main_id'; // main_id is the name of the column in the subquery holding the PK value of the parent table.
      $thisDefn->parentKey = "lt".$this->tableIndex."_id"; // parentKey holds the column in the main query to compare the main_id against.
     $thisDefn->id = 'id'; // id is the name of the column in the subquery holding the attribute id.
-     $thisDefn->separator = $separator;
+    $thisDefn->separator = $separator;
     $thisDefn->hideVagueDateFields = $hideVagueDateFields;
-     $thisDefn->columnPrefix = 'attr_'.$this->tableIndex.'_';
+    $thisDefn->columnPrefix = 'attr_'.$this->tableIndex.'_';
     // folowing is used the query builder only
-     $thisDefn->parentTableIndex = $this->tableIndex;
+    $thisDefn->parentTableIndex = $this->tableIndex;
     $thisDefn->where = $where;
-
+    $thisDefn->meaningIdLanguage = $meaningIdLanguage;
     $thisDefn->query = $this->buildAttributeQuery($thisDefn);
     $this->attributes[] = $thisDefn;
     // Make sure id column of parent table is in list of columns returned from query.
