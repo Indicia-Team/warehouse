@@ -83,17 +83,33 @@ class Sample_Model extends ORM_Tree
       'comment',
       'sample_method_id'
     );
-    
-    $array->add_rules('date_type', 'required', 'length[1,2]');
     $array->add_rules('survey_id', 'required');
-    $array->add_rules('date_start', 'date_in_past');
-    // We need either at least one of the location_id and sref/geom : in some cases may have both
-    if (array_key_exists('location_id', $orig_values) && $orig_values['location_id']!=='' && $orig_values['location_id']!== null) { // if a location is provided, we don't need an sref.
-      $array->add_rules('location_id', 'required');
-      // if any of the sref fields are also supplied, need all 3 fields
-      if ((array_key_exists('entered_sref', $orig_values) && $orig_values['entered_sref']!=='' && $orig_values['entered_sref']!== null) ||
-          (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='' && $orig_values['entered_sref_system']!== null) ||
-          (array_key_exists('geom', $orig_values)) && $orig_values['geom']!==''  && $orig_values['geom']!== null) {
+    // when deleting a sample, only need the id and the deleted flag, don't need the date or location details, but copy over if they are there.
+    if(array_key_exists('deleted', $orig_values) && $orig_values['deleted']=='t'){
+      $this->unvalidatedFields = array_merge($this->unvalidatedFields,
+                                     array('date_type','date_start','date_end','location_id','entered_sref','entered_sref_system','geom'));
+    } else {
+      $array->add_rules('date_type', 'required', 'length[1,2]');
+      $array->add_rules('date_start', 'date_in_past');
+      // We need either at least one of the location_id and sref/geom : in some cases may have both
+      if (array_key_exists('location_id', $orig_values) && $orig_values['location_id']!=='' && $orig_values['location_id']!== null) { // if a location is provided, we don't need an sref.
+        $array->add_rules('location_id', 'required');
+        // if any of the sref fields are also supplied, need all 3 fields
+        if ((array_key_exists('entered_sref', $orig_values) && $orig_values['entered_sref']!=='' && $orig_values['entered_sref']!== null) ||
+            (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='' && $orig_values['entered_sref_system']!== null) ||
+            (array_key_exists('geom', $orig_values)) && $orig_values['geom']!==''  && $orig_values['geom']!== null) {
+          $array->add_rules('entered_sref', "required");
+          $array->add_rules('entered_sref_system', 'required');
+          $array->add_rules('geom', 'required');
+          if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
+            $system = $orig_values['entered_sref_system'];
+            $array->add_rules('entered_sref', "sref[$system]");
+            $array->add_rules('entered_sref_system', 'sref_system');
+          }
+        }
+      } else {
+        // without a location_id, default to requires an sref.
+        // no need to copy over location_id, as not present.
         $array->add_rules('entered_sref', "required");
         $array->add_rules('entered_sref_system', 'required');
         $array->add_rules('geom', 'required');
@@ -103,19 +119,7 @@ class Sample_Model extends ORM_Tree
           $array->add_rules('entered_sref_system', 'sref_system');
         }
       }
-    } else {
-      // without a location_id, default to requires an sref.
-      // no need to copy over location_id, as not present.
-      $array->add_rules('entered_sref', "required");
-      $array->add_rules('entered_sref_system', 'required');
-      $array->add_rules('geom', 'required');
-      if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
-        $system = $orig_values['entered_sref_system'];
-        $array->add_rules('entered_sref', "sref[$system]");
-        $array->add_rules('entered_sref_system', 'sref_system');
-      }    
     }
-
     return parent::validate($array, $save);
   }
 

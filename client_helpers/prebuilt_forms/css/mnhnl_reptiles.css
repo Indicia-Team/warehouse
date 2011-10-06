@@ -1,0 +1,16 @@
+.deh-required {
+  color:red;
+}
+.control-box {
+  display:inline  !important;
+}
+p.inline-error {
+  margin-left: 0;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 20px;	
+  display: inline;  
+}
+.remove-row {
+  color:red !important;
+}

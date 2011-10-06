@@ -1773,7 +1773,7 @@ class data_entry_helper extends helper_base {
         'nocache' => true
       ));
       foreach($attrValues as $attrValue) {
-        self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].':'.$attrValue['id']]
+        self::$entity_to_load['sc:'.$occurrenceIds[$attrValue['occurrence_id']].':'.$attrValue['occurrence_id'].':occAttr:'.$attrValue['occurrence_attribute_id'].(isset($attrValue['id'])?':'.$attrValue['id']:'')]
             = $attrValue['raw_value'];
       }
       if ($loadImages) {
@@ -1801,7 +1801,7 @@ class data_entry_helper extends helper_base {
    * @param array $occAttrs Array of custom attributes included in the grid.
    * @return string Html for the <thead> element.
    */
-  private static function get_species_checklist_header($options, $occAttrs) {
+  public static function get_species_checklist_header($options, $occAttrs) {
     $r = '';
     $visibleColIdx = 0;
     if ($options['header']) {
@@ -1890,7 +1890,7 @@ class data_entry_helper extends helper_base {
    * @param array $options Options array passed to the control
    * @return array Options array prepared with defaults and other values required by the control.
    */
-  private static function get_species_checklist_options($options) {
+  public static function get_species_checklist_options($options) {
     // validate some options
     if (!isset($options['listId']) && !isset($options['lookupListId']))
       throw new Exception('Either the listId or lookupListId parameters must be provided for a species checklist.');
@@ -1928,7 +1928,7 @@ class data_entry_helper extends helper_base {
   /**
    * Internal function to prepare the list of occurrence attribute columns for a species_checklist control.
    */
-  private static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
+  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
     $idx=0;
     if (array_key_exists('occAttrs', $options))
       $attrs = $options['occAttrs'];
@@ -1949,6 +1949,7 @@ class data_entry_helper extends helper_base {
         'suffixTemplate' => 'nosuffix',
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
+      if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
       // Don't want captions in the grid
       unset($attrDef['caption']);
       $attrDef['fieldname'] = '{fieldname}';
@@ -1973,7 +1974,7 @@ class data_entry_helper extends helper_base {
    * a hidden table is used to store a clonable row which provides the template for new rows
    * to be added to the grid.
    */
-  private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
+  public static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
     $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow">';
     $colspan = isset($options['lookupListId']) || $options['rowInclusionCheck']=='alwaysRemovable' ? ' colspan="2"' : '';
@@ -2398,7 +2399,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Converts the list of arguments to an options array unless the first argument is already
    * an options array. The arguments are mapped to the array in the order specified by the mapping.
    */
-  private static function check_arguments(array $args, array $mapping=null) {
+  public static function check_arguments(array $args, array $mapping=null) {
     if (count($args)>0) {
       if (is_array($args[0])) {
         // First argument is an options array

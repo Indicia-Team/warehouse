@@ -1108,12 +1108,13 @@ indiciaData.windowLoaded=false;
           var tabselected=false;
           jQuery.each(validator.errorMap, function(ctrlId, error) {
             // select the tab containing the first error control
+            var ctrl = jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:').replace(/\[/g, '\\\\[').replace(/]/g, '\\\\]') + ']');
             if (!tabselected && typeof(tabs)!=='undefined') {
-              tabs.tabs('select',jQuery('[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').filter('input,select').parents('.ui-tabs-panel')[0].id);
+              tabs.tabs('select',ctrl.filter('input,select').parents('.ui-tabs-panel')[0].id);
               tabselected = true;
             }
-            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('fieldset').removeClass('collapsed');
-            $('input[name=' + ctrlId.replace(/:/g, '\\\\:') + ']').parents('.fieldset-wrapper').show();
+            ctrl.parents('fieldset').removeClass('collapsed');
+            ctrl.parents('.fieldset-wrapper').show();
           });
         },
         messages: ".json_encode(self::$validation_messages)."
