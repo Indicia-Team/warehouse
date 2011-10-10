@@ -37,7 +37,7 @@ $indicia_templates = array(
   'suffix' => "<br/>\n",
   'nosuffix' => " \n",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
-  'requirednosuffix' => '<span class="deh-required">*</span><br/>'."\n",
+  'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
   'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
