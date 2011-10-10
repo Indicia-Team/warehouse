@@ -213,11 +213,18 @@
       }
     }
     
-        function loadGridFrom (div, request, clearExistingRows) {      
+    function loadGridFrom (div, request, clearExistingRows) {      
       $.getJSON(request,
           null,
           function(response) {
-            var tbody = $(div).find('tbody'), row, rows = eval(response), rowclass='', hasMore=false, value, rowInProgress=false, rowOutput, rowId;            
+            var tbody = $(div).find('tbody'), row, rows, rowclass='', hasMore=false, value, rowInProgress=false, rowOutput, rowId;
+            // if we get a count back, then update the stored count
+            if (typeof response.count !== "undefined") {
+              div.settings.recordCount = response.count;
+              rows = response.records;
+            } else {
+              rows = response;
+            }
             // clear current grid rows
             if (clearExistingRows) {
               tbody.children().remove();
@@ -286,9 +293,12 @@
     /**
      * Function to make a service call to load the grid data.
      */
-    function load (div) {
+    function load (div, recount) {
       var paramName, request = getRequest(div);
       request += '&offset=' + div.settings.offset;
+      if (recount) {
+        request += '&wantCount=1';
+      }
       // Extract any parameters from the attached form
       $('form#'+div.settings.reportGroup+'-params input, form#'+div.settings.reportGroup+'-params select').each(function(idx, input) {
         if (input.type!=='submit') {
@@ -324,7 +334,7 @@
           if (div.loading) {return;}
           div.loading = true;
           div.settings.offset += div.settings.itemsPerPage;
-          load(div);
+          load(div, false);
         });
         
         $(div).find('.pager .pag-prev').click(function(e) {
@@ -334,7 +344,7 @@
           div.settings.offset -= div.settings.itemsPerPage;
           // Min offset is zero, shouldn't really happen.
           if (div.settings.offset<0) {div.settings.offset=0;}
-          load(div);
+          load(div, false);
         });
         
         $(div).find('.pager .pag-first').click(function(e) {
@@ -342,7 +352,7 @@
           if (div.loading) {return;}
           div.loading = true;
           div.settings.offset = 0;
-          load(div);
+          load(div, false);
         });
         
         $(div).find('.pager .pag-last').click(function(e) {
@@ -350,7 +360,7 @@
           if (div.loading) {return;}
           div.loading = true;
           div.settings.offset = Math.round(div.settings.recordCount / div.settings.itemsPerPage-1)*div.settings.itemsPerPage;
-          load(div);
+          load(div, false);
         });
         
         $(div).find('.pager .pag-page').click(function(e) {
@@ -359,7 +369,7 @@
           div.loading = true;
           var page = this.id.replace('page-'+div.settings.id+'-', '');
           div.settings.offset = (page-1) * div.settings.itemsPerPage;
-          load(div);
+          load(div, false);
         });
       }
         
@@ -372,7 +382,7 @@
           div.loading = true;
           div.settings.filterCol = $(div).find('.filterSelect').val();
           div.settings.filterValue = $(div).find('.filterInput').val();
-          load(div);
+          load(div, true);
           if (div.settings.filterValue==='') {
             $(div).find('.clear-filter').hide();
           } else {
@@ -402,7 +412,7 @@
     
     this.reload = function() {
       $.each($(this), function(idx, div) {
-        load(div);
+        load(div, false);
       });
     };
     
@@ -432,7 +442,7 @@
         div.settings.orderby = colName;
         // Change sort to this column [DESC?]
         // reload the data
-        load(div);
+        load(div, false);
       });    
 
       setupReloadLinks(div);
