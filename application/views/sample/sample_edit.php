@@ -20,97 +20,81 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-echo html::script(array(
-  'media/js/jquery.ajaxQueue.js',
-  'media/js/jquery.bgiframe.min.js',
-  'media/js/jquery.autocomplete.js',
-  'media/js/OpenLayers.js',
-  'media/js/spatial-ref.js'
-), FALSE); 
 $id = html::initial_value($values, 'sample:id');
+require_once(DOCROOT.'client_helpers/map_helper.php');
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+require_once(DOCROOT.'client_helpers/form_helper.php');
+if (isset($_POST))
+  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
-<script type='text/javascript' src='http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1'></script>
-<script type='text/javascript'>
-(function($){
-  $(document).ready(function() {
-    init_map('<?php echo url::base()."', '".html::initial_value($values, 'sample:geom'); ?>', 'entered_sref', 'entered_geom', true);
-    jQuery('.vague-date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});    
-    jQuery('.date-picker').datepicker({dateFormat : '<?php echo kohana::lang('dates.format_js'); ?>', constrainInput: false});
-  });
-})(jQuery);
-</script>
-<form class="cmxform" action="<?php echo url::site().'sample/save' ?>" method="post">
+<form class="cmxform" action="<?php echo url::site().'sample/save' ?>" method="post" id="sample-edit">
 <?php echo $metadata; ?>
 <fieldset>
-<?php 
-print form::hidden('sample:id', html::specialchars($id));
-print form::hidden('sample:survey_id', html::initial_value($values, 'sample:survey_id')); 
-print form::hidden('website_id', html::initial_value($values, 'website_id'));
-?>
+<input type="hidden" name="sample:id" value="<?php echo html::initial_value($values, 'sample:id'); ?>" />
+<input type="hidden" name="sample:survey_id" value="<?php echo html::initial_value($values, 'sample:survey_id'); ?>" />
+<input type="hidden" name="website_id" value="<?php echo html::initial_value($values, 'website_id'); ?>" />
 <legend>Sample Details</legend>
-<ol>
-<li>
 <label for='survey'>Survey:</label>
-<input readonly="readonly" class="ui-state-disabled" id="survey" value="<?php echo $model->survey->title; ?>" />
-</li>
-<li>
-<label for='sample:date'>Date:</label>
-<?php print form::input('sample:date', html::initial_value($values, 'sample:date'), 'class="date-picker"');  ?>
-</li>
-<li>
-<label for="sample:entered_sref">Spatial Ref:</label>
-<input id="sample:entered_sref" class="narrow" name="sample:entered_sref"
-value="<?php echo html::initial_value($values, 'sample:entered_sref'); ?>"
-onblur="exit_sref();"
-onclick="enter_sref();"/>
-<select class="narrow" id="sample:entered_sref_system" name="sample:entered_sref_system">
+<input readonly="readonly" class="ui-state-disabled" id="survey" value="<?php echo $model->survey->title; ?>" /><br/>
 <?php
-$entered_sref_system=html::initial_value($values, 'sample:entered_sref_system'); 
-foreach (kohana::config('sref_notations.sref_notations') as $notation=>$caption) {
- if ($entered_sref_system==$notation)
-   $selected=' selected="selected"';
- else
-   $selected = '';
- echo "<option value=\"$notation\"$selected>$caption</option>";
-}
+echo data_entry_helper::date_picker(array(
+  'label' => 'Date',
+  'fieldname' => 'sample:date',
+  'default' => html::initial_value($values, 'sample:date'),
+  'class' => 'required'
+));
+echo data_entry_helper::sref_and_system(array(
+    'label' => 'Spatial Ref',
+    'fieldname' => 'sample:entered_sref',
+    'geomFieldname' => 'sample:geom',
+    'default' => html::initial_value($values, 'sample:entered_sref'),
+    'defaultGeom' => html::initial_value($values, 'sample:geom'),
+    'systems' => kohana::config('sref_notations.sref_notations'),
+    'defaultSystem' => html::initial_value($values, 'sample:entered_sref_system'),
+    'class' => 'control-width-3',
+    'validation'=>'required'
+));
+?>
+<p class="instruct">Zoom the map in by double-clicking then single click on the sample's centre to set the
+spatial reference. The more you zoom in, the more accurate the reference will be.</p>
+<?php
+$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+echo map_helper::map_panel(array(
+    'readAuth' => $readAuth,
+    'presetLayers' => array('virtual_earth'),
+    'editLayer' => true,
+    'layers' => array(),
+    'initial_lat'=>52,
+    'initial_long'=>-2,
+    'initial_zoom'=>7,
+    'width'=>870,
+    'height'=>400,
+    'initialFeatureWkt' => html::initial_value($values, 'sample:geom'),
+    'standardControls' => array('layerSwitcher','panZoom')
+));
+echo data_entry_helper::text_input(array(
+  'label' => 'Location Name',
+  'fieldname' => 'sample:location_name',
+  'default' => html::initial_value($values, 'sample:location_name')
+));
+echo data_entry_helper::textarea(array(
+  'label' => 'Recorder Names',
+  'description' => 'Enter the names of the recorders, one per line',
+  'fieldname' => 'sample:recorder_names',
+  'default' => html::initial_value($values, 'sample:recorder_names')
+));
+echo data_entry_helper::select(array(
+  'label' => 'Sample Method',
+  'fieldname' => 'sample:sample_method_id',
+  'default' => html::initial_value($values, 'sample:sample_method_id'),
+  'lookupValues' => $other_data['method_terms']
+));
+echo data_entry_helper::textarea(array(
+  'label' => 'Comment',
+  'fieldname' => 'sample:comment',
+  'default' => html::initial_value($values, 'sample:comment')
+));
  ?>
- </select>
- <input type="hidden" name="sample:entered_geom" value="<?php echo html::initial_value($values, 'sample:entered_geom'); ?>" />
- <?php echo html::error_message($model->getError('sample:entered_sref')); ?>
- <?php echo html::error_message($model->getError('sample:entered_sref_system')); ?>
- <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
- spatial reference. The more you zoom in, the more accurate the reference will be.</p>
- <div id="map" class="smallmap" style="width: 600px; height: 350px;"></div>
- </li>
- <li>
- <label for='sample:location_name'>Location Name:</label>
- <?php
- print form::input('sample:location_name', html::initial_value($values, 'sample:location_name'));
- echo html::error_message($model->getError('sample:location_name'));
- ?>
- </li>
- <li>
- <label for="sample:recorder_names">Recorder Names:<br />(one per line)</label>
- <?php
- print form::textarea('sample:recorder_names', html::initial_value($values, 'sample:recorder_names'));
- echo html::error_message($model->getError('sample:recorder_names'));
- ?>
- </li>
- <li>
- <label for='sample:sample_method_id'>Sample Method:</label>
- <?php
- print form::dropdown('sample:sample_method_id', $other_data['method_terms'], html::initial_value($values, 'sample:sample_method_id'));
- echo html::error_message($model->getError('sample:sample_method_id'));
- ?>
- </li>
- <li>
- <label for='sample:comment'>Comment:</label>
- <?php
- print form::textarea('sample:comment', html::initial_value($values, 'sample:comment'));
- echo html::error_message($model->getError('sample:comment'));
- ?>
- </li>
- </ol>
  </fieldset>
  <fieldset>
  <legend>Survey Specific Attributes</legend>
@@ -120,29 +104,50 @@ foreach ($values['attributes'] as $attr) {
 	$name = 'smpAttr:'.$attr['sample_attribute_id'];
   // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
   if ($attr['id']) $name .= ':'.$attr['id'];
-	echo '<li><label for="">'.$attr['caption']."</label>\n";
 	switch ($attr['data_type']) {
-	  case 'Specific Date':
-	  	echo form::input($name, $attr['value'], 'class="date-picker"');
-	    break;
-	  case 'Vague Date':
-	    echo form::input($name, $attr['value'], 'class="vague-date-picker"');
-	    break;
-	  case 'Lookup List':	    
-	  	echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);
-	  	break;
-	  case 'Boolean':
-	  	echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);
-	  	break;
-	  default:
-	  	echo form::input($name, $attr['value']);
-	}
-	echo '<br/>'.html::error_message($model->getError($name)).'</li>';
+    case 'Specific Date':
+    case 'Vague Date':
+      echo data_entry_helper::date_picker(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+      break;
+    case 'Lookup List':
+      echo data_entry_helper::date_picker(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['raw_value'],
+        'lookupValues' => $values['terms_'.$attr['termlist_id']]
+      ));
+      break;
+    case 'Boolean':
+      echo data_entry_helper::checkbox(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+      break;
+    default:
+      echo data_entry_helper::text_input(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+  }
 	
 }
  ?>
  </ol>
  </fieldset>
- <?php echo html::form_buttons($id!=null, false, false); ?>
+<?php 
+echo html::form_buttons($id!=null, false, false); 
+data_entry_helper::$dumped_resources[] = 'jquery';
+data_entry_helper::$dumped_resources[] = 'jquery_ui';
+data_entry_helper::$dumped_resources[] = 'fancybox';
+data_entry_helper::enable_validation('sample-edit');
+data_entry_helper::link_default_stylesheet();
+echo data_entry_helper::dump_javascript();
+?>
 </form>
  
