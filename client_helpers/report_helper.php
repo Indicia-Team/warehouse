@@ -1270,8 +1270,8 @@ mapSettingsHooks.push(function(opts) {
       // look for idlist parameters with an alias. If we find one, we need to pass this information to any map panel, because the 
       // alias provides the name of the key field in the features loaded onto the map. E.g. if you click on the feature, the alias
       // allows the map to find the primary key value and therefore filter the report to show the matching feature.
-      foreach($response['parameterRequest'] as $key=>$param) {
-        if (!empty($param['alias']) && $param['datatype']=='idlist')
+      foreach($response['parameterRequest'] as $key=>$param) 
+        if (!empty($param['alias']) && $param['datatype']=='idlist') {
           $alias = $param['alias'];
           data_entry_helper::$javascript .= "
 if (typeof(mapSettingsHooks)!=='undefined') {
@@ -1279,7 +1279,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     opts.featureIdField='$alias';
   });
 }\n";
-      }
+        }
       if ($options['paramsInMapToolbar']) {
         $toolbarControls = str_replace(array('<br/>', "\n"), '', $r);
         data_entry_helper::$javascript .= "$.fn.indiciaMapPanel.defaults.toolbarPrefix+='$toolbarControls';\n";
@@ -1400,6 +1400,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       'completeParamsForm' => true,
       'callback' => '',
       'paramsFormButtonCaption' => 'Run Report',
+      'paramsInMapToolbar' => false,
       'view' => 'list'
     ), $options);
     if ($options['galleryColCount']>1) $options['class'] .= ' gallery';
