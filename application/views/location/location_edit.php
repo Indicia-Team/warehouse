@@ -100,7 +100,8 @@ echo data_entry_helper::select(array(
   'label' => 'Type',
   'fieldname' => 'location:location_type_id',
   'default' => html::initial_value($values, 'location:location_type_id'),
-  'lookupValues' => $other_data['type_terms']
+  'lookupValues' => $other_data['type_terms'],
+  'blankText' => '<Please select>'
 ));
 echo data_entry_helper::sref_and_system(array(
     'label' => 'Spatial Ref',

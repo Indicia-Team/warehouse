@@ -87,7 +87,8 @@ echo data_entry_helper::select(array(
   'label' => 'Sample Method',
   'fieldname' => 'sample:sample_method_id',
   'default' => html::initial_value($values, 'sample:sample_method_id'),
-  'lookupValues' => $other_data['method_terms']
+  'lookupValues' => $other_data['method_terms'],
+  'blankText' => '<Please select>'
 ));
 echo data_entry_helper::textarea(array(
   'label' => 'Comment',
