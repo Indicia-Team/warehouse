@@ -44,8 +44,8 @@ foreach ($content['data'] as $row)
   foreach ($content['columns'] as $col => $det)
   {
     if (!array_key_exists('visible', $det) || $det['visible']!='false') {
-      $style= ($det['style']!='') ? 'style="'.$det['style'].'" ' : '';
-      $class= ($det['class']!='') ? 'class="'.$det['class'].'" ' : '';
+      $style= (isset($det['style']) && $det['style']!='') ? 'style="'.$det['style'].'" ' : '';
+      $class= (isset($det['class']) && $det['class']!='') ? 'class="'.$det['class'].'" ' : '';
       echo "<td $style $class>".$row[$col]."</td>";
     }
   }
