@@ -18,6 +18,12 @@ p.inline-error {
   margin-right: 20px;	
   display: inline;  
 }
+span.extra-text {
+  margin-left: 20px;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 0;	
+}
 .species-grid td.noPadding {
   padding: 0;
 }
@@ -30,4 +36,19 @@ p.inline-error {
 }
 .remove-row {
   color:red !important;
+}
+.locgrid-code {
+  width: 40px;
+}
+.locgrid-precision {
+  width: 40px;
+}
+.locgrid-codegsl {
+  width: 40px;
+}
+.locgrid-profondeur {
+  width: 40px;
+}
+.locgrid-development {
+  width: 40px;
 }
