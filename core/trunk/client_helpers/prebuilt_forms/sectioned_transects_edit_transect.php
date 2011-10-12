@@ -71,7 +71,7 @@ class iform_sectioned_transects_edit_transect {
             'label' => lang::get('Max. Section Count'),
             'type' => 'text_input',
             'description' => lang::get('The maximum number of sections a user is allowed to create for a transect site.'),
-            'group' => 'UKBMS Settings'
+            'group' => 'Transects Editor Settings'
           ), array(
             'name'=>'survey_id',
             'caption'=>'Survey',
@@ -86,13 +86,15 @@ class iform_sectioned_transects_edit_transect {
             'caption'=>'Site list page path',
             'description'=>'Enter the path to the page which the site list is on.',
             'type'=>'text_input',
-            'group'=>'UKBMS Settings'
+            'group'=>'Transects Editor Settings'
           ), array(
-            'name'=>'section_edit_path',
-            'caption'=>'Section edit page path',
-            'description'=>'Enter the path to the page which the section editor is on.',
-            'type'=>'text_input',
-            'group'=>'UKBMS Settings'
+            'name'=>'bottom_blocks',
+            'caption'=>'Form blocks to place at bottom',
+            'description'=>'A list of the blocks which need to be placed at the bottom of the form, below the map.',
+            'type'=>'textarea',
+            'group'=>'Transects Editor Settings',
+            'siteSpecific'=>true,
+            'required'=>false
           ),
           array(
             'name'=>'spatial_systems',
@@ -247,7 +249,7 @@ class iform_sectioned_transects_edit_transect {
     $r = '<div id="site-details" class="ui-helper-clearfix">';
     $r .= '<form method="post" id="input-form">';
     $r .= $auth['write'];    
-    $r .= '<div class="left" style="width: 44%">';
+    $r .= '<div id="cols" class="ui-helper-clearfix"><div class="left" style="width: 54%">';
     $r .= '<fieldset><legend>'.lang::get('Transect Details').'</legend>';
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";    
@@ -273,18 +275,18 @@ class iform_sectioned_transects_edit_transect {
     ));
     
     // setup the map options
-    $options = iform_map_get_map_options($args, $auth['read']);    
+    $options = iform_map_get_map_options($args, $auth['read']);
+    // find the form blocks that need to go below the map.
+    $bottom = '';
+    $bottomBlocks = explode("\n", isset($args['bottom_blocks']) ? $args['bottom_blocks'] : '');
+    foreach ($bottomBlocks as $block) {
+      $bottom .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), $block);
+    }
+    // other blocks to go at the top, next to the map
     $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'])); 
     $r .= '</fieldset>';
-    if (user_access('indicia data admin'))
-      $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
-    elseif (!$settings['locationId']) {
-      // for a new record, we need to link the current user to the location if they are not admin.
-      global $user;
-      $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
-    }
     $r .= "</div>"; // left
-    $r .= '<div class="right" style="width: 54%">';
+    $r .= '<div class="right" style="width: 44%">';
     if (!$settings['locationId']) {
       $help = t('Use the search box to find a nearby town or village, then drag the map to pan and click on the map to set the centre grid reference of the transect. '.
           'Alternatively if you know the grid reference you can enter it in the Grid Ref box on the left.');
@@ -299,7 +301,16 @@ class iform_sectioned_transects_edit_transect {
     }
     $olOptions = iform_map_get_ol_options($args);
     $r .= map_helper::map_panel($options, $olOptions);
-    $r .= '</div>'; // right
+    $r .= '</div></div>'; // right    
+    if (!empty($bottom))
+      $r .= $bottom;
+    if (user_access('indicia data admin'))
+      $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
+    elseif (!$settings['locationId']) {
+      // for a new record, we need to link the current user to the location if they are not admin.
+      global $user;
+      $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
+    }
     $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" />';
     $r .='</form>';
     $r .= '</div>'; // site-details

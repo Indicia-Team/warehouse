@@ -27,17 +27,17 @@
  * @param array $attributes
  * @param array $args
  * @param array $defAttrOptions
- * @param array $outerFilter
+ * @param array $outerFilter Name of the outer block to get controls for. Leave null for all outer blocks.
  * @param array $blockOptions Associative array of control names that have non-default options. Each entry
  * is keyed by the control name and has an array of the options and values to override.
  * @param array $idPrefix Optional prefix to give to IDs (e.g. for fieldsets) to allow you to ensure they remain unique.
  */
 
-function get_attribute_html($attributes, $args, $defAttrOptions, $outerFilter=null, $blockOptions=null, $idPrefix='') {
+function get_attribute_html(&$attributes, $args, $defAttrOptions, $outerFilter=null, $blockOptions=null, $idPrefix='') {
   $lastOuterBlock='';
   $lastInnerBlock='';
   $r = '';
-  foreach ($attributes as $attribute) {
+  foreach ($attributes as &$attribute) {
     // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
     if (($outerFilter===null || strcasecmp($outerFilter,$attribute['outer_structure_block'])==0) && !isset($attribute['handled'])) {
       if (empty($outerFilter) && $lastOuterBlock!=$attribute['outer_structure_block']) {
