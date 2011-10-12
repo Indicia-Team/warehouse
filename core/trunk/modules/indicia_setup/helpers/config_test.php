@@ -318,11 +318,31 @@ class config_test {
     $bad_dirs=array();
     $readonly=true;
     $writeable=false;
+    if (glob(dirname(dirname(dirname(dirname(__file__ )))) . '/application/cache/nofile*')===false)
+        array_push($messages, array(
+          'title' => 'PHP bug detected',
+          'description' => '<p>A bug in PHP has been detected which prevents the Kohana framework used by the Indicia Warehouse from running. '.
+              'This bug can be fixed by upgrading to PHP 5.3 or higher or by disabling safe mode on the server. For more information see '.
+              '<a target="_blank" href="https://bugs.php.net/bug.php?id=43530">https://bugs.php.net/bug.php?id=43530</a>.</p>',
+          'success' => false
+        ));
+    self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
+          'the installation settings to be stored correctly',
+          'the installation settings cannot be stored');
+    self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'cache',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/application/cache',
+          'the warehouse to cache information to improve performance',
+          'the warehouse cannot cache information to improve performance');
+    self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'database update folders',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
+          'the database upgrades to be tracked',
+          'the database upgrades cannot be tracked');
     if (array_key_exists('ack_permissions', $_SESSION)) {
       if (!$problems_only) {
         array_push($messages, array(
           'title' => 'Directory Access',
-          'description' => '<p>Problems with the directory access permissions have been acknowledged by you.</p>',
+          'description' => '<p>Non-essential problems with the directory access permissions have been acknowledged by you.</p>',
           'success' => true
         ));
       }
@@ -331,18 +351,6 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/upload',
           'images to be uploaded',
           'images cannot be uploaded');
-      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
-          'the installation settings to be stored correctly',
-          'the installation settings cannot be stored');
-      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'cache',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/application/cache',
-          'the warehouse to cache information to improve performance',
-          'the warehouse cannot cache information to improve performance');
-      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'database update folders',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
-          'the database upgrades to be tracked',
-          'the database upgrades cannot be tracked');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'configuration',
           dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',
