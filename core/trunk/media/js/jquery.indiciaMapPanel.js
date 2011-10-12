@@ -534,8 +534,8 @@ mapInitialisationHooks = [];
                   VERSION: "1.1.0",
                   STYLES: '',
                   BBOX: div.map.getExtent().toBBOX(),
-                  X: this.lastclick.x,
-                  Y: this.lastclick.y,
+                  X: Math.floor(this.lastclick.x),
+                  Y: Math.floor(this.lastclick.y),
                   INFO_FORMAT: 'application/vnd.ogc.gml',
                   LAYERS: clickableWMSLayerNames,
                   QUERY_LAYERS: clickableWMSLayerNames,
@@ -1092,7 +1092,6 @@ $.fn.indiciaMapPanel.defaults = {
     clickableLayersOutputMode: 'popup', // options are popup or div
     clickableLayersOutputFn: format_selected_features,
     clickableLayersOutputDiv: '',
-    clickableLayersOutputMode: 'popup', // popup, div or report
     clickableLayersOutputColumns: [],
     featureIdField: '',
     clickPixelTolerance: 5,
