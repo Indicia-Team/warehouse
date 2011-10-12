@@ -141,7 +141,7 @@ class Location_Model extends ORM_Tree {
       $this->submission['fields']['centroid_sref_system']['value'] = '4326';
     }
     // Empty boundary geom is allowed but must be null
-    if (empty($this->submission['fields']['boundary_geom']['value']))
+    if (isset($this->submission['fields']['boundary_geom']['value']) && empty($this->submission['fields']['boundary_geom']['value']))
       $this->submission['fields']['boundary_geom']['value'] = null;
     return parent::presubmit();
   }
