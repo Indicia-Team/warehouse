@@ -37,6 +37,11 @@ class iform_sectioned_transects_edit_transect {
    */
   protected static $cmsUserAttrId;
   
+  /**
+   * @var string The Url to post AJAX form saves to.
+   */
+  private static $ajaxFormUrl = null;
+  
   /** 
    * Return the form metadata. 
    * @return array The definition of the form.
@@ -111,7 +116,12 @@ class iform_sectioned_transects_edit_transect {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
+    $checks=self::check_prerequisites();
+    if ($checks!==true)
+      return $checks;
     require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
+    data_entry_helper::add_resource('jquery_form');
+    self::$ajaxFormUrl = iform_ajaxproxy_url($node, 'location');
     if (function_exists('url')) {
       $args['section_edit_path'] = url($args['section_edit_path']);
     }
@@ -120,21 +130,6 @@ class iform_sectioned_transects_edit_transect {
       'locationTypes' => helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section')),
       'locationId' => isset($_GET['id']) ? $_GET['id'] : null
     );
-    data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
-    if ($settings['locationId']) {
-      data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
-      $settings['sections'] = data_entry_helper::get_population_data(array(
-        'table' => 'location',
-        'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$settings['locationId'],'deleted'=>'f'),
-        'nocache' => true
-      ));
-      foreach($settings['sections'] as $section) {
-        $code = strtolower($section['code']);
-        data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."'};\n";
-      }
-    } else {
-      $settings['sections']=array();
-    }
     $settings['attributes'] = data_entry_helper::getAttributes(array(
         'id' => $settings['locationId'],
         'valuetable'=>'location_attribute_value',
@@ -146,22 +141,50 @@ class iform_sectioned_transects_edit_transect {
         'location_type_id' => $settings['locationTypes'][0]['id'],
         'multiValue' => true
     ));
+    $settings['section_attributes'] = data_entry_helper::getAttributes(array(
+        'valuetable'=>'location_attribute_value',
+        'attrtable'=>'location_attribute',
+        'key'=>'location_id',
+        'fieldprefix'=>'locAttr',
+        'extraParams'=>$auth['read'],
+        'survey_id'=>$args['survey_id'],
+        'location_type_id' => $settings['locationTypes'][1]['id'],
+        'multiValue' => true
+    ));
+    data_entry_helper::$javascript .= "indiciaData.sections = {};\n";
+    $settings['sections']=array();
+    if ($settings['locationId']) {
+      data_entry_helper::load_existing_record($auth['read'], 'location', $settings['locationId']);
+      // find the number of sections attribute.
+      foreach($settings['attributes'] as $attr) {
+        if ($attr['caption']==='No. of sections') {
+          for ($i=1; $i<=$attr['displayValue']; $i++) {
+            $settings['sections']["S$i"]=null;
+          }
+        }
+      }
+      $sections = data_entry_helper::get_population_data(array(
+        'table' => 'location',
+        'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$settings['locationId'],'deleted'=>'f','orderby'=>'code'),
+        'nocache' => true
+      ));
+      foreach($sections as $section) {
+        $code = $section['code'];
+        data_entry_helper::$javascript .= "indiciaData.sections.$code = {'geom':'".$section['boundary_geom']."','id':'".$section['id']."'};\n";
+        $settings['sections'][$code]=$section;
+      }
+    }
     if (false==$settings['cmsUserAttr'] = extract_cms_user_attr($settings['attributes']))
       return 'This form is designed to be used with the CMS User ID attribute setup for locations in the survey.';
     // keep a copy of the location_attribute_id so we can use it later.
     self::$cmsUserAttrId = $settings['cmsUserAttr']['attributeId'];
-    $r = '<form method="post" id="input-form">';
-    $r .= $auth['write'];
     $r .= '<div id="controls">';
-    $customAttributeTabs = array_merge(array(
-      'Site Details' => array('[*]'),
-    ), get_attribute_tabs($settings['attributes']));
-    if (count($customAttributeTabs)>1) {
-      $headerOptions = array('tabs'=>array());
-      foreach($customAttributeTabs as $tab=>$content) {
-        $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
-        $headerOptions['tabs']['#'.$alias] = lang::get($tab); 
-      }
+    $headerOptions = array('tabs'=>array('#site-details'=>lang::get('Site Details')));
+    if ($settings['locationId']) {
+      $headerOptions['tabs']['#your-route'] = lang::get('Your Route');
+      $headerOptions['tabs']['#section-details'] = lang::get('Section Details');
+    }
+    if (count($headerOptions['tabs'])) {
       $r .= data_entry_helper::tab_header($headerOptions);
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
@@ -169,21 +192,12 @@ class iform_sectioned_transects_edit_transect {
           'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
       ));
     }
-    
-    foreach($customAttributeTabs as $tab=>$content) {
-      if ($tab=='Site Details')
-        $r .= self::get_site_tab($auth, $args, $settings);
-      else {
-        $alias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
-        $r .= "\n<div id=\"$alias\">\n";
-        $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), $tab);    
-        $r .= "</div>\n";
-      }
-        
+    $r .= self::get_site_tab($auth, $args, $settings);
+    if ($settings['locationId']) {
+      $r .= self::get_your_route_tab($auth, $args, $settings);
+      $r .= self::get_section_details_tab($auth, $args, $settings);
     }
-    $r .= '</div>'; // controls
-    $r .= '<input type="submit" value="'.lang::get('Save').'" class="ui-state-default ui-corner-all" />';
-    $r .='</form>';
+    $r .= '</div>'; // controls    
     data_entry_helper::enable_validation('input-form');
     if (function_exists('drupal_set_breadcrumb')) {
       $breadcrumb = array();
@@ -195,18 +209,51 @@ class iform_sectioned_transects_edit_transect {
         $breadcrumb[] = lang::get('New Site');
       drupal_set_breadcrumb($breadcrumb);
     }
+    // Inform JS where to post data to for AJAX form saving
+    data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.self::$ajaxFormUrl."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.website_id="'.$args['website_id']."\";\n";
+    data_entry_helper::$javascript .= "indiciaData.indiciaSvc = '".data_entry_helper::$base_url."';\n";
+    data_entry_helper::$javascript .= "indiciaData.readAuth = {nonce: '".$auth['read']['nonce']."', auth_token: '".$auth['read']['auth_token']."'};\n";    
+    data_entry_helper::$javascript .= "indiciaData.currentSection = '';\n";
+    data_entry_helper::$javascript .= "indiciaData.sectionTypeId = '".$settings['locationTypes'][1]['id']."';\n";
+    data_entry_helper::$javascript .= "selectSection('S1', true);\n";
     return $r;
   }
   
+  private static function check_prerequisites() {
+    // check required modules installed
+    if (isset($_POST['enable'])) {
+      module_enable(array('iform_ajaxproxy'));
+      drupal_set_message(lang::get('The Indicia AJAX Proxy module has been enabled.', 'info'));      
+    }
+    $ok=true;
+    if (!module_exists('iform_ajaxproxy')) {
+       drupal_set_message('This form must be used in Drupal with the Indicia AJAX Proxy module enabled.');
+       $ok=false;
+    }
+    if (!function_exists('iform_ajaxproxy_url')) {
+      drupal_set_message(lang::get('The Indicia AJAX Proxy module must be enabled to use this form. This lets the form save verifications to the '.
+          'Indicia Warehouse without having to reload the page.'));
+      $r .= '<form method="post">';
+      $r .= '<input type="hidden" name="enable" value="t"/>';
+      $r .= '<input type="submit" value="'.lang::get('Enable Indicia AJAX Proxy').'">';
+      $r .= '</form>';
+      return $r;
+    }
+    return $ok;
+  }
+  
   private static function get_site_tab($auth, $args, $settings) {
-    $r = '<div id="sitedetails" class="ui-helper-clearfix">';
+    $r = '<div id="site-details" class="ui-helper-clearfix">';
+    $r .= '<form method="post" id="input-form">';
+    $r .= $auth['write'];    
     $r .= '<div class="left" style="width: 44%">';
     $r .= '<fieldset><legend>'.lang::get('Transect Details').'</legend>';
     $r .= "<input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />\n";
     $r .= "<input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />\n";    
     $r .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$settings['locationTypes'][0]['id']."\" />\n";
     if ($settings['locationId'])
-      $r .= '<input type="hidden" name="location:id" value="'.$settings['locationId']."\" />\n";
+      $r .= '<input type="hidden" name="location:id" id="location:id" value="'.$settings['locationId']."\" />\n";
     $r .= data_entry_helper::text_input(array(
       'fieldname' => 'location:name',
       'label' => lang::get('Transect Name'),
@@ -222,38 +269,12 @@ class iform_sectioned_transects_edit_transect {
       'label' => 'Grid Ref.',
       'systems' => $systems,
       'class' => 'required',
-      'helpText' => lang::get('Click on the map to set the grid reference.')      
+      'helpText' => lang::get('Click on the map to set the central grid reference.')      
     ));
     
     // setup the map options
-    $options = iform_map_get_map_options($args, $auth['read']);
-    $options['toolbarDiv'] = 'top';
-    if (!empty($settings['sections'])) {
-      // if we have an existing site with sections, output a selector for the current section.
-      $sectionArr = array('' => htmlspecialchars(lang::get('<select>')));
-      for ($i=1; $i<=count($settings['sections']); $i++)
-        $sectionArr[$i] = $i;
-      $options['toolbarPrefix'] = data_entry_helper::select(array(
-        'fieldname'=>'',
-        'id' => 'current-section',
-        'label' => lang::get('Select section'),
-        'lookupValues' => $sectionArr,
-        'suffixTemplate' => 'nosuffix'
-      ));
-      $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].
-          (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
-          'from=transect&transect_id='.$settings['locationId'].'&section_id=0" id="section-edit" style="display: none" class="ui-state-default ui-corner-all indicia-button">' . 
-          lang::get('Edit') . '</a>';
-      // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
-      $options['standardControls'][] = 'selectFeature';
-      $options['standardControls'][] = 'hoverFeatureHighlight';
-    }
-    if ($settings['locationId']) {
-      $options['toolbarPrefix'] .= '<a href="'.$args['section_edit_path'].
-          (strpos($args['section_edit_path'], '?')===false ? '?' : '&').
-          'from=transect&transect_id='.$settings['locationId'].'" class="ui-state-default ui-corner-all indicia-button">'.lang::get('Add Section') . '</a>';
-    }
-    $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read']), 'Site Details'); 
+    $options = iform_map_get_map_options($args, $auth['read']);    
+    $r .= get_attribute_html($settings['attributes'], $args, array('extraParams'=>$auth['read'])); 
     $r .= '</fieldset>';
     if (user_access('indicia data admin'))
       $r .= self::get_user_assignment_control($auth['read'], $settings['cmsUserAttr'], $args);
@@ -262,20 +283,12 @@ class iform_sectioned_transects_edit_transect {
       global $user;
       $r .= '<input type="hidden" name="locAttr:'.self::$cmsUserAttrId.'" value="'.$user->uid.'">';
     }
-    $r .= "</div>";
-    $r .= '<div class="right" style="width: '.$options['width'].'px;">';
-    if ($settings['locationId']) {
-      $help = lang::get('Use the Add Section button to create each section of your transect in turn.');
-      if (count($settings['sections'])>0)
-        $help .= ' '.lang::get('For existing sections, select a section from the drop down list then click Edit to make changes. '.
-            'You can also select a section using the query tool to click on the section lines, or reset the transect centroid grid reference '.
-            'using the Click Grid Ref tool.');
-    } else {
+    $r .= "</div>"; // left
+    $r .= '<div class="right" style="width: 54%">';
+    if (!$settings['locationId']) {
       $help = t('Use the search box to find a nearby town or village, then drag the map to pan and click on the map to set the centre grid reference of the transect. '.
           'Alternatively if you know the grid reference you can enter it in the Grid Ref box on the left.');
-    }
-    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
-    if (!$settings['locationId']) {
+      $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>';
       $r .= data_entry_helper::georeference_lookup(array(
         'label' => lang::get('Search for place'),
         'driver'=>$args['georefDriver'],
@@ -287,10 +300,73 @@ class iform_sectioned_transects_edit_transect {
     $olOptions = iform_map_get_ol_options($args);
     $r .= map_helper::map_panel($options, $olOptions);
     $r .= '</div>'; // right
-    $r .= '</div>'; // site
+    $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" />';
+    $r .='</form>';
+    $r .= '</div>'; // site-details
     // This must go after the map panel, so it has created its toolbar
     data_entry_helper::$onload_javascript .= "$('#current-section').change(selectSection);\n";
     return $r;
+  }
+  
+  private static function get_your_route_tab($auth, $args, $settings) {
+    $r = '<div id="your-route" class="ui-helper-clearfix">';
+    $selector .= self::section_selector($settings, 'section-select-route');
+    $olOptions = iform_map_get_ol_options($args);
+    $options = iform_map_get_map_options($args, $auth['read']);
+    $options['divId'] = 'route-map';
+    $options['toolbarDiv'] = 'top';
+    $options['tabDiv']='your-route';
+    $options['toolbarPrefix'] = $selector;
+    // also let the user click on a feature to select it. The highlighter just makes it easier to select one.
+    $options['standardControls'][] = 'selectFeature';
+    $options['standardControls'][] = 'hoverFeatureHighlight';
+    $options['standardControls'][] = 'drawLine';
+    $options['standardControls'][] = 'modifyFeature';
+    $options['clickForSpatialRef'] = false;
+    $help = lang::get('Select a section from the list then click on the map to draw the route and double click to finish. '.
+        'You can also select a section using the query tool to click on the section lines. If you make a mistake then use the Modify a feature '.
+        'tool to correct the line shape, or redraw the line to replace it entirely.');
+    $r .= '<p class="ui-state-highlight page-notice ui-corner-all">'.$help.'</p>'; 
+    $r .= map_helper::map_panel($options, $olOptions);
+    $r .= '</div>';
+    return $r;  
+  }
+  
+  private static function get_section_details_tab($auth, $args, $settings) {
+    $r = '<div id="section-details" class="ui-helper-clearfix">';
+    $r .= '<form method="post" id="section-form" action="'.self::$ajaxFormUrl.'">';
+    $r .= '<fieldset><legend>'.lang::get('Section Details').'</legend>';
+    // Output a selector for the current section.    
+    $r .= self::section_selector($settings, 'section-select');
+    $r .= "<input type=\"hidden\" name=\"location:id\" value=\"\" id=\"section-location-id\" />\n";
+    $r .= '<input type="hidden" name="website_id" value="'.$args['website_id']."\" />\n";
+    // force a blank centroid, so that the Warehouse will recalculate it from the boundary
+    //$r .= "<input type=\"hidden\" name=\"location:centroid_geom\" value=\"\" />\n";   
+    $r .= get_attribute_html($settings['section_attributes'], $args, array('extraParams'=>$auth['read']));
+    $r .= '<input type="submit" value="'.lang::get('Save').'" class="form-button right" id="submit-section" />';    
+    $r .= '</fieldset></form>';
+    $r .= '</div>';
+    return $r;
+  }
+  
+  /**
+   * Build a row of buttons for selecting the route.
+   */
+  private static function section_selector($settings, $id) {
+    foreach ($settings['sections'] as $code=>$section)
+      $sectionArr[$code] = $code;
+    $selector = '<label for="'.$id.'">'.lang::get('Select section').':</label><ol id="'.$id.'" class="section-select">';
+    foreach ($sectionArr as $key=>$value) {
+      $classes = array();
+      if ($key=='S1') 
+        $classes[] = 'selected';
+      if (!isset($settings['sections'][$key]))
+        $classes[] = 'missing';
+      $class = count($classes) ? ' class="'.implode(' ', $classes).'"' : '';
+      $selector .= "<li id=\"$id-$value\"$class>$value</li>";
+    }
+    $selector .= '</ol>';
+    return $selector;
   }
   
   /**
@@ -356,7 +432,7 @@ class iform_sectioned_transects_edit_transect {
    */
   public static function get_redirect_on_success($values, $args) {
     if (!isset($values['location:id'])) {
-      return 'site-details';
+      return 'site-details#your-route';
     }
   } 
   
