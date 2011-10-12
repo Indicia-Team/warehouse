@@ -131,7 +131,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
     return  '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=reptilereport">
       <p>'.lang::get('LANG_Data_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "taxon_list_id":'.$args['extra_list_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
   </div>';
@@ -242,7 +242,7 @@ deleteSurvey = function(sampleID){
     $dummy=array('','');
     if(isset(data_entry_helper::$entity_to_load["location:centroid_sref"]))
       $dummy = explode(',',data_entry_helper::$entity_to_load["location:centroid_sref"]);
-    self::$locations = iform_loctools_listlocations($node);
+    self::$locations = iform_loctools_listlocations(self::$node);
     $locOptions = array('validation' => array('required'),
     					'label'=>lang::get('LANG_Lux5kgrid'),
     					'id'=>'location_parent_id',
@@ -667,7 +667,7 @@ setupButtons($('#controls'), 0);";
   }
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess($node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
   /**
@@ -767,9 +767,9 @@ setupButtons($('#controls'), 0);";
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
             $search = preg_grep("/^sc:$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
-            $ctrlId = (count($search)===1) ? implode('', $search) : $attributes[$attrId]['fieldname'];
+            $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid:$existing_record_id:occAttr:$attrId";
           } else {
-            $ctrlId = str_replace('-ttlId-:', $ttlid.':x'.$rowIdx, $attributes[$attrId]['fieldname']);
+            $ctrlId = "sc:$ttlid:x$rowIdx:occAttr:$attrId";
           }
           if (isset(data_entry_helper::$entity_to_load[$ctrlId])) {
             $existing_value = data_entry_helper::$entity_to_load[$ctrlId];
@@ -795,7 +795,7 @@ setupButtons($('#controls'), 0);";
         }
         if ($options['occurrenceComment']) {
           $row .= "\n<td class=\"ui-widget-content scCommentCell\"><input class=\"scComment\" type=\"text\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" ".
-          "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".data_entry_helper::$entity_to_load["sc:$id:$existing_record_id:occurrence:comment"]."\" /></td>";
+          "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
         // no confidential checkbox.
         $rows[$rowIdx]=$row; // only one column, no images.
@@ -806,11 +806,6 @@ setupButtons($('#controls'), 0);";
       else $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
       $grid .= "</tbody>\n</table>\n";
       if ($options['rowInclusionCheck']=='hasData') $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
-      if (isset($options['lookupListId']) || (isset($options['occurrenceImages']) && $options['occurrenceImages'])){
-      	// TBD 
-        // include a js file that has code for handling grid rows, including adding image rows.
-        // self::add_resource('addrowtogrid'); // TBD
-      }
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {

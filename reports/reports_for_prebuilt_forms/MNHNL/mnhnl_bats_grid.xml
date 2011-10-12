@@ -1,6 +1,6 @@
 <report
     title="MNHNL Bats Grid"
-    description="Form Internal Report: Used by the Samples grid to retrieve the samples associated with a survey and user."
+    description="Form Internal Report: Used by the Samples grid on the MNHNL Bats Form to retrieve the samples associated with a survey and user."
 >
   <query>
   SELECT s.id as sample_id,

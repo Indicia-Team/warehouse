@@ -88,9 +88,15 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[location attributes]\r\n".
               "@tabNameFilter=SpatialRef\r\n".
               "[place search]\r\n".
+              "[location buttons]\r\n".
               "[map]\r\n".
+              "@clickableLayers=['locationListLayer']\r\n".
+              "@clickableLayersOutputMode=div\r\n".
+              "@clickableLayersOutputDiv=wms-info-target\r\n".
+              "@clickableLayersOutputFn=clickedSite\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
+              "@maxZoom=13\r\n".
               "[location comment]\r\n".
               "[*]\r\n".
              "=Other Information=\r\n".
@@ -105,7 +111,8 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@view=detail\r\n".
               "@rowInclusionCheck=alwaysRemovable\r\n".
               "[species attributes]\r\n".
-              "[*]\r\n";
+              "[*]\r\n".
+              "[lateJS]\r\n";
       }
       if($param['name'] == 'attribute_termlist_language_filter')
         $param['default'] = true;
@@ -174,19 +181,145 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'required' => false,
           'group' => 'User Interface'
         );
-        
-        
+    $retVal[] = array(
+          'name'=>'LocTypeID',
+          'caption'=>'Location Type ID filter',
+          'description'=>'Locations Type ID filter to be applied to locations in the database to identify those locations to be used for this form.',
+          'type'=>'int',
+          'required' => false,
+          'group' => 'User Interface'
+        );
+    $retVal[] = array(
+          'name'=>'communeLayerLookup',
+          'caption'=>'WFS Layer specification for Commune Lookup',
+          'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
+          'type'=>'string',
+          'required' => false,
+          'group'=>'Georeferencing',
+        );
     return $retVal;
   }
 
+  protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
+    $isAdmin = user_access('IForm n'.$node->nid.' admin');
+  	if(!$isAdmin) return('');
+    if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
+
+   $r = '<div id="downloads" >
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_sites_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batsitesreport">
+      <p>'.lang::get('LANG_Sites_Download').'</p>
+      <input type="hidden" id="params" name="params" value=\'{"website_id":'.$args['website_id'].', "location_type_id":'.$args['LocTypeID'].'}\' />
+      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    </form>
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_conditions_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batconditionsreport">
+      <p>'.lang::get('LANG_Conditions_Download').'</p>
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
+      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    </form>
+        <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_species_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batspeciesreport">
+      <p>'.lang::get('LANG_Species_Download').'</p>
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
+      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    </form>
+  </div>
+  <div id="locations" ><table>';
+      $location_list_args=array(
+        'nocache'=>true,
+        'includeCodeField'=>true,
+        'NameFieldName'=>'dummy:location_name_DD',
+        'NameID'=>'imp-location-name',
+        'extraParams'=>array_merge(array(
+          'orderby'=>'name',
+          'view'=>'detail',
+          'website_id'=>$args['website_id']), $readAuth),
+        'table'=>'location',
+        'template' => 'select',
+        'itemTemplate' => 'select_item',
+        'filterField'=>'parent_id',
+        'size'=>3
+    );
+    if (array_key_exists('LocTypeID', $args) && $args['LocTypeID']<>"") {
+      $location_list_args['extraParams'] += array('location_type_id' => $args['LocTypeID']);
+    }
+    // Idea here is to get a list of all locations in order to build drop downs.
+    // control used can be configured on Indicia
+    $responseRecords = data_entry_helper::get_population_data($location_list_args);
+    // The way this will work: have 2 drop downs: code and name. Doesn't matter what they are set to
+    // investigate self::init_linked_lists($options);
+    if (isset($responseRecords['error']))
+      return $responseRecords['error'];
+    $attributeRecords = array(array());
+    $attribute_list_args=array(
+        'nocache'=>true,
+        'view'=>'detail',
+        'extraParams'=>array_merge(array('orderby'=>'name', 'website_id'=>$args['website_id']), $readAuth),
+        'table'=>'location_attribute_value'
+      );
+    $attributeResponse = data_entry_helper::get_population_data($attribute_list_args);
+    $attrList=array();
+    foreach ($attributeResponse as $record){
+        $attributeRecords[$record['location_id']][$record['location_attribute_id']] = $record;
+        $attrList[$record['location_attribute_id']] = $record['caption'];
+    }
+    $r .= "<tr><th>".lang::get('Name')."</th>
+      <th>".lang::get('Code')."</th>
+      <th>".lang::get('Sref')."</th>
+      <th>".lang::get('Comment')."</th>";
+    foreach ($attrList as $id => $caption){
+      $r .= "<th>".lang::get($caption)."</th>";
+    }
+    $r .= "</tr>";
+    foreach ($responseRecords as $record){
+      $r .= "<form method=\"post\"><tr><td>".self::$auth['write']."<input type=\"hidden\" name=\"locmode\" value=\"Yes\" /><input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
+      <input name=\"l:".$record['id'].":name\" value=\"".$record['name']."\" class=\"locgrid-name\" ></td>
+      <td><input name=\"l:".$record['id'].":code\" value=\"".$record['code']."\" class=\"locgrid-code\" ></td>
+      <td><input name=\"l:".$record['id'].":centroid_sref\" value=\"".$record['centroid_sref']."\" class=\"locgrid-sref\"><input type=\"hidden\" name=\"l:".$record['id'].":centroid_sref_system\" value=\"".$record['centroid_sref_system']."\"><input type=\"hidden\" name=\"l:".$record['id'].":centroid_geom\" value=\"".$record['centroid_geom']."\" class=\"locgrid-geom\" ></td>
+      <td><input name=\"l:".$record['id'].":comment\" value=\"".$record['comment']."\" class=\"locgrid-comment\"></td>";
+      foreach ($attrList as $id => $caption){
+        if(isset($attributeRecords[$record['id']][$id])){
+          $class="locgrid-".str_replace (" ", "", $attributeRecords[$record['id']][$id]['caption']);
+          unset($attributeRecords[$record['id']][$id]['caption']);
+          $attributeRecords[$record['id']][$id]['default'] = $attributeRecords[$record['id']][$id]['raw_value'];
+          $attributeRecords[$record['id']][$id]['fieldname'] = "l:".$record['id'].':locAttr:'.$attributeRecords[$record['id']][$id]['location_attribute_id'].(isset($attributeRecords[$record['id']][$id]['id']) ? ':'.$attributeRecords[$record['id']][$id]['id'] : '');
+          $attributeRecords[$record['id']][$id]['id'] = $attributeRecords[$record['id']][$id]['fieldname'];
+          $r .= "<td>".
+            ($X=data_entry_helper::outputAttribute(
+                $attributeRecords[$record['id']][$id],
+                array('lookUpListCtrl'=>'select',
+                      'lookUpKey'=>'meaning_id',
+                      'extraParams' => $readAuth,
+                      'class'=>$class,
+                      'language' => iform_lang_iso_639_2($args['language'])))).
+             "</td>";
+        } else
+          $r .= "<td>**</td>";
+      }
+      $r .= "<td><input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" /></td></tr></form>";
+    }
+    data_entry_helper::$javascript .= "
+$('.locgrid-sref').change(function() {
+  if ($(this).val()!='')
+    $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
+            \"?sref=\" + $(this).val() + \"&system=2169&callback=?\",
+      function(data) {
+        if(typeof data.error != 'undefined')
+          alert(data.error);
+        else
+          $(this).nearest('tr').find('.locgrid-geom').val(data.wkt);
+      });
+});
+";
+    return $r."</table></div>";
+  }
+  
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
     global $user;
     // get the CMS User ID attribute so we can filter the grid to this user
-    foreach($attributes as $attrId => $attr) {
+    foreach($attributes as $attr) { // note that the sample attrs are not indexed.
       if (strcasecmp($attr['caption'],'CMS User ID')==0) {
-        $userIdAttr = $attrId;
+        $userIdAttr = $attr['attributeId'];
       } else if (strcasecmp($attr['caption'],'CMS Username')==0) {
-        $usernameAttr = $attrId;
+        $usernameAttr = $attr['attributeId'];
       }
     }
     $locAttributes = data_entry_helper::getAttributes(array(
@@ -205,29 +338,23 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
       }
     }
       
-    if ($user->uid===0) {
-      // Return a login link that takes you back to this form when done.
+    if ($user->uid===0)
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
-    }
-    if (!isset($userIdAttr)) {
+
+    if (!isset($userIdAttr))
       return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
           'be tagged against the user.');
-    }
-    if (!isset($usernameAttr)) {
+    if (!isset($usernameAttr))
       return lang::get('This form must be used with a survey that has the CMS Username attribute associated with it so records can '.
           'be tagged against the user.');
-    }
-    if (!isset($villageAttr)) {
+    if (!isset($villageAttr))
       return lang::get('This form must be used with a survey that has the Village Location attribute associated with it.');
-    }
-    if (!isset($communeAttr)) {
+    if (!isset($communeAttr))
       return lang::get('This form must be used with a survey that has the Commune Location attribute associated with it.');
-    }
     if (isset($args['grid_report']))
       $reportName = $args['grid_report'];
     else
-      // provide a default in case the form settings were saved in an old version of the form
-      $reportName = 'reports_for_prebuilt_forms/simple_sample_list_1';
+      $reportName = 'reports_for_prebuilt_forms/MHNL/mnhnl_bats_grid';
     if(method_exists(get_called_class(), 'getSampleListGridPreamble'))
       $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
     else
@@ -266,21 +393,17 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
        <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
        <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
        <input type=\"hidden\" name=\"sample:id\" value=\"\" />
-       <input type=\"hidden\" name=\"sample:date\" value=\"2010-01-01\"/>
-       <input type=\"hidden\" name=\"sample:location_id\" value=\"\" />
        <input type=\"hidden\" name=\"sample:deleted\" value=\"t\" />
     </form>
 </div>";
     data_entry_helper::$javascript .= "
 deleteSurvey = function(sampleID){
-  if(confirm(\"Are you sure you wish to delete survey \"+sampleID)){
+  if(confirm(\"".lang::get('Are you sure you wish to delete survey')." \"+sampleID)){
     jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/sample/\"+sampleID +
             \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."\" +
             \"&callback=?\", function(data) {
         if (data.length>0) {
           jQuery('#form-delete-survey').find('[name=sample\\:id]').val(data[0].id);
-          jQuery('#form-delete-survey').find('[name=sample\\:date]').val(data[0].date_start);
-          jQuery('#form-delete-survey').find('[name=sample\\:location_id]').val(data[0].location_id);
           jQuery('#form-delete-survey').submit();
   }});
   };
@@ -312,7 +435,7 @@ $.validator.messages.number = $.validator.format(\"".lang::get('validation_numbe
       data_entry_helper::$late_javascript .= "
 $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digits')."\");";
 
-    $numRows=3;
+    $numRows=2;
     $numCols=1;
     $startPos=2;
     data_entry_helper::$javascript .= "
@@ -367,25 +490,21 @@ checkCheckStatus();
 // Two aspects: need to find scClonableRow, and then do existing rows in grid, and clear row being added.
 var occAttrs = jQuery('.scClonableRow').find('.scOccAttrCell');
 var newTable = jQuery('<table class=\"fullWidth\">');
-var newElem = jQuery('<td class=\"noPadding\" >').append(newTable).insertBefore(occAttrs.filter(':first'));
+var newElem = jQuery('<td class=\"noPadding\" colspan=".($numCols+1).">').append(newTable).insertBefore(occAttrs.filter(':first'));
 for (var i=0;i<$numRows;i++){
 	switch(i){";
     for($i=0; $i<$numRows; $i++){
     	data_entry_helper::$javascript .= "
-		case($i): jQuery(\"<tr><td class='scOccAttrCell ui-widget-content'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
+		case($i): newRow = jQuery(\"<tr><td class='scOccAttrCell ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
     }
     data_entry_helper::$javascript .= "
 	}
-}
-// TBD
-occAttrs.find('input').filter(':text').addClass('digits').attr('min',1);
-for (var i=0;i<occAttrs.length;i++){
-	if(i%$numRows == 0){
-		newTable = jQuery('<table class=\"fullWidth\">');
-		newElem = jQuery('<td class=\"noPadding\">').append(newTable).insertAfter(newElem);
+	for (var j=0;j<$numCols;j++){
+		newRow.append(occAttrs[i+(j*$numRows)]);
 	}
-	jQuery('<tr>').append(occAttrs[i]).appendTo(newTable);
 }
+occAttrs.find('input').filter(':text').addClass('digits').attr('min',0);
+
 var CRgroup = jQuery('.scClonableRow').find('table').find('td');
 // Do main table header
 occAttrs = jQuery('.species-grid > thead').find('th');
@@ -407,24 +526,21 @@ speciesRows = jQuery('.species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
 	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
 	newTable = jQuery('<table class=\"fullWidth\">');
-	newElem = jQuery('<td class=\"noPadding\" >').append(newTable).insertBefore(occAttrs.filter(':first'));
+	newElem = jQuery('<td class=\"noPadding\" colspan=".($numCols+1).">').append(newTable).insertBefore(occAttrs.filter(':first'));
 	for (var i=0;i<$numRows;i++){
 		switch(i){";
     for($i=0; $i<$numRows; $i++){
     	data_entry_helper::$javascript .= "
-			case($i): jQuery(\"<tr><td class='scOccAttrCell ui-widget-content'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
+			case($i): newRow = jQuery(\"<tr><td class='scOccAttrCell ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
     }
     data_entry_helper::$javascript .= "
 		}
-	}
-	occAttrs.find('input').filter(':text').addClass('digits').attr('min',1);
-	for (var i=0;i<occAttrs.length;i++){
-		if(i%$numRows == 0){
-			newTable = jQuery('<table class=\"fullWidth\">');
-			newElem = jQuery('<td class=\"noPadding\" >').append(newTable).insertAfter(newElem);
+		for (var k=0;k<$numCols;k++){
+			newRow.append(occAttrs[i+(k*$numRows)]);
 		}
-		jQuery('<tr>').append(occAttrs[i]).appendTo(newTable);
 	}
+	occAttrs.find('input').filter(':text').addClass('digits').addClass('required').width('85%').attr('min',0).after('<span class=\"deh-required\">*</span>');
+	occAttrs.find('select').addClass('required').width('85%').after('<span class=\"deh-required\">*</span>');
 	var group = jQuery(speciesRows[j]).find('table').find('td');
 	var tallest = 0;
 	group.each(function(){ tallest = Math.max($(this).outerHeight(), tallest); });
@@ -438,7 +554,7 @@ for(var j=0; j<speciesRows.length; j++){
        $colWidths=explode(',', $args['col_widths']);
        for($i=0; $i<count($colWidths); $i++){
        		data_entry_helper::$javascript .= "
-jQuery('.species-grid > thead').find('th').filter(':eq(".$i.")').width('";
+jQuery('.species-grid > thead').find('th').not(':hidden').filter(':eq(".$i.")').width('";
        	if($colWidths[$i]==''){
        		data_entry_helper::$javascript .= "auto');";
        	} else {
@@ -505,8 +621,11 @@ hook_species_checklist_new_row=function(rowData) {
           if(duplicate){
             alert(\"".lang::get('LANG_Duplicate_Taxon')."\");
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').remove();
-          } else
+          } else {
+            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('input').filter(':text').addClass('required').width('85%').attr('min',0).after('<span class=\"deh-required\">*</span>');
+            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('select').addClass('required').width('85%').after('<span class=\"deh-required\">*</span>');
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('extraCommonNames');
+          }
         }
       });
     }})
@@ -527,6 +646,14 @@ return false;
 },
   \"".lang::get('validation_no_observation')."\");
   ";
+          } else if($rule[$i]=='integer'){
+               data_entry_helper::$late_javascript .= "
+// integer is similar to digit but allows negative
+$.validator.addMethod('integer', function(value, element){
+	return this.optional(element) || /^-?\d+$/.test(value);
+},
+  \"".lang::get('validation_integer')."\");
+jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {integer: true});";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').addClass('".$rule[$i]."');";
@@ -537,6 +664,21 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
 setupButtons($('#controls'), 1);
 setupButtons($('#controls'), 2);
 setupButtons($('#controls'), 0);";
+    $smpAttributes = data_entry_helper::getAttributes(array(
+        'valuetable'=>'sample_attribute_value'
+       ,'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
+       ,'fieldprefix'=>'smpAttr'
+       ,'extraParams'=>$auth['read']
+       ,'survey_id'=>$args['survey_id']
+      ));
+    foreach($smpAttributes as $attrId => $attr) {
+      if (strcasecmp($attr['untranslatedCaption'],'Bat Visit')==0) {
+    data_entry_helper::$late_javascript .= "
+jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::get('LANG_Site_Extra')."</span>\");";
+      }
+    }
+      
     return '';
   }
   
@@ -579,6 +721,12 @@ setupButtons($('#controls'), 0);";
    * Get the location module control
    */
   protected static function get_control_locationmodule($auth, $args, $tabalias, $options) {
+    // There are 5 events that trigger a set up of the location data
+    // 1) a newSample is being generated
+    // 2) a exisitng sample is being displayed with its reference to an existing location
+    // 3) the new Location button is pressed
+    // 4) the existing location name drop down is selected.
+    // 5) an existing location is clicked on the map.
     global $indicia_templates, $user;
     // have to override the name of the imp-geom to point to the location centroid_geometry
     $smpAttributes = data_entry_helper::getAttributes(array(
@@ -609,6 +757,7 @@ setupButtons($('#controls'), 0);";
         $communeAttr = $attrId;
       }
     }
+    
     if (!isset($villageAttr)) {
       return lang::get('This form must be used with a survey that has the Village Location attribute associated with it.');
     }
@@ -661,6 +810,7 @@ setupButtons($('#controls'), 0);";
         'table'=>'location_attribute_value'
       ), $options);
     $attributeResponse = data_entry_helper::get_population_data($attribute_list_args);
+    
     foreach ($attributeResponse as $record)
         $attributeRecords[$record['location_id']][$record['location_attribute_id']] = $record;
     $NameOpts = '';
@@ -669,10 +819,10 @@ setupButtons($('#controls'), 0);";
         $item = array('selected' => ((array_key_exists('location:id', data_entry_helper::$entity_to_load) &&
                                       data_entry_helper::$entity_to_load['location:id']==$record['id']) ? 'selected' : ''),
                       'value' => $record['id'],
-                      'caption' => $record['name'].' ('.
-                           (isset($attributeRecords[$record['id']][$communeAttr]['text_value']) ? $attributeRecords[$record['id']][$communeAttr]['text_value'] : '-').' / '.
-                           (isset($attributeRecords[$record['id']][$villageAttr]['text_value']) ? $attributeRecords[$record['id']][$villageAttr]['text_value'] : '-').') n° '.
-                           ($record['code'] != '' ? $record['code'] : '-'));
+                      'caption' => htmlspecialchars($record['name'].' ('.
+                           (isset($attributeRecords[$record['id']][$communeAttr]['value']) ? $attributeRecords[$record['id']][$communeAttr]['value'] : '-').' / '.
+                           (isset($attributeRecords[$record['id']][$villageAttr]['value']) ? $attributeRecords[$record['id']][$villageAttr]['value'] : '-').') n° '.
+                           ($record['code'] != '' ? $record['code'] : '-')));
         $NameOpts .= data_entry_helper::mergeParamsIntoTemplate($item, $location_list_args['itemTemplate']);
       }
     }
@@ -688,23 +838,66 @@ setupButtons($('#controls'), 0);";
     }
     $isAdmin = user_access('IForm n'.$node->nid.' admin');
     data_entry_helper::$javascript .= "
-setLocationEditable = function(enableFields){
-  var enableItems;
-  var disableItems;
-  disableItems = '[name=location\\:id]".($isAdmin ? "" : ",[name=location\\:code]")."'; //clearing the location so no ID, so disable 
-  enableItems = '[name=locations_website\\:website_id]'; // but have to activate website record 
-  if(!enableFields){
-    if(jQuery('#map')[0].map != undefined) jQuery('#map')[0].map.editLayer.clickControl.deactivate()
-    disableItems = disableItems + '".($isAdmin ? ",[name=location\\:code]" : "").",[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom';
+setAllDisabled = function(existingLoc){
+  enableItems = [];
+  disableItems = ['[name=locations_website\\:website_id]',
+                  '[name=location\\:id]',
+                  '[name=location\\:code]',
+                  '[name=location\\:name]',
+                  '[name=location\\:comment]',
+                  '[name=location\\:location_type_id]',
+                  '[name^=locAttr\\:]',
+                  '#imp-sref',
+                  '#imp-sref-lat',
+                  '#imp-sref-long',
+                  '#imp-sref-system',
+                  '#imp-geom'];
+  if(existingLoc)
+    enableItems.push('[name=sample\\:location_id]');
+  else
+    disableItems.push('[name=sample\\:location_id]');
+  if(jQuery('#map')[0].map != undefined) jQuery('#map')[0].map.editLayer.clickControl.deactivate();
+  jQuery(disableItems.join(',')).attr('disabled',true);
+  if(enableItems.length > 0) jQuery(enableItems.join(',')).removeAttr('disabled');
+}
+setLocationEditable = function(creating){
+  disableItems = ['[name=sample\\:location_id]'];
+  readonlyItems = [];
+  enableItems = ['[name=location\\:id]',
+                  '[name=location\\:name]',
+                  '[name=location\\:comment]',
+                  '[name^=locAttr\\:]',
+                  '#imp-sref',
+                  '#imp-sref-lat',
+                  '#imp-sref-long',
+                  '#imp-sref-system',
+                  '#imp-geom'];
+  if(creating) {
+    enableItems.push('[name=locations_website\\:website_id]');
+    enableItems.push('[name=location\\:location_type_id]');
+    disableItems.push('[name=location\\:id]');
   } else {
-    if(jQuery('#map')[0].map != undefined) jQuery('#map')[0].map.editLayer.clickControl.activate()
-    enableItems = enableItems + '".($isAdmin ? ",[name=location\\:code]" : "").",[name=location\\:name],[name=location\\:comment],[name^=locAttr\\:],#imp-sref-lat,#imp-sref-long,#imp-sref-system,#imp-geom';
+    disableItems.push('[name=locations_website\\:website_id]');
+    disableItems.push('[name=location\\:location_type_id]');
+    enableItems.push('[name=location\\:id]');
   }
-  jQuery(enableItems).removeAttr('disabled');
-  jQuery(disableItems).attr('disabled',true);
-};
-clearLocation = function(){
-  jQuery('[name=location\\:id],[name=location\\:code],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-lat,#imp-sref-long,#imp-geom').val('');
+";
+    if(isset($args['communeLayerLookup']) && $args['communeLayerLookup']!='')
+      data_entry_helper::$javascript .= "readonlyItems.push('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]');";
+    else
+      data_entry_helper::$javascript .= "enableItems.push('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]');";
+    if(!$isAdmin)
+      data_entry_helper::$javascript .= "readonlyItems.push('[name=location\\:code]');";
+    else
+      data_entry_helper::$javascript .= "enableItems.push('[name=location\\:code]');";
+    data_entry_helper::$javascript .= "
+  if(jQuery('#map')[0].map != undefined) jQuery('#map')[0].map.editLayer.clickControl.activate();
+  jQuery(disableItems.join(',')).attr('disabled',true);
+  jQuery(enableItems.join(',')).removeAttr('disabled');
+  if(readonlyItems.length > 0) jQuery(readonlyItems.join(',')).removeAttr('disabled').attr('readonly',true);
+}
+clearLocationContents = function(setCode){ // note this does not set the editable state.
+  jQuery('[name=location\\:code],[name=location\\:id],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-lat,#imp-sref-long,#imp-geom').val('');
   // first need to remove any hidden multiselect checkbox unclick fields
   jQuery('[name^=locAttr\\:]').filter('.multiselect').remove();
   // rename, to be safe, removing any [] at the end or any attribute value id
@@ -726,31 +919,47 @@ clearLocation = function(){
   // boolean checkboxes have extra field to force zero if unselected, but there are no attributes of that type in use for this form at the moment, so leave uncoded.
   jQuery('[name^=locAttr\\:]').filter(':text').val('');
   checkRadioStatus();
+  if(!setCode) return;
+  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location' +
+            '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(data) {
+      // store value in saved field?
+      if (data instanceof Array && data.length>0) {
+        var maxCode = 0;
+        for(var i = 0; i< data.length; i++){
+          if(parseInt(data[i].code) > maxCode)
+            maxCode = parseInt(data[i].code)
+        }
+        if(jQuery('[name=location\\:code]').val()=='') jQuery('[name=location\\:code]').val(maxCode+1)
+      }});
 };
 loadLocation = function(myValue){
+  clearLocationContents(false);
   if (myValue!=='') {
-    // Change the location control requests the location's geometry to place on the map.
+    setLocationEditable(false);
+    jQuery('[name=location\\:id]').val(myValue);
+    jQuery('[name=sample\\:location_id]').val(myValue);";
+    if(!$isAdmin) data_entry_helper::$javascript .= "
+    // Count returns: normal bods can edit provided that they encoded all samples on this location.
     jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?location_id='+myValue +
             '&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(sdata) {
-      ".($isAdmin ? "": "
-      // Count returns: normal bods can edit provided that they encoded all samples on this location.
       if (sdata instanceof Array && sdata.length>0) {
         var sampleList=[];
         for (var i=0;i<sdata.length;i++)
           sampleList.push(sdata[i].id);
-        jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample_attribute_values' +
+        jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample_attribute_value' +
             '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?&sample_attribute_id=$userIdAttr&query='+escape(JSON.stringify({'in': ['sample_id', sampleList]})), function(sadata) {
           if (sadata instanceof Array && sadata.length>0) {
             for (var i=0;i<sadata.length;i++)
-              if(sadata[i].value != ".$user->uid.") return;
-            setLocationEditable(true);
-          }});
-      }")."
-      jQuery('[name=location\\:id]').val(myValue).removeAttr('disabled');
-      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location/'+myValue +
+              if(sadata[i].value != ".$user->uid.") {
+                setAllDisabled(true);
+                return;
+              }}});
+    }});";
+    data_entry_helper::$javascript .= "
+    jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location/'+myValue +
             '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(data) {
-       // store value in saved field?
-       if (data instanceof Array && data.length>0) {
+      // store value in saved field?
+      if (data instanceof Array && data.length>0) {
         jQuery('[name=location\\:code]').val(data[0].code);
         jQuery('[name=location\\:name]').val(data[0].name);
         jQuery('[name=location\\:comment]').val(data[0].comment);
@@ -761,12 +970,10 @@ loadLocation = function(myValue){
         var refx = refxy[0].split(',');
         jQuery('#imp-sref-lat').val(refx[0]);
         jQuery('#imp-sref-long').val(refxy[1]).change();
-        jQuery('[name=locations_website\\:website_id]').attr('disabled','disabled');
-       }
-      });
-      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
+      }});
+    jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/location_attribute_value' +
             '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_id='+myValue+'&callback=?', function(data) {
-       if(data instanceof Array && data.length>0){
+      if(data instanceof Array && data.length>0){
         for (var i=0;i<data.length;i++){
           if (data[i].id) { // && (data[i].iso == null || data[i].iso == '' || data[i].iso == '".$language."')
             var radiobuttons = jQuery('[name=locAttr\\:'+data[i]['location_attribute_id']+'],[name^=locAttr\\:'+data[i]['location_attribute_id']+'\\:]').filter(':radio');
@@ -788,92 +995,110 @@ loadLocation = function(myValue){
             }
           }
         }
-       }
-       checkRadioStatus();
-      });
+      }
+      checkRadioStatus();
     });
   } else
-    setLocationEditable(false);
+    setAllDisabled(false);
 };
 jQuery('#imp-location-name').change(function(){
   var myValue = jQuery('#imp-location-name').val();
-  jQuery('#imp-location').val(myValue).change();
-  clearLocation();
-  setLocationEditable(".($isAdmin ? "true" : "false").");
   loadLocation(myValue);
-  });
+});
 newLocation = function(){
-  jQuery('#imp-location').val('').change();
-  jQuery('#imp-location').attr('disabled');
   jQuery('#imp-location-name').val('');
-  clearLocation();
+  clearLocationContents(true);
   setLocationEditable(true);
 };
-jQuery('#imp-location').change(function(){
-  jQuery('#imp-location').removeAttr('disabled');
-});
 ";
+    // assume all validation carried out client side -> no error situations.
     if(array_key_exists('sample:id', data_entry_helper::$entity_to_load)) {
-      if($isAdmin || !array_key_exists('sample:location_id', data_entry_helper::$entity_to_load))
-      // existing sample, either admin or not existing location (validation error situation)
-        data_entry_helper::$onload_javascript .= "
-setLocationEditable(true);";
-      else 
-            data_entry_helper::$onload_javascript .= "
-setLocationEditable(false);
-jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?location_id=".data_entry_helper::$entity_to_load['sample:location_id']."' +
-            '&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(sdata) {
-      // Count returns: normal bods can edit provided that they encoded all samples on this location.
-      if (sdata instanceof Array && sdata.length>0) {
-        var sampleList=[];
-        for (var i=0;i<sdata.length;i++)
-          sampleList.push(sdata[i].id);
-        jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample_attribute_values' +
-            '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?&sample_attribute_id=$userIdAttr&query='+escape(JSON.stringify({'in': ['sample_id', sampleList]})), function(sadata) {
-          if (sadata instanceof Array && sadata.length>0) {
-            for (var i=0;i<sadata.length;i++)
-              if(sadata[i].value != ".$user->uid.") return;
-            setLocationEditable(true);
-          }});
-      }})
-      ";
-  } else { // newSample
-    if(self::$mode == 1 )// newSample mode rather than error situation
-        data_entry_helper::$onload_javascript .= "
-clearLocation();
-setLocationEditable(false);";
-    else if($isAdmin || !array_key_exists('sample:location_id', data_entry_helper::$entity_to_load))
-        data_entry_helper::$onload_javascript .= "
-setLocationEditable(true);";
-      else 
-            data_entry_helper::$onload_javascript .= "
-setLocationEditable(false);
-jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?location_id=".data_entry_helper::$entity_to_load['sample:location_id']."' +
-            '&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(sdata) {
-      // Count returns: normal bods can edit provided that they encoded all samples on this location.
-      if (sdata instanceof Array && sdata.length>0) {
-        var sampleList=[];
-        for (var i=0;i<sdata.length;i++)
-          sampleList.push(sdata[i].id);
-        jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample_attribute_values' +
-            '?mode=json&view=list&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?&sample_attribute_id=$userIdAttr&query='+escape(JSON.stringify({'in': ['sample_id', sampleList]})), function(sadata) {
-          if (sadata instanceof Array && sadata.length>0) {
-            for (var i=0;i<sadata.length;i++)
-              if(sadata[i].value != ".$user->uid.") return;
-            setLocationEditable(true);
-          }});
-      }})";
+      // viewing an existing sample.
+      data_entry_helper::$onload_javascript .= "loadLocation(".data_entry_helper::$entity_to_load['sample:location_id'].");
+jQuery('#imp-location-name').val(".data_entry_helper::$entity_to_load['sample:location_id'].");
+";
+    } else { // newSample
+      data_entry_helper::$onload_javascript .= "clearLocationContents(false);
+setAllDisabled(false);
+jQuery('#imp-location-name').val('');
+";
   }
+    // Create Layers.
+// Base Layers first.
+  data_entry_helper::$onload_javascript .= "
+WMSoptions = {
+          SERVICE: 'WMS',
+          VERSION: '1.1.0',
+          STYLES: '',
+          SRS: 'EPSG:2169', // TBD configurable.
+          FORMAT: 'image/png',
+          TRANSPARENT: 'true',
+          LAYERS: 'indicia:bat_locations' // TBD configurable.
+};
+locationListLayer = new OpenLayers.Layer.WMS('sites', // TBD configurable.
+        '".iform_proxy_url('http://localhost:8080/geoserver/wms')."', // TBD configurable.
+        WMSoptions, {
+             minScale: 0, // TBD configurable.
+            maxScale: 10000, // TBD configurable.
+            units: 'm', // TBD configurable.
+            isBaseLayer: false,
+            singleTile: true
+        });
+clickedSite = function(features, div){
+  if(features.length>0){
+    var myValue = features[0].attributes.id;
+    jQuery('#imp-location-name').val(myValue);
+    loadLocation(myValue);
+  }
+};
+";
+  
     $r .= '<input type="button" value="'.lang::get('Create New Location').'" onclick="newLocation();">'.
       '<input type="hidden" id="locations_website:website_id" name="locations_website:website_id" value="'.$args['website_id'].'" disabled="'.(array_key_exists('location:id', data_entry_helper::$entity_to_load) ? 'disabled' : ''). '" />'.
+      '<input type="hidden" name="location:location_type_id" value="'.$args['LocTypeID'].'" />'.
       '</fieldset>'.
       '<label for="location:name">'.lang::get('LANG_Location_Name_Label').':</label>'.
       '<input type="text" id="location:name" name="location:name" class="required" value="'.data_entry_helper::$entity_to_load['location:name'].'" /><span class="deh-required">*</span><br/>';
     if($location_list_args['includeCodeField'])
       $r .= '<label for="location:code">'.lang::get('LANG_Location_Code_Label').':</label><input type="text" id="location:code" name="location:code" disabled="disabled" value="'.data_entry_helper::$entity_to_load['location:code'].'" /><br/>';
-    
+    $r .= "<div id='wms-info-target' style=\"display:none\" ></div>";
     return $r;
   }
+
+  protected static function get_control_lateJS($auth, $args, $tabalias, $options) {
+    if(isset($args['communeLayerLookup']) && $args['communeLayerLookup']!=''){
+      $parts=explode(',',$args['communeLayerLookup']);
+      data_entry_helper::$onload_javascript .= "communeProtocol = new OpenLayers.Protocol.WFS({
+              url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $parts[0])."',
+              featurePrefix: '".$parts[1]."',
+              featureType: '".$parts[2]."',
+              geometryName:'".$parts[3]."',
+              featureNS: '".$parts[4]."',
+              srsName: '".$parts[5]."',
+              version: '1.1.0'                  
+      		  ,propertyNames: [\"".$parts[6]."\"]
+});
+fillCommune = function(a1){
+  if(a1.features.length > 0)
+    jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[0].attributes[\"".$parts[6]."\"]).attr('readonly','readonly');
+  else
+    jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('').attr('readonly','readonly');
+}
+jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
+    jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('').attr('readonly','readonly');
+	if(a1.features.length < 1)return;
+	var feature = a1.features[0];
+	var filter = new OpenLayers.Filter.Spatial({
+  		type: OpenLayers.Filter.Spatial.CONTAINS ,
+    	property: '".$parts[3]."',
+    	value: feature.geometry
+	});
+	communeProtocol.read({filter: filter, callback: fillCommune});
+});
+";
+    }
+    return '';
+}
 
   protected static function get_control_locationspatialreference($auth, $args, $tabalias, $options) {
     global $indicia_templates;
@@ -884,24 +1109,7 @@ jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?
         '<input type="text" id="{idLong}" name="{fieldnameLong}" {class} {disabled} value="{defaultLong}" />' .
         '<input type="hidden" id="imp-geom" name="{geomFieldname}" value="{defaultGeom}" />'.
         '<input type="hidden" id="{id}" name="{fieldname}" value="{default}" />'.
-        '<span style="margin-left: 20px; ">'.lang::get('LANG_LatLong_Bumpf').'</span><br />'.
-        '<input type="button" value="'.lang::get('Clear Position').'" onclick="ClearPosition();">'.
-        '<input type="button" value="'.lang::get('View All Luxembourg').'" onclick="ViewAllLuxembourg();">';
-    data_entry_helper::$javascript .= "
-ViewAllLuxembourg = function(){
-	var div = jQuery('#map')[0];
-	var center = new OpenLayers.LonLat(".$args['map_centroid_long'].", ".$args['map_centroid_lat'].");
-	center.transform(div.map.displayProjection, div.map.projection);
-	div.map.setCenter(center, ".((int) $args['map_zoom']).");
-};
-ClearPosition = function(){
-  jQuery('#imp-geom').val('');
-  jQuery('#imp-sref').val('');
-  jQuery('#imp-sref-lat').val('');
-  jQuery('#imp-sref-long').val('');
-  var div = jQuery('#map')[0];
-  div.map.editLayer.destroyFeatures();
-};";
+        '<span style="margin-left: 20px; ">'.lang::get('LANG_LatLong_Bumpf').'</span><br />';
 
     // Build the array of spatial reference systems into a format Indicia can use.
     $systems=array();
@@ -917,7 +1125,27 @@ ClearPosition = function(){
       'systems' => $systems
     ), $options));
   }
-   /**
+  
+  protected static function get_control_locationbuttons($auth, $args, $tabalias, $options) {
+    data_entry_helper::$javascript .= "
+ViewAllLuxembourg = function(){
+	var div = jQuery('#map')[0];
+	var center = new OpenLayers.LonLat(".$args['map_centroid_long'].", ".$args['map_centroid_lat'].");
+	center.transform(div.map.displayProjection, div.map.projection);
+	div.map.setCenter(center, ".((int) $args['map_zoom']).");
+};
+ClearPosition = function(){
+  jQuery('#imp-geom').val('');
+  jQuery('#imp-sref').val('');
+  jQuery('#imp-sref-lat').val('');
+  jQuery('#imp-sref-long').val('');
+  var div = jQuery('#map')[0];
+  div.map.editLayer.destroyFeatures();
+};";
+    return '<input type="button" value="'.lang::get('Clear Position').'" onclick="ClearPosition();">'.
+        '<input type="button" value="'.lang::get('View All Luxembourg').'" onclick="ViewAllLuxembourg();">';
+  }
+  /**
    * Get the recorder names control
    */
   protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
@@ -1036,32 +1264,48 @@ ClearPosition = function(){
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
+    if (isset($values['locmode'])){
+      if (!array_key_exists('website_id', $values))
+        throw new Exception('Cannot find website id in POST array!');
+      $record = array();
+      foreach ($values as $key=>$value){
+        if (substr($key, 0, 2)=='l:'){
+          // Don't explode the last element for location attributes
+          $a = explode(':', $key, 3);
+          $record['id']=$a[1];
+          $record[$a[2]] = $value;
+        }
+      }
+      $record['website_id'] = $values['website_id'];
+      return (data_entry_helper::wrap($record, 'location'));
+    }
     if (isset($values['sample:recorder_names'])){
       if(is_array($values['sample:recorder_names'])){
         $values['sample:recorder_names'] = implode("\r\n", $values['sample:recorder_names']);
       }
     } // else just load the string
-    if (isset($values['gridmode']))
-      $occurrences = data_entry_helper::wrap_species_checklist($values);
-    else
-      $occurrences = submission_builder::wrap_with_images($values, 'occurrence');
-    // when a non admin selects an existing location they can not modify it or its attributes and the location record does not form part of the submission
-    if (isset($values['location:name'])){
-      $sampleMod = submission_builder::wrap_with_images($values, 'sample');
-      if(count($occurrences)>0) 
-          $sampleMod['subModels'] = $occurrences;
-      $locationMod = submission_builder::wrap_with_images($values, 'location');
-      $locationMod['subModels'] = array(array('fkId' => 'location_id', 'model' => $sampleMod));
-      if(array_key_exists('locations_website:website_id', $_POST)){
-        $lw = submission_builder::wrap_with_images($values, 'locations_website');
-        $locationMod['subModels'][] = array('fkId' => 'location_id', 'model' => $lw);
-      }
-      return $locationMod;
-    }
-    $values['sample:location_id'] = $values['location:id'];
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
-    if(count($occurrences)>0) 
-          $sampleMod['subModels'] = $occurrences;
+    if(!isset($values['sample:deleted'])) {
+      if (isset($values['gridmode']))
+        $occurrences = data_entry_helper::wrap_species_checklist($values);
+      else
+        $occurrences = submission_builder::wrap_with_images($values, 'occurrence');
+      // when a non admin selects an existing location they can not modify it or its attributes and the location record does not form part of the submission
+      if (isset($values['location:name'])){
+        if(count($occurrences)>0) 
+            $sampleMod['subModels'] = $occurrences;
+        $locationMod = submission_builder::wrap_with_images($values, 'location');
+        $locationMod['subModels'] = array(array('fkId' => 'location_id', 'model' => $sampleMod));
+        if(array_key_exists('locations_website:website_id', $_POST)){
+          $lw = submission_builder::wrap_with_images($values, 'locations_website');
+          $locationMod['subModels'][] = array('fkId' => 'location_id', 'model' => $lw);
+        }
+        return $locationMod;
+      }
+      $values['sample:location_id'] = $values['location:id'];
+      if(count($occurrences)>0) 
+            $sampleMod['subModels'] = $occurrences;
+    }
     return $sampleMod;
   }
 

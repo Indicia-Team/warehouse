@@ -27,6 +27,13 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
+	'LANG_Main_Samples_Tab' => 'Surveys',
+	'LANG_Download' => 'Reports and Downloads',
+	'LANG_Locations' => 'Sites',
+	'LANG_Sites_Download' => 'Run a report to provide information on all the sites used for these surveys, plus their attributes. (CSV Format)',
+	'LANG_Conditions_Download' => 'Run a report to provide information on all these surveys, including the conditions and the associated sites. This returns one row per survey, and excludes any species data. (CSV Format)',
+	'LANG_Species_Download' => 'Run a report to provide information on species entered for these surveys. It includes the data for the surveys, conditions and the associated sites. This returns one row per occurrence. (CSV Format)',
+	'LANG_Download_Button' => 'Download Report',
 	'Edit' => 'Éditer',
 	// 'Actions' is left unchanged
 	// TBD translations for report grid headings.
@@ -65,8 +72,8 @@ $custom_terms = array(
 	'development' => 'Développement',
 	'search' => 'Chercher',
 	'Location Comment' => 'Commentaires',
-	'Clear Position' => 'Coordonnées Effacer',
-	'View All Luxembourg' => 'Voir tous le Luxembourg',
+	'Clear Position' => 'Effacer les coordonnées',
+	'View All Luxembourg' => 'Voir tout le Luxembourg',
 
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',
@@ -76,6 +83,7 @@ $custom_terms = array(
 	'Microclimate' => 'Conditions microclimatiques',
 	'Visit' => 'Visite',
 	'Bat Visit' => 'Visite',
+	'LANG_Site_Extra' => "(Numéro de passage / Nombre de passages durant l'hiver)",
 	'cavity entrance' => 'Entrée de la cavité',
 	'disturbances' => 'Perturbations',
 	'Human Frequentation' => 'Fréquentation humaine du site',
@@ -95,9 +103,10 @@ $custom_terms = array(
 	'species_checklist.species'=>'Espèces',
 	'Bats Obs Type' => "Type d'observation",
 	'SCLabel_Col1' => "Nombre d'individus",
-	'SCLabel_Row1' => 'Léthargie',
-	'SCLabel_Row2' => 'Cadavre(s)',
-	'SCLabel_Row3' => 'Excréments', 
+	'SCLabel_Row1' => 'Vivant(s)',
+	'SCLabel_Row2' => 'Mort(s)',
+	'Excrement' => 'Excréments', 
+	'Bat Reliability' => "Fiabilité de la determination",
 	'No Observation' => 'Aucune observation',
 	'Comment' => 'Commentaires',
 	'LANG_Duplicate_Taxon' => 'Vous avez sélectionné un taxon qui a déjà une entrée.',
@@ -107,7 +116,8 @@ $custom_terms = array(
 	'validation_max' => "S'il vous plaît entrer une valeur inférieure ou égale à {0}.",
 	'validation_min' => "S'il vous plaît entrer une valeur supérieure ou égale à {0}.",
 	'validation_number' => "S'il vous plaît entrer un numéro valide.",
-	'validation_digits' => "S'il vous plaît entrer un nombre entier.",
+	'validation_digits' => "S'il vous plaît entrer un nombre entier positif.",
+	'validation_integer' => "S'il vous plaît entrer un nombre entier.",
 	'validation_no_observation' => "Cette option doit être cochée si et seulement si il n'existe aucun donnée dans le tableau ci-dessus."
 
 );
