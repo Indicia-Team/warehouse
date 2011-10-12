@@ -335,6 +335,10 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/application/config',
           'the installation settings to be stored correctly',
           'the installation settings cannot be stored');
+      self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'cache',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/application/cache',
+          'the warehouse to cache information to improve performance',
+          'the warehouse cannot cache information to improve performance');
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'database update folders',
           dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
           'the database upgrades to be tracked',

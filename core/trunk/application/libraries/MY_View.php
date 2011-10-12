@@ -88,32 +88,38 @@ jQuery(document).ready(function() {
    * Retrieve the list of tabs for the current view.
    */
   protected function get_tabs() {
-    $uri = URI::instance();  
-    // use caching, so things don't slow down if there are lots of plugins
-    $cacheId = 'tabs-'.$this->viewname.'-'.$uri->segment(2);
-    $cache = Cache::instance();
-    if ($tabs = $cache->get($cacheId)) { 
-      return $tabs;
-    } else {
-      // $this->tabs is set to the default tabs for the view - excluding module extensions.
-      $tabs = array();
-      if (isset($this->tabs)) {
-        $this->extend_tabs($tabs, $this->tabs);
-      }
-      // now look for modules which plugin to add a tab.
-      foreach (Kohana::config('config.modules') as $path) {
-        $plugin = basename($path);
-        if (file_exists("$path/plugins/$plugin.php")) {
-          require_once("$path/plugins/$plugin.php");
-          if (function_exists($plugin.'_extend_ui')) {
-            $extends = call_user_func($plugin.'_extend_ui');
-            $this->extend_tabs($tabs, $extends);
+    // skip tabifying the setup_check page, as it relies on the cache and we have not yet checked
+    // if the cache folder is set up.
+    if ($this->viewname=='setup_check')
+      return array('General'=>$this->viewname);
+    else {
+      $uri = URI::instance();  
+      // use caching, so things don't slow down if there are lots of plugins
+      $cacheId = 'tabs-'.$this->viewname.'-'.$uri->segment(2);
+      $cache = Cache::instance();
+      if ($tabs = $cache->get($cacheId)) { 
+        return $tabs;
+      } else {
+        // $this->tabs is set to the default tabs for the view - excluding module extensions.
+        $tabs = array();
+        if (isset($this->tabs)) {
+          $this->extend_tabs($tabs, $this->tabs);
+        }
+        // now look for modules which plugin to add a tab.
+        foreach (Kohana::config('config.modules') as $path) {
+          $plugin = basename($path);
+          if (file_exists("$path/plugins/$plugin.php")) {
+            require_once("$path/plugins/$plugin.php");
+            if (function_exists($plugin.'_extend_ui')) {
+              $extends = call_user_func($plugin.'_extend_ui');
+              $this->extend_tabs($tabs, $extends);
+            }
           }
         }
+        $tabs = array_merge(array('General'=>$this->viewname), $tabs);
+        $cache->set($cacheId, $tabs);
+        return $tabs;
       }
-      $tabs = array_merge(array('General'=>$this->viewname), $tabs);
-      $cache->set($cacheId, $tabs);
-      return $tabs;
     }    
   }
   
