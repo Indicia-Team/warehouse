@@ -34,6 +34,30 @@ $(document).ready(function() {
   });
 });
 
+function getTotal(cell) {
+  var row=$(cell).parents('tr:first')[0]
+  // get the total for the column
+  var total=0, cellValue;
+  $.each($(row).find('.count-input'), function(idx, cell) {
+    cellValue = parseInt($(cell).val());
+    if (!isNaN(cellValue)) {
+      total += cellValue;
+    }
+  });
+  $(row).find('.row-total').html(total);
+  // get the total for the row
+  var matches = $(cell).parents('td:first')[0].className.match(/col\-\d/);
+  var colidx = matches[0].substr(4);
+  total = 0;
+  $.each($(cell).parents('table:first tbody').find('.col-'+colidx+' .count-input'), function(idx, collCell) {
+    cellValue = parseInt($(collCell).val());
+    if (!isNaN(cellValue)) {
+      total += cellValue;
+    }
+  });
+  $('td.col-total.col-'+colidx).html(total);
+}
+
 function loadSpeciesList() {
   var currentCell=null, submittingSample='';
 
@@ -49,7 +73,7 @@ function loadSpeciesList() {
     },
     'dataType': 'jsonp',
     'success': function(data) {
-      var name, row, rowclass, val, key, tmp, rowCount=$('table#transect-input tbody').children('tr').length;
+      var name, row, rowclass, val, key, tmp, rowTotal, rowCount=$('table#transect-input tbody').children('tr').length;
       $.each(data, function(idx, species) {
         if (species.common!==null) {
           name = species.common
@@ -61,13 +85,20 @@ function loadSpeciesList() {
         rowclass = rowCount%2===0 ? '' : ' class="alt-row"';
         row = '<tr id="row-' + species.id + '"' + rowclass + '><td>'+name+'</td>';
         rowCount +=1;
+        rowTotal = 0;
         $.each(indiciaData.sections, function(idx, section) {
+          if (typeof section.total==="undefined") {
+            section.total = 0;
+          }
           // find current value if there is one - the key is the combination of sample id and ttl id that an existing value would be stored as
           key=indiciaData.samples[section.code] + ':' + species.id;
-          row += '<td>';
+          row += '<td class="col-'+(idx+1)+'">';
           if (typeof indiciaData.existingOccurrences[key]!=="undefined") {
             val = indiciaData.existingOccurrences[key]['value'] === null ? '' : indiciaData.existingOccurrences[key]['value'];
-            
+            if (val!=='') {
+              rowTotal += parseInt(val);
+              section.total += parseInt(val);
+            }
             // store the ids of the occurrence and attribute we loaded, so future changes to the cell can overwrite the existing records
             row += '<input type="hidden" id="value:'+species.id+':'+section.code+':id" value="'+indiciaData.existingOccurrences[key]['o_id']+'"/>';
             row += '<input type="hidden" id="value:'+species.id+':'+section.code+':attrId" value="'+indiciaData.existingOccurrences[key]['a_id']+'"/>';
@@ -76,8 +107,13 @@ function loadSpeciesList() {
           }
           row += '<input class="count-input" id="value:'+species.id+':'+section.code+'" type="text" value="'+val+'" /></td>';
         });
+        row += '<td class="row-total">'+rowTotal+'</td>';
         row += '</tr>';
         $('table#transect-input tbody#occs-body').append(row);
+      });
+      // copy across the col totals
+      $.each(indiciaData.sections, function(idx, section) {
+        $('tfoot .col-total.col-'+(idx+1)).html(section.total);
       });
 
       $('.count-input').keydown(function (evt) {
@@ -92,10 +128,10 @@ function loadSpeciesList() {
         if (evt.keyCode===38) {
           targetRow = $(evt.target).parents('tr').prev('tr');
         }
-        if (targetRow.length>0) {
-          $('#value\\:' + targetRow[0].id.substr(4) + '\\:' + code).focus();
-        }
         var targetInput = [];
+        if (targetRow.length>0) {
+          targetInput = $('#value\\:' + targetRow[0].id.substr(4) + '\\:' + code);
+        }        
         // right arrow - move to next cell if at end of text
         if (evt.keyCode===39 && evt.target.selectionEnd >= evt.target.value.length) {
           targetInput = $(evt.target).parents('td').next('td').find('input');
@@ -103,8 +139,7 @@ function loadSpeciesList() {
             // end of row, so move down to next if there is one
             targetRow = $(evt.target).parents('tr').next('tr');
             if (targetRow.length>0) {
-              targetRow.find('input.count-input:first').focus();
-              return false;
+              targetInput = targetRow.find('input.count-input:first');
             }
           }
         }
@@ -115,15 +150,24 @@ function loadSpeciesList() {
             // before start of row, so move up to previous if there is one
             targetRow = $(evt.target).parents('tr').prev('tr');
             if (targetRow.length>0) {
-              targetRow.find('input:last').focus();
-              return false;
+              targetInput = targetRow.find('input:last');
             }
           }
         }
         if (targetInput.length > 0) {
-          targetInput.focus();
+          $(targetInput).get()[0].focus();
           return false;
         }
+      });
+      $('.count-input').focus(function(evt) {
+        // select the row
+        var matches = $(evt.target).parents('td:first')[0].className.match(/col\-\d/);
+        var colidx = matches[0].substr(4);
+        $(evt.target).parents('table:first').find('.table-selected').removeClass('table-selected');
+        $(evt.target).parents('table:first').find('.ui-state-active').removeClass('ui-state-active');
+        $(evt.target).parents('tr:first').addClass('table-selected');
+        $(evt.target).parents('table:first').find('tbody .col-'+colidx).addClass('table-selected');
+        $(evt.target).parents('table:first').find('thead .col-'+colidx).addClass('ui-state-active');
       });
       $('.count-input,.smp-input').change(function(evt) {
         $(evt.target).addClass('edited');
@@ -131,6 +175,7 @@ function loadSpeciesList() {
       $('.count-input,.smp-input').blur(function(evt) {        
         var selector = '#'+evt.target.id.replace(/:/g, '\\:');
         currentCell = evt.target.id;
+        getTotal(evt.target);
         if ($(selector).hasClass('edited')) {
           $(selector).addClass('saving');
           if ($(selector).hasClass('count-input')) {

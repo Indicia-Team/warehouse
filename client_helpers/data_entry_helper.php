@@ -231,7 +231,7 @@ class data_entry_helper extends helper_base {
   */
   public static function checkbox($options) {
     $options = self::check_options($options);
-    $default = isset($options['default']) ? $options['default'] : '';    
+    $default = isset($options['default']) ? $options['default'] : '';
     $value = self::check_default_value($options['fieldname'], $default);
     $options['checked'] = ($value==='on' || $value === 1 || $value === '1' || $value==='t') ? ' checked="checked"' : '';
     $options['template'] = array_key_exists('template', $options) ? $options['template'] : 'checkbox';
@@ -1201,7 +1201,7 @@ class data_entry_helper extends helper_base {
   * <li><b>table</b><br/>
   * Table name to get data from for the select options if the select is being populated by a service call.</li>
   * <li><b>report</b><br/>
-  * Report name to get data from for the select options if the select is being populated by a service call using a report. 
+  * Report name to get data from for the select options if the select is being populated by a service call using a report.
   * Mutually exclusive with the table option.</li>
   * <li><b>captionField</b><br/>
   * Field to draw values to show in the control from if the select is being populated by a service call.</li>
@@ -2075,6 +2075,50 @@ class data_entry_helper extends helper_base {
     return self::apply_template('text_input', $options);
   }
 
+ /**
+  * A control for inputting a time value. Provides a text input with a spin control that allows
+  * the time to be input. Reverts to a standard text input when JavaScript disabled.
+  * @param array $options Options array with the following possibilities:<ul>
+  * <ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. If not assigned the fieldname is used.</li>
+  * <li><b>default</b><br/>
+  * Optional. The default value to assign to the control. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>beforeSetTime</b><br/>
+  * Optional. Set this to the name of a JavaScript function which is called when the user tries to set a time value. This
+  * can be used, for example, to display a warning label when an out of range time value is input. See <a '.
+  * href="http://keith-wood.name/timeEntry.html">jQuery Time Entry</a> then click on the Restricting tab for more information.</li>
+  * <li><b>timeSteps</b><br/>
+  * Optional. An array containing 3 values for the allowable increments in time for hours, minutes and seconds respectively. Defaults to
+  * 1, 15, 0 meaning that the increments allowed are in 15 minute steps and seconds are ignored.</li>
+  * </ul>
+  */
+  public static function time_input($options) {
+    $options = array_merge(array(
+      'id' => $options['fieldname'],
+      'default' => '',
+      'timeSteps' => array(1,15,0)
+    ), $options);
+    self::add_resource('timeentry');
+    $steps = implode(', ', $options['timeSteps']);
+    // build a list of options to pass through to the jQuery widget
+    $jsOpts = array(
+      "timeSteps: [$steps]",
+      "spinnerImage: '".self::relative_client_helper_path()."../media/images/spinnerGreen.png'"
+    );
+    if (isset($options['beforeSetTime']))
+      $jsOpts[] = "beforeSetTime: ".$options['beforeSetTime'];
+    // ensure ID is safe for jQuery selectors
+    $safeId = str_replace(':','\\\\:',$options['id']);
+    self::$javascript .= "$('#".$safeId."').timeEntry({".implode(', ', $jsOpts)."});\n";
+    return self::apply_template('text_input', $options);
+  }
+
   /**
   * Helper function to generate a treeview from a given list
   *
@@ -2651,7 +2695,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     self::_purgeImages();
     return $r;
   }
-  
+
   /**
    * Helper function to clear the Indicia cache files.
    */
@@ -2661,7 +2705,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       return;
     }
     while (false !== ($obj = readdir($dh))) {
-      if($obj != '.' && $obj != '..') 
+      if($obj != '.' && $obj != '..')
         @unlink($cacheFolder . '/' . $obj);
     }
     closedir($dh);
@@ -3149,7 +3193,7 @@ if (errors.length>0) {
           setcookie('indicia_remembered', '');
         }
       }
-      
+
       $images = self::extract_image_data($_POST);
       $request = parent::$base_url."index.php/services/data/$entity";
       $postargs = 'submission='.urlencode(json_encode($submission));
@@ -3872,14 +3916,14 @@ if (errors.length>0) {
       if (in_array('required',$validation))
         $attrOptions['suffixTemplate'] = 'requiredsuffix';
     }
-    if(isset($item['default']) && $item['default']!="") 
+    if(isset($item['default']) && $item['default']!="")
       $attrOptions['default']= $item['default'];
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
           if (isset($item['control_type']) &&
               ($item['control_type']=='text_input' || $item['control_type']=='textarea'
-              || $item['control_type']=='postcode_textbox')) {
+              || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input')) {
             $ctrl = $item['control_type'];
           } else {
             $ctrl = 'text_input';
@@ -4146,10 +4190,10 @@ if (errors.length>0) {
   /**
   * While cookies may be offered for the convenience of clients, an option to prevent
   * the saving of personal data should also be present.
-  * 
+  *
   * Helper function to output an HTML checkbox control. Defaults to false unless
   * values are loaded from cookie.
-  * 
+  *
   * @param array $options Options array with the following possibilities:<ul>
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
