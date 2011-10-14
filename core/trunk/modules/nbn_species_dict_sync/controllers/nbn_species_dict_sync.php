@@ -59,6 +59,7 @@ class Nbn_species_dict_sync_Controller extends Controller {
   public function taxon_groups_sync() {
     require DOCROOT.'modules/nbn_species_dict_sync/lib/nusoap.php';
     $client = new nusoap_client('http://www.nbnws.net/ws_3_5/GatewayWebService?wsdl', true);
+    $client->setGlobalDebugLevel(0);
     $query1 = '<TaxonReportingCategoryListRequest xmlns="http://www.nbnws.net/TaxonReportingCategory" registrationKey="'.
         kohana::config('nbn_species_dict_sync.registration_key').'">'.
         '</TaxonReportingCategoryListRequest>';

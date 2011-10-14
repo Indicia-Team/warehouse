@@ -86,6 +86,7 @@ class XMLReportReader_Core implements ReportReader
       $this->name = $a[count($a)-1];
       $reader = new XMLReader();
       $reader->open($report);
+      $fieldsql = '';
       while($reader->read())
       {
         switch($reader->nodeType)
@@ -129,11 +130,9 @@ class XMLReportReader_Core implements ReportReader
                 break;
               case 'field_sql':
                 $reader->read();
-                $this->field_sql = $reader->value;
+                $field_sql = $reader->value;
                 // drop a marker in so we can insert custom attr fields later
-                $this->field_sql .= '#fields#';
-                $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
-                $this->query = str_replace('#field_sql#', $this->field_sql, $this->query);
+                $field_sql .= '#fields#';
                 break;
               case 'order_by':
                 $reader->read();
@@ -223,6 +222,12 @@ class XMLReportReader_Core implements ReportReader
           $this->query = str_replace('#order_by#', "#filters#\n#order_by#", $this->query);
         else
             $this->query .= '#filters#';
+      }
+      // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
+      // otherwise the same.
+      if (!empty($field_sql)) {
+        $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
+        $this->query = str_replace('#field_sql#', $field_sql, $this->query);
       }
       if ($this->hasColumnsSql) {
         // column sql is defined in the list of column elements, so autogenerate the query.
