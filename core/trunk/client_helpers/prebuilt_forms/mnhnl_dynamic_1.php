@@ -438,8 +438,6 @@ class iform_mnhnl_dynamic_1 {
     define ("MODE_EXISTING", 2);
     self::parse_defaults($args);
     self::getArgDefaults($args);
-    global $user;
-    $logged_in = $user->uid>0;
     self::$node = $node;
     
     // Get authorisation tokens to update and read from the Warehouse.
@@ -606,55 +604,8 @@ class iform_mnhnl_dynamic_1 {
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
-
-    // If logged in, output some hidden data about the user
-    if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {
-      self::profile_load_all_profile($user);
-    }
-    foreach($attributes as &$attribute) {
-      $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
-      if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true && isset($user->$attrPropName)) {
-        if ($args['nameShow'] == true) 
-          $attribute['default'] = $user->$attrPropName;
-        else {
-          // profile attributes are not displayed as the user is logged in
-          $attribute['handled']=true;
-          $attribute['value'] = $user->$attrPropName;
-        }
-      }
-      elseif (strcasecmp($attribute['caption'], 'cms user id')==0) {
-        if ($logged_in) $attribute['value'] = $user->uid;
-        $attribute['handled']=true; // user id attribute is never displayed
-      }
-      elseif (strcasecmp($attribute['caption'], 'cms username')==0) {
-        if ($logged_in) $attribute['value'] = $user->name;
-        $attribute['handled']=true; // username attribute is never displayed
-      }
-      elseif (strcasecmp($attribute['caption'], 'email')==0) {
-        if ($logged_in) {
-          if ($args['emailShow'] != true)
-          {// email attribute is not displayed
-            $attribute['value'] = $user->mail;
-            $attribute['handled']=true; 
-          }
-          else
-            $attribute['default'] = $user->mail;
-        }
-      }
-      elseif ((strcasecmp($attribute['caption'], 'first name')==0 ||
-          strcasecmp($attribute['caption'], 'last name')==0 ||
-          strcasecmp($attribute['caption'], 'surname')==0) && $logged_in) {
-        if ($args['nameShow'] != true) {  
-          // name attributes are not displayed because we have the users login
-          $attribute['handled']=true;
-        }
-      }
-      // If we have a value for one of the user login attributes then we need to output this value. BUT, for existing data
-      // we must not overwrite the user who created the record.
-      if (isset($attribute['value']) && $mode != MODE_EXISTING) {
-        $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
-      }
-    }
+      
+    $hiddens .= get_user_profile_hidden_inputs($attributes, $args);
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     $r .= "<div id=\"controls\">\n";
@@ -878,6 +829,7 @@ class iform_mnhnl_dynamic_1 {
    * Get the control for species input, either a grid or a single species input control.
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
+    global $user;
     $extraParams = $auth['read'];
     if ($args['species_names_filter']=='preferred') {
       $extraParams += array('preferred' => 't');
@@ -1340,24 +1292,6 @@ class iform_mnhnl_dynamic_1 {
   protected function getReportActions() {
     return array(array('display' => 'Actions', 'actions' => 
         array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
-  }
-  
-  /**
-   * Variant on the profile modules profile_load_profile, that also gets empty profile values. 
-   */
-  private static function profile_load_all_profile(&$user) {
-    // don't do anything unless in Drupal, with the profile module enabled, and the user logged in.
-    if ($user->uid>0 && function_exists('profile_load_profile')) {
-      $result = db_query('SELECT f.name, f.type, v.value FROM {profile_fields} f LEFT JOIN {profile_values} v ON f.fid = v.fid AND uid = %d', $user->uid);
-      while ($field = db_fetch_object($result)) {
-        if (empty($user->{$field->name})) {
-          if (empty($field->value)) 
-            $user->{$field->name} = '';
-          else
-            $user->{$field->name} = _profile_field_serialize($field->type) ? unserialize($field->value) : $field->value;
-        }
-      }
-    }
   }
   
 }

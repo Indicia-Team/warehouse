@@ -84,7 +84,15 @@ class iform_sectioned_transects_input_sample {
           'captionField'=>'title',
           'valueField'=>'id',
           'siteSpecific'=>true
-        )
+        ),
+        array(
+          'name'=>'custom_attribute_options',
+          'caption'=>'Options for custom attributes',
+          'description'=>'A list of additional options to pass through to custom attributes, one per line. Each option should be specified as '.
+              'the attribute name followed by | then the option name, followed by = then the value. For example, smpAttr:1|class=control-width-5.',
+          'type'=>'textarea',
+          'siteSpecific'=>true
+        ),
       )
     );
   }
@@ -110,7 +118,7 @@ class iform_sectioned_transects_input_sample {
     }
   }
   
-  public static function get_sample_form($args, $node, $response) {
+  public static function get_sample_form($args, $node, $response) {  
     global $user;
     if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
@@ -186,10 +194,6 @@ class iform_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="" id="entered_sref_system"/>';
       // sref values for the sample will be populated automatically when the submission is built.
     }
-    $r .= data_entry_helper::date_picker(array(
-      'label' => lang::get('Date'),
-      'fieldname' => 'sample:date',
-    ));
     $sampleMethods = helper_base::get_termlist_terms($auth, 'indicia:sample_methods', array('Transect'));
     $attributes = data_entry_helper::getAttributes(array(
       'id' => $sampleId,
@@ -201,7 +205,22 @@ class iform_sectioned_transects_input_sample {
       'survey_id'=>$args['survey_id'],
       'sample_method_id'=>$sampleMethods[0]['id']
     ));
-    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']));
+    $r .= get_user_profile_hidden_inputs($attributes, $args);
+    $r .= data_entry_helper::date_picker(array(
+      'label' => lang::get('Date'),
+      'fieldname' => 'sample:date',
+    ));
+    // are there any option overrides for the custom attributes?
+    $blockOptions = array();
+    if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) {
+      $blockOptionList = explode("\n", $args['custom_attribute_options']);
+      foreach($blockOptionList as $opt) {
+        $tokens = explode('|', $opt);
+        $optvalue = explode('=', $tokens[1]);
+        $blockOptions[$tokens[0]][$optvalue[0]] = $optvalue[1];
+      }
+    }
+    $r .= get_attribute_html($attributes, $args, array('extraParams'=>$auth['read']), null, $blockOptions);
     $r .= '<input type="hidden" name="sample:sample_method_id" value="'.$sampleMethods[0]['id'].'" />';
     $r .= '<input type="submit" value="'.lang::get('Next').'" class="ui-state-default ui-corner-all" />';
     $r .= '</form>';
@@ -311,9 +330,10 @@ class iform_sectioned_transects_input_sample {
     $r .= "<div id=\"grid\">\n";
     $r .= '<table id="transect-input" class="ui-widget"><thead>';
     $r .= '<tr><th class="ui-widget-header">' . lang::get('Sections') . '</th>';
-    foreach ($sections as $section) {
-      $r .= '<th class="ui-widget-header">' . $section['code'] . '</th>';
+    foreach ($sections as $idx=>$section) {
+      $r .= '<th class="ui-widget-header col-'.($idx+1).'">' . $section['code'] . '</th>';
     }
+    $r .= '<th class="ui-widget-header">' . lang::get('Total') . '</th>';
     $r .= '</tr></thead>';
     $r .= '<tbody class="ui-widget-content">';
     // output rows at the top for any transect section level sample attributes
@@ -322,7 +342,7 @@ class iform_sectioned_transects_input_sample {
       $r .= '<tr '.$rowClass.'><td>'.$attr['caption'].'</td>';
       $rowClass=$rowClass=='' ? 'class="alt-row"':'';
       unset($attr['caption']);
-      foreach ($sections as $section) {
+      foreach ($sections as $idx=>$section) {
         // output a cell with the attribute - tag it with a class & id to make it easy to find from JS.
         $attrOpts = array(
             'class' => 'smp-input smpAttr-'.$section['code'], 
@@ -336,12 +356,18 @@ class iform_sectioned_transects_input_sample {
         } else {
           $attr['default']=isset($_POST[$attr['fieldname']]) ? $_POST[$attr['fieldname']] : '';
         }
-        $r .= '<td>' . data_entry_helper::outputAttribute($attr, $attrOpts) . '</td>';
+        $r .= '<td class="col-'.($idx+1).'">' . data_entry_helper::outputAttribute($attr, $attrOpts) . '</td>';
       }
+      $r .= '<td class="ui-state-disabled"></td>';
       $r .= '</tr>';
     }
     $r .= '</tbody>';
     $r .= '<tbody class="ui-widget-content" id="occs-body"></tbody>';
+    $r .= '<tfoot><tr><td>Total</td>';
+    foreach ($sections as $idx=>$section) {
+      $r .= '<td class="col-'.($idx+1).' col-total"></td>';
+    }
+    $r .= '<td class="ui-state-disabled"></td></tr></tfoot>';
     $r .= '</table>';
     $r .= '</div>';
     $r .= "<div id=\"notes\">\n";

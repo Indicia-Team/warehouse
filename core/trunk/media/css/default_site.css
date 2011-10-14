@@ -69,7 +69,7 @@ label {
   margin: 4px 0 4px 0;
 }
 
-input, select, textarea, #form-params textarea {
+input, select, textarea, #form-params textarea, .timeEntry_control {
   vertical-align: top;
   margin: 4px 0 4px 0;
   display: inline; 

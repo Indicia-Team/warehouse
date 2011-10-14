@@ -169,3 +169,87 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
   }
   return $found;
 }
+
+/**
+ * Returns a list of hidden inputs which are extracted from the form attributes which can be extracted
+ * from the user's profile information in Drupal. The attributes which are used are marked as handled
+ * so they don't need to be output elsewhere on the form.
+ * @param array $attributes List of form attributes.
+ * @param array $args List of form arguments. Can include values called:
+ *   copyFromProfile - boolean indicating if values should be copied from the profile when the names match
+ *   nameShow - boolean, if true then name values should be displayed rather than hidden
+ *   emailShow - boolean, if true then email values should be displayed rather than hidden.
+ * @return string HTML for the hidden inputs.
+ */
+function get_user_profile_hidden_inputs(&$attributes, $args) {
+  $hiddens = '';
+  global $user;
+  $logged_in = $user->uid>0;
+  // If logged in, output some hidden data about the user
+  if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {
+    self::profile_load_all_profile($user);
+  }  
+  foreach($attributes as &$attribute) {
+    $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
+    if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true && isset($user->$attrPropName)) {
+      if (isset($args['nameShow']) && $args['nameShow'] == true) 
+        $attribute['default'] = $user->$attrPropName;
+      else {
+        // profile attributes are not displayed as the user is logged in
+        $attribute['handled']=true;
+        $attribute['value'] = $user->$attrPropName;
+      }
+    }
+    elseif (strcasecmp($attribute['caption'], 'cms user id')==0) {
+      if ($logged_in) $attribute['value'] = $user->uid;
+      $attribute['handled']=true; // user id attribute is never displayed
+    }
+    elseif (strcasecmp($attribute['caption'], 'cms username')==0) {
+      if ($logged_in) $attribute['value'] = $user->name;
+      $attribute['handled']=true; // username attribute is never displayed
+    }
+    elseif (strcasecmp($attribute['caption'], 'email')==0) {
+      if ($logged_in) {
+        if (!isset($args['emailShow']) || $args['emailShow'] != true)
+        {// email attribute is not displayed
+          $attribute['value'] = $user->mail;
+          $attribute['handled']=true; 
+        }
+        else
+          $attribute['default'] = $user->mail;
+      }
+    }
+    elseif ((strcasecmp($attribute['caption'], 'first name')==0 ||
+        strcasecmp($attribute['caption'], 'last name')==0 ||
+        strcasecmp($attribute['caption'], 'surname')==0) && $logged_in) {
+      if (!isset($args['nameShow']) || $args['nameShow'] != true) {  
+        // name attributes are not displayed because we have the users login
+        $attribute['handled']=true;
+      }
+    }
+    // If we have a value for one of the user login attributes then we need to output this value. BUT, for existing data
+    // we must not overwrite the user who created the record.
+    if (isset($attribute['value']) && $mode != MODE_EXISTING) {
+      $hiddens .= '<input type="hidden" name="'.$attribute['fieldname'].'" value="'.$attribute['value'].'" />'."\n";
+    }
+  }
+  return $hiddens;
+}
+
+/**
+   * Variant on the profile modules profile_load_profile, that also gets empty profile values. 
+   */
+function profile_load_all_profile(&$user) {
+  // don't do anything unless in Drupal, with the profile module enabled, and the user logged in.
+  if ($user->uid>0 && function_exists('profile_load_profile')) {
+    $result = db_query('SELECT f.name, f.type, v.value FROM {profile_fields} f LEFT JOIN {profile_values} v ON f.fid = v.fid AND uid = %d', $user->uid);
+    while ($field = db_fetch_object($result)) {
+      if (empty($user->{$field->name})) {
+        if (empty($field->value)) 
+          $user->{$field->name} = '';
+        else
+          $user->{$field->name} = _profile_field_serialize($field->type) ? unserialize($field->value) : $field->value;
+      }
+    }
+  }
+}
