@@ -366,7 +366,7 @@ class map_helper extends helper_base {
       'suffix'=>''
     ), $options);
     $options['class'] .= (empty($options['class']) ? '' : ' ').'layer_list';
-    $r .= '<div class="'.$options['class'].'" id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all">';
+    $r = '<div class="'.$options['class'].'" id="'.$options['id'].'" class="ui-widget ui-widget-content ui-corner-all">';
     $r .= $options['prefix']."\n<ul>";
     $r .= "</ul>\n".$options['suffix']."</div>";
     $funcSuffix = str_replace('-','_',$options['id']);
