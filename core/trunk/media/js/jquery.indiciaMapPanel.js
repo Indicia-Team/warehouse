@@ -401,8 +401,18 @@ mapInitialisationHooks = [];
         multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
       };
       // To protect ourselves against exceptions because the Google script would not link up, we
-      // only enable these layers if the Google constants are available.
-      if (typeof google !== "undefined" && typeof google.maps !== "undefined") {
+      // only enable these layers if the Google constants are available. We separately check for google V2 and V3 layers
+      // to maintain backwards compatibility
+      if (typeof G_PHYSICAL_MAP != "undefined") {
+        r.google_physical =
+            function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': true}); };
+        r.google_streets =
+            function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
+        r.google_hybrid =
+            function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+        r.google_satellite =
+            function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+      } else if (typeof google !== "undefined" && typeof google.maps !== "undefined") {
         r.google_physical =
             function() { return new OpenLayers.Layer.Google('Google Physical', {type: google.maps.MapTypeId.TERRAIN, 'sphericalMercator': true}); };
         r.google_streets =
