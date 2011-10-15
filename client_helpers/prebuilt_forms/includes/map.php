@@ -258,7 +258,7 @@ function iform_map_get_map_options($args, $readAuth) {
     $options['indiciaWMSLayers'] = explode("\n", $args['indicia_wms_layers']);
   }
   // set up standard control list if supplied
-  if ($args['standard_controls']) {
+  if (array_key_exists('standard_controls', $args) && $args['standard_controls']) {
     $args['standard_controls'] = str_replace("\r\n", "\n", $args['standard_controls']);
     $options['standardControls']=explode("\n", $args['standard_controls']);
   }
