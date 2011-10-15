@@ -258,10 +258,12 @@ class map_helper extends helper_base {
               self::add_resource('multimap');
               break;
             case 'virtual':
-            case 'bing':
               self::add_resource('virtualearth');
               break;
           }
+          if ($a=='bing' && (!isset(self::$bing_api_key) || empty(self::$bing_api_key)))
+            return '<p class="error">To use the Bing layers, please ensure that you declare a variable called $bing_api_key in the helper_config.php file set to an '
+                'empty string and specify a Bing API Key on the IForm settings page.</p>';
         }
       }
 
