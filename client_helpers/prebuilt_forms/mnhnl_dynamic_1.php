@@ -1211,7 +1211,7 @@ class iform_mnhnl_dynamic_1 {
     // get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['caption'],'CMS User ID')==0) {
-        $userIdAttr = $attrId;
+        $userIdAttr = $attr['attributeId'];
         break;
       }
     }
