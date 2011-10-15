@@ -101,7 +101,7 @@ echo data_entry_helper::textarea(array(
  <legend>Survey Specific Attributes</legend>
  <ol>
  <?php
-foreach ($values['attributes'] as $attr) {
+ foreach ($values['attributes'] as $attr) {
 	$name = 'smpAttr:'.$attr['sample_attribute_id'];
   // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
   if ($attr['id']) $name .= ':'.$attr['id'];
@@ -115,11 +115,12 @@ foreach ($values['attributes'] as $attr) {
       ));
       break;
     case 'Lookup List':
-      echo data_entry_helper::date_picker(array(
+      echo data_entry_helper::select(array(
         'label' => $attr['caption'],
         'fieldname' => $name,
         'default' => $attr['raw_value'],
-        'lookupValues' => $values['terms_'.$attr['termlist_id']]
+        'lookupValues' => $values['terms_'.$attr['termlist_id']],
+        'blankText' => '<Please select>'
       ));
       break;
     case 'Boolean':
