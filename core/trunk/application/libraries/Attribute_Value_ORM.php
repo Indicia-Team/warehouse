@@ -86,7 +86,6 @@ abstract class Attribute_Value_ORM extends ORM {
         foreach ($rules as $a){
           $array->add_rules($vf, trim($a));
         }
-        
       }
       // Now get the survey specific custom attribute validation rules for the attribute
       if (method_exists($this, 'get_survey_specific_rules')) {
@@ -113,12 +112,15 @@ abstract class Attribute_Value_ORM extends ORM {
   }
   
   protected function delete_if_empty() {
-    foreach ($this->as_array() as $field => $content) {
-      if (substr($field, -6)=='_value' && $content=="")
+    $arr = $this->as_array();
+    foreach ($arr as $field => $content) {
+      if (substr($field, -6)=='_value' && $content!="")
         return false;
     }
-    $this->deleted='t';
-    parent::save();
+    if ($this->id!==0) {
+      $this->deleted='t';
+      parent::save();
+    }
     return true;
   }
 
