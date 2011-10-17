@@ -364,6 +364,7 @@ class iform_sectioned_transects_edit_transect {
    * Build a row of buttons for selecting the route.
    */
   private static function section_selector($settings, $id) {
+    $sectionArr = array();
     foreach ($settings['sections'] as $code=>$section)
       $sectionArr[$code] = $code;
     $selector = '<label for="'.$id.'">'.lang::get('Select section').':</label><ol id="'.$id.'" class="section-select">';
