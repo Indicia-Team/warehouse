@@ -25,7 +25,7 @@ function loadSectionDetails(section) {
   if (typeof indiciaData.sections[section]!=="undefined") {
     $('#section-location-id').val(indiciaData.sections[section]['id']);
     $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/location_attribute_value?location_id=" + indiciaData.sections[section]['id'] +
-        "&mode=json&view=list&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
+        "&mode=json&view=list&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
         function(data) {
           var attrname;
           $.each(data, function(idx, attr) {

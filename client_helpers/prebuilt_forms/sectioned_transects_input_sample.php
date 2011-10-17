@@ -22,6 +22,20 @@
 
 require_once 'includes/map.php';
 require_once 'includes/form_generation.php';
+
+/** 
+ * A custom function for usort which sorts by the location code of a list of sections. 
+ */
+function sectionSort($a, $b)
+{
+  $aCode = substr($a['code'], 1);
+  $bCode = substr($b['code'], 1);
+  if ($aCode===$bCode) {
+    return 0;
+  }
+  watchdog('compare', "$aCode = $bCode - ".((int)$aCode < (int)$bCode ? '-1' : '1'));
+  return ((int)$aCode < (int)$bCode) ? -1 : 1;
+}
  
 /**
  * 
@@ -311,9 +325,9 @@ class iform_sectioned_transects_input_sample {
     }
     $sections = data_entry_helper::get_population_data(array(
       'table' => 'location',
-      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f','orderby'=>'code')
+      'extraParams' => $auth['read'] + array('view'=>'detail','parent_id'=>$parentLocId,'deleted'=>'f')
     ));
-    
+    usort($sections, "sectionSort");
     $r = "<form method=\"post\"><div id=\"tabs\">\n";
     $r .= '<input type="hidden" name="sample:id" value="'.$parentSampleId.'" />';
     $r .= '<input type="hidden" name="website_id" value="'.$args['website_id'].'"/>';
