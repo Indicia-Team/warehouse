@@ -81,16 +81,23 @@ class Website_Model extends ORM
       $this->auth = new Auth;
 
     if (!$this->auth->logged_in('CoreAdmin')) {
-      $websites = $this->db->select('users_websites.website_id')
+      $websites = $this->db->select('websites.id')
           ->from('users_websites')
           ->join('site_roles', 'site_roles.id', 'users_websites.site_role_id')
+          ->join('websites', 'websites.id', 'users_websites.website_id')
           ->where(array('users_websites.user_id'=>$_SESSION['auth_user']->id,
-              'site_roles.title'=>$role))->get();
-      $arr = array();
-      foreach ($websites as $website)
-        $arr[] = $website->website_id;
-      $this->in('id', $arr);
+              'site_roles.title'=>$role,
+              'websites.deleted'=>'f'))->get();
+    } else {
+      $websites = $this->db->select('id')
+          ->from('websites')
+          ->where(array('websites.deleted'=>'f'))
+          ->get();
     }
+    $arr = array();
+    foreach ($websites as $website)
+      $arr[] = $website->id;
+    $this->in('id', $arr);
     return $this;
   }
 
