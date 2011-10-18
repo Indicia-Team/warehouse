@@ -50,7 +50,7 @@ function outputBlocks(list) {
       r += '{';
         r += '"id":"' + block.id + '",'; 
 		caption = $('#' + block.id+' > div > .caption').text();
-		if (caption.substr(caption.length-1, 1)=='*') {
+		if (caption.substr(caption.length-1, 1)==='*') {
 		  caption = $.trim(caption.substr(0, caption.length-1));
 		}
         r += '"name":"' + caption + '",';
@@ -83,8 +83,8 @@ function moveBlock(source, target) {
     source.css('border-color', 'red');
     $('#layout-change-form').show();
     var label=$(source.find('> div > .caption'));
-    if (label.text().substr(label.text().length-1,1)!='*') {
-	  label.text(label.text() + ' *');
+    if (label.text().substr(label.text().length-1,1)!=='*') {
+      label.text(label.text() + ' *');
     }
   }
 }
@@ -93,10 +93,13 @@ function moveControl(source, target) {
   // Don't bother doing anything if dragging to the dragged control's drop placeholder above or below it.
   if (source.prev()[0]!==target[0] && source.next()[0]!==target[0]) {
 	if (source.hasClass('draggable-control')) {
-	  var controlDrop = source.prev();
+	  var srcList = source.parent()[0], controlDrop = source.prev();
 	  // move the drop target as well
 	  controlDrop.insertBefore(target);
 	  source.insertBefore(target);
+    // force a redraw to get round a bug in IE not updating after items removed from list
+    $(srcList).addClass('redraw');
+    $(srcList).removeClass('redraw');
 	}
 	source.css('top',0);
 	source.css('border-color', 'red');
@@ -280,16 +283,16 @@ $(document).ready(function() {
   
   $('.control-delete').click(function(event) {
     event.preventDefault();
-	var control = $(event.target.parentNode);
-	// mark the control with a deleted class that will be handled later
-	control.addClass('deleted');
-	// restyle and remove the drag/drop capability of the deleted control
-	control.draggable('destroy');
-	control.find('.control-drop').removeClass('control-drop');
-	control.find('a').css('display','none');
-	control.find('.handle').css('display','none');
-	control.find('.caption').css('text-decoration', 'line-through');	
-	$('#layout-change-form').show();
+    var control = $(event.target.parentNode);
+    // mark the control with a deleted class that will be handled later
+    control.addClass('deleted');
+    // restyle and remove the drag/drop capability of the deleted control
+    control.draggable('destroy');
+    control.find('.control-drop').removeClass('control-drop');
+    control.find('a').css('display','none');
+    control.find('.handle').css('display','none');
+    control.find('.caption').css('text-decoration', 'line-through');	
+    $('#layout-change-form').show();
   });
   
   makeControlsDragDroppable();
