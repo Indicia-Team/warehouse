@@ -494,20 +494,21 @@ mapInitialisationHooks = [];
               'stopSingle': false,
               'stopDouble': true
             };
-
-            // allow click or bounding box actions
-            this.handlers = { click: new OpenLayers.Handler.Click(this, {
-                'click': this.onGetInfo
-              }, handlerOptions)
-            };
-            this.handlers.click.activate();
             if (clickableVectorLayers.length>0) {
-              this.handlers.box = new OpenLayers.Handler.Box(
-                this, {done: this.onGetInfo},
-                {boxDivClassName: "olHandlerBoxSelectFeature"}
-              );
+              this.handlers = { box: new OpenLayers.Handler.Box(
+                  this, {done: this.onGetInfo},
+                  {boxDivClassName: "olHandlerBoxSelectFeature"}
+                )
+              };
               this.handlers.box.activate();
               this.allowBox = true;
+            } else {
+              // allow click or bounding box actions
+              this.handlers = { click: new OpenLayers.Handler.Click(this, {
+                  'click': this.onGetInfo
+                }, handlerOptions)
+              };
+              this.handlers.click.activate();
             }
             // create a protocol for the WMS getFeatureInfo requests if we need to
             if (wmsUrl!=='') {
@@ -544,8 +545,8 @@ mapInitialisationHooks = [];
                   VERSION: "1.1.0",
                   STYLES: '',
                   BBOX: div.map.getExtent().toBBOX(),
-                  X: Math.floor(this.lastclick.x),
-                  Y: Math.floor(this.lastclick.y),
+                  X: Math.round(this.lastclick.x),
+                  Y: Math.round(this.lastclick.y),
                   INFO_FORMAT: 'application/vnd.ogc.gml',
                   LAYERS: clickableWMSLayerNames,
                   QUERY_LAYERS: clickableWMSLayerNames,
@@ -565,7 +566,9 @@ mapInitialisationHooks = [];
               // the proxy URL built into their URL. But OL will use proxyHost for a protocol request. Therefore temporarily 
               // disable proxyHost during this request.
               var oldPh = OpenLayers.ProxyHost;
-              OpenLayers.ProxyHost = "";
+              if (wmsUrl.substr(0, OpenLayers.ProxyHost.length)===OpenLayers.ProxyHost) {
+                OpenLayers.ProxyHost = "";
+              }
               try {
                 this.protocol.read({
                   params: params,
@@ -619,7 +622,7 @@ mapInitialisationHooks = [];
           // handler for response from a WMS call.
           // todo: support div or report filters.
           onResponse: function(response) {
-            if (div.settings.clickableLayersOutputDiv==='') {
+            if (div.settings.clickableLayersOutputMode==='popup') {
               for (var i=0; i<div.map.popups.length; i++) {
                 div.map.removePopup(div.map.popups[i]);
               }
