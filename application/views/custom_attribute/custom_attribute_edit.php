@@ -76,12 +76,12 @@ function toggleOptions(data_type)
       break;
 
   };
-  for (i in enable_list) {
-    $('#li_'+enable_list[i]).attr('style', '');
-  };
-  for (i in disable_list) {
-    $('#li_'+disable_list[i]).attr('style', 'display: none');
-  };
+  $.each(enable_list, function(i, item) {
+    $('#li_'+item).show();
+  });
+  $.each(disable_list, function(i, item) {
+    $('#li_'+item).hide();
+  });
 
 };
 <?php
