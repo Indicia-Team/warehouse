@@ -326,9 +326,15 @@ class Import_Controller extends Service_Base_Controller {
   private function captureSupermodelIds($model) {
     $submissionStruct = $model->get_submission_structure();
     if (isset($submissionStruct['superModels'])) {
+      $array = $model->as_array();
       // loop through the supermodels
       foreach($submissionStruct['superModels'] as $modelName=>$modelDetails) {
-        $this->previousCsvSupermodel['id'][$modelName]=$model->$modelName->id;
+        $id = $modelName . '_id';
+        // Expect that the fk field is called fkTable_id (e.g. if the super model is called sample, then
+        // the field should be sample_id). If it is not, then we revert to using ORM to find the ID, which 
+        // incurs a database hit.
+        $this->previousCsvSupermodel['id'][$modelName]=
+          isset($array[$id]) ? $array[$id] : $model->$modelName->id;
       }
     }
   }
