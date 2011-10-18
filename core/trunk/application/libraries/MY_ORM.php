@@ -312,7 +312,13 @@ class ORM extends ORM_Core {
     // and also use correct user.
     if (array_key_exists('updated_on', $obj->table_columns)) {
       $obj->updated_on = date("Ymd H:i:s");
-      if ($force or !$obj->updated_by_id) $obj->updated_by_id = $userId;
+      if ($force or !$obj->updated_by_id) {
+        if ($obj->id)
+          $obj->updated_by_id = $userId;
+        else 
+          // creating a new record, so it must be the same updator as creator.
+          $obj->updated_by_id = $obj->created_by_id;
+      }
     }
   }
 
