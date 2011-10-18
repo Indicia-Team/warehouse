@@ -53,6 +53,7 @@
 <label class="wide" for="view_common_names">Show Common Names</label>
 <?php echo form::checkbox('view_common_names', TRUE, isset($model->view_common_names) AND ($model->view_common_names == 't') ) ?>
 </li>
+<?php if ($this->auth->logged_in('CoreAdmin')): ?>
 <li>
 <label class="wide" for="core_role_id">Role within Warehouse</label>
 <select class="narrow" id="core_role_id" name="user:core_role_id" >
@@ -69,7 +70,9 @@
 </select>
 <?php echo html::error_message($model->getError('core_role_id')); ?>
 </li>
-<?php if (isset($password_field) and $password_field != '') { 
+<?php
+endif;
+if (isset($password_field) and $password_field != '') { 
   echo $password_field; 
   echo html::error_message($model->getError('user:password'));
 } ?>

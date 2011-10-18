@@ -46,27 +46,30 @@ class Website_Controller extends Gridview_Base_Controller
     $this->pagetitle = "Websites";
     $this->set_website_access('admin');
   }
-    
+
   /**
-   * Returns an array of all values from this model and its super models ready to be 
+   * Returns an array of all values from this model and its super models ready to be
    * loaded into a form. For this controller, we need to double up the password field.
    */
   protected function getModelValues() {
-    $r = parent::getModelValues();    
+    $r = parent::getModelValues();
     $r['password2']=$r['website:password'];
-    return $r;  
+    return $r;
   }
-  
+
   /**
    * If trying to edit an existing website record, ensure the user has rights to this website.
    */
   public function record_authorised ($id) {
-    if (!is_null($id) AND !is_null($this->auth_filter)) {
+    if (is_null($id))
+      // creating a new website registration so must be core admin.
+      return $this->auth->logged_in('CoreAdmin');
+    elseif (!is_null($id) AND !is_null($this->auth_filter))
+      // editing a website registration - so must have rights to it.
       return (in_array($id, $this->auth_filter['values']));
-    }
     return true;
   }
-  
+
   /**
    * Core admin or website admins can see the list of websites
    */
