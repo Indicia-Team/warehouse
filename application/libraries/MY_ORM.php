@@ -32,7 +32,7 @@ class ORM extends ORM_Core {
   /**
   * @var bool Should foreign key lookups be cached? Set to true during import for example.
   */
-  public static $cacheFkLookups = true;
+  public static $cacheFkLookups = false;
 
   public function last_query() {
     return $this->db->last_query();
@@ -534,7 +534,12 @@ class ORM extends ORM_Core {
       foreach ($this->submission['fkFields'] as $a => $b) {
         $cache = false;
         if (ORM::$cacheFkLookups) {
-          $cache = $this->cache->get('lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue']);
+          $keyArr=array('lookup', $b['fkTable'], $b['fkSearchField'], $b['fkSearchValue']);
+          // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
+          if (isset($b['fkSearchFilterValue']))
+            $keyArr[] = $b['fkSearchFilterValue'];
+          $key = implode('-', $keyArr);
+          $cache = $this->cache->get($key);
         }
         if ($cache) {
           $this->submission['fields'][$b['fkIdField']] = $cache;
@@ -557,7 +562,7 @@ class ORM extends ORM_Core {
           } else {
             $this->submission['fields'][$b['fkIdField']] = $matches[0]->id;
             if (ORM::$cacheFkLookups) {
-              $this->cache->set('lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue'], $matches[0]->id, array('lookup'));
+              $this->cache->set($key, $matches[0]->id, array('lookup'));
             }
           }
         }
@@ -729,7 +734,10 @@ class ORM extends ORM_Core {
       $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
       // as the required fields list is relatively static, we use the cache. This cache entry gets cleared when 
       // a custom attribute is saved so it should always be up to date.
-      $result = $this->cache->get('required-' . $this->object_name . '-' . $typeFilter);
+      $keyArr = array_merge(array('required', $this->object_name), $this->identifiers);
+      if ($typeFilter) $keyARr[] = $typeFilter;
+      $key = implode('-', $keyArr);
+      $result = $this->cache->get($key);
       if ($result===null) {
         // setup basic query to get custom attrs
         $this->setupDbToQueryAttributes(false, $typeFilter);
@@ -740,7 +748,7 @@ class ORM extends ORM_Core {
         else 
           $this->db->like($attr_entity.'s.validation_rules','%required%');
         $result=$this->db->get()->result_array(true);
-        $this->cache->set('required-' . $this->object_name . '-' . $typeFilter, $result, array('required-fields'));
+        $this->cache->set($key, $result, array('required-fields'));
       }
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
