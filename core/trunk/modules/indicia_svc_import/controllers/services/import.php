@@ -272,6 +272,9 @@ class Import_Controller extends Service_Base_Controller {
       unlink(DOCROOT . "upload/" . $_GET['uploaded_csv']);
     if (file_exists(DOCROOT . "upload/" . $metadataFile))
       unlink(DOCROOT . "upload/" . $metadataFile);
+    // clean up cached lookups
+    $cache= Cache::instance();
+    $cache->delete_tag('lookup');
   }
   
   /**
