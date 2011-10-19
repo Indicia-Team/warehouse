@@ -114,7 +114,7 @@ abstract class Attribute_Value_ORM extends ORM {
   protected function delete_if_empty() {
     $arr = $this->as_array();
     foreach ($arr as $field => $content) {
-      if (substr($field, -6)=='_value' && $content!="")
+      if (substr($field, -6)=='_value' && $content!=="")
         return false;
     }
     if ($this->id!==0) {
