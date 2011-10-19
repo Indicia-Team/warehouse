@@ -49,12 +49,6 @@ CREATE OR REPLACE VIEW gv_samples AS
    LEFT JOIN locations l ON s.location_id = l.id
    WHERE s.deleted=false;
 
-CREATE OR REPLACE VIEW gv_taxon_groups_taxon_lists AS 
- SELECT tgtl.id, tg.id AS taxon_group_id, tg.title, tgtl.deleted, tgtl.taxon_list_id
-   FROM taxon_groups_taxon_lists tgtl
-   JOIN taxon_groups tg ON tg.id = tgtl.taxon_group_id AND tg.deleted = false
-   WHERE tgtl.deleted=false;
-
 CREATE OR REPLACE VIEW gv_taxon_relations AS 
    SELECT tr.id, tr.from_taxon_meaning_id AS my_taxon_meaning_id, t1.taxon AS my_taxon, tr.to_taxon_meaning_id AS other_taxon_meaning_id, t2.taxon AS other_taxon, tr.taxon_relation_type_id, trt.forward_term AS term, tr.deleted
            FROM taxon_relations tr
