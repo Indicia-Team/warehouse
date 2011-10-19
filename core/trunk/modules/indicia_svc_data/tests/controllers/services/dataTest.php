@@ -74,7 +74,7 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     $locattr = ORM::Factory('location_attribute', $this->locationAttributeId2);
     $locattr->delete();
   }
-  
+
   public function testRequestDataGetRecordByDirectId() {
     $params = array(
       'mode'=>'json',
@@ -210,7 +210,7 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
   }  
   
   public function testSaveInt() {
-    // post a location with an attribute value.
+    // post a location with an invalid attribute value.
     $array = array(
       'location:name' => 'UnitTest2',
       'location:centroid_sref'=>'SU0101',
@@ -233,8 +233,21 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
     $this->assertTrue(isset($r['success']), 'Submitting a location with int attr did not return success response');
     $locId = $r['success'];
-    $locAttr = ORM::Factory('location_attribute_value')->where(array('location_id'=>$locId))->find();
+    $locAttr = ORM::Factory('location_attribute_value')->where(array('location_id'=>$locId, 'deleted'=>'f'))->find();
     $this->assertEquals(0, $locAttr->int_value, 'Submitting a location with zero int attr did not save');
+    // set attr to empty to check it deletes the attribute value
+    $array = array(
+      'location:id' => $locId,
+      'location:name' => 'UnitTest2',
+      'location:centroid_sref'=>'SU0101',
+      'location:centroid_sref_system'=>'osgb',
+      'locAttr:'.$this->locationAttributeId2.':'.$locAttr->id=>''
+    );
+    $s = submission_builder::build_submission($array, array('model'=>'location'));
+    $r = data_entry_helper::forward_post_to('location', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a location with blank attr did not return success response');
+    $db = ORM::Factory('location_attribute_value')->where(array('location_id'=>$locId, 'deleted'=>'f'));
+    $this->assertEquals(0, $db->count_all(), 'Submitting a location with blank attr did not delete the attr');
     // cleanup
     $locAttr->delete();
     ORM::Factory('location', $locId)->delete();

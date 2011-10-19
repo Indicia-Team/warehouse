@@ -111,16 +111,23 @@ abstract class Attribute_Value_ORM extends ORM {
       return parent::save();
   }
   
+  /**
+   * Detect if the attribute value is empty. If so, either delete and save it, or if it does not exist just 
+   * skip saving it.
+   */
   protected function delete_if_empty() {
     $arr = $this->as_array();
     foreach ($arr as $field => $content) {
-      if (substr($field, -6)=='_value' && $content!=="")
+      if (substr($field, -6)=='_value' && $content!=="" && $content!==null) 
+        // not empty, so can exit
         return false;
     }
+    // delete if it exists
     if ($this->id!==0) {
       $this->deleted='t';
       parent::save();
-    }
+    } 
+    
     return true;
   }
 
