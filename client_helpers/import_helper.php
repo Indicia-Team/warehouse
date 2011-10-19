@@ -306,7 +306,7 @@ class import_helper extends helper_base {
     * next chunk.
     */
     uploadChunk = function() {
-      var limit=10;
+      var limit=50;
       $.ajax({
         url: '".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
         dataType: 'jsonp',

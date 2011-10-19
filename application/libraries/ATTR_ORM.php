@@ -41,6 +41,9 @@ abstract class ATTR_ORM extends Valid_ORM {
         array_push($this->unvalidatedFields, 'termlist_id');
     }
     $parent_valid = parent::validate($array, $save);
+    // clean up cached required fields in case validation rules have changed
+    $cache=Cache::instance();
+    $cache->delete_tag('required-fields');
     return $save && $parent_valid;
   }
 
