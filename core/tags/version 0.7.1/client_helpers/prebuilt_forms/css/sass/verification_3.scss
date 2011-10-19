@@ -1,0 +1,127 @@
+@import "sassy-buttons";
+@import "compass/css3";
+@import "blueprint/form";
+
+$verify-color: #00a000;
+$reject-color: #a00000;
+$default-color: #4ba3cc;
+$hover-color: #ffffcc;
+$selected-color: #027AC6;
+$selected-font-color: #ffffff;
+
+#verification-grid {
+  form#verification-grid-params {
+    margin-bottom: 0;
+  }
+}
+
+#grid {
+  width: 55%;
+  overflow: auto;
+}
+
+#record-details-wrap {
+  width: 44%;
+  overflow: auto;
+}
+
+table.report-grid {
+  font-size: 80%;  
+}
+
+table.report-grid tr:hover, table.report-grid tr.odd:hover {
+  background-color: $hover-color;
+}
+
+table.report-grid {
+  tr.selected, tr.selected td {
+    background-color: $selected-color;
+    color: white;
+  }
+}
+
+ul.gallery li {
+  @include inline-block;
+  list-style-type: none;
+  text-align: center;
+  background: none;
+}
+
+.status-V {
+  @include background(linear-gradient(top, darken($verify-color, 30%), $verify-color));
+  @include border-radius(4px, 4px);
+  color: #ffffff;
+}
+
+.status-R {
+  @include background(linear-gradient(top, darken($reject-color, 30%), $reject-color));
+  @include border-radius(4px, 4px);
+  color: #ffffff;
+}
+
+.status-S {
+  @include background(linear-gradient(top, darken($default-color, 30%), $default-color));
+  @include border-radius(4px, 4px);
+  color: #ffffff;
+}
+
+.zero-t {
+  font-style: italic;
+  text-decoration: line-through;
+}
+
+button {
+  margin: 0.25em;
+  @include sassy-button-structure(4px, 1px, 0.25em, 11px, 1em);
+  font-weight: bold; 
+}
+
+#btn-verify {
+  @include sassy-button-colors("simple", $verify-color, darken($verify-color, 20%), true, #ffffff, raised);
+}
+
+#btn-reject {
+  @include sassy-button-colors("simple", $reject-color, darken($reject-color, 20%), true, #ffffff, raised);
+}
+
+button.default-button {
+  @include sassy-button-colors("simple", $default-color, darken($default-color, 20%), true, #ffffff, raised);
+}
+
+#comment-text {
+  display: block;
+  width: 100%;
+}
+
+.popup-form {
+  width: 500px;
+  @include blueprint-form-layout;
+  @include blueprint-form-borders;
+  @include blueprint-form-sizes(360px, 360px);
+  @include blueprint-inline-form;
+
+  label {
+    width: 120px;
+    &.error {
+      width: auto;
+      margin: 0 0 0 120px;
+      line-height: 1em;
+    }
+  }
+}
+
+.manual-email {
+  width: 600px;
+
+  .left {
+    width: 120px;
+  }
+  .right {
+    width: 450px;
+  }
+}
+
+#click-record-notice {
+  padding: 1em;
+  @include background(linear-gradient(top, lighten($default-color, 60%), lighten($default-color, 30%)));
+}

@@ -1,0 +1,133 @@
+/* Change labels to fit on narrower space available */
+/* line 9, sass/sectioned_transects_edit_transect.scss */
+label {
+  width: 140px;
+}
+
+/* line 13, sass/sectioned_transects_edit_transect.scss */
+.helpText {
+  margin-left: 144px;
+}
+
+/* line 17, sass/sectioned_transects_edit_transect.scss */
+.section-select {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  margin: 0;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+.section-select {
+  *display: inline;
+}
+/* line 21, sass/sectioned_transects_edit_transect.scss */
+.section-select li {
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  display: inline-block;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0.3em 1em;
+  line-height: 1.2em;
+  border-style: solid;
+  border-width: 1px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -o-border-radius: 3px;
+  -ms-border-radius: 3px;
+  -khtml-border-radius: 3px;
+  border-radius: 3px;
+  background-color: #4ba3cc;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #4ba3cc), color-stop(100%, #276b8a));
+  background: -webkit-linear-gradient(#4ba3cc, #276b8a);
+  background: -moz-linear-gradient(#4ba3cc, #276b8a);
+  background: -o-linear-gradient(#4ba3cc, #276b8a);
+  background: -ms-linear-gradient(#4ba3cc, #276b8a);
+  background: linear-gradient(#4ba3cc, #276b8a);
+  border-color: #276b8a;
+  color: white;
+  text-shadow: #256482, 0 -1px 0;
+  margin: 0 0.5em;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+.section-select li {
+  *display: inline;
+}
+/* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.section-select li:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #5fadd2), color-stop(100%, #2d7a9e));
+  background: -webkit-linear-gradient(#5fadd2, #2d7a9e);
+  background: -moz-linear-gradient(#5fadd2, #2d7a9e);
+  background: -o-linear-gradient(#5fadd2, #2d7a9e);
+  background: -ms-linear-gradient(#5fadd2, #2d7a9e);
+  background: linear-gradient(#5fadd2, #2d7a9e);
+}
+/* line 27, sass/sectioned_transects_edit_transect.scss */
+.section-select li.selected {
+  -moz-box-shadow: #4e4e00 0 0.2em 0.4em inset;
+  -webkit-box-shadow: #4e4e00 0 0.2em 0.4em inset;
+  -o-box-shadow: #4e4e00 0 0.2em 0.4em inset;
+  box-shadow: #4e4e00 0 0.2em 0.4em inset;
+  border: solid 1px #2a2a00;
+}
+/* line 31, sass/sectioned_transects_edit_transect.scss */
+.section-select li.missing:not(.selected) {
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=50);
+  opacity: 0.5;
+}
+/* line 35, sass/sectioned_transects_edit_transect.scss */
+.section-select li.missing.selected {
+  filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=70);
+  opacity: 0.7;
+}
+
+/* Hide the sections that still need to be drawn on the details tab as they are not in DB yet. */
+/* line 42, sass/sectioned_transects_edit_transect.scss */
+#section-details .missing {
+  display: none;
+}
+
+/* line 46, sass/sectioned_transects_edit_transect.scss */
+.form-button {
+  display: inline-block;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0.3em 1em;
+  line-height: 1.2em;
+  border-style: solid;
+  border-width: 1px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -o-border-radius: 3px;
+  -ms-border-radius: 3px;
+  -khtml-border-radius: 3px;
+  border-radius: 3px;
+  background-color: #006699;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #006699), color-stop(100%, #002233));
+  background: -webkit-linear-gradient(#006699, #002233);
+  background: -moz-linear-gradient(#006699, #002233);
+  background: -o-linear-gradient(#006699, #002233);
+  background: -ms-linear-gradient(#006699, #002233);
+  background: linear-gradient(#006699, #002233);
+  border-color: #002233;
+  color: white;
+  text-shadow: #001b29, 0 -1px 0;
+}
+/* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+.form-button:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #0077b3), color-stop(100%, #00334d));
+  background: -webkit-linear-gradient(#0077b3, #00334d);
+  background: -moz-linear-gradient(#0077b3, #00334d);
+  background: -o-linear-gradient(#0077b3, #00334d);
+  background: -ms-linear-gradient(#0077b3, #00334d);
+  background: linear-gradient(#0077b3, #00334d);
+}
