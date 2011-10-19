@@ -37,22 +37,22 @@ function loadSectionDetails(section) {
             if ($('input:radio#locAttr\\:'+attr.location_attribute_id+'\\:0').length>0) {
               var radioidx=0;
               // name the radios with the existing value id
-              while ($('#locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0) {
-                $('#locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).attr('name',attrname);
+              while ($('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0) {
+                $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).attr('name',attrname);
                 radioidx++;
               }
               radioidx=0;
               // check the correct radio
-              while ($('#locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
-                  $('#locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()!=attr.raw_value)
+              while ($('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
+                  $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()!=attr.raw_value)
                 radioidx ++;
-              if ($('#locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
-                  $('#locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()==attr.raw_value) {
-                $('#locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).attr('checked', true);
+              if ($('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
+                  $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()==attr.raw_value) {
+                $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).attr('checked', true);
               }
             } else {
-              $('#locAttr\\:'+attr.location_attribute_id).val(attr.raw_value);              
-              $('#locAttr\\:'+attr.location_attribute_id).attr('name',attrname);
+              $('#section-form #locAttr\\:'+attr.location_attribute_id).val(attr.raw_value);              
+              $('#section-form #locAttr\\:'+attr.location_attribute_id).attr('name',attrname);
             }
           });
         }
