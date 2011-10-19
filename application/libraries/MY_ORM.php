@@ -735,7 +735,7 @@ class ORM extends ORM_Core {
       // as the required fields list is relatively static, we use the cache. This cache entry gets cleared when 
       // a custom attribute is saved so it should always be up to date.
       $keyArr = array_merge(array('required', $this->object_name), $this->identifiers);
-      if ($typeFilter) $keyARr[] = $typeFilter;
+      if ($typeFilter) $keyArr[] = $typeFilter;
       $key = implode('-', $keyArr);
       $result = $this->cache->get($key);
       if ($result===null) {
