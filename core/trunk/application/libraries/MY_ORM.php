@@ -30,7 +30,7 @@
  */
 class ORM extends ORM_Core {
   /**
-  * @var Should foreign key lookups be cached? Set to true during import for example.
+  * @var bool Should foreign key lookups be cached? Set to true during import for example.
   */
   public static $cacheFkLookups = true;
 
@@ -75,6 +75,8 @@ class ORM extends ORM_Core {
   
   /**
    * Constructor allows plugins to modify the data model.
+   * @var int $id ID of the record to load. If null then creates a new record. If -1 then the ORM 
+   * object is not initialised, providing access to the variables only.
    */
   public function __construct($id = NULL)
   {
@@ -120,8 +122,6 @@ class ORM extends ORM_Core {
         $this->has_and_belongs_to_many = $ormRelations['has_and_belongs_to_many'];
       }
       parent::__construct($id);
-    } else {
-      kohana::log('debug', 'skipped constructor for '.strtolower(substr(get_class($this), 0, -6)));
     }
   }
   
@@ -432,7 +432,7 @@ class ORM extends ORM_Core {
     $return = $this->createParentRecords() && $return;
     // No point doing any more if the parent records did not post
     if ($return) {
-      $this->preSubmit();
+      $this->preSubmit();      
       $this->removeUnwantedFields();
       $return = $this->validateAndSubmit();
       $return = $this->checkRequiredAttributes() ? $return : null;
@@ -445,9 +445,9 @@ class ORM extends ORM_Core {
       // Call postSubmit
       if ($return) {
         $ps = $this->postSubmit();
-          if ($ps == null) {
-            $return = null;
-          }
+        if ($ps == null) {
+          $return = null;
+        }
       }
       if (kohana::config('config.log_threshold')=='4') {
         kohana::log('debug', 'Done inner submit of model '.$this->object_name.' with result '.$return);
@@ -530,24 +530,24 @@ class ORM extends ORM_Core {
    */
   private function populateFkLookups() {
     $r=true;
-     if (!ORM::$cacheFkLookups) {
-       throw new Exception('NO CACHING');
-     }
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
         $cache = false;
         if (ORM::$cacheFkLookups) {
-          kohana::log('debug', 'trying to read from cache '.'lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue']);
           $cache = $this->cache->get('lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue']);
-          if ($cache) kohana::log('debug', 'cache read OK');
         }
         if ($cache) {
           $this->submission['fields'][$b['fkIdField']] = $cache;
         } else {
+          $where = array($b['fkSearchField'] => $b['fkSearchValue']);
+          // does the lookup need to be filtered, e.g. to a taxon or term list?
+          if ($b['fkSearchFilterField']) {
+            $where[$b['fkSearchFilterField']] = $b['fkSearchFilterValue'];
+          }
           $matches = $this->db
               ->select('id')
               ->from(inflector::plural($b['fkTable']))
-              ->like(array($b['fkSearchField'] => $b['fkSearchValue']))
+              ->where($where)
               ->limit(1)
               ->get();
           if (count($matches)<1) {
@@ -558,7 +558,6 @@ class ORM extends ORM_Core {
             $this->submission['fields'][$b['fkIdField']] = $matches[0]->id;
             if (ORM::$cacheFkLookups) {
               $this->cache->set('lookup-'.$b['fkTable'].'-'.$b['fkSearchField'].'-'.$b['fkSearchValue'], $matches[0]->id, array('lookup'));
-              kohana::log('debug', 'cache setting OK');
             }
           }
         }
@@ -728,15 +727,21 @@ class ORM extends ORM_Core {
         }
       }
       $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
-      // setup basic query to get custom attrs
-      $this->setupDbToQueryAttributes(false, $typeFilter);
-      $attr_entity = $this->object_name.'_attribute';
-      // We only want globally or locally required ones
-      if ($this->identifiers['website_id'] || $this->identifiers['survey_id']) 
-        $this->db->where('('.$attr_entity."s_websites.validation_rules like '%required%' or ".$attr_entity."s.validation_rules like '%required%')");
-      else 
-        $this->db->like($attr_entity.'s.validation_rules','%required%');
-      $result=$this->db->get();
+      // as the required fields list is relatively static, we use the cache. This cache entry gets cleared when 
+      // a custom attribute is saved so it should always be up to date.
+      $result = $this->cache->get('required-' . $this->object_name . '-' . $typeFilter);
+      if ($result===null) {
+        // setup basic query to get custom attrs
+        $this->setupDbToQueryAttributes(false, $typeFilter);
+        $attr_entity = $this->object_name.'_attribute';
+        // We only want globally or locally required ones
+        if ($this->identifiers['website_id'] || $this->identifiers['survey_id']) 
+          $this->db->where('('.$attr_entity."s_websites.validation_rules like '%required%' or ".$attr_entity."s.validation_rules like '%required%')");
+        else 
+          $this->db->like($attr_entity.'s.validation_rules','%required%');
+        $result=$this->db->get()->result_array(true);
+        $this->cache->set('required-' . $this->object_name . '-' . $typeFilter, $result, array('required-fields'));
+      }
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
           // There is a required attr which we don't have a value for the submission for. But if posting an existing occurrence, the
