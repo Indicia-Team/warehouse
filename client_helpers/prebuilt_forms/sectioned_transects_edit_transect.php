@@ -398,10 +398,13 @@ class iform_sectioned_transects_edit_transect {
     ));
     $r .= '<table id="user-list" style="width: auto">';
     $rows = '';
-    if (isset($cmsUserAttr['displayValue'])) 
-      $rows .= '<tr><td id="user-'.$cmsUserAttr['displayValue'].'"><input type="hidden" name="'.$cmsUserAttr['fieldname'].':'.
-          $cmsUserAttr['displayValue'].'" value="'.$cmsUserAttr['displayValue'].'"/>'.
-          $users[$cmsUserAttr['displayValue']].'</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>';
+    if (isset($cmsUserAttr['default']) && !empty($cmsUserAttr['default'])) {
+      foreach($cmsUserAttr['default'] as $value) {
+        $rows .= '<tr><td id="user-'.$value['default'].'"><input type="hidden" name="'.$value['fieldname'].'" '.
+            'value="'.$value['default'].'"/>'.$users[$value['default']].
+            '</td><td><div class="ui-state-default ui-corner-all"><span class="remove-user ui-icon ui-icon-circle-close"></span></div></td></tr>';
+        }
+    }
     if (empty($rows))
       $rows = '<tr><td colspan="2"></td></tr>';
     $r .= "$rows</table>\n";
