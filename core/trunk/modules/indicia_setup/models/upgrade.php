@@ -77,7 +77,7 @@ class Upgrade_Model extends Model
             // track the last run script.
             if (!is_writeable($baseDir."db/$version_name")) {
               throw new Exception("You cannot upgrade at the moment until the directory permissions on the Warehouse are corrected. ".
-                 "Write access is required to the $baseDir/db/$version_name folder on the server.");
+                 "Write access is required to the $baseDir"."db/$version_name folder on the server.");
             }
             // start transaction for each folder full of scripts
             $this->begin();
