@@ -355,6 +355,10 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers',
           'the settings for the data entry helper classes to be stored',
           'the settings for the data entry helper classes cannot be stored');
+      self::check_dir_permission($writeable,  $good_dirs, $bad_dirs, 'data upload',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/client_helpers/upload',
+          'data to be uploaded',
+          'data cannot be uploaded');          
       self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'demo',
           dirname(dirname(dirname(dirname(__file__ )))) . '/modules/demo',
           'the settings for the demo configuration to be stored',
