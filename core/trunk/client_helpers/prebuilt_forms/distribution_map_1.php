@@ -99,7 +99,8 @@ class iform_distribution_map_1 {
           'name' => 'click_on_occurrences_mode',
           'caption' => 'Click on Occurrences Mode',
           'description' => 'This option allows you to enable querying the occurrences under a point by clicking on the map, displaying the results in a div or popup. '.
-              'For this to work, the IForm Proxy module must be enabled in Drupal.',
+              'For this to work, the Indicia Proxy module must be enabled in Drupal and the IForm Proxy Passthrough permission must be granted to the Drupal user roles that '.
+              'are able to access the map.',
           'type' => 'select',
           'options' => array(
             'none' => 'None',
