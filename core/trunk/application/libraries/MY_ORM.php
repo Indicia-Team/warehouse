@@ -546,7 +546,7 @@ class ORM extends ORM_Core {
         } else {
           $where = array($b['fkSearchField'] => $b['fkSearchValue']);
           // does the lookup need to be filtered, e.g. to a taxon or term list?
-          if ($b['fkSearchFilterField']) {
+          if (isset($b['fkSearchFilterField']) && $b['fkSearchFilterField']) {
             $where[$b['fkSearchFilterField']] = $b['fkSearchFilterValue'];
           }
           $matches = $this->db
