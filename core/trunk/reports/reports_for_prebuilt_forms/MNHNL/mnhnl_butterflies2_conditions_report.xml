@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report title="MNHNL Butterflies2 Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+  <params>
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
+  </params>
+  <table tablename="samples" where="#this#.deleted = FALSE and #this#.parent_id IS NULL and #this#.survey_id = #survey_id#" >
+    <tabColumn name='id' visible='true' display='Main Survey sample ID' />
+    <tabColumn name='location_name' display='Square' />
+    <tabColumn name='date_start' visible='false'/>
+    <tabColumn name='date_end' visible='false'/>
+    <tabColumn name='date_type' visible='false'/>
+    <tabColumn name='date' func="''" display='Year' /> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+    <tabColumn name='comment' display='Main Survey Comment' />
+    <attributes separator='|' meaningIdLanguage='preferred'/>
+    <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+      <tabColumn name='location_name' display='Site name' />
+      <tabColumn name='date_start' visible='false' display='site_start' />
+      <tabColumn name='date_end' visible='false'  display='site_end'/>
+      <tabColumn name='date_type' visible='false'  display='site_type'/>
+      <tabColumn name='date' func="''"  display='site_date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+      <tabColumn name='comment' display='Site Comment'  />
+      <tabColumn name='id' visible='true' display='Site Survey sample ID' />
+      <attributes separator='|' meaningIdLanguage='preferred'/>
+    </subTable>    
+  </table>
+</report>

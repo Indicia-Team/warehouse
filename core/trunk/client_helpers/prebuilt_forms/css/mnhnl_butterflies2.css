@@ -1,0 +1,28 @@
+.remove-cgnewrow {
+  color:red !important;
+}
+.clear-cgrow {
+  color:red !important;
+}
+.remove-sgnewrow {
+  color:red !important;
+}
+.clear-sgrow {
+  color:red !important;
+}
+.narrow {
+  width: 40px;
+}
+input.cgAttr {
+  width: 50px;
+}
+.cggrid-date {
+  width: 80px;
+}
+p.inline-error {
+  margin-left: 0;	
+  margin-bottom: 0;
+  margin-top: 4px;
+  margin-right: 20px;	
+  display: inline;  
+}
