@@ -488,8 +488,8 @@ class XMLReportReader_Core implements ReportReader
     for($i = 0; $i <= $attributes->parentTableIndex; $i++){
       if ($i == 0) {
           $query .= $this->tables[$i]['tablename']." lt".$i;
-      } else { // making assumption to reduce the size of the query that all left outer join tables can be excluded
-          if ($this->tables[$i]['join'] == null) {
+      } else { // making assumption to reduce the size of the query that all left outer join tables can be excluded, but make sure parent is included!
+          if ($this->tables[$i]['join'] == null || $i == $attributes->parentTableIndex) {
             $query .= " INNER JOIN ".$this->tables[$i]['tablename']." lt".$i." ON (".$this->tables[$i]['tableKey']." = ".$this->tables[$i]['parentKey'];
               if($this->tables[$i]['where'] != null) {
                 $query .= " AND ".preg_replace("/#this#/", "lt".$i, $this->tables[$i]['where']);
