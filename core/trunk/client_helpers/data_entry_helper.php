@@ -3910,17 +3910,20 @@ if (errors.length>0) {
     // build validation rule classes from the attribute data
     if (isset($item['validation_rules'])) {
       $validation = explode("\n", $item['validation_rules']);
-      // append the rules to any existing class string
-      $attrOptions['class'] = (isset($attrOptions['class']) ? $attrOptions['class'] .' ' : '') .
-          self::build_validation_class(array('fieldname' => $item['fieldname'], 'validation'=>$validation));
+      $validationClass = self::build_validation_class(array('fieldname' => $item['fieldname'], 'validation'=>$validation));
       if (in_array('required',$validation))
         $attrOptions['suffixTemplate'] = 'requiredsuffix';
+    } else {
+      $validation = array();
+      $validationClass = "";
     }
     if(isset($item['default']) && $item['default']!="")
       $attrOptions['default']= $item['default'];
     switch ($item['data_type']) {
         case 'Text':
         case 'T':
+          // append the validation rules to any existing class string
+          $attrOptions['class'] = (isset($attrOptions['class']) ? $attrOptions['class'] .' ' : '').$validationClass;
           if (isset($item['control_type']) &&
               ($item['control_type']=='text_input' || $item['control_type']=='textarea'
               || $item['control_type']=='postcode_textbox' || $item['control_type']=='time_input')) {
@@ -3934,13 +3937,16 @@ if (errors.length>0) {
         case 'F':
         case 'Integer':
         case 'I':
+          // append the validation rules to any existing class string
+          $attrOptions['class'] = (isset($attrOptions['class']) ? $attrOptions['class'] .' ' : '').$validationClass;
           $output = self::text_input($attrOptions);
           break;
         case 'Boolean':
         case 'B':
           // A change in template means we can now use a checkbox if desired: in fact this is now the default.
           // Can also use checkboxes (eg for filters where none selected is a possibility) or radio buttons.
-            $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box';
+          // append the validation rules to any existing class string
+            $attrOptions['class'] = array_key_exists('class', $options) ? $options['class'] : 'control-box '.$validationClass;
             if(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='radio') {
               $output = self::boolean_attribute('radio', $attrOptions);
             } elseif(array_key_exists('booleanCtrl', $options) && $options['booleanCtrl']=='checkbox_group') {
@@ -3953,7 +3959,7 @@ if (errors.length>0) {
         case 'Specific Date': // Date
         case 'V': // Vague Date
         case 'Vague Date': // Vague Date
-            $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker" : "vague-date-picker");
+            $attrOptions['class'] = ($item['data_type'] == 'D' ? "date-picker " : "vague-date-picker ").$validationClass;
             $output = self::date_picker($attrOptions);
             break;
         case 'Lookup List':
@@ -3983,6 +3989,10 @@ if (errors.length>0) {
               $ctrl = 'select';
             }
           }
+          if ($ctrl =='checkbox_group' || $ctrl=='radio_group'){
+            $attrOptions['validation']=array_merge(isset($attrOptions['validation'])?$attrOptions['validation']:array(), $validation);
+          } else
+            $attrOptions['class'] = (isset($attrOptions['class']) ? $attrOptions['class'] .' ' : '').$validationClass;
           if(array_key_exists('lookUpKey', $options)){
             $lookUpKey = $options['lookUpKey'];
           } else {
