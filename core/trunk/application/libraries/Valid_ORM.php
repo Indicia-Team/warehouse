@@ -35,6 +35,8 @@ abstract class Valid_ORM extends ORM {
   public $valid_url;
   public $valid_alpha_numeric;
   public $valid_numeric;
+  public $valid_digit;
+  public $valid_integer;
   public $valid_standard_text;
   public $valid_decimal;
   public $valid_dec_format;
@@ -45,6 +47,7 @@ abstract class Valid_ORM extends ORM {
   public $valid_max;
   public $valid_max_value;
   public $valid_date_in_past;
+  public $valid_time;
   
   public function validate(Validation $array, $save = FALSE) {
     if (array_key_exists('validation_rules', $array->as_array())) {
@@ -149,6 +152,12 @@ abstract class Valid_ORM extends ORM {
         case 'numeric' :	
 		  $this->valid_numeric = true;
           break;
+        case 'digit' :	
+		  $this->valid_digit = true;
+          break;
+        case 'integer' :	
+		  $this->valid_integer = true;
+          break;
         case 'standard_text' :	
 		  $this->valid_standard_text = true;
           break;
@@ -176,6 +185,9 @@ abstract class Valid_ORM extends ORM {
           break;
         case 'date_in_past' : 
 		  $this->valid_date_in_past=true;
+          break;
+        case 'time' : 
+		  $this->valid_time=true;
           break;
       }
     }

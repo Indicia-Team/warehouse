@@ -57,6 +57,7 @@ abstract class Attribute_Value_ORM extends ORM {
         break;
       case 'I':
         $vf = 'int_value';
+        $array->add_rules('int_value', 'integer');
         break;
       case 'F':
         $vf = 'float_value';
@@ -73,6 +74,7 @@ abstract class Attribute_Value_ORM extends ORM {
       	// Boolean
       	// The checkbox html control actually posts the value on
       	if (is_string($array->int_value) && $array->int_value=='on') $array->int_value=1;
+        $array->add_rules('int_value', 'integer');
       	$array->add_rules('int_value', 'minimum[0]');
       	$array->add_rules('int_value', 'maximum[1]');
       	$vf = 'int_value';

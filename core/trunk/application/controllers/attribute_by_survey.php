@@ -242,7 +242,7 @@ class Attribute_By_Survey_Controller extends Indicia_Controller
   public function save() {       
     // Build the validation_rules field from the set of controls that are associated with it.
     $rules = array();
-    foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past') as $rule) {          
+    foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past','time','digit','integer') as $rule) {          
       if (array_key_exists('valid_'.$rule, $_POST) && $_POST['valid_'.$rule]==1) {            
         array_push($rules, $rule);
       }

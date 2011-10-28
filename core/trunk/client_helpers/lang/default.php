@@ -58,6 +58,9 @@ $default_terms = array(
   'validation_url' => 'Please enter a valid URL',
   'validation_dateISO' => 'Please enter a valid date in yyyy-mm-dd format',
   'validation_date' => 'Please enter a valid date',
+  'validation_time' => 'Please enter a valid 24Hr Time in HH:MM format',
+  'validation_digit' => 'Please enter only digits',
+  'validation_integer' => 'Please enter an integer, positive or negative',
 
   // Default labels for various database fields
   'occurrence:taxa_taxon_list_id' => 'Species',

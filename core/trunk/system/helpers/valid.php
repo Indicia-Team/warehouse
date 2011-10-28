@@ -265,6 +265,31 @@ class valid_Core {
 	}
 
 	/**
+	 * Checks whether a string is a valid integer (negative numbers allowed, no decimals).
+	 * Based on Numeric.
+	 *
+	 * @param   string   input string
+	 * @return  boolean
+	 */
+	public static function integer($str)
+	{
+		// Use localeconv to set the decimal_point value: Usually a comma or period.
+		return (bool) preg_match('/^-?[0-9]++$/D', (string) $str);
+	}
+	
+	/**
+	 * Checks whether a string is a valid integer (negative numbers allowed, no decimals).
+	 * Based on Numeric.
+	 *
+	 * @param   string   input string
+	 * @return  boolean
+	 */
+	public static function time($str)
+	{
+		return (bool) preg_match('/^(2[0-3]|[0,1][0-9]):[0-5][0-9]$/D', (string) $str);
+	}
+	
+	/**
 	 * Checks whether a string is a valid number (negative and decimal numbers allowed).
 	 *
 	 * @see Uses locale conversion to allow decimal point to be locale specific.

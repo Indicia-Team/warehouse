@@ -26,12 +26,14 @@ $attrModelName = str_replace('s_website', '', $model->object_name);
 $dataType = $model->$attrModelName->data_type;
 switch ($dataType) {
   case "T": // text
-    $enable_list = array('valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format');
+    $enable_list = array('valid_required','valid_length','valid_length_min','valid_length_max','valid_alpha','valid_email','valid_url','valid_alpha_numeric','valid_numeric','valid_standard_text','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_time');
     break;
   case "L": // Lookup List
     $enable_list = array('valid_required');
     break;
   case "I": // Integer
+    $enable_list = array('valid_required','valid_numeric','valid_digit','valid_integer','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value');
+    break;
   case "F": // Float
     $enable_list = array('valid_required','valid_numeric','valid_decimal','valid_dec_format','valid_regex','valid_regex_format','valid_min','valid_min_value','valid_max','valid_max_value');
     break;
@@ -88,6 +90,13 @@ if (in_array('valid_alpha_numeric', $enable_list)) : ?>
 if (in_array('valid_numeric', $enable_list)) : ?>		
 	<li id="li_valid_numeric"><label class="narrow" for="valid_numeric">Numeric</label><?php echo form::checkbox('valid_numeric', TRUE, isset($model->valid_numeric) AND ($model->valid_numeric == 't'), 'class="vnarrow" ' ) ?></li>
 <?php endif; 
+if (in_array('valid_digit', $enable_list)) : ?>		
+	<li id="li_valid_digit"><label class="narrow" for="valid_digit">Digits Only</label><?php echo form::checkbox('valid_digit', TRUE, isset($model->valid_digit) AND ($model->valid_digit == 't'), 'class="vnarrow" ' ) ?></li>
+<?php endif;
+// only integers will have this option, so set by default.
+if (in_array('valid_integer', $enable_list)) : ?>		
+	<li id="li_valid_integer"><label class="narrow" for="valid_integer">Integer</label><?php echo form::checkbox('valid_integer', TRUE, true, 'class="vnarrow" ' ) ?></li>
+<?php endif; 
 if (in_array('valid_standard_text', $enable_list)) : ?>	
 	<li id="li_valid_standard_text"><label class="narrow"
 		for="valid_standard_text">Standard Text</label><?php echo form::checkbox('valid_standard_text', TRUE, isset($model->valid_standard_text) AND ($model->valid_standard_text == 't'), 'class="vnarrow" ' ) ?></li>
@@ -130,6 +139,10 @@ if (in_array('valid_date_in_past', $enable_list)) : ?>
 			echo form::checkbox('valid_date_in_past', TRUE, isset($model->valid_date_in_past) AND ($model->valid_date_in_past == 't'), 'class="vnarrow" ' ); 
 		  echo html::error_message($model->getError('valid_date_in_past')); ?>
 	</li>
+<?php endif; 
+if (in_array('valid_time', $enable_list)) : ?>	
+	<li id="li_valid_time"><label class="narrow"
+		for="valid_time">Time</label><?php echo form::checkbox('valid_time', TRUE, isset($model->valid_time) AND ($model->valid_time == 't'), 'class="vnarrow" ' ) ?></li>
 <?php endif; ?>
 </ol>
 </fieldset>

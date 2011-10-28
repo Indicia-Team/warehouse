@@ -268,6 +268,7 @@ $.extend($.validator, {
 		dateISO: "Please enter a valid date (ISO).",
 		number: "Please enter a valid number.",
 		digits: "Please enter only digits.",
+		integer: "Please enter a valid integer.",
 		creditcard: "Please enter a valid credit card number.",
 		equalTo: "Please enter the same value again.",
 		accept: "Please enter a value with a valid extension.",
@@ -766,6 +767,7 @@ $.extend($.validator, {
 		number: {number: true},
 		numberDE: {numberDE: true},
 		digits: {digits: true},
+		integer: {integer: true},
 		creditcard: {creditcard: true},
 		time: {time: true}
 	},
@@ -781,6 +783,13 @@ $.extend($.validator, {
       $.each(classes.split(' '), function() {
         if (this in $.validator.classRuleSettings) {
           $.extend(rules, $.validator.classRuleSettings[this]);
+        } else {
+          for (var method in $.validator.methods) {
+            var start='{'+method+'Value:';
+            if(this.substr(0,start.length) == start){
+              rules[method] = this.substring(start.length,this.length-1);
+            }
+          }
         }
       });
     }
@@ -1049,6 +1058,10 @@ $.extend($.validator, {
 		// http://docs.jquery.com/Plugins/Validation/Methods/digits
 		digits: function(value, element) {
 			return this.optional(element) || /^\d+$/.test(value);
+		},
+		
+		integer: function(value, element) {
+			return this.optional(element) || /^-?\d+$/.test(value);
 		},
 		
 		// http://docs.jquery.com/Plugins/Validation/Methods/creditcard
