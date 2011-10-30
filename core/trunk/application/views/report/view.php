@@ -30,7 +30,7 @@ $content = $report['content'];
 foreach ($content['columns'] as $col => $det)
 {
   if (!array_key_exists('visible', $det) || $det['visible']!='false') {
-    $display = $det['display'] ? $det['display'] : $col;
+    $display = isset($det['display']) ? $det['display'] : $col;
     echo "<th>$display</th>";
   }
 }
