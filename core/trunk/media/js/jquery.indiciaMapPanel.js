@@ -1227,11 +1227,11 @@ function format_selected_features(features, div) {
   if (features.length===0) {
     return div.settings.msgGetInfoNothingFound;
   } else {
-    var html='<table><thead><tr>';
+    var html='<table><thead><tr>', keepVagueDates = typeof features[0].attributes.date === "undefined";
     // use normal for (in) to get object properties
     for(var attr in features[0].attributes) {
-      // skip vague date component columns
-      if (attr.substr(0, 5)!=='date_') {
+      // skip vague date component columns if we have a standard date
+      if (keepVagueDates || attr.substr(0, 5)!=='date_') {
         if (div.settings.clickableLayersOutputColumns.length===0) {
           html += '<th>' + attr + '</th>';
         } else if (div.settings.clickableLayersOutputColumns[attr]!=undefined) {
@@ -1243,7 +1243,7 @@ function format_selected_features(features, div) {
     $.each(features, function(i, item) {
       html += '<tr>';
       for(var attr in item.attributes) {
-        if (attr.substr(0, 5)!=='date_' && (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!=undefined)) {
+        if ((keepVagueDates || attr.substr(0, 5)!=='date_') && (div.settings.clickableLayersOutputColumns.length===0 || div.settings.clickableLayersOutputColumns[attr]!=undefined)) {
           html += '<td>' + item.attributes[attr] + '</td>';
         }
       };
