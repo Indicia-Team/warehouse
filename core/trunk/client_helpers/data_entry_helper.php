@@ -2078,7 +2078,7 @@ class data_entry_helper extends helper_base {
  /**
   * A control for inputting a time value. Provides a text input with a spin control that allows
   * the time to be input. Reverts to a standard text input when JavaScript disabled.
-  * @param array $options Options array with the following possibilities:<ul>
+  * @param array $options Options array with the following possibilities:
   * <ul>
   * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
