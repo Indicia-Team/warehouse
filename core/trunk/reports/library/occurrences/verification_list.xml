@@ -6,6 +6,7 @@
   SELECT #field_sql#
   FROM occurrences o
   JOIN samples s ON s.id=o.sample_id AND s.deleted = FALSE
+  JOIN surveys su on su.id=s.survey_id and su.deleted=false
   JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id AND ttl.deleted=false
   JOIN taxa_taxon_lists ttlpref ON ttlpref.taxon_meaning_id=ttl.taxon_meaning_id AND ttlpref.preferred='t' 
       AND ttlpref.deleted=false AND ttlpref.taxon_list_id=ttl.taxon_list_id
