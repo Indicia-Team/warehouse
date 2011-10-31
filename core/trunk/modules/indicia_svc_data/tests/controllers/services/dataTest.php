@@ -148,14 +148,12 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
   }
   
   private function getResponse($url) {
-    $session = curl_init();    
-    kohana::log('debug', $url);
+    $session = curl_init();
     curl_setopt ($session, CURLOPT_URL, $url);
     curl_setopt($session, CURLOPT_HEADER, false);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     // valid json response will decode    
     $response = curl_exec($session);
-    kohana::log('debug', $response);
     $response = json_decode($response, true);
     return $response;
   }
@@ -251,6 +249,30 @@ class Controllers_Services_Data_Test extends PHPUnit_Framework_TestCase {
     // cleanup
     $locAttr->delete();
     ORM::Factory('location', $locId)->delete();
+  }
+  
+  public function testCreateUser() {
+    $array=array(
+      'person:first_name' => 'Test',
+      'person:surname' => 'Person',
+      'person:email_address' => 'test123abc@example.com'
+    );
+    $s = submission_builder::build_submission($array, array('model'=>'person'));
+    $r = data_entry_helper::forward_post_to('person', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a new person did not work');
+    $personId = $r['success'];
+    $array=array(
+      'user:person_id' => $personId,
+      'user:email_visible' => 'f',
+      'user:core_role_id' => 1,
+      'user:username' => 'testUser'
+    );
+    $s = submission_builder::build_submission($array, array('model'=>'user'));
+    $r = data_entry_helper::forward_post_to('user', $s, $this->auth['write_tokens']);
+    $this->assertTrue(isset($r['success']), 'Submitting a new user did not work');
+    $userId = $r['success'];
+    ORM::Factory('user', $userId)->delete();
+    ORM::Factory('person', $personId)->delete();
   }
  
 }
