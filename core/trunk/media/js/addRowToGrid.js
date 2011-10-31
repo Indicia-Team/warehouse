@@ -185,7 +185,7 @@ $('.add-image-link').live('click', function(evt) {
     swfAndXapFolder : uploadSettings.swfAndXapFolder,
     jsPath : uploadSettings.jsPath,    
     table : table,
-    maxUploadSize : '4M',
+    maxUploadSize : '4000000', // 4mb
     container: ctrlId
   };
   if (typeof uploadSettings.resizeWidth!="undefined") opts.resizeWidth=uploadSettings.resizeWidth;

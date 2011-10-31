@@ -729,12 +729,15 @@ class iform_mnhnl_dynamic_1 {
           $method = 'get_control_'.preg_replace('/[^a-zA-Z0-9]/', '', strtolower($component));
           // Anything following the component that starts with @ is an option to pass to the control
           $options = array();
-          while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@') {
+          while ($i < count($tabContent)-1 && substr($tabContent[$i+1],0,1)=='@' || trim($tabContent[$i])==='') {
             $i++;
-            $option = explode('=',substr($tabContent[$i],1));
-            $options[$option[0]]=json_decode($option[1]);
-            // if not json then need to use option value as it is
-            if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
+            // ignore empty lines
+            if (trim($tabContent[$i])!=='') {
+              $option = explode('=',substr($tabContent[$i],1));
+              $options[$option[0]]=json_decode($option[1]);
+              // if not json then need to use option value as it is
+              if ($options[$option[0]]=='') $options[$option[0]]=$option[1];            
+            }
           }
           if (method_exists(get_called_class(), $method)) { 
             $html .= call_user_func(array(get_called_class(), $method), $auth, $args, $tabalias, $options);
