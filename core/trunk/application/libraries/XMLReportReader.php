@@ -584,10 +584,10 @@ class XMLReportReader_Core implements ReportReader
       if ($style != '') $this->columns[$name]['style'] = $style;
       if ($feature_style != '') $this->columns[$name]['feature_style'] = $feature_style;
       if ($class != '') $this->columns[$name]['class'] = $class;
-      if ($visible == 'false') {
-        if($this->columns[$name]['visible'] != 'true') // allows a false to override a provisional_true, but not a true.
+      if ($visible === 'false') {
+        if($this->columns[$name]['visible'] !== 'true') // allows a false to override a provisional_true, but not a true.
           $this->columns[$name]['visible'] = 'false'; 
-      } elseif ($this->columns[$name]['visible'] !== 'false')
+      } elseif ($visible === 'true') // don't make any change if $visible is not set
         $this->columns[$name]['visible'] = 'true';
       if ($img == 'true' || $this->columns[$name]['img'] == 'true') $this->columns[$name]['img'] = 'true';
       if ($orderby != '') $this->columns[$name]['orderby'] = $orderby;
