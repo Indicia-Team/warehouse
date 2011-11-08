@@ -167,7 +167,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
           } else {
             $newheader = $header;
           }
-          if(!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] == "true"){
+          if(!isset($this->view_columns[$header]['visible']) || $this->view_columns[$header]['visible'] !== 'false'){
             $newheaders[] = $newheader;
           }
         } else {
@@ -182,7 +182,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
         $newrow = array();
         foreach ($row as $key => $value) {
           if(isset($this->view_columns[$key])){
-             if(!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] == "true"){
+             if(!isset($this->view_columns[$key]['visible']) || $this->view_columns[$key]['visible'] !== 'false'){
               $newrow[] = $value;
             }
           } else {
