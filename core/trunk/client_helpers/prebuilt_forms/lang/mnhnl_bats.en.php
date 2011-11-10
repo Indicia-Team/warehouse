@@ -49,7 +49,8 @@ $custom_terms = array(
 	'codegsl' => 'GSL Code',
 	'profondeur' => 'Depth',
 	'development' => 'Development',
-
+	'commune' => 'Commune',
+	'LANG_PositionOutsideCommune' => 'The position you have choosen is outside the set of allowable Communes. You will not be able to save this position.',
 	'LANG_Save' => 'Save',
 	'LANG_Cancel' => 'Cancel',
 
@@ -86,7 +87,7 @@ $custom_terms = array(
 	'Bats Temp Int 3' => "Temperature inside cavity - C (Celcius)",
 	'Bats Humid Int 3' => "Relative Humidity inside cavity - C (%)",
 	'Positions Marked' => 'Measurement location(s) indicated on map',
-	'Bats Reliability' => "Reliability (completeness) of the inventory",
+	'Reliability' => "Reliability (completeness) of the inventory",
 	'Overall Comment' => 'Comment',
 
 	'LANG_Tab_species' => 'Species',
@@ -98,7 +99,8 @@ $custom_terms = array(
 	'LANG_Duplicate_Taxon' => 'You have chosen a taxon for which there is already an entry.',
 	'Are you sure you want to delete this row?' => 'Etes-vous sûr de vouloir supprimer cette ligne?',
 
-	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid."
-
+	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid.",
+	'validation_fillgroup'=>'Please enter one of these two fields.'
+	
 	
 );

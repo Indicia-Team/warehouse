@@ -14,3 +14,16 @@ p.inline-error {
 .remove-row {
   color:red !important;
 }
+input.site-name {
+	width: 200px;
+}
+label.auto-width {
+	width: auto;
+}
+label.prepad {
+  padding-left: 20px;	
+}
+.coords-text {
+  margin-top: 4px;
+  margin-left: 20px;	
+}

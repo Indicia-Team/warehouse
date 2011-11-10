@@ -21,75 +21,37 @@
   the newly added rows.
  */
 var addRowToGridSequence = 1000; // this should be more than the length of the initial taxon list
-function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
-	
+function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     addRowToGridSequence++;
-    // on picking a result in the autocomplete, ensure we have a spare row
-    // clear the event handler
-    $(event.target).unbind('result', handleSelectedTaxon);
-    var taxonCell=event.target.parentNode;
-    $(taxonCell).before('<td class="ui-state-default remove-row" style="width: 1%">X</td>');
-    // Note case must be colSpan to work in IE!
-    $(taxonCell).attr('colSpan',1);
-    var row=taxonCell.parentNode;
-    $(taxonCell).parent().addClass('added-row');
-    $(taxonCell).parent().removeClass('scClonableRow');
-    // Do we use a JavaScript fn, or a standard template, to format the species label?
-    if ($.isFunction(formatter)) {
-      $(taxonCell).html(formatter(data));
-    } else {
-      // Just a simple PHP template
-      var label = formatter;
-      // replace each field in the label template
-      $.each(data, function(field, value) {
-        regex = new RegExp('\\{' + field + '\\}', 'g');
-        label = label.replace(regex, value===null ? '' : value);
-      });
-      $(taxonCell).html(label);
-    }
+    var newRow1 =$('tr#'+gridId + '-scClonableRow1').clone(true);
+    var newRow2 =$('tr#'+gridId + '-scClonableRow2').clone(true);
+    var taxonCell=newRow1.find('td:eq(1)');
+    newRow1.addClass('added-row').removeClass('scClonableRow').attr('id','');
+    newRow2.addClass('added-row').removeClass('scClonableRow').attr('id','').addClass('scMeaning-'+data.taxon_meaning_id);
     // Replace the tags in the row template with the taxa_taxon_list_ID
-    $.each($(row).children(), function(i, cell) {
+    $.each(newRow2.children(), function(i, cell) {
       cell.innerHTML = cell.innerHTML.replace(/-ttlId-:/g, data.id+':y'+addRowToGridSequence);
     }); 
-    $(row).find('.add-image-select-species').hide();
-    $(row).find('.add-image-link').show();    
     // auto-check the row
-    var checkbox=$(row).find('.scPresenceCell input');
-    checkbox.attr('checked', 'checked');
-    // and rename the controls so they post into the right species record
-    checkbox.attr('name', 'sc:' + data.id + ':y'+addRowToGridSequence+':present');    
-    // Finally, a blank row is added for the next record
-    makeSpareRow(true, formatter);
+    newRow2.find('.scPresenceCell input').attr('name', 'sc:' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
     // Allow forms to hook into the event of a new row being added
-    if (typeof hook_species_checklist_new_row !== "undefined") {
-      hook_species_checklist_new_row(data);
+    newRow2.find('.scOccAttrCell').find(':text').addClass('required').width('30px').attr('min',1).after('<span class=\"deh-required\">*</span>');
+    newRow2.find('.scOccAttrCell').find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
+    newRow1.appendTo('#'+gridId);
+    newRow2.appendTo('#'+gridId);
+    if (typeof hook_check_no_obs !== "undefined") {
+  	  hook_check_no_obs();
     }
+    $(event.target).val('');
+    formatter(data,taxonCell);
   };
-  
-  // Create an inner function for adding blank rows to the bottom of the grid
-  var makeSpareRow = function(scroll) {
-    if (!$.isFunction(formatter)) {
-      // provide a default format function
-      formatter = function(item) {
-        return item.taxon;
-      };
-    } 
-    // get a copy of the new row template
-    var newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
-    // build an auto-complete control for selecting the species to add to the bottom of the grid. 
-    // The next line gets a unique id for the autocomplete.
-    selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].childElementCount;
-    var speciesSelector = '<input type="text" id="' + selectorId + '" class="grid-required" />';
-    // put this inside the new row template in place of the species label.
-    $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
-    // add the row to the bottom of the grid
-    newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
-  
+
     // Attach auto-complete code to the input
-    ctrl = $('#' + selectorId).autocomplete(url+'/taxa_taxon_list', {
+  ctrl = $('#' + selectorID).autocomplete(url+'/taxa_taxon_list', {
       extraParams : {
+        view : 'detail',
         orderby : 'taxon',
         mode : 'json',
         qfield : 'taxon',
@@ -109,19 +71,12 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
         });
         return results;
       },
-      formatItem: formatter
-    });
-    ctrl.bind('result', handleSelectedTaxon);
-    setTimeout(function() { $('#' + ctrl.attr('id')).focus(); });
-    // Check that the new entry control for taxa will remain in view with enough space for the autocomplete drop down
-    if (scroll && ctrl.offset().top > $(window).scrollTop() + $(window).height() - 180) {
-      var newTop = ctrl.offset().top - $(window).height() + 180;
-      // slide the body upwards so the grid entry box remains in view, as does the drop down content on the autocomplete for taxa
-      $('html,body').animate({scrollTop: newTop}, 500);       
-    }
-  };
-  
-  makeSpareRow(false);
+      formatItem: function(item) {
+        return item.taxon;
+      }
+  });
+  ctrl.bind('result', handleSelectedTaxon);
+  setTimeout(function() { $('#' + ctrl.attr('id')).focus(); });
 }
 
 $('.remove-row').live('click', function(e) {
@@ -132,34 +87,25 @@ $('.remove-row').live('click', function(e) {
   }
   // @todo unbind all event handlers
   var row = $(e.target.parentNode);
-  if (row.next().find('.file-box').length>0) {
-    // remove the uploader row
-    row.next().remove();
-  }
   if (row.hasClass('added-row')) {
+    row.next().remove();
     row.remove();
   } else {
     // This was a pre-existing occurrence so we can't just delete the row from the grid. Grey it out
+    nextRow = row.next();
     row.css('opacity',0.25);
+    nextRow.css('opacity',0.25);
     // Use the presence checkbox to remove the taxon, even if the checkbox is hidden.
-    row.find('.scPresence').attr('checked',false);
+    nextRow.find('.scPresence').attr('checked',false);
     // Hide the checkbox so this can't be undone
-    row.find('.scPresence').css('display','none');
+    nextRow.find('.scPresence').css('display','none');
     // disable or remove all other active controls from the row.
     // Do NOT disable the presence checkbox or the container td, otherwise it is not submitted.
-    row.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled');
-    row.find('a').remove();
+    nextRow.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled').removeClass('required').filter('input,select').val('').width('');
+    nextRow.find('a').remove();
+    nextRow.find('.deh-required').remove();
   }
-  // Allow forms to hook into the event of a row being deleted
-  if (typeof hook_species_checklist_delete_row !== "undefined") {
-    hook_species_checklist_delete_row();
+  if (typeof hook_check_no_obs !== "undefined") {
+	  hook_check_no_obs();
   }
 });
-
-function ViewAllLuxembourg(lat, long, zoom){
-	var div = jQuery('#map')[0];
-	var center = new OpenLayers.LonLat(long, lat);
-	center.transform(div.map.displayProjection, div.map.projection);
-	div.map.setCenter(center, zoom);
-};
-function ZoomToDataExtent(layer){if(layer.features.length > 0) layer.map.zoomToExtent(layer.getDataExtent())};

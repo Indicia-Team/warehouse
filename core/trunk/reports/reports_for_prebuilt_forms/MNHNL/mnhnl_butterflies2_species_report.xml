@@ -5,31 +5,25 @@
         query='SELECT id, title as caption FROM surveys' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE and #this#.parent_id IS NULL and #this#.survey_id = #survey_id#" >
-    <tabColumn name='id' visible='true' display='Main Survey sample ID' />
-    <tabColumn name='location_name' display='Square' />
-    <tabColumn name='date_start' visible='false'/>
-    <tabColumn name='date_end' visible='false'/>
-    <tabColumn name='date_type' visible='false'/>
-    <tabColumn name='date' func="''" display='Year' /> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
-    <tabColumn name='comment' display='Main Survey Comment' />
+    <tabColumn name='id' visible='true' display='Square survey sample ID' />
+    <tabColumn name='location_name' display='Square (5x5km)' />
+    <tabColumn name='comment' display='Main survey comment' />
+    <tabColumn name='recorder_names' display='Recorder names' />
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
-      <tabColumn name='location_name' display='Site name' />
-      <tabColumn name='date_start' visible='false' display='site_start' />
-      <tabColumn name='date_end' visible='false'  display='site_end'/>
-      <tabColumn name='date_type' visible='false'  display='site_type'/>
-      <tabColumn name='date' func="''"  display='site_date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
-      <tabColumn name='comment' display='Site Comment'  />
-      <tabColumn name='id' visible='true' display='Site Survey sample ID' />
+      <tabColumn name='location_name' display='Site' />
+      <tabColumn name='date_start' visible='false' />
+      <tabColumn name='date_end' visible='false' />
+      <tabColumn name='date_type' visible='false' />
+      <tabColumn name='date' func="''"  display='Survey date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+      <tabColumn name='comment' display='Site comment'  />
+      <tabColumn name='id' visible='true' display='Site survey sample ID' />
       <attributes separator='|' meaningIdLanguage='preferred'/>
       <subTable tablename="occurrences" parentKey="id" join="LEFT OUTER" where=" #this#.deleted = FALSE" >
         <subTable tablename='taxa_taxon_lists' join="LEFT OUTER" >
-          <subTable tablename='taxa' join="LEFT OUTER" >
-            <tabColumn name='taxon' display='Entered Species'/>
-          </subTable>
           <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE " join="LEFT OUTER" >
             <subTable tablename='taxa' join="LEFT OUTER" >
-             <tabColumn name='taxon' display='Preferred Species'/>
+             <tabColumn name='taxon' display='Species'/>
             </subTable>
           </subTable>
         </subTable>
@@ -38,4 +32,7 @@
       </subTable>    
     </subTable>    
   </table>
+  <order_bys>
+    <order_by>lt0_id ASC, lt1_id ASC, lt2_id ASC</order_by>
+  </order_bys>
 </report>

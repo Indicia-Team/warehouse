@@ -39,7 +39,7 @@
   <columns>
     <column name='sample_id' display='ID' />
     <column name='creator' display='Entered By' />
-    <column name='location_name' display='5km Square' />
+    <column name='location_name' display='Square (5x5km)' />
     <column name='date' display='Year' />
     <column name='passage' display='Passage' />
   </columns>

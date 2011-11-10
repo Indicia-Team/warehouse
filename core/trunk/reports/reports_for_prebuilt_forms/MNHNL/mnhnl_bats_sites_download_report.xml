@@ -4,11 +4,12 @@
   <params>
     <param name='website_id' display='Website: ' description='Select the website to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM websites' />
-    <param name='location_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate locations used:' datatype='int' />
+    <param name='orig_location_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate orginal locations:' datatype='int' />
+    <param name='new_location_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate new locations:' datatype='int' />
   </params>
-  <table tablename="locations_websites" where="#this#.deleted = FALSE and #this#.website_id=#website_id#" >
-    <subTable tablename="locations" where="#this#.deleted = FALSE and #this#.location_type_id=#location_type_id# " >
-      <tabColumn name='name' display='location'/>
+  <table tablename="locations_websites" where="#this#.deleted = FALSE AND #this#.website_id=#website_id#" >
+    <subTable tablename="locations" where="#this#.deleted = FALSE AND #this#.location_type_id IN (#orig_location_type_id#, #new_location_type_id#) " >
+      <tabColumn name='name' display='Site'/>
       <tabColumn name='code' display='Code'/>
       <tabColumn name='centroid_sref' display='Coordinates'/>
       <tabColumn name='comment' display='Comment'/>

@@ -43,6 +43,7 @@
  * Need to set the control of Visit to a select, and for the cavity entrance to a checkbox group.
  */
 require_once('mnhnl_dynamic_1.php');
+require_once('includes/mnhnl_common.php');
 
 class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   
@@ -84,6 +85,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@lookUpKey=meaning_id\r\n".
               "@sep= \r\n".
               "@tabNameFilter=Site\r\n".
+              "@class=wide\r\n".
               "[location spatial reference]\r\n".
               "[location attributes]\r\n".
               "@tabNameFilter=SpatialRef\r\n".
@@ -94,6 +96,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@clickableLayersOutputMode=div\r\n".
               "@clickableLayersOutputDiv=wms-info-target\r\n".
               "@clickableLayersOutputFn=clickedSite\r\n".
+              "@clickPixelTolerance=10\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
               "@maxZoom=13\r\n".
@@ -121,7 +124,9 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
         
       if($param['name'] != 'species_include_taxon_group' &&
           $param['name'] != 'link_species_popups' &&
-          $param['name'] != 'species_include_both_names')
+          $param['name'] != 'species_include_both_names' &&
+          $param['name'] != 'includeLocTools' &&
+          $param['name'] != 'loctoolsLocTypeID')
         $retVal[] = $param;
     }
     $retVal[] = array(
@@ -182,14 +187,6 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'group' => 'User Interface'
         );
     $retVal[] = array(
-          'name'=>'LocTypeID',
-          'caption'=>'Location Type ID filter',
-          'description'=>'Locations Type ID filter to be applied to locations in the database to identify those locations to be used for this form.',
-          'type'=>'int',
-          'required' => false,
-          'group' => 'User Interface'
-        );
-    $retVal[] = array(
           'name'=>'communeLayerLookup',
           'caption'=>'WFS Layer specification for Commune Lookup',
           'description'=>'Comma separated: proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames',
@@ -197,18 +194,35 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'required' => false,
           'group'=>'Georeferencing',
         );
+    $retVal[] = array(
+          'name'=>'OrigLocationTypeID',
+          'caption'=>'Original Site Location Type ID',
+          'description'=>'Location Type ID for locations which are Original Sites (non editable by normal users).',
+          'type'=>'int',
+          'required' => true,
+          'group' => 'Locations'
+        );
+    $retVal[] = array(
+          'name'=>'NewLocationTypeID',
+          'caption'=>'New Site Location Type ID',
+          'description'=>'Location Type ID for locations which are New Sites (editable by normal users).',
+          'type'=>'int',
+          'required' => true,
+          'group' => 'Locations'
+        );
+        
     return $retVal;
   }
 
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
-    $isAdmin = user_access('IForm n'.$node->nid.' admin');
+    $isAdmin = user_access('IForm n'.self::$node->nid.' admin');
   	if(!$isAdmin) return('');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
 
    $r = '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_sites_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batsitesreport">
       <p>'.lang::get('LANG_Sites_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"website_id":'.$args['website_id'].', "location_type_id":'.$args['LocTypeID'].'}\' />
+      <input type="hidden" id="params" name="params" value=\'{"website_id":'.$args['website_id'].', "orig_location_type_id":'.$args['OrigLocationTypeID'].', "new_location_type_id":'.$args['NewLocationTypeID'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_conditions_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batconditionsreport">
@@ -238,9 +252,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
         'filterField'=>'parent_id',
         'size'=>3
     );
-    if (array_key_exists('LocTypeID', $args) && $args['LocTypeID']<>"") {
-      $location_list_args['extraParams'] += array('location_type_id' => $args['LocTypeID']);
-    }
+    $location_list_args['extraParams'] += array('location_type_id' => array($args['OrigLocationTypeID'],$args['NewLocationTypeID']));
     // Idea here is to get a list of all locations in order to build drop downs.
     // control used can be configured on Indicia
     $responseRecords = data_entry_helper::get_population_data($location_list_args);
@@ -262,6 +274,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
         $attrList[$record['location_attribute_id']] = $record['caption'];
     }
     $r .= "<tr><th>".lang::get('Name')."</th>
+      <th>".lang::get('Type')."</th>
       <th>".lang::get('Code')."</th>
       <th>".lang::get('Sref')."</th>
       <th>".lang::get('Comment')."</th>";
@@ -272,6 +285,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     foreach ($responseRecords as $record){
       $r .= "<form method=\"post\"><tr><td>".self::$auth['write']."<input type=\"hidden\" name=\"locmode\" value=\"Yes\" /><input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
       <input name=\"l:".$record['id'].":name\" value=\"".$record['name']."\" class=\"locgrid-name\" ></td>
+      <td><select name=\"l:".$record['id'].":location_type_id\" class=\"locgrid-type\" ><option value=\"".$args['OrigLocationTypeID']."\" ".($record['location_type_id']==$args['OrigLocationTypeID'] ? "selected=\"selected\"" : "").">Original</option><option value=\"".$args['NewLocationTypeID']."\" ".($record['location_type_id']==$args['NewLocationTypeID'] ? "selected=\"selected\"" : "").">New</option></td>
       <td><input name=\"l:".$record['id'].":code\" value=\"".$record['code']."\" class=\"locgrid-code\" ></td>
       <td><input name=\"l:".$record['id'].":centroid_sref\" value=\"".$record['centroid_sref']."\" class=\"locgrid-sref\"><input type=\"hidden\" name=\"l:".$record['id'].":centroid_sref_system\" value=\"".$record['centroid_sref_system']."\"><input type=\"hidden\" name=\"l:".$record['id'].":centroid_geom\" value=\"".$record['centroid_geom']."\" class=\"locgrid-geom\" ></td>
       <td><input name=\"l:".$record['id'].":comment\" value=\"".$record['comment']."\" class=\"locgrid-comment\"></td>";
@@ -376,7 +390,7 @@ $('.locgrid-sref').change(function() {
       'mode' => 'report',
       'readAuth' => $auth['read'],
       'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
-      'itemsPerPage' =>25,
+      'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 25),
       'autoParamsForm' => true,
       'extraParams' => $extraparams
     ));    
@@ -389,7 +403,7 @@ $('.locgrid-sref').change(function() {
     }
     $r .= "</form>
 <div style=\"display:none\" />
-    <form id=\"form-delete-survey\" action=\"".$reloadPath."\" method=\"POST\">".self::$auth['write']."
+    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".self::$auth['write']."
        <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
        <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
        <input type=\"hidden\" name=\"sample:id\" value=\"\" />
@@ -417,8 +431,6 @@ deleteSurvey = function(sampleID){
    * Does not include any HTML.
    */
   protected static function get_control_customJS($auth, $args, $tabalias, $options) {
-    $reload = data_entry_helper::get_reload_link_parts();
-    $reloadPath = $reload['path'];
     if(lang::get('validation_required') != 'validation_required')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
@@ -434,13 +446,19 @@ $.validator.messages.number = $.validator.format(\"".lang::get('validation_numbe
     if(lang::get('validation_digits') != 'validation_digits')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digits')."\");";
-
+    data_entry_helper::$late_javascript .= "
+// integer is similar to digit but allows negative
+$.validator.addMethod('fillgroup', function(value, element){
+	return jQuery(element).closest('table').find('input').not('[value=]').length > 0;
+},
+  \"".lang::get('validation_fillgroup')."\");
+// jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {integer: true});";
+      
     $numRows=2;
     $numCols=1;
     $startPos=2;
+    iform_mnhnl_addCancelButton();
     data_entry_helper::$javascript .= "
-jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\">".lang::get('LANG_Cancel')."</a></span></div>').appendTo('.buttons');
-
 checkRadioStatus = function(){
   jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
     if(this.checked)
@@ -455,19 +473,19 @@ checkRadioStatus();
 var other = jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]');
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend
-other.remove(); // remove Other field, then bolt in after the other radio button.
+other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
 jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').parent().append(other);
 
 var other = jQuery('[name=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."],[name^=smpAttr\\:".$args['entranceDefectiveCommentAttrID']."\\:]');
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend
-other.remove(); // remove Other field, then bolt in after the other radio button.
+other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
 jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['entranceDefectiveTermID']."]').parent().append(other);
 
 var other = jQuery('[name=smpAttr\\:".$args['disturbanceCommentAttrID']."],[name^=smpAttr\\:".$args['disturbanceCommentAttrID']."\\:]');
 other.next().remove(); // remove break
 other.prev().remove(); // remove legend
-other.remove(); // remove Other field, then bolt in after the other radio button.
+other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
 jQuery('[name^=smpAttr]').filter(':checkbox').filter('[value=".$args['disturbanceOtherTermID']."]').parent().append(other);
 
 checkCheckStatus = function(){
@@ -495,7 +513,7 @@ for (var i=0;i<$numRows;i++){
 	switch(i){";
     for($i=0; $i<$numRows; $i++){
     	data_entry_helper::$javascript .= "
-		case($i): newRow = jQuery(\"<tr><td class='scOccAttrCell ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
+		case($i): newRow = jQuery(\"<tr><td class='ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
     }
     data_entry_helper::$javascript .= "
 	}
@@ -503,8 +521,6 @@ for (var i=0;i<$numRows;i++){
 		newRow.append(occAttrs[i+(j*$numRows)]);
 	}
 }
-occAttrs.find('input').filter(':text').addClass('digits').attr('min',0);
-
 var CRgroup = jQuery('.scClonableRow').find('table').find('td');
 // Do main table header
 occAttrs = jQuery('.species-grid > thead').find('th');
@@ -525,13 +541,14 @@ for (var i=0;i<$numCols;i++){
 speciesRows = jQuery('.species-grid > tbody').find('tr');
 for(var j=0; j<speciesRows.length; j++){
 	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
+	occAttrs.find('input').eq(0).addClass('fillgroup');
 	newTable = jQuery('<table class=\"fullWidth\">');
 	newElem = jQuery('<td class=\"noPadding\" colspan=".($numCols+1).">').append(newTable).insertBefore(occAttrs.filter(':first'));
 	for (var i=0;i<$numRows;i++){
 		switch(i){";
     for($i=0; $i<$numRows; $i++){
     	data_entry_helper::$javascript .= "
-			case($i): newRow = jQuery(\"<tr><td class='scOccAttrCell ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
+			case($i): newRow = jQuery(\"<tr><td class='ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
     }
     data_entry_helper::$javascript .= "
 		}
@@ -539,7 +556,6 @@ for(var j=0; j<speciesRows.length; j++){
 			newRow.append(occAttrs[i+(k*$numRows)]);
 		}
 	}
-	occAttrs.find('input').filter(':text').addClass('digits').addClass('required').width('85%').attr('min',0).after('<span class=\"deh-required\">*</span>');
 	occAttrs.find('select').addClass('required').width('85%').after('<span class=\"deh-required\">*</span>');
 	var group = jQuery(speciesRows[j]).find('table').find('td');
 	var tallest = 0;
@@ -622,7 +638,7 @@ hook_species_checklist_new_row=function(rowData) {
             alert(\"".lang::get('LANG_Duplicate_Taxon')."\");
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').remove();
           } else {
-            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('input').filter(':text').addClass('required').width('85%').attr('min',0).after('<span class=\"deh-required\">*</span>');
+            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('input').eq(0).addClass('fillgroup');
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('select').addClass('required').width('85%').after('<span class=\"deh-required\">*</span>');
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('extraCommonNames');
           }
@@ -646,14 +662,14 @@ return false;
 },
   \"".lang::get('validation_no_observation')."\");
   ";
-          } else if($rule[$i]=='integer'){
-               data_entry_helper::$late_javascript .= "
-// integer is similar to digit but allows negative
-$.validator.addMethod('integer', function(value, element){
-	return this.optional(element) || /^-?\d+$/.test(value);
-},
-  \"".lang::get('validation_integer')."\");
-jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {integer: true});";
+//          } else if($rule[$i]=='fillgroup'){
+//               data_entry_helper::$late_javascript .= "
+//// integer is similar to digit but allows negative
+//$.validator.addMethod('fillgroup', function(value, element){/
+//	return this.optional(element) || /^-?\d+$/.test(value);
+//},
+//  \"".lang::get('validation_fillgroup')."\");
+//// jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {integer: true});";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').addClass('".$rule[$i]."');";
@@ -819,10 +835,10 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
         $item = array('selected' => ((array_key_exists('location:id', data_entry_helper::$entity_to_load) &&
                                       data_entry_helper::$entity_to_load['location:id']==$record['id']) ? 'selected' : ''),
                       'value' => $record['id'],
-                      'caption' => htmlspecialchars($record['name'].' ('.
+                      'caption' => htmlspecialchars(utf8_decode($record['name'].' ('.
                            (isset($attributeRecords[$record['id']][$communeAttr]['value']) ? $attributeRecords[$record['id']][$communeAttr]['value'] : '-').' / '.
                            (isset($attributeRecords[$record['id']][$villageAttr]['value']) ? $attributeRecords[$record['id']][$villageAttr]['value'] : '-').') n° '.
-                           ($record['code'] != '' ? $record['code'] : '-')));
+                           ($record['code'] != '' ? $record['code'] : '-'))));
         $NameOpts .= data_entry_helper::mergeParamsIntoTemplate($item, $location_list_args['itemTemplate']);
       }
     }
@@ -836,7 +852,7 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
           $indicia_templates[$location_list_args['itemTemplate']]).$NameOpts;
       $r .= data_entry_helper::apply_template($location_list_args['template'], $location_list_args);
     }
-    $isAdmin = user_access('IForm n'.$node->nid.' admin');
+    $isAdmin = user_access('IForm n'.self::$node->nid.' admin');
     data_entry_helper::$javascript .= "
 setAllDisabled = function(existingLoc){
   enableItems = [];
@@ -897,6 +913,8 @@ setLocationEditable = function(creating){
   if(readonlyItems.length > 0) jQuery(readonlyItems.join(',')).removeAttr('disabled').attr('readonly',true);
 }
 clearLocationContents = function(setCode){ // note this does not set the editable state.
+  jQuery('#clear-pos-button').attr('disabled','');
+  if(jQuery('#map')[0].map != undefined) jQuery('#map')[0].map.editLayer.destroyFeatures();
   jQuery('[name=location\\:code],[name=location\\:id],[name=location\\:name],[name=location\\:comment],#imp-sref,#imp-sref-lat,#imp-sref-long,#imp-geom').val('');
   // first need to remove any hidden multiselect checkbox unclick fields
   jQuery('[name^=locAttr\\:]').filter('.multiselect').remove();
@@ -935,11 +953,12 @@ clearLocationContents = function(setCode){ // note this does not set the editabl
 loadLocation = function(myValue){
   clearLocationContents(false);
   if (myValue!=='') {
+    jQuery('#clear-pos-button').attr('disabled','disabled');
     setLocationEditable(false);
     jQuery('[name=location\\:id]').val(myValue);
     jQuery('[name=sample\\:location_id]').val(myValue);";
     if(!$isAdmin) data_entry_helper::$javascript .= "
-    // Count returns: normal bods can edit provided that they encoded all samples on this location.
+    // normal bods can not edit the location details if someone else has recorded a samples on this location, or the location is an original.
     jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/sample?location_id='+myValue +
             '&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(sdata) {
       if (sdata instanceof Array && sdata.length>0) {
@@ -960,7 +979,9 @@ loadLocation = function(myValue){
             '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(data) {
       // store value in saved field?
       if (data instanceof Array && data.length>0) {
-        jQuery('[name=location\\:code]').val(data[0].code);
+        ".(!$isAdmin ? "if(data[0].location_type_id == ".$args['OrigLocationTypeID'].") setAllDisabled(true);
+        " : '').
+        "jQuery('[name=location\\:code]').val(data[0].code);
         jQuery('[name=location\\:name]').val(data[0].name);
         jQuery('[name=location\\:comment]').val(data[0].comment);
         jQuery('#imp-sref-system').val(data[0].centroid_sref_system);
@@ -1055,10 +1076,10 @@ clickedSite = function(features, div){
   
     $r .= '<input type="button" value="'.lang::get('Create New Location').'" onclick="newLocation();">'.
       '<input type="hidden" id="locations_website:website_id" name="locations_website:website_id" value="'.$args['website_id'].'" disabled="'.(array_key_exists('location:id', data_entry_helper::$entity_to_load) ? 'disabled' : ''). '" />'.
-      '<input type="hidden" name="location:location_type_id" value="'.$args['LocTypeID'].'" />'.
+      '<input type="hidden" name="location:location_type_id" value="'.$args['NewLocationTypeID'].'" />'.
       '</fieldset>'.
       '<label for="location:name">'.lang::get('LANG_Location_Name_Label').':</label>'.
-      '<input type="text" id="location:name" name="location:name" class="required" value="'.data_entry_helper::$entity_to_load['location:name'].'" /><span class="deh-required">*</span><br/>';
+      '<input type="text" id="location:name" name="location:name" class="required wide" value="'.data_entry_helper::$entity_to_load['location:name'].'" /><span class="deh-required">*</span><br/>';
     if($location_list_args['includeCodeField'])
       $r .= '<label for="location:code">'.lang::get('LANG_Location_Code_Label').':</label><input type="text" id="location:code" name="location:code" disabled="disabled" value="'.data_entry_helper::$entity_to_load['location:code'].'" /><br/>';
     $r .= "<div id='wms-info-target' style=\"display:none\" ></div>";
@@ -1066,7 +1087,11 @@ clickedSite = function(features, div){
   }
 
   protected static function get_control_lateJS($auth, $args, $tabalias, $options) {
-    if(isset($args['communeLayerLookup']) && $args['communeLayerLookup']!=''){
+    // proxiedurl,featurePrefix,featureType,geometryName,featureNS,srsName,propertyNames
+    // http://localhost/geoserver/wfs,indiciaCommune,Communes,the_geom,indicia,EPSG:2169,COMMUNE
+  	if(isset($args['communeLayerLookup']) && $args['communeLayerLookup']!=''){
+      $communeAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'commune');
+      if (!$communeAttr) return lang::get('The lateJS control form must be used with a survey that has the Commune attribute associated with it.');
       $parts=explode(',',$args['communeLayerLookup']);
       data_entry_helper::$onload_javascript .= "communeProtocol = new OpenLayers.Protocol.WFS({
               url:  '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $parts[0])."',
@@ -1081,8 +1106,9 @@ clickedSite = function(features, div){
 fillCommune = function(a1){
   if(a1.features.length > 0)
     jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[0].attributes[\"".$parts[6]."\"]).attr('readonly','readonly');
-  else
-    jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('').attr('readonly','readonly');
+  else {
+    alert('".lang::get('LANG_PositionOutsideCommune')."');
+  }
 }
 jQuery('#map')[0].map.editLayer.events.register('featuresadded', {}, function(a1){
     jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val('').attr('readonly','readonly');
@@ -1141,9 +1167,11 @@ ClearPosition = function(){
   jQuery('#imp-sref-long').val('');
   var div = jQuery('#map')[0];
   div.map.editLayer.destroyFeatures();
-};";
-    return '<input type="button" value="'.lang::get('Clear Position').'" onclick="ClearPosition();">'.
-        '<input type="button" value="'.lang::get('View All Luxembourg').'" onclick="ViewAllLuxembourg();">';
+};
+";
+    return '<input id="clear-pos-button" type="button" value="'.lang::get('Clear Position').'" onclick="ClearPosition();">
+<input type="button" value="'.lang::get('Zoom to Site').'" onclick="jQuery(\'#imp-sref-long\').change();">
+<input type="button" value="'.lang::get('View All Luxembourg').'" onclick="ViewAllLuxembourg();">';
   }
   /**
    * Get the recorder names control
@@ -1177,10 +1205,10 @@ ClearPosition = function(){
       'lookupValues'=>$userlist,
       'validation'=>array('required')
     ), $options));
-    return $r;
-  }
+    return $r."<span>".lang::get('LANG_RecorderInstructions')."</span><br />";
+}
 
-  // This func5tion pays no attention to the outer block. This is needed when the there is no outer/inner block pair, 
+  // This function pays no attention to the outer block. This is needed when the there is no outer/inner block pair, 
   // if the attribute is put in a single block level, then that block appears in the inner, rather than the outer .
   private function bats_get_attribute_html($attributes, $args, $defAttrOptions, $blockFilter=null, $blockOptions=null) {
    $r = '';

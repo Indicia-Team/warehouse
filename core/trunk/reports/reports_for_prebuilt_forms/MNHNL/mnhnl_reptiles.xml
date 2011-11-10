@@ -5,14 +5,17 @@
   <query>
   SELECT s.id as sample_id,
   		sav1.text_value as creator,
+  		parent.name as square,
   		s.location_name,
   		s.date_start,
   		s.date_end,
   		s.date_type
   FROM samples s
+  INNER JOIN locations l ON l.id = s.location_id
+  INNER JOIN locations parent ON parent.id = l.parent_id
   INNER JOIN sample_attribute_values sav1
   		ON sav1.sample_id = s.id AND sav1.sample_attribute_id = #userName_attr_id# and sav1.deleted = FALSE
-  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND parent_id IS NULL
+  WHERE s.survey_id=#survey_id# AND s.deleted = FALSE AND s.parent_id IS NULL
   AND ((#userID# > 0 AND (EXISTS (SELECT id FROM sample_attribute_values sav2
   								WHERE sav2.sample_id = s.id
   								AND sav2.sample_attribute_id = #userID_attr_id#
@@ -35,6 +38,7 @@
   <columns>
     <column name='sample_id' display='ID' />
     <column name='creator' display='Entered By' />
+    <column name='square' display='Square (5x5 km)' />
     <column name='location_name' display='Site' />
     <column name='date' display='Date' />
   </columns>

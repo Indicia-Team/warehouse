@@ -17,7 +17,7 @@ input.cgAttr {
   width: 50px;
 }
 .cggrid-date {
-  width: 80px;
+  width: 90px;
 }
 p.inline-error {
   margin-left: 0;	
@@ -26,3 +26,22 @@ p.inline-error {
   margin-right: 20px;	
   display: inline;  
 }
+
+.deh-required {
+  color:red;
+}
+.control-box {
+  display:inline  !important;
+}
+
+label.auto-width {
+	width: auto;
+}
+label.prepad {
+  padding-left: 20px;	
+}
+.coords-text {
+  margin-top: 4px;
+  margin-left: 20px;	
+}
+

@@ -28,7 +28,7 @@
 		      		</subTable>
 					<subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE " >
 		      			<subTable tablename='taxa' >
-		    	    		<tabColumn name='taxon' display='Preferred Species'/>
+		    	    		<tabColumn name='taxon' display='Species'/>
 		      			</subTable>
 		    		</subTable>
 		    	</subTable>

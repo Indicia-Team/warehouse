@@ -30,6 +30,7 @@ span.extra-text {
 
 .fullWidth {
   width: 100%;
+  margin: 0;
 }
 .data {
   margin-right: 15px;	
