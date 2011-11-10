@@ -37,6 +37,7 @@
  */
 
 require_once('mnhnl_dynamic_1.php');
+require_once('includes/mnhnl_common.php');
 
 class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
   protected static $locations;
@@ -102,8 +103,8 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
         ),
         array(
           'name'=>'aucune_attr_id',
-          'caption'=>'No Observation Sample Attribute ID',
-          'description'=>'The Indicia ID of the Sample Attribute for No Observation.',
+          'caption'=>'No observation Sample Attribute ID',
+          'description'=>'The Indicia ID of the Sample Attribute for No observation.',
           'type'=>'int'
         ),
         array(
@@ -144,11 +145,9 @@ class iform_mnhnl_butterflies extends iform_mnhnl_dynamic_1 {
     $indicia_templates['zilch'] = ''; // can't have the CR on the end
     self::$locations = iform_loctools_listlocations($node);
     $retVal = parent::get_form($args, $node, $response);
-    $reload = data_entry_helper::get_reload_link_parts();
-    $reloadPath = $reload['path'];
     if(self::$mode != 0){
+      iform_mnhnl_addCancelButton();
       data_entry_helper::$javascript .= "
-jQuery('<div class=\"ui-widget-content ui-state-default ui-corner-all indicia-button tab-cancel\"><span><a href=\"".$reloadPath."\">Cancel</a></span></div>').appendTo('.buttons');
 $.validator.messages.required = \"".lang::get('validation_required')."\";";
       if(!iform_loctools_checkaccess($node,'superuser')){
         data_entry_helper::$javascript .= "
@@ -213,7 +212,7 @@ jQuery('.tab-submit').click(function() {
     }
   }
   if (secList != ''){
-    alert('The following sections have no species recorded against them: Section(s) '+secList+'. In these circumstances, the \"No Observation\" checkbox must be checked for the relevant section.'); 
+    alert('The following sections have no species recorded against them: Section(s) '+secList+'. In these circumstances, the \"No observation\" checkbox must be checked for the relevant section.'); 
     return;
   }
   var form = jQuery(this).parents('form:first');
@@ -223,7 +222,7 @@ jQuery('.tab-submit').click(function() {
       
     } else {
     $retVal .= "<div style=\"display:none\" />
-    <form id=\"form-delete-survey\" action=\"".$reloadPath."\" method=\"POST\">".self::$auth['write']."
+    <form id=\"form-delete-survey\" action=\"".iform_mnhnl_getReloadPath()."\" method=\"POST\">".self::$auth['write']."
        <input type=\"hidden\" name=\"website_id\" value=\"".$args['website_id']."\" />
        <input type=\"hidden\" name=\"survey_id\" value=\"".$args['survey_id']."\" />
        <input type=\"hidden\" name=\"sample:id\" value=\"\" />
@@ -260,14 +259,14 @@ deleteSurvey = function(sampleID){
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'));
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['untranslatedCaption'],'CMS Username')==0) {
-        $userNameAttr = $attrId;
+        $userNameAttr = $attr['attributeId'];
         break;
       }
     }
     
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Observer')==0) {
-        $ObserverIdAttr = $attrId;
+        $ObserverIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($ObserverIdAttr))
@@ -275,7 +274,7 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'MNHNL Month')==0) {
-        $MonthIdAttr = $attrId;
+        $MonthIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($MonthIdAttr))
@@ -283,7 +282,7 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Number In Month')==0) {
-        $NumInMonthIdAttr = $attrId;
+        $NumInMonthIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($NumInMonthIdAttr))
@@ -291,7 +290,7 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Start Time')==0) {
-        $StartTimeIdAttr = $attrId;
+        $StartTimeIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($StartTimeIdAttr))
@@ -299,7 +298,7 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'End Time')==0) {
-        $EndTimeIdAttr = $attrId;
+        $EndTimeIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($EndTimeIdAttr))
@@ -307,7 +306,7 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Temperature')==0) {
-        $TempIdAttr = $attrId;
+        $TempIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($TempIdAttr))
@@ -315,7 +314,7 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Wind Force')==0) {
-        $WindIdAttr = $attrId;
+        $WindIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($WindIdAttr))
@@ -323,7 +322,7 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Cloud Cover')==0) {
-        $CloudIdAttr = $attrId;
+        $CloudIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($CloudIdAttr))
@@ -331,15 +330,23 @@ deleteSurvey = function(sampleID){
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Habitat Type')==0) {
-        $HabitatIdAttr = $attrId;
+        $HabitatIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($HabitatIdAttr))
       return lang::get('This form must be used with a survey that has the Habitat Type attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
+      if (strcasecmp($attr['untranslatedCaption'],'No Observation')==0 || strcasecmp($attr['untranslatedCaption'],'No observation')==0) {
+        $NoObsIdAttr = $attr['attributeId'];
+        break;
+      }
+    if (!isset($NoObsIdAttr))
+      return lang::get('This form must be used with a survey that has the No Observation attribute associated with it.');
+
+    foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Survey Reliability')==0) {
-        $ReliabilityIdAttr = $attrId;
+        $ReliabilityIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($ReliabilityIdAttr))
@@ -353,7 +360,7 @@ deleteSurvey = function(sampleID){
     </form>
 	<form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_section.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadsection">
       <p>'.lang::get('LANG_Section_Based_Data_Download').'</p>
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
+      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "username_attr_id":'.$userNameAttr.', "observer_attr_id":'.$ObserverIdAttr.', "month_attr_id":'.$MonthIdAttr.', "numberinmonth_attr_id":'.$NumInMonthIdAttr.', "starttime_attr_id":'.$StartTimeIdAttr.', "endtime_attr_id":'.$EndTimeIdAttr.', "temperature_attr_id":'.$TempIdAttr.', "wind_attr_id":'.$WindIdAttr.', "cloud_attr_id":'.$CloudIdAttr.', "habitat_attr_id":'.$HabitatIdAttr.', "no_obs_attr_id":'.$NoObsIdAttr.', "reliability_attr_id":'.$ReliabilityIdAttr.'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Section_Download_Button').'">
     </form>
   </div>';
@@ -412,7 +419,7 @@ deleteSurvey = function(sampleID){
       'mode' => 'report',
       'readAuth' => $auth['read'],
       'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
-      'itemsPerPage' =>10,
+      'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
       'autoParamsForm' => true,
       'extraParams' => array(
         'survey_id'=>$args['survey_id'], 
@@ -968,7 +975,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
 
   protected static function getSampleListGridPreamble() {
     global $user;
-    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess($node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
+    $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
   

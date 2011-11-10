@@ -23,13 +23,14 @@
   		(select max(split_part(s3.location_name, ' ', 3)) from samples s3 where s3.parent_id = s.id and s3.deleted = false and s3.location_name like 'SL%') as num_sections,
   		split_part(s2.location_name, ' ', 3) as section,
   		thabitat.term as habitat,
+  		sav11.term as no_obs,
   		treliability.term as reliability,
   		dttl.taxon as taxon,
   		oav1.int_value as observation
   FROM samples s 
   INNER JOIN samples s2
   		ON s2.parent_id = s.id and s2.deleted = false and s2.location_name like 'SL%'
-  INNER JOIN occurrences o
+  LEFT OUTER JOIN occurrences o
   		ON o.sample_id = s2.id and o.deleted = false
   INNER JOIN detail_taxa_taxon_lists dttl
   		ON o.taxa_taxon_list_id = dttl.id
@@ -55,7 +56,9 @@
   		ON sav9.sample_id = s2.id AND sav9.sample_attribute_id = #habitat_attr_id# and sav9.deleted = FALSE
   INNER JOIN sample_attribute_values sav10
   		ON sav10.sample_id = s2.id AND sav10.sample_attribute_id = #reliability_attr_id# and sav10.deleted = FALSE
-  INNER JOIN occurrence_attribute_values oav1
+  INNER JOIN sample_attribute_values sav110
+  		ON sav11.sample_id = s2.id AND sav11.sample_attribute_id = #no_obs_attr_id# and sav11.deleted = FALSE
+  LEFT OUTER JOIN occurrence_attribute_values oav1
   		ON oav1.occurrence_id = o.id  and oav1.deleted = FALSE and oav1.int_value is not null
   LEFT JOIN detail_termlists_terms tmonth ON tmonth.id=sav2.int_value
   LEFT JOIN detail_termlists_terms tnumber ON tnumber.id=sav3.int_value
@@ -83,7 +86,7 @@
     <param name='cloud_attr_id' display='Cloud Sample Attribute ID' description='Sample Attribute ID used to Identify Cloud' datatype='int' />
     <param name='habitat_attr_id' display='Habitat Sample Attribute ID' description='Sample Attribute ID used to Identify Habitat in the section Grid' datatype='int' />
     <param name='reliability_attr_id' display='Reliability Sample Attribute ID' description='Sample Attribute ID used to Identify Reliability in the section Grid' datatype='int' />
-  </params>
+    <param name='no_obs_attr_id' display='No observation Sample Attribute ID' description='Sample Attribute ID used to Identify No observations in the section Grid' datatype='int' />
   <columns>
     <column name='sample_id' display='ID' />
     <column name='subsample_id' display='Subsample ID' />
@@ -103,6 +106,7 @@
     <column name='num_sections' display='Number of Sections' />
     <column name='section' display='Section' />
     <column name='habitat' display='Habitat' />
+    <column name='no_obs' display='No Observation' />
     <column name='reliability' display='Reliability' />
     <column name='taxon' display='Taxon' />
     <column name='observation' display='Observation' />
