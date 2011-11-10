@@ -137,7 +137,7 @@ $indicia_templates = array(
       {max}
     });
     jQuery('input#{escaped_input_id}').result(function(event, data) {
-      jQuery('input#{escaped_id}').attr('value', data.id);
+      jQuery('input#{escaped_id}').attr('value', data.{valueField});
       jQuery('input#{escaped_id}').change();
     });\r\n",
   'linked_list_javascript' => "
@@ -522,7 +522,7 @@ $('.ui-state-default').live('mouseout', function() {
     // Check for an error, or check if the http response was not OK. Note that the cUrl emulator only returns connection: close.
     if (curl_errno($session) || (strpos($response, 'HTTP/1.1 200 OK')===false && strpos($response, 'Connection: close')===false)) {
       if ($output_errors) {
-        echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>';
+        echo '<div class="error">cUrl POST request failed. Please check cUrl is installed on the server and the $base_url setting is correct.<br/>URL:'.$url.'<br/>';
         if (curl_errno($session)) {
           echo 'Error number: '.curl_errno($session).'<br/>';
           echo 'Error message: '.curl_error($session).'<br/>';
@@ -1343,7 +1343,8 @@ indiciaData.windowLoaded=false;
           || $rule=='dateISO'
           || $rule=='email'
           || $rule=='url'
-          || $rule=='time') {
+          || $rule=='time'
+          || $rule=='integer') {
         $converted[] = $rule;
       // Now any rules which need parsing or conversion
       } else if ($rule=='date') {

@@ -26,7 +26,7 @@ function setupButtons(tabs, index) {
     var tabs = wizList.parent();
     // first, validate
     var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
-    var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select')
+    var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');
     if (!tabinputs.valid()) {
       return;
     }
@@ -57,7 +57,7 @@ function setupButtons(tabs, index) {
       var tabs = wizList.parent();
       // first, validate
       var current=wizList.parent().children('.ui-tabs').tabs('option', 'selected');
-      var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select')
+      var tabinputs = $('#entry_form div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');
       if (!tabinputs.valid()) {
         return;
       }

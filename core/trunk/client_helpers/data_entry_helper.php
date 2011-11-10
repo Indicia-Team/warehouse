@@ -1950,6 +1950,7 @@ class data_entry_helper extends helper_base {
         'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
       );
       if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
+      if(isset($options['blankText'])) $ctrlOptions['blankText']=$options['blankText'];
       // Don't want captions in the grid
       unset($attrDef['caption']);
       $attrDef['fieldname'] = '{fieldname}';
@@ -3002,7 +3003,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs and selects on the current tab and validate them.
       if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select')\n";
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
         self::$javascript .= "  if (!tabinputs.valid()) {\n";
         self::$javascript .= "    return;";
         self::$javascript .= "  }\n";
@@ -3015,7 +3016,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
       self::$javascript .= "  var current=$('#$divId').tabs('option', 'selected');\n";
       // Use a selector to find the inputs and selects on the current tab and validate them.
       if (isset(self::$validated_form_id)) {
-        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select')\n";
+        self::$javascript .= "  var tabinputs = $('#".self::$validated_form_id." div > .ui-tabs-panel:eq('+current+')').find('input,select').not(':disabled');\n";
         self::$javascript .= "  if (!tabinputs.valid()) {\n";
         self::$javascript .= "    return;";
         self::$javascript .= "  }\n";
@@ -3965,7 +3966,7 @@ if (errors.length>0) {
         case 'Lookup List':
         case 'L':
           if(!array_key_exists('noBlankText', $options)){
-            $attrOptions = $attrOptions + array('blankText' => '');
+            $attrOptions = $attrOptions + array('blankText' => (array_key_exists('blankText', $options)? $options['blankText'] : ''));
           }
           if (array_key_exists('class', $options))
             $attrOptions['class'] = $options['class'];
