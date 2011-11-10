@@ -225,6 +225,15 @@ class iform_mnhnl_dynamic_1 {
           'default' => 'reports_for_prebuilt_forms/simple_sample_list_1'
         ),
         array(
+          'name'=>'grid_num_rows',
+          'caption'=>'Number of rows displayed in grid',
+          'description'=>'Number of rows display on each page of the grid.',
+          'type'=>'int',
+          'default' => 10,
+          'group' => 'User Interface'
+        ),
+        
+        array(
           'name'=>'save_button_below_all_pages',
           'caption'=>'Save button below all pages?',
           'description'=>'Should the save button be present below all the pages (checked), or should it be only on the last page (unchecked)? '.
@@ -413,7 +422,7 @@ class iform_mnhnl_dynamic_1 {
           'type'=>'boolean',
           'required' => false,
           'default' => false,
-          'group' => 'User Interface'
+          'group' => 'Locations'
         ),
         array(
           'name'=>'loctoolsLocTypeID',
@@ -421,7 +430,7 @@ class iform_mnhnl_dynamic_1 {
           'description'=>'When performing allocation of locations, filter available locations by this location_type_id.',
           'type'=>'int',
           'required' => false,
-          'group' => 'User Interface'
+          'group' => 'Locations'
         )        
       )
     );
@@ -1241,7 +1250,7 @@ class iform_mnhnl_dynamic_1 {
       'mode' => 'report',
       'readAuth' => $auth['read'],
       'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
-      'itemsPerPage' =>10,
+      'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 10),
       'autoParamsForm' => true,
       'extraParams' => array(
         'survey_id'=>$args['survey_id'], 
