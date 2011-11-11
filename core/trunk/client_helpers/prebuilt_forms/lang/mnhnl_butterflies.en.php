@@ -74,7 +74,7 @@ $custom_terms = array(
 	'LANG_Save' => 'Save',
 
 	'validation_required' => 'Required',
-
+	'LANG_Cancel'=>'Cancel',
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Allocate_Locations' => 'Allocate Locations',
 	'LANG_Save_Location_Allocations' => 'Save Location Allocations',

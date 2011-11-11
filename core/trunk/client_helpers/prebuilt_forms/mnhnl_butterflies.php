@@ -374,19 +374,19 @@ deleteSurvey = function(sampleID){
     // get the CMS User ID attribute so we can filter the grid to this user
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['untranslatedCaption'],'CMS User ID')==0) {
-        $userIdAttr = $attrId;
+        $userIdAttr = $attr['attributeId'];
         break;
       }
     }
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['untranslatedCaption'],'CMS Username')==0) {
-        $userNameAttr = $attrId;
+        $userNameAttr = $attr['attributeId'];
         break;
       }
     }
     foreach($attributes as $attrId => $attr) {
       if (strcasecmp($attr['untranslatedCaption'],'Observer')==0) {
-        $observerAttr = $attrId;
+        $observerAttr = $attr['attributeId'];
         break;
       }
     }
