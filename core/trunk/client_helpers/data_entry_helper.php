@@ -1626,7 +1626,7 @@ class data_entry_helper extends helper_base {
         foreach ($occAttrControls as $attrId => $control) {
           if ($existing_record_id) {
             $search = preg_grep("/^sc:$id:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(self::$entity_to_load));
-            $ctrlId = (count($search)===1) ? implode('', $search) : $attributes[$attrId]['fieldname'];
+            $ctrlId = (count($search)===1) ? implode('', $search) : str_replace('-ttlId-:', $id.':'.$existing_record_id, $attributes[$attrId]['fieldname']);
           } else {
             $ctrlId = str_replace('-ttlId-', $id, $attributes[$attrId]['fieldname']);
           }
@@ -1954,6 +1954,7 @@ class data_entry_helper extends helper_base {
       // Don't want captions in the grid
       unset($attrDef['caption']);
       $attrDef['fieldname'] = '{fieldname}';
+      $attrDef['id'] = '{fieldname}';
       $occAttrControls[$occAttrId] = self::outputAttribute($attrDef, $ctrlOptions);
       $idx++;
     }
