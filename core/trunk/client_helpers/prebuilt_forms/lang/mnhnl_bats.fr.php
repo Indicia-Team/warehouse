@@ -110,6 +110,7 @@ $custom_terms = array(
 	'Excrement' => 'Excréments', 
 	'Occurrence Reliability' => "Fiabilité de la determination",
 	'No observation' => 'Aucune observation',
+	'No Observation' => 'Aucune observation',
 	'Comment' => 'Commentaires',
 	'LANG_Duplicate_Taxon' => 'Vous avez sélectionné un taxon qui a déjà une entrée.',
 	'Are you sure you want to delete this row?' => 'Etes-vous sûr de vouloir supprimer cette ligne?',

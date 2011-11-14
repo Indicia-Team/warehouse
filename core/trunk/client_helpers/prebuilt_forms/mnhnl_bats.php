@@ -30,12 +30,8 @@
 
 /* Development Stream: TBD
  * 
- * TBD: Code editable by admin
- * 
  * Future possibles:
  * add map to main grid, Populate with positions of samples?
- * add close locations to map in site tab: geoserver view. Could hover -> WMS feature request, Click event to select item under it, or if there is no item, as if clicking edit Layer.
- * checks on species list re adding existing taxon
  * 
  * On Installation:
  * Need to set attributeValidation required for locAttrs for Village, site type, site follow up, and smpAttrs Visit, human freq, microclimate (including min, max) 
@@ -92,6 +88,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[place search]\r\n".
               "[location buttons]\r\n".
               "[map]\r\n".
+              "@layers=['locationListLayer']\r\n".
               "@clickableLayers=['locationListLayer']\r\n".
               "@clickableLayersOutputMode=div\r\n".
               "@clickableLayersOutputDiv=wms-info-target\r\n".
@@ -113,14 +110,15 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "[species]\r\n". 
               "@view=detail\r\n".
               "@rowInclusionCheck=alwaysRemovable\r\n".
-              "[species attributes]\r\n".
+              "@sep= \r\n".
+              "@lookUpKey=meaning_id\r\n".
               "[*]\r\n".
               "[lateJS]\r\n";
       }
       if($param['name'] == 'attribute_termlist_language_filter')
         $param['default'] = true;
       if($param['name'] == 'grid_report')
-        $param['default'] = 'reports_for_prebuilt_forms/mnhnl_bats_grid';
+        $param['default'] = 'reports_for_prebuilt_forms/MNHNL/mnhnl_bats_grid';
         
       if($param['name'] != 'species_include_taxon_group' &&
           $param['name'] != 'link_species_popups' &&
@@ -159,7 +157,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
         );
     $retVal[] = array(
           'name' => 'disturbanceOtherTermID',
-          'caption' => 'Entrance hole Attribute, Defective Term ID',
+          'caption' => 'Disturbance Attribute, Other Term ID',
           'description' => 'The Disturbances attribute has an Other choice which when selected allows an additional text field to be filled in. This field holds the Indicia term meaning id for the checkbox.',
           'type' => 'int',
           'group' => 'User Interface'
@@ -193,6 +191,13 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'type'=>'string',
           'required' => false,
           'group'=>'Georeferencing',
+        );
+    $retVal[] = array(
+          'name'=>'locationWMSLayerLookup',
+          'caption'=>'WMS Layer specification for Location Layer',
+          'description'=>'Comma separated: proxiedurl,layer',
+          'type'=>'string',
+          'group'=>'Locations',
         );
     $retVal[] = array(
           'name'=>'OrigLocationTypeID',
@@ -328,47 +333,17 @@ $('.locgrid-sref').change(function() {
   
   protected static function getSampleListGrid($args, $node, $auth, $attributes) {
     global $user;
-    // get the CMS User ID attribute so we can filter the grid to this user
-    foreach($attributes as $attr) { // note that the sample attrs are not indexed.
-      if (strcasecmp($attr['caption'],'CMS User ID')==0) {
-        $userIdAttr = $attr['attributeId'];
-      } else if (strcasecmp($attr['caption'],'CMS Username')==0) {
-        $usernameAttr = $attr['attributeId'];
-      }
-    }
-    $locAttributes = data_entry_helper::getAttributes(array(
-        'valuetable'=>'location_attribute_value'
-       ,'attrtable'=>'location_attribute'
-       ,'key'=>'location_id'
-       ,'fieldprefix'=>'locAttr'
-       ,'extraParams'=>$auth['read']
-       ,'survey_id'=>$args['survey_id']
-      ));
-    foreach($locAttributes as $attrId => $attr) {
-      if (strcasecmp($attr['untranslatedCaption'],'village')==0) {
-        $villageAttr = $attrId;
-      } else if (strcasecmp($attr['untranslatedCaption'],'commune')==0) {
-        $communeAttr = $attrId;
-      }
-    }
-      
     if ($user->uid===0)
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
-
-    if (!isset($userIdAttr))
-      return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
-          'be tagged against the user.');
-    if (!isset($usernameAttr))
-      return lang::get('This form must be used with a survey that has the CMS Username attribute associated with it so records can '.
-          'be tagged against the user.');
-    if (!isset($villageAttr))
-      return lang::get('This form must be used with a survey that has the Village Location attribute associated with it.');
-    if (!isset($communeAttr))
-      return lang::get('This form must be used with a survey that has the Commune Location attribute associated with it.');
-    if (isset($args['grid_report']))
-      $reportName = $args['grid_report'];
-    else
-      $reportName = 'reports_for_prebuilt_forms/MHNL/mnhnl_bats_grid';
+    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
+    if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it so records can be tagged against their creator.');
+    $usernameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
+    if (!$usernameAttr) return lang::get('This form must be used with a survey that has the CMS Username sampleattribute associated with it so records can be tagged against their creator.');
+    $villageAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'village');
+    if (!$villageAttr) return lang::get('This form must be used with a survey that has the village location attribute associated with it.');
+    $communeAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'commune');
+    if (!$communeAttr) return lang::get('This form must be used with a survey that has the commune location attribute associated with it.');
+    $reportName = $args['grid_report'];
     if(method_exists(get_called_class(), 'getSampleListGridPreamble'))
       $r = call_user_func(array(get_called_class(), 'getSampleListGridPreamble'));
     else
@@ -390,7 +365,7 @@ $('.locgrid-sref').change(function() {
       'mode' => 'report',
       'readAuth' => $auth['read'],
       'columns' => call_user_func(array(get_called_class(), 'getReportActions')),
-      'itemsPerPage' =>(isset($args['grid_num_rows']) ? $args['grid_num_rows'] : 25),
+      'itemsPerPage' => $args['grid_num_rows'],
       'autoParamsForm' => true,
       'extraParams' => $extraparams
     ));    
@@ -446,13 +421,15 @@ $.validator.messages.number = $.validator.format(\"".lang::get('validation_numbe
     if(lang::get('validation_digits') != 'validation_digits')
       data_entry_helper::$late_javascript .= "
 $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digits')."\");";
-    data_entry_helper::$late_javascript .= "
+    if(lang::get('validation_integer') != 'validation_integer')
+      data_entry_helper::$late_javascript .= "
+$.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
+      data_entry_helper::$late_javascript .= "
 // integer is similar to digit but allows negative
 $.validator.addMethod('fillgroup', function(value, element){
 	return jQuery(element).closest('table').find('input').not('[value=]').length > 0;
 },
-  \"".lang::get('validation_fillgroup')."\");
-// jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {integer: true});";
+  \"".lang::get('validation_fillgroup')."\");";
       
     $numRows=2;
     $numCols=1;
@@ -600,19 +577,22 @@ jQuery('[name=".$removeBreakID."],[name^=".$removeBreakID."\\:]').css('margin-ri
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').attr('".$details[0]."',".$details[1].");";
           } else if($rule[$i]=='no_observation'){
-               data_entry_helper::$late_javascript .= "
+            data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').filter(':checkbox').rules('add', {no_observation: true});
 hook_species_checklist_delete_row=function() {
-  var rows=jQuery('.species-grid > tbody > tr').not(':hidden').not('.scClonableRow').length;
-  if(rows==0)
+  if(jQuery('.scPresence').filter(':checkbox').filter('[checked]').length==0)
     jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').removeAttr('disabled');
   else
-    jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').attr('disabled','disabled').removeAttr('checked');
+    jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').filter(':checkbox').attr('disabled','disabled').removeAttr('checked');
 };
 hook_species_checklist_pre_delete_row=function(e) {
-    return confirm(\"".lang::get('Are you sure you want to delete this row?')."\");
+  if(!confirm(\"".lang::get('Are you sure you want to delete this row?')."\")) return false;
+  var row = $(e.target.parentNode);
+  row.find('*').removeClass('ui-state-error');
+  row.find('.inline-error').remove();
+  return true;
 };
-// possible clash with link_species_popups, so latter disabled.
+// possible clash with link_species_popups, so latter disabled. First get the meaning id for the taxon, then all taxa with that meaning.
 hook_species_checklist_new_row=function(rowData) {
   jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
             '?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?', function(mdata) {
@@ -628,10 +608,11 @@ hook_species_checklist_new_row=function(rowData) {
                 taxaList += (taxaList == '' ? '' : ', ')+data[i].taxon;
               else
                 taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
-              if(jQuery('[name^=sc\\:'+data[i].id+'\\:]').length > 0)
+              // look for a checked presence checkbox that starts with this taxon ID
+              if(jQuery('.scPresence').filter(':checkbox').filter('[checked]').filter('[name^=sc\\:'+data[i].id+'\\:]').length>0)
                 duplicate=true;
             } else
-              if(jQuery('[name^=sc\\:'+data[i].id+'\\:]').length > 8)
+              if(jQuery('.scPresence').filter(':checkbox').filter('[checked]').filter('[name^=sc\\:'+data[i].id+'\\:]').length>1)
                 duplicate=true;
           }
           if(duplicate){
@@ -649,27 +630,17 @@ hook_species_checklist_new_row=function(rowData) {
 }
 hook_species_checklist_delete_row();
 $.validator.addMethod('no_observation', function(arg1, arg2){
-var numChecked = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').filter(':radio').filter('[checked=true]').length;
-var numFilledIn = jQuery('[name^=sc]').not(':hidden').not('[name^=sc\\:-ttlId-]').not(':radio').filter('[value!=]').length;
-if(jQuery('[name='+jQuery(arg2).attr('name')+']').not(':hidden').filter('[checked=true]').length>0)
- // is checked.
- return(numChecked==0&&numFilledIn==0)
-else if(numChecked>0||numFilledIn>0)
- return true;
-// there are no rows filled in, in which case ensure no obs can be filled in.
-jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').removeAttr('disabled','disabled');
-return false;
+  var numRows = jQuery('.scPresence').filter(':checkbox').filter('[checked]').length;
+  var isChecked = jQuery('[name='+jQuery(arg2).attr('name')+']').not(':hidden').filter('[checked]').length>0;
+  if(isChecked) return(numRows==0)
+  else if(numRows>0) return true;
+  // Not checked, no rows: ensure no obs can be filled in, and flag failure.
+  jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').removeAttr('disabled');
+  // this is being used against a boolean checkbox, which has a hidden zero field before. Have to tag on to later field explicitly.
+  return false;
 },
   \"".lang::get('validation_no_observation')."\");
   ";
-//          } else if($rule[$i]=='fillgroup'){
-//               data_entry_helper::$late_javascript .= "
-//// integer is similar to digit but allows negative
-//$.validator.addMethod('fillgroup', function(value, element){/
-//	return this.optional(element) || /^-?\d+$/.test(value);
-//},
-//  \"".lang::get('validation_fillgroup')."\");
-//// jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').rules('add', {integer: true});";
           } else if(substr($rule[0], 3, 4)!= 'Attr'){ // have to add for non attribute case.
             data_entry_helper::$late_javascript .= "
 jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').addClass('".$rule[$i]."');";
@@ -745,41 +716,12 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
     // 5) an existing location is clicked on the map.
     global $indicia_templates, $user;
     // have to override the name of the imp-geom to point to the location centroid_geometry
-    $smpAttributes = data_entry_helper::getAttributes(array(
-        'valuetable'=>'sample_attribute_value'
-       ,'attrtable'=>'sample_attribute'
-       ,'key'=>'sample_id'
-       ,'fieldprefix'=>'smpAttr'
-       ,'extraParams'=>$auth['read']
-       ,'survey_id'=>$args['survey_id']
-      ));
-    foreach($smpAttributes as $attrId => $attr) {
-      if (strcasecmp($attr['caption'],'CMS User ID')==0) {
-        $userIdAttr = $attrId;
-      }
-    }
-    $locAttributes = data_entry_helper::getAttributes(array(
-        'valuetable'=>'location_attribute_value'
-       ,'attrtable'=>'location_attribute'
-       ,'key'=>'location_id'
-       ,'fieldprefix'=>'locAttr'
-       ,'extraParams'=>$auth['read']
-       ,'survey_id'=>$args['survey_id']
-      ));
-    foreach($locAttributes as $attrId => $attr) {
-      if (strcasecmp($attr['untranslatedCaption'],'village')==0) {
-        $villageAttr = $attrId;
-      } else if (strcasecmp($attr['untranslatedCaption'],'commune')==0) {
-        $communeAttr = $attrId;
-      }
-    }
-    
-    if (!isset($villageAttr)) {
-      return lang::get('This form must be used with a survey that has the Village Location attribute associated with it.');
-    }
-    if (!isset($communeAttr)) {
-      return lang::get('This form must be used with a survey that has the Commune Location attribute associated with it.');
-    }
+    $userIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS User ID');
+    if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID sample attribute associated with it so records can be tagged against their creator.');
+    $villageAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'village');
+    if (!$villageAttr) return lang::get('This form must be used with a survey that has the village location attribute associated with it.');
+    $communeAttr=iform_mnhnl_getAttrID($auth, $args, 'location', 'commune');
+    if (!$communeAttr) return lang::get('This form must be used with a survey that has the commune location attribute associated with it.');
     // at this point the entity to load either holds location data if there has been an error, or needs
     // to be populated with it.
     // we are assuming no loctools.
@@ -1043,28 +985,15 @@ jQuery('#imp-location-name').val(".data_entry_helper::$entity_to_load['sample:lo
 setAllDisabled(false);
 jQuery('#imp-location-name').val('');
 ";
-  }
+    }
     // Create Layers.
-// Base Layers first.
-  data_entry_helper::$onload_javascript .= "
-WMSoptions = {
-          SERVICE: 'WMS',
-          VERSION: '1.1.0',
-          STYLES: '',
-          SRS: 'EPSG:2169', // TBD configurable.
-          FORMAT: 'image/png',
-          TRANSPARENT: 'true',
-          LAYERS: 'indicia:bat_locations' // TBD configurable.
-};
-locationListLayer = new OpenLayers.Layer.WMS('sites', // TBD configurable.
-        '".iform_proxy_url('http://localhost:8080/geoserver/wms')."', // TBD configurable.
-        WMSoptions, {
-             minScale: 0, // TBD configurable.
-            maxScale: 10000, // TBD configurable.
-            units: 'm', // TBD configurable.
-            isBaseLayer: false,
-            singleTile: true
-        });
+    $parts=explode(',',$args['locationWMSLayerLookup']);
+    data_entry_helper::$onload_javascript .= "
+locationListLayer = new OpenLayers.Layer.WMS('Sites',
+        '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $parts[0])."',
+        {TRANSPARENT: 'true',
+          LAYERS: '".$parts[1]."'}, {
+            isBaseLayer: false, singleTile: true, sphericalMercator: true, displayInLayerSwitcher: false});
 clickedSite = function(features, div){
   if(features.length>0){
     var myValue = features[0].attributes.id;
@@ -1177,36 +1106,9 @@ ClearPosition = function(){
    * Get the recorder names control
    */
   protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
-    $values = array();
-  	$userlist = array();
-    $results = db_query('SELECT uid, name FROM {users}');
-    while($result = db_fetch_object($results)){
-  		$account = user_load($result->uid);
-		if($account->uid != 1 && user_access('IForm n'.self::$node->nid.' user', $account)){
-			$userlist[$result->name] = $result->name;
-		}
-    }
-    if (isset(data_entry_helper::$entity_to_load['sample:recorder_names'])){
-      if(!is_array(data_entry_helper::$entity_to_load['sample:recorder_names']))
-        $values = explode("\r\n", data_entry_helper::$entity_to_load['sample:recorder_names']);
-      else
-        $values[] = data_entry_helper::$entity_to_load['sample:recorder_names'];
-    }
-    foreach($values as $value){
-      $userlist[$value] = $value;
-    }
-    $r = data_entry_helper::listbox(array_merge(array(
-      'id'=>'sample:recorder_names',
-      'fieldname'=>'sample:recorder_names[]',
-      'label'=>lang::get('Recorder names'),
-      'size'=>6,
-      'multiselect'=>true,
-      'default'=>$values,
-      'lookupValues'=>$userlist,
-      'validation'=>array('required')
-    ), $options));
-    return $r."<span>".lang::get('LANG_RecorderInstructions')."</span><br />";
-}
+    return iform_mnhnl_recordernamesControl(self::$node, $auth, $args, $tabalias, $options);
+  }
+
 
   // This function pays no attention to the outer block. This is needed when the there is no outer/inner block pair, 
   // if the attribute is put in a single block level, then that block appears in the inner, rather than the outer .
