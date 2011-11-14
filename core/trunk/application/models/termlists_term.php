@@ -209,5 +209,19 @@ class Termlists_term_Model extends Base_Name_Model {
       'preferred'=>'t'
     );
   }
+  
+  /**
+   * Define a form that is used to capture a set of predetermined values that apply to every record during an import.
+   */
+  public function fixed_values_form() {
+    return array(
+      'term:language_id' => array( 
+        'display'=>'Language', 
+        'description'=>'Select the language to import preferred terms for.', 
+        'datatype'=>'lookup',
+        'population_call'=>'direct:language:id:language' 
+      )
+    );
+  }
 
 }
