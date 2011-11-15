@@ -187,7 +187,7 @@ function get_user_profile_hidden_inputs(&$attributes, $args) {
   $logged_in = $user->uid>0;
   // If logged in, output some hidden data about the user
   if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true) {
-    self::profile_load_all_profile($user);
+    profile_load_all_profile($user);
   }  
   foreach($attributes as &$attribute) {
     $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
