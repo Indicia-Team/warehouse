@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report
     title="Species &amp; Occurrence Counts by Taxon Group"
-    description="Lists taxon groups and the number of species and occurrences within them."
-    website_filter_field="o.website_id">
-  <query>
+    description="Lists taxon groups and the number of species and occurrences within them.">
+  <query website_filter_field="o.website_id">
     SELECT tg.title as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
     FROM occurrences o
     JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
