@@ -510,7 +510,7 @@ class XMLReportReader_Core implements ReportReader
   if($attributes->where != null) {
     $query .= ($previous ? " AND " : " WHERE ").$attributes->where;
   }
-    $query .= " ORDER BY lt".$attributes->parentTableIndex.".id, rt.form_structure_block_id, rt.weight";
+    $query .= " ORDER BY rt.form_structure_block_id, rt.weight, lt".$attributes->parentTableIndex.".id ";
     return $query;
   }
 

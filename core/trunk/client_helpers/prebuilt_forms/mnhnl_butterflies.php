@@ -289,20 +289,20 @@ deleteSurvey = function(sampleID){
       return lang::get('This form must be used with a survey that has the Number In Month attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Start Time')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'Start time')==0) {
         $StartTimeIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($StartTimeIdAttr))
-      return lang::get('This form must be used with a survey that has the Start Time attribute associated with it.');
+      return lang::get('This form must be used with a survey that has the Start time attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'End Time')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'End time')==0) {
         $EndTimeIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($EndTimeIdAttr))
-      return lang::get('This form must be used with a survey that has the End Time attribute associated with it.');
+      return lang::get('This form must be used with a survey that has the End time attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
       if (strcasecmp($attr['untranslatedCaption'],'Temperature')==0) {
@@ -313,44 +313,44 @@ deleteSurvey = function(sampleID){
       return lang::get('This form must be used with a survey that has the Temperature attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Wind Force')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'Wind force')==0) {
         $WindIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($WindIdAttr))
-      return lang::get('This form must be used with a survey that has the Wind Force attribute associated with it.');
+      return lang::get('This form must be used with a survey that has the Wind force attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Cloud Cover')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'Cloud cover')==0) {
         $CloudIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($CloudIdAttr))
-      return lang::get('This form must be used with a survey that has the Cloud Cover attribute associated with it.');
+      return lang::get('This form must be used with a survey that has the Cloud cover attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Habitat Type')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'Habitat type')==0) {
         $HabitatIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($HabitatIdAttr))
-      return lang::get('This form must be used with a survey that has the Habitat Type attribute associated with it.');
+      return lang::get('This form must be used with a survey that has the Habitat type attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'No Observation')==0 || strcasecmp($attr['untranslatedCaption'],'No observation')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'No observation')==0) {
         $NoObsIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($NoObsIdAttr))
-      return lang::get('This form must be used with a survey that has the No Observation attribute associated with it.');
+      return lang::get('This form must be used with a survey that has the No observation attribute associated with it.');
 
     foreach($attributes as $attrId => $attr)
-      if (strcasecmp($attr['untranslatedCaption'],'Survey Reliability')==0) {
+      if (strcasecmp($attr['untranslatedCaption'],'Survey reliability')==0) {
         $ReliabilityIdAttr = $attr['attributeId'];
         break;
       }
     if (!isset($ReliabilityIdAttr))
-      return lang::get('This form must be used with a survey that has the Survey Reliability attribute associated with it.');
+      return lang::get('This form must be used with a survey that has the Survey reliability attribute associated with it.');
 
     return  '<div id="downloads" >
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies_grid.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadgrid">

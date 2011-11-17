@@ -40,7 +40,12 @@ $custom_terms = array(
 	'prev step'=>'Précédente',
 	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',
-	'validation_integer' => "Please enter an integer.",
+	'validation_required' => 'Veuillez entrer une valeur pour ce champ',
+	'validation_max' => "S'il vous plaît entrer une valeur inférieure ou égale à {0}.",
+	'validation_min' => "S'il vous plaît entrer une valeur supérieure ou égale à {0}.",
+	'validation_number' => "S'il vous plaît entrer un numéro valide.",
+	'validation_digits' => "S'il vous plaît entrer un nombre entier positif.",
+	'validation_integer' => "S'il vous plaît entrer un nombre entier.",
 	'LANG_LocModTool_ParentLabel'=>'Square (5x5km)',
 	'LANG_LocModTool_ParentBlank'=>'Choose a square',
 	'LANG_LocModTool_IDLabel'=>'Old site number',
@@ -66,7 +71,7 @@ $custom_terms = array(
 	'LANG_SpeciesGridInstructions'=>"Note species observed at each site and estimate their abundance.<br />Before any data can be entered into the grid below, the conditions for the visit to that site must be entered in the Conditions section. Additional sites may be added by drawing on the map in the Sites section. Additional species may be added by entering the name in the box below.  Clicking on the red 'X' will either clear the data for that species (if data has previously been entered for the species), or the species will be removed (if you have added it during this session).",
 	'LANG_ModificationInstructions' => 'When drawing a new site: ',
 //	Passage
-	'speciesgrid:taxa_taxon_list_id'=>'Add Species',
+	'speciesgrid:taxa_taxon_list_id'=>'Add species',
 	'LANG_ConfirmSurveyDelete'=>'You are about to flag a survey as deleted. Do you wish to continue and delete survey ',
 	'LANG_Conditions_Report_Download' => 'This Report provides details of the <strong>conditions</strong> recorded on each site for each survey, including if no observations where made. It does not include any species data.',
 	'LANG_Download_Button' => 'Download',
@@ -77,12 +82,13 @@ $custom_terms = array(
 	'LANG_RecorderInstructions'=>"(Pour sélectionner plusieurs observateurs, maintenir la touche CTRL enfoncée)",
 	'LANG_CentreOutsideParent'=>'Warning: the centre of your new site is outside the square.',
 // Date
-	'Start Time'=>'Heure de début',
+	'Start time'=>'Heure de début',
 	'Duration'=>'Durée<br />(minutes)',
 	'Temperature (Celsius)'=>'Temp<br />(C)',
-	'Numeric Windspeed'=>'Vitesse du Vent<br />(Bf)',
-	'Rain Checkbox'=>'Pluie',
-	'Numeric Cloud Cover'=>'Couverture nuageuse<br />(%)',
+	'Temperature'=>'Temp<br />(C)',
+	'Windspeed'=>'Vitesse du Vent<br />(Bf)',
+	'Rain'=>'Pluie',
+	'Cloud cover'=>'Couverture nuageuse<br />(%)',
 	'Reliability'=>'Fiabilité',
 // No observation
 	'LANG_conditionsgrid:clearconfirm' => 'You are about to clear the data for a site. If you do this any previously saved data (including species data for that site) will be lost. Do you still wish to continue?',
@@ -98,7 +104,6 @@ $custom_terms = array(
 	'LANG_Date' => 'Date',
 	'LANG_Submit' => 'Enregistrer',
 
-	'validation_required' => 'Required',
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data for this site in the species grid.",
 
 	'LANG_Main_Samples_Tab' => 'Inventaires',

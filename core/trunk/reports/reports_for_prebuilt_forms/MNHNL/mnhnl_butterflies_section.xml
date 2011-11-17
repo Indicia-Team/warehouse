@@ -114,7 +114,7 @@
     <column name='num_sections' display='Number of Sections' />
     <column name='section' display='Section' />
     <column name='habitat' display='Habitat' />
-    <column name='no_obs' display='No Observation' />
+    <column name='no_obs' display='No observation' />
     <column name='reliability' display='Reliability' />
     <column name='taxon' display='Taxon' />
     <column name='observation' display='Observation' />

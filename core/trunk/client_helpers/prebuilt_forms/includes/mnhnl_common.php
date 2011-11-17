@@ -397,7 +397,7 @@ loadFeatures = function(parent_id, child_id, childArgs){
          }
 ".($args['multiSite'] ? "  jQuery('#smp-loc-name').val(data[0].name);" : "")."
        }});
-    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?&orderby=id&location_type_id=".$args['LocationTypeID']."&parent_id=\"+parent_id,
+    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?&orderby=name&location_type_id=".$args['LocationTypeID']."&parent_id=\"+parent_id,
       function(data) {
         if (data.length>0) {
           var parser = new OpenLayers.Format.WKT();
@@ -441,8 +441,19 @@ loadFeatures(".data_entry_helper::$entity_to_load["sample:location_id"].", '', "
 <input type="hidden" name ="sample:location_id" value="'.data_entry_helper::$entity_to_load["sample:location_id"].'" >
 <p>'.lang::get('LANG_LocModTool_ParentLabel').' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
 <p>'.lang::get("LANG_LocationModuleInstructions2").'</p>
-<p>'.lang::get('LANG_NumSites').' : <span id="num-sites"></span></p>
-';
+<label for="dummy-num-sites">'.lang::get('LANG_NumSites').' : </label><input id="num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />'.
+    ($args['siteNameTermListID']== '' ?
+      "<label for=\"location-name\">".lang::get("LANG_LocModTool_NameLabel")." : </label><input id=\"location-name\" name=\"location:name\" class='required'><br />" :
+      data_entry_helper::select(array(
+        'label'=>lang::get("LANG_LocModTool_NameLabel"),
+        'id'=>'dummy-name',
+        'fieldname'=>'dummy:name',
+        'table'=>'termlists_term',
+        'captionField'=>'term',
+        'valueField'=>'term',
+        'blankText'=>'',
+        'class'=>'checkGrid',
+        'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id'))));
     }
     $dummy=array('','');
     if(!$args['multiSite']){
@@ -547,9 +558,22 @@ jQuery(\"#location_parent_id\").change(function(){
   loadFeatures(this.value, '', {});
 });
 ";
+      return $retVal;
     }
     // the multisite parent location field change function must be defined locally, as it changes too much: still must call loadFeatures.
-    return $retVal.($args['multiSite'] ? '<p>'.lang::get('LANG_NumSites').' : <span id="num-sites"></span></p>' : '');;
+    return $retVal.'<label for="dummy-num-sites">'.lang::get('LANG_NumSites').' : </label><input id="num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />'.
+    ($args['siteNameTermListID']== '' ?
+      "<label for=\"location-name\">".lang::get("LANG_LocModTool_NameLabel")." : </label><input id=\"location-name\" name=\"location:name\" class='required'><br />" :
+      data_entry_helper::select(array(
+        'label'=>lang::get("LANG_LocModTool_NameLabel"),
+        'id'=>'dummy-name',
+        'fieldname'=>'dummy:name',
+        'table'=>'termlists_term',
+        'captionField'=>'term',
+        'valueField'=>'term',
+        'class'=>'checkGrid',
+        'blankText'=>'',
+        'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id'))));
   }
   
 function iform_mnhnl_getAttrID($auth, $args, $table, $caption){
@@ -636,6 +660,6 @@ UndoSketchPoint = function(layer){
   return '<input type="button" value="'.lang::get('Zoom to Parent').'" onclick="ZoomToDataExtent(ParentLocationLayer);">
 '.($includeLocation ? '<input type="button" value="'.lang::get('Zoom to Location').'" onclick="ZoomToHightlightedOrSelectedFeature(SiteListLayer);">' : '' ).'
 <input type="button" value="'.lang::get('View All Country').'" onclick="ViewAllCountry('.$args['map_centroid_lat'].','.$args['map_centroid_long'].','.((int) $args['map_zoom']).');">'.
-($includeModButtons && $args['usePolygons'] ? '<br /><span>'.lang::get('LANG_ModificationInstructions').'</span><input type="button" value="'.lang::get('Cancel current site').'" onclick="CancelSketch();"><input type="button" value="'.lang::get('Undo site point').'" onclick="UndoSketchPoint();">'.($args['multiSite'] ? '<input type="button" value="'.lang::get('Remove last site').'" onclick="RemoveLastSite();">' : '') : '');
+($includeModButtons && $args['usePolygons'] ? '<br /><span>'.lang::get('LANG_ModificationInstructions').'</span><input type="button" value="'.lang::get('Cancel current site').'" onclick="CancelSketch();"><input type="button" value="'.lang::get('Undo site point').'" onclick="UndoSketchPoint();">'.($args['multiSite'] ? '<input id="remove-site-button" type="button" disabled="disabled" value="'.lang::get('Remove this site').'" onclick="RemoveThisSite();">' : '') : '');
 }
 

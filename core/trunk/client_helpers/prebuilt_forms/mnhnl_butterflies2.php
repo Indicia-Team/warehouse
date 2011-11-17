@@ -84,7 +84,6 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
         $param['default'] =
              "=Sites=\r\n".
               "[lux5kgrid2]\r\n".
-              "[recorder names]\r\n".
               "[location buttons]\r\n".
               "[map]\r\n".
               "@layers=[\"ParentLocationLayer\",\"SiteListLayer\"]\r\n".
@@ -93,6 +92,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
               "@searchUpdatesSref=true\r\n".
               "[sample comment]\r\n".
              "=Conditions=\r\n".
+              "[recorder names]\r\n".
               "[*]\r\n".
               "@sep= \r\n".
               "@lookUpKey=meaning_id\r\n".
@@ -101,7 +101,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
               "[conditions grid]\r\n".
               "@sep= \r\n".
               "@lookUpKey=meaning_id\r\n".
-              "@tabNameFilter=Conditions\r\n".
+              "@tabNameFilter=ConditionsGrid\r\n".
               "@setColumnsRequired=2:3:4:9\r\n".
              "=Species=\r\n".
               "[species grid]\r\n".
@@ -231,11 +231,10 @@ onChildFeatureLoad = function(feature, data, child_id, options){
     newCGrow.find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
     newCGrow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-namecell,.cggrid-name,.remove-cgnewrow)').attr('disabled','disabled');
     var name=newCGrow.find('.cggrid-name').attr('name');
-    newCGrow.find('.cggrid-namecell').empty().append('<input name=\"'+name+'\" class=\"cggrid-name narrow\" value=\"'+data.name+'\" readonly=\"readonly\" >');
+    newCGrow.find('.cggrid-namecell').empty().append('<input name=\"'+name+'\" class=\"cggrid-name narrow\" value=\"'+data.name+'\" readonly=\"readonly\" ><input type=\"hidden\" name=\"CG:--rownnum--:--sampleid--:location_id\" value=\"'+data.id+'\" >');
+//    newCGrow.find('.cggrid-centroid_sref,.cggrid-centroid_geom,.cggrid-boundary_geom,.cggrid-location_type_id').remove(); // All these are remove by the cggrid-name empty above
     jQuery.each(newCGrow.children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownnum--/g, cgRownum);});
     newCGrow.find('.remove-cgnewrow').removeClass('remove-cgnewrow').addClass('clear-cgrow');
-    newCGrow.find('.cggrid-centroid_sref,.cggrid-centroid_geom,.cggrid-boundary_geom,.cggrid-location_type_id').remove();
-    newCGrow.find('.cggrid-namecell').append('<input type=\"hidden\" name=\"CG:'+cgRownum+':--sampleid--:location_id\" value=\"'+data.id+'\" >');
     newCGrow.appendTo('#conditions-grid');
     newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
     // Species grid 1) add to header, 2) add to cloneable row, 3) assume no species existing rows, 4) add no observation
@@ -250,7 +249,7 @@ onChildFeatureLoad = function(feature, data, child_id, options){
     });
   }
   recalcNumSites();
-  resetNameDropDowns();
+  setNameDropDowns(true, false);
 }
 ";
     $retVal = iform_mnhnl_lux5kgridControl($auth, $args, $tabalias, $options, self::$node,
@@ -268,6 +267,7 @@ jQuery(\"#location_id\").change(function(){
   jQuery('#species-grid').find('td').not(':eq(0)').remove();
   jQuery('.sgCloneableRow').find('td:gt(1)').remove();
   cgRownum=0;
+  recalcNumSites();
   loadFeatures(this.value, '', {addGridRows : true});
 });";
     return $retVal;
@@ -293,8 +293,15 @@ jQuery(\"#location_id\").change(function(){
       data_entry_helper::add_resource('jquery_ui_'.$args['language']); // this will autoload the jquery_ui resource. The date_picker does not have access to the args.
     if (isset(data_entry_helper::$entity_to_load['sample:date']))
       $year=substr(data_entry_helper::$entity_to_load['sample:date'],0,4);
-    else $year = "";
-    $retVal = "<label for='sample:date'>".lang::get('Year').":</label><input type='text' size='4' class='required digits' min='2000' id='sample:date' name='sample:date' value='".$year."' /><span class='deh-required'>*</span><br/>";
+    else $year = date('Y');
+    $startYear = isset($options['startYear']) ? $options['startYear'] : 2009;
+    $retVal = "<label for='sample:date'>".lang::get('Year').":</label><select id='sample:date' name='sample:date' class='required' >";
+    //    <input type='text' size='4' class='required digits' min='2000' id='sample:date' name='sample:date' value='".$year."' /><span class='deh-required'>*</span><br/>";
+    while($startYear <= date('Y')){
+	    $retVal .= '<option '.($startYear == $year ? 'selected=\\"selected\\"' : '').'>'.$startYear.'</option>';
+		$startYear++;
+	}
+	$retVal .= "</select><span class='deh-required'>*</span><br/>";
     if(!isset($options['boltTo']))
       return $retVal;
     data_entry_helper::$javascript .= '
@@ -318,11 +325,11 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       // merge the locations and existing subsamples lists
       if (isset($locationEntities))
         foreach($locationEntities as $entity){
-          self::$locationsInGrid[intval($entity['id'])] = array('location_id'=>$entity['id'], 'name'=>$entity['name']);
+          self::$locationsInGrid[intval($entity['name'])] = array('location_id'=>$entity['id'], 'name'=>$entity['name']);
         }
       if (isset($sampleEntities))
         foreach($sampleEntities as $entity){
-          $id=intval($entity['location_id']);
+          $id=intval($entity['location_name']);
           if(!isset(self::$locationsInGrid[$id]))
             self::$locationsInGrid[$id] = array('location_id'=>$entity['location_id']);
           self::$locationsInGrid[$id]['name'] = $entity['location_name'];
@@ -480,9 +487,9 @@ jQuery('.sgNoObRow').find(':checkbox:eq(".$key.")').rules('add', {no_observation
     // remembering that validation for checkbox is actually called on the hidden element, not the checkbox itself.
     data_entry_helper::$late_javascript .= "
 $.validator.addMethod('no_observation', function(value, element, params){
-  if(jQuery('[name='+jQuery(element).attr('name')+']').not(':hidden').filter('[disabled=true]').length>0) return true;
+  if(jQuery('[name='+jQuery(element).attr('name')+']').not(':hidden').filter('[disabled]').length>0) return true;
   var numFilledIn = jQuery('.smp-'+params).find('.digits').filter('[value!=]').length;
-  if(jQuery('[name='+jQuery(element).attr('name')+']').not(':hidden').filter('[checked=true]').length>0)
+  if(jQuery('[name='+jQuery(element).attr('name')+']').not(':hidden').filter('[checked]').length>0)
     return(numFilledIn==0);
   else
     return(numFilledIn>0);
@@ -565,21 +572,15 @@ jQuery('.remove-sgnewrow').live('click', function() {
     $cloneprefix='CG:--rownnum--:--sampleid--:';
     $ret .= "<tr class=\"cgCloneableRow\">
 <td class=\"ui-state-default remove-cgnewrow\" style=\"width: 1%\">X</td>
-<td class=\"cggrid-namecell\">".data_entry_helper::select(array(
-        'fieldname'=>$cloneprefix."name",
-        'table'=>'termlists_term',
-        'captionField'=>'term',
-        'valueField'=>'term',
-        'class'=>'cggrid-name',
-        'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id')
-    ))."<input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$args['LocationTypeID']."\"></td>
-<td class=\"cggrid-datecell\"><input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate\" value=\"\" ></td>";
+<td class=\"cggrid-namecell\"><input name=\"".$cloneprefix."name\" class=\"cggrid-name narrow\" value=\"\" readonly=\"readonly\" >
+<input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$args['LocationTypeID']."\"></td>
+<td class=\"cggrid-datecell\"><input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>";
     unset($attrArgs['id']);
     $attrArgs['fieldprefix']=$cloneprefix.'smpAttr';
     $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $ret .= self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName)."<td><input name=\"".$cloneprefix."comment\" class=\"cggrid-comment\" ></td></tr>";
 //    throw(1);
-    $ret .= '</table><table id ="conditions-grid"><tr><th colSpan=2>'.lang::get("Sites").'</th><th>'.lang::get('Date').'</th>';
+    $ret .= '</table><table id ="conditions-grid"><tr><th colSpan=2>'.lang::get("Site").'</th><th>'.lang::get('Date').'</th>';
     foreach($sampleAttributes as $attr){
       if ((!isset($options['tabNameFilter']) || strcasecmp($options['tabNameFilter'],$attr['inner_structure_block'])==0))
         $ret .= '<th>'.$attr['caption'].'</th>';
@@ -609,7 +610,7 @@ jQuery('#conditions-grid').find('tr:eq(".$rowNum.")').find('.cggrid-date').datep
             $d = new DateTime($entity['date']);
             $entity['date'] = $d->format('d/m/Y');
           }
-          $ret .= "<tr class=\"cggrid-row\"><td class=\"ui-state-default clear-cgrow\" style=\"width: 1%\">X</td><td class=\"cggrid-namecell\"><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".$entity['name']."\" readonly=\"readonly\" ></td><td class=\"cggrid-datecell\"><input type=\"hidden\" name=\"".$fieldprefix."location_id\" value=\"".$entity['location_id']."\" class=\"cggrid-location_id\" ><input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate\" value=\"".$entity['date']."\" ></td>";
+          $ret .= "<tr class=\"cggrid-row\"><td class=\"ui-state-default clear-cgrow\" style=\"width: 1%\">X</td><td class=\"cggrid-namecell\"><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".$entity['name']."\" readonly=\"readonly\" ></td><td class=\"cggrid-datecell\"><input type=\"hidden\" name=\"".$fieldprefix."location_id\" value=\"".$entity['location_id']."\" class=\"cggrid-location_id\" ><input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"".$entity['date']."\" ></td>";
           $attrArgs['fieldprefix']=$fieldprefix.'smpAttr';
           $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
           $ret .= self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName);
@@ -620,7 +621,7 @@ jQuery('#conditions-grid').find('tr:eq(".$rowNum.")').find('.cggrid-date').datep
     data_entry_helper::$onload_javascript .= "
 cgRownum=$rowNum;";
     data_entry_helper::$javascript .= "
-recalcNumSites = function(){jQuery('#num-sites').empty().append(jQuery('.cggrid-row,.cgAddedRow').length);};
+recalcNumSites = function(){jQuery('#num-sites').val(jQuery('.cggrid-row,.cgAddedRow').length);};
 recalcNumSites();
 if (typeof jQuery.validator !== \"undefined\") {
   jQuery.validator.addMethod('customDate',
@@ -629,6 +630,23 @@ if (typeof jQuery.validator !== \"undefined\") {
       try{jQuery.datepicker.parseDate( 'dd/mm/yy', value);return true;}
       catch(e){return false;}
     }, '".lang::get('Please enter a valid date')."'
+  );
+  jQuery.validator.addMethod('checkYear',
+    function(value, element) {
+      if(jQuery(element).val() == '') return true;
+      var myYear = jQuery(element).datepicker(\"getDate\").getFullYear();
+      return (myYear == jQuery('[name=sample\\:date]').val());
+    }, '".lang::get('Please ensure the year matches the year entered above.')."'
+  );
+  jQuery.validator.addMethod('checkNumSites',
+    function(value, element) {
+      return (jQuery(element).val() > 0);
+    }, '".lang::get('You must add at least one site to the square before you can continue.')."'
+  );
+  jQuery.validator.addMethod('checkComplete',
+    function(value, element) {
+      return (jQuery('.cggrid-date').not('[value=]').length > 0);
+    }, '".lang::get('You must fill in the data for at least one site in this grid.')."'
   );
 }
 jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't need to worry about name drop down.
@@ -649,26 +667,13 @@ jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't ne
     data_entry_helper::$javascript .= "
   }
 });
-jQuery('.cggrid-name').live('change', function() {
-  rowNum = jQuery(this).closest('tr').data('rowNum');
-  jQuery('#species-grid-header').find('.smp-'+rowNum).empty().append(jQuery(this).val());
-  for(var i=0; i<SiteListLayer.features.length; i++){
-    if(SiteListLayer.features[i].attributes.row == rowNum){
-      newFeature = SiteListLayer.features[i].clone();
-      newFeature.style.label = jQuery(this).val();
-      SiteListLayer.destroyFeatures([SiteListLayer.features[i]]);
-      SiteListLayer.addFeatures([newFeature]);
-      break;
-    }
-  }
-  resetNameDropDowns();
-});
 jQuery('.cggrid-date').live('change', function() {
   jQuery(this).closest('tr').find('td:not(.cggrid-datecell,.cggrid-namecell)').css('opacity','');
-  jQuery(this).addClass('required');
   jQuery(this).closest('tr').find('*').removeAttr('disabled');
   rowNum = jQuery(this).closest('tr').data('rowNum');
-  jQuery('.smp-'+rowNum).css('opacity','').find('input').removeAttr('disabled');";
+  jQuery('.smp-'+rowNum).css('opacity','').find('input').removeAttr('disabled');
+  jQuery(this).closest('tr').find('.deh-required').remove();
+  jQuery(this).closest('tr').find('*').removeClass('required');";
   if (isset($options['setColumnsRequired'])){
     $columns = explode(':',$options['setColumnsRequired']);
     foreach($columns as $column)
@@ -691,16 +696,25 @@ jQuery('.clear-cgrow').live('click', function() { // existing location - no name
   jQuery('.smp-'+rowNum).css('opacity',0.25).find(':text').attr('disabled','disabled').val('');
   jQuery('.smp-'+rowNum).css('opacity',0.25).find(':checkbox').attr('disabled','disabled').attr('checked','');
 });
-resetNameDropDowns = function(){
-  jQuery('.cgAddedRow').find('.cggrid-name').find('*').attr('disabled','');
-  jQuery('.cgAddedRow').find('.cggrid-name').filter('select').each(function (index, select){
-    jQuery(select).find('option').each(function (index, option){
-      if(jQuery(option).val() != jQuery(select).val() && 
+setNameDropDowns = function(disable, value){
+  jQuery('#dummy-name').find('*').removeAttr('disabled');
+  if(disable === true){
+  	jQuery('#dummy-name').val('').attr('disabled','disabled');
+  	return;
+  }
+  if(disable === false)
+  	jQuery('#dummy-name').removeAttr('disabled');
+  if(value===false && jQuery('#dummy-name').val() !== '') value=jQuery('#dummy-name').val()
+  if(value !== '')
+    jQuery('#dummy-name').find('option').filter('[value=]').attr('disabled','disabled');
+  jQuery('#dummy-name').find('option').each(function (index, option){
+      if((value == false || jQuery(option).val() != value) &&
           jQuery('.cggrid-row,.cgAddedRow').find('.cggrid-name').filter('[value='+jQuery(option).val()+']').length > 0)
         jQuery(option).attr('disabled','disabled');
-    });
   });
+  if(value!==false) jQuery('#dummy-name').val(value);
 };
+setNameDropDowns(true, false);
 jQuery('.remove-cgnewrow').live('click', function() {
   var thisRow=jQuery(this).closest('tr');
   if(!confirm(\"".lang::get('LANG_conditionsgrid:removeconfirm')."\")) return;
@@ -708,6 +722,14 @@ jQuery('.remove-cgnewrow').live('click', function() {
   jQuery('.smp-'+rowNum).remove();
   thisRow.remove();
   recalcNumSites();
+  for(var i=0; i<SiteListLayer.selectedFeatures.length; i++){ // Row may not be selected on map
+    if(SiteListLayer.selectedFeatures[i].attributes.row == rowNum){
+      modFeature.selectControl.unselect(SiteListLayer.selectedFeatures[i]);
+      jQuery('#remove-site-button').attr('disabled','disabled');
+      setNameDropDowns(true, false);
+      break;
+    }
+  }
   for(var i=0; i<SiteListLayer.features.length; i++){
     if(SiteListLayer.features[i].attributes.row == rowNum){
       SiteListLayer.destroyFeatures([SiteListLayer.features[i]]);
@@ -719,29 +741,55 @@ jQuery('.remove-cgnewrow').live('click', function() {
     if(jQuery(thisRow).data('rowNum') > cgRownum)
       cgRownum=jQuery(thisRow).data('rowNum');
   });
-  resetNameDropDowns();
+  setNameDropDowns('leave', false);
 });
-RemoveLastSite= function() {
-  var thisRow=jQuery('.remove-cgnewrow').filter(':last').closest('tr');
-  if(!confirm(\"".lang::get('LANG_conditionsgrid:removeconfirm')."\")) return;
-  rowNum = thisRow.data('rowNum');
-  jQuery('.smp-'+rowNum).remove();
-  thisRow.remove();
-  recalcNumSites();
-  for(var i=0; i<SiteListLayer.features.length; i++){
-    if(SiteListLayer.features[i].attributes.row == rowNum){
-      modFeature.selectControl.unselect(SiteListLayer.features[i]);
-      SiteListLayer.destroyFeatures([SiteListLayer.features[i]]);
-      break;
-    }
+RemoveThisSite= function() {
+  if(SiteListLayer.selectedFeatures.length == 0) {
+    jQuery('#remove-site-button').attr('disabled','disabled');
+    return;
   }
+  var feature = SiteListLayer.selectedFeatures[0];
+  var rowNum = feature.attributes.row;
+  // TBD put in check for feature being new.
+  ZoomToFeature(feature);
+  if(!confirm(\"".lang::get('LANG_conditionsgrid:removeconfirm')."\")) return;
+  jQuery('.cgAddedRow').each(function(index, elem){
+    if(jQuery(elem).data('rowNum') == rowNum)
+      jQuery(elem).remove();
+  });
+  jQuery('.smp-'+rowNum).remove();
+  recalcNumSites();
+  jQuery('#remove-site-button').attr('disabled','disabled');
+  modFeature.selectControl.unselect(feature);
+  SiteListLayer.destroyFeatures([feature]);
   cgRownum=0;
   jQuery('.cggrid-row,.cgAddedRow').each(function(i,thisRow){
     if(jQuery(thisRow).data('rowNum') > cgRownum)
       cgRownum=jQuery(thisRow).data('rowNum');
   });
-  resetNameDropDowns();
-};";
+  setNameDropDowns(true, false);
+};
+jQuery('#dummy-name').change(function() {
+  if(SiteListLayer.selectedFeatures.length == 0) {
+    setNameDropDowns(true, false);
+    return;
+  }
+  var feature = SiteListLayer.selectedFeatures[0];
+  var rowNum = feature.attributes.row;
+  // TBD put in check for feature being new.
+  ZoomToFeature(feature);
+  jQuery('.cgAddedRow').each(function(index, elem){
+    if(jQuery(elem).data('rowNum') == rowNum)
+      jQuery(elem).find('.cggrid-name').val(jQuery('#dummy-name').val());
+  });
+  jQuery('#species-grid-header').find('.smp-'+rowNum).empty().append(jQuery(this).val());
+  modFeature.selectControl.unselect(feature);
+  SiteListLayer.removeFeatures([feature]);
+  feature.style.label = jQuery(this).val();
+  SiteListLayer.addFeatures([feature]);
+  modFeature.selectControl.select(feature);
+});
+";
     return $ret;
   }
 
@@ -790,13 +838,12 @@ addDrawnGeomToSelection = function(geometry) {
     cell.innerHTML = cell.innerHTML.replace(/--rownnum--/g, cgRownum);
   });
   var name = '';
-  newCGrow.find('.cggrid-name').find('option').each(function (index, option){
+  jQuery('#dummy-name').find('option').each(function (index, option){
     if(name == '' && jQuery('.cggrid-row,.cgAddedRow').find('.cggrid-name').filter('[value='+jQuery(option).val()+']').length == 0)
       name=jQuery(option).val();
   });
   newCGrow.find('.cggrid-name').val(name);
   newCGrow.appendTo('#conditions-grid');
-  resetNameDropDowns();
   newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
   recalcNumSites();
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
@@ -842,8 +889,12 @@ function onFeatureModify(evt) {
   feature = evt.feature;
   ZoomToFeature(feature);
   if(feature.attributes.new == true) {
+    setNameDropDowns(false, feature.style.label);
+    jQuery('#remove-site-button').removeAttr('disabled');
     return true;
   }
+  jQuery('#remove-site-button').attr('disabled','disabled');
+  setNameDropDowns(true, false);
   for(var i=SiteListLayer.selectedFeatures.length-1; i>=0; i--){
     modFeature.selectControl.unselect(SiteListLayer.selectedFeatures[i]);
   }

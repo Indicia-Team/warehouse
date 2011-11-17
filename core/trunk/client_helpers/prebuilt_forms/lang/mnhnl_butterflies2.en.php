@@ -61,7 +61,7 @@ $custom_terms = array(
 	'LANG_SpeciesGridInstructions'=>"Note species observed at each site and estimate their abundance.<br />Before any data can be entered into the grid below, the conditions for the visit to that site must be entered in the Conditions section. Additional sites may be added by drawing on the map in the Sites section. Additional species may be added by entering the name in the box below.  Clicking on the red 'X' will either clear the data for that species (if data has previously been entered for the species), or the species will be removed (if you have added it during this session).",
 	'LANG_ModificationInstructions' => 'When drawing a new site: ',
 //	Passage
-	'speciesgrid:taxa_taxon_list_id'=>'Add Species',
+	'speciesgrid:taxa_taxon_list_id'=>'Add species',
 	'LANG_ConfirmSurveyDelete'=>'You are about to flag a survey as deleted. Do you wish to continue and delete survey ',
 	'LANG_Conditions_Report_Download' => 'This Report provides details of the <strong>conditions</strong> recorded on each site for each survey, including if no observations where made. It does not include any species data.',
 	'LANG_Download_Button' => 'Download',
@@ -72,12 +72,13 @@ $custom_terms = array(
 	'LANG_RecorderInstructions'=>"To select more than one observer, keep the CTRL button down.",
 	'LANG_CentreOutsideParent'=>'Warning: the centre of your new site is outside the square.',
 // Date
-	'Start Time'=>'Start time',
+//	'Start time'=>'Start time',
 	'Duration'=>'Duration<br />(minutes)',
 	'Temperature (Celsius)'=>'Temp<br />(C)',
-	'Numeric Windspeed'=>'Windspeed<br />(Bf)',
-	'Rain Checkbox'=>'Rain',
-	'Numeric Cloud Cover'=>'Cloud cover<br />(%)',
+	'Temperature'=>'Temp<br />(C)',
+	'Windspeed'=>'Wind<br />(Bf)',
+//	'Rain'=>'Rain',
+	'Cloud cover'=>'Cloud cover<br />(%)',
 // 'Reliability'=>'Reliability',
 // No observation
 	'LANG_conditionsgrid:clearconfirm' => 'You are about to clear the data for a site. If you do this any previously saved data (including species data for that site) will be lost. Do you still wish to continue?',
