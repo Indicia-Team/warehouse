@@ -500,16 +500,16 @@ class XMLReportReader_Core implements ReportReader
     }
     $query .= " INNER JOIN ".$parentSingular."_attribute_values vt ON (vt.".$parentSingular."_id = "." lt".$attributes->parentTableIndex.".id and vt.deleted = FALSE) ";
     $query .= " INNER JOIN ".$parentSingular."_attributes at ON (vt.".$parentSingular."_attribute_id = at.id and at.deleted = FALSE) ";
-    $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE) ";
+    $query .= " INNER JOIN ".$parentSingular."_attributes_websites rt ON (rt.".$parentSingular."_attribute_id = at.id and rt.deleted = FALSE and (rt.restrict_to_survey_id = #survey_id# or rt.restrict_to_survey_id is null)) ";
     // where list
-  $previous=false;
-  if($this->tables[0]['where'] != null) {
-    $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
-    $previous = true;
-  }
-  if($attributes->where != null) {
-    $query .= ($previous ? " AND " : " WHERE ").$attributes->where;
-  }
+    $previous=false;
+    if($this->tables[0]['where'] != null) {
+      $query .= " WHERE ".preg_replace("/#this#/", "lt0", $this->tables[0]['where']);
+      $previous = true;
+    }
+    if($attributes->where != null) {
+      $query .= ($previous ? " AND " : " WHERE ").$attributes->where;
+    }
     $query .= " ORDER BY rt.form_structure_block_id, rt.weight, lt".$attributes->parentTableIndex.".id ";
     return $query;
   }

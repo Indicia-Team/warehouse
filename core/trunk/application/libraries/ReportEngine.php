@@ -401,7 +401,15 @@ class ReportEngine {
     /* Attribute definitions included the query to run, and the field names to compare between each data array for matching */
     $vagueDateProcessing = $this->getVagueDateProcessing();
     foreach($attributeDefns as $attributeDefn){
-        $subquery = $attributeDefn->query;
+        // Build an index of the report data indexed on the attribute: nb that the attribute data has been sorted in main_id order.
+        $index = array();
+        for ($r=0; $r<count($data); $r++) {
+          if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
+            $index[$data[$r][$attributeDefn->parentKey]] = array($r);
+          } else
+            $index[$data[$r][$attributeDefn->parentKey]][] = $r;
+        }
+    	$subquery = $attributeDefn->query;
         foreach ($providedParams as $name => $value)
         {
           $subquery = preg_replace("/#$name#/", $value, $subquery);
@@ -409,9 +417,12 @@ class ReportEngine {
         $response = $this->reportDb->query($subquery);
         $attrData = $response->result_array(FALSE);
         $newColumns = array();
-        // initially create new columns in the the data set for each distinct attribute, and initialise them to blank.
         // This makes some assumptions about the way the attribute data is stored within the DB tables.
+        // Note that $attributeDefn->id is actually text, which means that the order of data in $row is actually the order in which the 
+        // attributes are encountered in the data set.
+        // we assume that the attributes are ordered in blocks of each attribute ID, in the order that we wish them to appear in the report.
         foreach ($attrData as $row){
+          // If this attribute row has not been encountered so far, make a new column for it, initialise to blank.
           if(!array_key_exists($row[$attributeDefn->id], $newColumns)){  // id is the column holding the attribute id.
             $newColName=$attributeDefn->columnPrefix.$row[$attributeDefn->id];
             $multiValue = ($row['multi_value'] == 't') && ($row["data_type"] != 'D') && ($row["data_type"] != 'V');
@@ -461,61 +472,57 @@ class ReportEngine {
                 break;
             }
           }
-        }
-        // Build an index of the attribute data: nb that the attribute data has been sorted in main_id order.
-        // We need the index of first record for each main_id value (there may be many)
-        $index = array();
-        for ($r=0; $r<count($attrData); $r++) {
-          if(!isset($index[$attrData[$r][$attributeDefn->main_id]])){
-            $index[$attrData[$r][$attributeDefn->main_id]] = $r;
-          }
-        }
-        for ($r=0; $r<$dataCount; $r++) {
-          if(!isset($index[$data[$r][$attributeDefn->parentKey]])){
-            continue;
-          }
-          $rowIndex = $index[$data[$r][$attributeDefn->parentKey]];
-          while($rowIndex < count($attrData) && $attrData[$rowIndex][$attributeDefn->main_id] == $data[$r][$attributeDefn->parentKey]){
-            $column = $newColumns[$attrData[$rowIndex][$attributeDefn->id]]['column'];
-             switch ($attrData[$rowIndex]["data_type"]) {
-               case 'L':
-                 $value = $attrData[$rowIndex]['int_value']; // default value is int value
-                 foreach($newColumns[$attrData[$rowIndex][$attributeDefn->id]]['lookup'] as $lookup){
-                   if($value == $lookup["id"]){
-                     $value = $lookup['term'];
-                     break;
-                   }
-                 }
-                 $this->mergeColumnData($data[$r][$column], $value);
-                 break;
-               case 'I':
-                 $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value']);
-                    break;
-               case 'B':
-                 $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['int_value'] ? 'Yes' : 'No');
-                    break;
-                case 'F':
-                    $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['float_value']);
-                break;
-                case 'T':
-                    $this->mergeColumnData($data[$r][$column], $attrData[$rowIndex]['text_value']);
-                break;
-                case 'D':
-                case 'V': // assume no multi values: would be far too complex to deal with...
-                    $data[$r][$column."_date_start"] = $attrData[$rowIndex]['date_start_value'];
-                    $data[$r][$column."_date_end"] = $attrData[$rowIndex]['date_end_value'];
-                    $data[$r][$column."_date_type"] = $attrData[$rowIndex]['date_type_value'];
-                break;
-            }
-            $rowIndex++;
+          $column = $newColumns[$row[$attributeDefn->id]]['column'];
+          switch ($row["data_type"]) {
+            case 'L':
+              $value = $row['int_value']; // default value is int value
+              foreach($newColumns[$row[$attributeDefn->id]]['lookup'] as $lookup){
+                if($value == $lookup["id"]){
+                  $value = $lookup['term'];
+                  break;
+                }
+              }
+              if(isset($index[$row[$attributeDefn->main_id]]))
+                foreach($index[$row[$attributeDefn->main_id]] as $r)
+                  $this->mergeColumnData($data[$r][$column], $value);
+              break;
+            case 'I':
+              if(isset($index[$row[$attributeDefn->main_id]]))
+                foreach($index[$row[$attributeDefn->main_id]] as $r)
+                  $this->mergeColumnData($data[$r][$column], $row['int_value']);
+              break;
+            case 'B':
+              if(isset($index[$row[$attributeDefn->main_id]]))
+                foreach($index[$row[$attributeDefn->main_id]] as $r)
+                  $this->mergeColumnData($data[$r][$column], $row['int_value'] ? 'Yes' : 'No');
+              break;
+            case 'F':
+              if(isset($index[$row[$attributeDefn->main_id]]))
+                foreach($index[$row[$attributeDefn->main_id]] as $r)
+                  $this->mergeColumnData($data[$r][$column], $row['float_value']);
+              break;
+            case 'T':
+              if(isset($index[$row[$attributeDefn->main_id]]))
+                foreach($index[$row[$attributeDefn->main_id]] as $r)
+                  $this->mergeColumnData($data[$r][$column], $row['text_value']);
+              break;
+            case 'D':
+            case 'V': // assume no multi values: would be far too complex to deal with...
+              if(isset($index[$row[$attributeDefn->main_id]]))
+                foreach($index[$row[$attributeDefn->main_id]] as $r){
+                  $data[$r][$column."_date_start"] = $row['date_start_value'];
+                  $data[$r][$column."_date_end"] = $row['date_end_value'];
+                  $data[$r][$column."_date_type"] = $row['date_type_value'];
+                }
+              break;
           }
         }
         for ($r=0; $r<$dataCount; $r++) {
           foreach($newColumns as $newCol){
             $column = $newCol['column'];
-             if($newCol['multi_value'] == true && is_array($data[$r][$column])){
-               $data[$r][$column] = implode($attributeDefn->separator, $data[$r][$column]);
-             }
+            if($newCol['multi_value'] == true && is_array($data[$r][$column])){
+              $data[$r][$column] = implode($attributeDefn->separator, $data[$r][$column]);
+            }
           }
         }
     }

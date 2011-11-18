@@ -64,7 +64,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     if (isset($responseStruct['parameterRequest']))
       kohana::log('debug', 'parameters requested');
     else
-      kohana::log('debug', 'got records');
+      kohana::log('debug', 'got records: records array has '.count($records).' entries');
     switch ($mode)
     {
       case 'json':
