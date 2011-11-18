@@ -88,24 +88,24 @@ $custom_terms = array(
 
 	'Survey (1)' => 'Survey',
 	'Survey (2)' => 'Survey',
-	'Duration'=>'Duration (Minutes)',
-	'Suitability Checkbox' => 'Suitability',
-	'Picture Provided' => 'Picture',
+	'Duration'=>'Duration (minutes)',
+//	'Suitability' => 'Suitability',
+	'Picture provided' => 'Picture',
 	'Weather' => 'Weather Conditions',
 //	Temperature (Celsius)
-//	Cloud Cover
-	'Rain Checkbox' => 'Rain',
+//	Cloud cover
+//	'Rain' => 'Rain',
 	
 	'LANG_Tab_species' => 'Species',
 	'LANG_SpeciesInstructions'=>"For a newly created survey, this grid will be populated with rows for species immediately relevant to this survey. Additional species may be added using the control under the grid.<br />Additional rows may be added using the control for existing taxa if a different combination of Type/Stage/Sex/Behaviour is to be added.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed (eg an 'egg' can not be a 'dead specimen'). Such banned combinations will be greyed out in the drop down lists. In addition, it is not possible to enter multiple rows for the same combination of Species/Type/Stage/Sex/Behaviour: again duplicate possiblities will be greyed out.<br />If you think a combination is valid, but you can not select it, first check that there is no other existing row with this combination.<br />The 'No observation' can only be selected when there are no undeleted rows in the grid (when it must be selected) - otherwise it is disabled. Click the red 'X' to delete the relevant row.",
 	'species_checklist.species'=>'Species',
 	'Count'=>'Number',
-	'Occurrence Reliability'=>'Reliability',
+	'Occurrence reliability'=>'Reliability',
 //	Counting
-	'Reptile Occurrence Type'=>'Type',
-	'Reptile Occurrence Stage'=>'Stage',
-	'Reptile Occurrence Sex'=>'Sex',
-	'Reptile Occurrence Behaviour'=>'Behaviour',
+//	'Type'=>'Type',
+//	'Stage'=>'Stage',
+//	'Sex'=>'Sex',
+//	'Behaviour'=>'Behaviour',
 	
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid."
 );

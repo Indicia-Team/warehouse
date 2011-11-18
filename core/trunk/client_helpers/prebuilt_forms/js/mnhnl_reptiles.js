@@ -36,11 +36,21 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     }); 
     // auto-check the row
     newRow2.find('.scPresenceCell input').attr('name', 'sc:' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
-    // Allow forms to hook into the event of a new row being added
     newRow2.find('.scOccAttrCell').find(':text').addClass('required').width('30px').attr('min',1).after('<span class=\"deh-required\">*</span>');
     newRow2.find('.scOccAttrCell').find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
     newRow1.appendTo('#'+gridId);
     newRow2.appendTo('#'+gridId);
+    if($('tr#'+gridId + '-scClonableRow3').length>0){
+        var newRow3 =$('tr#'+gridId + '-scClonableRow3').clone(true);
+        newRow3.addClass('added-row').removeClass('scClonableRow').attr('id','').addClass('scMeaning-'+data.taxon_meaning_id);
+        // Replace the tags in the row template with the taxa_taxon_list_ID
+        $.each(newRow3.children(), function(i, cell) {
+          cell.innerHTML = cell.innerHTML.replace(/-ttlId-:/g, data.id+':y'+addRowToGridSequence);
+        }); 
+        // Allow forms to hook into the event of a new row being added
+        newRow3.appendTo('#'+gridId);
+    }
+    // Allow forms to hook into the event of a new row being added
     if (typeof hook_check_no_obs !== "undefined") {
   	  hook_check_no_obs();
     }
@@ -89,6 +99,8 @@ $('.remove-row').live('click', function(e) {
   var row = $(e.target.parentNode);
   if (row.hasClass('added-row')) {
     row.next().remove();
+    if($(e.target).attr('rowspan') > 2)
+        row.next().remove();
     row.remove();
   } else {
     // This was a pre-existing occurrence so we can't just delete the row from the grid. Grey it out
@@ -104,6 +116,13 @@ $('.remove-row').live('click', function(e) {
     nextRow.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled').removeClass('required').filter('input,select').val('').width('');
     nextRow.find('a').remove();
     nextRow.find('.deh-required').remove();
+    if($(e.target).attr('rowspan') > 2) {
+        // this extra row only has the optional comment field on it.
+        nextRow = nextRow.next();
+        nextRow.css('opacity',0.25);
+        // disable or remove all active controls from the row.
+        nextRow.find('*').attr('disabled','disabled').filter('input').val('');
+    }
   }
   if (typeof hook_check_no_obs !== "undefined") {
 	  hook_check_no_obs();

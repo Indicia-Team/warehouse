@@ -15,7 +15,7 @@ p.inline-error {
   color:red !important;
 }
 input.site-name {
-	width: 200px;
+	width: 300px;
 }
 label.auto-width {
 	width: auto;
@@ -26,4 +26,8 @@ label.prepad {
 .coords-text {
   margin-top: 4px;
   margin-left: 20px;	
+}
+input.scComment  {
+	width: 770px;
+	margin-top: 4px;
 }

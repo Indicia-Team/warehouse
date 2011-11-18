@@ -259,7 +259,7 @@ hook_species_checklist_pre_delete_row=function(e) {
 };
 
 resetChildValue = function(child){
-  var options = child.find('option').not('[value=]').not(':disabled');
+  var options = child.find('option').not('[value=]').not('[disabled]');
   if (options.length==1)
     child.val(options.val());
   else child.val('');
@@ -436,7 +436,7 @@ $.validator.addMethod('no_observation', function(arg1, arg2){
   if(isChecked) return(numRows==0)
   else if(numRows>0) return true;
   // Not checked, no rows: ensure no obs can be filled in, and flag failure.
-  jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').removeAttr('disabled','disabled');
+  jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:',$rule[0])."\\:]').removeAttr('disabled');
   // this is being used against a boolean checkbox, which has a hidden zero field before. Have to tag on to later field explicitly.
   return false;
 },
@@ -735,9 +735,9 @@ setupButtons($('#controls'), 0);";
         $ttlid = $occ['taxon']['id'];
         $firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label');
         if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
-        $colspan = ' colspan="'.(count($attributes)+($options['occurrenceComment']?1:0)).'"';
+        $colspan = ' colspan="'.count($attributes).'"';
         // assume always removeable and presence is hidden.
-        $firstrow = '<td class="ui-state-default remove-row" style="width: 1%" rowspan="2" >X</td>';
+        $firstrow = '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.($options['occurrenceComment']?"3":"2").'" >X</td>';
         $firstrow .= str_replace('{content}', $firstCell, str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']));
         $existing_record_id = $occ['id'];
         $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
@@ -777,13 +777,16 @@ setupButtons($('#controls'), 0);";
           }
           $secondrow .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
         }
+        $thirdrow = "";
         if ($options['occurrenceComment']) {
-          $secondrow .= "\n<td class=\"ui-widget-content scCommentCell\"><input class=\"scComment\" type=\"text\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" ".
+          $thirdrow .= "\n<td class=\"ui-widget-content scCommentCell\" $colspan><label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\" >".lang::get("Comment")." : </label><input class=\"scComment\" type=\"text\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" ".
           "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]."\" /></td>";
         }
         // no confidential checkbox.
         $rows[]='<tr>'.$firstrow.'</tr>';
         $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.$secondrow.'</tr>'; // no images.
+        if($thirdrow != "") 
+          $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.$thirdrow.'</tr>'; // no images.
         $rowIdx++;
       }
       $grid .= "\n<tbody>\n";
@@ -794,7 +797,7 @@ setupButtons($('#controls'), 0);";
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
-        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add Species to List')." : </label><input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
+        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species')." : </label><input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
         // Javascript to add further rows to the grid
         data_entry_helper::$javascript .= "var formatter = function(rowData,taxonCell) {
   taxonCell.html(\"".lang::get('loading')."\");
@@ -836,8 +839,8 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
     global $indicia_templates;
     // assume always removeable and presence is hidden.
-    $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow1"><td class="ui-state-default remove-row" style="width: 1%" rowspan="2">X</td>';
-    $colspan = ' colspan="'.(count($attributes)+($options['occurrenceComment']?1:0)).'"';
+    $r = '<table style="display: none"><tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow1"><td class="ui-state-default remove-row" style="width: 1%" rowspan="'.($options['occurrenceComment']?"3":"2").'">X</td>';
+    $colspan = ' colspan="'.count($attributes).'"';
     $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']).'</tr><tr class="scClonableRow scDataRow" id="'.$options['id'].'-scClonableRow2">';
     $r .= '<td class="scPresenceCell" style="display:none"><input type="checkbox" class="scPresence" name="" value="" /></td>';
     $idx = 0;
@@ -860,8 +863,12 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
       $idx++;
     }
     if ($options['occurrenceComment']) {
-      $r .= '<td class="ui-widget-content scCommentCell"><input class="scComment" type="text" ' .
-          'id="sc:-ttlId-::occurrence:comment" name="sc:-ttlId-::occurrence:comment" value="" /></td>';
+      $r .= "</tr>
+  <tr class=\"scClonableRow scDataRow\" id=\"".$options['id']."-scClonableRow3\">
+    <td class=\"ui-widget-content scCommentCell\" ".$colspan.">
+      <label for=\"sc:-ttlId-::occurrence:comment\" class=\"auto-width\" >".lang::get("Comment")." : </label>
+      <input class=\"scComment\" type=\"text\" id=\"sc:-ttlId-::occurrence:comment\" name=\"sc:-ttlId-::occurrence:comment\" />
+    </td>";
     }
     $r .= "</tr></tbody></table>\n";
     return $r;
@@ -895,9 +902,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         foreach ($occAttrs as $a) {
           $r .= self::get_species_checklist_col_header($a, $visibleColIdx, $options['colWidths']) ;
         }
-        if ($options['occurrenceComment']) {
-          $r .= self::get_species_checklist_col_header(lang::get('Comment'), $visibleColIdx, $options['colWidths']) ;
-        }
+        // Comment on its own line
       }
       $r .= '</tr></thead>';
       return $r;
@@ -1079,7 +1084,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         '$taxaMeaning = -1;'."\n".
         'foreach ($responseRecords as $record)'."\n".
         '  if($record["id"] == {id}) $taxaMeaning=$record["taxon_meaning_id"];'."\n".
-        'var_dump($taxaMeaning);'."\n".
         'foreach ($responseRecords as $record){'."\n".
         '  if($record["id"] != {id} && $taxaMeaning==$record["taxon_meaning_id"] && $record["taxon_list_id"]=="'.$args['extra_list_id'].'"){'."\n".
         '    if($record["preferred"] == "f")'."\n".
