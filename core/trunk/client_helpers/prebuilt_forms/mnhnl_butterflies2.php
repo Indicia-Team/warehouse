@@ -317,7 +317,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $sampleEntities = json_decode(curl_exec($session), true);
-      $url = data_entry_helper::$base_url."/index.php/services/data/location?parent_id=".data_entry_helper::$entity_to_load['sample:location_id']."&mode=json&view=detail&orderby=id&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$args['LocationTypeID'];
+      $url = data_entry_helper::$base_url."/index.php/services/data/location?parent_id=".data_entry_helper::$entity_to_load['sample:location_id']."&mode=json&view=detail&orderby=name&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$args['LocationTypeID'];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $locationEntities = json_decode(curl_exec($session), true);
@@ -716,6 +716,10 @@ setNameDropDowns = function(disable, value){
 };
 setNameDropDowns(true, false);
 jQuery('.remove-cgnewrow').live('click', function() {
+  if(jQuery('.cggrid-row,.cgAddedRow').length < 2) {
+    alert(\"".lang::get("You can't remove the last site in the square/grid - there must be at least one. If you wish to remove this one, you must first add another in the Site tab.")."\");
+    return;
+  }
   var thisRow=jQuery(this).closest('tr');
   if(!confirm(\"".lang::get('LANG_conditionsgrid:removeconfirm')."\")) return;
   rowNum = thisRow.data('rowNum');
@@ -1027,6 +1031,10 @@ setupButtons($('#controls'), 0);";
                                                $parts[5]=>array('value' => $value))));
             if($parts[4] != "--occid--" && $parts[4] != "")
               $occ['model']['fields']['id']=array('value' => $parts[4]);
+            if($value==""){
+              $occ['model']['fields']['deleted']=array('value' => 't');
+              unset($occ['model']['fields'][$parts[5]]);
+            }
             $occs[] = $occ;
           }
         }
