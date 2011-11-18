@@ -926,7 +926,7 @@ jQuery('#sectionlist_number').change();
             $ATTRentities = json_decode(curl_exec($session), true);
             foreach($ATTRentities as $ATTRentity){
               	data_entry_helper::$javascript .= "
-add_section_species(".($OCCentity['taxa_taxon_list_id']).",".$section.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".($ATTRentity['id']).",".($ATTRentity['raw_value']==''?"\"\"":$ATTRentity['raw_value']).");";
+add_section_species(".($OCCentity['taxa_taxon_list_id']).",".$section.",".($OCCentity['sample_id']).",".($ATTRentity['occurrence_id']).",".(isset($ATTRentity['id']) ? $ATTRentity['id'] : "\"-\"").",".($ATTRentity['raw_value']==''?"\"\"":$ATTRentity['raw_value']).");";
             }
           } // TBS SLA
           $url = self::$svcUrl.'/data/sample_attribute_value?mode=json&view=list&nonce='.$auth['read']["nonce"].'&auth_token='.$auth['read']['auth_token'].'&deleted=f&sample_id='.($entity['id']);
@@ -1070,7 +1070,7 @@ jQuery('input#sectionlist_taxa_taxon_list_id\\\\:taxon').result(function(event, 
                                               'fields' => array('taxa_taxon_list_id' => array('value' => $parts[1]),
                                                                 'website_id' => array('value' => $values['website_id']))));
           if($parts[4] != '-') $occ['model']['fields']['id'] = array('value' => $parts[4]);
-          if($parts[4] != '-' || $value != ''){
+          if($parts[5] != '-' || $value != ''){
             $occ['model']['fields']['occAttr:'.$args['quant_dist_attr_id'].($parts[5] != '-' ? ':'.$parts[5] : '')] = array('value' => $value);
             $suboccs[] = $occ;
           }
