@@ -1003,7 +1003,8 @@ $('.ui-state-default').live('mouseout', function() {
       self::add_resource($resource);
     }
     // place a css class on the body if JavaScript enabled. And output the resources
-    return self::internal_dump_javascript('$("body").addClass("js");', '', '', self::$required_resources);
+    return self::internal_dump_resources(self::$required_resources) . 
+        self::get_scripts('$("body").addClass("js");', '', '', true);
   }
 
   /**
@@ -1019,7 +1020,8 @@ $('.ui-state-default').live('mouseout', function() {
     if (self::$default_styles) self::add_resource('defaultStylesheet');
     // Jquery validation js has to be added at this late stage, because only then do we know all the messages required.
     self::setup_jquery_validation_js();
-    $dump = self::internal_dump_javascript(self::$javascript, self::$late_javascript, self::$onload_javascript, self::$required_resources);
+    $dump = self::internal_dump_resources(self::$required_resources);
+    $dump .= self::get_scripts(self::$javascript, self::$late_javascript, self::$onload_javascript, true);
     // ensure scripted JS does not output again if recalled.
     self::$javascript = "";
     self::$late_javascript = "";
@@ -1032,7 +1034,7 @@ $('.ui-state-default').live('mouseout', function() {
    * as flexible parameters, rather that using the globals.
    * @access private
    */
-  protected static function internal_dump_javascript($javascript, $late_javascript, $onload_javascript, $resources) {
+  protected static function internal_dump_resources($resources) {
     $libraries = '';
     $stylesheets = '';
     if (isset($resources)) {
@@ -1059,10 +1061,22 @@ $('.ui-state-default').live('mouseout', function() {
         }
       }
     }
+    return $stylesheets.$libraries;
+  }
+  
+  /**
+   * A utility function for building the inline script content which should be inserted into a page from the javaascript,
+   * late javascript and onload javascript. Can optionally include the script tags wrapper around the script generated.
+   * @param string $javascript JavaScript to run when the page is ready, i.e. in $(document).ready.
+   * @param string $late_javascript JavaScript to run at the end of $(document).ready.
+   * @param string $onload_javascript JavaScript to run in the window.onLoad handler which comes later in the page load process.
+   * @param bool $includeWrapper If true then includes script tags around the script.
+   */
+  public static function get_scripts($javascript, $late_javascript, $onload_javascript, $includeWrapper=false) {
     if (!empty($javascript) || !empty($late_javascript) || !empty($onload_javascript)) {
-      $script = "<script type='text/javascript'>/* <![CDATA[ */
-if (typeof indiciaData==='undefined') {
-  indiciaData = {};
+      $script = $includeWrapper ? "<script type='text/javascript'>/* <![CDATA[ */\n" : "";
+      $script .= "if (typeof indiciaData==='undefined') {
+  indiciaData = {onloadFns: []};
 }
 indiciaData.windowLoaded=false;
 ";
@@ -1072,17 +1086,26 @@ indiciaData.windowLoaded=false;
       if (!self::$is_ajax)
         $script .= "});\n";
       if (!empty($onload_javascript)) {
-        if (!self::$is_ajax)
-          $script .= "window.onload = function() {\n";
-        $script .= "$onload_javascript\nindiciaData.windowLoaded=true;\n";
-        if (!self::$is_ajax)
-          $script .= "};\n";
+        if (self::$is_ajax)
+          // ajax requests are simple - page has already loaded so just return the javascript
+          $script .= "$onload_javascript\n";
+        else {
+          // create a function that can be called from window.onLoad. Don't put it directly in the onload
+          // in case another form is added to the same page which overwrites onload.
+          $script .= "indiciaData.onloadFns.push(function() {\n$onload_javascript\n});\n";
+          $script .= "window.onload = function() {\n".
+              "  $.each(indiciaData.onloadFns, function(idx, fn) {\n".
+              "    fn();\n".
+              "  });\n".
+              "  indiciaData.windowLoaded=true\n".              
+              "}\n";
+          }              
       }
-      $script .= "/* ]]> */</script>";
+      $script .= $includeWrapper ? "/* ]]> */</script>\n" : "";
     } else {
       $script='';
-    }
-    return $stylesheets.$libraries.$script;
+    } 
+    return $script; 
   }
 
   /**

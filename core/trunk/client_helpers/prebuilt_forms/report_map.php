@@ -102,7 +102,8 @@ class iform_report_map {
           'description' => 'Choose the behaviour you want when clicking on distribution points on the map. The output can display as a popup, '.
               'or can be loaded into the div specified in the next parameter. If you select to filter Indicia '.
               'report grids, then this assumes you have built a page containing other report grids e.g. by following '.
-              '<a href="http://code.google.com/p/indicia/wiki/DrupalDashboardReporting">this tutorial</a>.',
+              '<a href="http://code.google.com/p/indicia/wiki/DrupalDashboardReporting">this tutorial</a>. The report you are using must '.
+              'have a parameter of type "idlist" which allows the report to filter to the selection on the map.',
           'type' => 'select',
           'options' => array(
             'none' => 'No action',

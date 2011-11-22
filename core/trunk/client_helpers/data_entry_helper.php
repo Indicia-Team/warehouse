@@ -3132,7 +3132,7 @@ if (errors.length>0) {
     // For clean code, the jquery_ui stuff should have gone out in the page header, but just in case.
     // Don't bother from inside Drupal, since the header is added after the page code runs
     if (!in_array('jquery_ui', self::$dumped_resources) && !defined('DRUPAL_BOOTSTRAP_CONFIGURATION')) {
-      $r = self::internal_dump_javascript('', '', '', array('jquery_ui'));
+      $r = self::internal_dump_resources(array('jquery_ui'));
       array_push(self::$dumped_resources, 'jquery_ui');
     } else {
       $r = '';
