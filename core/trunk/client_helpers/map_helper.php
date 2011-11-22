@@ -211,8 +211,8 @@ class map_helper extends helper_base {
         $presetLayers[] = 'google_satellite';
         $presetLayers[] = 'google_hybrid';
         $presetLayers[] = 'google_physical';
-        // Fallback as we don't need a key for this.
         $presetLayers[] = 'virtual_earth';
+        $presetLayers[] = 'osm';
       }
       $options = array_merge(array(
           'indiciaSvc'=>self::$base_url,

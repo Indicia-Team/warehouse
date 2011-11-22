@@ -398,7 +398,8 @@ mapInitialisationHooks = [];
         bing_hybrid : function() { return new OpenLayers.Layer.Bing({name: 'Bing Hybrid', 'type': 'AerialWithLabels', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
         bing_shaded : function() { return new OpenLayers.Layer.Bing({name: 'Bing Shaded', 'type': 'road', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
         multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
-        multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); }
+        multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); },
+        osm : function() { return new OpenLayers.Layer.OSM(); }
       };
       // To protect ourselves against exceptions because the Google script would not link up, we
       // only enable these layers if the Google constants are available. We separately check for google V2 and V3 layers
