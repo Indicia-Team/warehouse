@@ -97,7 +97,8 @@ function iform_map_get_map_parameters() {
         'bing_shaded' => 'Bing Shaded',
         'multimap_default' => 'Multimap',
         'multimap_landranger' => 'Multimap with OS Landranger',
-        'osm' => 'Open Street Map'
+        'osm' => 'OpenStreetMap',
+        'osm_th' => 'OpenStreetMap Tiles@Home'
       ),
       'group'=>'Base Map Layers',
       'required'=>false

@@ -53,8 +53,10 @@ class map_helper extends helper_base {
   * <li><b>readAuth</b><br/>
   * </li>
   * <li><b>height</b><br/>
+  * Height of the map panel, in pixels.
   * </li>
   * <li><b>width</b><br/>
+  * Width of the map panel, in pixels or as a percentage if followed by a % symbol.
   * </li>
   * <li><b>initial_lat</b><br/>
   * Latitude of the centre of the initially displayed map, using WGS84.
@@ -71,7 +73,10 @@ class map_helper extends helper_base {
   * <li><b>displayFormat</b><br/>
   * </li>
   * <li><b>presetLayers</b><br/>
-  * </li>
+  * Array of preset layers to include. Options are 'google_physical', 'google_streets', 'google_hybrid',
+  * 'google_satellite', 'openlayers_wms', 'nasa_mosaic', 'virtual_earth' (deprecated, use bing_aerial),
+  * 'bing_aerial', 'bing_hybrid, 'bing_shaded', 'multimap_default', 'multimap_landranger', 
+  * 'osm' (for OpenStreetMap), 'osm_th' (for OpenStreetMap Tiles@Home).</li>
   * <li><b>tilecacheLayers</b><br/>
   * Array of layer definitions for tilecaches, which are pre-cached background tiles. They are less flexible but much faster
   * than typical WMS services. The array is associative, with the following keys:
