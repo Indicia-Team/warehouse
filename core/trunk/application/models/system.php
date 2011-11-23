@@ -28,17 +28,14 @@
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class System_Model extends Model
+class System_Model extends ORM
 {
+    protected $table_names_plural = FALSE;
+    
     /**
      * @var array $system_data
      */
     private $system_data;
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     /**
      * get indicia version
@@ -64,6 +61,20 @@ class System_Model extends Model
       if (isset($this->system_data[$name]))
         $data = $this->system_data[$name];
       return isset($data) ? $data->last_scheduled_task_check : 0;
+    }
+    
+    /**
+     * get indicia version
+     * @param string $name Name of the script that was run last in the update process
+     * @return string
+     */
+    public function getLastRunScript($name='Indicia')
+    {
+      $this->getSystemData($name);
+      if (isset($this->system_data[$name]))
+        $data = $this->system_data[$name];
+      // note last_run_script only exists after v0.8.
+      return isset($data) && isset($data->last_run_script) ? $data->last_run_script : '';
     }
 
     /**

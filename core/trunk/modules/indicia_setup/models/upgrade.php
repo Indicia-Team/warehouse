@@ -30,7 +30,13 @@ class Upgrade_Model extends Model
      */
     public function run()
     {
-      $system = new System_Model();
+      $system = ORM::Factory('system');
+      // Need to ensure system table has a last_run_script. It was not in the original 
+      // update process pre v0.8, but is required for 0.8 and later. As it is part of the upgrade
+      // process it makes sense to add this here rather than via a script.
+      if (!array_key_exists('last_run_script', $system->as_array())) {
+        $this->db->query('ALTER TABLE system ADD last_run_script VARCHAR(500) null');
+      }
       // version in the file system
       $new_version = kohana::config('version.version');
       // version in the database
@@ -45,19 +51,21 @@ class Upgrade_Model extends Model
       if (1 == version_compare('0.2.3', $old_version) ) {
         $old_version='0.2.3';
       }
-      $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version);
+      $last_run_script = $system->getLastRunScript('Indicia');
+      $this->applyUpdateScripts($this->base_dir . "/modules/indicia_setup/", 'Indicia', $old_version, $last_run_script);
       // need to look for any module with a db folder, then read its system version and apply the updates.
       foreach (Kohana::config('config.modules') as $path) {
         // skip the indicia_setup module db files since they are for the main app
         if (basename($path)!=='indicia_setup' && file_exists("$path/db/")) {
           $old_version = $system->getVersion(basename($path));
-          $this->applyUpdateScripts("$path/", basename($path), $old_version);
+          $last_run_script = $system->getLastRunScript(basename($path));
+          $this->applyUpdateScripts("$path/", basename($path), $old_version, $last_run_script);
         }
       }
       // @todo set_new_version for diff modules
     }
 
-    private function applyUpdateScripts($baseDir, $appName, $old_version) {
+    private function applyUpdateScripts($baseDir, $appName, $old_version, $last_run_script) {
       try
       {
         $currentVersionNumbers = explode('.', $old_version);
@@ -73,16 +81,10 @@ class Upgrade_Model extends Model
             kohana::log('debug', "Method ran for $version_name");
           }
           if (file_exists($baseDir . "db/" . $version_name)) {
-            // upgrades cannot proceed without directory permissions being sorted, because otherwise we cannot write the ____*____ files which
-            // track the last run script.
-            if (!is_writeable($baseDir."db/$version_name")) {
-              throw new Exception("You cannot upgrade at the moment until the directory permissions on the Warehouse are corrected. ".
-                 "Write access is required to the $baseDir"."db/$version_name folder on the server.");
-            }
             // start transaction for each folder full of scripts
             $this->begin();
             // we have a folder containing scripts
-            $this->execute_sql_scripts($baseDir, $version_name);
+            $this->execute_sql_scripts($baseDir, $version_name, $appName, $last_run_script);
             $updatedTo = implode('.', $currentVersionNumbers);
             // update the version number of the db since we succeeded
             $this->set_new_version($updatedTo, $appName);
@@ -207,16 +209,17 @@ class Upgrade_Model extends Model
      * @param string $baseDir directory to the module folder updgrades are in.
      * @param string $upgrade_folder folder version name
      */
-    public function execute_sql_scripts($baseDir, $upgrade_folder)
+    public function execute_sql_scripts($baseDir, $upgrade_folder, $appName, $last_run_script)
     {
       $file_name = array();
       $full_upgrade_folder = $baseDir . "db/" . $upgrade_folder;
       
-      // get last executed sql file name
-      $orig_last_executed_file = $this->get_last_executed_sql_file_name($full_upgrade_folder);
-
-      $orig_last_executed_file = str_replace("____", "", $orig_last_executed_file).".sql";
-      $last_executed_file=$orig_last_executed_file;
+      // get last executed sql file name. If not in the parameter (which loads from the db via the
+      // system model), then it must be from an old version of Indicia pre 0.8 so has the last
+      // run script saved as a file in the db scripts folder.
+      if (empty($last_run_script))
+        $last_run_script = $this->get_last_executed_sql_file_name($full_upgrade_folder, $appName);
+      $original_last_run_script = $last_run_script;
 
       if ( (($handle = @opendir( $full_upgrade_folder ))) != FALSE )
       {
@@ -240,7 +243,7 @@ class Upgrade_Model extends Model
       try
       {
         foreach($file_name as $name) {
-          if (strcmp($name, $last_executed_file)>0 || empty($last_executed_file)) {
+          if (strcmp($name, $last_run_script)>0 || empty($last_run_script)) {
             if(false === ($_db_file = file_get_contents( $full_upgrade_folder . '/' . $name ))) {
               throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
             }
@@ -251,7 +254,7 @@ class Upgrade_Model extends Model
             }
             kohana::log('debug', $_db_file);
             $result = $this->db->query($_db_file);
-            $last_executed_file = $name;
+            $last_run_script = $name;
           }
         }
       }
@@ -260,36 +263,25 @@ class Upgrade_Model extends Model
         kohana::log('error', "Error in file: " . $full_upgrade_folder . '/' . $name);
         throw $e;
       }      
-      $this->update_last_executed_sql_file($full_upgrade_folder, $orig_last_executed_file, $last_executed_file);        
+      $this->update_last_executed_sql_file($full_upgrade_folder, $appName, $original_last_run_script, $last_run_script);        
       return true;
     }
 
   /**
    * Updates the last executed sql file name after each successful script run.
    */
-  private function update_last_executed_sql_file($full_upgrade_folder, $prev, $next) {
-    if ($prev!=$next) {
-      if (false === @file_put_contents( $full_upgrade_folder . '/____' . str_replace('.sql', '', $next) . '____', 'nop' ))
-      {
-        throw new  Exception("Couldn't write last executed file name: ". $full_upgrade_folder . '/____' . str_replace(".sql", "", $prev) . '____');
-      }
-  
-      // remove the previous last executed file name
-      if ($prev!=".sql")
-      {
-        if( false === @unlink($full_upgrade_folder . '/____' . str_replace('.sql', '', $prev) .'____'))
-        {
-          throw new  Exception("Couldn't delete previous executed file name: " . $full_upgrade_folder . '/' . $prev);
-        }
-      }
-    }  
+  private function update_last_executed_sql_file($full_upgrade_folder, $appName, $prev, $next) {
+    $this->db->update('system', array('last_run_script'=>$next), array('name'=>$appName));  
   }
   
   /**
    * Find the file in the directory which is prefixed ____, if it exists. This denotes the last run script from a 
-   * previous upgrade.   
+   * previous upgrade.
+   * Note that this approach of hanlding last upgrade script is no longer used, but the method is kept
+   * for handling upgrades from previous versions. The last upgrade script is instead stored in the db
+   * as this reduces the requirement to mess around with file privileges.   
    */
-  private  function get_last_executed_sql_file_name( $_full_upgrade_folder_path) {
+  private  function get_last_executed_sql_file_name($_full_upgrade_folder_path, $appName='') {
     if ( (($handle = @opendir( $_full_upgrade_folder_path ))) != FALSE ) {
       while ( (( $file = readdir( $handle ) )) != false ) {
         if ( !preg_match("/^____.*____$/", $file) ) {

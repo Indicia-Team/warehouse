@@ -334,10 +334,6 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/application/cache',
           'the warehouse to cache information to improve performance',
           'the warehouse cannot cache information to improve performance');
-    self::check_dir_permission($writeable, $good_dirs, $bad_dirs, 'database update folders',
-          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
-          'the database upgrades to be tracked',
-          'the database upgrades cannot be tracked');
     if (array_key_exists('ack_permissions', $_SESSION)) {
       if (!$problems_only) {
         array_push($messages, array(
@@ -371,6 +367,10 @@ class config_test {
           dirname(dirname(dirname(dirname(__file__ )))) . '/reports/trigger_templates',
           'the trigger and notification templates to be accessed',
           'the trigger and notification templates cannot be accessed');
+      self::check_dir_permission($readonly, $good_dirs, $bad_dirs, 'database update folders',
+          dirname(dirname(dirname(dirname(__file__ )))) . '/modules/indicia_setup/db',
+          'the database upgrades to be accessed',
+          'the database upgrades cannot be accessed');
 
       if (count($good_dirs)>0 && !$problems_only) {
         array_push($messages, array(
