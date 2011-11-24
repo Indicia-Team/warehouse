@@ -704,7 +704,7 @@ mapInitialisationHooks = [];
       var div = this;
 
       // Create a projection to represent data in the Indicia db
-      div.indiciaProjection = new OpenLayers.Projection('EPSG:900913');
+      div.indiciaProjection = new OpenLayers.Projection('EPSG:3857');
       olOptions.controls = [
             new OpenLayers.Control.Navigation(),
             new OpenLayers.Control.ArgParser(),
@@ -947,7 +947,7 @@ mapInitialisationHooks = [];
               } else {
                 sref = lonlat.lat + ', ' + lonlat.lon;
               }
-              if (outputSystem != '900913') {
+              if (outputSystem != '900913' && outputSystem != '3857') {
                 lonlat.transform(div.map.projection, div.indiciaProjection);
               }
               wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
@@ -1193,7 +1193,7 @@ $.fn.indiciaMapPanel.georeferenceLookupSettings = {
  * Default options to pass to the openlayers map constructor
  */
 $.fn.indiciaMapPanel.openLayersDefaults = {
-    projection: 900913,
+    projection: 3857,
     displayProjection: 4326,
     units: "m",
     numZoomLevels: 18,
