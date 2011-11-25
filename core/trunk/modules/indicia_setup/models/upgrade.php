@@ -225,34 +225,29 @@ class Upgrade_Model extends Model
       {
           while ( (( $file = readdir( $handle ) )) != false )
           {
-              if ( !preg_match("/^20.*\.sql$/", $file) )
-              {
-                  continue;
+              if ( !preg_match("/^20.*\.sql$/", $file) ) {
+                continue;
               }
-
               $file_name[] = $file;
           }
           @closedir( $handle );
       }
-      else
-      {
-          throw new  Exception("Cant open dir " . $full_upgrade_folder);
+      else {
+        throw new  Exception("Cant open dir " . $full_upgrade_folder);
       }
-
-      sort($file_name);        
+      sort($file_name);      
       try
-      {
+      { 
         foreach($file_name as $name) {
           if (strcmp($name, $last_run_script)>0 || empty($last_run_script)) {
             if(false === ($_db_file = file_get_contents( $full_upgrade_folder . '/' . $name ))) {
-              throw new  Exception("Cant open file " . $full_upgrade_folder . '/' . $name);
+              throw new  Exception("Can't open file " . $full_upgrade_folder . '/' . $name);
             }
             kohana::log('debug', "Upgrading file $name");
             // @todo Look into why utf8 files do not run without conversion to ascii.
             if (!utf8::is_ascii($_db_file)) {
               $_db_file = utf8::strip_non_ascii($_db_file);
             }
-            kohana::log('debug', $_db_file);
             $result = $this->db->query($_db_file);
             $last_run_script = $name;
           }
@@ -262,7 +257,7 @@ class Upgrade_Model extends Model
       {
         kohana::log('error', "Error in file: " . $full_upgrade_folder . '/' . $name);
         throw $e;
-      }      
+      }
       $this->update_last_executed_sql_file($full_upgrade_folder, $appName, $original_last_run_script, $last_run_script);        
       return true;
     }
@@ -284,10 +279,10 @@ class Upgrade_Model extends Model
   private  function get_last_executed_sql_file_name($_full_upgrade_folder_path, $appName='') {
     if ( (($handle = @opendir( $_full_upgrade_folder_path ))) != FALSE ) {
       while ( (( $file = readdir( $handle ) )) != false ) {
-        if ( !preg_match("/^____.*____$/", $file) ) {
+        if ( !preg_match("/^____(?<file>.*)____$/", $file, $matches) ) {
           continue;
         }
-        return $file;
+        return $matches['file'].'.sql';
       }
       @closedir( $handle );
 
