@@ -90,7 +90,7 @@ class Upgrade_Model extends Model
             $this->set_new_version($updatedTo, $appName);
             // commit transaction
             $this->commit();
-            kohana::log('debug', "Scripts ran for $version_name");
+            kohana::log('info', "Scripts ran for $version_name");
           }
           
           // Now find the next version number. We start by incrementing the smallest part of the version (level=2), if that does not work
@@ -170,46 +170,12 @@ class Upgrade_Model extends Model
     }
     
     /**
-     * log error message
-     *
-     * @param object $e
-     */
-    public function log($e)
-    {
-        $message  = "\n\n\n________________________________________________\n";
-        $message .= "Upgrade Error - Time: " . date(DATE_RFC822) . "\n";
-        $message .= "MESSAGE: "  .$e->getMessage()."\n";
-        $message .= "CODE: "     .$e->getCode()."\n";
-        $message .= "FILE: "     .$e->getFile()."\n";
-        $message .= "LINE: "     .$e->getLine()."\n";
-
-        Kohana::log('error', $message);
-
-        return $message;
-    }
-
-    /**
-     * Build the system config content of indicia.php
-     *
-     * @param string $new_version New version number
-     */
-    private function buildConfigFileContent($new_version)
-    {
-      $str = "<?php \n";
-      $str .= "\$config['version'] = '$new_version';\n";
-      $str .= "\$config['upgrade_date'] = '".date("F j, Y, g:i a")."';\n";
-      $str .= "?>";
-
-      return $str;
-    }
-    
-    /**
      * execute all sql srips from the upgrade folder
      *
      * @param string $baseDir directory to the module folder updgrades are in.
      * @param string $upgrade_folder folder version name
      */
-    public function execute_sql_scripts($baseDir, $upgrade_folder, $appName, $last_run_script)
+    public function execute_sql_scripts($baseDir, $upgrade_folder, $appName, &$last_run_script)
     {
       $file_name = array();
       $full_upgrade_folder = $baseDir . "db/" . $upgrade_folder;
@@ -256,6 +222,7 @@ class Upgrade_Model extends Model
       catch(Exception $e)
       {
         kohana::log('error', "Error in file: " . $full_upgrade_folder . '/' . $name);
+        kohana::log('error', $e->getMessage());
         throw $e;
       }
       $this->update_last_executed_sql_file($full_upgrade_folder, $appName, $original_last_run_script, $last_run_script);        
