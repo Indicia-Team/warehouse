@@ -614,7 +614,7 @@ class iform_mnhnl_dynamic_1 {
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
       
-    $hiddens .= get_user_profile_hidden_inputs($attributes, $args);
+    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode);
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     $r .= "<div id=\"controls\">\n";

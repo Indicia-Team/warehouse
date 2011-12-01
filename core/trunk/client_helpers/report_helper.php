@@ -404,7 +404,7 @@ class report_helper extends helper_base {
       // Now AJAXify the grid
       self::add_resource('reportgrid');
       $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
-      $group = preg_replace( "/[^a-z0-9]+/", "_", $options['reportGroup']);
+      $group = preg_replace( "/[^a-zA-Z0-9]+/", "_", $options['reportGroup']);
       global $indicia_templates;
       
       self::$javascript .= "
@@ -1022,12 +1022,12 @@ var defaultStyle = OpenLayers.Util.applyDefaults($defsettings, OpenLayers.Featur
 var selectStyle = OpenLayers.Util.applyDefaults($selsettings, OpenLayers.Feature.Vector.style['select']);
   
 var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-var reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
+indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
 features = [];\n";
         foreach ($records as $record)
           report_helper::$javascript.= "addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
         report_helper::$javascript.= "  
-reportlayer.addFeatures(features);\n";
+indiciaData.reportlayer.addFeatures(features);\n";
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1047,17 +1047,22 @@ reportlayer.addFeatures(features);\n";
           $proxy = '';
         }
         $layerUrl = $proxy . self::$geoserver_url . 'wms';
-        map_helper::$javascript .= "  reportlayer = new OpenLayers.Layer.WMS('Report output',
+        map_helper::$javascript .= "  indiciaData.reportlayer = new OpenLayers.Layer.WMS('Report output',
       '$layerUrl', { layers: '".$options['geoserverLayer']."', transparent: true,
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
       report_helper::$javascript.= "
+mapInitialisationHooks.push(function(div) {
+  if (indiciaData.reportlayer.CLASS_NAME==='OpenLayers.Layer.Vector') {
+    div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
+  }
+});
 mapSettingsHooks.push(function(opts) {
   opts.reportGroup = '".$options['reportGroup']."';
-  opts.layers.push(reportlayer);\n";
+  opts.layers.push(indiciaData.reportlayer);\n";
       if ($options['clickable'])
-        report_helper::$javascript .= "  opts.clickableLayers.push(reportlayer);\n";
+        report_helper::$javascript .= "  opts.clickableLayers.push(indiciaData.reportlayer);\n";
       report_helper::$javascript .= "  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
       if ($options['clickableLayersOutputDiv'])
         report_helper::$javascript .= "  opts.clickableLayersOutputDiv='".$options['clickableLayersOutputDiv']."';\n";

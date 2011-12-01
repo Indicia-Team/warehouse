@@ -181,7 +181,7 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
  *   emailShow - boolean, if true then email values should be displayed rather than hidden.
  * @return string HTML for the hidden inputs.
  */
-function get_user_profile_hidden_inputs(&$attributes, $args) {
+function get_user_profile_hidden_inputs(&$attributes, $args, $mode) {
   $hiddens = '';
   global $user;
   $logged_in = $user->uid>0;

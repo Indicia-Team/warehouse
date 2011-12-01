@@ -591,7 +591,8 @@ mapInitialisationHooks = [];
                 features = features.concat(layer.selectedFeatures);
               });
               // now filter the report, or display output in a popup or div depending on settings.
-              if (div.settings.clickableLayersOutputMode==='report' && div.settings.reportGroup!==null) {
+              if (div.settings.clickableLayersOutputMode==='report' && div.settings.reportGroup!==null
+                  && typeof indiciaData.reports!=="undefined") {
                 // grab the feature ids
                 ids = [];
                 $.each(features, function(idx, feature) {
