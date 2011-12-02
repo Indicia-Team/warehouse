@@ -89,6 +89,7 @@ function sendEmail() {
       data,
       function (response) {
         if (response === 'OK') {
+          $.fancybox.close();
           alert(indiciaData.popupTranslations.emailSent);
         } else {
           $.fancybox('<div class="manual-email">' + indiciaData.popupTranslations.requestManualEmail +

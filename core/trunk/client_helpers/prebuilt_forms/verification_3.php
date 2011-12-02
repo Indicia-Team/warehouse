@@ -525,7 +525,7 @@ record_status=C'
          wordwrap($emailBody, 70),
          $headers);
     if ($success)
-      echo 'OK x';
+      echo 'OK';
     else  
       echo 'Fail';
   }
