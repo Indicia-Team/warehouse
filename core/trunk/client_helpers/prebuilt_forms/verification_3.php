@@ -546,13 +546,13 @@ record_status=C'
        lang::get("{1} week ago"), 
        lang::get("{1} month ago"), 
        lang::get("{1} year ago"), 
-       lang::get("{1] decade ago"));
+       lang::get("{1} decade ago"));
    $periodsPlural = array(
        lang::get("{1} seconds ago"),
-       lang::get("{1] minutes ago"), 
+       lang::get("{1} minutes ago"), 
        lang::get("{1} hours ago"), 
        lang::get("{1} days ago"), 
-       lang::get("{!} weeks ago"), 
+       lang::get("{1} weeks ago"), 
        lang::get("{1} months ago"), 
        lang::get("{1} years ago"), 
        lang::get("{1} decades ago"));
