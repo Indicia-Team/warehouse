@@ -151,8 +151,13 @@ function iform_report_get_report_options($args, $auth) {
     'paramDefaults' => $defaults,
     'galleryColCount' => isset($args['gallery_col_count']) ? $args['gallery_col_count'] : 1,
     'headers' => isset($args['gallery_col_count']) && $args['gallery_col_count']>1 ? false : true,
-    'paramsInMapToolbar'=>isset($args['params_in_map_toolbar']) ? $args['params_in_map_toolbar'] : false
+    'paramsInMapToolbar'=>isset($args['params_in_map_toolbar']) ? $args['params_in_map_toolbar'] : false    
   );
+  // If in Drupal, allow the params panel to collapse.
+  if (function_exists('drupal_add_js')) {
+    drupal_add_js('misc/collapse.js');
+    $reportOptions['fieldsetClass'] = 'collapsible';
+  }
   
   if (empty($args['output']) || $args['output']=='default') {
     $reportOptions['autoParamsForm'] = true;
