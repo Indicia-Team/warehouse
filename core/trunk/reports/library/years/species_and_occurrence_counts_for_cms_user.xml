@@ -15,6 +15,7 @@
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       AND CAST(sav.int_value AS character varying)='#user_id#'
+      AND s.date_start is not null
       GROUP BY year, website_id
     UNION
       SELECT 'Total' as year, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
@@ -31,7 +32,8 @@
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       AND CAST(sav.int_value AS character varying)='#user_id#'
-      AND '#include_total#'!='no'
+      AND s.date_start is not null
+      HAVING '#include_total#'!='no'
       </query>
   <params>
     <param name='date_from' display='Date From' datatype='date' />
