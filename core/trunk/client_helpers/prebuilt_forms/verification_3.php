@@ -398,7 +398,7 @@ record_status=C'
       $r .= '<br/>' . lang::get('This is a record indicating absence.');
     $r .= "</td></tr>\n";
     foreach($data as $item) {
-      if (!empty($item['value'])) 
+      if (!is_null($item['value']) && $item['value'] != '') 
         $r .= "<tr><td><strong>".$item['caption']."</strong></td><td>".$item['value'] ."</td></tr>\n";
     }
     $r .= "</table>\n";

@@ -221,7 +221,7 @@ $(document).ready(function () {
   $('#btn-email').click(function () {
     var record = '';
     $.each(current_record.data, function (idx, obj) {
-      if (obj.value !== null) {
+      if (obj.value !== null && obj.value !=='') {
         record += obj.caption + ': ' + obj.value + "\n";
       }
     });
