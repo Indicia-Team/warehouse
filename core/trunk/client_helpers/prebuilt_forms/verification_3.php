@@ -367,7 +367,9 @@ record_status=C'
       array('caption'=>lang::get('Species'), 'value'=>data_entry_helper::$entity_to_load['occurrence:taxon']),
       array('caption'=>lang::get('Date'), 'value'=>data_entry_helper::$entity_to_load['sample:date']),
       array('caption'=>lang::get('Grid Ref.'), 'value'=>data_entry_helper::$entity_to_load['sample:entered_sref']),
-      array('caption'=>lang::get('Site'), 'value'=>implode(' | ', $siteLabels))
+      array('caption'=>lang::get('Site'), 'value'=>implode(' | ', $siteLabels)),
+      array('caption'=>lang::get('Comment'), 'value'=>data_entry_helper::$entity_to_load['sample:comment']),
+      array('caption'=>lang::get('Comment'), 'value'=>data_entry_helper::$entity_to_load['occurrence:comment'])
     );
     $smpAttrs = data_entry_helper::getAttributes(array(
         'id' => data_entry_helper::$entity_to_load['sample:id'],
@@ -405,6 +407,7 @@ record_status=C'
     $additional=array();
     $additional['wkt'] = data_entry_helper::$entity_to_load['occurrence:wkt'];
     $additional['taxon'] = data_entry_helper::$entity_to_load['occurrence:taxon'];
+    $additional['sample_id'] = data_entry_helper::$entity_to_load['occurrence:sample_id'];
     header('Content-type: application/json');
     echo json_encode(array(
       'content' => $r,
