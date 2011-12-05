@@ -1,4 +1,5 @@
 var mapDiv = null, occurrence_id = null, current_record = null, urlSep, validator;
+var email = {to:'', subject:'', body:'', type:''};
 
 function selectRow(tr) {
   // The row ID is row1234 where 1234 is the occurrence ID. 
@@ -58,21 +59,59 @@ function postOccurrence(occ) {
   $('#add-comment').remove();
 }
 
-function sendEmail() {
+function buildVerifierEmail() {
+  //Form to create email of record details
+  var record = '';
+  $.each(current_record.data, function (idx, obj) {
+    if (obj.value !== null && obj.value !=='') {
+      record += obj.caption + ': ' + obj.value + "\n";
+    }
+  });
+
+  record += "\n\n[Photos]\n\n[Comments]";
+
+  email.subject = indiciaData.email_subject_send_to_verifier
+      .replace('%taxon%', current_record.additional.taxon)
+      .replace('%id%', occurrence_id),
+  email.body = indiciaData.email_body_send_to_verifier
+      .replace('%taxon%', current_record.additional.taxon)
+      .replace('%id%', occurrence_id)
+      .replace('%record%', record);
+  $('#record-details-tabs').tabs('load', 0);
+  email.type = 'verifier';
+  popupEmail();
+}
+
+function popupEmail() {
+  $.fancybox('<form id="email-form"><fieldset class="popup-form">' +
+        '<legend>' + indiciaData.popupTranslations.emailTitle + '</legend>' +
+        '<label>To:</label><input type="text" id="email-to" class="email required"/><br />' +
+        '<label>Subject:</label><input type="text" id="email-subject" class="require" value="' + email.subject + '"/><br />' +
+        '<label>Body:</label><textarea id="email-body" class="required">' + email.body + '</textarea><br />' +
+        '<input type="hidden" id="set-status" value="' + status + '"/>' +
+        '<input type="submit" class="default-button" ' +
+            'value="' + indiciaData.popupTranslations.sendEmail + '" />' +
+        '</fieldset></form>');
+  validator = $('#email-form').validate({});
+  $('#email-form').submit(processEmail);  
+}
+
+function processEmail(){
+  //Complete creation of email of record details
   if (validator.numberOfInvalids()===0) {
-    var data = {
-      'to': $('#email-to').val(),
-      'subject': $('#email-subject').val(),
-      'body': $('#email-body').val()
-    };
+    email.to = $('#email-to').val();
+    email.subject = $('#email-subject').val();
+    email.body = $('#email-body').val();
+
+    if (email.type == 'verifier') {
     // ensure images are loaded
     $.ajax({
       url: indiciaData.ajaxUrl + '/imagesAndComments' + urlSep + 'occurrence_id=' + occurrence_id,
       async: false,
       dataType: 'json',
       success: function (response) {
-        data.body = data.body.replace(/\[Photos\]/g, response.images);
-        data.body = data.body.replace(/\[Comments\]/g, response.comments);
+          email.body = email.body.replace(/\[Photos\]/g, response.images);
+          email.body = email.body.replace(/\[Comments\]/g, response.comments);
       }
     });
     // set the status
@@ -83,26 +122,33 @@ function sendEmail() {
         'occurrence:record_status': status
       };
     postOccurrence(occ);
+    }
+
+    sendEmail();
+  }
+  return false;
+}
+
+function sendEmail() {
+  //Send an email
     // use an AJAX call to get the server to send the email
     $.post(
       indiciaData.ajaxUrl + '/email',
-      data,
+    email,
       function (response) {
         if (response === 'OK') {
           $.fancybox.close();
           alert(indiciaData.popupTranslations.emailSent);
         } else {
           $.fancybox('<div class="manual-email">' + indiciaData.popupTranslations.requestManualEmail +
-                '<div class="ui-helper-clearfix"><span class="left">To:</span><div class="right">' + data.to + '</div></div>' +
-                '<div class="ui-helper-clearfix"><span class="left">Subject:</span><div class="right">' + data.subject + '</div></div>' +
-                '<div class="ui-helper-clearfix"><span class="left">Content:</span><div class="right">' + data.body.replace(/\n/g, '<br/>') + '</div></div>' +
+              '<div class="ui-helper-clearfix"><span class="left">To:</span><div class="right">' + email.to + '</div></div>' +
+              '<div class="ui-helper-clearfix"><span class="left">Subject:</span><div class="right">' + email.subject + '</div></div>' +
+              '<div class="ui-helper-clearfix"><span class="left">Content:</span><div class="right">' + email.body.replace(/\n/g, '<br/>') + '</div></div>' +
                 '</div>');
         }
       }
     );
   }
-  return false;
-}
 
 function showComment(comment, username) {
   // Remove message that there are no comments
@@ -137,7 +183,6 @@ function saveComment() {
   );
 }
 
-
 function saveVerifyComment() {
   var status = $('#set-status').val(),
     comment = indiciaData.statusTranslations[status],
@@ -171,6 +216,16 @@ function showTab() {
   }
 }
 
+function setStatus(status) {
+  $.fancybox('<fieldset class="popup-form">' +
+        '<legend>' + indiciaData.popupTranslations.title.replace('{1}', indiciaData.popupTranslations[status]) + '</legend>' +
+        '<label>Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
+        '<input type="hidden" id="set-status" value="' + status + '"/>' +
+        '<button type="button" class="default-button" onclick="saveVerifyComment();">' +
+            indiciaData.popupTranslations.save.replace('{1}', indiciaData.popupTranslations['verb' + status]) + '</button>' +
+        '</fieldset>');
+}
+
 mapInitialisationHooks.push(function (div) {
   mapDiv = div;
   div.map.editLayer.style = null;
@@ -196,16 +251,6 @@ $(document).ready(function () {
     selectRow($(evt.target).parents('tr')[0]);
   });
 
-  function setStatus(status) {
-    $.fancybox('<fieldset class="popup-form">' +
-          '<legend>' + indiciaData.popupTranslations.title.replace('{1}', indiciaData.popupTranslations[status]) + '</legend>' +
-          '<label>Comment:</label><textarea id="verify-comment" rows="5" cols="80"></textarea><br />' +
-          '<input type="hidden" id="set-status" value="' + status + '"/>' +
-          '<button type="button" class="default-button" onclick="saveVerifyComment();">' +
-              indiciaData.popupTranslations.save.replace('{1}', indiciaData.popupTranslations['verb' + status]) + '</button>' +
-          '</fieldset>');
-  }
-
   $('#record-details-tabs').bind('tabsshow', function (evt, ui) {
     showTab();
   });
@@ -219,35 +264,8 @@ $(document).ready(function () {
   });
 
   $('#btn-email').click(function () {
-    var record = '';
-    $.each(current_record.data, function (idx, obj) {
-      if (obj.value !== null && obj.value !=='') {
-        record += obj.caption + ': ' + obj.value + "\n";
-      }
+    buildVerifierEmail();
     });
-
-    record += "\n\n[Photos]\n\n[Comments]";
-
-    var subject = indiciaData.email_subject_send_to_verifier
-        .replace('%taxon%', current_record.additional.taxon)
-        .replace('%id%', occurrence_id),
-      body = indiciaData.email_body_send_to_verifier
-        .replace('%taxon%', current_record.additional.taxon)
-        .replace('%id%', occurrence_id)
-        .replace('%record%', record);
-    $('#record-details-tabs').tabs('load', 0);
-    $.fancybox('<form id="email-form"><fieldset class="popup-form">' +
-          '<legend>' + indiciaData.popupTranslations.emailTitle + '</legend>' +
-          '<label>To:</label><input type="text" id="email-to" class="email required"/><br />' +
-          '<label>Subject:</label><input type="text" id="email-subject" class="require" value="' + subject + '"/><br />' +
-          '<label>Body:</label><textarea id="email-body" class="required">' + body + '</textarea><br />' +
-          '<input type="hidden" id="set-status" value="' + status + '"/>' +
-          '<input type="submit" class="default-button" ' +
-              'value="' + indiciaData.popupTranslations.sendEmail + '" />' +
-          '</fieldset></form>');
-    validator = $('#email-form').validate({});
-    $('#email-form').submit(sendEmail);
-  });
 
 });
 
