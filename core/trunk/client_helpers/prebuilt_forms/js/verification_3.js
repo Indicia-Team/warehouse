@@ -27,6 +27,19 @@ function selectRow(tr) {
   );
 }
 
+function getAttributeValue(caption) {
+  //returns the value of the attribute in the current_record.data with the caption supplied
+ var r = '';
+ $.each(current_record.data, function(){
+    if (this.caption == caption) {
+      //found attribute
+      r = this.value
+      return false;
+    }
+  });
+  return r
+}
+
 /** 
  * Post an object containing occurrence form data into the Warehouse. Updates the
  * visual indicators of the record's status.
@@ -78,14 +91,43 @@ function buildVerifierEmail() {
       .replace('%id%', occurrence_id)
       .replace('%record%', record);
   $('#record-details-tabs').tabs('load', 0);
+  email.to = '';
   email.type = 'verifier';
+  popupEmail();
+}
+
+function buildRecorderEmail(status, comment)
+{
+  if (status == 'V') {
+    email.subject = indiciaData.email_subject_verified;
+    email.body = indiciaData.email_body_verified;
+  }
+  else if (status == 'R') {
+    email.subject = indiciaData.email_subject_rejected;
+    email.body = indiciaData.email_body_rejected;
+  }
+
+  email.to = getAttributeValue(indiciaData.email_address_attribute);
+  email.subject = email.subject
+      .replace('%taxon%', current_record.additional.taxon)
+      .replace('%id%', occurrence_id)
+      .replace('%sample_id%', current_record.additional.sample_id);
+  email.body = email.body
+      .replace('%taxon%', current_record.additional.taxon)
+      .replace('%id%', occurrence_id)
+      .replace('%sample_id%', current_record.additional.sample_id)
+      .replace('%date%', current_record.additional.date)
+      .replace('%entered_sref%', current_record.additional.entered_sref)
+      .replace('%comment%', comment)
+      .replace('%verifier%', indiciaData.username);
+
   popupEmail();
 }
 
 function popupEmail() {
   $.fancybox('<form id="email-form"><fieldset class="popup-form">' +
         '<legend>' + indiciaData.popupTranslations.emailTitle + '</legend>' +
-        '<label>To:</label><input type="text" id="email-to" class="email required"/><br />' +
+        '<label>To:</label><input type="text" id="email-to" class="email required" value="' + email.to + '"/><br />' +
         '<label>Subject:</label><input type="text" id="email-subject" class="require" value="' + email.subject + '"/><br />' +
         '<label>Body:</label><textarea id="email-body" class="required">' + email.body + '</textarea><br />' +
         '<input type="hidden" id="set-status" value="' + status + '"/>' +
@@ -197,8 +239,19 @@ function saveVerifyComment() {
     'occurrence_comment:comment': comment,
     'occurrence_comment:person_name': indiciaData.username
   };
-  $.fancybox.close();
   postOccurrence(data);
+  
+  //Does the recorder email option exist?
+  var sendEmail = false
+  if (indiciaData.email_request_attribute !== '') {
+    //Find attribute to see if recorder wants email confirmation
+    if (getAttributeValue(indiciaData.email_request_attribute) == 1) {
+      sendEmail = true;
+      buildRecorderEmail(status, comment);
+    }
+  }
+  if (!sendEmail) $.fancybox.close();
+
 }
 
 function showTab() {

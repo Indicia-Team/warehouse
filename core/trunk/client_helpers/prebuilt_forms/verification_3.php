@@ -163,7 +163,7 @@ record_status=C'
           'description'=>'Default subject for the send to verifier email. Replacements allowed include %taxon% and %id%.',
           'type'=>'string',
           'default' => 'Record of %taxon% requires verification (ID:%id%)',
-          'group' => 'Notification emails'
+          'group' => 'Verifier emails'
         ), array(
           'name'=>'email_body_send_to_verifier',
           'caption'=>'Send to Verifier Email Body',
@@ -172,7 +172,62 @@ record_status=C'
           'default' => 'The following record requires verification. Please reply to this mail with the word Verified or Rejected '.
               'in the email body, followed by any comments you have including the proposed re-identification if relevant on the next line.'.
               "\n\n%record%",
-          'group' => 'Notification emails'
+          'group' => 'Verifier emails'
+        ), array(
+          'name'=>'email_request_attribute',
+          'caption'=>'Email Request Attribute',
+          'description'=>'Enter the caption of a sample attribute and the value will be checked and '.
+             'an email only sent if it is true. Leave blank if recorder emails are not required.',
+          'type'=>'string',
+          'default' => '',
+          'required'=>false,
+          'group' => 'Recorder emails',
+         ), array(
+          'name'=>'email_address_attribute',
+          'caption'=>'Email Address Attribute',
+          'description'=>'Enter the caption of the sample attribute being used to capture the ' .
+          'email address for the recorder.',
+          'type'=>'string',
+          'default' => '',
+          'required'=>false,
+          'group' => 'Recorder emails',
+        ),array(
+          'name'=>'email_subject_verified',
+          'caption'=>'Acceptance Email Subject',
+          'description'=>'Default subject for the acceptance email. Replacements allowed include '.
+              '%id% (occurrence id), %sample_id%, %taxon%.',
+          'type'=>'string',
+          'default' => 'Record of %taxon% verified',
+          'required'=>false,
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'email_body_verified',
+          'caption'=>'Acceptance Email Body',
+          'description'=>'Default body for the acceptance email. Replacements allowed include '.
+              '%id% (occurrence id), %sample_id%, %verifier% (username of verifier), %taxon%, %date%, %entered_sref%, %comment%.',
+          'type'=>'textarea',
+          'default' => "Your record of %taxon%, recorded on %date% at grid reference %entered_sref% has been checked by ".
+            "an expert and verified.\nMany thanks for the contribution.\n\n%verifier%",
+          'required'=>false,
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'email_subject_rejected',
+          'caption'=>'Rejection Email Subject',
+          'description'=>'Default subject for the rejection email. Replacements as for acceptance.',
+          'type'=>'string',
+          'default' => 'Record of %taxon% not verified',
+          'required'=>false,
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'email_body_rejected',
+          'caption'=>'Rejection Email Body',
+          'description'=>'Default body for the rejection email. Replacements as for acceptance.',
+          'type'=>'textarea',
+          'default' => "Your record of %taxon%, recorded on %date% at grid reference %entered_sref% has been checked by ".
+            "an expert but unfortunately it could not be verified because there was a problem with your photo.\n".
+            "Nonetheless we are grateful for your contribution and hope you will be able to send us further records.\n\n%verifier%",
+          'required'=>false,
+          'group' => 'Recorder emails'
         ), array(
           'name'=>'auto_discard_rows',
           'caption'=>'Automatically remove rows',
@@ -318,9 +373,21 @@ record_status=C'
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.T = "'.lang::get('Test record')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.S = "'.lang::get('Sent for verification')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.C = "'.lang::get('Awaiting verification')."\";\n";
+    
     data_entry_helper::$javascript .= 'indiciaData.email_subject_send_to_verifier = "'.$args['email_subject_send_to_verifier']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_verifier']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_send_to_verifier = "'.$body."\";\n";
+    
+    data_entry_helper::$javascript .= 'indiciaData.email_request_attribute = "'.$args['email_request_attribute']."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.email_address_attribute = "'.$args['email_address_attribute']."\";\n";
+   
+    data_entry_helper::$javascript .= 'indiciaData.email_subject_verified = "'.$args['email_subject_verified']."\";\n";
+    $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_verified']);
+    data_entry_helper::$javascript .= 'indiciaData.email_body_verified = "'.$body."\";\n";
+    
+    data_entry_helper::$javascript .= 'indiciaData.email_subject_rejected = "'.$args['email_subject_rejected']."\";\n";
+    $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_rejected']);
+    data_entry_helper::$javascript .= 'indiciaData.email_body_rejected = "'.$body."\";\n";
     return $r;
     
   }
@@ -408,6 +475,8 @@ record_status=C'
     $additional['wkt'] = data_entry_helper::$entity_to_load['occurrence:wkt'];
     $additional['taxon'] = data_entry_helper::$entity_to_load['occurrence:taxon'];
     $additional['sample_id'] = data_entry_helper::$entity_to_load['occurrence:sample_id'];
+    $additional['date'] = data_entry_helper::$entity_to_load['sample:date'];
+    $additional['entered_sref'] = data_entry_helper::$entity_to_load['sample:entered_sref'];
     header('Content-type: application/json');
     echo json_encode(array(
       'content' => $r,
