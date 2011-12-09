@@ -4,6 +4,8 @@
   <params>
     <param name='website_id' display='Website: ' description='Select the website to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM websites' />
+    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
+        query='SELECT id, title as caption FROM surveys' />
     <param name='orig_location_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate orginal locations:' datatype='int' />
     <param name='new_location_type_id' display='Location Type: ' description='Term ID for the Location Type used to indicate new locations:' datatype='int' />
   </params>
@@ -11,9 +13,13 @@
     <subTable tablename="locations" where="#this#.deleted = FALSE AND #this#.location_type_id IN (#orig_location_type_id#, #new_location_type_id#) " >
       <tabColumn name='name' display='Site'/>
       <tabColumn name='code' display='Code'/>
-      <tabColumn name='centroid_sref' display='Coordinates'/>
+      <tabColumn name='x' display='X' func="(split_part(#this#.centroid_sref, ', ', 1))" />
+      <tabColumn name='y' display='Y' func="(split_part(#this#.centroid_sref, ', ', 2))" />
       <tabColumn name='comment' display='Comment'/>
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
   </table>
+  <order_bys>
+    <order_by>name</order_by>
+  </order_bys>
 </report>

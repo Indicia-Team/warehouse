@@ -84,9 +84,8 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
         $param['default'] =
              "=Sites=\r\n".
               "[lux5kgrid2]\r\n".
-              "[location buttons]\r\n".
               "[map]\r\n".
-              "@layers=[\"ParentLocationLayer\",\"SiteListLayer\"]\r\n".
+              "@layers=[\"ParentLocationLayer\",\"SitePointLayer\",\"SitePathLayer\",\"SiteAreaLayer\",\"SiteLabelLayer\"]\r\n".
               "@editLayer=false\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
@@ -147,7 +146,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-  </div>'.iform_mnhnl_locModTool(self::$auth, $args);
+  </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
     return $retVal;
   }
   /**
@@ -224,61 +223,138 @@ deleteSurvey = function(sampleID){
     if (!$noObAttr) return lang::get('This form must be used with a survey that has the No observation Sample attribute associated with it.');
 
     data_entry_helper::$javascript .= "
-onChildFeatureLoad = function(feature, data, child_id, options){
-  if(options.addGridRows){
-    cgRownum++;
-    newCGrow = jQuery('.cgCloneableRow').clone().removeClass('cgCloneableRow').addClass('cggrid-row').data('rowNum', cgRownum);
-    newCGrow.find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
-    newCGrow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-namecell,.cggrid-name,.remove-cgnewrow)').attr('disabled','disabled');
-    var name=newCGrow.find('.cggrid-name').attr('name');
-    newCGrow.find('.cggrid-namecell').empty().append('<input name=\"'+name+'\" class=\"cggrid-name narrow\" value=\"'+data.name+'\" readonly=\"readonly\" ><input type=\"hidden\" name=\"CG:--rownnum--:--sampleid--:location_id\" value=\"'+data.id+'\" >');
-//    newCGrow.find('.cggrid-centroid_sref,.cggrid-centroid_geom,.cggrid-boundary_geom,.cggrid-location_type_id').remove(); // All these are remove by the cggrid-name empty above
-    jQuery.each(newCGrow.children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownnum--/g, cgRownum);});
-    newCGrow.find('.remove-cgnewrow').removeClass('remove-cgnewrow').addClass('clear-cgrow');
-    newCGrow.appendTo('#conditions-grid');
-    newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
-    // Species grid 1) add to header, 2) add to cloneable row, 3) assume no species existing rows, 4) add no observation
-    jQuery('<th class=\"smp-'+cgRownum+'\">'+data.name+'</th>').css('opacity',0.25).appendTo('#species-grid-header');
-    jQuery('<td class=\"smp-'+cgRownum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRownum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" ></td>').css('opacity',0.25).appendTo('.sgCloneableRow');
-    jQuery('.sgNoObRow').each(function(i, Row) {
-      var newNoObCell = jQuery('<td class=\"smp-'+cgRownum+'\">'+
-        '<input type=\"hidden\" name=\"CG:'+cgRownum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"0\" \"/>'+
-        '<input type=\"checkbox\" name=\"CG:'+cgRownum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"1\" class=\"cgAttr\" disabled=\"disabled\" />'+
-        '</td>').css('opacity',0.25).appendTo(Row);
-      newNoObCell.find(':checkbox').rules('add', {no_observation: cgRownum});
-    });
-  }
-  recalcNumSites();
-  setNameDropDowns(true, false);
+// because the fetch is generic, we can't guarentee that the sort order will be numeric eg name 2 comes after 10.
+hook_loadLocation= function(feature) {
+  if(feature.attributes.new) setNameDropDowns(false, false);
+  else setNameDropDowns(true, false);
 }
-";
-    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, $tabalias, $options, self::$node,
-      array('initLoadArgs' => '{addGridRows: false}',
-       'parentFieldID' => 'location_id',
-       'parentFieldName' => 'sample:location_id'
-       ));
-    
-    data_entry_helper::$javascript .= "
-jQuery(\"#location_id\").change(function(){
-  drawControl.activate();
+createGridEntries = function(feature, isnew) {
+  cgRowNum++;
+  var mySiteNum=false;
+  var name = '';
+  if(typeof(feature)=='object'&&(feature instanceof Array)){
+    mySiteNum = feature[0].attributes.SiteNum;
+  } else {
+    mySiteNum = feature.attributes.SiteNum;
+  }
+  var newCGrow = jQuery('.cgCloneableRow').clone().removeClass('cgCloneableRow').addClass(isnew ? 'cgAddedRow':'cggrid-row').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
+  newCGrow.find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
+  newCGrow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow)').attr('disabled','disabled');
+  if(!isnew){
+    if(typeof(feature)=='object'&&(feature instanceof Array)){
+      myID = feature[0].attributes.data.id;
+      name = feature[0].attributes.data.name;
+    } else {
+      myID = feature.attributes.data.id;
+      name = feature.attributes.data.name;
+    }
+    var fieldname=newCGrow.find('.cggrid-name').attr('name');
+    newCGrow.find('.cggrid-namecell').empty().append('<input name=\"'+fieldname+'\" class=\"cggrid-name narrow\" value=\"'+name+'\" readonly=\"readonly\" ><input type=\"hidden\" name=\"CG:--rownum--:--sampleid--:location_id\" value=\"'+myID+'\" >');
+    //  cggrid-centroid_sref,cggrid-centroid_geom,cggrid-boundary_geom,cggrid-location_type_id are all removed by the cggrid-name empty above
+    newCGrow.find('.remove-cgnewrow').removeClass('remove-cgnewrow').addClass('clear-cgrow');
+  }
+  jQuery.each(newCGrow.children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownum--/g, cgRowNum);});
+  if(isnew){
+    jQuery('#dummy-name').find('option').each(function (index, option){
+      if(name == '' && jQuery('.cggrid-row,.cgAddedRow').find('.cggrid-name').filter('[value='+jQuery(option).val()+']').length == 0)
+        name=jQuery(option).val();
+    });
+    newCGrow.find('.cggrid-name').val(name);
+  }
+  var insertPoint=false;
+  insertCount=0; // we'll assume that the existing entries are in numerical order
+  jQuery('#conditions-grid').find('tr').each(function(index,elem){
+    if(jQuery(elem).find('.cggrid-name').length == 0 || 
+        parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
+      insertCount++;
+      insertPoint = jQuery(elem);
+    }
+  });
+  insertCount--;
+  newCGrow.insertAfter(insertPoint);
+  newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
+  recalcNumSites();
+  // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
+  insertPoint=jQuery('#species-grid-header').children(':eq('+insertCount+')');
+  jQuery('<th class=\"smp-'+cgRowNum+'\">'+name+'</th>').css('opacity',0.25).insertAfter(insertPoint);
+  jQuery('.sgNoObRow').each(function(i, Row) {
+    insertPoint=jQuery(Row).children(':eq('+insertCount+')');
+    var newNoObCell = jQuery('<td class=\"smp-'+cgRowNum+'\">'+
+      '<input type=\"hidden\" name=\"CG:'+cgRowNum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"0\" \"/>'+
+      '<input type=\"checkbox\" name=\"CG:'+cgRowNum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"1\" class=\"cgAttr\" disabled=\"disabled\" />'+
+      '</td>').css('opacity',0.25).insertAfter(insertPoint);
+    newNoObCell.find(':checkbox').rules('add', {no_observation: cgRowNum});
+  });
+  insertCount++;// double cells at start for these rows.
+  insertPoint=jQuery('.sgCloneableRow').children(':eq('+insertCount+')');
+  jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRowNum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
+  jQuery('.sgAddedRow,.sgOrigRow').each(function(i, Row) {
+    insertPoint=jQuery(Row).children(':eq('+insertCount+')');
+    jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRowNum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
+  });
+  return name;
+};
+moveGridEntries = function(cgRowNum) {
+  var oldPosition=false;
+  var newPosition=false;
+  var name;
+  jQuery('#conditions-grid').find('tr').each(function(index,elem){
+    if(jQuery(elem).data('cgRowNum')==cgRowNum){
+      name = jQuery(elem).find('.cggrid-name').val(); // has been updated to new value.
+      oldPosition=index;
+    }});
+  jQuery('#conditions-grid').find('tr').each(function(index,elem){
+    if(index != 0 && index != oldPosition && parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
+      newPosition=index; // points to row we insert after.
+    }});
+  if(newPosition==oldPosition-1) return;
+  var insertPoint=jQuery('#conditions-grid').find('tr:eq('+newPosition+')');
+  jQuery('#conditions-grid').find('tr:eq('+oldPosition+')').insertAfter(insertPoint);
+  // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
+  jQuery('#species-grid-header,.sgNoObRow').each(function(i, Row) {
+    insertPoint=jQuery(Row).children(':eq('+newPosition+')');
+    insertPoint=jQuery(Row).children(':eq('+oldPosition+')').insertAfter(insertPoint);
+  });
+  jQuery('.sgCloneableRow,.sgAddedRow,.sgOrigRow').each(function(i, Row) {
+    insertPoint=jQuery(Row).children(':eq('+(newPosition+1)+')');
+    insertPoint=jQuery(Row).children(':eq('+(oldPosition+1)+')').insertAfter(insertPoint);
+  });
+};
+
+hook_ChildFeatureLoad = function(feature, data, child_id, options){
+  // this is a multisite, so child_id will never be filled in.
+  if(!options.initial){
+    var mySiteNum=false;
+    if(typeof(feature)=='object'&&(feature instanceof Array)){
+      mySiteNum = feature[0].attributes.SiteNum;
+    } else {
+      mySiteNum = feature.attributes.SiteNum;
+    }
+    createGridEntries(feature, false);
+    var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features,SiteLabelLayer.features);
+    for(var i=0; i< allFeatures.length; i++){ // need to get the label as well
+      if(typeof allFeatures[i].attributes.SiteNum != 'undefined' &&
+          allFeatures[i].attributes.SiteNum == mySiteNum){
+        allFeatures[i].attributes.cgRowNum = cgRowNum;
+      }}
+  }
+  setNameDropDowns(false, false);
+}
+hook_mnhnl_parent_changed = function(){
   jQuery('#conditions-grid').find('tr').not(':eq(0)').remove();
   jQuery('#species-grid').find('tr').not(':eq(0)').not('.sgNoObRow').remove();
   jQuery('#species-grid').find('th').not(':eq(0)').remove();
   jQuery('#species-grid').find('td').not(':eq(0)').remove();
   jQuery('.sgCloneableRow').find('td:gt(1)').remove();
-  cgRownum=0;
-  recalcNumSites();
-  loadFeatures(this.value, '', {addGridRows : true});
-});";
+};";
+    $retVal = iform_mnhnl_lux5kgridControl($auth, $args, self::$node, array_merge(
+      array('initLoadArgs' => '{initial: true}',
+       'canCreate'=>true
+       ), $options));
     return $retVal;
   }
 
-  
-  protected static function get_control_locationbuttons($auth, $args, $tabalias, $options) {
-    return iform_mnhnl_locationButtonsControl($args, false, true);
-  }
-
-  /**
+ /**
    * Get the recorder names control
    */
   protected static function get_control_recordernames($auth, $args, $tabalias, $options) {
@@ -317,7 +393,9 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $sampleEntities = json_decode(curl_exec($session), true);
-      $url = data_entry_helper::$base_url."/index.php/services/data/location?parent_id=".data_entry_helper::$entity_to_load['sample:location_id']."&mode=json&view=detail&orderby=name&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$args['LocationTypeID'];
+      // primary only location type: not secondary
+      $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+      $url = data_entry_helper::$base_url."/index.php/services/data/location?parent_id=".data_entry_helper::$entity_to_load['sample:location_id']."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&location_type_id=".$LocationTypeID;
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
       $locationEntities = json_decode(curl_exec($session), true);
@@ -337,6 +415,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
           self::$locationsInGrid[$id]['comment'] = $entity['comment'];
           self::$locationsInGrid[$id]['sample_id'] = $entity['id'];
         }
+      ksort(self::$locationsInGrid);
       self::$locationsInGrid = array_values(self::$locationsInGrid);
     }
     return self::$locationsInGrid;
@@ -349,15 +428,15 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
     if (!$countAttr) return lang::get('This form must be used with a survey that has the Count Occurrence attribute associated with it.');
     $subsamples = self::getLocationsInGrid($auth, $args);
     $ret = '<p>'.lang::get("LANG_SpeciesGridInstructions").'</p><table style="display:none">';
-    $cloneprefix='SG:--rownnum--:--sampleid--:--ttlid--:--occid--:';
+    $cloneprefix='SG:--rownum--:--sampleid--:--ttlid--:--occid--:';
     $ret .= "<tr class=\"sgCloneableRow\">
 <td class=\"ui-state-default remove-sgnewrow\" style=\"width: 1%\">X</td><td class=\"sggrid-namecell\"></td>";
     $taxonList = array();
     if (isset($subsamples))
       foreach($subsamples as $key => $entity){
-        $ret .= str_replace(array('--rownnum--', '--sampleid--'),
+        $ret .= str_replace(array('--rownum--', '--sampleid--'),
                          array($key+1, $entity['sample_id']),
-                         '<td class="smp---rownnum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' ></td>');
+                         '<td class="smp---rownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' min="1" ></td>');
         if(isset($entity['sample_id'])){
           $url = data_entry_helper::$base_url."/index.php/services/data/occurrence?sample_id=".$entity['sample_id']."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
           $session = curl_init($url);
@@ -445,14 +524,14 @@ jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('ttlid', ".$ttlid.").d
       $ret .= '
 <tr class="sgOrigRow"><td class="ui-state-default clear-sgrow" style="width: 1%">X</td><td class="sggrid-namecell">'.$name.'</td>';
       foreach($subsamples as $key => $entity){
-        $template = '<td class="smp---rownnum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'--attrid--" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' value="--value--" ></td>';
+        $template = '<td class="smp---rownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'--attrid--" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' value="--value--" min="1"></td>';
         if(isset($entity['occurrences'][$ttlid])){
           $occid=$entity['occurrences'][$ttlid]['id'];
-          $ret .= str_replace(array('--rownnum--', '--sampleid--','--ttlid--','--occid--','--attrid--','--value--'),
+          $ret .= str_replace(array('--rownum--', '--sampleid--','--ttlid--','--occid--','--attrid--','--value--'),
                          array($key+1, $entity['sample_id'], $ttlid, $occid, isset($entity['occattrs'][$occid]) ? ':'.$entity['occattrs'][$occid]['id'] : '', isset($entity['occattrs'][$occid]) ? $entity['occattrs'][$occid]['value'] : ''),
                          $template);
         } else
-          $ret .= str_replace(array('--rownnum--', '--sampleid--','--ttlid--','--attrid--','--value--'),
+          $ret .= str_replace(array('--rownum--', '--sampleid--','--ttlid--','--attrid--','--value--'),
                          array($key+1, isset($entity['sample_id']) ? $entity['sample_id'] : '', $ttlid, '',''),
                          $template);
       }
@@ -553,7 +632,12 @@ jQuery('.remove-sgnewrow').live('click', function() {
   protected static function get_control_conditionsgrid($auth, $args, $tabalias, $options) {
   	/* We will make the assumption that only one of these will be put onto a form.
   	 * A lot of this is copied from the species control and has the same features. */
-    $extraParams = $auth['read'] + array('view' => 'detail', 'reset_timeout' => 'true');
+    data_entry_helper::$javascript .= "
+///////////////////////////////////////
+// Functions for the conditions grid //
+///////////////////////////////////////
+";
+  	$extraParams = $auth['read'] + array('view' => 'detail', 'reset_timeout' => 'true');
     // A single species entry control of some kind
     $attrArgs = array(
        'valuetable'=>'sample_attribute_value',
@@ -569,11 +653,12 @@ jQuery('.remove-sgnewrow').live('click', function() {
                 'language' => iform_lang_iso_639_2($args['language'])),$options);
     $tabName = (isset($options['tabNameFilter']) ? $options['tabNameFilter'] : null);
     $ret = '<p>'.lang::get("LANG_ConditionsGridInstructions").'</p><table style="display:none">';
-    $cloneprefix='CG:--rownnum--:--sampleid--:';
+    $cloneprefix='CG:--rownum--:--sampleid--:';
+    $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     $ret .= "<tr class=\"cgCloneableRow\">
 <td class=\"ui-state-default remove-cgnewrow\" style=\"width: 1%\">X</td>
 <td class=\"cggrid-namecell\"><input name=\"".$cloneprefix."name\" class=\"cggrid-name narrow\" value=\"\" readonly=\"readonly\" >
-<input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$args['LocationTypeID']."\"></td>
+<input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$LocationTypeID."\"></td>
 <td class=\"cggrid-datecell\"><input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>";
     unset($attrArgs['id']);
     $attrArgs['fieldprefix']=$cloneprefix.'smpAttr';
@@ -586,22 +671,21 @@ jQuery('.remove-sgnewrow').live('click', function() {
         $ret .= '<th>'.$attr['caption'].'</th>';
     }
     $ret .= '<th>'.lang::get('Comment').'</th></tr>';
-    $rowNum=0;
-    data_entry_helper::$javascript .= "cgRownum=0;";
+    $cgRowNum=0;
     if(isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
       $subsamples = self::getLocationsInGrid($auth, $args);
       if (isset($subsamples))
         foreach($subsamples as $entity){
-          $rowNum++;
+          $cgRowNum++;
           data_entry_helper::$javascript .= "
-jQuery('#conditions-grid').find('tr:eq(".$rowNum.")').data('rowNum', ".$rowNum.");
-jQuery('#conditions-grid').find('tr:eq(".$rowNum.")').find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
+jQuery('#conditions-grid').find('tr:eq(".$cgRowNum.")').data('locID', ".$entity['location_id'].").data('cgRowNum', ".$cgRowNum.");
+jQuery('#conditions-grid').find('tr:eq(".$cgRowNum.")').find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
 ";
           if (isset($entity['sample_id'])){
-            $fieldprefix='CG:'.$rowNum.':'.$entity['sample_id'].':';
+            $fieldprefix='CG:'.$cgRowNum.':'.$entity['sample_id'].':';
             $attrArgs['id'] = $entity['sample_id'];
           } else {
-            $fieldprefix='CG:'.$rowNum.':--sampleid--:';
+            $fieldprefix='CG:'.$cgRowNum.':--sampleid--:';
             unset($attrArgs['id']);
           }
           if (isset($entity['date']) && preg_match('/^(\d{4})/', $entity['date'])) {
@@ -619,10 +703,8 @@ jQuery('#conditions-grid').find('tr:eq(".$rowNum.")').find('.cggrid-date').datep
     }
     $ret .= '</table>';
     data_entry_helper::$onload_javascript .= "
-cgRownum=$rowNum;";
+cgRowNum=$cgRowNum;";
     data_entry_helper::$javascript .= "
-recalcNumSites = function(){jQuery('#num-sites').val(jQuery('.cggrid-row,.cgAddedRow').length);};
-recalcNumSites();
 if (typeof jQuery.validator !== \"undefined\") {
   jQuery.validator.addMethod('customDate',
     function(value, element) {
@@ -655,8 +737,8 @@ jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't ne
     // disable all  active controls from the row apart from the date.
     // Do NOT disable the date or the container td, otherwise it is not submitted.
     jQuery(this).find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');
-    rowNum = jQuery(this).closest('tr').data('rowNum');
-    jQuery('.smp-'+rowNum).css('opacity','0.25').find(':checkbox').attr('disabled','disabled');
+    var myRowNum = jQuery(this).closest('tr').data('cgRowNum');
+    jQuery('.smp-'+myRowNum).css('opacity','0.25').find(':checkbox').attr('disabled','disabled');
   } else {";
     if (isset($options['setColumnsRequired'])){
       $columns = explode(':',$options['setColumnsRequired']);
@@ -670,8 +752,8 @@ jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't ne
 jQuery('.cggrid-date').live('change', function() {
   jQuery(this).closest('tr').find('td:not(.cggrid-datecell,.cggrid-namecell)').css('opacity','');
   jQuery(this).closest('tr').find('*').removeAttr('disabled');
-  rowNum = jQuery(this).closest('tr').data('rowNum');
-  jQuery('.smp-'+rowNum).css('opacity','').find('input').removeAttr('disabled');
+  var myRowNum = jQuery(this).closest('tr').data('cgRowNum');
+  jQuery('.smp-'+myRowNum).css('opacity','').find('input').removeAttr('disabled');
   jQuery(this).closest('tr').find('.deh-required').remove();
   jQuery(this).closest('tr').find('*').removeClass('required');";
   if (isset($options['setColumnsRequired'])){
@@ -692,28 +774,10 @@ jQuery('.clear-cgrow').live('click', function() { // existing location - no name
   thisRow.find('select').val('');
   thisRow.find('.inline-error,.deh-required').remove();
   thisRow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');
-  rowNum = thisRow.data('rowNum');
-  jQuery('.smp-'+rowNum).css('opacity',0.25).find(':text').attr('disabled','disabled').val('');
-  jQuery('.smp-'+rowNum).css('opacity',0.25).find(':checkbox').attr('disabled','disabled').attr('checked','');
+  var myRowNum = thisRow.data('cgRowNum');
+  jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':text').attr('disabled','disabled').val('');
+  jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':checkbox').attr('disabled','disabled').attr('checked','');
 });
-setNameDropDowns = function(disable, value){
-  jQuery('#dummy-name').find('*').removeAttr('disabled');
-  if(disable === true){
-  	jQuery('#dummy-name').val('').attr('disabled','disabled');
-  	return;
-  }
-  if(disable === false)
-  	jQuery('#dummy-name').removeAttr('disabled');
-  if(value===false && jQuery('#dummy-name').val() !== '') value=jQuery('#dummy-name').val()
-  if(value !== '')
-    jQuery('#dummy-name').find('option').filter('[value=]').attr('disabled','disabled');
-  jQuery('#dummy-name').find('option').each(function (index, option){
-      if((value == false || jQuery(option).val() != value) &&
-          jQuery('.cggrid-row,.cgAddedRow').find('.cggrid-name').filter('[value='+jQuery(option).val()+']').length > 0)
-        jQuery(option).attr('disabled','disabled');
-  });
-  if(value!==false) jQuery('#dummy-name').val(value);
-};
 setNameDropDowns(true, false);
 jQuery('.remove-cgnewrow').live('click', function() {
   if(jQuery('.cggrid-row,.cgAddedRow').length < 2) {
@@ -722,76 +786,111 @@ jQuery('.remove-cgnewrow').live('click', function() {
   }
   var thisRow=jQuery(this).closest('tr');
   if(!confirm(\"".lang::get('LANG_conditionsgrid:removeconfirm')."\")) return;
-  rowNum = thisRow.data('rowNum');
-  jQuery('.smp-'+rowNum).remove();
+  var myRowNum = thisRow.data('cgRowNum');
+  var mySiteNum = thisRow.data('SiteNum');
+  jQuery('.smp-'+myRowNum).remove();
   thisRow.remove();
   recalcNumSites();
-  for(var i=0; i<SiteListLayer.selectedFeatures.length; i++){ // Row may not be selected on map
-    if(SiteListLayer.selectedFeatures[i].attributes.row == rowNum){
-      modFeature.selectControl.unselect(SiteListLayer.selectedFeatures[i]);
-      jQuery('#remove-site-button').attr('disabled','disabled');
+  // TBD de highlight, demodify, and remove from map
+  for(var i=SiteLabelLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
+    if(SiteLabelLayer.features[i].attributes.SiteNum == mySiteNum){
+      SiteLabelLayer.destroyFeatures([SiteLabelLayer.features[i]]);
       setNameDropDowns(true, false);
-      break;
     }
   }
-  for(var i=0; i<SiteListLayer.features.length; i++){
-    if(SiteListLayer.features[i].attributes.row == rowNum){
-      SiteListLayer.destroyFeatures([SiteListLayer.features[i]]);
-      break;
+  for(var i=SiteAreaLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
+    if(SiteAreaLayer.features[i].attributes.SiteNum == mySiteNum){
+      if(SiteAreaLayer.features[i].attributes.highlighted){
+        modAreaFeature.unselect(SiteAreaLayer.features[i]);
+        selectFeature.unhighlight(SiteAreaLayer.features[i]);
+      }
+      SiteAreaLayer.destroyFeatures([SiteAreaLayer.features[i]]);
+      setNameDropDowns(true, false);
     }
   }
-  cgRownum=0;
+  for(var i=SitePathLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
+    if(SitePathLayer.features[i].attributes.SiteNum == mySiteNum){
+      if(SitePathLayer.features[i].attributes.highlighted){
+        modPathFeature.unselect(SitePathLayer.features[i]);
+        selectFeature.unhighlight(SitePathLayer.features[i]);
+      }
+      setNameDropDowns(true, false);
+      SitePathLayer.destroyFeatures([SitePathLayer.features[i]]);
+    }
+  }
+  for(var i=SitePointLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
+    if(SitePointLayer.features[i].attributes.SiteNum == mySiteNum){
+      if(SitePointLayer.features[i].attributes.highlighted){
+        modPointFeature.unselect(SitePointLayer.features[i]);
+      }
+      setNameDropDowns(true, false);
+      SitePointLayer.destroyFeatures([SitePointLayer.features[i]]);
+    }
+  }
+  cgRowNum=0;
   jQuery('.cggrid-row,.cgAddedRow').each(function(i,thisRow){
-    if(jQuery(thisRow).data('rowNum') > cgRownum)
-      cgRownum=jQuery(thisRow).data('rowNum');
+    if(jQuery(thisRow).data('cgRowNum') > cgRowNum)
+      cgRowNum=jQuery(thisRow).data('cgRowNum');
   });
   setNameDropDowns('leave', false);
 });
-RemoveThisSite= function() {
-  if(SiteListLayer.selectedFeatures.length == 0) {
-    jQuery('#remove-site-button').attr('disabled','disabled');
-    return;
-  }
-  var feature = SiteListLayer.selectedFeatures[0];
-  var rowNum = feature.attributes.row;
-  // TBD put in check for feature being new.
-  ZoomToFeature(feature);
-  if(!confirm(\"".lang::get('LANG_conditionsgrid:removeconfirm')."\")) return;
+// 2 places we can delete from the main map delete site button and on the conditions grid 'X' button
+hook_RemoveNewSite= function() {
+  // assume all checks done by main function, and it will destroy the features after this is called.
+  var highlighted = gethighlight();
+  var myRowNum = highlighted[0].attributes.cgRowNum;
   jQuery('.cgAddedRow').each(function(index, elem){
-    if(jQuery(elem).data('rowNum') == rowNum)
+    if(jQuery(elem).data('cgRowNum') == myRowNum)
       jQuery(elem).remove();
   });
-  jQuery('.smp-'+rowNum).remove();
-  recalcNumSites();
-  jQuery('#remove-site-button').attr('disabled','disabled');
-  modFeature.selectControl.unselect(feature);
-  SiteListLayer.destroyFeatures([feature]);
-  cgRownum=0;
+  jQuery('.smp-'+myRowNum).remove();
+  cgRowNum=0;
   jQuery('.cggrid-row,.cgAddedRow').each(function(i,thisRow){
-    if(jQuery(thisRow).data('rowNum') > cgRownum)
-      cgRownum=jQuery(thisRow).data('rowNum');
+    if(jQuery(thisRow).data('cgRowNum') > cgRowNum)
+      cgRowNum=jQuery(thisRow).data('cgRowNum');
   });
-  setNameDropDowns(true, false);
 };
+hook_multisite_setGeomFields=function(feature, boundaryWKT, centreWKT){
+  if(feature.attributes.new != true) return; // just to be safe...
+  // AND assume that we can modify existing.
+  // want newCGRow to stay valid until json returns so don't scope local.
+  newCGrow=false;
+  jQuery('.cgAddedRow').each(function (index, Element){
+    if(jQuery(this).data('SiteNum') == feature.attributes.SiteNum) newCGrow=jQuery(this);
+  });
+  if(!newCGrow) return; 
+  newCGrow.find('.cggrid-boundary_geom').val(boundaryWKT);
+  newCGrow.find('.cggrid-centroid_geom').val(centreWKT);
+  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=\" + centreWKT + \"&system=2169&precision=8&callback=?\",
+    function(data){
+      if(typeof data.error != 'undefined') alert(data.error);
+      else newCGrow.find('.cggrid-centroid_sref').val(data.sref);});
+}
 jQuery('#dummy-name').change(function() {
-  if(SiteListLayer.selectedFeatures.length == 0) {
+  var highlighted = gethighlight();
+  if(highlighted.length == 0 || !highlighted[0].attributes.new) {
     setNameDropDowns(true, false);
     return;
   }
-  var feature = SiteListLayer.selectedFeatures[0];
-  var rowNum = feature.attributes.row;
-  // TBD put in check for feature being new.
-  ZoomToFeature(feature);
+  var myRowNum = highlighted[0].attributes.cgRowNum;
+  ZoomToSite();
   jQuery('.cgAddedRow').each(function(index, elem){
-    if(jQuery(elem).data('rowNum') == rowNum)
+    if(jQuery(elem).data('cgRowNum') == myRowNum)
       jQuery(elem).find('.cggrid-name').val(jQuery('#dummy-name').val());
   });
-  jQuery('#species-grid-header').find('.smp-'+rowNum).empty().append(jQuery(this).val());
-  modFeature.selectControl.unselect(feature);
-  SiteListLayer.removeFeatures([feature]);
-  feature.style.label = jQuery(this).val();
-  SiteListLayer.addFeatures([feature]);
-  modFeature.selectControl.select(feature);
+  moveGridEntries(myRowNum);
+  jQuery('#species-grid-header').find('.smp-'+myRowNum).empty().append(jQuery(this).val());
+  for(var i=SiteLabelLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
+    if(typeof SiteLabelLayer.features[i].attributes.cgRowNum != 'undefined'
+        && SiteLabelLayer.features[i].attributes.cgRowNum == myRowNum
+        && SiteLabelLayer.features[i].attributes.new){
+      feature = SiteLabelLayer.features[i];
+      SiteLabelLayer.removeFeatures([feature]);
+      feature.style.label = jQuery(this).val();
+      SiteLabelLayer.addFeatures([feature]);
+      break;
+    }
+  }
 });
 ";
     return $ret;
@@ -820,146 +919,29 @@ jQuery('#dummy-name').change(function() {
 
   protected static function get_control_lateJS($auth, $args, $tabalias, $options) {
     iform_mnhnl_addCancelButton();
-  	$countAttr = iform_mnhnl_getAttrID($auth, $args, 'occurrence','Count');
-    if (!$countAttr) return lang::get('This form must be used with a survey that has the Count Occurrence attribute associated with it.');
-    $noObAttr = iform_mnhnl_getAttrID($auth, $args, 'sample','No observation');
-    if (!$noObAttr) return lang::get('This form must be used with a survey that has the No observation Sample attribute associated with it.');
-  	data_entry_helper::$onload_javascript .= "
-addDrawnGeomToSelection = function(geometry) {
-  cgRownum++;
-  points = geometry.components[0].getVertices();
-  if(points.length < 3){
-    alert('".lang::get('LANG_TooFewPoints')."');
-    return;
-  }
-  centre = geometry.getCentroid();
-  if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-    alert('".lang::get('LANG_CentreOutsideParent')."');
-  newCGrow = jQuery('.cgCloneableRow').clone().removeClass('cgCloneableRow').addClass('cgAddedRow').data('rowNum', cgRownum);
-  newCGrow.find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
-  newCGrow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow)').attr('disabled','disabled');
-  jQuery.each(newCGrow.children(), function(i, cell) {
-    cell.innerHTML = cell.innerHTML.replace(/--rownnum--/g, cgRownum);
-  });
-  var name = '';
-  jQuery('#dummy-name').find('option').each(function (index, option){
-    if(name == '' && jQuery('.cggrid-row,.cgAddedRow').find('.cggrid-name').filter('[value='+jQuery(option).val()+']').length == 0)
-      name=jQuery(option).val();
-  });
-  newCGrow.find('.cggrid-name').val(name);
-  newCGrow.appendTo('#conditions-grid');
-  newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
-  recalcNumSites();
-  // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
-  jQuery('<th class=\"smp-'+cgRownum+'\">'+name+'</th>').css('opacity',0.25).appendTo('#species-grid-header');
-  jQuery('<td class=\"smp-'+cgRownum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRownum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" ></td>').css('opacity',0.25).appendTo('.sgCloneableRow');
-  jQuery('.sgAddedRow,.sgOrigRow').each(function(i, Row) {
-    jQuery('<td class=\"smp-'+cgRownum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRownum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" ></td>').css('opacity',0.25).appendTo(Row);
-  });
-  jQuery('.sgNoObRow').each(function(i, Row) {
-    jQuery('<td class=\"smp-'+cgRownum+'\">'+
-      '<input type=\"hidden\" name=\"CG:'+cgRownum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"0\" \"/>'+
-      '<input type=\"checkbox\" name=\"CG:'+cgRownum+':--sampleid--:smpAttr:".$noObAttr."\" value=\"1\" class=\"cgAttr\" disabled=\"disabled\" />'+
-      '</td>').css('opacity',0.25).appendTo(Row);
-    jQuery(Row).find('.smp-'+cgRownum).find(':checkbox').rules('add', {no_observation: cgRownum});
-  });
-  // Create the polygon as drawn, only 1 polygon at a time
-  var feature = new OpenLayers.Feature.Vector(geometry, {row: cgRownum, new: true});
-  feature.style = jQuery.extend({}, SiteListNewStyleHash);
-  feature.style.label = name;
-  SiteListLayer.addFeatures([feature]);
-  modFeature.selectControl.select(feature);
-  wkt = '';
-  points = geometry.components[0].getVertices();
-  for(var i = 0; i< points.length; i++)
-    wkt = wkt+(i==0? '' : ', ')+points[i].x+' '+points[i].y;
-  wkt = wkt+', '+points[0].x+' '+points[0].y;
-  newCGrow.find('.cggrid-boundary_geom').val(\"POLYGON((\" + wkt + \"))\");
-  newCGrow.find('.cggrid-centroid_geom').val(\"POINT(\" + centre.x + \"  \" + centre.y + \")\");
-  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(\" + centre.x + \"  \" + centre.y + \")&system=2169&precision=8&callback=?\",
-    function(data){
-      if(typeof data.error != 'undefined')
-        alert(data.error);
-      else
-        newCGrow.find('.cggrid-centroid_sref').val(data.sref);});
+  	data_entry_helper::$javascript .= "
+hook_new_site_added = function(feature) {
+  var name=createGridEntries(feature, true);
+  feature.attributes.cgRowNum=cgRowNum;
+  var centreGeom;
+  var centrefeature;
+  if(feature.geometry.CLASS_NAME == \"OpenLayers.Geometry.Point\"){
+    centreGeom = feature.geometry;
+  }else{
+    centreGeom = feature.geometry.getCentroid();}
+  centrefeature = new OpenLayers.Feature.Vector(centreGeom);
+  centrefeature.attributes.new=true;
+  centrefeature.attributes.highlighted=false;
+  centrefeature.attributes.SiteNum=feature.attributes.SiteNum;
+  centrefeature.attributes.cgRowNum=cgRowNum;
+  centrefeature.style = jQuery.extend({}, SiteListPrimaryLabelStyleHash);
+  centrefeature.style.label = name;
+  SiteLabelLayer.addFeatures([centrefeature]);
+  setNameDropDowns(false,name);
+  setGeomFields();
 };
-drawControl=new OpenLayers.Control.DrawFeature(SiteListLayer,OpenLayers.Handler.Polygon,{'displayClass':'olControlDrawFeaturePolygon', drawFeature: addDrawnGeomToSelection});
-SiteListLayer.map.addControl(drawControl);
-modFeature = new OpenLayers.Control.ModifyFeature(SiteListLayer);
-SiteListLayer.map.addControl(modFeature);
-SiteListLayer.map.editLayer.clickControl.deactivate();
-SiteListLayer.map.editLayer.destroyFeatures();
-function onFeatureModify(evt) {
-  feature = evt.feature;
-  ZoomToFeature(feature);
-  if(feature.attributes.new == true) {
-    setNameDropDowns(false, feature.style.label);
-    jQuery('#remove-site-button').removeAttr('disabled');
-    return true;
-  }
-  jQuery('#remove-site-button').attr('disabled','disabled');
-  setNameDropDowns(true, false);
-  for(var i=SiteListLayer.selectedFeatures.length-1; i>=0; i--){
-    modFeature.selectControl.unselect(SiteListLayer.selectedFeatures[i]);
-  }
-  return false;
-}
-function onFeatureModified(evt) {
-  feature = evt.feature;
-  points = feature.geometry.components[0].getVertices();
-  if(points.length < 3){
-    alert('".lang::get('LANG_TooFewPoints')."');
-    return;
-  }
-  centre = feature.geometry.getCentroid();
-  if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-    alert('".lang::get('LANG_CentreOutsideParent')."');
-  if(feature.attributes.new != true) return;
-  newCGrow==false;
-  jQuery('.cgAddedRow').each(function (index, Element){
-    if(jQuery(this).data('rowNum') == feature.attributes.row) newCGrow=jQuery(this);
-  });
-  if(!newCGrow) return;
-  wkt = '';
-  for(var i = 0; i< points.length; i++)
-    wkt = wkt+(i==0? '' : ', ')+points[i].x+' '+points[i].y;
-  wkt = wkt+', '+points[0].x+' '+points[0].y;
-  newCGrow.find('.cggrid-boundary_geom').val(\"POLYGON((\" + wkt + \"))\");
-  newCGrow.find('.cggrid-centroid_geom').val(\"POINT(\" + centre.x + \"  \" + centre.y + \")\");
-  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(\" + centre.x + \"  \" + centre.y + \")&system=2169&precision=8&callback=?\",
-    function(data){
-      if(typeof data.error != 'undefined')
-        alert(data.error);
-      else
-        newCGrow.find('.cggrid-centroid_sref').val(data.sref);});
-}
-function onFeatureAdded(evt) {
-  drawControl.activate();
-  modFeature.activate();
-}
-SiteListLayer.events.on({
-    'featureadded': onFeatureAdded,
-    'beforefeaturemodified': onFeatureModify,
-    'featuremodified': onFeatureModified
-  });
 ";
-    if(isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
-      data_entry_helper::$onload_javascript .= "
-loadFeatures(".data_entry_helper::$entity_to_load["sample:location_id"].", '', {addGridRows : false});";
-    }
-    if (array_key_exists('sample:id', data_entry_helper::$entity_to_load)){
-    	data_entry_helper::$onload_javascript .= "
-// drawControl.activate();
-";
-      data_entry_helper::$late_javascript .= "
-setupButtons($('#controls'), 1);
-setupButtons($('#controls'), 2);
-setupButtons($('#controls'), 0);";
-    } else {
-    	data_entry_helper::$onload_javascript .= "
-// drawControl.deactivate();
-";
-    }
+    iform_mnhnl_locationmodule_lateJS($auth, $args, $tabalias, $options);
     return '';
   }
   
@@ -977,7 +959,7 @@ setupButtons($('#controls'), 0);";
    * @return array Submission structure.
    */
   public static function get_submission($values, $args) {
-    if (isset($values['location:name']))
+    if (isset($values['source']))
       return submission_builder::wrap_with_images($values, 'location');
     if (isset($values['sample:recorder_names'])){
       if(is_array($values['sample:recorder_names'])){
@@ -990,8 +972,8 @@ setupButtons($('#controls'), 0);";
     $locations = array();
     foreach($values as $key => $value){
       $parts = explode(':', $key, 4);
-      //     $cloneprefix='CG:--rownnum--:--sampleid--:smpAttr:--attr_id--[:--attr_value_id--]
-      if($parts[0]=='CG' && count($parts)>1 && $parts[1] != '--rownnum--' && $parts[1] != ''){
+      //     $cloneprefix='CG:--rownum--:--sampleid--:smpAttr:--attr_id--[:--attr_value_id--]
+      if($parts[0]=='CG' && count($parts)>1 && $parts[1] != '--rownum--' && $parts[1] != ''){
         $field = explode(':',$parts[3]);
         if($field[0]=='location'){
           $locations[$parts[1]][$field[1]]=array('value' => $value);
@@ -1021,7 +1003,7 @@ setupButtons($('#controls'), 0);";
         $occs=array();
         foreach($values as $key => $value){
           $parts = explode(':', $key, 6);
-          // SG:--rownnum--:--sampleid--:--ttlid--:--occid--:occAttr:--attr_id--[:--attr_value_id--]
+          // SG:--rownum--:--sampleid--:--ttlid--:--occid--:occAttr:--attr_id--[:--attr_value_id--]
           if($parts[0]=='SG' && count($parts)>1 && $parts[3] != '--ttlid--' && $parts[3] != '' && $parts[1] == $sampleIndex && (($parts[4] != "--occid--" && $parts[4] != "")||$value!="")){
             $occ = array('fkId' => 'sample_id',
                          'model' => array('id' => 'occurrence',

@@ -12,6 +12,10 @@
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
       <tabColumn name='location_name' display='Site' />
+      <subTable tablename="locations" > // allow deleted Sites!
+        <tabColumn name='x' display='X' func="(split_part(#this#.centroid_sref, ', ', 1))" />
+        <tabColumn name='y' display='Y' func="(split_part(#this#.centroid_sref, ', ', 2))" />
+      </subTable>
       <tabColumn name='date_start' visible='false' />
       <tabColumn name='date_end' visible='false' />
       <tabColumn name='date_type' visible='false' />
@@ -33,6 +37,6 @@
     </subTable>    
   </table>
   <order_bys>
-    <order_by>lt0_id ASC, lt1_id ASC, lt2_id ASC</order_by>
+    <order_by>lt0_id ASC, lt1_id ASC, lt3_id ASC</order_by>
   </order_bys>
 </report>

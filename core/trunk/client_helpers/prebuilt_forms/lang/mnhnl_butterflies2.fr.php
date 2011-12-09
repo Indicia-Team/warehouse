@@ -70,7 +70,6 @@ $custom_terms = array(
 	'LANG_CentreOutsideParent'=>'Warning: the centre of your new site is outside the square.',
 	'LANG_ConditionsGridInstructions'=>'Before any data can be entered onto a row of the grid below, and entered into the equivalent column in the species grid, the date for the visit to that site must be filled in. Additional sites may be added by drawing on the Map. Clicking on the Red X will either clear the data for that site, if the site was pre-existing, or the site will be deleted if you have added it during this session. ',
 	'LANG_SpeciesGridInstructions'=>"Note species observed at each site and estimate their abundance.<br />Before any data can be entered into the grid below, the conditions for the visit to that site must be entered in the Conditions section. Additional sites may be added by drawing on the map in the Sites section. Additional species may be added by entering the name in the box below.  Clicking on the red 'X' will either clear the data for that species (if data has previously been entered for the species), or the species will be removed (if you have added it during this session).",
-	'LANG_ModificationInstructions' => 'When drawing a new site: ',
 //	Passage
 	'speciesgrid:taxa_taxon_list_id'=>'Add species',
 	'LANG_ConfirmSurveyDelete'=>'You are about to flag a survey as deleted. Do you wish to continue and delete survey ',

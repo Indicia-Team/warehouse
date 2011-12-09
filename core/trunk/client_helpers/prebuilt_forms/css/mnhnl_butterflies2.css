@@ -1,3 +1,6 @@
+.redOption {
+  color:red !important;
+}
 .remove-cgnewrow {
   color:red !important;
 }
@@ -44,4 +47,45 @@ label.prepad {
   margin-top: 4px;
   margin-left: 20px;	
 }
+input.mnhnl-site-name {
+	width: 300px;
+}
+div.olControlEditingToolbar div.olControlCancelSketchItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: 0px 0px;
+}
+div.olControlEditingToolbar div.olControlUndoSketchPointItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -25px 0px;
+}
+
+div.olControlEditingToolbar div.olControlRemoveNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -50px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -75px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToSquareItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -100px 0px;
+}
+
+div.olControlEditingToolbar div.olControlZoomToCountryItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -125px 0px;
+}
+
+div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
+  background-image: url("../images/mnhnl-mod-toolbar.png");
+  background-position: -150px 0px;
+}
+
+div.olControlEditingToolbar  {
+    width: 350px;
+}
+
 

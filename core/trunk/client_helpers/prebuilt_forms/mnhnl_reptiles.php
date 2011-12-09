@@ -83,13 +83,18 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
               "@attrRestrictionsProcessOrder=<TBD>\r\n".
               "@attrRestrictions=<TBD>\r\n".
               "[lux5k grid]\r\n".
-              "[location buttons]\r\n".
+              "[location attributes]\r\n".
+              "[location spatial reference]\r\n".
               "[map]\r\n".
-              "@layers=[\"ParentLocationLayer\",\"SiteListLayer\"]\r\n".
+              "@layers=[\"ParentLocationLayer\",\"SitePointLayer\",\"SitePathLayer\",\"SiteAreaLayer\",\"SiteLabelLayer\"]\r\n".
               "@editLayer=false\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
              "=Conditions=\r\n".
+              "[programme grid]\r\n".
+              "@programmeTermList=reptile:programme\r\n".
+              "@defaultAttrs=<TBD>\r\n".
+              "@disableOptions=<TBD>\r\n".
               "[date]\r\n".
               "[recorder names]\r\n".
               "[*]\r\n".
@@ -109,6 +114,8 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
         $param['default'] = true;
       if($param['name'] == 'grid_report')
         $param['default'] = 'reports_for_prebuilt_forms/MNHNL/mnhnl_reptiles';
+      if($param['name'] == 'extendLocationNameTemplate')
+        $param['default'] = '{name} : created by {Creator}';
         
       if($param['name'] != 'species_include_taxon_group' &&
           $param['name'] != 'link_species_popups' &&
@@ -127,15 +134,32 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
   }
   
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
+    if(!user_access('IForm n'.self::$node->nid.' admin')) return('');
+    $progAttr=iform_mnhnl_getAttr(self::$auth, $args, 'sample', 'Programme');
+    if (!$progAttr) return lang::get('This form must be used with a survey that has the Programme attribute associated with it.');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
-
+    $control = data_entry_helper::select(array(
+          'label'=>lang::get("LANG_Programme"),
+          'fieldname'=>'programme',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'meaning_id',
+          'extraParams' => $readAuth + array('view'=>'detail', 'termlist_id'=>$progAttr['termlist_id'], 'orderby'=>'id')
+        ));
+    data_entry_helper::$javascript .= "
+jQuery('[name=programme]').change(function(){
+  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"taxon_list_id\":".$args['extra_list_id'].", \"programme\":'+jQuery(this).val()+'}');
+});
+jQuery('[name=programme]').change();
+";
     return  '<div id="downloads" >
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=reptilereport">
       <p>'.lang::get('LANG_Data_Download').'</p>
+      '.$control.'
+      <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=reptilereport">
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "taxon_list_id":'.$args['extra_list_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-  </div>'.iform_mnhnl_locModTool(self::$auth, $args);
+  </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
 	
   }
   /**
@@ -148,7 +172,9 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
     if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can be tagged against their creator.');
     $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
     if (!$userNameAttr) return lang::get('This form must be used with a survey that has the CMS User Name attribute associated with it so records can be tagged against their creator.');
-
+    $progIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Programme');
+    if (!$progIdAttr) return lang::get('This form must be used with a survey that has the Programme attribute associated with it.');
+    
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
       return lang::get('Before using this facility, please <a href="'.url('user/login', array('query'=>'destination=node/'.($node->nid))).'">login</a> to the website.');
@@ -172,7 +198,8 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
         'userID_attr_id'=>$userIdAttr,
         'userID'=>(iform_loctools_checkaccess($node,'superuser') ? -1 :  $user->uid), // use -1 if superuser - non logged in will not get this far.
         'userName_attr_id'=>$userNameAttr,
-        'userName'=>($user->name)
+        'userName'=>($user->name),
+        'programme_attr_id'=>$progIdAttr
     )
     ));	
     $r .= '<form>';    
@@ -213,14 +240,19 @@ deleteSurvey = function(sampleID){
    * Submission failed: holds the POST array.
    */
   protected static function get_control_lux5kgrid($auth, $args, $tabalias, $options) {
-    $ret = iform_mnhnl_lux5kgridControl($auth, $args, $tabalias, $options, self::$node,
-      array('initLoadArgs' => '{}',
-       'parentFieldID' => 'location_parent_id',
-       'parentFieldName' => 'location:parent_id',
-       'extendName' => 'comment'
-       ));
+    $ret = iform_mnhnl_lux5kgridControl($auth, $args, self::$node,
+      array_merge(array('initLoadArgs' => '{}',
+       'canCreate'=>true
+      ), $options));
     return $ret;
   }
+  protected static function get_control_locationspatialreference($auth, $args, $tabalias, $options) {
+    return iform_mnhnl_SrefFields($auth, $args);
+  }
+  protected static function get_control_locationattributes($auth, $args, $tabalias, $options) {
+    return iform_mnhnl_locationattributes($auth, $args, $tabalias, $options);
+  }
+  
   /**
    * Get the recorder names control
    */
@@ -247,17 +279,6 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
   	// possible clash with link_species_popups, so latter disabled.
   	iform_mnhnl_addCancelButton();
     data_entry_helper::$javascript .= "
-// Main table existing entries
-speciesRows = jQuery('.species-grid > tbody').find('tr');
-for(var j=0; j<speciesRows.length; j++){
-	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
-	occAttrs.find(':text').addClass('required').width('30px').attr('min',1).after('<span class=\"deh-required\">*</span>');
-	occAttrs.find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
-}
-hook_species_checklist_pre_delete_row=function(e) {
-    return confirm(\"".lang::get('Are you sure you want to delete this row?')."\");
-};
-
 resetChildValue = function(child){
   var options = child.find('option').not('[value=]').not('[disabled]');
   if (options.length==1)
@@ -455,215 +476,138 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
   }
 
   protected static function get_control_lateJS($auth, $args, $tabalias, $options) {
-  data_entry_helper::$onload_javascript .= "
-setSref = function(sref){
-  $('#imp-sref').val(sref);
-  if (sref.indexOf(' ')!==-1) {
-    var parts=sref.split(' ');
-    parts[0]=parts[0].split(',')[0]; // part 1 may have a comma at the end, so remove
-    $('#imp-srefX').val(parts[0]);
-    $('#imp-srefY').val(parts[1]);
-}};
-setDrawnGeom = function() {
-  // need to leave the location parent id enabled. Don't need to set geometries as we are using an existing location.
-  jQuery(\"#locWebsite,#locComment,#imp-geom,#imp-boundary-geom,#imp-sref,#imp-srefX,#imp-srefY\").removeAttr('disabled');
-  jQuery(\"#sample_location_id\").val('');
-  jQuery(\"#location_name\").attr('name','location:name').removeAttr('readonly');;
-};
-removeDrawnGeom = function(){
-  for(var i=SiteListLayer.features.length-1; i>=0; i--)
-    if(SiteListLayer.features[i].attributes.new == true)
-      SiteListLayer.destroyFeatures(SiteListLayer.features[i]);
-}
-addDrawnGeomToSelection = function(geometry) {
-  removeDrawnGeom();
-  setDrawnGeom();
-  jQuery(\"#location_name\").val('');
-  wkt = '';
-  points = geometry.components[0].getVertices();
-  if(points.length < 3){
-    alert('".lang::get('LANG_TooFewPoints')."');
-    return;
-  }
-  if(ParentLocationLayer.features.length == 0){
-    alert('".lang::get('LANG_ChoseParentWarning')."');
-    return;
-  }
-  centre = geometry.getCentroid();
-  if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-    alert('".lang::get('LANG_CentreOutsideParent')."');
-  // Create the polygon as drawn, only 1 polygon at a time
-  var feature = new OpenLayers.Feature.Vector(geometry, {});
-  feature.attributes.new=true;
-  SiteListLayer.addFeatures([feature]);
-  modFeature.selectControl.select(feature);
-  for(var i = 0; i< points.length; i++)
-    wkt = wkt+(i==0? '' : ', ')+points[i].x+' '+points[i].y;
-  wkt = wkt+', '+points[0].x+' '+points[0].y;
-  jQuery(\"#imp-boundary-geom\").val(\"POLYGON((\" + wkt + \"))\");
-  jQuery(\"#imp-geom\").val(\"POINT(\" + centre.x + \"  \" + centre.y + \")\");
-  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(\" + centre.x + \"  \" + centre.y + \")&system=2169&precision=8&callback=?\",
-    function(data){
-      if(typeof data.error != 'undefined')
-        alert(data.error);
-      else
-        setSref(data.sref);});
-};
-function onFeatureModified(evt) {
-  feature = evt.feature;
-  wkt = '';
-  points = feature.geometry.components[0].getVertices();
-  if(points.length < 3){
-    alert('".lang::get('LANG_TooFewPoints')."');
-    return;
-  }
-  centre = feature.geometry.getCentroid();
-  if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-    alert('".lang::get('LANG_CentreOutsideParent')."');
-  for(var i = 0; i< points.length; i++)
-    wkt = wkt+(i==0? '' : ', ')+points[i].x+' '+points[i].y;
-  wkt = wkt+', '+points[0].x+' '+points[0].y;
-  jQuery('#imp-boundary-geom').val(\"POLYGON((\" + wkt + \"))\");
-  jQuery('#imp-geom').val(\"POINT(\" + centre.x + \"  \" + centre.y + \")\");
-  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(\" + centre.x + \"  \" + centre.y + \")&system=2169&precision=8&callback=?\",
-    function(data){
-      if(typeof data.error != 'undefined')
-        alert(data.error);
-      else
-        jQuery('#centroid_sref').val(data.sref);});
-}
-
-// onSelect {Function} Optional function to be called when a feature is selected. 
-// callbacks {Object} The functions that are sent to the handlers.feature for callback
-drawControl=new OpenLayers.Control.DrawFeature(SiteListLayer,OpenLayers.Handler.Polygon,{'displayClass':'olControlDrawFeaturePolygon', drawFeature: addDrawnGeomToSelection});
-SiteListLayer.map.addControl(drawControl);
-modFeature = new OpenLayers.Control.ModifyFeature(SiteListLayer);
-SiteListLayer.map.addControl(modFeature);
-function setSpecifiedLocation() {
-  // need to leave the location parent id enabled. Don't need to set geometries as we are using an existing location.
-  // locComment holds the name of the creator of the location.
-  jQuery(\"#locWebsite,#locComment,#imp-geom,#imp-boundary-geom,#imp-sref,#imp-srefX,#imp-srefY\").attr('disabled','disabled');
-  jQuery(\"#location_name\").attr('name','sample:location_name').attr('readonly','readonly');
-}
-// have to be canny: want to highlight but not select if feature is not new.
-function onFeatureModify(evt) {
-  feature = evt.feature;
-  ZoomToFeature(feature);
-  for(var i=0; i<SiteListLayer.features.length; i++){
-    SiteListLayer.features[i].attributes.highlighted = false;
-    modFeature.selectControl.unhighlight(SiteListLayer.features[i]);
-  }
-  if(feature.attributes.new == true) {
-    return true;
-  }
-  for(var i=SiteListLayer.selectedFeatures.length-1; i>=0; i--){
-    modFeature.selectControl.unselect(SiteListLayer.selectedFeatures[i]);
-  }
-  removeDrawnGeom();
-  modFeature.selectControl.highlight(feature)
-  feature.attributes.highlighted = true;
-  setSpecifiedLocation();
-  jQuery(\"#sample_location_id\").val(feature.attributes.id);
-  jQuery(\"#location_name\").val(feature.attributes.name);
-  if(feature.attributes.sref=='TBC'){
-    centre = feature.geometry.getCentroid();
-    jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(\" + centre.x + \"  \" + centre.y + \")&system=2169&precision=8&callback=?\",
-      function(data){
-        if(typeof data.error != 'undefined')
-          alert(data.error);
-        else
-          setSref(data.sref);
-       });
-  } else {
-    setSref(feature.attributes.sref);
-  }
-  return false;
-}
-onChildFeatureLoad = function(feature, data, child_id, childArgs){
-  if(data.comment)
-    name = data.name +\"".lang::get('LANG_ExtendName')."\"+data.comment;
-  else
-    name = data.name;
-  if(child_id != '' && data.id == child_id){
-    // at this point we are dealing with an existing location: no need to worry about new ones, just highlight it.
-    feature.attributes.highlighted=true;
-    modFeature.selectControl.highlight(feature);
-    ZoomToHightlightedOrSelectedFeature(SiteListLayer);
-    jQuery(\"#sample_location_id\").append('<option value=\"'+data.id+'\" selected=\"selected\">'+name+'</option>');
-  } else {
-    feature.attributes.highlighted=false;
-    jQuery(\"#sample_location_id\").append('<option value=\"'+data.id+'\">'+name+'</option>');
-  }};
-
-SiteListLayer.events.on({
-    'beforefeaturemodified': onFeatureModify,
-    'featuremodified': onFeatureModified
-  });
-
-SiteListLayer.map.editLayer.clickControl.deactivate();
-SiteListLayer.map.editLayer.destroyFeatures();
-drawControl.activate();
-modFeature.activate();
-jQuery('#sample_location_id').change(function(){
-  for(var i=SiteListLayer.selectedFeatures.length-1; i>=0; i--){
-    modFeature.selectControl.unselect(SiteListLayer.selectedFeatures[i]);
-  }
-  removeDrawnGeom();
-  for(var i=0; i<SiteListLayer.features.length; i++){
-    SiteListLayer.features[i].attributes.highlighted = false;
-    modFeature.selectControl.unhighlight(SiteListLayer.features[i]);
-  }
-  setSpecifiedLocation();
-  if(jQuery(this).val()=='') return;
-  for(var i=0; i<SiteListLayer.features.length; i++)
-    if(SiteListLayer.features[i].attributes.id == jQuery(this).val()){
-      jQuery(\"#sample_location_id\").val(SiteListLayer.features[i].attributes.id);
-      jQuery(\"#location_name\").val(SiteListLayer.features[i].attributes.name);
-      if(SiteListLayer.features[i].attributes.sref=='TBC'){
-        centre = SiteListLayer.features[i].geometry.getCentroid();
-        jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=POINT(\" + centre.x + \"  \" + centre.y + \")&system=2169&precision=8&callback=?\",
-          function(data){
-            if(typeof data.error != 'undefined')
-              alert(data.error);
-            else
-              setSref(data.sref);
-           });
-      } else {
-        setSref(SiteListLayer.features[i].attributes.sref);
-      }
-      SiteListLayer.features[i].attributes.highlighted=true;
-      modFeature.selectControl.highlight(SiteListLayer.features[i]);
-      ZoomToHightlightedOrSelectedFeature(SiteListLayer);
-    }
-});
-";
-    if(isset(data_entry_helper::$entity_to_load['location:id']))
-      data_entry_helper::$onload_javascript .= "setSpecifiedLocation();
-loadFeatures(".data_entry_helper::$entity_to_load['location:parent_id'].",".data_entry_helper::$entity_to_load['location:id'].");
-";
-    if (array_key_exists('sample:id', data_entry_helper::$entity_to_load))
-      data_entry_helper::$late_javascript .= "
-setupButtons($('#controls'), 1);
-setupButtons($('#controls'), 2);
-setupButtons($('#controls'), 0);";
-      
-    return '';
+   return iform_mnhnl_locationmodule_lateJS($auth, $args, $tabalias, $options);
   }
   
-  protected static function get_control_locationbuttons($auth, $args, $tabalias, $options) {
-    return iform_mnhnl_locationButtonsControl($args, true, true);
-  }
-
   protected static function getSampleListGridPreamble() {
     global $user;
     $r = '<p>'.lang::get('LANG_SampleListGrid_Preamble').(iform_loctools_checkaccess(self::$node,'superuser') ? lang::get('LANG_All_Users') : $user->name).'</p>';
     return $r;
   }
+  
+  protected static function get_control_programmegrid($auth, $args, $tabalias, $options) {
+    $progIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Programme');
+    if (!$progIdAttr) return lang::get('The Programme Grid control must be used with a survey that has the Programme attribute associated with it.');
+    // the programme is a grouping of samples determined by the
+    // 1) the termlist id of the list of programmes: argument programmeTermListID
+    // 2) a default set of attributes to be loaded: survey 2, Suitablity
+    // 3) Overrides for specific programmes: Common wall disabled second survey
+    // Reports: samples grid
+    // report
+    $list = data_entry_helper::get_population_data(array('table' => 'termlist',
+        'extraParams' => $auth['read'] + array('external_key' => $options['programmeTermList'])));
+    if (count($list)==0) throw new Exception("Termlist ".$options['programmeTermList']." not available on the Warehouse");
+    if (count($list)>1) throw new Exception("Multiple termlists identified by ".$options['programmeTermList']." found on the Warehouse");
+    $termlist = $list[0]['id'];
+    $extraParams = $auth['read'] + array('termlist_id' => $termlist, 'view'=>'detail');
+    $programmes = data_entry_helper::get_population_data(array('table' => 'termlists_term', 'extraParams' => $extraParams));
+    $smpAttributes = data_entry_helper::getAttributes(array(
+       'attrtable'=>'sample_attribute'
+       ,'key'=>'sample_id'
+       ,'fieldprefix'=>'{MyPrefix}:smpAttr'
+       ,'extraParams'=>$auth['read']
+       ,'survey_id'=>$args['survey_id']
+    ), true);
+    $retval = '<br /><table class="programme-grid"><tr><th>'.lang::get('Programme').'</th><th></th>';
+    $attrList = explode(',', $options['defaultAttrs']);
+    foreach($attrList as $attrID){
+      $retval .= '<th></th>'; // blank headings: will put captions in table itself.
+      // $retval .= '<th>'.$smpAttributes[$attrID]['caption'].'</th>';
+    }
+    $retval .= '</tr>';
+    $subSamples = array();
+    $subSamplesAttrs = array();
+    if(isset(data_entry_helper::$entity_to_load['sample:id'])){
+      $smpOptions = array(
+        'table'=>'sample',
+        'nocache'=>true,
+        'extraParams'=> $auth['read']+ array('view'=>'detail', 'parent_id' => data_entry_helper::$entity_to_load['sample:id']));
+      $subSamples = data_entry_helper::get_population_data($smpOptions);
+      foreach($subSamples as $sample) {
+        $subSamplesAttrs[$sample['id']] = data_entry_helper::getAttributes(array(
+             'attrtable'=>'sample_attribute'
+            ,'valuetable'=>'sample_attribute_value'
+            ,'id'=>$sample['id']
+            ,'key'=>'sample_id'
+            ,'fieldprefix'=>'{MyPrefix}:smpAttr'
+            ,'extraParams'=>$auth['read']
+            ,'survey_id'=>$args['survey_id']), true);
+      }
+    }
+    // prog:sampleID:termlist_meaning_id:presence|smpAttr:attrdetails.
+    foreach($programmes as $programme){
+      $smpID=false;
+      $fieldname = '{MyPrefix}:presence:'.$progIdAttr;
+      $present='';
+      $attrOpts = array('lookUpKey'=>'meaning_id',
+                        'extraParams' => $auth['read'],
+                        'language' => iform_lang_iso_639_2($args['language']),
+                        'disabled'=>'disabled');
+      foreach($subSamples as $subSample){//    $retval .= '<tr><td><em> Checking attributes for subsample '.$subSample['id'].'</em></td></tr>';
+        foreach($subSamplesAttrs[$subSample['id']] as $attr) {
+          if($attr['attributeId'] == $progIdAttr && $attr['default'] == $programme['meaning_id']) {
+            $smpID=$subSample['id'];
+            $fieldname = str_replace('smpAttr','presence',$attr["fieldname"]);
+            $present=" checked=\"checked\" ";
+            unset($attrOpts['disabled']);
+          }
+        }
+      }
+      $fieldprefix='prog:'.($smpID ? $smpID : '-').':'.$programme['meaning_id'];
+      $retval .= str_replace('{MyPrefix}',$fieldprefix,'<tr><td>'.$programme['term'].'</td><td><input type="hidden" name="'.$fieldname.'" class="prog-presence" value=0><input type="checkbox" class="prog-presence" name="'.$fieldname.'" value=1 '.$present.'></td>');
+      foreach($attrList as $attrID){
+        $retval .= str_replace('{MyPrefix}',$fieldprefix, 
+              '<td class="prog-grid-cell">'.data_entry_helper::outputAttribute(($smpID ? $subSamplesAttrs[$smpID][$attrID] : $smpAttributes[$attrID]),
+                $attrOpts).'</td>');
+      }
+      $retval .= '</tr>';
+    }
+    $retval .= '</table><br />';
+    data_entry_helper::$javascript .= "// JS for programme grid control.
+jQuery('.prog-presence').change(function(){
+  if(jQuery(this).filter('[checked]').length>0) {
+    jQuery(this).closest('tr').find('input,select').removeAttr('disabled');
+    jQuery(this).closest('tr').find('input,select').not(':checkbox').not(':hidden').addClass('required').after('<span class=\"deh-required\">*</span>');
+  } else {
+    jQuery(this).closest('tr').find('.deh-required,.inline-error').remove();
+    jQuery(this).closest('tr').find('.required').removeClass('ui-state-error required');
+    jQuery(this).closest('tr').find('input,select').not(this).attr('disabled','disabled');
+  }
+});
+jQuery('.programme-grid').find('label').addClass('auto-width');";
+    if(isset($options['disableOptions'])){
+      $disableList = explode(',', $options['disableOptions']);
+      data_entry_helper::$javascript .= "
+jQuery('.programme-grid').find('[name*=\\:".$disableList[0]."\\:smpAttr\\:]').find('option').filter('[value=".$disableList[1]."]').attr('disabled','disabled');
+";
+    }    
+    data_entry_helper::$late_javascript .= "// JS for programme grid control.
+$.validator.addMethod('prog-presence', function(value, element){
+	return jQuery('.prog-presence').filter('[checked]').length > 0;
+},
+  \"".lang::get('validation_prog-presence')."\");
+";
+//    throw(1);
+    return $retval;
+  }
+  
   /**
    * Get the control for species input, either a grid or a single species input control.
    */
   protected static function get_control_species($auth, $args, $tabalias, $options) {
-    $extraParams = $auth['read'];
+    data_entry_helper::$javascript .= "
+// Main table existing entries
+speciesRows = jQuery('.species-grid > tbody').find('tr');
+for(var j=0; j<speciesRows.length; j++){
+	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
+	occAttrs.find(':text').addClass('required').width('30px').attr('min',1).after('<span class=\"deh-required\">*</span>');
+	occAttrs.find('select').addClass('required').width('auto').after('<span class=\"deh-required\">*</span>');
+}
+hook_species_checklist_pre_delete_row=function(e) {
+    return confirm(\"".lang::get('Are you sure you want to delete this row?')."\");
+};
+";
+  	$extraParams = $auth['read'];
     if ($args['species_names_filter']=='preferred') {
       $extraParams += array('preferred' => 't');
     }
@@ -717,7 +661,6 @@ setupButtons($('#controls'), 0);";
            ,'attrtable'=>'occurrence_attribute'
            ,'key'=>'occurrence_id'
            ,'fieldprefix'=>"{fieldname}"
-//           ,'fieldprefix'=>"sc:-ttlId-::occAttr"
            ,'extraParams'=>$options['readAuth']
            ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
       ));
@@ -797,7 +740,7 @@ setupButtons($('#controls'), 0);";
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
-        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species')." : </label><input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
+        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species to list')." : </label><input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
         // Javascript to add further rows to the grid
         data_entry_helper::$javascript .= "var formatter = function(rowData,taxonCell) {
   taxonCell.html(\"".lang::get('loading')."\");
@@ -980,12 +923,41 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
     $sampleMod = submission_builder::wrap_with_images($values, 'sample');
     if(!isset($values['sample:deleted'])) {
       if (isset($values['gridmode']))
-        $occurrences = self::wrap_species_checklist($values);
+        $subModels = self::wrap_species_checklist($values);
       else
-        $occurrences = submission_builder::wrap_with_images($values, 'occurrence');
-      if(count($occurrences)>0) 
-        $sampleMod['subModels'] = $occurrences;
-      if (isset($values['location:name'])){
+        $subModels = submission_builder::wrap_with_images($values, 'occurrence');
+      foreach($values as $key => $value){
+        $parts = explode(':', $key, 5);
+        if ($parts[0] == 'prog' && $parts[3] == 'presence'){
+          $smp = array('fkId' => 'parent_id', 'model' => array('id' => 'sample', 'fields' => array()));
+          $smp['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
+          $smp['model']['fields']['website_id'] = array('value' => $values['website_id']);
+          $smp['model']['fields']['date'] = array('value' => $values['sample:date']);
+          $smp['model']['fields']['smpAttr:'.$parts[4]] = array('value' => $parts[2]);
+          if(isset($values['sample:location_id']))
+            $smp['model']['fields']['location_id'] = array('value' => $values['sample:location_id']);
+          else
+            $smp['model']['fields']['location_id'] = array('value' => $values['location:parent_id']);
+          if($value != '1') $smp['model']['fields']['deleted'] = array('value' => 't');
+          if($parts[1] != '-') $smp['model']['fields']['id'] = array('value' => $parts[1]);
+          foreach($values as $key1 => $value1){
+            $moreParts = explode(':', $key1, 5);
+            if ($moreParts[0] == 'prog' && $moreParts[1] == $parts[1] && $moreParts[2] == $parts[2] && $moreParts[3]== 'smpAttr'){
+              $smp['model']['fields']['smpAttr:'.$moreParts[4]] = array('value' => $value1);
+            }
+          }
+          if(isset($values['sample:location_id'])) $smp['model']['fields']['location_id'] = array('value' => $values['sample:location_id']);
+          else {
+            $smp['model']['fields']['centroid_sref'] = array('value' => $values['sample:entered_sref']);
+            $smp['model']['fields']['centroid_sref_system'] = array('value' => $values['sample:entered_sref_system']);
+            $smp['model']['fields']['centroid_geom'] = array('value' => $values['sample:geom']);
+          }
+          if($value == '1' || $parts[1] != '-') $subModels[]=$smp;
+        }
+      }
+      if(count($subModels)>0)
+        $sampleMod['subModels'] = $subModels;
+      if (isset($values['location:location_type_id'])){
         $locationMod = submission_builder::wrap_with_images($values, 'location');
         $locationMod['subModels'] = array(array('fkId' => 'location_id', 'model' => $sampleMod));
         if(array_key_exists('locations_website:website_id', $_POST)){

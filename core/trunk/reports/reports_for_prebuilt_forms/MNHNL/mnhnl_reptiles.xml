@@ -4,9 +4,13 @@
 >
   <query>
   SELECT s.id as sample_id,
-  		sav1.text_value as creator,
+	    replace(replace(replace(ARRAY(select dtt.term::text from samples s2
+	      INNER JOIN sample_attribute_values sav ON sav.sample_id = s2.id AND sav.deleted = false AND sav.sample_attribute_id = #programme_attr_id#
+          INNER JOIN detail_termlists_terms dtt ON sav.int_value = dtt.meaning_id AND dtt.preferred = true
+          WHERE s2.parent_id = s.id AND s2.deleted = false)::text, '}', ''), '{', ''), '"', '') as programme,
   		parent.name as square,
   		s.location_name,
+  		sav1.text_value as creator,
   		s.date_start,
   		s.date_end,
   		s.date_type
@@ -34,12 +38,14 @@
     <param name='userID' display='CMS User ID' description='CMS User ID: use -1 for superusers' datatype='int' />
     <param name='userName_attr_id' display='CMS User Name Sample Attribute ID' description='Sample Attribute ID used to Identify User Name' datatype='int' />
     <param name='userName' display='CMS User Name' description='CMS User Name' datatype='text' />
+    <param name='programme_attr_id' display='Programme Sample Attribute ID' description='Sample Attribute ID used to Identify the Reptile Programme' datatype='int' />
   </params>
   <columns>
     <column name='sample_id' display='ID' />
-    <column name='creator' display='Entered By' />
+    <column name='programme' display='Programme' />
     <column name='square' display='Square (5x5 km)' />
     <column name='location_name' display='Site' />
+    <column name='creator' display='Entered By' />
     <column name='date' display='Date' />
   </columns>
 </report>

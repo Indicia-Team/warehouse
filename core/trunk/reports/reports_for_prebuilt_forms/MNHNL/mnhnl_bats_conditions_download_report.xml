@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="MNHNL Reptile Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+<report title="MNHNL Bats Conditions Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
       <params>
 		    <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
 		        query='SELECT id, title as caption FROM surveys' />
@@ -9,17 +9,19 @@
       		and #this#.parent_id IS NULL
       		and #this#.survey_id = #survey_id#" >
 		  <subTable tablename="locations" where="#this#.deleted = FALSE" >
-			<tabColumn name='name' display='location'/>
+			<tabColumn name='name' display='Site'/>
 			<tabColumn name='code' display='Code'/>
-			<tabColumn name='centroid_sref' display='Coordinates'/>
-			<tabColumn name='comment' display='Comment'/>
+            <tabColumn name='x' display='X' func="(split_part(#this#.centroid_sref, ', ', 1))" />
+            <tabColumn name='y' display='Y' func="(split_part(#this#.centroid_sref, ', ', 2))" />
+			<tabColumn name='comment' display='Site comment'/>
 			<attributes separator='|' meaningIdLanguage='preferred'/>
 		  </subTable>
  		  <tabColumn name='date_start' visible='false'/>
 		  <tabColumn name='date_end' visible='false'/>
 		  <tabColumn name='date_type' visible='false'/>
-		  <tabColumn name='date' func="''"/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
-		  <tabColumn name='comment' />
+		  <tabColumn name='date' func="''" display='Date' /> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
+          <tabColumn name='recorder_names' display='Recorder names' />
+		  <tabColumn name='comment' display='Visit comment'/>
           <attributes separator='|' meaningIdLanguage='preferred'/>
       </table>
 </report>

@@ -8,7 +8,8 @@
   		loccommune.text_value as commune,
   		locvillage.text_value as village,
   		username.text_value as username,
-  		l.centroid_sref,
+		split_part(l.centroid_sref, ', ', 1) as x,
+		split_part(l.centroid_sref, ', ', 2) as y,
   		s.date_start,
   		s.date_end,
   		s.date_type
@@ -42,7 +43,8 @@
     <column name='location_name' display='Nom du site' />
     <column name='commune' display='Commune' />
     <column name='village' display='Village/Lieu-dit' />
-    <column name='centroid_sref' display='SRef' />
+    <column name='x' display='X' />
+    <column name='y' display='Y' />
     <column name='date' display='Date' />
     <column name='username' display='User' />
   </columns>

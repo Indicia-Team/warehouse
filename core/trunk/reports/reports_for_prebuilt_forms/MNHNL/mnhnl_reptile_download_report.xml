@@ -6,6 +6,7 @@
         query='SELECT id, title as caption FROM surveys' />
     <param name='taxon_list_id' display='Taxon_list_id: ' description='Select the taxon_list to look up taxa in:' datatype='lookup'
         query='SELECT id, title as caption FROM taxon_lists' />
+    <param name='programme' display='Programme: ' description='Select the programme to return data for:' datatype='int' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE
       and #this#.parent_id IS NULL
@@ -17,20 +18,23 @@
     <tabColumn name='date_type' visible='false'/>
     <tabColumn name='date' func="''" display='Visit date'/> // dummy field for the vague date processing, here so appears at logical position and with reasonable description in the report
     <subTable tablename="locations" > // allow deleted Sites!
-      <tabColumn name='name' display='Site'/>
-      <tabColumn name='centroid_sref' display='Site centre coordinates'/>
       <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" >
         <tabColumn name='name' display='Square (5x5km)'/>
       </subTable>
+      <tabColumn name='name' display='Site'/>
+      <tabColumn name='x' display='X' func="(split_part(#this#.centroid_sref, ', ', 1))" />
+      <tabColumn name='y' display='Y' func="(split_part(#this#.centroid_sref, ', ', 2))" />
     </subTable>
     <attributes separator='|' meaningIdLanguage='preferred'/>
+    <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
+      <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id" where="#this#.deleted = FALSE and #this#.int_value = #programme#" >
+      </subTable>
+      <attributes separator='|' meaningIdLanguage='preferred'/>
+    </subTable>
     <subTable tablename="occurrences" parentKey="id" where=" #this#.deleted = FALSE" join="LEFT OUTER" >
       <tabColumn name='id' visible='true' display='Occurrence ID' />
       <tabColumn name='comment' display='Occurrence comment' />
       <subTable tablename='taxa_taxon_lists' join="LEFT OUTER" >
-        <subTable tablename='taxa' join="LEFT OUTER" >
-          <tabColumn name='taxon' display='Entered Species'/>
-        </subTable>
         <subTable tablename='taxa_taxon_lists' parentKey="taxon_meaning_id" tableKey="taxon_meaning_id" where="#this#.preferred = TRUE AND #this#.taxon_list_id = #taxon_list_id#" join="LEFT OUTER" >
           <subTable tablename='taxa' join="LEFT OUTER" >
             <tabColumn name='taxon' display='Species'/>
