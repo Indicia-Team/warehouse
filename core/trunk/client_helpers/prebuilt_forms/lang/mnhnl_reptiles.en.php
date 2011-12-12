@@ -107,7 +107,7 @@ $custom_terms = array(
 	'LANG_Tab_species' => 'Species',
 	'LANG_SpeciesInstructions'=>"Additional species may be added using the control under the grid.<br />Additional rows may be added using the control for existing taxa if a different combination of Type/Stage/Sex/Behaviour is to be added.<br />There are various combinations Type/Stage/Sex/Behaviour which are not allowed (eg an 'egg' can not be a 'dead specimen'). Such banned combinations will be greyed out in the drop down lists. In addition, it is not possible to enter multiple rows for the same combination of Species/Type/Stage/Sex/Behaviour: again duplicate possiblities will be greyed out.<br />If you think a combination is valid, but you can not select it, first check that there is no other existing row with this combination.<br />The 'No observation' can only be selected when there are no undeleted rows in the grid (when it must be selected) - otherwise it is disabled. Click the red 'X' to delete the relevant row.",
 	'species_checklist.species'=>'Species',
-	'Count'=>'Number',
+	'Count'=>'No.',
 	'Occurrence reliability'=>'Reliability',
 //	Counting
 //	'Type'=>'Type',

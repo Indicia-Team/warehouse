@@ -71,6 +71,17 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 div.olControlEditingToolbar  {
     width: 350px;
 }
-
+.species-grid td {
+  padding: 1px;
+}
+.ui-widget-header th {
+  padding-right: 8px;
+}
+#imp-srefX {
+	width: 60px;
+}
+#imp-srefY {
+	width: 60px;
+}
 
 

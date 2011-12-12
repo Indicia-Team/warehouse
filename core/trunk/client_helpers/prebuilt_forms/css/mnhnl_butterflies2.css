@@ -87,5 +87,10 @@ div.olControlEditingToolbar div.olControlStartNewSiteItemInactive {
 div.olControlEditingToolbar  {
     width: 350px;
 }
-
+#imp-srefX {
+	width: 60px;
+}
+#imp-srefY {
+	width: 60px;
+}
 
