@@ -32,6 +32,17 @@
   <option value="900913">EPSG:900913: Google Projection</option>
   <option value="2169">EPSG:2169 Luxembourg 1930</option>
 </select><br/>
+<label for='type' class='wide' >Location type for all</label>
+<select id='type' name='type' >
+<?php 
+  $termlist = ORM::factory('termlist')->where('title', 'Location types')->find();
+  $terms = $termlist->orderby('term', 'asc')->terms;
+  echo '<option value="" >&lt;Not applicable&gt;</option>';
+  foreach ($terms as $term) {
+    echo '<option value="'.$term->id.'" >'.$term->term.'</option>';
+  }
+  ?>
+</select><br/>
 <label for='website_id' class='wide' >Default Website to attach any new locations to</label>
 <select id='website_id' name='website_id' >
 <?php
