@@ -32,7 +32,7 @@
   <option value="900913">EPSG:900913: Google Projection</option>
   <option value="2169">EPSG:2169 Luxembourg 1930</option>
 </select><br/>
-<label for='SRID' class='wide' >Default Website to attach any new locations to</label>
+<label for='website_id' class='wide' >Default Website to attach any new locations to</label>
 <select id='website_id' name='website_id' >
 <?php
   
@@ -46,14 +46,15 @@
   ?>
 </select><br/>
 
-<label for='prepend'>Optional text to prepend to field identified below to create location name in database</label>
+<label for='prepend' class ="wide">Optional text to prepend to field identified below to create location name in database</label>
 <input id='prepend' name="prepend" /><br />
 <input type='hidden' name='uploaded_zip' <?php echo 'value="'.$_SESSION['uploaded_zip'].'"'; ?>/><br/>
 <input type='hidden' name='extracted_basefile' <?php echo 'value="'.$_SESSION['extracted_basefile'].'"'; ?>/><br/>
-<p>Please indicate which column in the DBF file should be used to identify the name of the location.</p>
+<p>Please indicate which column in the DBF file should be used to identify the name of the location.<br />
+You can also indicate a column to identify a parent location and a code field.</p>
 <table class="ui-widget ui-widget-content">
 <thead class="ui-widget-header">
-<tr><th>Column in DBF File</th><th>Name?</th><th>Parent Name?</th></tr>
+<tr><th>Column in DBF File</th><th>Name?</th><th>Parent Name?</th><th>Code?</th></tr>
 </thead>
 <tbody>
 <?php $i=0;
@@ -61,8 +62,9 @@ foreach ($columns as $col): ?>
   <tr class="<?php echo ($i % 2 == 0) ? 'evenRow' : 'oddRow'; ?>">
   <?php $i++; ?>
     <td><?php echo $col['name']; ?></td>
-    <td><input type="radio" value="<?php echo $col['name']; ?>" name="name" /></td>
-    <td><input type="radio" value="<?php echo $col['name']; ?>" name="parent" /></td>
+    <td><input type="radio" class="narrow" value="<?php echo $col['name']; ?>" name="name" /></td>
+    <td><input type="radio" class="narrow" value="<?php echo $col['name']; ?>" name="parent" /></td>
+    <td><input type="radio" class="narrow" value="<?php echo $col['name']; ?>" name="code" /></td>
   </tr>
 <?php endforeach; ?>
 </tbody>

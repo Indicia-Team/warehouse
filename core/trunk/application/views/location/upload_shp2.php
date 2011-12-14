@@ -23,10 +23,10 @@
 ?>
 <?php 
 foreach ($update as $row):
-  echo '<p>Location with name "'.$row.'" updated.</p>';
+  echo '<p>Location with name "'.$row.'" updated. (<a href="edit/'.$location_id[$row].'">Edit</a>)</p>';
 endforeach; ?>
 <?php 
 foreach ($create as $row):
-  echo '<p>New location with name "'.$row.'" created.</p>';
+  echo '<p>New location with name "'.$row.'" created. (<a href="edit/'.$location_id[$row].'">Edit</a>)</p>';
 endforeach; ?>
 
