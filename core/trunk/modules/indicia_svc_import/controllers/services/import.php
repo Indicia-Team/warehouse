@@ -77,7 +77,7 @@ class Import_Controller extends Service_Base_Controller {
   
   /**
    * Handle uploaded files in the $_FILES array by moving them to the upload folder. The current time is prefixed to the 
-   * name to make it unique.
+   * name to make it unique. The uploaded file should be in a field called media_upload.
    */
   public function upload_csv()
   {
@@ -93,7 +93,10 @@ class Import_Controller extends Service_Base_Controller {
         'media_upload', 'upload::valid', 'upload::required',
         'upload::type[csv]', "upload::size[$ups]"
       );
-      if ($_FILES->validate())
+      if (count($_FILES)===0) {
+        echo "No file was uploaded.";
+      }
+      elseif ($_FILES->validate())
       {
         if (array_key_exists('name_is_guid', $_POST) && $_POST['name_is_guid']=='true') 
           $finalName = strtolower($_FILES['media_upload']['name']);
@@ -190,12 +193,11 @@ class Import_Controller extends Service_Base_Controller {
         // skip rows to allow for the last file position
         fseek($handle, $filepos);
       $count=0;
-      $model = ORM::Factory($_GET['model']);
+      $model = ORM::Factory($_GET['model']);      
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         $count++;
         $index = 0;
         $saveArray = $model->getDefaults();
-        
         // Note, the mappings will always be in the same order as the columns of the CSV file
         foreach ($metadata['mappings'] as $col=>$attr) {
           if (isset($data[$index])) {
@@ -238,7 +240,7 @@ class Import_Controller extends Service_Base_Controller {
       }
       // Get percentage progress
       $progress = $filepos * 100 / filesize($csvTempFile);
-      $r = "{uploaded:$count,progress:$progress,filepos:$filepos}";
+      $r = "{\"uploaded\":$count,\"progress\":$progress,\"filepos\":$filepos}";
       // allow for a JSONP cross-site request
       if (array_key_exists('callback', $_GET)) {
         $r = $_GET['callback']."(".$r.")";
