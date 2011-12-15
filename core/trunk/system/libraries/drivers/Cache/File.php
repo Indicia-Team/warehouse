@@ -54,7 +54,9 @@ class Cache_File_Driver implements Cache_Driver {
 
 			// Find all tags matching the given tag
 			$files = array();
-			foreach ($paths as $path)
+      // Change for Indicia. Test $paths is not false, as it seems some servers will return false instead of an empty 
+      // array of files if no matches.
+			if ($paths) foreach ($paths as $path)
 			{
 				// Split the files
 				$tags = explode('~', basename($path));
