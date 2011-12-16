@@ -25,7 +25,12 @@ echo html::script(array(
   'media/js/jquery.bgiframe.min.js',
   'media/js/jquery.autocomplete.js'
 ), FALSE); 
-$id = html::initial_value($values, 'taxa_taxon_list:id'); 
+
+require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+require_once(DOCROOT.'client_helpers/form_helper.php');
+$id = html::initial_value($values, 'taxa_taxon_list:id');
+if (isset($_POST))
+  data_entry_helper::dump_errors(array('errors'=>$this->model->getAllErrors()));
 ?>
 <script type="text/javascript" >
 $(document).ready(function() {
@@ -187,6 +192,51 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
 </li>
 </ol>
 </fieldset>
+<fieldset>
+ <legend>Taxon Attributes</legend>
+ <ol>
+ <?php
+ foreach ($values['attributes'] as $attr) {
+	$name = 'taxAttr:'.$attr['taxa_taxon_list_attribute_id'];
+  // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+  if ($attr['id']) $name .= ':'.$attr['id'];
+	switch ($attr['data_type']) {
+    case 'Specific Date':
+    case 'Vague Date':
+      echo data_entry_helper::date_picker(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+      break;
+    case 'Lookup List':
+      echo data_entry_helper::select(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['raw_value'],
+        'lookupValues' => $values['terms_'.$attr['termlist_id']],
+        'blankText' => '<Please select>'
+      ));
+      break;
+    case 'Boolean':
+      echo data_entry_helper::checkbox(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+      break;
+    default:
+      echo data_entry_helper::text_input(array(
+        'label' => $attr['caption'],
+        'fieldname' => $name,
+        'default' => $attr['value']
+      ));
+  }
+	
+}
+ ?>
+ </ol>
+ </fieldset>
 <?php
 echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null); 
 ?>

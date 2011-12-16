@@ -122,17 +122,57 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   }
   
   /**
-   * Loads the custom attributes for a sample, location or occurrence into the load array. Also sets up
-   * any lookup lists required.
+   * Loads the custom attributes for a taxon, sample, location or occurrence into the load array. 
+   * Also sets up any lookup lists required.
    * This is only called by sub-classes for entities that have associated attributes.
    */
-  protected function loadAttributes(&$r) {
-    // Grab all the custom attribute data
-    $attrs = $this->db->
-        from('list_'.$this->model->object_name.'_attribute_values')->
-        where($this->model->object_name.'_id', $this->model->id)->
-        get()->as_array(false);
+  protected function loadAttributes(&$r, $in) {
+    // First load up the possible attribute list
+    $this->db->from('list_'.$this->model->object_name.'_attributes');
+    foreach($in as $field=>$values)
+      $this->db->in($field, $values);
+    $result = $this->db->get()->as_array(true);
+    $attrs = array();
+    foreach($result as $attr) {
+      $attrs[$attr->id] = array(
+        'id' => null, // the attribute value ID, which we don't know yet
+        $this->model->object_name.'_id'=>null,
+        $this->model->object_name.'_attribute_id' => $attr->id,
+        'data_type' => $attr->data_type,
+        'caption' => $attr->caption,
+        'value' => null,
+        'raw_value' => null,
+        'termlist_id' => $attr->termlist_id,
+        'validation_rules' => $attr->validation_rules
+      );
+    }
+    // now load up the values and splice into the array
+    if ($this->model->id!==0) {
+      $where = array($this->model->object_name.'_id'=>$this->model->id);
+      $this->db
+        ->from('list_'.$this->model->object_name.'_attribute_values')
+        ->where($where);
+      $result = $this->db->get()->as_array(false);
+      $toRemove = array();
+      foreach ($result as $value) {
+        $attrId = $value[$this->model->object_name.'_attribute_id'];
+        if (isset($attrs[$attrId])) {
+          // copy the attribute def into an array entry specific to this value
+          $attrs[$attrId.':'.$value['id']] = array_merge($attrs[$attrId]);
+          $attrs[$attrId.':'.$value['id']]['id']=$value['id'];
+          $attrs[$attrId.':'.$value['id']]['value'] = $value['value'];
+          $attrs[$attrId.':'.$value['id']]['raw_value'] = $value['raw_value'];
+          // remember the non-value specific attribute so we can remove it at the end
+          $toRemove[] = $attrId;
+        }
+      }
+      // clean up any attributes which are repeated in the list because they have values
+      foreach ($toRemove as $attrId) {
+        unset($attrs[$attrId]);
+      }
+    }
     $r['attributes'] = $attrs;
+    // now work out if we need termlist content for lookups
     foreach ($attrs as $attr) {
       // if there are any lookup lists in the attributes, preload the options     
       if (!empty($attr['termlist_id'])) {

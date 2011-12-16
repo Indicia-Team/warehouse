@@ -290,6 +290,9 @@ class submission_builder extends helper_config {
       case 'sample':
         $prefix = 'smp';
         break;
+      case 'taxa_taxon_list':
+        $prefix = 'tax';
+        break;
       default:
         if ($except) 
 		  throw new Exception('Unknown attribute type. ');

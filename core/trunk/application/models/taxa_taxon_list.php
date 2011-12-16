@@ -40,6 +40,11 @@ class Taxa_taxon_list_Model extends Base_Name_Model {
     'created_by' => 'user',
     'updated_by' => 'user'
   );
+  
+  // Declare that this model has child attributes, and the name of the node in the submission which contains them
+  protected $has_attributes=true;
+  protected $attrs_submission_name='taxAttributes';
+  protected $attrs_field_prefix='taxAttr';
 
   protected $ORM_Tree_children = 'taxa_taxon_lists';  
   protected $list_id_field = 'taxon_list_id';

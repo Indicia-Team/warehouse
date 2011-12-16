@@ -108,7 +108,7 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-
+    $this->loadAttributes($r, array('taxon_list_id'=>array($this->model->taxon_list_id)));
     // Add items to view
     $all_names = $this->model->getSynonomy('taxon_meaning_id', $this->model->taxon_meaning_id);
     $r = array_merge($r, array(
@@ -130,7 +130,13 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
       if (array_key_exists('taxa_taxon_list:parent_id', $_POST)) {
         $r['taxa_taxon_list:parent_id']=$_POST['taxa_taxon_list:parent_id'];
       }
+    } else {
+      // after a validation failure, the list id is in the post data
+      $r['taxa_taxon_list:taxon_list_id'] = $_POST['taxa_taxon_list:taxon_list_id'];
     }
+    $this->loadAttributes($r, 
+        array('taxon_list_id'=>array($r['taxa_taxon_list:taxon_list_id']))
+    );
     return $r;
   }
 

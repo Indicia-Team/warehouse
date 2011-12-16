@@ -712,6 +712,8 @@ class ReportEngine {
             $query = $this->mergeAttrListParam($query, 'occurrence', $value);
           elseif ($paramDefs[$name]['datatype']=='locattrs')
             $query = $this->mergeAttrListParam($query, 'location', $value);
+          elseif ($paramDefs[$name]['datatype']=='taxattrs')
+            $query = $this->mergeAttrListParam($query, 'taxa_taxon_list', $value);
           else 
             $query = preg_replace("/#$name#/", $value, $query);
         }

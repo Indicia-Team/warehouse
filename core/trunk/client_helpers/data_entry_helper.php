@@ -3403,8 +3403,8 @@ if (errors.length>0) {
    * Helper function to simplify building of a submission that contains a single sample
    * and occurrence record.
    * @param array $values List of the posted values to create the submission from. Each entry's
-   * key should be occurrence:fieldname, sample:fieldname, occAttr:n or smpAttr:n to be correctly
-   * identified.
+   * key should be occurrence:fieldname, sample:fieldname, occAttr:n, smpAttr:n or taxAttr:n 
+   * to be correctly identified.
    */
   public static function build_sample_occurrence_submission($values) {
     $structure = array(

@@ -181,15 +181,15 @@ foreach ($values['attributes'] as $attr) {
   // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
   if ($attr['id']) $name .= ':'.$attr['id'];
   switch ($attr['data_type']) {
-    case 'Specific Date':
-    case 'Vague Date':
+    case 'D':
+    case 'V':
       echo data_entry_helper::date_picker(array(
         'label' => $attr['caption'],
         'fieldname' => $name,
         'default' => $attr['value']
       ));
       break;
-    case 'Lookup List':
+    case 'L':
       echo data_entry_helper::date_picker(array(
         'label' => $attr['caption'],
         'fieldname' => $name,
@@ -197,7 +197,7 @@ foreach ($values['attributes'] as $attr) {
         'lookupValues' => $values['terms_'.$attr['termlist_id']]
       ));
       break;
-    case 'Boolean':
+    case 'B':
       echo data_entry_helper::checkbox(array(
         'label' => $attr['caption'],
         'fieldname' => $name,

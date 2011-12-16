@@ -713,7 +713,7 @@ class ORM extends ORM_Core {
       } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
         foreach($this->submission['fields'] as $field => $content) {
-          // look for pattern smpAttr:nn (or occAttr or locAttr)
+          // look for pattern smpAttr:nn (or occAttr, taxAttr or locAttr)
           $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:[0-9]+/', $field, $baseAttrName);   
           if ($isAttribute) {
             // extract the nn, this is the attribute id
@@ -1070,7 +1070,7 @@ class ORM extends ORM_Core {
       }
     }
 
-    // Hook to the owning entity (the sample, location or occurrence)
+    // Hook to the owning entity (the sample, location, taxa_taxon_list or occurrence)
     $thisFk = $this->object_name.'_id';
     $attrValueModel->$thisFk = $this->id;
     // and hook to the attribute

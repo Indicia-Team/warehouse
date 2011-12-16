@@ -98,7 +98,8 @@ class Indicia_Controller extends Template_Controller {
         $menu['Custom Attributes'] = array(
           'Occurrence Attributes'=>'occurrence_attribute',
           'Sample Attributes'=>'sample_attribute',
-          'Location Attributes'=>'location_attribute'
+          'Location Attributes'=>'location_attribute',
+          'Taxon Attributes'=>'taxa_taxon_list_attribute'
         );
       if ($this->auth->has_any_website_access('editor') || $this->auth->logged_in('CoreAdmin'))
         $menu['Entered Data'] = array(

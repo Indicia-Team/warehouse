@@ -174,7 +174,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   }
 
   /**
-  * Provides the /service/data/occurrence_attribute service.
+  * Provides the /service/data/determination service.
   * Retrieves details of occurrence attributes.
   */
   public function determination()
@@ -272,6 +272,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   public function taxa_taxon_list()
   {
     $this->handle_call('taxa_taxon_list');
+  }
+  
+  /**
+  * Provides the /service/data/occurrence_attribute service.
+  * Retrieves details of occurrence attributes.
+  */
+  public function taxa_taxon_list_attribute()
+  {
+  $this->handle_call('taxa_taxon_list_attribute');
+  }
+
+  /**
+  * Provides the /service/data/taxa_taxon_list_attribute_value service.
+  * Retrieves details of occurrence attribute values.
+  */
+  public function taxa_taxon_list_attribute_value()
+  {
+  $this->handle_call('taxa_taxon_list_attribute_value');
   }
 
   /**
@@ -618,6 +636,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     }
     catch (Exception $e) {
       kohana::log('error', 'Error occurred running the following query from a service request:');
+      kohana::log('error', $e->getMessage());
       kohana::log('error', $this->db->last_query());
       kohana::log('error', 'Request detail:');
       kohana::log('error', $this->uri->string());

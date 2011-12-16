@@ -71,13 +71,24 @@ class Occurrence_controller extends Gridview_Base_Controller {
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $this->loadAttributes($r);
+    $this->loadAttributes($r, array(
+        'website_id'=>array($r['occurrence:website_id']),
+        'restrict_to_survey_id'=>array(null, $r['sample:survey_id'])
+    ));
     return $r;  
   }
   
   protected function getDefaults() {
     $r = parent::getDefaults();
-    $this->loadAttributes($r);
+    // as you can't create an occurrence in the warehouse, no logic yet for which attributes
+    // to display
+    if ($this->uri->method(false)!=='create') {
+      $sample = ORM::Factory('sample', $_POST['occurrence:sample_id']);
+      $this->loadAttributes($r, array(
+          'website_id'=>array($_POST['occurrence:website_id']),
+          'restrict_to_survey_id'=>array(null, $sample->survey_id)
+      ));
+    }
     return $r;
   }
   

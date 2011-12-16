@@ -183,7 +183,7 @@ class Sample_Model extends ORM_Tree
     return $value;
   }
   
-    /**
+  /**
    * Return a displayable caption for the item.
    * For samples this is a combination of the date and spatial reference.
    */

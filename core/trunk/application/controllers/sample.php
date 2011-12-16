@@ -47,8 +47,12 @@ class Sample_Controller extends Gridview_Base_Controller
 
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $this->loadAttributes($r);
     $r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
+    $this->loadAttributes($r, array(
+        'website_id'=>array($r['website_id']),
+        'restrict_to_survey_id'=>array(null, $r['sample:survey_id']),
+        'restrict_to_sample_method_id'=>array(null, $r['sample:sample_method_id'])
+    ));
     return $r;      
   }
   
@@ -58,10 +62,14 @@ class Sample_Controller extends Gridview_Base_Controller
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    $this->loadAttributes($r);
     if (array_key_exists('sample:survey_id', $_POST)) {
       $r['sample:survey_id'] = $_POST['sample:survey_id'];
       $r['website_id']=ORM::factory('survey', $r['sample:survey_id'])->website_id;
+      $this->loadAttributes($r, array(
+        'website_id'=>array($r['website_id']),
+        'restrict_to_survey_id'=>array(null, $r['sample:survey_id']),
+        'restrict_to_sample_method_id'=>array(null, $r['sample:sample_method_id'])
+      ));
     }
     return $r;
   }

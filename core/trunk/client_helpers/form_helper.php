@@ -332,6 +332,8 @@ $('#load-params').click(function(evt) {
         'int'=>'text_input',
         'smpAttr'=>'text_input',
         'occAttr'=>'text_input',
+        'locAttr'=>'text_input',
+        'taxAttr'=>'text_input',
         'termlist'=>'text_input',
         'boolean'=>'checkbox',
         'list'=>'checkbox_group'

@@ -213,36 +213,31 @@ $(document).ready(function() {
   <li id="li_valid_time"><label class="narrow" for="valid_integer">Time</label><?php echo form::checkbox('valid_time', TRUE, isset($model->valid_time) AND ($model->valid_time == 't'), 'class="vnarrow" '.$enabled ) ?></li>
 </ol>
 </fieldset>
-<fieldset><legend><?php echo $other_data['name']; ?> Attribute
-Website/Survey Allocation</legend>
+<fieldset><legend><?php echo $other_data['name']; ?> attribute
+species list allocation</legend>
+  <ol>
 <?php
-if (!is_null($this->auth_filter))
-  $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
+// TODO this query must filter out the taxon_lists_taxa_taxon_list_attributes.deleted flag (in (false or null))
+
+if (is_null($this->auth_filter))
+  $lists = ORM::factory('taxon_list')->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
 else
-  $websites = ORM::factory('website')->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
-foreach ($websites as $website) {
-  $webrec = ORM::factory($other_data['webrec_entity'])->where(array($other_data['webrec_key'] => $model->id,
-                            'website_id' => $website->id,
-                            'restrict_to_survey_id IS' => null,
-                            'deleted' => 'f'))->find();
-
-  echo '<div class="ui-corner-all ui-widget"><div class="ui-corner-all ui-widget-header">'.$website->title.'</div><ol><li><label for="website_'.$website->id.'" class="wide" >'.$website->title.': non survey specific</label>';
-  echo form::checkbox('website_'.$website->id, TRUE, $webrec->loaded, 'class="vnarrow"');
-  echo "</li>";
-  $surveys = ORM::factory('survey')->where(array('website_id'=>$website->id, 'deleted'=>'f'))->orderby('title','asc')->find_all();
-  foreach ($surveys as $survey) {
-    $webrec = ORM::factory($other_data['webrec_entity'])->where(array($other_data['webrec_key'] => $model->id,
-                            'website_id' => $website->id,
-                            'restrict_to_survey_id' => $survey->id,
-                            'deleted'=>'f'))->find();
-    echo '<li><label for="website_'.$website->id.'_'.$survey->id.'" class="wide" >'.$website->title.':'.$survey->title.'</label>';
-    echo form::checkbox('website_'.$website->id.'_'.$survey->id, TRUE, $webrec->loaded, 'class="vnarrow"');
-    echo "</li>";
-  }
-  echo '</ol></div>';
-
+  $lists = ORM::factory('taxon_list')->where(array('deleted'=>'f'))->in('website_id',$this->auth_filter['values'])->orderby('title','asc')->find_all();
+foreach ($lists as $list) {
+  $rec = $this->db->select('id')
+      ->from('taxon_lists_taxa_taxon_list_attributes')
+      ->where(array(
+        'taxon_list_id'=>$list->id, 
+        'taxa_taxon_list_attribute_id'=>html::initial_value($values,$model->object_name.':id'),
+        'deleted'=>'f'
+      ))
+      ->get()->result_array();
+  echo '<li><label for="taxon_list_'.$list->id.'" class="wide">'.$list->title.'</label>';
+  echo form::checkbox('taxon_list_'.$list->id, TRUE, count($rec)>0, 'class="vnarrow"');
+  echo '</li>';
 }
 ?>
+  </ol>
 </fieldset>
 <?php echo $metadata;
 echo html::form_buttons(html::initial_value($values, $model->object_name.':id')!=null);

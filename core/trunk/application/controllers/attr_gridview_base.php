@@ -23,7 +23,7 @@
 
 /**
 * Base class for controllers which provide CRUD access to the lists of custom attributes
-* associated with locations, occurrences or sample entities.
+* associated with locations, occurrences, taxa_taxon_list or sample entities.
 *
 * @package	Core
 * @subpackage Controllers
@@ -35,7 +35,7 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
   public function __construct()
   {
     parent::__construct($this->prefix.'_attribute', 'custom_attribute/index');
-    $this->pagetitle = ucfirst($this->prefix).' Custom Attributes';
+    $this->pagetitle = ucfirst($this->prefix).' Attributes';
     $this->columns = array
     (
       'id'=>'',
@@ -77,9 +77,8 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
     if ($this->auth->logged_in('CoreAdmin')) {
       $r['metaFields:disabled_input']='NO';
     } else {
-      // We need to know if this attribute is unique to the website
-      $count = ORM::factory($this->prefix.'_attributes_website')->where($this->model->object_name.'_id',$this->model->id)->find_all()->count();
-      $r['metaFields:disabled_input']=$count<=1 ? 'NO' : 'YES';
+      // We need to know if this attribute was created by the logged in user
+      $r['metaFields:disabled_input']=$this->model->created_by_id==($_SESSION['auth_user']->id) ? 'NO' : 'YES';
     }
     $this->model->populate_validation_rules();
     return $r;
@@ -90,7 +89,7 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
   }
 
   public function save() {
-    if ($_POST['metaFields:disabled_input'] == 'NO') {
+    if ($_POST['metaFields:disabled_input']==='NO') {
       // Build the validation_rules field from the set of controls that are associated with it.
       $rules = array();
       foreach(array('required', 'alpha', 'email', 'url', 'alpha_numeric', 'numeric', 'standard_text','date_in_past','time','digit','integer') as $rule) {

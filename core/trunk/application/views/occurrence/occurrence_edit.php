@@ -99,8 +99,12 @@ echo $metadata;
 $sample = $model->sample;
 ?>
 <fieldset class="readonly">
-<legend>Sample information</legend>
+<legend>Sample summary</legend>
 <ol>
+<li>
+<label>Sample link:</label>
+<a href="<?php echo url::site(); ?>sample/edit/<?php echo $sample->id; ?>">ID <?php echo $sample->id;?></a>
+</li>
 <li>
 <label>Survey:</label>
 <input readonly="readonly" type="text" value="<?php echo $sample->survey->title; ?>"/>
@@ -205,16 +209,16 @@ foreach ($values['attributes'] as $attr) {
   if ($attr['id']) $name .= ':'.$attr['id'];
   echo '<li><label for="">'.$attr['caption']."</label>\n";
   switch ($attr['data_type']) {
-    case 'Specific Date':
+    case 'D':
       echo form::input($name, $attr['value'], 'class="date-picker"');
       break;
-    case 'Vague Date':
+    case 'V':
       echo form::input($name, $attr['value'], 'class="vague-date-picker"');
       break;
-    case 'Lookup List':
+    case 'L':
       echo form::dropdown($name, $values['terms_'.$attr['termlist_id']], $attr['raw_value']);	  
       break;
-    case 'Boolean':
+    case 'B':
       echo form::dropdown($name, array(''=>'','0'=>'false','1'=>'true'), $attr['value']);
       break;
     default:

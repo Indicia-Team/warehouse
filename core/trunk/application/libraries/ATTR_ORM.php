@@ -72,12 +72,14 @@ abstract class ATTR_ORM extends Valid_ORM {
     }
   }
 
+  /**
+   * After saving, ensures that the join records linking the attribute to a website
+   * & survey combination are created or deleted.
+   * @return boolean Returns true to indicate success. 
+   */
   protected function postSubmit() {
     // Record has saved correctly or is being reused
-    /*if(!is_null($this->gen_auth_filter))
-      $websites = ORM::factory('website')->in('id', $this->gen_auth_filter['values'])->find_all();
-    else*/
-      $websites = ORM::factory('website')->find_all();
+    $websites = ORM::factory('website')->find_all();
     foreach ($websites as $website) {
       // First check for non survey specific checkbox
       $this->set_attribute_website_record($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
@@ -89,6 +91,15 @@ abstract class ATTR_ORM extends Valid_ORM {
     return true;
   }
 
+  /**
+   * Internal function to ensure that an attribute is linked to a website/survey combination
+   * or alternatively is unlinked from the combination. Checks the existing data and 
+   * creates or deletes the join record as and when necessary.
+   * @param integer $attr_id Id of the attribute.
+   * @param integer $website_id ID of the website.
+   * @param integer $survey_id ID of the survey.
+   * @param boolean $checked True if there should be a link, false if not. 
+   */
   private function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
   {
     $attributes_website = ORM::factory(inflector::plural($this->object_name).'_website',

@@ -89,6 +89,7 @@ $default_terms = array(
   'smpAttr' => 'Sample Custom Attributes',
   'occAttr' => 'Occurrence Custom Attributes',
   'locAttr' => 'Location Custom Attributes',
+  'taxAttr' => 'Taxon Custom Attributes',
   'fkFilter' => 'Lookup Filters'
 );
 

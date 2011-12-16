@@ -60,11 +60,10 @@ class Occurrence_Model extends ORM
 
   /**
    * Returns a caption to identify this model instance.
-   * @todo This could be much better than just an id. Preferable configurable?
    */ 
   public function caption()
   {
-    return $this->id;
+    return 'Record of '.$this->taxa_taxon_list->taxon->taxon;
   }
 
   public function validate(Validation $array, $save = false) {
