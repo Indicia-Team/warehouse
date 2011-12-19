@@ -63,6 +63,14 @@ class Taxa_taxon_list_attribute_Controller extends Attr_Gridview_Base_Controller
       'controllerpath' => $this->controllerpath
     );
   }
+  
+  public function save() {
+    if ($_POST['metaFields:disabled_input']==='NO') {
+      // Make sure checkboxes have a value as unchecked values don't appear in $_POST
+      if (!array_key_exists($this->model->object_name.':for_verification_check', $_POST)) $_POST[$this->model->object_name.':for_verification_check'] = '0';
+    }
+    parent::save();
+  }
 
 }
 ?>

@@ -38,6 +38,11 @@ class Taxa_Taxon_List_Attribute_Model extends ATTR_ORM {
 
   protected $has_and_belongs_to_many = array('websites');
   
+  public function validate(Validation $array, $save = FALSE) {
+    $array->add_rules('for_verification_check', 'required');
+    return parent::validate($array, $save);
+  }
+  
   /**
    * After saving, ensures that the join records linking the attribute to a taxon 
    * list are created or deleted.

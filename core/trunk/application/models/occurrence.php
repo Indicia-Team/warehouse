@@ -86,7 +86,10 @@ class Occurrence_Model extends ORM
       'confidential',
       'use_determination',
       'external_key',
-      'zero_abundance'
+      'zero_abundance',
+      'last_verification_check_date',
+      'last_verification_check_taxa_taxon_list_id',
+      'last_verification_check_version'
     );
     if(array_key_exists('id', $fieldlist)) {
       $existingRecord = ORM::factory('occurrence', $fieldlist['id']);

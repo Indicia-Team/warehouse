@@ -55,6 +55,13 @@
 <input type="password" id="password2" name="password2" value="<?php echo html::initial_value($values, 'password2'); ?>" />
 <?php echo html::error_message($model->getError('website:password2')); ?>
 </li>
+<li>
+<input type="hidden" name="website:verification_checks_enabled" value="f" />
+<label for="verification_checks_enabled">Enable auto-verification checks:</label>
+<?php $checked = (html::initial_value($values, 'website:verification_checks_enabled')==='t') ? 'checked="checked"' : ''; ?>
+<input type="checkbox" id="verification_checks_enabled" name="website:verification_checks_enabled" <?php echo $checked; ?>/>
+<?php echo html::error_message($model->getError('website:verification_checks_enabled')); ?>
+</li>
 </ol>
 </fieldset>
 <?php echo html::form_buttons(html::initial_value($values, 'website:id')!=null); ?>

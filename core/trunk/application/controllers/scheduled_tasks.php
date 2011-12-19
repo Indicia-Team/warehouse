@@ -48,6 +48,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
     $currentTime = time();
     $this->checkTriggers();
+    $this->runScheduledPlugins();
     $swift = email::connect();
     $this->doRecordOwnerNotifications($swift);
     $this->doDigestNotifications($swift);
@@ -387,6 +388,33 @@ class Scheduled_Tasks_Controller extends Controller {
       if (!empty($value) && !in_array($field, $excludedFields)) {
         $emailContent .= "<tr><td>$field</td><td>$value</td></tr>";
       }
+    }
+  }
+  
+  /**
+   * Loop through any plugin modules which declare scheduled tasks and run them.
+   */
+  private function runScheduledPlugins() {
+    $cacheId = 'indicia-scheduled-plugins';
+    $cache = Cache::instance();
+    if (!($plugins = $cache->get($cacheId))) {
+      $plugins = array();
+      foreach (Kohana::config('config.modules') as $path) {
+        $plugin = basename($path);
+        if (file_exists("$path/plugins/$plugin.php")) {
+          require_once("$path/plugins/$plugin.php");
+          if (function_exists($plugin.'_scheduled_task')) {
+            $plugins[] = $path;
+          }
+        }
+      }
+      $cache->set($cacheId, $plugins);
+    }
+    // now we have just a list of plugins with scheduled tasks to run
+    foreach ($plugins as $path) {
+      $plugin = basename($path);
+      require_once("$path/plugins/$plugin.php");
+      call_user_func($plugin.'_scheduled_task');
     }
   }
 

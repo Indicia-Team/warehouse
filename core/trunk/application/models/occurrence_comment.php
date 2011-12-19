@@ -43,7 +43,10 @@ class Occurrence_comment_model extends ORM {
     $this->unvalidatedFields = array(
       'email_address',
       'person_name',
-      'deleted'
+      'deleted',
+      'auto_generated',
+      'generated_by',
+      'implies_manual_check_required'
     );
     return parent::validate($array, $save);
 

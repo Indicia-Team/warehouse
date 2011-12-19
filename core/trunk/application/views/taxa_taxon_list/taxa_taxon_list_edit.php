@@ -201,15 +201,15 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
   // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
   if ($attr['id']) $name .= ':'.$attr['id'];
 	switch ($attr['data_type']) {
-    case 'Specific Date':
-    case 'Vague Date':
+    case 'D':
+    case 'V':
       echo data_entry_helper::date_picker(array(
         'label' => $attr['caption'],
         'fieldname' => $name,
         'default' => $attr['value']
       ));
       break;
-    case 'Lookup List':
+    case 'L':
       echo data_entry_helper::select(array(
         'label' => $attr['caption'],
         'fieldname' => $name,
@@ -218,7 +218,7 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
         'blankText' => '<Please select>'
       ));
       break;
-    case 'Boolean':
+    case 'B':
       echo data_entry_helper::checkbox(array(
         'label' => $attr['caption'],
         'fieldname' => $name,
@@ -239,6 +239,10 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
  </fieldset>
 <?php
 echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null); 
+data_entry_helper::$dumped_resources[] = 'jquery';
+data_entry_helper::$dumped_resources[] = 'jquery_ui';
+data_entry_helper::$dumped_resources[] = 'fancybox';
+echo data_entry_helper::dump_javascript();
 ?>
 </form>
 </div>
