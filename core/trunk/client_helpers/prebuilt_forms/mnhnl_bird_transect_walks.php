@@ -730,13 +730,13 @@ $('#controls').bind('tabsshow', function(event, ui) {
     }
 
     $fieldName = $attributes[$args['uid_attr_id']]['fieldname'];
-    $fieldValue = data_entry_helper::check_default_value($fieldName, $user->uid);
+    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$args['uid_attr_id']]) ? $attributes[$args['uid_attr_id']]['default'] : $user->uid); // default is not closed
     $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
     $fieldName = $attributes[$args['email_attr_id']]['fieldname'];
-    $fieldValue = data_entry_helper::check_default_value($fieldName, $user->mail);
+    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$args['email_attr_id']]) ? $attributes[$args['email_attr_id']]['default'] : $user->mail); // default is not closed
     $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
     $fieldName = $attributes[$args['username_attr_id']]['fieldname'];
-    $fieldValue = data_entry_helper::check_default_value($fieldName, $user->name);
+    $fieldValue = data_entry_helper::check_default_value($fieldName, array_key_exists('default', $attributes[$args['username_attr_id']]) ? $attributes[$args['username_attr_id']]['default'] : $user->name); // default is not closed
     $r .= "<input type=\"hidden\" name=\"".$fieldName."\" value=\"".$fieldValue."\" />\n";
       
     $defAttrOptions['validation'] = array('required');
