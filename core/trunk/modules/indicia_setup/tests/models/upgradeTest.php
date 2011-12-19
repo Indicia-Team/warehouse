@@ -11,12 +11,8 @@ class Model_Upgrade_Test extends PHPUnit_Framework_TestCase {
   
   protected function tearDown() {
     // cleanup the db
-    $result = $this->db->query('delete from system where id>1');
-    // cleanup the file system
-    if (file_exists(MODPATH.'indicia_setup/db/test_scripts/____200912271517_test1____'))
-      unlink(MODPATH.'indicia_setup/db/test_scripts/____200912271517_test1____');
-    if (file_exists(MODPATH.'indicia_setup/db/test_scripts/____200912271528_test2____'))
-      unlink(MODPATH.'indicia_setup/db/test_scripts/____200912271528_test2____');
+    $this->db->query('delete from system where name in (\'test\', \'test2\')');
+    // and cleanup the upgrade file we created.
     if (file_exists(MODPATH.'indicia_setup/db/test_scripts/200912271528_test2.sql'))
       unlink(MODPATH.'indicia_setup/db/test_scripts/200912271528_test2.sql');
   }
@@ -25,17 +21,18 @@ class Model_Upgrade_Test extends PHPUnit_Framework_TestCase {
    * Test an initial upgrade against a folder with no ___ file in it.
    */
   public function testFirstUpgrade() {
-    $this->model->execute_sql_scripts(MODPATH.'indicia_setup/','test_scripts');
-    // Check the file tracking
-    $this->assertFileExists(MODPATH.'indicia_setup/db/test_scripts/____200912271517_test1____');
-    // and check the SQL actually ran
+    $last_run_script = '';
+    $this->model->execute_sql_scripts(MODPATH.'indicia_setup/','test_scripts','test',$last_run_script);
+    $this->assertTrue($last_run_script==='200912271517_test1.sql');
+    // Check the SQL actually ran
     $result = $this->db->query('select * from system where "version"=\'test\'')->result_array(false);
     $this->assertTrue(count($result)==1);
     $this->assertTrue($result[0]['name']=='test');
+    $this->assertTrue($result[0]['last_run_script']=='200912271517_test1.sql');
   }
   
   /**
-   * Test an subsequent upgrade against a folder which already has a ____ file in it to denote the last run script.
+   * Test an subsequent upgrade against a folder which already has been upgraded.
    * @depends testFirstUpgrade   
    */
   public function testSubsequentUpgrade() {
@@ -48,14 +45,16 @@ class Model_Upgrade_Test extends PHPUnit_Framework_TestCase {
     fclose($handle); 
     
     // run the upgrade
-    $this->model->execute_sql_scripts(MODPATH.'indicia_setup/','test_scripts');
-    // Check the file tracking    
-    $this->assertFalse(file_exists(MODPATH.'indicia_setup/db/test_scripts/____200912271517_test1____'));
-    $this->assertFileExists(MODPATH.'indicia_setup/db/test_scripts/____200912271528_test2____');
-    // and check the SQL actually ran 
+    $last_run_script='200912271517_test1.sql';
+    $this->model->execute_sql_scripts(MODPATH.'indicia_setup/','test_scripts','test2',$last_run_script);
+    // Check the tracking    
+    $this->assertTrue($last_run_script==='200912271528_test2.sql');
+    // Check the SQL actually ran
     $result = $this->db->query('select * from system where "version"=\'test2\'')->result_array(false);
     $this->assertTrue(count($result)==1);
-    $this->assertTrue($result[0]['name']=='test2');   
+    $this->assertTrue($result[0]['name']=='test2');
+    print $result[0]['last_run_script'];
+    $this->assertTrue($result[0]['last_run_script']=='200912271528_test2.sql');
   }
   
   
