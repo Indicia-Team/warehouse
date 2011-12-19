@@ -76,6 +76,23 @@ class System_Model extends ORM
       // note last_run_script only exists after v0.8.
       return isset($data) && isset($data->last_run_script) ? $data->last_run_script : '';
     }
+    
+    /**
+     * Function which ensures that the system table entry exists for an application or module.
+     * @param type $name 
+     */
+    public function forceSystemEntry($name) {
+      $this->getSystemData($name);
+      if (!isset($this->system_data[$name])) {
+        $this->db->insert('system', array(
+            'version'=>'',
+            'name'=>$name,
+            'repository'=>'Not specified',
+            'release_date'=>'now()',
+            'last_scheduled_task_check'=>'now()'
+        ));
+      }
+    }
 
     /**
      * Load on demand for records from the system table.

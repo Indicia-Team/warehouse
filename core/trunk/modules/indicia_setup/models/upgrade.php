@@ -233,6 +233,9 @@ class Upgrade_Model extends Model
    * Updates the last executed sql file name after each successful script run.
    */
   private function update_last_executed_sql_file($full_upgrade_folder, $appName, $prev, $next) {
+    $system = ORM::Factory('system');
+    $system->forceSystemEntry($appName);
+    
     $this->db->update('system', array('last_run_script'=>$next), array('name'=>$appName));  
   }
   
