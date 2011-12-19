@@ -42,10 +42,13 @@ class Cache_File_Driver implements Cache_Driver {
 	 */
 	private function all_exists($id, $tag)
 	{
+      // Change for Indicia. Test return from globs is not false, as it seems some servers will return false instead of an empty 
+      // array of files if no matches.
 		if ($id === TRUE)
 		{
 			// Find all the files
-			return glob($this->directory.'*~*~*');
+			$files = glob($this->directory.'*~*~*');
+			if($files === false) $files = array();
 		}
 		elseif ($tag === TRUE)
 		{
@@ -54,8 +57,6 @@ class Cache_File_Driver implements Cache_Driver {
 
 			// Find all tags matching the given tag
 			$files = array();
-      // Change for Indicia. Test $paths is not false, as it seems some servers will return false instead of an empty 
-      // array of files if no matches.
 			if ($paths) foreach ($paths as $path)
 			{
 				// Split the files
@@ -68,20 +69,21 @@ class Cache_File_Driver implements Cache_Driver {
 				// Split the tags by plus signs, used to separate tags
 				$tags = explode('+', $tags[1]);
 
-				if (in_array($tag, $tags))
+				if (in_array($id, $tags))
 				{
 					// Add the file to the array, it has the requested tag
 					$files[] = $path;
 				}
 			}
 
-			return $files;
 		}
 		else
 		{
 			// Find the file matching the given id
-			return glob($this->directory.$id.'~*');
+			$files = glob($this->directory.$id.'~*');
+			if($files === false) $files = array();
 		}
+		return $files;
 	}
 
 	/**
