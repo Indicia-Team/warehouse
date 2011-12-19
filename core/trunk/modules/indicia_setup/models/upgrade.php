@@ -235,14 +235,13 @@ class Upgrade_Model extends Model
   private function update_last_executed_sql_file($full_upgrade_folder, $appName, $prev, $next) {
     $system = ORM::Factory('system');
     $system->forceSystemEntry($appName);
-    
     $this->db->update('system', array('last_run_script'=>$next), array('name'=>$appName));  
   }
   
   /**
    * Find the file in the directory which is prefixed ____, if it exists. This denotes the last run script from a 
    * previous upgrade.
-   * Note that this approach of hanlding last upgrade script is no longer used, but the method is kept
+   * Note that this approach of handling last upgrade script is no longer used, but the method is kept
    * for handling upgrades from previous versions. The last upgrade script is instead stored in the db
    * as this reduces the requirement to mess around with file privileges.   
    */
