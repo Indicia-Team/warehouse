@@ -24,26 +24,26 @@
  * Hook into the verification checker to declare checks for the test of record time of year. 
  * @return type array of rules.
  */
-function verification_check_period_within_year_verification_rules() {
+function verification_check_period_verification_rules() {
   return array(
     array(
-      'message'=>'This record was before the expected time of year for observations of this species.',
+      'message'=>'This record was before the expected period for observations of this species.',
       'query' => array(
         'joins' => 
             "join samples s on s.id=occlist.sample_id ".
             "join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=occlist.taxa_taxon_list_id\n" .
-            "join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttla.deleted=false and ttla.caption='Period within year start date'",
-        'where'=>'where extract(doy from ttlav.date_start_value) > extract(doy from s.date_start)'
+            "join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttla.deleted=false and ttla.caption='Period start date'",
+        'where'=>'where ttlav.date_start_value > s.date_start'
       )
     ),
     array(
-      'message'=>'This record was after the expected time of year for observations of this species.',
+      'message'=>'This record was after the expected period for observations of this species.',
       'query' => array(
         'joins' =>
             "join samples s on s.id=occlist.sample_id ".
             "join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=occlist.taxa_taxon_list_id\n" .
-            "join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttla.deleted=false and ttla.caption='Period within year end date'",
-        'where'=>'where extract(doy from ttlav.date_start_value) < extract(doy from s.date_start)'
+            "join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttla.deleted=false and ttla.caption='Period end date'",
+        'where'=>'where ttlav.date_start_value < s.date_start'
       )
     )
   );

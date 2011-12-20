@@ -140,6 +140,7 @@ function verification_check_update_occurrence_metadata($db) {
 set last_verification_check_date=occlist.timepoint, 
     last_verification_check_taxa_taxon_list_id=occlist.taxa_taxon_list_id, 
     last_verification_check_version=occlist.verification_check_version
-from occlist';
+from occlist
+where occlist.occurrence_id=o.id';
   $db->query($query);
 }
