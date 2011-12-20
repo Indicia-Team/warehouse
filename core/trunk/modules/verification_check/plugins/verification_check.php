@@ -56,9 +56,10 @@ function verification_check_get_rules() {
         require_once("$path/plugins/$plugin.php");
         if (function_exists($plugin.'_verification_rules')) {
           $pluginRules = call_user_func($plugin.'_verification_rules');
-          // mark each rule with the plugin name that generated it.
-          foreach ($pluginRules as &$pluginRule)
+          foreach ($pluginRules as &$pluginRule) {
+            // mark each rule with the plugin name that generated it.
             $pluginRule['plugin'] = $plugin;
+          }
           $rules = array_merge($rules, $pluginRules);
         }
       }
@@ -116,9 +117,10 @@ function verification_check_cleanout_old_messages($rules, $db) {
  */
 function verification_check_run_rules($rules, $db) {
   foreach ($rules as $rule) {
+    $implies_manual_check_required = isset($rule['implies_manual_check_required']) && !$rule['implies_manual_check_required'] ? 'false' : 'true';
     $query = 'insert into occurrence_comments (comment, created_by_id, created_on,  
-    updated_by_id, updated_on, occurrence_id, auto_generated, generated_by) 
-select distinct \''.$rule['message'].'\', 1, now(), 1, now(), occlist.occurrence_id, true, \''.$rule['plugin'].'\'
+    updated_by_id, updated_on, occurrence_id, auto_generated, generated_by, implies_manual_check_required) 
+select distinct \''.$rule['message'].'\', 1, now(), 1, now(), occlist.occurrence_id, true, \''.$rule['plugin'].'\', '.$implies_manual_check_required.'
 from occlist';
     if (isset($rule['query']['joins']))
       $query .= "\n" . $rule['query']['joins'];
