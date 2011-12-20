@@ -1,1 +1,1 @@
-ALTER TABLE indicia."system" ALTER "name" TYPE character varying(100);
+ALTER TABLE "system" ALTER "name" TYPE character varying(100);
