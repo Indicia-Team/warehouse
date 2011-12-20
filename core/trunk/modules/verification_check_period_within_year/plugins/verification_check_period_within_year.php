@@ -24,7 +24,7 @@
  * Hook into the verification checker to declare checks for the test of record time of year. 
  * @return type array of rules.
  */
-function verification_check_phenology_verification_rules() {
+function verification_check_period_within_year_verification_rules() {
   return array(
     array(
       'message'=>'This record was before the expected time of year for observations of this species.',
