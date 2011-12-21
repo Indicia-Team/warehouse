@@ -60,7 +60,8 @@ class Location_Model extends ORM_Tree {
       'centroid_geom',
       'boundary_geom',
       'location_type_id',
-      'comment'
+      'comment',
+      'public'
     );
     return parent::validate($array, $save);
   }
@@ -134,16 +135,39 @@ class Location_Model extends ORM_Tree {
       // if the geom is supplied for the boundary, but not the centroid sref, then calculate it.
       // First, convert the boundary geom to a centroid using LatLong (EPSG:4326)
       $boundary = $this->submission['fields']['boundary_geom']['value'];
-      $row = $this->db->query("SELECT ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid').")) AS geom, ".
-          "ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid')."))) AS wkt")->current();
-      $this->submission['fields']['centroid_geom']['value'] = $row->geom;
-      $this->submission['fields']['centroid_sref']['value'] = spatial_ref::internal_wkt_to_sref($row->wkt, 4326);
-      $this->submission['fields']['centroid_sref_system']['value'] = '4326';
+      $centroid = $this->calcCentroid($boundary);
+      $this->submission['fields']['centroid_geom']['value'] = $centroid['geom'];
+      $this->submission['fields']['centroid_sref']['value'] = $centroid['sref'];
+      $this->submission['fields']['centroid_sref_system']['value'] = $centroid['sref_system'];
     }
     // Empty boundary geom is allowed but must be null
     if (isset($this->submission['fields']['boundary_geom']['value']) && empty($this->submission['fields']['boundary_geom']['value']))
       $this->submission['fields']['boundary_geom']['value'] = null;
     return parent::presubmit();
+  }
+
+  /*
+  * Calculates centroid of a location from a boundary wkt
+  */
+  protected function calcCentroid($boundary) {
+    $row = $this->db->query("SELECT ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid').")) AS geom, ".
+        "ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid')."))) AS wkt")->current();
+    $result = array('geom' => $row->geom,
+      'wkt' => $row->wkt,
+      'sref' => spatial_ref::internal_wkt_to_sref($row->wkt, 4326),
+      'sref_system' => '4326');
+    return $result;    
+}
+  
+  /*
+  * Sets centroid from boundary_geom
+  */
+  public function setCentroid() {
+    $boundary = $this->__get('boundary_geom');
+    $centroid = $this->calcCentroid($boundary);
+    $this->__set('centroid_geom', $centroid['wkt']);
+    $this->__set('centroid_sref', $centroid['sref']);
+    $this->__set('centroid_sref_system', $centroid['sref_system']);
   }
 
 }

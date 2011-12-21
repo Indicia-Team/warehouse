@@ -46,11 +46,12 @@
 <label for='website_id' class='wide' >Default Website to attach any new locations to</label>
 <select id='website_id' name='website_id' >
 <?php
-  
-  if (isset($this->gen_auth_filter) && !is_null($this->gen_auth_filter))
-    $websites = ORM::factory('website')->in('id',$this->gen_auth_filter['values'])->orderby('title','asc')->find_all();
-  else
+  if (!is_null($this->auth_filter))
+    $websites = ORM::factory('website')->in('id',$this->auth_filter['values'])->where(array('deleted'=>'f'))->orderby('title','asc')->find_all();
+  else {
     $websites = ORM::factory('website')->orderby('title','asc')->find_all();        
+    echo '<option value="all" >&lt;Available to all&gt;</option>';
+  }
   foreach ($websites as $website) {
     echo '<option value="'.$website->id.'" >'.$website->title.'</option>';
   }

@@ -21,6 +21,9 @@
  * @link 	http://code.google.com/p/indicia/
  */
 
+$disabled_input=html::initial_value($values, 'metaFields:disabled_input');
+$disabled = ($disabled_input=='YES') ? 'disabled="disabled"' : '';
+
 $id = html::initial_value($values, 'location:id');
 $parent_id = html::initial_value($values, 'location:parent_id');
 $boundary_geom = html::initial_value($values, 'location:boundary_geom');
@@ -75,35 +78,57 @@ jQuery(document).ready(function() {
       }
     }});
   });
+  
+  if ($("#location\\:public").attr("checked")) {
+    $("#websites").hide();  
+  } else {
+    $("#websites").show();  
+  }
+  $("#location\\:public").change(function() {
+    $("#websites").toggle('slow');
+  });
+  
 });
 </script>
-<p>This page allows you to specify the details of a location.</p>
+
+<p>
+<?php if ($disabled_input==='YES') : ?>
+The location is available to all websites so you don't have permission to change it. 
+Please contact the warehouse owner to request changes.
+<?php else : ?>
+This page allows you to specify the details of a location.
+<?php endif; ?>
+</p>
+
 <form class="cmxform" action="<?php echo url::site().'location/save'; ?>" method="post" id="location-edit">
 <div id="details">
 <?php echo $metadata; ?>
-<fieldset>
-<legend>Location details</legend>
-<input type="hidden" name="location:id" value="<?php echo html::initial_value($values, 'location:id'); ?>" />
-<?php
-echo data_entry_helper::text_input(array(
-  'label' => 'Name',
-  'fieldname' => 'location:name',
-  'default' => html::initial_value($values, 'location:name'),
-  'validation' => 'required'
-));
-echo data_entry_helper::text_input(array(
-  'label' => 'Code',
-  'fieldname' => 'location:code',
-  'default' => html::initial_value($values, 'location:code')
-));
-echo data_entry_helper::select(array(
-  'label' => 'Type',
-  'fieldname' => 'location:location_type_id',
-  'default' => html::initial_value($values, 'location:location_type_id'),
-  'lookupValues' => $other_data['type_terms'],
-  'blankText' => '<Please select>'
-));
-echo data_entry_helper::sref_and_system(array(
+  <fieldset>
+  <legend>Location details</legend>
+  <input type="hidden" name="location:id" value="<?php echo html::initial_value($values, 'location:id'); ?>" />
+  <?php
+  echo data_entry_helper::text_input(array(
+    'label' => 'Name',
+    'fieldname' => 'location:name',
+    'default' => html::initial_value($values, 'location:name'),
+    'validation' => 'required',
+    'disabled' => $disabled,
+  ));
+  echo data_entry_helper::text_input(array(
+    'label' => 'Code',
+    'fieldname' => 'location:code',
+    'default' => html::initial_value($values, 'location:code'),
+    'disabled' => $disabled,
+  ));
+  echo data_entry_helper::select(array(
+    'label' => 'Type',
+    'fieldname' => 'location:location_type_id',
+    'default' => html::initial_value($values, 'location:location_type_id'),
+    'lookupValues' => $other_data['type_terms'],
+    'blankText' => '<Please select>',
+    'disabled' => $disabled,
+  ));
+  echo data_entry_helper::sref_and_system(array(
     'label' => 'Spatial Ref',
     'fieldname' => 'location:centroid_sref',
     'geomFieldname' => 'location:centroid_geom',
@@ -112,15 +137,16 @@ echo data_entry_helper::sref_and_system(array(
     'systems' => kohana::config('sref_notations.sref_notations'),
     'defaultSystem' => html::initial_value($values, 'location:centroid_sref_system'),
     'class' => 'control-width-3',
-    'validation'=>'required'
-));
-?>
-<input type="hidden" name="location:boundary_geom" id="boundary_geom" value="<?php echo $boundary_geom; ?>"/>
-<p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
-spatial reference. The more you zoom in, the more accurate the reference will be.</p>
-<?php
-$readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-echo map_helper::map_panel(array(
+    'validation'=>'required',
+    'disabled' => $disabled,
+  ));
+  ?>
+  <input type="hidden" name="location:boundary_geom" id="boundary_geom" value="<?php echo $boundary_geom; ?>"/>
+  <p class="instruct">Zoom the map in by double-clicking then single click on the location's centre to set the
+  spatial reference. The more you zoom in, the more accurate the reference will be.</p>
+  <?php
+  $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+  echo map_helper::map_panel(array(
     'readAuth' => $readAuth,
     'presetLayers' => array('virtual_earth'),
     'editLayer' => true,
@@ -131,90 +157,113 @@ echo map_helper::map_panel(array(
     'width'=>870,
     'height'=>400,
     'initialFeatureWkt' => $centroid_geom,
-    'standardControls' => array('layerSwitcher','panZoom','drawPolygon','drawLine','modifyFeature')
-));
-echo data_entry_helper::autocomplete(array(
-  'label' => 'Parent location',
-  'fieldname' => 'location:parent_id',
-  'table' => 'location',
-  'captionField' => 'name',
-  'valueField' => 'id',
-  'extraParams' => $readAuth,
-  'default' => html::initial_value($values, 'location:parent_id'),
-  'defaultCaption' => html::initial_value($values, 'parent:name')
-));
-?>
-</fieldset>
-<fieldset>
-<legend>Location Websites</legend>
-<ol>
-<?php
-  $websiteIds = $this->get_allowed_website_id_list('editor');
-  $linkedWebsites = array();
-  if (!is_null($websiteIds))
-    $websites = ORM::factory('website')->in('id', $websiteIds)->orderby('title','asc')->find_all();
-  else
-    $websites = ORM::factory('website')->orderby('title','asc')->find_all();        
-  foreach ($websites as $website) {
-    echo '<li><label for="website_'.$website->id.'" class="wide">'.$website->title.'</label>';
-    echo '<input type="checkbox" name="joinsTo:website:'.$website->id.'" ';
-    if(!is_null($id)){      
-      if (array_key_exists('joinsTo:website:'.$website->id, $values)) {
-        echo "checked=\"checked\"";
-        $linkedWebsites[] = $website->id;
+    'standardControls' => ($disabled_input==='YES') ? array('layerSwitcher','panZoom'): array('layerSwitcher','panZoom','drawPolygon','drawLine','modifyFeature'),
+  ));
+  echo data_entry_helper::autocomplete(array(
+    'label' => 'Parent location',
+    'fieldname' => 'location:parent_id',
+    'table' => 'location',
+    'captionField' => 'name',
+    'valueField' => 'id',
+    'extraParams' => $readAuth,
+    'default' => html::initial_value($values, 'location:parent_id'),
+    'defaultCaption' => html::initial_value($values, 'parent:name'),
+    'disabled' => $disabled,
+  ));
+      if ($this->auth->logged_in('CoreAdmin')) {
+        //Only core admin can create public locations.
+        echo data_entry_helper::checkbox(array(
+          'label' => 'Available to all websites',
+          'fieldname' => 'location:public',
+          'default' => html::initial_value($values, 'location:public'),
+          'disabled' => $disabled,
+        ));
       }
-    }
-    echo '></li>';
-  }  
-?>
-</ol>
-</fieldset>
+
+  ?>
+  </fieldset>
 </div>
-<?php if ($id != null) : ?>
+
+<?php 
+  if ($this->auth->logged_in('CoreAdmin') || $values['location:public'] != true) :
+  //No need to display for public locations unless core admin. 
+?>  
+<div id="websites">
+  <fieldset>
+  <legend>Location Websites</legend>
+  <ol>
+  <?php
+    $websiteIds = $this->get_allowed_website_id_list('editor');
+    $linkedWebsites = array();
+    if (!is_null($websiteIds))
+      $websites = ORM::factory('website')->in('id', $websiteIds)->orderby('title','asc')->find_all();
+    else
+      $websites = ORM::factory('website')->orderby('title','asc')->find_all();        
+    foreach ($websites as $website) {
+      echo '<li><label for="website_'.$website->id.'" class="wide">'.$website->title.'</label>';
+      echo '<input type="checkbox" name="joinsTo:website:'.$website->id.'" ';
+      if(!is_null($id)){      
+        if (array_key_exists('joinsTo:website:'.$website->id, $values)) {
+          echo "checked=\"checked\"";
+          $linkedWebsites[] = $website->id;
+        }
+      }
+      echo '></li>';
+    }  
+  ?>
+  </ol>
+  </fieldset>
+</div>
+<?php endif; ?>
+
+<?php 
+  if ($id != null && $values['location:public'] != "t") : 
+  //No need to display for new locations or public locations.
+  ?>
 <div id="attrs">
-<fieldset>
- <legend>Additional Attributes</legend>
- <ol>
- <?php
-foreach ($values['attributes'] as $attr) {
-  $name = 'locAttr:'.$attr['location_attribute_id'];
-  // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
-  if ($attr['id']) $name .= ':'.$attr['id'];
-  switch ($attr['data_type']) {
-    case 'D':
-    case 'V':
-      echo data_entry_helper::date_picker(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['value']
-      ));
-      break;
-    case 'L':
-      echo data_entry_helper::date_picker(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['raw_value'],
-        'lookupValues' => $values['terms_'.$attr['termlist_id']]
-      ));
-      break;
-    case 'B':
-      echo data_entry_helper::checkbox(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['value']
-      ));
-      break;
-    default:
-      echo data_entry_helper::text_input(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['value']
-      ));
+  <fieldset>
+   <legend>Additional Attributes</legend>
+   <ol>
+   <?php
+  foreach ($values['attributes'] as $attr) {
+    $name = 'locAttr:'.$attr['location_attribute_id'];
+    // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
+    if ($attr['id']) $name .= ':'.$attr['id'];
+    switch ($attr['data_type']) {
+      case 'D':
+      case 'V':
+        echo data_entry_helper::date_picker(array(
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['value']
+        ));
+        break;
+      case 'L':
+        echo data_entry_helper::date_picker(array(
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['raw_value'],
+          'lookupValues' => $values['terms_'.$attr['termlist_id']]
+        ));
+        break;
+      case 'B':
+        echo data_entry_helper::checkbox(array(
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['value']
+        ));
+        break;
+      default:
+        echo data_entry_helper::text_input(array(
+          'label' => $attr['caption'],
+          'fieldname' => $name,
+          'default' => $attr['value']
+        ));
+    }
   }
-}
- ?>
- </ol>
- </fieldset>
+   ?>
+   </ol>
+   </fieldset>
 </div>
 <?php 
 endif;
