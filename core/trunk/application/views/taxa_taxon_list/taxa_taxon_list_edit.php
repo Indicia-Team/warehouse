@@ -27,6 +27,7 @@ echo html::script(array(
 ), FALSE); 
 
 require_once(DOCROOT.'client_helpers/data_entry_helper.php');
+require_once(DOCROOT.'client_helpers/map_helper.php');
 require_once(DOCROOT.'client_helpers/form_helper.php');
 $id = html::initial_value($values, 'taxa_taxon_list:id');
 if (isset($_POST))
@@ -225,12 +226,22 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
         'default' => $attr['value']
       ));
       break;
+    case 'G':
     default:
-      echo data_entry_helper::text_input(array(
-        'label' => $attr['caption'],
-        'fieldname' => $name,
-        'default' => $attr['value']
-      ));
+      echo '<input type="hidden" name="'.$name.'" value="'.$attr['value'].'" id="imp-geom"/>';
+      echo '<label>'.$attr['caption'].':</label>';
+      echo map_helper::map_panel(array(
+        'presetLayers' => array('virtual_earth'),
+        'editLayer' => true,
+        'clickForSpatialRef'=>false,
+        'layers' => array(),
+        'initial_lat'=>55,
+        'initial_long'=>-2,
+        'initial_zoom'=>4,
+        'width'=>870,
+        'height'=>400,
+        'standardControls' => array('panZoom','hoverFeatureHighlight','drawPolygon','modifyFeature')
+    ));
   }
 	
 }
@@ -238,10 +249,26 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
  </ol>
  </fieldset>
 <?php
+// some script to handle drawn polygons. Only allow 1 polygon on the layer
+data_entry_helper::$javascript .= "mapInitialisationHooks.push(function(div) {
+  function featureChangeEvent(evt) {
+    var featuresToRemove=[];
+    $.each(evt.feature.layer.features, function(idx, feature) {
+      if (feature.id !== evt.feature.id) {
+        featuresToRemove.push(feature);
+      }
+    });
+    evt.feature.layer.removeFeatures(featuresToRemove);
+    $('#imp-geom').val(evt.feature.geometry.toString());
+  }
+  div.map.editLayer.events.on({'featureadded': featureChangeEvent, 'afterfeaturemodified': featureChangeEvent}); 
+});
+";
 echo html::form_buttons(html::initial_value($values, 'taxa_taxon_list:id')!=null); 
 data_entry_helper::$dumped_resources[] = 'jquery';
 data_entry_helper::$dumped_resources[] = 'jquery_ui';
 data_entry_helper::$dumped_resources[] = 'fancybox';
+data_entry_helper::link_default_stylesheet();
 echo data_entry_helper::dump_javascript();
 ?>
 </form>

@@ -79,6 +79,9 @@ abstract class Attribute_Value_ORM extends ORM {
       	$array->add_rules('int_value', 'maximum[1]');
       	$vf = 'int_value';
       	break;
+      case 'G':
+        $vf = 'geom_value';
+        break;
       default:
         $vf = 'int_value';
       }
@@ -131,6 +134,36 @@ abstract class Attribute_Value_ORM extends ORM {
     } 
     
     return true;
+  }
+  
+  /**
+  * Override set handler to translate WKT to PostGIS internal spatial data.
+  */
+  public function __set($key, $value)
+  {
+    if ($key === 'geom_value')
+    {
+      if ($value) {
+        $row = $this->db->query("SELECT ST_GeomFromText('$value', ".kohana::config('sref_notations.internal_srid').") AS geom")->current();
+        $value = $row->geom;
+      }
+    }
+    parent::__set($key, $value);
+  }
+
+  /**
+  * Override get handler to translate PostGIS internal spatial data to WKT.
+  */
+  public function __get($column)
+  {
+    $value = parent::__get($column);
+
+    if ($column === 'geom_value' && $value!==null)
+    {
+      $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
+      $value = $row->wkt;
+    }
+    return $value;
   }
 
 }

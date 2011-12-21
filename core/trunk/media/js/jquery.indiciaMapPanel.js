@@ -813,7 +813,7 @@ mapInitialisationHooks = [];
         if (this.settings.initialFeatureWkt === null ) {
           // if no initial feature specified, but there is a populated imp-geom hidden input,
           // use the value from the hidden geom
-          this.settings.initialFeatureWkt = $('#imp-geom').val();
+          this.settings.initialFeatureWkt = $('#'+this.settings.geomId).val();
         }
 
         // Draw the feature to be loaded on startup, if present

@@ -1051,6 +1051,9 @@ class ORM extends ORM_Core {
           $attrValueModel->date_type_value = null;
         }
         break;
+      case 'G':
+        $vf = 'geom_value';
+        break;
       default:
         // Lookup in list, int or boolean
         $vf = 'int_value';
@@ -1060,13 +1063,13 @@ class ORM extends ORM_Core {
     if ($vf != null) {
       $attrValueModel->$vf = $value;
       // Test that ORM accepted the new value - it will reject if the wrong data type for example. Use a string compare to get a
-      // proper test but with type tolerance.
-      if (strcmp($attrValueModel->$vf,$value)!==0) {
+      // proper test but with type tolerance. A wkt geometry gets translated to a proper geom so this will look different - just check it is not empty.
+      if (strcmp($attrValueModel->$vf,$value)===0 || ($dataType==='G' && !empty($attrValueModel->$vf))) {
+        kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
+      } else {
         $this->errors[$fieldId] = "Invalid value $value for attribute";
         kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
         return false;
-      } else {
-        kohana::log('debug', "Accepted value $value into field $vf for attribute $fieldId. Value=".$attrValueModel->$vf);
       }
     }
 
