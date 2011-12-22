@@ -47,7 +47,7 @@ function verification_check_get_rules() {
   $cacheId = 'verification-check-rules';
   $cache = Cache::instance();
   // use cached rules if available
-  if ($cache) {//(!($rules = $cache->get($cacheId))) {
+  if (!($rules = $cache->get($cacheId))) {
     // need to build the set of rules from plugin modules
     $rules = array();
     foreach (Kohana::config('config.modules') as $path) {
@@ -77,7 +77,7 @@ function verification_check_get_rules() {
 function verification_check_get_occurrence_list($db) {
   $query = 'create temporary table occlist as 
   select o.id as occurrence_id, s.id as sample_id, w.id as website_id, 
-  ttl.id as taxa_taxon_list_id, ttl.verification_check_version, now() as timepoint
+  ttl.id as taxa_taxon_list_id, ttl.taxon_id, ttl.verification_check_version, now() as timepoint
   from occurrences o
   inner join samples s on s.id=o.sample_id and s.deleted=false
   inner join websites w on w.id=o.website_id and w.deleted=false and w.verification_checks_enabled=true
@@ -86,8 +86,10 @@ function verification_check_get_occurrence_list($db) {
   and (ttl.id <> o.last_verification_check_taxa_taxon_list_id
   or ttl.verification_check_version>last_verification_check_version
   or o.updated_on>o.last_verification_check_date
-  or s.updated_on>o.last_verification_check_date)';;
+  or s.updated_on>o.last_verification_check_date)';
   $db->query($query);
+  $r = $db->query('select count(*) as count from occlist')->result_array(false);
+  echo "Verification checking ".$r[0]['count']." record(s).<br/>";
 }
 
 /**
@@ -116,6 +118,7 @@ function verification_check_cleanout_old_messages($rules, $db) {
  * comments in the occurrences.
  */
 function verification_check_run_rules($rules, $db) {
+  $count=0;
   foreach ($rules as $rule) {
     $implies_manual_check_required = isset($rule['implies_manual_check_required']) && !$rule['implies_manual_check_required'] ? 'false' : 'true';
     $query = 'insert into occurrence_comments (comment, created_by_id, created_on,  
@@ -127,8 +130,9 @@ from occlist';
     if (isset($rule['query']['where']))
       $query .= "\n" . $rule['query']['where'];
     // we now have the query ready to run which will return a list of the occurrence ids that fail the check.
-    $db->query($query);
+    $count += $db->query($query)->count();
   }
+  echo "Verification check generated $count messages.<br/>";
 }
 
 /**
