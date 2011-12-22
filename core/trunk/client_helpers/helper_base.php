@@ -224,6 +224,11 @@ class helper_base extends helper_config {
    * This path should be a full path on the server (starting with '/' exluding the domain).
    */
   public static $css_path = null;
+  
+  /**
+   * @var string Path to Indicia Images folder.
+   */
+  public static $images_path = null;
 
   /**
    * @var array List of resources that have already been dumped out, so we don't duplicate them. For example, if the

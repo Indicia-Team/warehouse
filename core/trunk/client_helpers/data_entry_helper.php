@@ -2109,10 +2109,11 @@ class data_entry_helper extends helper_base {
     ), $options);
     self::add_resource('timeentry');
     $steps = implode(', ', $options['timeSteps']);
+    $imgPath = empty(self::$images_path) ? self::relative_client_helper_path()."../media/images" : self::$images_path;
     // build a list of options to pass through to the jQuery widget
     $jsOpts = array(
       "timeSteps: [$steps]",
-      "spinnerImage: '".self::relative_client_helper_path()."../media/images/spinnerGreen.png'"
+      "spinnerImage: '".$imgPath."/spinnerGreen.png'"
     );
     if (isset($options['beforeSetTime']))
       $jsOpts[] = "beforeSetTime: ".$options['beforeSetTime'];
