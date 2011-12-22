@@ -46,16 +46,17 @@ function getAttributeValue(caption) {
  */
 function postOccurrence(occ) {
   var status = occ['occurrence:record_status'];
+  var id=occ['occurrence:id'];
   $.post(
     indiciaData.ajaxFormPostUrl,
     occ,
     function (data) {
-      $('#row' + occurrence_id + ' td:first div, #details-tab td').removeClass('status-V');
-      $('#row' + occurrence_id + ' td:first div, #details-tab td').removeClass('status-C');
-      $('#row' + occurrence_id + ' td:first div, #details-tab td').removeClass('status-R');
-      $('#row' + occurrence_id + ' td:first div, #details-tab td').removeClass('status-I');
-      $('#row' + occurrence_id + ' td:first div, #details-tab td').removeClass('status-T');
-      $('#row' + occurrence_id + ' td:first div, #details-tab td.status').addClass('status-' + status);
+      $('#row' + id + ' td:first div, #details-tab td').removeClass('status-V');
+      $('#row' + id + ' td:first div, #details-tab td').removeClass('status-C');
+      $('#row' + id + ' td:first div, #details-tab td').removeClass('status-R');
+      $('#row' + id + ' td:first div, #details-tab td').removeClass('status-I');
+      $('#row' + id + ' td:first div, #details-tab td').removeClass('status-T');
+      $('#row' + id + ' td:first div, #details-tab td.status').addClass('status-' + status);
       var text = indiciaData.statusTranslations[status];
       $('#details-tab td.status').html(text);
       if ($('#record-details-tabs').tabs('option', 'selected') == 0 ||
@@ -63,9 +64,14 @@ function postOccurrence(occ) {
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
       }
       if (indiciaData.autoDiscard) {
-        var nextRow = $('#row' + occurrence_id).next();
-        $('#row' + occurrence_id).remove();
-        selectRow(nextRow[0]);
+        var nextRow = $('#row' + id).next();
+        $('#row' + id).remove();
+        if (nextRow.length>0) {
+          selectRow(nextRow[0]);
+        } else {
+          // reload the grid once empty, to get the next page
+          indiciaData.reports.verification_grid.grid_verification_grid.reload();
+        }
       }
     }
   );
@@ -318,7 +324,24 @@ $(document).ready(function () {
 
   $('#btn-email').click(function () {
     buildVerifierEmail();
-    });
+  });
+  
+  $('#btn-verify-all').click(function () {
+    $('verify-in-progress').fadeIn();
+    var thOccId = document.getElementById('verification-grid-th-occurrence_id');
+    var idIndex = $('#verification-grid thead th').index(thOccId);
+    $.each($('#verification-grid tbody tr td:nth-child(1)'), function(idx, occurrenceIdCell) {
+      data = {
+        'website_id': indiciaData.website_id,
+        'occurrence:id': occurrenceIdCell.textContent,
+        'occurrence:record_status': 'V',
+        'occurrence_comment:comment': 'Verified as it passes all automated checks.',
+        'occurrence_comment:person_name': indiciaData.username
+      };
+      postOccurrence(data);
+    });    
+    $('verify-in-progress').fadeOut();
+  });
 
 });
 

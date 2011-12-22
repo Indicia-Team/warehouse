@@ -76,7 +76,7 @@ button {
   font-weight: bold; 
 }
 
-#btn-verify {
+#btn-verify, #btn-verify-all {
   @include sassy-button-colors("simple", $verify-color, darken($verify-color, 20%), true, #ffffff, raised);
 }
 

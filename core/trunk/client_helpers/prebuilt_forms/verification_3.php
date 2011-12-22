@@ -39,7 +39,9 @@ class iform_verification_3 {
     return array(
       'title'=>'Verification 3',
       'category' => 'Verification',
-      'description'=>'An advanced verification form with built in review of the record, images and comments.',
+      'description'=>'An advanced verification form with built in review of the record, images and comments. For full functionality, ensure that the report this loads '.
+          'data from returns a field called occurrence_id and has a parameter called rule for filtering by verification rule. See the "Auto-checked verification data" '.
+          'report for an example.',
       'helpLink' => 'http://code.google.com/p/indicia/wiki/PrebuiltFormVerification3'      
     );
   }
@@ -58,7 +60,7 @@ class iform_verification_3 {
           'description'=>'The report to load into the verification grid, excluding the .xml suffix. This report should have '.
               'at least the following columns: occurrence_id, taxon. If you don\'t know which report to use, try the recent_occurrences_in_survey report.',
           'type'=>'report_helper::report_picker',
-          'default'=>'library/occurrences/verification_list',
+          'default'=>'library/occurrences/verification_list_2',
           'group'=>'Report Settings'
         ), array(
           'name' => 'param_presets',
@@ -86,7 +88,8 @@ occattrs='
           'group'=>'Report Settings',
           'default'=>'id=
 taxon_group_id=
-record_status=C'
+record_status=C
+rule=all'
         ), array(
             'name' => 'columns_config',
             'caption' => 'Columns Configuration',
@@ -98,7 +101,8 @@ record_status=C'
               {"fieldname":"taxon","display":"Species","template":"<div class=\'zero-{zero_abundance}\'>{taxon}<br\/>{common}<\/div>"},
               {"fieldname":"record_status","visible":false},
               {"fieldname":"common","visible":false},
-              {"fieldname":"zero_abundance","visible":false}
+              {"fieldname":"zero_abundance","visible":false},
+              {"fieldname":"check","display":"Check"}
             ]',
             'schema' => '{
     "type":"seq",
@@ -148,6 +152,7 @@ record_status=C'
       }
     ]
   }',
+            'group' => 'Report Settings',
             'required' => false
           ), array(
           'name'=>'verifiers_mapping',
@@ -243,7 +248,13 @@ record_status=C'
   
   private static function get_template_grid_left($args, $auth) {
     $r .= '<div id="outer" class="ui-helper-clearfix">';
-    $r .= '<div id="grid" class="left">{grid}</div>';
+    $r .= '<div id="grid" class="left">{grid}';
+    // Insert a button to verify all visible, only available if viewing the clean records.
+    if (isset($_POST['verification-grid-rule']) && $_POST['verification-grid-rule']==='none' && empty($_POST['verification-grid-id'])) {
+      $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
+      $r .= '<span id="verify-in-progress" style="display:none">Updating records...</span>';
+    }
+    $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
     $r .= '<div id="click-record-notice">'.t('Click on a record to view the details').'</div>';
     $r .= '<div id="record-details-content" style="display: none">';

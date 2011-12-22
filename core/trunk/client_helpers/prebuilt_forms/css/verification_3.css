@@ -42,7 +42,7 @@ ul.gallery li {
   text-align: center;
   background: none;
 }
-/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+/* line 7, C:/Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
 ul.gallery li {
   *display: inline;
 }
@@ -126,7 +126,7 @@ button {
 }
 
 /* line 79, sass/verification_3.scss */
-#btn-verify {
+#btn-verify, #btn-verify-all {
   background-color: #00a000;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00a000), color-stop(100%, #003a00));
   background: -webkit-linear-gradient(#00a000, #003a00);
@@ -139,7 +139,7 @@ button {
   text-shadow: #003000, 0 1px 0;
 }
 /* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
-#btn-verify:hover {
+#btn-verify:hover, #btn-verify-all:hover {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00ba00), color-stop(100%, #005300));
   background: -webkit-linear-gradient(#00ba00, #005300);
   background: -moz-linear-gradient(#00ba00, #005300);
