@@ -256,6 +256,12 @@ class ORM extends ORM_Core {
     foreach ($fields_to_copy as $a)
     {
       if (array_key_exists($a, $array->as_array())) {
+        // Apart from strings, empty values must be null not ''. Note that kohana declares a date
+        // as a string, with a format of 0000-00-00.
+        if ($array[$a]==='' &&
+            ($this->table_columns[$a]['type']!=='string' || 
+            (isset($this->table_columns[$a]['format']) && substr($this->table_columns[$a]['format'], 0, 10)==='0000-00-00'))) 
+          $array[$a]=null;
         $this->__set($a, $array[$a]);
       }
     }
