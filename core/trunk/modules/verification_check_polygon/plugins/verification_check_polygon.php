@@ -23,6 +23,7 @@
 /**
  * Hook into the verification checker to declare checks for the test of record compared
  * with known species range. 
+ * This will only return messages for species where a range attribute value has been assigned.
  * @return type array of rules.
  */
 function verification_check_polygon_verification_rules() {
