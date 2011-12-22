@@ -196,9 +196,9 @@ This page allows you to specify the details of a location.
     $websiteIds = $this->get_allowed_website_id_list('editor');
     $linkedWebsites = array();
     if (!is_null($websiteIds))
-      $websites = ORM::factory('website')->in('id', $websiteIds)->orderby('title','asc')->find_all();
+      $websites = ORM::factory('website')->in('id', $websiteIds)->where('deleted', 'false')->orderby('title','asc')->find_all();
     else
-      $websites = ORM::factory('website')->orderby('title','asc')->find_all();        
+      $websites = ORM::factory('website')->where('deleted', 'false')->orderby('title','asc')->find_all();        
     foreach ($websites as $website) {
       echo '<li><label for="website_'.$website->id.'" class="wide">'.$website->title.'</label>';
       echo '<input type="checkbox" name="joinsTo:website:'.$website->id.'" ';
