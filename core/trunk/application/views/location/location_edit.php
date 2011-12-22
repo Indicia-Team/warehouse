@@ -79,13 +79,15 @@ jQuery(document).ready(function() {
     }});
   });
   
-  if ($("#location\\:public").attr("checked")) {
-    $("#websites").hide();  
-  } else {
-    $("#websites").show();  
+  if ($('#location\\:public').attr('checked')) {
+    $('#websites').hide();
   }
-  $("#location\\:public").change(function() {
-    $("#websites").toggle('slow');
+    $("#location\\:public").change(function() {
+    if ($(this).attr('checked')) {
+      $('input:checked[name^="joinsTo\\:website"]').attr('checked', false);
+      $('#attrs').hide();  
+    }
+    $('#websites').toggle('slow');
   });
   
 });
