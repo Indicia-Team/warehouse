@@ -136,7 +136,7 @@ class Location_Model extends ORM_Tree {
       // First, convert the boundary geom to a centroid using LatLong (EPSG:4326)
       $boundary = $this->submission['fields']['boundary_geom']['value'];
       $centroid = $this->calcCentroid($boundary);
-      $this->submission['fields']['centroid_geom']['value'] = $centroid['geom'];
+      $this->submission['fields']['centroid_geom']['value'] = $centroid['wkt'];
       $this->submission['fields']['centroid_sref']['value'] = $centroid['sref'];
       $this->submission['fields']['centroid_sref_system']['value'] = $centroid['sref_system'];
     }
@@ -150,10 +150,8 @@ class Location_Model extends ORM_Tree {
   * Calculates centroid of a location from a boundary wkt
   */
   protected function calcCentroid($boundary) {
-    $row = $this->db->query("SELECT ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid').")) AS geom, ".
-        "ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid')."))) AS wkt")->current();
-    $result = array('geom' => $row->geom,
-      'wkt' => $row->wkt,
+    $row = $this->db->query("SELECT ST_AsText(ST_Centroid(ST_GeomFromText('$boundary', ".kohana::config('sref_notations.internal_srid')."))) AS wkt")->current();
+    $result = array('wkt' => $row->wkt,
       'sref' => spatial_ref::internal_wkt_to_sref($row->wkt, 4326),
       'sref_system' => '4326');
     return $result;    
