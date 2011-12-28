@@ -251,14 +251,25 @@ class XMLReportReader_Core implements ReportReader
    */
   private function autogenColumns() {
     $sql = array();
+    $distinctSql = array();
     foreach ($this->columns as $col=>$def) {
       if (isset($def['sql'])) {
         $sql[] = $def['sql'] . ' as ' . $col;
+        if (isset($def['distincton']) && $def['distincton']==true) {
+          $distinctSql[] = $def['sql'];
+        }          
       }
+    }
+    if (count($distinctSql)>0) {
+      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(', ', $distinctSql) . ') ', $this->query);
+      $distincton = ' distinct on ('.implode(', ', $distinctSql).') ';
+    } else {
+      $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
+      $distincton = '';
     }
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to 
     // add custom attribute fields.
-    $this->query = str_replace('#columns#', implode(', ', $sql) . '#fields#', $this->query);
+    $this->query = str_replace('#columns#', $distincton . implode(', ', $sql) . '#fields#', $this->query);
   }
   
   /**
