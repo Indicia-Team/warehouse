@@ -82,7 +82,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       }
       else
       {
-        kohana::log('error', 'Validation errors uploading file '. $_FILES['media_upload']['name']);
+        kohana::log('error', 'Validation errors uploading file '. $_FILES['csv_upload']['name']);
         kohana::log('error', print_r($_FILES->errors('form_error_messages'), true));
         Throw new ArrayException('Validation error', $_FILES->errors('form_error_messages'));
       }
@@ -125,8 +125,8 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       // skip rows to allow for the last file position
       fseek($handle, $filepos);
       if ($filepos==0) {
-        // first row, so load the column headings
-        $headings = fgetcsv($handle, 1000, ",");
+        // first row, so load the column headings. Force lowercase so we can case insensitive search later. 
+        $headings = array_map('strtolower',fgetcsv($handle, 1000, ","));
         // Also work out the termlist_id for the cateogories
         $r = $this->db
             ->select('id')
@@ -142,15 +142,16 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         $count++;
         $filepos = ftell($handle);
-        $designationTitle = $this->findValue($data, 'designation title', $obj);
-        $designationCode = $this->findValue($data, 'designation code', $obj);
-        $designationAbbr = $this->findValue($data, 'designation abbr', $obj);
-        $designationDescription = $this->findValue($data, 'designation description', $obj);
-        $designationCategory = $this->findValue($data, 'designation category', $obj);
-        $taxonExternalKey = $this->findValue($data, 'taxon external key', $obj);
-        $startDate = $this->findValue($data, 'start date', $obj);
-        $source = $this->findValue($data, 'source', $obj);
-        $geographicConstraint = $this->findValue($data, 'geographic constraint', $obj);
+        $designationTitle = $this->findValue($data, array('designation title', 'designation'), $obj);
+        $designationCode = $this->findValue($data, array('designation code'), $obj);
+        $designationAbbr = $this->findValue($data, array('designation abbr', 'designation abbreviation'), $obj);
+        $designationDescription = $this->findValue($data, array('designation description'), $obj);
+        $designationCategory = $this->findValue($data, array('designation category','reporting category'), $obj);
+        $taxonExternalKey = $this->findValue($data, array('taxon external key', 'taxon version key'), $obj);
+        $taxon = $this->findValue($data, array('taxon', 'current taxon name'), $obj);
+        $startDate = $this->findValue($data, array('start date', 'year'), $obj);
+        $source = $this->findValue($data, array('source'), $obj);
+        $geographicConstraint = $this->findValue($data, array('geographic constraint'), $obj);
         // First step - ensure a designation category exists
         $r = $this->db
             ->select('id')
@@ -198,24 +199,44 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         $r = $this->db
             ->select('id')
             ->from('taxa')
-            ->where(array('external_key'=>$taxonExternalKey))
+            ->where(array('external_key'=>$taxonExternalKey, 'taxon'=>$taxon))
             ->get()->result_array(false);
         // convert years to a date
         if (preg_match('/\d\d\d\d/', $startDate))
           $startDate = $startDate.'-01-01';
         foreach ($r as $taxon) {
-          // Insert a link from each matched taxon to the designation
-          $this->db->insert('taxa_taxon_designations', array(
-            'taxon_id'=>$taxon['id'],
-            'taxon_designation_id'=>$desId,
-            'start_date'=>$startDate,
-            'source'=>$source,
-            'geographical_constraint'=>$geographicConstraint,
-            'created_on'=>date("Ymd H:i:s"),
-            'created_by_id'=>$_SESSION['auth_user']->id,
-            'updated_on'=>date("Ymd H:i:s"),
-            'updated_by_id'=>$_SESSION['auth_user']->id   
-          ));
+          // Insert a link from each matched taxon to the designation, if not already present. 
+          $r = $this->db
+            ->select('id')
+            ->from('taxa_taxon_designations')
+            ->where(array('taxon_designation_id'=>$desId, 'taxon_id'=>$taxon['id']))
+            ->get()->result_array(false);;
+          if (count($r)===0) {
+            $this->db->insert('taxa_taxon_designations', array(
+              'taxon_id'=>$taxon['id'],
+              'taxon_designation_id'=>$desId,
+              'start_date'=>$startDate,
+              'source'=>$source,
+              'geographical_constraint'=>$geographicConstraint,
+              'created_on'=>date("Ymd H:i:s"),
+              'created_by_id'=>$_SESSION['auth_user']->id,
+              'updated_on'=>date("Ymd H:i:s"),
+              'updated_by_id'=>$_SESSION['auth_user']->id   
+            ));
+          } else {
+            $this->db->update('taxa_taxon_designations', array(
+                'taxon_id'=>$taxon['id'],
+                'taxon_designation_id'=>$desId,
+                'start_date'=>$startDate,
+                'source'=>$source,
+                'geographical_constraint'=>$geographicConstraint,
+                'updated_on'=>date("Ymd H:i:s"),
+                'updated_by_id'=>$_SESSION['auth_user']->id   
+              ), 
+              array('id'=>$r[0]['id'])
+            );
+            kohana::log('debug', 'updated');
+          }
         }
       }
     }
@@ -232,6 +253,7 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
    */
   public function upload_complete() {
     $this->session->set_flash('flash_info', $_GET['total']." designations were uploaded.");
+    $cache= Cache::instance();
     $cache->delete(basename($_GET['uploaded_csv']));
     $csvTempFile = DOCROOT . "upload/" . $_GET['uploaded_csv'];
     unlink($csvTempFile);
@@ -241,11 +263,14 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
   /** 
    * Finds a field value if it exists in the data for a CSV row.
    * @param type $data
-   * @param type $name
+   * @param array $names List of the possible column titles that this value can match against.
    * @param type $obj 
    */
-  private function findValue($data, $name, $obj) {
-    $idx = array_search($name, $obj['headings']);
+  private function findValue($data, $names, $obj) {
+    foreach ($names as $name) {
+      $idx = array_search($name, $obj['headings']);
+      if ($idx!==false) break;
+    }
     if ($idx===false) 
       return null;
     else

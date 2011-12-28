@@ -34,13 +34,14 @@ echo $grid;
 <input type="file" name="csv_upload" id="csv_upload" size="40" />
 <input type="submit" value="Upload Designations File" />
 <p>This lets you import designations including links for any existing taxon, identified by the external key. 
-  To use this facility, create a spreadsheet with the following columns:</p>
+  To use this facility, create a spreadsheet with the following columns, or columns matching the JNCC Conservation Designations spreadsheet:</p>
 <ol>
   <li>designation title</li>
   <li>designation code</li>
   <li>designation abbr</li>
   <li>designation description</li>
   <li>designation category</li>
+  <li>taxon</li>
   <li>taxon external key</li>
   <li>start date</li>
   <li>source</li>
