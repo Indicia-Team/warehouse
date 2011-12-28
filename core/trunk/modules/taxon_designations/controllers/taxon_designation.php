@@ -204,6 +204,8 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         // convert years to a date
         if (preg_match('/\d\d\d\d/', $startDate))
           $startDate = $startDate.'-01-01';
+        if (empty($startDate))
+          $startDate=null;
         foreach ($r as $taxon) {
           // Insert a link from each matched taxon to the designation, if not already present. 
           $r = $this->db
