@@ -1,6 +1,6 @@
 -- Function: insert_term(character varying, character, integer, character varying)
 
-CREATE OR REPLACE FUNCTION insert_term(t character varying, lang_iso character, sort_order integer, list integer, list_external_key character varying)
+CREATE OR REPLACE FUNCTION insert_term(t character varying, lang_iso character, srt integer, list integer, list_external_key character varying)
   RETURNS integer AS
 $BODY$
 DECLARE
@@ -29,7 +29,7 @@ BEGIN
     INSERT INTO meanings VALUES (m_id);
 
     INSERT INTO termlists_terms (term_id, termlist_id, meaning_id, preferred, sort_order, created_on, created_by_id, updated_on, updated_by_id)
-    VALUES (t_id, l_id, m_id, 't', sort_order, now(), 1, now(), 1);
+    VALUES (t_id, l_id, m_id, 't', srt, now(), 1, now(), 1);
   END IF;
 
   RETURN 1;
