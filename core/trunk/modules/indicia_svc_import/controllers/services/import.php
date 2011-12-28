@@ -192,7 +192,6 @@ class Import_Controller extends Service_Base_Controller {
       } else
         // skip rows to allow for the last file position
         fseek($handle, $filepos);
-      $count=0;
       $model = ORM::Factory($_GET['model']);      
       while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && ($limit===false || $count<$limit)) {
         $count++;
