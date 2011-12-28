@@ -47,8 +47,8 @@
     <param name='id' display='Record ID' description='Enter the ID of a record to view or leave blank for all records. If you specify an ID then the other parameters are ignored.' datatype='integer' emptyvalue='0' />
     <param name='survey_id' display='Survey' description='Select the survey, or leave for all surveys' datatype='lookup'
         population_call='direct:survey:id:title' />
-    <param name='date_from' display='Date From' datatype='date' />
-    <param name='date_to' display='Date To' datatype='date' />
+    <param name='date_from' display='Date From' datatype='date' description="Start of the date range to return records for, or leave blank." />
+    <param name='date_to' display='Date To' datatype='date' description="End of the date range to return records for, or leave blank." />
     <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
         query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />

@@ -18,7 +18,7 @@
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
   AND (CAST(tpref.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='')
-  AND st_intersects(s.geom, st_geomfromtext('#searchArea#',900913))
+  AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
   AND (#sref_max_size#=-1 OR #sref_max_size# >= CASE
       WHEN lower(s.entered_sref_system) = 'osgb' THEN CASE WHEN length(s.entered_sref)=5 THEN 2000 ELSE power(10, (6-(length(s.entered_sref)/2))) END
       WHEN lower(s.entered_sref_system) = 'osie' THEN power(10, (5-(length(s.entered_sref)/2)))
