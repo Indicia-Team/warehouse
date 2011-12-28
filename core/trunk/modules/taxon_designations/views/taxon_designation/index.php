@@ -28,3 +28,24 @@ echo $grid;
 <input type="submit" value="New taxon designation" class="ui-corner-all ui-state-default button" />
 </form>
 <?php echo $upload_csv_form ?>
+<form enctype="multipart/form-data" class="linear-form" method="post" action="<?php echo url::site().'taxon_designation/upload_csv'; ?>">
+<fieldset>
+<label for="csv_upload" class="auto">Upload a Designations Spreadsheet (CSV) file into this list:</label>
+<input type="file" name="csv_upload" id="csv_upload" size="40" />
+<input type="submit" value="Upload Designations File" />
+<p>This lets you import designations including links for any existing taxon, identified by the external key. 
+  To use this facility, create a spreadsheet with the following columns:</p>
+<ol>
+  <li>designation title</li>
+  <li>designation code</li>
+  <li>designation abbr</li>
+  <li>designation description</li>
+  <li>designation category</li>
+  <li>taxon external key</li>
+  <li>start date</li>
+  <li>source</li>
+  <li>geographic constraint</li>
+</ol>
+
+</fieldset>
+</form>
