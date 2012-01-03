@@ -210,6 +210,9 @@ class Import_Controller extends Service_Base_Controller {
           }
           $index++;
         }
+        // copy across the fixed values, including the website id, into the data to save.
+        if (!empty($metadata['website_id']))
+          $saveArray['website_id']=$metadata['website_id'];
         if ($metadata['settings']) {
           $saveArray = array_merge($metadata['settings'], $saveArray);
         }
