@@ -118,16 +118,7 @@ class iform_report_grid {
           'required' => false,
           'default' => 1,
           'group'=>'Report Settings'
-        ),
-        array(
-          'name' => 'items_per_page',
-          'caption' => 'Items per page',
-          'description' => 'Maximum number of rows shown on each page of the table',
-          'type' => 'int',
-          'default' => 20,
-          'required' => true,
-          'group'=>'Report Settings'
-        ),
+        ),        
         array(
           'name' => 'download_link',
           'caption' => 'Download link',
@@ -156,7 +147,7 @@ class iform_report_grid {
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
-    require_once drupal_get_path('module', 'iform').'/client_helpers/report_helper.php';
+    iform_load_helpers(array('report_helper'));
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     // get the grid output before outputting the download link, so we can check if the download link is needed.

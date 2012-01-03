@@ -73,7 +73,7 @@ class iform_importer {
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
-    require_once drupal_get_path('module', 'iform').'/client_helpers/import_helper.php';
+    iform_load_helpers(array('import_helper'));
     
     $auth = import_helper::get_read_write_auth($args['website_id'], $args['password']);
     if ($args['model']=='url') {

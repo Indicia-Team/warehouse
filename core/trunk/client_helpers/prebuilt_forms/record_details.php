@@ -69,7 +69,7 @@ class iform_record_details {
    * @return Form HTML.
    */
   public static function get_form($args) {
-    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
+    iform_load_helpers(array('map_helper'));
     $hidden = str_replace("\r\n", "\n", $args['hide_fields']);
     $hidden = explode("\n", $hidden);
     if (empty($_GET['occurrence_id'])) {

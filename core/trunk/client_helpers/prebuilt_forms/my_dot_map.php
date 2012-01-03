@@ -294,7 +294,7 @@ class iform_my_dot_map {
   public static function get_form($args) {
     global $user;
     $lang = isset($user) ? iform_lang_iso_639_2($user->lang) : 'eng';
-    require_once dirname(dirname(__FILE__)) . '/map_helper.php';
+    iform_load_helpers(array('map_helper'));
     $readAuth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
     $r = '';
     // setup the map options

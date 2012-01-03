@@ -136,7 +136,7 @@ class iform_sectioned_transects_input_sample {
     global $user;
     if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
-    require_once dirname(dirname(__FILE__)) . '/map_helper.php';
+    iform_load_helpers(array('map_helper'));
     $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     $sampleId = isset($_GET['sample_id']) ? $_GET['sample_id'] : null;
     if ($sampleId) {

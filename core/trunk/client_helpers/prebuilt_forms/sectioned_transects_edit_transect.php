@@ -121,7 +121,7 @@ class iform_sectioned_transects_edit_transect {
     $checks=self::check_prerequisites();
     if ($checks!==true)
       return $checks;
-    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
+    iform_load_helpers(array('map_helper'));
     data_entry_helper::add_resource('jquery_form');
     self::$ajaxFormUrl = iform_ajaxproxy_url($node, 'location');
     if (function_exists('url')) {

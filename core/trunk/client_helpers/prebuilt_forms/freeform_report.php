@@ -115,7 +115,7 @@ class iform_freeform_report {
    * @todo: Implement this method 
    */
   public static function get_form($args, $node, $response=null) {
-    require_once drupal_get_path('module', 'iform').'/client_helpers/report_helper.php';
+    iform_load_helpers(array('report_helper'));
     $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     $reportOptions['header'] = $args['header'];

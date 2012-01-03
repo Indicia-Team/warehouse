@@ -57,6 +57,14 @@ function iform_report_get_report_parameters() {
       'type' => 'textarea',
       'required' => false,
       'group'=>'Report Settings'
+    ),array(
+      'name' => 'items_per_page',
+      'caption' => 'Items per page',
+      'description' => 'Maximum number of rows shown on each page of the table',
+      'type' => 'int',
+      'default' => 20,
+      'required' => true,
+      'group'=>'Report Settings'
     ), array(
       'name' => 'output',
       'caption' => 'Output Mode',

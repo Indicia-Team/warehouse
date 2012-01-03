@@ -171,7 +171,7 @@ class iform_distribution_map_1 {
    * @return Form HTML.
    */
   public static function get_form($args) {
-    require_once drupal_get_path('module', 'iform').'/client_helpers/map_helper.php';
+    iform_load_helpers(array('map_helper'));
     global $user;
     $readAuth = map_helper::get_read_auth($args['website_id'], $args['password']);
     // setup the map options
