@@ -107,12 +107,7 @@ function enableBuffering() {
       if (document.activeElement.id==='geom_buffer') {
         rebuildBuffer(div);
       }
-      storeGeomsInForm(div);
-      if ($('#hidden-wkt').val()==='') {
-        evt.preventDefault();
-        alert('Please supply a search area for the report.');
-        return false;
-      }
+      storeGeomsInForm(div);      
     });
   });
 }
