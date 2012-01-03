@@ -25,7 +25,6 @@
 require_once('helper_config.php');
 require_once('helper_base.php');
 require_once('submission_builder.php');
-require_once("libcurlEmulator/libcurlemu.inc.php");
 
 /**
  * Static helper class that provides automatic HTML and JavaScript generation for Indicia online

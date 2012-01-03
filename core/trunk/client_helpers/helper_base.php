@@ -22,6 +22,7 @@
 
 require_once('helper_config.php');
 require_once('lang.php');
+require_once("libcurlEmulator/libcurlemu.inc.php");
 
 global $indicia_templates;
 
