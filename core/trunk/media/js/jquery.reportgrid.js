@@ -161,7 +161,7 @@
       }
       pagerContent = pagerContent.replace('{pagelist}', pagelist);
       showing = showing.replace('{1}', div.settings.offset+1);
-      showing = showing.replace('{2}', Math.min(div.settings.offset + div.settings.itemsPerPage, div.settings.recordCount));
+      showing = showing.replace('{2}', div.settings.offset + $(div).find('tbody').children().length);
       showing = showing.replace('{3}', div.settings.recordCount);
       pagerContent = pagerContent.replace('{showing}', showing);
 
@@ -413,6 +413,16 @@
     this.reload = function() {
       $.each($(this), function(idx, div) {
         load(div, false);
+      });
+    };
+    
+    /**
+     * Public method to be called after deleting rows from the grid - to keep paginator updated
+     */
+    this.removeRecordsFromPage = function(count) {
+      $.each($(this), function(idx, div) {
+        div.settings.recordCount -= count;
+        updatePager(div, true);
       });
     };
     
