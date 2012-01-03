@@ -71,6 +71,11 @@ class ORM extends ORM_Core {
    */
   protected $has_attributes = false;
   
+  /**
+   * @var boolean Is this model for an existing record that is being saved over?
+   */
+  protected $existing = false;
+  
   private $cache;
   
   /**
@@ -256,12 +261,11 @@ class ORM extends ORM_Core {
     foreach ($fields_to_copy as $a)
     {
       if (array_key_exists($a, $array->as_array())) {
-        // Apart from strings, empty values must be null not ''. Note that kohana declares a date
-        // as a string, with a format of 0000-00-00.
-        if ($array[$a]==='' &&
-            ($this->table_columns[$a]['type']!=='string' || 
-            (isset($this->table_columns[$a]['format']) && substr($this->table_columns[$a]['format'], 0, 10)==='0000-00-00'))) 
+        // When a field allows nulls, convert empty values to null. Otherwise we end up trying to store '' in non-string
+        // fields such as dates.
+        if ($array[$a]==='' && isset($this->table_columns[$a]['null']) && $this->table_columns[$a]['null']==1) {
           $array[$a]=null;
+        }
         $this->__set($a, $array[$a]);
       }
     }
@@ -492,6 +496,7 @@ class ORM extends ORM_Core {
     if (array_key_exists('id', $vArray) && $vArray['id'] != null) {
       $this->find($vArray['id']);
       $vArray = array_merge($this->as_array(), $vArray);
+      $this->existing=true;
     }
     Kohana::log("debug", "About to validate the following array in model ".$this->object_name);
     Kohana::log("debug", kohana::debug($this->sanitise($vArray)));
@@ -1012,14 +1017,20 @@ class ORM extends ORM_Core {
         return false;
       }
     }
-    // Create a attribute value, loading the existing value id if it exists
-    $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
-    $dt = $this->db
-        ->select('data_type')
+    $attr = $this->db
+        ->select('data_type','multi_value')
         ->from($this->object_name.'_attributes')
         ->where(array('id'=>$attrId))
-        ->get();
-    $dataType = $dt[0]->data_type;
+        ->get()->result_array();
+    $attr = $attr[0];
+    // Create a attribute value, loading the existing value id if it exists, or search for the existing record
+    // if not multivalue but no id supplied and not a new record
+    if ($this->existing && (!is_null($valueId)) && (!$attr->multi_value=='f'))
+      $attrValueModel = ORM::factory($this->object_name.'_attribute_value')
+          ->where(array($this->object_name.'_attribute_id'=>$attrId, $this->object_name.'_id'=>$this->id))->find();
+    if (!isset($attrValueModel) || !$attrValueModel->loaded)
+      $attrValueModel = ORM::factory($this->object_name.'_attribute_value', $valueId);
+    $dataType = $attr->data_type;
     $vf = null;
     
     $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
