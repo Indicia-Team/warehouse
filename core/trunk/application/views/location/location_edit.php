@@ -187,7 +187,7 @@ This page allows you to specify the details of a location.
 </div>
 
 <?php 
-  if ($this->auth->logged_in('CoreAdmin') || $values['location:public'] != true) :
+  if (is_null($id) || $this->auth->logged_in('CoreAdmin') || $values['location:public'] != true) :
   //No need to display for public locations unless core admin. 
 ?>  
 <div id="websites">
@@ -219,7 +219,7 @@ This page allows you to specify the details of a location.
 <?php endif; ?>
 
 <?php 
-  if ($id != null && $values['location:public'] != "t") : 
+  if (!is_null($id) && $values['location:public'] != "t") : 
   //No need to display for new locations or public locations.
   ?>
 <div id="attrs">
