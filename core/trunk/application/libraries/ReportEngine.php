@@ -695,6 +695,16 @@ class ReportEngine {
   {
     // Replace each parameter in place
     $paramDefs = $this->reportReader->getParams();
+    // Pre-parse joins defined by parameters, so that join SQL also gets other parameter values
+    // inserted
+    foreach ($this->providedParams as $name => $value)
+    {
+      if (isset($paramDefs[$name])) {
+        if (array_key_exists('joins', $paramDefs[$name]))
+          $query = $this->addParamJoins($query, $paramDefs[$name], $value);
+      }
+    }
+    // Now loop through the joins to insert the values into the query
     foreach ($this->providedParams as $name => $value)
     {
       if (isset($paramDefs[$name])) {
@@ -869,6 +879,19 @@ class ReportEngine {
     }
     return $query;
   }
+  
+  private function addParamJoins($query, $paramDef, $value) {
+    foreach($paramDef['joins'] as $joinDef) {
+      if (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
+          ($joinDef['operator']==='notequal' && $joinDef['value']!==$value)) {
+        // Join SQL can contain the parameter value as well.
+        $join = str_replace('', $value, $joinDef['sql']);
+        $query = str_replace('#joins#', $join."\n #joins#", $query);
+      }
+    }
+    return $query;
+  }
+  
   /**
    * If sorting on the date column (the extra column added by vague date processing) then
    * switch the sort order back to use date_start.

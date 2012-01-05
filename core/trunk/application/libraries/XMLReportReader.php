@@ -31,6 +31,7 @@ class XMLReportReader_Core implements ReportReader
   private $description;
   private $row_class;
   private $query;
+  private $extraJoins=array();
   private $countQuery=null;
   private $field_sql;
   private $order_by;
@@ -139,18 +140,7 @@ class XMLReportReader_Core implements ReportReader
                 $this->order_by[] = $reader->value;
                 break;
               case 'param':
-                $this->mergeParam(
-                    $reader->getAttribute('name'),
-                    $reader->getAttribute('display'),
-                    $reader->getAttribute('datatype'),
-                    $reader->getAttribute('allow_buffer'),
-                    $reader->getAttribute('fieldname'),
-                    $reader->getAttribute('alias'),
-                    $reader->getAttribute('emptyvalue'),
-                    $reader->getAttribute('description'),
-                    $reader->getAttribute('query'),
-                    $reader->getAttribute('lookup_values'),
-                    $reader->getAttribute('population_call'));
+                $this->mergeParam($reader->getAttribute('name'), $reader);
                 break;
               case 'column':
                 $this->mergeXmlColumn($reader);
@@ -252,24 +242,33 @@ class XMLReportReader_Core implements ReportReader
   private function autogenColumns() {
     $sql = array();
     $distinctSql = array();
+    $countSql = array();
     foreach ($this->columns as $col=>$def) {
       if (isset($def['sql'])) {
         $sql[] = $def['sql'] . ' as ' . $col;
-        if (isset($def['distincton']) && $def['distincton']==true) {
+        if (isset($def['distincton']) && $def['distincton']=='true') {
           $distinctSql[] = $def['sql'];
+          // in_count lets the xml file exclude distinct on columns from the count query
+          if (!isset($def['in_count']) || $def['in_count']=='true') {
+            $countSql[] = $def['sql'];  
+          }
         }          
       }
     }
     if (count($distinctSql)>0) {
-      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(', ', $distinctSql) . ') ', $this->query);
       $distincton = ' distinct on ('.implode(', ', $distinctSql).') ';
     } else {
-      $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
       $distincton = '';
+    }
+    if (count($countSql)>0) {
+      $this->countQuery = str_replace('#columns#', ' count(distinct ' . implode(', ', $countSql) . ') ', $this->query);
+    } else {
+      $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
     }
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to 
     // add custom attribute fields.
     $this->query = str_replace('#columns#', $distincton . implode(', ', $sql) . '#fields#', $this->query);
+    kohana::log('debug', 'count : '.$this->countQuery);
   }
   
   /**
@@ -525,8 +524,21 @@ class XMLReportReader_Core implements ReportReader
     return $query;
   }
 
-  private function mergeParam($name, $display = '', $type = '', $allow_buffer='', $fieldname='', $alias='', $emptyvalue='', $description = '', $query='', $lookup_values='', $population_call='')
-  {
+  /**
+   * Merges a parameter into the list of parameters read for the report. Updates existing 
+   * ones if there is a name match.
+   */
+  private function mergeParam($name, $reader=null) {
+    $display = ($reader===null) ? '' : $reader->getAttribute('display');
+    $type = ($reader===null) ? '' : $reader->getAttribute('datatype');
+    $allow_buffer = ($reader===null) ? '' : $reader->getAttribute('allow_buffer');
+    $fieldname = ($reader===null) ? '' : $reader->getAttribute('fieldname');
+    $alias = ($reader===null) ? '' : $reader->getAttribute('alias');
+    $emptyvalue = ($reader===null) ? '' : $reader->getAttribute('emptyvalue');
+    $description = ($reader===null) ? '' : $reader->getAttribute('description');
+    $query = ($reader===null) ? '' : $reader->getAttribute('query');
+    $lookup_values = ($reader===null) ? '' : $reader->getAttribute('lookup_values');
+    $population_call = ($reader===null) ? '' : $reader->getAttribute('population_call');
     if (array_key_exists($name, $this->params))
     {
       if ($display != '') $this->params[$name]['display'] = $display;
@@ -554,6 +566,26 @@ class XMLReportReader_Core implements ReportReader
         'lookup_values' => $lookup_values,
         'population_call' => $population_call
       );
+    }
+    // Does the parameter define optional join elements which are associated with specific parameter values?
+    if ($reader!==null) {
+      $joinXml = $reader->readInnerXML();
+      if (!empty($joinXml)) {
+        $joinReader = new XMLReader();
+        $joinReader->XML($joinXml);
+        while ($joinReader->read()) {
+          if ($joinReader->nodeType==XMLREADER::ELEMENT && $joinReader->name=='join') {
+            if (!isset($this->params[$name]['joins']))
+              $this->params[$name]['joins']=array();
+            $this->params[$name]['joins'][] = array(
+              'value'=>$joinReader->getAttribute('value'),
+              'operator'=>$joinReader->getAttribute('operator'),
+              'sql'=>$joinReader->readString()
+            );
+          }
+        }
+      }
+      
     }
   }
   
