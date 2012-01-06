@@ -155,7 +155,9 @@ function iform_map_get_map_parameters() {
     array(
       'name' => 'standard_controls',
       'caption' => 'Controls to add to map',
-      'description' => 'List of map controls, one per line. Select from layerSwitcher, zoomBox, panZoom, panZoomBar, drawPolygon, drawPoint, drawLine, graticule.',
+      'description' => 'List of map controls, one per line. Select from layerSwitcher, zoomBox, panZoom, panZoomBar, drawPolygon, drawPoint, drawLine, '.
+         'hoverFeatureHighlight, clearEditLayer, modifyFeature, graticule. If using a data entry form and you add drawPolygon or drawLine controls then your '.
+         'form will support recording against polygons and lines as well as grid references and points.',
       'type' => 'textarea',
       'group'=>'Other Map Settings',
       'required'=>false,
@@ -263,6 +265,9 @@ function iform_map_get_map_options($args, $readAuth) {
   if (array_key_exists('standard_controls', $args) && $args['standard_controls']) {
     $args['standard_controls'] = str_replace("\r\n", "\n", $args['standard_controls']);
     $options['standardControls']=explode("\n", $args['standard_controls']);
+    // If drawing controls are enabled, then allow polygon recording.
+    if (in_array('drawPolygon', $options['standardControls']) || in_array('drawLine', $options['standardControls']))
+      $options['allowPolygonRecording']=true;
   }
   // And pass through any translation strings, only if they exist
   $msgGeorefSelectPlace = lang::get('LANG_Georef_SelectPlace');

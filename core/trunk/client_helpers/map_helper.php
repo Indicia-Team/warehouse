@@ -126,6 +126,14 @@ class map_helper extends helper_base {
   * <li><b>toolbarSuffix</b><br/>
   * Content to include at the end of the map toolbar. Not applicable when the toolbar is added directly to the map.
   * </li>
+  * <li><b>clickForSpatialRef</b><br/>
+  * Does clicking on the map set the spatial reference of the sample input controls on the form the map appears on (if any)?
+  * Defaults to true.
+  * </li>
+  * <li><b>allowPolygonRecording</b><br/>
+  * If a drawPolygon or drawLine control is present, do these set the spatial reference of the sample input controls on the form the map appears on (if any)?
+  * The spatial ref is set to the polygon centroid and the sample geometry is set to the polygon itself allowing polygons for records.
+  * </li>
   * <li><b>editLayer</b><br/>
   * </li>
   * <li><b>editLayerName</b><br/>
