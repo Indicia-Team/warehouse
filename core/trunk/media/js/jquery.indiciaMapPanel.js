@@ -649,6 +649,104 @@ mapInitialisationHooks = [];
         return null;
       }
     }
+    
+    /**
+     * Function which takes a Wkt value and converts to a display spatial ref in the current system, then calls
+     * a callback function (e.g. to put the sref into a form control).
+     * Callback is a function that accepts a data structure as returned by the warehouse conversion from Wkt to Sref.
+     */
+    function wktToSref(div, wkt, callback) {
+      var outputSystem = _getSystem();
+      // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+      var precision, metres = div.map.getScale()/200;
+      // now round to find appropriate square size
+      if (metres<30) {
+        precision=8;
+      } else if (metres<300) {
+        precision=6;
+      } else if (metres<3000) {
+        precision=4;
+      } else {
+        precision=2;
+      }
+      // enforce precision limits if specified in the settings
+      if (div.settings.clickedSrefPrecisionMin!=='') {
+        precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+      }
+      if (div.settings.clickedSrefPrecisionMax!=='') {
+        precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+      }
+      
+      $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
+              "?wkt=" + wkt +
+              "&system=" + outputSystem +
+              "&precision=" + precision +
+              "&metresAccuracy=" + metres +
+              "&output=" + div.settings.latLongFormat +
+              "&callback=?", callback
+      );
+    }
+    
+    /**
+     * Event handler for feature add/modify on the edit layer when polygon recording is enabled. Puts the geom in the hidden
+     * input for the sample geom, plus sets the visible spatial ref control to the centroid in the currently selected system.     
+     */
+    function recordPolygon(evt) {
+      // replace old features?
+      var oldFeatures=[];
+      $.each(evt.feature.layer.features, function(idx, feature) {
+        if (feature!==evt.feature) {
+          oldFeatures.push(feature);
+        }
+      });
+      if (oldFeatures.length>0) {
+        if (confirm(this.map.div.settings.msgReplaceBoundary)) {
+          evt.feature.layer.removeFeatures(oldFeatures, {});
+        } else {
+          evt.feature.layer.removeFeatures([evt.feature], {});
+          return;
+        }
+      }
+      $('#imp-geom').val(evt.feature.geometry.toString());
+      wktToSref(this.map.div, evt.feature.geometry.getCentroid(), function(data) {
+        if (typeof data.sref !== "undefined") {
+          $('#imp-sref').val(data.sref);
+        }
+      });
+    }
+    
+    /**
+     * Function called by the map click handler. Converts the point clicked to an sref then calls a callback to 
+     * process it.
+     * Callback is a function that accepts a data structure as returned by the warehouse conversion from Wkt to Sref.
+     * Should contain properties for sref & wkt, or error if failed.
+     */
+    function clickOnMap(xy, div, callback)
+    {
+      var lonlat = div.map.getLonLatFromPixel(xy);
+      var sref, wkt, outputSystem = _getSystem();
+      if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
+        // no transform required
+        if (div.map.getUnits()=='m') {
+        // in metres, so we can round (no need for sub-metre precision)
+          sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
+        } else {
+          sref = lonlat.lat + ', ' + lonlat.lon;
+        }
+        if (outputSystem != '900913' && outputSystem != '3857') {
+          lonlat.transform(div.map.projection, div.indiciaProjection);
+        }
+        wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+        callback({sref: sref, wkt: wkt});
+      } else {
+        if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+          // Indicia expects the WKT in 900913 (it's internal format)
+          lonlat.transform(div.map.projection, div.indiciaProjection);
+        }
+        wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
+        wktToSref(div, wkt, callback);        
+      }
+    }
 
     // Extend our default options with those provided, basing this on an empty object
     // so the defaults don't get changed.
@@ -910,78 +1008,29 @@ mapInitialisationHooks = [];
         // Setup a click event handler for the map
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
           defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
+          trigger: function(e) {
+            clickOnMap(e.xy, div, function(data)
+              {
+                if(typeof data.error != 'undefined')
+                  if(data.error == 'wkt_to_sref translation is outside range of grid.')
+                    alert(div.settings.msgSrefOutsideGrid);
+                  else
+                    alert(data.error);
+                else
+                  _setClickPoint(data, div);
+              }
+            );
+          },
           initialize: function(options)
           {
             this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
             OpenLayers.Control.prototype.initialize.apply(this, arguments);
             this.handler = new OpenLayers.Handler.Click( this, {'click': this.trigger}, this.handlerOptions );
-          },
-
-          trigger: function(e)
-          {
-            var lonlat = div.map.getLonLatFromPixel (e.xy);
-            // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-            var precision, metres = div.map.getScale()/200;
-            // now round to find appropriate square size
-            if (metres<30) {
-              precision=8;
-            } else if (metres<300) {
-              precision=6;
-            } else if (metres<3000) {
-              precision=4;
-            } else {
-              precision=2;
-            }
-            // enforce precision limits if specified in the settings
-            if (div.settings.clickedSrefPrecisionMin!=='') {
-              precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
-            }
-            if (div.settings.clickedSrefPrecisionMax!=='') {
-              precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
-            }
-            var sref, wkt, outputSystem = _getSystem();
-            if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
-              // no transform required
-              if (div.map.getUnits()=='m') {
-              // in metres, so we can round (no need for sub-metre precision)
-                sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
-              } else {
-                sref = lonlat.lat + ', ' + lonlat.lon;
-              }
-              if (outputSystem != '900913' && outputSystem != '3857') {
-                lonlat.transform(div.map.projection, div.indiciaProjection);
-              }
-              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-              _setClickPoint({
-                'sref' : sref,
-                'wkt' : wkt
-              }, div);
-            } else {
-              if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-                // Indicia expects the WKT in 900913 (it's internal format)
-                lonlat.transform(div.map.projection, div.indiciaProjection);
-              }
-              wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-              $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
-                      "?wkt=" + wkt +
-                      "&system=" + outputSystem +
-                      "&precision=" + precision +
-                      "&metresAccuracy=" + metres +
-                      "&output=" + div.settings.latLongFormat +
-                      "&callback=?", function(data)
-                {
-                  if(typeof data.error != 'undefined')
-                    if(data.error == 'wkt_to_sref translation is outside range of grid.')
-                      alert(div.settings.msgSrefOutsideGrid);
-                    else
-                      alert(data.error);
-                  else
-                    _setClickPoint(data, div);
-                }
-              );
-            }
-          }
+          }         
         });
+      }
+      if (div.settings.editLayer && div.settings.allowPolygonRecording) {
+        div.map.editLayer.events.on({'featureadded': recordPolygon, 'afterfeaturemodified': recordPolygon});     
       }
       $.each(div.settings.standardControls, function(i, ctrl) {
         // Add a layer switcher if there are multiple layers
@@ -1120,6 +1169,7 @@ $.fn.indiciaMapPanel.defaults = {
     toolbarSuffix: '', // content to append to the toolbarDiv content if not on the map
     editLayer: true,
     clickForSpatialRef: true, // if true, then enables the click to get spatial references control
+    allowPolygonRecording: false,
     editLayerName: 'Selection layer',
     editLayerInSwitcher: false,
     searchLayer: false, // determines whether we have a separate layer for the display of location searches, eg georeferencing. Defaults to editLayer.
@@ -1141,6 +1191,7 @@ $.fn.indiciaMapPanel.defaults = {
     msgGetInfoNothingFound: 'No occurrences were found at the location you clicked.',
     msgSrefOutsideGrid: 'The position is outside the range of the selected grid reference system.',
     msgSrefNotRecognised: 'The grid reference is not recognised.',
+    msgReplaceBoundary: 'Would you like to replace the existing boundary with the new one?',
     maxZoom: 19, //maximum zoom when relocating to gridref, postcode etc.
     maxZoomBuffer: 0.67, //margin around feature when relocating to gridref
 
