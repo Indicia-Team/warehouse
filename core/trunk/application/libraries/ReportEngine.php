@@ -771,7 +771,7 @@ class ReportEngine {
    */
   private function mergeAttrListParam($query, $type, $attrList) {
     $this->reportDb
-        ->select('id, data_type, caption, validation_rules')
+        ->select('distinct id, data_type, caption, validation_rules')
         ->from('list_'.$type.'_attributes');
     if ($this->websiteIds)
       $this->reportDb->in('website_id', $this->websiteIds);
@@ -792,7 +792,12 @@ class ReportEngine {
       $this->reportDb->in('caption', $captions);
     $usingCaptions=count($captions)>0;
     $attrs = $this->reportDb->get();
+    $done = array();    
     foreach($attrs as $attr) {
+      // don't duplicate any attributes as the SQL distinct does not force distinct when loading from a view.
+      if (in_array($attr->id, $done))
+        continue;
+      $done[]=$attr->id;
       $id = $attr->id;
       // can only use an inner join for definitely required fields. If they are required
       // only at the per-survey level, we must use left joins as the survey could vary per record.
