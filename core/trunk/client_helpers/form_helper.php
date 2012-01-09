@@ -260,7 +260,7 @@ $('#load-params').click(function(evt) {
 
       $ctrlOptions['extraParams'] = array_merge($ctrlOptions['extraParams'], $options['readAuth']);
       // standardise the control width unless specified already in the control options
-      if (strpos($ctrlOptions['class'], 'control-width')==false && $type != 'checkbox')
+      if (strpos($ctrlOptions['class'], 'control-width')==false && $type != 'checkbox' && $type != 'report_helper::report_picker')
         $ctrlOptions['class'] .= ' control-width-6';
       if (!isset($fieldsets[$fieldset])) 
         $fieldsets[$fieldset]='';
