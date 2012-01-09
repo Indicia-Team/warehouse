@@ -20,36 +20,14 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
+require_once(DOCROOT.'client_helpers/report_helper.php');
+$readAuth = report_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+echo report_helper::report_grid(array(
+    'readAuth'=>$readAuth,
+    'dataSource' => $_GET['report_name'],
+    'itemsPerPage' => kohana::config('pagination.default.items_per_page')
+));
+report_helper::link_default_stylesheet();
+echo report_helper::dump_javascript();
 
 ?>
-<p><?php echo $report['description']['description']; ?></p>
-<table class="report ui-widget ui-widget-content"><thead class="ui-widget-header">
-<?php
-$content = $report['content'];
-
-foreach ($content['columns'] as $col => $det)
-{
-  if (!array_key_exists('visible', $det) || $det['visible']!='false') {
-    $display = isset($det['display']) ? $det['display'] : $col;
-    echo "<th>$display</th>";
-  }
-}
-?>
-</thead><tbody>
-<?php
-$row_class= ($report['description']['row_class']!='') ? 'class="'.$report['description']['row_class'].'" ' : '';
-foreach ($content['data'] as $row)
-{
-  echo "<tr $row_class>";
-  foreach ($content['columns'] as $col => $det)
-  {
-    if (!array_key_exists('visible', $det) || $det['visible']!='false') {
-      $style= (isset($det['style']) && $det['style']!='') ? 'style="'.$det['style'].'" ' : '';
-      $class= (isset($det['class']) && $det['class']!='') ? 'class="'.$det['class'].'" ' : '';
-      echo "<td $style $class>".$row[$col]."</td>";
-    }
-  }
-  echo "</tr>";
-}
-?>
-</tbody></table>

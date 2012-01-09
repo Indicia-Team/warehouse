@@ -49,85 +49,19 @@ class Report_viewer_Controller extends Indicia_Controller
   */
   public function index()
   {
-    // Get the list of reports - at the moment we just grab default level
-    $localReports = $this->repServ->listLocalReports(2);
-
     $view = new View('report/index');
-    $view->localReports = $localReports;
 
     $this->template->title = "Report Browser";
     $this->template->content = $view;
+    $this->page_breadcrumbs[] = $this->template->title;
   }
-
-
-  public function resume($uid)
-  {
-    $this->run(null, $uid);
-  }
-
-  /**
-  * Process and deliver a local report - no parameters
-  */
-  public function local($report)
-  {
-    $this->run($report);
-  }
-
-  public function run($report, $uid=null)
-  {
-    try {
-      if ($uid) {
-        // Resume a report that has an existing identifier
-        $srvResponse = $this->repServ->resumeReport($uid, $_POST);
-      }	else {
-        $srvResponse = $this->repServ->requestReport($report, 'local', 'xml');
-      }
-    } catch (Exception $e) {
-      // Something went wrong, so back to the index page and flash the error.
-      $localReports = $this->repServ->listLocalReports(2);
-
-      $view = new View('report/index');
-      $view->localReports = $localReports;
-      $this->session->set_flash('flash_error', $e->getMessage());
-      error::log_error("Error occurred running report $report.", $e);
-
-      $this->template->title = "Report Browser";
-      $this->template->content = $view;
-      return;
-    }
-    if (array_key_exists('parameterRequest', $srvResponse['content']))
-    {
-      $view = new View('report/params');
-      // Grab the lookup values for any lookup parameters
-      foreach ($srvResponse['content']['parameterRequest'] as $name => $det) {
-        if ($det['query']!='') {
-          // Report specifies a query for a lookup, so we need to grab the lookup data. Use the report connection so
-          // we are not exposed to injection attack (as this is hopefully a limited read only account).
-          if (!$this->db) {
-            $this->db = new Database('report');
-          }
-          $srvResponse['content']['parameterRequest'][$name]['lookup_values'] = $this->db->query($det['query'])->result_array();
-        } else if (isset($det['lookup_values']) && is_string($det['lookup_values'])) {
-        	$options = array();
-        	foreach(explode(',', $det['lookup_values']) as $option) {
-        		$parts=explode(':', $option);
-        		$optionObj = new stdClass;
-        		$optionObj->id = $parts[0];
-        		$optionObj->caption = $parts[1];
-        		$options[]=$optionObj;
-        	}
-        	$srvResponse['content']['parameterRequest'][$name]['lookup_values'] = $options;
-        }
-      }
-      $view->report = $srvResponse;
-      $this->template->title = $srvResponse['description']['title'];
-    }
-    else
-    {
-      $view = new View('report/view');
-      $view->report = $srvResponse;
-      $this->template->title = $srvResponse['description']['title'];
-    }
+  
+  public function load() {
+    $view = new View('report/view');
+    $this->template->title = 'Report Output';
     $this->template->content = $view;
+    $this->page_breadcrumbs[] = html::anchor('report_viewer', 'Report Browser');
+    $this->page_breadcrumbs[] = $this->template->title;
   }
+
 }

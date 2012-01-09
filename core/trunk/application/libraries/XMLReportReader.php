@@ -213,22 +213,24 @@ class XMLReportReader_Core implements ReportReader
         else
             $this->query .= '#filters#';
       }
-      // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
-      // otherwise the same.
-      if (!empty($field_sql)) {
-        $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
-        $this->query = str_replace('#field_sql#', $field_sql, $this->query);
-      }
+      
       if ($this->hasColumnsSql) {
         // column sql is defined in the list of column elements, so autogenerate the query.
         $this->autogenColumns();
         if ($this->hasAggregates) {
           $this->buildGroupBy();
         } 
-      } elseif ($this->query)
+      } elseif ($this->query) {
+        // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
+        // otherwise the same.
+        if (!empty($field_sql)) {
+          $this->countQuery = str_replace('#field_sql#', ' count(*) ', $this->query);
+          $this->query = str_replace('#field_sql#', $field_sql, $this->query);
+        }
         // column SQL is part of the SQL statement, or defined in a field_sql element.
         // Get any extra columns from the query data. Do this at the end so that the specified columns appear first, followed by any unspecified ones.
         $this->inferFromQuery();
+      }
     }
     catch (Exception $e)
     {

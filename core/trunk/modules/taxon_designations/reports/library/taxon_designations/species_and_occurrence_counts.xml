@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Species and occurrence counts by designations" description="List species and record counts grouped by designations for a results set.">
+      <query>
+     select #columns#
+      from taxon_designations td
+      join taxa_taxon_designations ttd on ttd.taxon_designation_id=td.id and ttd.deleted=false
+      join taxa_taxon_lists ttl on ttl.taxon_id=ttd.taxon_id and ttl.deleted=false
+      join taxa_taxon_lists ttl2 on ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.deleted=false
+      join occurrences o on o.taxa_taxon_list_id=ttl.id and o.deleted=false
+      join samples s on s.id=o.sample_id and s.deleted=false 
+      #joins#
+      where td.deleted=false
+      and td.category_id=216
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND (o.zero_abundance='f' OR o.id IS NULL)
+      AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND o.record_status&lt;&gt;'R'
+      AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
+      </query>
+      <order_bys>
+            <order_by>td.title, td.id</order_by>
+      </order_bys>
+      <params>
+        <param name='date_from' display='Date From' datatype='date' />
+        <param name='date_to' display='Date To' datatype='date' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
+            query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title'>
+          <join operator="notequal" value="">join taxa t on t.id=ttl.taxon_id and t.taxon_group_id=#taxon_group_id#</join>
+        </param>
+        <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
+      </params>
+      <columns>
+            <column name="id" sql="td.id" visible="false" distincton="true" />
+            <column name="title" sql="td.title" display="Title" distincton="true" in_count="false"/>
+            <column name="occurrences" sql="count(distinct o.id)" display="No. of occurrences" aggregate="true" />
+            <column name="taxa" sql="count(distinct ttl.taxon_meaning_id)" display="No. of taxa" aggregate="true" />
+      </columns>
+</report>

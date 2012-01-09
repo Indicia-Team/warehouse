@@ -20,24 +20,16 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL
  * @link 	http://code.google.com/p/indicia/
  */
-
 ?>
-<div>
-<table class="ui-widget ui-widget-content"">
-<thead class="ui-widget-header">
-<th>Report</th><th>Description</th>
-</thead>
-<tbody>
+<form action="<?php echo url::site()?>report_viewer/load" method="GET">
 <?php
-foreach ($localReports['reportList'] as $lr)
-{
-  echo "<tr>";
-  echo "<td>".html::anchor("report/local/".$lr['name'], $lr['title'])."</td>";
-  echo "<td>".$lr['description']."</td>";
-  echo "</tr>";
-}
+require_once(DOCROOT.'client_helpers/report_helper.php');
+$readAuth = report_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
+echo report_helper::report_picker(array('readAuth'=>$readAuth));
+report_helper::link_default_stylesheet();
+echo report_helper::dump_javascript();
 ?>
-</tbody>
-</table>
-</div>
+<input type="submit" value="Load report" />
+</form>
+
 

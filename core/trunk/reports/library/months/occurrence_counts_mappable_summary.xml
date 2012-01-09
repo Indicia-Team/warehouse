@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Occurrence record counts by year" description="Lists years and the number of records for each. ">
+<report title="Occurrence record counts by months" description="Lists months and the number of records for each. ">
       <query>
       SELECT #columns#
       FROM websites w
@@ -26,9 +26,10 @@
           ('#quality#'='!R')
       )
       AND o.record_status&lt;&gt;'R'
+      AND s.date_type &lt;&gt; 'U' AND s.date_type not like '%-%'
       </query>
       <order_bys>
-            <order_by>value DESC</order_by>
+            <order_by>name ASC</order_by>
       </order_bys>
       <params>
         <param name='date_from' display='Date From' datatype='date' />
@@ -44,7 +45,7 @@
         <param name='maxlikely' display='Likely sort order' description='Maximum sort order for for certainty attribute terms that counts as likely' datatype='text' emptyvalue='0' />
       </params>
       <columns>
-            <column name="name" display="Month" style="background-color: #e7e7e7;" sql="cast(extract(month from s.date_start) as varchar) || '/' || cast(extract(year from s.date_start) as varchar)" />
+            <column name="name" display="Month" style="background-color: #e7e7e7;" sql="extract(month from s.date_start)" distincton="true" />
             <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false"/>
             <column name="minvalue" visible="false" sql="0" aggregate="true" />
             <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" aggregate="true"/>

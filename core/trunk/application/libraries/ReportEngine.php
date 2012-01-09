@@ -1,9 +1,24 @@
 <?php
 /**
-* INDICIA
-* @link http://code.google.com/p/indicia/
-* @package Indicia
-*/
+ * Indicia, the OPAL Online Recording Toolkit.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/gpl.html.
+ *
+ * @package Indicia
+ * @subpackage Libraries
+ * @author  Indicia Team
+ * @license http://www.gnu.org/licenses/gpl.html GPL
+ * @link    http://code.google.com/p/indicia/
+ */
 
 /**
 * <h1>Report provider</h1>
@@ -80,6 +95,39 @@ class ReportEngine {
     $this->websiteIds = $websiteIds;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
     $this->reportDb = new Database('report');
+  }
+  
+  /** 
+   * Retrieve all available reports, as a nested associative array.
+   */
+  public function report_list() {
+    $reports = $this->internal_report_list(Kohana::config('indicia.localReportDir'), '/');
+    foreach (Kohana::config('config.modules') as $path) {
+      if (is_dir("$path/reports")) 
+        $reports = array_merge_recursive($reports, $this->internal_report_list("$path/reports", '/'));
+    }
+    return $reports;
+  }
+
+  private function internal_report_list($root, $path) {
+    $files = array();
+    $fullPath = "$root$path";
+    if (!is_dir($fullPath))
+      throw new Exception("Failed to open reports folder ".$fullPath);
+    $dir = opendir($fullPath);
+    
+    while (false !== ($file = readdir($dir))) {
+      if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file"))
+        $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list($root, "$path$file/"));
+      elseif (substr($file, -4)=='.xml') {
+        $metadata = XMLReportReader::loadMetadata("$fullPath$file");
+        $file = basename($file, '.xml');
+        $reportPath = ltrim("$path$file", '/');
+        $files[$file] = array('type'=>'report','title'=>$metadata['title'],'description'=>$metadata['description'], 'path'=>$reportPath);
+      }
+    }
+    closedir($dir);
+    return $files;
   }
 
   /**
@@ -191,55 +239,6 @@ class ReportEngine {
       'description' => $this->reportReader->describeReport(ReportReader::REPORT_DESCRIPTION_BRIEF),
       'content' => $this->compileReport()
     );
-  }
-
-  public function listLocalReports($detail = ReportReader::REPORT_DESCRIPTION_DEFAULT)
-  {
-    if (!is_int((int)$detail) || $detail < 0 || $detail > 3)
-    {
-      Kohana::log('error', "Invalid reporting level : $detail.");
-      $detail = 2;
-    }
-    Kohana::log('debug', "Listing reports at level $detail.");
-    if ($detail == 0)
-    {
-      Kohana::log('debug', "Listing local reports in report directory ".$this->localReportDir.".");
-      $reportList = Array();
-      // All we do here is return the list of titles - don't bother interrogating the reports
-      $dh = opendir($this->localReportDir);
-      while ($file = readdir($dh))  {
-        if ($file != '..' && $file != '.' && is_file($this->localReportDir.'/'.$file))
-        {
-          $reportList[] = array('name' => $file);
-        }
-      }
-    }
-    else
-    {
-      Kohana::log('debug', "Listing local reports in report directory ".$this->localReportDir.".");
-
-      $reportList = Array();
-      $handle = opendir($this->localReportDir);
-      while ($file = readdir($handle))
-      {
-        $a = explode('.', $file);
-        $ext = $a[count($a) - 1];
-        switch ($ext)
-        {
-          case 'xml':
-            Kohana::log('debug', "Invoking XMLReportReader to handle $file.");
-            $this->fetchLocalReport($file);
-            $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
-            break;
-          default:
-            continue 2;
-        }
-        $reportList[] = $this->reportReader->describeReport($detail);
-      }
-    }
-
-    return array('reportList' => $reportList);
-
   }
 
   /**
@@ -578,18 +577,20 @@ class ReportEngine {
 
   private function fetchLocalReport($request)
   {
-    if (is_dir($this->localReportDir) ||
-      is_file($this->localReportDir.'/'.$request))
-      {
-        $this->report = $this->localReportDir.'/'.$request;
-        Kohana::log('debug', "Setting local report ".$this->report.".");
+    $this->report = null;
+    if (is_file($this->localReportDir.'/'.$request)) {
+      $this->report = $this->localReportDir.'/'.$request;
+      Kohana::log('debug', "Setting local report ".$this->report.".");
+    } else {
+      foreach (Kohana::config('config.modules') as $path) {
+        if (is_file("$path/reports/$request")) {
+          $this->report = "$path/reports/$request";
+          break;
+        }
       }
-      else
-      {
-        Kohana::log('error', "Unable to find report $request in ". $this->localReportDir.".");
-        // Throw an error - something has gone wrong
-        // TODO
-      }
+    }
+    if ($this->report===null)
+      throw new exception("Unable to find report $request.");    
   }
 
   private function fetchRemoteReport($request)
@@ -613,13 +614,9 @@ class ReportEngine {
     // Bad stuff
     // TODO
       }
-
       if (file_put_contents($uploadDir.$fname, $request))
-      {
-  $this->report = $uploadDir.$fname;
-      }
-      else
-      {
+        $this->report = $uploadDir.$fname;
+      else {
   // Error - unable to write to temp dir.
   // TODO
       }

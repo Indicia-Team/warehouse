@@ -56,7 +56,8 @@ class Report_Controller extends Data_Service_Base_Controller {
   public function __construct($suppress = false)
   {
     $this->authenticate('read');
-    $this->reportEngine = new ReportEngine(array($this->website_id));
+    $websites = $this->website_id ? array($this->website_id) : null;
+    $this->reportEngine = new ReportEngine($websites);
     parent::__construct();
   }
 
@@ -103,29 +104,11 @@ class Report_Controller extends Data_Service_Base_Controller {
     }
   }
 
+  /**
+   * Method called via report services to return a JSON encoded nested array of the available reporting directory structure.
+   */
   public function report_list() {
-    echo json_encode($this->internal_report_list('/'));
-  }
-
-  public function internal_report_list($path) {
-    $files = array();
-    $fullPath = Kohana::config('indicia.localReportDir') . $path;
-    if (!is_dir($fullPath))
-      throw new Exception("Failed to open reports folder ".Kohana::config('indicia.localReportDir') . $path);
-    $dir = opendir($fullPath);
-    
-    while (false !== ($file = readdir($dir))) {
-      if ($file != '.' && $file != '..' && $file != '.svn' && is_dir("$fullPath$file"))
-        $files[$file] = array('type'=>'folder','content'=>$this->internal_report_list("$path$file/"));
-      elseif (substr($file, -4)=='.xml') {
-        $metadata = XMLReportReader::loadMetadata("$fullPath$file");
-        $file = basename($file, '.xml');
-        $reportPath = ltrim("$path$file", '/');
-        $files[$file] = array('type'=>'report','title'=>$metadata['title'],'description'=>$metadata['description'],'path'=>$reportPath);
-      }
-    }
-    closedir($dir);
-    return $files;
+    echo json_encode($this->reportEngine->report_list());
   }
 
   /**
@@ -189,11 +172,6 @@ class Report_Controller extends Data_Service_Base_Controller {
     $params = json_decode($this->input->post('params', '{}'), true);
 
     return $this->formatJSON($this->reportEngine->resumeReport($uid, $params));
-  }
-
-  public function listLocalReports($detail = ReportReader::REPORT_DESCRIPTION_DEFAULT)
-  {
-    return $this->formatJSON($this->reportEngine->listLocalReports($detail));
   }
 
   private function formatJSON($stuff)

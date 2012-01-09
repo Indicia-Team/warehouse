@@ -650,7 +650,7 @@ $('.ui-state-default').live('mouseout', function() {
         $r .= '<input type="hidden" name="'.$fieldname.'" id="hidden-wkt" value="'.
             (isset($_POST[$fieldname]) ? $_POST[$fieldname] : '').'"/>';
         if (isset($info['allow_buffer']) && $info['allow_buffer']=='true') {
-          $bufferInput .= data_entry_helper::text_input(array(
+          $bufferInput = data_entry_helper::text_input(array(
             'label'=>'Buffer (m)',
             'fieldname'=>'geom_buffer',
             'prefixTemplate'=>'blank', // revert to default
