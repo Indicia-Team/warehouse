@@ -441,6 +441,7 @@ tfoot td div{
 
 .report-picker-container {  
   height: 200px;
+  width:  700px;
 }
 
 .report-picker-container > ul {
@@ -464,9 +465,15 @@ tfoot td div{
   margin-right: 0.2em;
 }
 
-.report-picker-container li {
+.report-picker-container ul li {
   padding-top: 0;
   padding-bottom: 0;
+}
+
+.report-picker-container li.expandable, .report-picker-container li.collapsable {
+  font-weight: bold;
+  line-height: 14px;
+  padding-bottom: 2px;
 }
 
 div.olControlEditingToolbar div {
