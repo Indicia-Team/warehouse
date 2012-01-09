@@ -17,7 +17,6 @@
       AND (o.zero_abundance='f' OR o.id IS NULL)
       AND (CAST(s.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND o.record_status&lt;&gt;'R'
-      AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
       </query>
       <order_bys>
             <order_by>td.title, td.id</order_by>
@@ -31,7 +30,6 @@
             query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title'>
           <join operator="notequal" value="">join taxa t on t.id=ttl.taxon_id and t.taxon_group_id=#taxon_group_id#</join>
         </param>
-        <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
       </params>
       <columns>
             <column name="id" sql="td.id" visible="false" distincton="true" />
