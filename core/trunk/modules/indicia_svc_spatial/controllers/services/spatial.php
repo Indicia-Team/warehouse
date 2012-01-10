@@ -91,24 +91,37 @@ class Spatial_Controller extends Service_Base_Controller {
     }
   }
 
+  /**
+   * Service method to buffer a provided wkt.
+   * Provide GET parameters for wkt (string) and buffer (a number of metres). Will 
+   * return the well known text for the buffered geometry. 
+   * If a callback function name is given in the GET parameters then returns a JSONP
+   * response with a json object that has a single response property.
+   */
   public function buffer()
   {
     if (array_key_exists('wkt', $_GET) && array_key_exists('buffer', $_GET)) {
       if ($_GET['buffer']==0)
         // no need to buffer if width set to zero
-        echo $_GET['wkt'];
+        $r = $_GET['wkt'];
       else {
         $db = new Database;
         $wkt = $_GET['wkt'];
         $buffer = $_GET['buffer'];
         kohana::log('debug', "SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;");
         $result = $db->query("SELECT st_astext(st_buffer(st_geomfromtext('$wkt'),$buffer)) AS wkt;")->current();
-        echo $result->wkt;
+        $r = $result->wkt;
       }
     } else {
-     echo 'No wkt or buffer to process';
+      $r = 'No wkt or buffer to process';
     }
-    
+    if (array_key_exists('callback', $_REQUEST))
+    {
+      $json=json_encode(array('response'=>$r));
+      $r = $_REQUEST['callback']."(".$json.")";
+      $this->content_type = 'Content-Type: application/javascript';
+    }
+    echo $r;    
   }
 
 
