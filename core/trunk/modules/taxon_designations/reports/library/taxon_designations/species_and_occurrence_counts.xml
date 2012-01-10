@@ -7,7 +7,7 @@
       join taxa_taxon_designations ttd on ttd.taxon_designation_id=td.id and ttd.deleted=false
       join taxa_taxon_lists ttl on ttl.taxon_id=ttd.taxon_id and ttl.deleted=false
       join taxa_taxon_lists ttl2 on ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.deleted=false
-      join occurrences o on o.taxa_taxon_list_id=ttl.id and o.deleted=false
+      join occurrences o on o.taxa_taxon_list_id=ttl2.id and o.deleted=false
       join samples s on s.id=o.sample_id and s.deleted=false 
       #joins#
       where td.deleted=false
