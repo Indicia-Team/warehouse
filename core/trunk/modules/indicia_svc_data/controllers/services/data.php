@@ -489,14 +489,14 @@ class Data_Controller extends Data_Service_Base_Controller {
    *
    * @return Array Query results array.
    */
-  protected function read_records() {
+  protected function read_data() {
     // Store the entity in class member, so less recursion overhead when building XML
     $this->viewname = $this->get_view_name();
     $this->db = new Database();
     $this->view_columns=$this->db->list_fields($this->viewname);
     $result=$this->build_query_results();
     kohana::log('debug', 'Query ran for service call: '.$this->db->last_query());
-    return $result;
+    return array('records'=>$result);
   }
 
   /**
@@ -542,50 +542,6 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->handle_error($e);
     }
   }
-
-  /**
-  * Returns some information about the table - at least list of columns and
-  * number of records. 
-  */
-  public function info_table($tablename)
-  {
-    $this->authenticate('read'); // populates $this->website_id
-    $this->entity = $tablename;
-    $this->db = new Database();
-    $this->viewname = $this->get_view_name();
-    $this->view_columns = $this->db->list_fields($this->viewname);
-    $mode = $this->get_output_mode();
-    if(!in_array ($this->entity, $this->allow_full_access)) {
-      if(array_key_exists ('website_id', $this->view_columns))
-      {
-        if ($this->website_id != 0) {
-          $this->db->in('website_id', array(null, $this->website_id));
-        }
-      } else {
-        Kohana::log('info', $this->viewname.' does not have a website_id - access denied to table info');
-        throw new ServiceError('No access to '.$this->viewname.' allowed.');
-      }
-    }
-
-    $return = Array(
-      'record_count' => $this->db->count_records($this->viewname),
-      'columns' => array_keys($this->db->list_fields($this->viewname))
-    );
-    switch ($mode)
-    {
-      case 'json':
-        $a = json_encode($return);
-        if (array_key_exists('callback', $_REQUEST))
-        {
-          $a = $_REQUEST['callback']."(".$a.")";
-        }
-        echo $a;
-        break;
-      default:
-        echo json_encode($return);
-    }
-  }
-
 
   /**
   * Builds a query to extract data from the requested entity, and also

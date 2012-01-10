@@ -49,7 +49,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
 
   /**
   * Generic method to handle a request for data or a report. Depends on the sub-class
-  * implementing a read_records method.
+  * implementing a read_data method.
   */
   protected function handle_request()
   {
@@ -57,14 +57,10 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     kohana::log('debug', 'Requesting data from Warehouse');
     kohana::log('debug', print_r($_REQUEST, true));
     $this->authenticate('read');
-    kohana::log('debug', 'read records');
-    $records=$this->read_records();
+    // return data will return an assoc array containing records and/or parameterRequest.
+    $records=$this->read_data();
     $mode = $this->get_output_mode();
     $responseStruct = $this->get_response_structure($records);
-    if (isset($responseStruct['parameterRequest']))
-      kohana::log('debug', 'parameters requested');
-    else
-      kohana::log('debug', 'got records: records array has '.count($records).' entries');
     switch ($mode)
     {
       case 'json':
@@ -118,27 +114,28 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
    * Note that if the report parameters are incomplete, then the response will always be just the 
    * parameter request. 
    */
-  protected function get_response_structure($records) {
-    // Do we need to request parameters?
-    if (isset($records['parameterRequest'])) {
-      return $records;
-    } else {
-      $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']='0';
-      $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns']='1';
-      $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']='1';
-      $array = array();
-      if ($wantRecords) $array['records'] = $records;
-      if ($wantColumns) $array['columns'] = $this->view_columns;
-      if ($wantCount) {
-        $count = $this->record_count();
-        if ($count!==false)
-          $array['count']=$count;
-      }
-      if (count($array)===1) 
-        return array_pop($array);
-      else
-        return $array;
+  protected function get_response_structure($data) {
+    $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']==='0';
+    $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns']==='1';
+    $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']==='1';
+    $wantParameters = isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters']==='1';
+    $array = array();
+    if ($wantRecords && isset($data['records'])) 
+      $array['records'] = $data['records'];
+    if ($wantColumns && isset($this->view_columns)) 
+      $array['columns'] = $this->view_columns;
+    if ($wantParameters && isset($data['parameterRequest'])) 
+      $array['parameterRequest'] = $data['parameterRequest'];
+    if ($wantCount) {
+      $count = $this->record_count();
+      if ($count!==false)
+        $array['count']=$count;
     }
+    // if only returning records, simplify the array down to just return the list of records rather than the full structure
+    if (count($array)===1 && isset($array['records']))
+      return array_pop($array);
+    else
+      return $array;
   }
   
   /**

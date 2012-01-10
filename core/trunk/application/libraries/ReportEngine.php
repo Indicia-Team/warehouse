@@ -151,7 +151,6 @@ class ReportEngine {
     $this->reportFormat = $reportFormat;
     $this->providedParams = $params;
     Kohana::log('debug', "Received request for report: $report, source: $reportSource");
-
     if ($reportSource == null) {
       $reportSource='local';
     }
@@ -249,15 +248,20 @@ class ReportEngine {
   private function compileReport()
   {
     // Do we need any more parameters?
-    $remPars = array_diff_key($this->expectedParams, $this->providedParams);
-    if (!empty($remPars))
+    $unpopulatedParams = array_diff_key($this->expectedParams, $this->providedParams);
+    if (isset($this->providedParams['paramsFormExcludes'])) {
+      $includedParams = array_diff_key($this->expectedParams, array_fill_keys(json_decode($this->providedParams['paramsFormExcludes']), ''));
+    }
+    if (!empty($unpopulatedParams))
     {
       // We need more parameters, so cache the report (and any existing parameters), get an id for
       // it and send a request for the others back to the requester.
       $uid = $this->cacheReport();
 
-      // Send a request for further parameters back to the client
-      $res = array('parameterRequest' => $remPars, 'uid' => $uid);
+      // Send a request for further parameters back to the client. If the request specified the list of parameters to drop
+      // in the paramsFormExcludes parameter, then the list of parameters is always the ones that are not excluded. Else
+      // the list of parameters is the list of unpopulated parameters.
+      $res = array('parameterRequest' => isset($includedParams) ? $includedParams : $unpopulatedParams, 'uid' => $uid);
       return $res;
 
     }
@@ -272,14 +276,16 @@ class ReportEngine {
       $this->post_process($data);
       $r = array(
         'columns'=>$this->columns,
-        'data'=>$data
+        'records'=>$data
       );
+      if (isset($includedParams))
+        $r['parameterRequest'] = $includedParams;
       return $r;
     }
   }
   
   public function record_count() {
-    if ($this->countQuery!==null) {
+    if (isset($this->countQuery) && $this->countQuery!==null) {
       $count = $this->reportDb->query($this->countQuery)->result_array(FALSE);
       return $count[0]['count'];
     } else {

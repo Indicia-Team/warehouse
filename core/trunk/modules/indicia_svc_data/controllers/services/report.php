@@ -118,7 +118,7 @@ class Report_Controller extends Data_Service_Base_Controller {
    *
    * @return array Array of records.
    */
-  protected function read_records() {
+  protected function read_data() {
     $src = $_REQUEST['reportSource'];
     $rep = $_REQUEST['report'];
     $params = json_decode($this->input->post('params', '{}'), true);
@@ -128,13 +128,11 @@ class Report_Controller extends Data_Service_Base_Controller {
       $params = $this->getRawGET();
     }
     $data=$this->reportEngine->requestReport($rep, $src, 'xml', $params);
-    if (isset($data['content']['columns']))
+    if (isset($data['content']['columns'])) {
       $this->view_columns = $data['content']['columns'];
-    if (isset($data['content']['data']))
-      return $data['content']['data'];
-    else 
-      // A parameter request, since the report is being called without sufficient info
-      return $data['content'];
+      unset($data['content']['columns']);
+    }
+    return $data['content'];
   }
   
   /**
