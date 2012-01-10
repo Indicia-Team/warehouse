@@ -42,10 +42,11 @@ function storeGeomsInHiddenInput(layer, inputId) {
 function bufferFeature(feature) {
   if (typeof feature.geometry!=="undefined" && feature.geometry!==null) {
     $.ajax({
-      url:mapDiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
-          +'?wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val(),
+      url: mapDiv.settings.indiciaSvc + 'index.php/services/spatial/buffer'
+          +'?wkt='+feature.geometry.toString()+'&buffer='+$('#geom_buffer').val()+'&callback=?',
+      dataType: 'json',
       success: function(buffered) {
-        var buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered));
+        var buffer = new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT(buffered.response));
         // link the feature to its buffer, for easy removal
         feature.buffer = buffer;
         bufferLayer.addFeatures([buffer]);
