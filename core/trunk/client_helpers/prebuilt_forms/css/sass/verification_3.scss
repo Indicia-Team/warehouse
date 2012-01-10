@@ -15,8 +15,15 @@ $selected-font-color: #ffffff;
   }
 }
 
-#grid {
+#outer-grid-left #grid {
   width: 55%;
+}
+
+#outer-with-map #summary-map {
+  width: 55%;
+}
+
+#grid {
   overflow: auto;
 }
 
@@ -27,13 +34,9 @@ $selected-font-color: #ffffff;
 
 table.report-grid {
   font-size: 80%;  
-}
-
-table.report-grid tr:hover, table.report-grid tr.odd:hover {
-  background-color: $hover-color;
-}
-
-table.report-grid {
+  tr:hover, table.report-grid tr.odd:hover {
+    background-color: $hover-color;
+  }
   tr.selected, tr.selected td {
     background-color: $selected-color;
     color: white;

@@ -67,6 +67,8 @@ class map_helper extends helper_base {
   * <li><b>initial_zoom</b><br/>
   * </li>
   * <li><b>scroll_wheel_zoom</b><br/>
+  * Does the scroll wheel zoom the map in and out when over the map? Defaults to true. When using the scroll wheel to look up and down a data entry form
+  * it can be easy to inadvertantly scroll the map, so it may be desirable to disable this feature in some cases.
   * </li>
   * <li><b>proxy</b><br/>
   * </li>

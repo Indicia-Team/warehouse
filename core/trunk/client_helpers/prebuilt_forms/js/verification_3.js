@@ -15,9 +15,9 @@ function selectRow(tr) {
         $(tr).parents('tbody').children('tr').removeClass('selected');
         $(tr).addClass('selected');
         // point the image and comments tabs to the correct AJAX call for the selected occurrence.
-        //$('#record-details-tabs').tabs('url', 0, indiciaData.rootUrl + '?q=iform/ajax/verification_3/details&occurrence_id='+occurrence_id);
-        $('#record-details-tabs').tabs('url', 2, indiciaData.ajaxUrl + '/images' + urlSep + 'occurrence_id=' + occurrence_id);
-        $('#record-details-tabs').tabs('url', 3, indiciaData.ajaxUrl + '/comments' + urlSep + 'occurrence_id=' + occurrence_id);
+        var tabcount = $('#record-details-tabs').tabs('length');
+        $('#record-details-tabs').tabs('url', tabcount-2, indiciaData.ajaxUrl + '/images' + urlSep + 'occurrence_id=' + occurrence_id);
+        $('#record-details-tabs').tabs('url', tabcount-1, indiciaData.ajaxUrl + '/comments' + urlSep + 'occurrence_id=' + occurrence_id);
         // reload current tabs
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
         $('#record-details-toolbar *').attr('disabled', '');
@@ -68,9 +68,11 @@ function postOccurrence(occ) {
         $('#row' + id).remove();
         if (nextRow.length>0) {
           selectRow(nextRow[0]);
+          indiciaData.reports.verification.grid_verification_grid.removeRecordsFromPage(1);
         } else {
           // reload the grid once empty, to get the next page
-          indiciaData.reports.verification_grid.grid_verification_grid.reload();
+          indiciaData.reports.verification.grid_verification_grid.reload();
+          
         }
       }
     }
@@ -264,7 +266,8 @@ function showTab() {
   if (current_record !== null) {
     if ($('#record-details-tabs').tabs('option', 'selected') === 0) {
       $('#details-tab').html(current_record.content);
-    } else if ($('#record-details-tabs').tabs('option', 'selected') === 1 && mapDiv !== null) {
+    }
+    if (mapDiv !== null) {
       var parser = new OpenLayers.Format.WKT(),
         feature = parser.read(current_record.additional.wkt),
         c = feature.geometry.getCentroid();
@@ -327,7 +330,6 @@ $(document).ready(function () {
   });
   
   $('#btn-verify-all').click(function () {
-    $('verify-in-progress').fadeIn();
     var thOccId = document.getElementById('verification-grid-th-occurrence_id');
     var idIndex = $('#verification-grid thead th').index(thOccId);
     $.each($('#verification-grid tbody tr td:nth-child(1)'), function(idx, occurrenceIdCell) {
@@ -339,8 +341,7 @@ $(document).ready(function () {
         'occurrence_comment:person_name': indiciaData.username
       };
       postOccurrence(data);
-    });    
-    $('verify-in-progress').fadeOut();
+    });
   });
 
 });

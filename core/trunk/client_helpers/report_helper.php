@@ -211,10 +211,11 @@ class report_helper extends helper_base {
   * Array of key value pairs to include as a filter against the data.
   * </li>
   * <li><b>extraParams</b><br/>
-  * Array of additional key value pairs to attach to the request.
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
+  * user and therefore are not needed in the parameters form.
   * </li>
   * <li><b>paramDefaults</b>
-  * Optional associative array of parameter default values.</li>
+  * Optional associative array of parameter default values. Default values appear in the parameter form and can be overridden.</li>
   * <li><b>paramsOnly</b>
   * Defaults to false. If true, then this method will only return the parameters form, not the grid content. autoParamsForm
   * is ignored if this flag is set.</li>
@@ -248,34 +249,15 @@ class report_helper extends helper_base {
   public static function report_grid($options) {
     self::add_resource('fancybox');
     self::$javascript .= "jQuery('a.fancybox').fancybox();\n";
-    $options = self::get_report_grid_options($options);
-    $r = '';
     $sortAndPageUrlParams = self::get_report_grid_sort_page_url_params($options);
+    $options = self::get_report_grid_options($options);
     $extras = self::get_report_sorting_paging_params($options, $sortAndPageUrlParams);
-    // specify the view variant to load, if loading from a view
-    if ($options['mode']=='direct') $extras .= '&view='.$options['view'];
-    // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
-    // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
-    // parameters form if needed, else the report data. 
-    $response = self::get_report_data($options, $extras);
-    if (isset($response['error'])) return $response['error'];
-    if (isset($response['parameterRequest'])) {
-      $currentParamValues = self::get_report_grid_current_param_values($options);
-      $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
-      // if we have a complete set of parameters in the URL, we can re-run the report to get the data
-      if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
-        $response = self::get_report_data($options, $extras.'&'.self::array_to_query_string($currentParamValues, true));
-        if (isset($response['error'])) return $response['error'];
-        $records = $response['records'];
-      }
-    } else {
-      if ($options['autoParamsForm'] && $options['mode']=='direct') {
-        $r .= self::get_direct_mode_params_form($options);
-      }
-      $records = $response['records'];
-    }
+    self::request_report($response, $options, $currentParamValues, true, $extras);
+    if (isset($response['error'])) return $response['error'];   
+    $r = self::params_form_if_required($response, $options, $currentParamValues);
     // return the params form, if that is all that is being requested, or the parameters are not complete.
-    if ($options['paramsOnly'] || !isset($records)) return $r;
+    if ($options['paramsOnly'] || !isset($response['records'])) return $r;
+    $records = $response['records'];
     
     self::report_grid_get_columns($response, $options);
     
@@ -445,6 +427,41 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
 });\n";
     }
     return $r;
+  }
+  
+  private static function request_report(&$response, &$options, &$currentParamValues, $wantCount, $extras='') {
+    $extras .= '&wantColumns=1&wantParameters=1';
+    if ($wantCount) 
+      $extras .= '&wantCount=1';
+    // any extraParams are fixed values that don't need to be available in the params form, so they can be added to the 
+    // list of ignorable parameters.
+    if (array_key_exists('extraParams', $options) && array_key_exists('ignoreParams', $options)) 
+      $options['ignoreParams'] = array_merge($options['ignoreParams'], array_keys($options['extraParams']));
+    elseif (array_key_exists('extraParams', $options))
+      $options['ignoreParams'] = array_keys($options['extraParams']);    
+    if (array_key_exists('ignoreParams', $options))
+      $extras .= '&paramsFormExcludes='.json_encode($options['ignoreParams']);
+    // specify the view variant to load, if loading from a view
+    if ($options['mode']=='direct') $extras .= '&view='.$options['view'];
+    $currentParamValues = self::get_report_grid_current_param_values($options);
+    // if loading the parameters form only, we don't need to send the parameter values in the report request but instead
+    // mark the request not to return records
+    if ($options['paramsOnly'])
+      $extras .= '&wantRecords=0';
+    else
+      $extras .= '&'.self::array_to_query_string($currentParamValues, true);
+    $response = self::get_report_data($options, $extras);
+  }
+  
+  private static function params_form_if_required($response, $options, $currentParamValues) {
+    if (isset($response['parameterRequest'])) {
+      return self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+    } elseif ($options['autoParamsForm'] && $options['mode']=='direct') {
+      // loading records from a view (not a report), so we can put a simple filter parameter form at the top.
+      return self::get_direct_mode_params_form($options);
+    }
+    
+    return ''; // no form required
   }
   
   /**
@@ -733,6 +750,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
     }
   }
   
+  /**
+   * When loading records from a view, put a simple filter parameters form at the top as the view does not specify any
+   * parameters. 
+   */
   private static function get_direct_mode_params_form($options) {
     $reloadUrl = self::get_reload_link_parts();
     $r = '<form action="'.$reloadUrl['path'].'" method="get" class="linear-form" id="filterForm-'.$options['id'].'">';
@@ -794,29 +815,20 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * trigger fields the band acts as a group header band.</li>
   */
   public static function freeform_report($options) {
-    $options = self::get_report_grid_options($options);
+    $options = self::get_report_grid_options($options);    
+    self::request_report($response, $options, $currentParamValues, false);
+    if (isset($response['error'])) return $response['error'];   
+    $r = self::params_form_if_required($response, $options, $currentParamValues);
+    // return the params form, if that is all that is being requested, or the parameters are not complete.
+    if ($options['paramsOnly'] || !isset($response['records'])) return $r;
+    $records = $response['records'];    
+
     $options = array_merge(array(
       'header' => '',
       'footer' => '',
       'bands' => array(),
       'class' => 'banded-report'
-    ), $options);
-    $r = '';
-    $response = self::get_report_data($options);
-    if (isset($response['error'])) return $response['error'];
-    if (isset($response['parameterRequest'])) {
-      $currentParamValues = self::get_report_grid_current_param_values($options);
-      $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
-      // if we have a complete set of parameters in the URL, we can re-run the report to get the data
-      if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
-        $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
-        if (isset($response['error'])) return $response['error'];
-        $records = $response['records'];
-      }
-    } else {
-      // because we did not ask for columns, the records are at the root of the response
-      $records = $response;
-    }
+    ), $options);    
 
     if (!isset($records))
       return $r;
@@ -942,34 +954,19 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * </ul>
    */
   public static function report_map($options) {
-    $options = self::get_report_grid_options($options);
     $options = array_merge(array(
       'clickable' => true,
       'clickableLayersOutputMode' => 'popup',
       'clickableLayersOutputDiv' => '',
     ), $options);
+    $options = self::get_report_grid_options($options);
     if (empty($options['geoserverLayer'])) {
-      // request the report data using the preset values in extraParams but not any parameter defaults or entries in the URL. This is because the preset
-      // values cause the parameter not to be shown, whereas defaults and URL params still show the param in the parameters form. So here we are asking for the 
-      // parameters form if needed, else the report data. 
-      $response = self::get_report_data($options);
-      if (isset($response['error'])) return $response['error'];
-      if (isset($response['parameterRequest'])) {
-        $currentParamValues = self::get_report_grid_current_param_values($options);
-        $r .= self::get_report_grid_parameters_form($response, $options, $currentParamValues);
-        // if we have a complete set of parameters in the URL, we can re-run the report to get the data
-        if (count(array_intersect_key($currentParamValues, $response['parameterRequest']))==count($response['parameterRequest'])) {
-          $response = self::get_report_data($options, self::array_to_query_string($currentParamValues, true).'&wantColumns=1&wantParameters=1');
-          if (isset($response['error'])) return $response['error'];
-          $records = $response['records'];
-        }
-      } else {
-        // because we did not ask for columns, the records are at the root of the response
-        $records = $response;
-      }
-    
-      if (!isset($records))
-        return $r;
+      self::request_report($response, $options, $currentParamValues, false, '');
+      if (isset($response['error'])) return $response['error'];   
+      $r = self::params_form_if_required($response, $options, $currentParamValues);
+      // return the params form, if that is all that is being requested, or the parameters are not complete.
+      if ($options['paramsOnly'] || !isset($response['records'])) return $r;
+      $records = $response['records'];
       // find the geom column
       foreach($response['columns'] as $col=>$cfg) {
         if ($cfg['mappable']=='true') {
@@ -1166,7 +1163,7 @@ mapSettingsHooks.push(function(opts) {
     // Work out the names and current values of the params we expect in the report request URL for sort and pagination    
     $page = ($sortAndPageUrlParams['page']['value'] ? $sortAndPageUrlParams['page']['value'] : 0);
     // set the limit to one higher than we need, so the extra row can trigger the pagination next link
-    $extraParams = '&limit='.($options['itemsPerPage']+1).'&wantColumns=1&wantParameters=1&wantCount=1';
+    $extraParams = '&limit='.($options['itemsPerPage']+1);
     $extraParams .= '&offset=' . $page * $options['itemsPerPage'];
 
     // Add in the sort parameters

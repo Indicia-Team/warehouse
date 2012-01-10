@@ -58,7 +58,9 @@ class iform_verification_3 {
           'name'=>'report_name',
           'caption'=>'Report Name',
           'description'=>'The report to load into the verification grid, excluding the .xml suffix. This report should have '.
-              'at least the following columns: occurrence_id, taxon. If you don\'t know which report to use, try the recent_occurrences_in_survey report.',
+              'at least the following columns: occurrence_id, taxon and should have an idlist type parameter if you are displaying '.
+              'a map to filter records against polygons. If you don\'t know which report to use, try the Auto-checked verification '.
+              'data report under Library\Occurrences.',
           'type'=>'report_helper::report_picker',
           'default'=>'library/occurrences/verification_list_2',
           'group'=>'Report Settings'
@@ -90,6 +92,14 @@ occattrs='
 taxon_group_id=
 record_status=C
 rule=all'
+        ), array(
+          'name' => 'items_per_page',
+          'caption' => 'Items per page',
+          'description' => 'Maximum number of rows shown on each page of the table',
+          'type' => 'int',
+          'default' => 20,
+          'required' => true,
+          'group'=>'Report Settings'
         ), array(
             'name' => 'columns_config',
             'caption' => 'Columns Configuration',
@@ -241,19 +251,26 @@ rule=all'
           'type'=>'checkbox',
           'default'=>'on',
           'required'=>false
+        ),
+        array(
+          'name'=>'show_map',
+          'caption'=>'Show map of the currently selected records',
+          'description'=>'If checked, then a map of currently selected records is shown. This lets the verifier do things like visually spot outliers to check.',
+          'type'=>'checkbox',
+          'default'=>'on',
+          'required'=>false,
+          'Group'=>'Other Map Settings'
         )
       )
     );
   }
   
   private static function get_template_grid_left($args, $auth) {
-    $r .= '<div id="outer" class="ui-helper-clearfix">';
+    $r .= '<div id="outer-grid-left" class="ui-helper-clearfix">';
     $r .= '<div id="grid" class="left">{grid}';
     // Insert a button to verify all visible, only available if viewing the clean records.
-    if (isset($_POST['verification-grid-rule']) && $_POST['verification-grid-rule']==='none' && empty($_POST['verification-grid-id'])) {
+    if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
       $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
-      $r .= '<span id="verify-in-progress" style="display:none">Updating records...</span>';
-    }
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
     $r .= '<div id="click-record-notice">'.t('Click on a record to view the details').'</div>';
@@ -264,6 +281,7 @@ rule=all'
     $r .= '<button type="button" id="btn-email" class="default-button">'.lang::get('Email').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-tabs">';
+    // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
         '#details-tab'=>'Details',
@@ -287,6 +305,64 @@ rule=all'
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     $r .= '</div></div></div></div>';
+    return $r;
+  }
+  
+  private static function get_template_with_map($args, $auth, $extraParams, $paramDefaults) {
+    $r .= '<div id="outer-with-map" class="ui-helper-clearfix">';
+    $r .= '<div id="map-and-record" style="clear: both;"><div id="summary-map" class="left">';
+    $options = iform_map_get_map_options($args, $auth);
+    $olOptions = iform_map_get_ol_options($args);
+    // This is used for drawing, so need an editlayer, but not used for input
+    $options['editLayer'] = true;
+    $options['editLayerInSwitcher'] = true;
+    $options['clickForSpatialRef'] = false;
+    $r .= map_helper::map_panel(
+      $options,
+      $olOptions
+    );
+    // give realistic performance on the map
+    $extraParams['limit']=1000;
+    $r .= report_helper::report_map(array(
+      'dataSource' => $args['report_name'],
+      'mode' => 'report',
+      'readAuth' => $auth,
+      'autoParamsForm' => false,
+      'extraParams' => $extraParams,
+      'paramDefaults' => $paramDefaults,
+      'reportGroup' => 'verification',
+      'clickableLayersOutputMode' => 'report'
+    ));
+    $r .= '</div>';
+    $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
+    $r .= '<div id="click-record-notice">'.t('Click on a record to view the details').'</div>';
+    $r .= '<div id="record-details-content" style="display: none">';
+    $r .= '<div id="record-details-toolbar">';
+    $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
+    $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
+    $r .= '<button type="button" id="btn-email" class="default-button">'.lang::get('Email').'</button>';
+    $r .= '</div>';
+    $r .= '<div id="record-details-tabs">';
+    // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
+    $r .= data_entry_helper::tab_header(array(
+      'tabs'=>array(
+        '#details-tab'=>'Details',
+        '#images-tab'=>'Images',
+        '#comments-tab'=>'Comments'
+      )
+    ));
+    data_entry_helper::enable_tabs(array(
+      'divId'=>'record-details-tabs'
+    ));
+    $r .= '<div id="details-tab"></div>';    
+    $r .= '<div id="images-tab"></div>';
+    $r .= '<div id="comments-tab"></div>';
+    $r .= '</div></div></div></div>';
+    $r .= '<div id="grid" style="clear:both;">{grid}';
+    // Insert a button to verify all visible, only available if viewing the clean records.
+    if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
+      $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
+    $r .= '</div></div>';
     return $r;
   }
  
@@ -316,7 +392,7 @@ rule=all'
     }
     if (function_exists('drupal_add_js'))
       drupal_add_js('misc/collapse.js');
-    iform_load_helpers(array('data_entry_helper', 'map_helper'));
+    iform_load_helpers(array('data_entry_helper', 'map_helper', 'report_helper'));
     // fancybox for popup comment forms etc
     data_entry_helper::add_resource('fancybox');
     data_entry_helper::add_resource('validation');
@@ -346,16 +422,20 @@ rule=all'
       'mode' => 'report',
       'readAuth' => $auth,
       'rowId' => 'occurrence_id',
-      'itemsPerPage' =>10,
+      'itemsPerPage' =>$args['items_per_page'],
       'autoParamsForm' => true,
       'extraParams' => $extraParams,
       'paramDefaults' => $paramDefaults,
-      'fieldsetClass' => 'collapsible collapsed'
+      'fieldsetClass' => 'collapsible collapsed',
+      'reportGroup' => 'verification'
     );
     if (!empty($args['columns_config']))
       $opts['columns'] = json_decode($args['columns_config'], true);
     $grid = data_entry_helper::report_grid($opts);
-    $r = str_replace(array('{grid}'), array($grid), self::get_template_grid_left($args, $auth));
+    if (isset($args['show_map']) && $args['show_map'])
+      $r = str_replace(array('{grid}'), array($grid), self::get_template_with_map($args, $auth, $extraParams, $paramDefaults));
+    else
+      $r = str_replace(array('{grid}'), array($grid), self::get_template_grid_left($args, $auth));
     $link = data_entry_helper::get_reload_link_parts();
     global $user;
     data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
