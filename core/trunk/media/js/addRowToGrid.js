@@ -50,8 +50,15 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     }
     // Replace the tags in the row template with the taxa_taxon_list_ID
     $.each($(row).children(), function(i, cell) {
-      cell.innerHTML = cell.innerHTML.replace(/-ttlId-/g, data.id);
-    }); 
+      $.each($(cell).find('*'), function(idx, child) {
+        if (typeof $(child).attr('name')!=="undefined") {
+          $(child).attr('name', $(child).attr('name').replace(/-ttlId-/g, data.id)) 
+        }
+        if (typeof $(child).attr('id')!=="undefined") {
+          $(child).attr('id', $(child).attr('id').replace(/-ttlId-/g, data.id)) 
+        }
+      });
+    });
     $(row).find('.add-image-select-species').hide();
     $(row).find('.add-image-link').show();    
     // auto-check the row
