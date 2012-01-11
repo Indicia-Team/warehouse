@@ -1,5 +1,3 @@
-
-
 /* Indicia, the OPAL Online Recording Toolkit.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -75,10 +73,13 @@ mapInitialisationHooks = [];
      * Add a well known text definition of a feature to the map.
      * @access private
      */
-    function _showWktFeature(div, wkt, layer, invisible) {
+    function _showWktFeature(div, wkt, layer, invisible, temporary) {
       var parser = new OpenLayers.Format.WKT();
       var feature = parser.read(wkt);
       feature.style = new style(opts.searchLayer && layer == div.map.searchLayer);
+      if (temporary) {
+        feature.attributes.temp=true;
+      }
       _removeAllFeaturesExcept(layer, 'boundary');
       var features = [feature];
 
@@ -88,6 +89,9 @@ mapInitialisationHooks = [];
           feature = parser.read(corner);
           feature.style = new style(true);
           feature.style.pointRadius = 0;
+          if (temporary) {
+            feature.attributes.temp=true;
+          }
           features.push(feature);
         });
       }
@@ -191,7 +195,7 @@ mapInitialisationHooks = [];
             "?mode=json&view=detail" + div.settings.readAuth + "&callback=?", function(data) {
               // store value in saved field?
               if (data.length>0) {
-                _showWktFeature(div, data[0].boundary_geom || data[0].centroid_geom, div.map.editLayer, null);
+                _showWktFeature(div, data[0].boundary_geom || data[0].centroid_geom, div.map.editLayer, null, true);
               }
             }
           );
@@ -213,7 +217,7 @@ mapInitialisationHooks = [];
               else {
                 // store value in saved field?
                 if (div.map.editLayer) {
-                  _showWktFeature(div, data.wkt, div.map.editLayer, null);
+                  _showWktFeature(div, data.wkt, div.map.editLayer, null, false);
                 }
                 $('#'+opts.geomId).val(data.wkt);
               }
@@ -332,7 +336,7 @@ mapInitialisationHooks = [];
       var datac1 = new OpenLayers.Geometry.Point(corner1xy[1],corner1xy[0]).transform(epsg, div.map.projection).toString();
       var corner2xy = corner2.split(', ');
       var datac2 = new OpenLayers.Geometry.Point(corner2xy[1],corner2xy[0]).transform(epsg, div.map.projection).toString();
-      _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2]);
+      _showWktFeature(div, dataref, div.map.searchLayer, [datac1, datac2], true);
       if(div.settings.searchUpdatesSref && !div.settings.searchLayer){ // if no separate search layer, ensure sref matches feature in editlayer, if requested.
           $('#'+opts.geomId).val(dataref);
           // Unfortunately there is no guarentee that the georeferencer will return the sref in the system required: eg it will usually be in
@@ -693,12 +697,17 @@ mapInitialisationHooks = [];
      */
     function recordPolygon(evt) {
       // replace old features?
-      var oldFeatures=[];
+      var oldFeatures=[], tempFeatures=[];
       $.each(evt.feature.layer.features, function(idx, feature) {
         if (feature!==evt.feature) {
-          oldFeatures.push(feature);
+          if (feature.attributes.temp) {
+            tempFeatures.push(feature);
+          } else {
+            oldFeatures.push(feature);
+          }
         }
       });
+      evt.feature.layer.removeFeatures(tempFeatures, {});
       if (oldFeatures.length>0) {
         if (confirm(this.map.div.settings.msgReplaceBoundary)) {
           evt.feature.layer.removeFeatures(oldFeatures, {});
@@ -917,7 +926,7 @@ mapInitialisationHooks = [];
         // Draw the feature to be loaded on startup, if present
         if (this.settings.initialFeatureWkt)
         {
-          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null);
+          _showWktFeature(this, this.settings.initialFeatureWkt, div.map.editLayer, null, false);
         }
       }
       if (this.settings.searchLayer) {
@@ -1030,8 +1039,14 @@ mapInitialisationHooks = [];
         });
       }
       if (div.settings.editLayer && div.settings.allowPolygonRecording) {
-        div.map.editLayer.events.on({'featureadded': recordPolygon, 'afterfeaturemodified': recordPolygon});     
+        div.map.editLayer.events.on({/*'featureadded': recordPolygon, */'afterfeaturemodified': recordPolygon});     
       }
+      var ctrl, pushDrawCtrl = function(c) {
+        toolbarControls.push(c);
+        if (div.settings.editLayer && div.settings.allowPolygonRecording) {
+          c.events.register('featureadded', c, recordPolygon);
+        }
+      };
       $.each(div.settings.standardControls, function(i, ctrl) {
         // Add a layer switcher if there are multiple layers
         if (ctrl=='layerSwitcher') {
@@ -1043,17 +1058,20 @@ mapInitialisationHooks = [];
         } else if (ctrl=='panZoomBar') {
           div.map.addControl(new OpenLayers.Control.PanZoomBar());
         } else if (ctrl=='drawPolygon' && div.settings.editLayer) {
-          toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Polygon,
-              {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':'Draw polygons by clicking on the then double click to finish'}));
+              {'displayClass': align + 'olControlDrawFeaturePolygon', 'title':'Draw polygons by clicking on the then double click to finish'})
+          pushDrawCtrl(ctrl);
         } else if (ctrl=='drawLine' && div.settings.editLayer) {
-          toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Path,
-              {'displayClass': align + 'olControlDrawFeaturePath', 'title':'Draw lines by clicking on the then double click to finish'}));
+              {'displayClass': align + 'olControlDrawFeaturePath', 'title':'Draw lines by clicking on the then double click to finish'})
+          pushDrawCtrl(ctrl);
         } else if (ctrl=='drawPoint' && div.settings.editLayer) {
-          toolbarControls.push(new OpenLayers.Control.DrawFeature(div.map.editLayer,
+          ctrl = new OpenLayers.Control.DrawFeature(div.map.editLayer,
               OpenLayers.Handler.Point,
-              {'displayClass': align + 'olControlDrawFeaturePoint', 'title':'Draw points by clicking on the map'}));
+              {'displayClass': align + 'olControlDrawFeaturePoint', 'title':'Draw points by clicking on the map'});
+          pushDrawCtrl(ctrl);
         } else if (ctrl=='selectFeature' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.SelectFeature(div.map.editLayer));
         } else if (ctrl=='hoverFeatureHighlight' && div.settings.editLayer) {
