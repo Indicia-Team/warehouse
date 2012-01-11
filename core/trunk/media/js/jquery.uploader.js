@@ -109,7 +109,7 @@ checkSubmitInProgress = function () {
       $.each(div.settings.existingFiles, function(i, file) {
         uniqueId = file.path.split('.')[0];
         uniqueId = uniqueId.replace(/[^a-zA-Z0-9]+/g,'');
-        existing = div.settings.file_box_initial_file_infoTemplate.replace('{id}', uniqueId)
+        existing = div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, uniqueId)
             .replace(/\{filename\}/g, file.caption)
             .replace(/\{filesize\}/g, 'Uploaded')
             .replace(/\{imagewidth\}/g, div.settings.imageWidth);
@@ -132,6 +132,10 @@ checkSubmitInProgress = function () {
               .replace(/\{captionValue\}/g, file.caption.replace(/\"/g, '&quot;'))
               .replace(/\{pathField\}/g, div.settings.table + ':path:' + uniqueId)
               .replace(/\{pathValue\}/g, file.path)
+              .replace(/\{deletedField\}/g, div.settings.table + ':deleted:' + uniqueId)
+              .replace(/\{deletedValue\}/g, 'f')
+              .replace(/\{isNewField\}/g, 'isNew-' + uniqueId)
+              .replace(/\{isNewValue\}/g, 'f')
               .replace(/\{idField\}/g, div.settings.table + ':id:' + uniqueId) 
               .replace(/\{idValue\}/g, file.id) // If ID is set, the picture is uploaded to the server
         );
@@ -147,7 +151,7 @@ checkSubmitInProgress = function () {
           alert(div.settings.msgTooManyFiles.replace('[0]', div.settings.maxFileCount));
         }
         $.each(files, function(i, file) {
-          $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace('{id}', file.id)
+          $('#' + div.id.replace(/:/g,'\\:') + ' .filelist').append(div.settings.file_box_initial_file_infoTemplate.replace(/\{id\}/g, file.id)
               .replace(/\{filename\}/g, file.name)
               .replace(/\{filesize\}/g, plupload.formatSize(file.size))
               .replace(/\{imagewidth\}/g, div.settings.imageWidth)
@@ -200,6 +204,10 @@ checkSubmitInProgress = function () {
                 .replace(/\{captionValue\}/g, '')
                 .replace(/\{pathField\}/g, div.settings.table + ':path:' + file.id)
                 .replace(/\{pathValue\}/g, '')
+                .replace(/\{deletedField\}/g, div.settings.table + ':deleted:' + file.id)
+                .replace(/\{deletedValue\}/g, 'f')
+                .replace(/\{isNewField\}/g, 'isNew-' + file.id)
+                .replace(/\{isNewValue\}/g, 't')
                 .replace(/\{idField\}/g, div.settings.table + ':id:' + file.id) 
                 .replace(/\{idValue\}/g, '') // Set ID to blank, as this is a new record.
           );
@@ -230,6 +238,18 @@ checkSubmitInProgress = function () {
         div.uploader.start();
         e.preventDefault();
       });
+      
+      $('.delete-file').live('click', function(evt) {
+        // if this is a newly uploaded file, we can simply delete the div since all that has been done is an upload to the 
+        // temp upload folder, which will get purged anyway. isNewField is a hidden input that marks up new and existing files.
+        var id=evt.target.id.substr(4);
+        if ($('#isNew-'+id).val()==='t')
+          $(evt.target).parents('#'+id).remove();
+        else {
+          $(evt.target).parents('#'+id).addClass('disabled').css('opacity', 0.5);
+          $(evt.target).parents('#'+id).find('.deleted-value').val('t');
+        }
+      });
     });
   };
 })(jQuery);
@@ -255,10 +275,13 @@ $.fn.uploader.defaults = {
   buttonTemplate : '<div class="indicia-button ui-state-default ui-corner-all" id="{id}"><span>{caption}</span></div>',
   file_boxTemplate : '<fieldset class="ui-corner-all">\n<legend>{caption}</legend>\n{uploadSelectBtn}\n{flickrSelectBtn}\n<div class="filelist"></div>' +
                  '{uploadStartBtn}</fieldset>',
-  file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all">{filename} ({filesize})</div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div><div class="progress-percent"></div></div><span class="photo-wrapper"></span></div>',
+  file_box_initial_file_infoTemplate : '<div id="{id}" class="ui-widget-content ui-corner-all photo"><div class="ui-widget-header ui-corner-all"><span>{filename} ({filesize})</span> ' +
+      '<span class="delete-file ui-state-default ui-widget-content ui-corner-all ui-helper-clearfix" id="del-{id}">X</span></div><div class="progress"><div class="progress-bar" style="width: {imagewidth}px"></div><div class="progress-percent"></div></div><span class="photo-wrapper"></span></div>',
   file_box_uploaded_imageTemplate : '<a class="fancybox" href="{origfilepath}"><img src="{thumbnailfilepath}" width="{imagewidth}"/></a>' +
       '<input type="hidden" name="{idField}" id="{idField}" value="{idValue}" />' +
       '<input type="hidden" name="{pathField}" id="{pathField}" value="{pathValue}" />' +
+      '<input type="hidden" name="{deletedField}" id="{deletedField}" value="{deletedValue}" class="deleted-value" />' +
+      '<input type="hidden" id="{isNewField}" value="{isNewValue}" />' +
       '<label for="{captionField}">Caption:</label><br/><input type="text" maxlength="100" style="width: {imagewidth}px" name="{captionField}" id="{captionField}" value="{captionValue}"/>',
   msgUploadError : 'An error occurred uploading the file.',
   msgFileTooBig : 'The file is too big to upload. Please resize it then try again.',

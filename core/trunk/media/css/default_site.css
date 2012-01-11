@@ -546,3 +546,7 @@ div.olControlEditingToolbar .olControlClickSrefItemInactive {
 div.olControlEditingToolbar .olControlClickSrefItemActive {
     background-position: -175px -23px;
 }
+
+.delete-file {
+  float: right;
+}
