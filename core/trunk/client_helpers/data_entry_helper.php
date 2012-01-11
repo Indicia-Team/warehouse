@@ -1473,10 +1473,11 @@ class data_entry_helper extends helper_base {
   * Defaults to 1.</li>
   * <li><b>rowInclusionCheck</b><br/>
   * Defines how the system determines whether a row in the grid actually contains an occurrence or not. There are 3 options: <br/>
-  * checkbox - a column is included in the grid containing a presence checkbox. If checked then an occurrence is created for the row. This is the default.<br/>
+  * checkbox - a column is included in the grid containing a presence checkbox. If checked then an occurrence is created for the row. This is the default unless listId is not set.<br/>
   * alwaysFixed - occurrences are created for all rows in the grid. Rows cannot be removed from the grid apart from newly added rows.<br/>
   * alwaysRemovable - occurrences are created for all rows in the grid. Rows can always be removed from the grid. Best used with no listId so there are
-  * no default taxa in the grid, otherwise editing an existing sample will re-add all the existing taxa.<br/>
+  * no default taxa in the grid, otherwise editing an existing sample will re-add all the existing taxa. This is the default when listId is not set, but 
+  * lookupListId is set.<br/>
   * hasData - occurrences are created for any row which has a data value specified in at least one of its columns. <br/>
   * This option supercedes the checkboxCol option which is still recognised for backwards compatibility.</li>
   * <li><b>class</b><br/>
@@ -1894,11 +1895,20 @@ class data_entry_helper extends helper_base {
     // validate some options
     if (!isset($options['listId']) && !isset($options['lookupListId']))
       throw new Exception('Either the listId or lookupListId parameters must be provided for a species checklist.');
+    // CheckBoxCol support is for backwards compatibility
+    if (isset($options['checkboxCol']) && $options['checkboxCol']==false) {
+      $rowInclusionCheck='hasData';
+    } else {
+      if (empty($options['listId']) && !empty($options['lookupListId']))
+        $rowInclusionCheck = 'alwaysRemovable';
+      else
+        $rowInclusionCheck = 'checkbox';
+    }
     // Apply default values
     $options = array_merge(array(
         'header'=>'true',
         'columns'=>1,
-        'rowInclusionCheck'=>isset($options['checkboxCol']) && $options['checkboxCol']==false ? 'hasData' : 'checkbox',
+        'rowInclusionCheck'=>$rowInclusionCheck,
         'attrCellTemplate'=>'attribute_cell',
         'PHPtaxonLabel' => false,
         'occurrenceComment' => false,
