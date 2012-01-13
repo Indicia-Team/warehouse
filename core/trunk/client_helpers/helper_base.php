@@ -1268,6 +1268,31 @@ indiciaData.windowLoaded=false;
   }
   
   /**
+   * Explodes a value on several lines into an array split on the lines. Tolerates any line ending.
+   * @param string $value A multi-line string to be split.
+   * @return array An array with one entry per line in $value.
+   */
+  public static function explode_lines($value) {
+    $structure = str_replace("\r\n", "\n", $value);
+    $structure = str_replace("\r", "\n", $value);
+    return explode("\n", trim($value));
+  }
+  
+  /**
+   * Explodes a value with key=value several lines into an array split on the lines. Tolerates any line ending.
+   * @param string $value A multi-line string to be split.
+   * @return array An associative array with one entry per line in $value. Array keys are the items before the = on each line,
+   * and values are the data after the = on each line.
+   */
+  public static function explode_lines_key_value_pairs($value) {
+    preg_match_all("/([^=\r\n]+)=([^\r\n]+)/", $value, $pairs);      
+    $trim = create_function('&$val', '$val = trim($val);');
+    array_walk($pairs[1], $trim);
+    array_walk($pairs[2], $trim);
+    return array_combine($pairs[1], $pairs[2]); 
+  }
+  
+  /**
    * Utility function to load a list of terms from a termlist. 
    * @param array $auth Read authorisation array.
    * @param mixed $termlist Either the id or external_key of the termlist to load. 
