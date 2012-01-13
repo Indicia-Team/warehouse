@@ -124,6 +124,15 @@ class iform_report_map {
           'group' => 'Report Map Settings'
         ),
         array(
+          'name' => 'click_on_map_columns',
+          'caption' => 'Columns displayed on click',
+          'description' => 'Specify each report column you want to output when clicking on the map on a separate line. Each column must be represented as a key=value pair '.
+              'with the column name as the key and the display label as the value.',
+          'type' => 'textarea',
+          'required' => false,
+          'group' => 'Report Map Settings'
+        ),
+        array(
           'name' => 'geoserver_layer',
           'caption' => 'GeoServer Layer',
           'description' => 'For improved mapping performance, specify a layer on GeoServer which '.
@@ -174,6 +183,8 @@ class iform_report_map {
     $reportOptions['cqlTemplate'] = $args['cql_template'];
     $reportOptions['clickable'] = $args['click_on_map_mode']<>'none';
     $reportOptions['clickableLayersOutputDiv'] = $args['click_on_map_div'];
+    if (!empty($args['click_on_map_columns']))
+      $reportOptions['clickableLayersOutputColumns'] = helper_base::explode_lines_key_value_pairs($args['click_on_map_columns']);
     if ($args['click_on_map_mode']<>'none')
       $reportOptions['clickableLayersOutputMode'] = $args['click_on_map_mode'];
     

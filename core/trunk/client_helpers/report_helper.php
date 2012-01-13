@@ -951,6 +951,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * with the query tool selected.</li>
   * <li>clickableLayersOutputDiv<br/>
   * Set to the id of a div to display the clicked data in, or leave blank to display a popup.</li>
+  * <li>clickableLayersOutputColumns<br/>
+  * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point. 
+  * If ommitted, then all available columns are output using their original field names.</li>
   * </ul>
    */
   public static function report_map($options) {
@@ -1063,6 +1066,8 @@ mapSettingsHooks.push(function(opts) {
       report_helper::$javascript .= "  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";
       if ($options['clickableLayersOutputDiv'])
         report_helper::$javascript .= "  opts.clickableLayersOutputDiv='".$options['clickableLayersOutputDiv']."';\n";
+      if (isset($options['clickableLayersOutputColumns']))
+        report_helper::$javascript .= "  opts.clickableLayersOutputColumns=".json_encode($options['clickableLayersOutputColumns']).";\n";
       report_helper::$javascript .= "});\n";
     }
   

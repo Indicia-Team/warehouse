@@ -605,7 +605,7 @@ class iform_mnhnl_dynamic_1 {
       $hiddens .= "<input type=\"hidden\" id=\"occurrence:id\" name=\"occurrence:id\" value=\"".data_entry_helper::$entity_to_load['occurrence:id']."\" />\n";    
     }
     // Check if Record Status is included as a control. If not, then add it as a hidden.
-    $arr = explode("\r\n", $args['structure']);
+    $arr = helper_base::explode_lines($args['structure']);
     if (!in_array('[record status]', $arr)) {
       $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C'; 
       $hiddens .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"$value\" />\n";    
@@ -683,7 +683,7 @@ class iform_mnhnl_dynamic_1 {
     $r='';
     if (isset($args['link_species_popups']) && !empty($args['link_species_popups'])) {
       data_entry_helper::add_resource('fancybox');
-      $popups = explode("\n", $args['link_species_popups']);
+      $popups = helper_base::explode_lines($args['link_species_popups']);    
       foreach ($popups as $popup) {
         $tokens = explode("|", $popup);
         if (count($tokens)==2) 
@@ -782,11 +782,8 @@ class iform_mnhnl_dynamic_1 {
    * Finds the list of all tab names that are going to be required, either by the form
    * structure, or by custom attributes.
    */
-  protected static function get_all_tabs($structure, $attrTabs) {
-    // tolerate any line ending format
-    $structure = str_replace("\r\n", "\n", $structure);
-    $structure = str_replace("\r", "\n", $structure);
-    $structureArr = explode("\n", trim($structure));
+  protected static function get_all_tabs($structure, $attrTabs) {    
+    $structureArr = helper_base::explode_lines($structure);
     $structureTabs = array();
     foreach ($structureArr as $component) {
       if (preg_match('/^=[A-Za-z0-9 \-\*\?]+=$/', trim($component), $matches)===1) {
@@ -1185,13 +1182,8 @@ class iform_mnhnl_dynamic_1 {
    */
   protected static function parse_defaults(&$args) {
     $result=array();
-    if (isset($args['defaults'])) {
-      $defaults = explode("\n", $args['defaults']);
-      foreach($defaults as $default) {
-        $tokens = explode('=', $default);
-        $result[trim($tokens[0])] = trim($tokens[1]);
-      }      
-    }  
+    if (isset($args['defaults']))
+      $result = helper_base::explode_lines_key_value_pairs($args['defaults']);     
     $args['defaults']=$result;
   }
   
