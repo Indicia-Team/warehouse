@@ -799,8 +799,9 @@ class ORM extends ORM_Core {
         $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
       if ($this->identifiers['survey_id'])
         $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
+      // note we concatenate the validation rules to check both global and website specific rules for requiredness. 
       if ($required) {
-        $this->db->like($attr_entity.'s_websites.validation_rules', '%required%');
+        $this->db->like($attr_entity.'s_websites.validation_rules || '.$attr_entity.'.validation_rules', '%required%');
       }
       // ensure that only attrs for the record's sample method or location type, or unrestricted attrs,
       // are returned
@@ -818,6 +819,8 @@ class ORM extends ORM_Core {
           $ttlIds[] = $typeFilter;
         $this->db->in('tlt2.id', $ttlIds);
       }
+    } elseif ($required) {
+      $this->db->like($attr_entity.'s.validation_rules', '%required%');
     }
   }
 
@@ -1268,6 +1271,25 @@ class ORM extends ORM_Core {
     parent::clear();
     $this->errors=array();
     $this->identifiers = array('website_id'=>null,'survey_id'=>null);
+  }
+  
+  /**
+   * Method which can be used in a model to add the validation rules required for a set of mandatory spatial fields (sref, system and geom).
+   * @param $validation object The validation object to add rules to.
+   * @param string $sref_field The sref field name.
+   * @param string $sref_system_field The sref system field name.   
+   * @param string $geom_field The geom field name.   
+   */
+  public function add_sref_rules(&$validation, $sref_field, $sref_system_field, $geom_field) {
+    $values = $validation->as_array();
+    $validation->add_rules($sref_field, 'required');
+    $validation->add_rules($sref_system_field, 'required');
+    $validation->add_rules($geom_field, 'required');
+    if (!empty($values[$sref_system_field])) {
+      $system = $values[$sref_system_field];
+      $validation->add_rules('entered_sref', "sref[$system]");
+      $validation->add_rules('entered_sref_system', 'sref_system');
+    }
   }
   
  /**

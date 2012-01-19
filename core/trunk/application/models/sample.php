@@ -93,20 +93,10 @@ class Sample_Model extends ORM_Tree
       $array->add_rules('date_start', 'date_in_past');
       // We need either at least one of the location_id and sref/geom : in some cases may have both
       if (array_key_exists('location_id', $orig_values) && $orig_values['location_id']!=='' && $orig_values['location_id']!== null) { // if a location is provided, we don't need an sref.
-        $array->add_rules('location_id', 'required');
+        $array->add_rules('location_id', 'required');        
         // if any of the sref fields are also supplied, need all 3 fields
-        if ((array_key_exists('entered_sref', $orig_values) && $orig_values['entered_sref']!=='' && $orig_values['entered_sref']!== null) ||
-            (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='' && $orig_values['entered_sref_system']!== null) ||
-            (array_key_exists('geom', $orig_values)) && $orig_values['geom']!==''  && $orig_values['geom']!== null) {
-          $array->add_rules('entered_sref', "required");
-          $array->add_rules('entered_sref_system', 'required');
-          $array->add_rules('geom', 'required');
-          if (array_key_exists('entered_sref_system', $orig_values) && $orig_values['entered_sref_system']!=='') {
-            $system = $orig_values['entered_sref_system'];
-            $array->add_rules('entered_sref', "sref[$system]");
-            $array->add_rules('entered_sref_system', 'sref_system');
-          }
-        }
+        if (!empty($orig_values['entered_sref']) || !empty($orig_values['entered_sref_system']) || !empty( $orig_values['geom']))
+          $this->add_sref_rules($array, 'entered_sref', 'entered_sref_system', 'geom');
       } else {
         // without a location_id, default to requires an sref.
         // no need to copy over location_id, as not present.
