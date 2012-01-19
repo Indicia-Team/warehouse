@@ -19,7 +19,7 @@
  * @license	http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link 	http://code.google.com/p/indicia/
  */
- 
+
 /**
  * Link in other required php files.
  */
@@ -34,7 +34,7 @@ class import_helper extends helper_base {
   /**
    * Outputs an import wizard. The csv file to be imported should be available in the $_POST data, unless
    * the existing_file option is specified.
-   * Additionally, if there are any preset values which apply to each row in the import data then you can 
+   * Additionally, if there are any preset values which apply to each row in the import data then you can
    * pass these to the importer in the $_POST data. For example, you could set taxa_taxon_list:taxon_list_id=3 in
    * the $_POST data when importing species data to force it to go into list 3.
    *
@@ -54,7 +54,7 @@ class import_helper extends helper_base {
     if (isset($_GET['total'])) {
       return self::upload_result($options);
     } elseif (!isset($_POST['import_step'])) {
-      if (count($_FILES)==1)      
+      if (count($_FILES)==1)
         return self::import_settings_form($options);
       else
         return self::upload_form($options);
@@ -64,7 +64,7 @@ class import_helper extends helper_base {
       return self::run_upload($options);
     }
   }
-  
+
   private static function upload_form($options) {
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
@@ -74,14 +74,14 @@ class import_helper extends helper_base {
     $r .= '<input type="Submit" value="'.lang::get('Upload').'"></form>';
     return $r;
   }
-  
+
   /**
    * Generates the import settings form. If none available, then outputs the upload mappings form.
    */
   private static function import_settings_form($options) {
     $r = '';
     $_SESSION['uploaded_file'] = self::get_uploaded_file($options);
-    
+
     // by this time, we should always have an existing file
     if (empty($_SESSION['uploaded_file'])) throw new Exception('File to upload could not be found');
     $request = parent::$base_url."index.php/services/import/get_import_settings/".$options['model'];
@@ -115,14 +115,14 @@ class import_helper extends helper_base {
       // was triggered from. E.g. if on a species checklist, this could be this checklists ID which the user does not need to pick.
       foreach ($_POST as $key=>$value)
         $r .= "<input type=\"hidden\" name=\"$key\" value=\"$value\" />\n";
-      $r .= '</fieldset></form>';      
+      $r .= '</fieldset></form>';
       return $r;
     } else {
       // No settings form, so output the mappings form instead which is the next step.
       return self::upload_mappings_form($options);
     }
   }
-  
+
   /**
    * Outputs the form for mapping columns to the import fields.
    */
@@ -136,7 +136,7 @@ class import_helper extends helper_base {
       if (empty($value)) {
         unset($_POST[$key]);
       }
-    } 
+    }
     $settings = json_encode($_POST);
     // cache the mappings
     $metadata = array('settings' => $settings);
@@ -145,7 +145,7 @@ class import_helper extends helper_base {
     $response = self::http_post($request, $post);
     if (!isset($response['output']) || $response['output'] != 'OK')
       return "Could not upload the settings metadata. <br/>".print_r($response, true);
-      
+
     $request = parent::$base_url."index.php/services/import/get_import_fields/".$options['model'];
     $request .= '?'.self::array_to_query_string($options['auth']['read']);
     // include survey and website information in the request if available, as this limits the availability of custom attributes
@@ -165,16 +165,16 @@ class import_helper extends helper_base {
       $unlinked_fields = $fields;
     // only use the required fields that are available for selection - the rest are handled somehow else
     $unlinked_required_fields = array_intersect($model_required_fields, array_keys($unlinked_fields));
-    
+
     $handle = fopen($_SESSION['uploaded_file'], "r");
     $columns = fgetcsv($handle, 1000, ",");
     $reload = self::get_reload_link_parts();
     $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
-    
+
     self::clear_website_survey_fields($unlinked_fields);
     self::clear_website_survey_fields($unlinked_required_fields);
     $options = self::model_field_options($options['model'], $unlinked_fields);
-    
+
     $r = "<form method=\"post\" id=\"entry_form\" action=\"$reloadpath\" class=\"iform\">\n".
         '<p>'.lang::get('column_mapping_instructions').'</p>'.
         '<div class="ui-helper-clearfix"><table style="width: 58%; float: left;" class="ui-widget ui-widget-content">'.
@@ -229,7 +229,7 @@ class import_helper extends helper_base {
       if (empty($caption)) {
         $tokens = explode(':', $field);
         $fieldname = $tokens[count($tokens)-1];
-        $caption = lang::get(self::leadingCaps(str_replace(array('fk_', 'id_'), '',$fieldname)));
+        $caption = lang::get(self::leadingCaps(preg_replace(array('/^fk_/', '/_id$/'), array('', ''), $fieldname)));
       }
       $caption = self::translate_field($field, $caption);
       self::$javascript .= "required_fields['$field']='$caption';\n";
@@ -238,9 +238,9 @@ class import_helper extends helper_base {
     self::$javascript .= "$('#entry_form select').change(function() {update_required_fields();});\n";
     return $r;
   }
-  
+
   /**
-   * When an array (e.g. $_POST containing preset import values) has values with actual ids in it, we need to 
+   * When an array (e.g. $_POST containing preset import values) has values with actual ids in it, we need to
    * convert these to fk_* so we can compare the array of preset data with other arrays of expected data.
    */
   private static function expand_ids_to_fks($arr) {
@@ -254,7 +254,7 @@ class import_helper extends helper_base {
     }
     return array_merge($arr, $ids);
   }
-  
+
   /**
    * Takes an array of fields, and removes the website ID or survey ID fields within the arrays if
    * the website and/or survey id are set in the $_POST data (which contains the settings).
@@ -279,12 +279,12 @@ class import_helper extends helper_base {
       return lang::get('upload_not_available');
     $filename=basename($_SESSION['uploaded_file']);
     // move file to server
-    $r = self::send_file_to_warehouse($filename, false, $options['auth']['write_tokens'], 'import/upload_csv');    
+    $r = self::send_file_to_warehouse($filename, false, $options['auth']['write_tokens'], 'import/upload_csv');
     if ($r===true) {
       $reload = self::get_reload_link_parts();
       $reload['params']['uploaded_csv']=$filename;
       $reloadpath = $reload['path'] . '?' . self::array_to_query_string($reload['params']);
-      
+
       // initiate local javascript to do the upload with a progress feedback
       $r = '
   <div id="progress" class="ui-widget ui-widget-content ui-corner-all">
@@ -299,7 +299,7 @@ class import_helper extends helper_base {
       $response = self::http_post($request, $post);
       if (!isset($response['output']) || $response['output'] != 'OK')
         return "Could not upload the mappings metadata. <br/>".print_r($response, true);
-      
+
       self::$onload_javascript .= "
     /**
     * Upload a single chunk of a file, by doing an AJAX get. If there is more, then on receiving the response upload the
@@ -322,9 +322,9 @@ class import_helper extends helper_base {
             window.location = '$reloadpath&total='+total;
           }
         }
-      });  
+      });
     };
-    
+
     var total=0, filepos=0;
     jQuery('#progress-bar').progressbar ({value: 0});
     uploadChunk();
@@ -332,7 +332,7 @@ class import_helper extends helper_base {
     }
     return $r;
   }
-  
+
   /**
    * Displays the upload result page.
    */
@@ -340,12 +340,12 @@ class import_helper extends helper_base {
     $request = parent::$base_url."index.php/services/import/get_upload_result?uploaded_csv=".$_GET['uploaded_csv'];
     $request .= '&'.self::array_to_query_string($options['auth']['read']);
     $response = self::http_post($request, array());
-    
+
     if (isset($response['output'])) {
       $output = json_decode($response['output'], true);
       if (!is_array($output) || !isset($output['problems']))
         return 'An error occurred during the upload.<br/>'.print_r($response, true);
-    
+
       if ($output['problems']!==0) {
         $r = $output['problems'].' problems were detected during the import. <a href="'.$output['file'].'">Download the records that did not import.</a>';
       } else {
@@ -356,8 +356,8 @@ class import_helper extends helper_base {
     }
     return $r;
   }
-  
-  
+
+
  /**
   * Returns a list of columns as an list of <options> for inclusion in an HTML drop down,
   * loading the columns from a model that are available to import data into
@@ -365,7 +365,7 @@ class import_helper extends helper_base {
   * @param string $model Name of the model
   * @param array $fields List of the available import columns
   * @param string $default The text to display for the unselected "please select" item.
-  * @param string $selected The name of the initially selected field if there is one.  
+  * @param string $selected The name of the initially selected field if there is one.
   */
   private static function model_field_options($model, $fields, $selected='') {
     $r = '';
@@ -373,7 +373,12 @@ class import_helper extends helper_base {
         'fk_created_by', 'fk_updated_by', 'fk_meaning', 'fk_taxon_meaning', 'deleted', 'image_path');
     $heading='';
     foreach ($fields as $field=>$caption) {
-      list($prefix,$fieldname)=explode(':',$field);
+      if (strpos($field,":"))
+        list($prefix,$fieldname)=explode(':',$field);
+      else {
+        $prefix=$model;
+        $fieldname=$field;
+      }
       unset($option);
       if (empty($caption)) {
         // Skip the metadata fields
@@ -409,7 +414,7 @@ class import_helper extends helper_base {
     $r = '<option>&lt;'.lang::get('Please select').'&gt;</option>'.$r.'</optgroup>';
     return $r;
   }
-  
+
   /**
    * Method to upload the file in the $_FILES array, or return the existing file if already uploaded.
    * @access private
@@ -435,7 +440,7 @@ class import_helper extends helper_base {
       return $options['existing_file'];
     return isset($_POST['existing_file']) ? $_POST['existing_file'] : '';
   }
-  
+
   /**
    * Humanize a piece of text by inserting spaces instead of underscores, and making first letter
    * of each word capital.
@@ -446,9 +451,9 @@ class import_helper extends helper_base {
   private static function leadingCaps($text) {
     return ucwords(preg_replace('/[\s_]+/', ' ', $text));
   }
-  
+
   /**
-   * Private method to build a single select option for the model field options. 
+   * Private method to build a single select option for the model field options.
    * Option is selected if selected=caption (case insensitive).
    */
   private static function model_field_option($field, $caption, $selected) {
@@ -456,9 +461,9 @@ class import_helper extends helper_base {
     $caption = self::translate_field($field, $caption);
     return '<option class="sub-option" value="'.htmlspecialchars($field)."\"$selHtml>".htmlspecialchars($caption).'</option>';
   }
-  
+
   /**
-   * Provides optional translation of field captions by looking for a translation code dd:model:fieldname. If not 
+   * Provides optional translation of field captions by looking for a translation code dd:model:fieldname. If not
    * found returns the original caption.
    */
   private static function translate_field($field, $caption) {
