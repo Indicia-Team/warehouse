@@ -96,7 +96,7 @@ class Sample_Model extends ORM_Tree
         $array->add_rules('location_id', 'required');        
         // if any of the sref fields are also supplied, need all 3 fields
         if (!empty($orig_values['entered_sref']) || !empty($orig_values['entered_sref_system']) || !empty( $orig_values['geom']))
-          $this->add_sref_rules($array, 'entered_sref', 'entered_sref_system', 'geom');
+          $this->add_sref_rules($array, 'entered_sref', 'entered_sref_system');
       } else {
         // without a location_id, default to requires an sref.
         // no need to copy over location_id, as not present.

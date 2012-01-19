@@ -48,7 +48,7 @@ class Location_Model extends ORM_Tree {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
     $array->add_rules('name', 'required');
-    $this->add_sref_rules($array, 'centroid_sref', 'centroid_sref_system', 'centroid_geom');
+    $this->add_sref_rules($array, 'centroid_sref', 'centroid_sref_system');
 
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(

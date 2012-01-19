@@ -1274,17 +1274,17 @@ class ORM extends ORM_Core {
   }
   
   /**
-   * Method which can be used in a model to add the validation rules required for a set of mandatory spatial fields (sref, system and geom).
+   * Method which can be used in a model to add the validation rules required for a set of mandatory spatial fields (sref and system).
+   * Although the geom field technically could also be set required here, because the models which call this should automatically
+   * generate the geom when it is missing in their preSubmit methods, there is no need to report it as required.
    * @param $validation object The validation object to add rules to.
    * @param string $sref_field The sref field name.
    * @param string $sref_system_field The sref system field name.   
-   * @param string $geom_field The geom field name.   
    */
-  public function add_sref_rules(&$validation, $sref_field, $sref_system_field, $geom_field) {
+  public function add_sref_rules(&$validation, $sref_field, $sref_system_field) {
     $values = $validation->as_array();
     $validation->add_rules($sref_field, 'required');
     $validation->add_rules($sref_system_field, 'required');
-    $validation->add_rules($geom_field, 'required');
     if (!empty($values[$sref_system_field])) {
       $system = $values[$sref_system_field];
       $validation->add_rules('entered_sref', "sref[$system]");
