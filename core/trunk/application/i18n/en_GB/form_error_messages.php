@@ -65,7 +65,8 @@ $lang = array (
   'float_value' => Array (
     'default' => 'This must be a valid number.',
     'maximum' => 'The value specified for this number is too high',
-    'minimum' => 'The value specified for this number is too low'
+    'minimum' => 'The value specified for this number is too low',
+    'required' => 'The value is required.',
   ),
   'geom' => array (
     'required' => 'The spatial reference must be supplied.',
@@ -143,6 +144,7 @@ $lang = array (
   'text_value' => array (
     'regex' => 'The value is not of the correct format.',
     'length' => 'The value is not of the correct length.',
+    'required' => 'The value is required.',
     'default' => 'The value is not of the correct format.',
   ),
   'term' => array (
