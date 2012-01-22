@@ -114,6 +114,7 @@ class Indicia_Controller extends Template_Controller {
         $adminMenu['Users']='user';
       }
       if($this->auth->logged_in('CoreAdmin')) {
+        $adminMenu['Website Agreements']='website_agreement';
         $adminMenu['Languages']='language';
         $adminMenu['Titles']='title';
         $adminMenu['Taxon Relations']='taxon_relation_type';

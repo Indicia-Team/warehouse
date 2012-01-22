@@ -354,6 +354,24 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('website');
   }
+  
+  /**
+  * Provides the /services/data/website_agreement service.
+  * Retrieves details of a single website.
+  */
+  public function website_agreement()
+  {
+    $this->handle_call('website_agreement');
+  }
+  
+  /**
+  * Provides the /services/data/websites_website_agreement service.
+  * Retrieves details of a single website.
+  */
+  public function websites_website_agreement()
+  {
+    $this->handle_call('websites_website_agreement');
+  }
 
   /**
   * Provides the /services/data/trigger service.
@@ -907,7 +925,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           if(array_key_exists ('website_id', $fields))
             {
                 $db->in('website_id', array(null, $this->website_id));
-            } else {
+            } elseif (!$this->in_warehouse) {
                 Kohana::log('info', $viewname.' does not have a website_id - access denied');
                 throw new ServiceError('No access to entity '.$entity.' allowed.');
             }

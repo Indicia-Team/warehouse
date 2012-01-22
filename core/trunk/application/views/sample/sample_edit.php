@@ -79,7 +79,7 @@ echo data_entry_helper::text_input(array(
 ));
 echo data_entry_helper::textarea(array(
   'label' => 'Recorder Names',
-  'description' => 'Enter the names of the recorders, one per line',
+  'helpText' => 'Enter the names of the recorders, one per line',
   'fieldname' => 'sample:recorder_names',
   'default' => html::initial_value($values, 'sample:recorder_names')
 ));

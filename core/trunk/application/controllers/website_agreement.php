@@ -27,23 +27,22 @@
  * @package	Core
  * @subpackage Controllers
  */
-class Website_Controller extends Gridview_Base_Controller
+class Website_agreement_Controller extends Gridview_Base_Controller
 {
   /**
    * Constructor
    */
   public function __construct()
   {
-    parent::__construct('website', 'website/index');
+    parent::__construct('website_agreement', 'website_agreement/index');
 
     $this->columns = array(
         'id'          => 'ID',
         'title'       => '',
-        'description' => '',
-        'url'         => ''
+        'description' => ''
     );
 
-    $this->pagetitle = "Websites";
+    $this->pagetitle = "Website Agreements";
     $this->set_website_access('admin');
   }
 
@@ -53,40 +52,21 @@ class Website_Controller extends Gridview_Base_Controller
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $r['password2']=$r['website:password'];
     return $r;
-  }
-
-  /**
-   * If trying to edit an existing website record, ensure the user has rights to this website.
-   */
-  public function record_authorised ($id) {
-    if (is_null($id))
-      // creating a new website registration so must be core admin.
-      return $this->auth->logged_in('CoreAdmin');
-    elseif (!is_null($id) AND !is_null($this->auth_filter))
-      // editing a website registration - so must have rights to it.
-      return (in_array($id, $this->auth_filter['values']));
-    return true;
-  }
-
-  /**
-   * Core admin or website admins can see the list of websites
-   */
-  public function page_authorised() {
-    return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
   
   /**
-   * Return a list of the tabs to display for this controller's actions.
+   * Website agreements only editable by core admin
    */
-  protected function getTabs($name) {
-    return array(array(
-      'controller' => 'websites_website_agreement',
-      'title' => 'Agreements',
-      'views'=>'websites_website_agreement/websites_website_agreement_edit',
-      'actions'=>array('edit')
-    ));
+  public function record_authorised ($id) {
+    return $this->auth->logged_in('CoreAdmin');
+  }
+
+  /**
+   * Core admin can see the list of websites
+   */
+  public function page_authorised() {
+    return $this->auth->logged_in('CoreAdmin');
   }
 
 }
