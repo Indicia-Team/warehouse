@@ -248,7 +248,7 @@ class Upgrade_Model extends Model
   private  function get_last_executed_sql_file_name($_full_upgrade_folder_path, $appName='') {
     if ( (($handle = @opendir( $_full_upgrade_folder_path ))) != FALSE ) {
       while ( (( $file = readdir( $handle ) )) != false ) {
-        if ( !preg_match("/^____(?<file>.*)____$/", $file, $matches) ) {
+        if ( !preg_match("/^____(?P<file>.*)____$/", $file, $matches) ) {
           continue;
         }
         return $matches['file'].'.sql';

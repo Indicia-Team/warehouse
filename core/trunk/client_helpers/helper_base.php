@@ -1274,8 +1274,8 @@ indiciaData.windowLoaded=false;
    */
   public static function explode_lines($value) {
     $structure = str_replace("\r\n", "\n", $value);
-    $structure = str_replace("\r", "\n", $value);
-    return explode("\n", trim($value));
+    $structure = str_replace("\r", "\n", $structure);
+    return explode("\n", trim($structure));
   }
   
   /**
@@ -1285,7 +1285,7 @@ indiciaData.windowLoaded=false;
    * and values are the data after the = on each line.
    */
   public static function explode_lines_key_value_pairs($value) {
-    preg_match_all("/([^=\r\n]+)=([^\r\n]+)/", $value, $pairs);      
+    preg_match_all("/([^=\r\n]+)=([^\r\n]+)/", $value, $pairs);
     $trim = create_function('&$val', '$val = trim($val);');
     array_walk($pairs[1], $trim);
     array_walk($pairs[2], $trim);
@@ -1313,6 +1313,7 @@ indiciaData.windowLoaded=false;
       $termlist = $list[0]['id'];
     }
     $extraParams = $auth['read'] + array(
+      'view' => 'detail',
       'termlist_id' => $termlist
     );
     // apply a filter for the actual list of terms, if required.
