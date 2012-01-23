@@ -1295,7 +1295,7 @@ class iform_mnhnl_dynamic_1 {
 
   protected function getReportActions() {
     return array(array('display' => 'Actions', 'actions' => 
-        array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
+        array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}','occurrence_id'=>'{occurrence_id}')))));
   }
   
 }
