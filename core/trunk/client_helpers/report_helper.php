@@ -387,8 +387,7 @@ class report_helper extends helper_base {
       self::add_resource('reportgrid');
       $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
       $group = preg_replace( "/[^a-zA-Z0-9]+/", "_", $options['reportGroup']);
-      global $indicia_templates;
-      
+      global $indicia_templates;      
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
@@ -1010,24 +1009,22 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         // convert these styles into a JSON definition ready to feed into JS.
         $defsettings = '{'.implode(',', array_map(create_function('$key, $value', 'return $key.":".$value;'), array_keys($defsettings), array_values($defsettings))).'}';
         $selsettings = '{'.implode(',', array_map(create_function('$key, $value', 'return $key.":".$value;'), array_keys($selsettings), array_values($selsettings))).'}';
-        report_helper::$javascript.= "
+        $addFeaturesJs = "
        
 function addDistPoint(features, record, wktCol) {
   var geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+  if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+    geom.transform(div.indiciaProjection, div.map.projection);
+  }
   delete record[wktCol];
   features.push(new OpenLayers.Feature.Vector(geom, record));
 }
-
-var defaultStyle = OpenLayers.Util.applyDefaults($defsettings, OpenLayers.Feature.Vector.style['default']);
-var selectStyle = OpenLayers.Util.applyDefaults($selsettings, OpenLayers.Feature.Vector.style['select']);
-  
-var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});  
 features = [];\n";
         foreach ($records as $record)
-          report_helper::$javascript.= "addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
-        report_helper::$javascript.= "  
-indiciaData.reportlayer.addFeatures(features);\n";
+          $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
+        $addFeaturesJs.= "  
+indiciaData.reportlayer.addFeatures(features);
+div.map.addLayer(indiciaData.reportlayer);\n";
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1052,15 +1049,22 @@ indiciaData.reportlayer.addFeatures(features);\n";
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
+      if (isset($addFeaturesJs))
       report_helper::$javascript.= "
+var defaultStyle = OpenLayers.Util.applyDefaults($defsettings, OpenLayers.Feature.Vector.style['default']);
+var selectStyle = OpenLayers.Util.applyDefaults($selsettings, OpenLayers.Feature.Vector.style['select']);
+var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
+indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});
+
 mapInitialisationHooks.push(function(div) {
-  if (indiciaData.reportlayer.CLASS_NAME==='OpenLayers.Layer.Vector') {
-    div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
-  }
+  $addFeaturesJs
+  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
 });
 mapSettingsHooks.push(function(opts) {
   opts.reportGroup = '".$options['reportGroup']."';
-  opts.layers.push(indiciaData.reportlayer);\n";
+  if (typeof indiciaData.reportlayer!=='undefined') {
+    opts.layers.push(indiciaData.reportlayer);
+  }\n";
       if ($options['clickable'])
         report_helper::$javascript .= "  opts.clickableLayers.push(indiciaData.reportlayer);\n";
       report_helper::$javascript .= "  opts.clickableLayersOutputMode='".$options['clickableLayersOutputMode']."';\n";

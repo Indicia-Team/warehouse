@@ -422,7 +422,7 @@ rule=all'
       'mode' => 'report',
       'readAuth' => $auth,
       'rowId' => 'occurrence_id',
-      'itemsPerPage' =>$args['items_per_page'],
+      'itemsPerPage' =>isset($args['items_per_page']) ? $args['items_per_page'] : 20,
       'autoParamsForm' => true,
       'extraParams' => $extraParams,
       'paramDefaults' => $paramDefaults,
@@ -729,7 +729,5 @@ rule=all'
      $text = str_replace('{1}', $difference, $periodsPlural[$j]);
    return $text; 
   }
-
-
   
 }
