@@ -181,9 +181,9 @@ class iform_mnhnl_dynamic_1 {
               "[species attributes]\r\n".
               "[*]\r\n".
               "=Place=\r\n".
-              "?Please provide the spatial reference of the record. You can enter the reference directly, or search for a place then click on the map.?\r\n".
-              "[place search]\r\n".
+              "?Please provide the spatial reference of the record. You can enter the reference directly, or search for a place then click on the map to set it.?\r\n".
               "[spatial reference]\r\n".
+              "[place search]\r\n".
               "[map]\r\n".
               "[*]\r\n".
               "=Other Information=\r\n".
