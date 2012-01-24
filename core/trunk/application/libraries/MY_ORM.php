@@ -44,7 +44,8 @@ class ORM extends ORM_Core {
    * @var array Describes the list of nested models that are present after a submission. E.g. the list of 
    * occurrences in a sample.
    */
-  private $nestedModelIds = array();
+  private $nestedChildModelIds = array();
+  private $nestedParentModelIds = array();
   
   /**
    * @var string The default field that is searchable is called title. Override this when a different field name is used.
@@ -139,8 +140,10 @@ class ORM extends ORM_Core {
       'model' => $this->object_name,
       'id' => $this->id,
     );
-    if (count($this->nestedModelIds))
-      $r['children'] = $this->nestedModelIds;
+    if (count($this->nestedChildModelIds))
+      $r['children'] = $this->nestedChildModelIds;
+    if (count($this->nestedParentModelIds))
+      $r['parents'] = $this->nestedParentModelIds;
     return $r;
   }
 
@@ -604,6 +607,7 @@ class ORM extends ORM_Core {
         // copy up the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
+        $this->nestedParentModelIds[] = $m->get_submitted_ids();
         // copy the submission back so we pick up updated foreign keys that have been looked up. E.g. if submitting a taxa taxon list, and the 
         // taxon supermodel has an fk lookup, we need to keep it so that it gets copied into common names and synonyms
         $a['model'] = $m->submission;
@@ -646,7 +650,7 @@ class ORM extends ORM_Core {
         // copy down the website id and survey id
         $m->identifiers = array_merge($this->identifiers);
         $result = $m->inner_submit();
-        $this->nestedModelIds[] = $m->get_submitted_ids();
+        $this->nestedChildModelIds[] = $m->get_submitted_ids();
 
         if (!$result) {
           $fieldPrefix = (array_key_exists('field_prefix',$a['model'])) ? $a['model']['field_prefix'].':' : '';
@@ -1117,7 +1121,7 @@ class ORM extends ORM_Core {
       return false;
     }
     $attrValueModel->save();
-    $this->nestedModelIds[] = $attrValueModel->get_submitted_ids();
+    $this->nestedChildModelIds[] = $attrValueModel->get_submitted_ids();
 
     return true;
   }
