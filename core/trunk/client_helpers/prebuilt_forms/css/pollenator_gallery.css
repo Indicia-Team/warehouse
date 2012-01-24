@@ -147,4 +147,8 @@
 #results-insects-results div {
 	*zoom: 1;
 }
+.loading {  background: transparent url(/misc/throbber.gif) no-repeat 0px -18px;}
 .loading-button {  background: transparent url(/misc/throbber.gif) no-repeat 50% -18px  !important ;}
+.ui-progressbar {
+    height: 1em;
+}
