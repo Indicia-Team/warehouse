@@ -40,9 +40,9 @@
   </params>
   <columns>
     <column name='sample_id' display='ID' />
-    <column name='location_name' display='Nom du site' />
+    <column name='location_name' display='Site name' />
     <column name='commune' display='Commune' />
-    <column name='village' display='Village/Lieu-dit' />
+    <column name='village' display='Village' />
     <column name='x' display='X' />
     <column name='y' display='Y' />
     <column name='date' display='Date' />

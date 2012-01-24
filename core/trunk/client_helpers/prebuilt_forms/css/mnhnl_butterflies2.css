@@ -22,6 +22,9 @@ input.cgAttr {
 .cggrid-date {
   width: 90px;
 }
+.cggrid-comment{
+  width: 150px;
+}
 p.inline-error {
   margin-left: 0;	
   margin-bottom: 0;

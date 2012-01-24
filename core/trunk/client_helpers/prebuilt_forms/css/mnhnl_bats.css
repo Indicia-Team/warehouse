@@ -11,6 +11,34 @@
 .scOccAttrCell input[type='radio'] {
   width: auto;
 }
+input.scNumAlive {
+  margin-top: 4px;
+  width: 30px;
+}
+input.scNumDead {
+  margin-top: 4px;
+  width: 30px;
+}
+input.scExcrement {
+  margin-top: 4px;
+  width: auto;
+}
+select.scOccurrenceReliability {
+  margin-top: 4px;
+  width: auto;
+}
+.scCommentTable {
+  width:100%;
+}
+.scCommentTableBody {
+  border-top: 0px;
+}
+td.scCommentLabelCell {
+  padding:0;
+}
+input.scComment {
+  width:99%;
+}
 p.inline-error {
   margin-left: 0;	
   margin-bottom: 0;
@@ -47,7 +75,7 @@ span.extra-text {
 .locgrid-codegsl {
   width: 40px;
 }
-.locgrid-profondeur {
+.locgrid-depth {
   width: 40px;
 }
 .locgrid-development {
@@ -60,7 +88,7 @@ span.extra-text {
   display:inline  !important;
 }
 input.mnhnl-site-name {
-	width: 300px;
+	width: 500px;
 }
 label.auto-width {
 	width: auto;

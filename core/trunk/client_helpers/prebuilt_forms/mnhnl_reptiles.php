@@ -149,13 +149,17 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
     data_entry_helper::$javascript .= "
 jQuery('[name=programme]').change(function(){
   jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"taxon_list_id\":".$args['extra_list_id'].", \"programme\":'+jQuery(this).val()+'}');
+  var action='".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=';
+  var filename=jQuery(this).find('[selected]')[0].text.replace(/ /g, \"\");
+  action=action+filename;
+  jQuery('#reportRequestForm').attr('action',action);
 });
 jQuery('[name=programme]').change();
 ";
     return  '<div id="downloads" >
       <p>'.lang::get('LANG_Data_Download').'</p>
       '.$control.'
-      <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=reptilereport">
+      <form id="reportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=reptilereport">
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "taxon_list_id":'.$args['extra_list_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
@@ -393,7 +397,7 @@ relationships = [";
   child : ".$parts[1].",
   values: [";
         for($i = 2; $i < count($parts); $i++){
-          $values = explode(',', $parts[$i]);
+          $values = explode(',', trim($parts[$i]));
           data_entry_helper::$javascript .= "{value : ".$values[0].", list: [\"";
           unset($values[0]);
           data_entry_helper::$javascript .= (implode("\",\"", $values))."\"]},
@@ -517,6 +521,10 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
     $retval .= '</tr>';
     $subSamples = array();
     $subSamplesAttrs = array();
+    $suitabilityAttr=iform_mnhnl_getAttrID(self::$auth, $args, 'sample', 'Suitability');
+    if (!$suitabilityAttr) return lang::get('This form must be used with a survey that has the Suitability attribute associated with it.');
+    $surveyAttr=iform_mnhnl_getAttrID(self::$auth, $args, 'sample', 'Survey');
+    if (!$surveyAttr) return lang::get('This form must be used with a survey that has the Survey attribute associated with it.');
     if(isset(data_entry_helper::$entity_to_load['sample:id'])){
       $smpOptions = array(
         'table'=>'sample',
@@ -532,6 +540,7 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
             ,'fieldprefix'=>'{MyPrefix}:smpAttr'
             ,'extraParams'=>$auth['read']
             ,'survey_id'=>$args['survey_id']), true);
+        $subSamplesAttrs[$sample['id']][$surveyAttr]['validation_rules']='required';
       }
     }
     // prog:sampleID:termlist_meaning_id:presence|smpAttr:attrdetails.
@@ -565,13 +574,15 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
     $retval .= '</table><br />';
     data_entry_helper::$javascript .= "// JS for programme grid control.
 jQuery('.prog-presence').change(function(){
+  var myTR = jQuery(this).closest('tr');
   if(jQuery(this).filter('[checked]').length>0) {
-    jQuery(this).closest('tr').find('input,select').removeAttr('disabled');
-    jQuery(this).closest('tr').find('input,select').not(':checkbox').not(':hidden').addClass('required').after('<span class=\"deh-required\">*</span>');
+    myTR.find('[name$=\\:smpAttr\\:".$suitabilityAttr."],[name*=\\:smpAttr\\:".$suitabilityAttr."\\:]').removeAttr('disabled').filter(':checkbox').attr('checked','checked');
+    myTR.find('[name$=\\:smpAttr\\:".$surveyAttr."],[name*=\\:smpAttr\\:".$surveyAttr."\\:]').removeAttr('disabled').addClass('required').after('<span class=\"deh-required\">*</span>');
   } else {
-    jQuery(this).closest('tr').find('.deh-required,.inline-error').remove();
-    jQuery(this).closest('tr').find('.required').removeClass('ui-state-error required');
-    jQuery(this).closest('tr').find('input,select').not(this).attr('disabled','disabled');
+    myTR.find('.deh-required,.inline-error').remove();
+    myTR.find('.required').removeClass('ui-state-error required');
+    myTR.find('[name$=\\:smpAttr\\:".$suitabilityAttr."],[name*=\\:smpAttr\\:".$suitabilityAttr."\\:]').attr('disabled','disabled').removeAttr('checked');
+    myTR.find('[name$=\\:smpAttr\\:".$surveyAttr."],[name*=\\:smpAttr\\:".$surveyAttr."\\:]').attr('disabled','disabled').val('');
   }
 });
 jQuery('.programme-grid').find('label').addClass('auto-width');";
@@ -587,7 +598,6 @@ $.validator.addMethod('prog-presence', function(value, element){
 },
   \"".lang::get('validation_prog-presence')."\");
 ";
-//    throw(1);
     return $retval;
   }
   
@@ -608,12 +618,7 @@ hook_species_checklist_pre_delete_row=function(e) {
 };
 ";
   	$extraParams = $auth['read'];
-    if ($args['species_names_filter']=='preferred') {
-      $extraParams += array('preferred' => 't');
-    }
-    if ($args['species_names_filter']=='language') {
-      $extraParams += array('language' => iform_lang_iso_639_2($user->lang));
-    }  
+    // we want all languages, so dont filter
     // multiple species being input via a grid      
     $species_ctrl_opts=array_merge(array(
           "extra_list_id"=>$args["extra_list_id"],
@@ -626,7 +631,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true,
-          'language' => iform_lang_iso_639_2($user->lang) // used for termlists in attributes
+          'language' => 'eng' // forced, used for termlists in attributes
     ), $options);
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
@@ -1028,9 +1033,9 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   
   protected function getReportActions() {
     return array(array('display' => '', 'actions' => 
-            array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
+            array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
         array('display' => '', 'actions' => 
-            array(array('caption' => 'Delete', 'javascript'=>'deleteSurvey({sample_id})'))));
+            array(array('caption' => lang::get('Delete'), 'javascript'=>'deleteSurvey({sample_id})'))));
   }
   
   /**

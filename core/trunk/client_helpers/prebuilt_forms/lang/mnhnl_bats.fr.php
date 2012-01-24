@@ -28,7 +28,7 @@ global $custom_terms;
  */
 $custom_terms = array(
 	'LANG_Main_Samples_Tab' => 'Surveys',
-	'LANG_Download' => 'Reports and Downloads',
+	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',
 	'LANG_Sites_Download' => 'Run a report to provide information on all the sites used for these surveys, plus their attributes. (CSV Format)',
 	'LANG_Conditions_Download' => 'Run a report to provide information on all these surveys, including the conditions and the associated sites. This returns one row per survey, and excludes any species data. (CSV Format)',
@@ -50,7 +50,7 @@ $custom_terms = array(
 	'prev step'=>'Précédente',
 
 	// 'Site' tab heading left alone
-	'Existing Locations' => 'Sites existants',
+	'Existing locations' => 'Sites existants',
 	'LANG_Location_Code_Label' => 'Code',
 	'LANG_Location_Name_Label' => 'Nom du site',
 	'LANG_Location_Name_Blank_Text' => 'Choisissez un site',
@@ -66,7 +66,7 @@ $custom_terms = array(
 	'Longitude' => 'Y ',
 	'LANG_LatLong_Bumpf' => '(projection géographique LUREF en mètres)',
 	'Precision' => 'Précision',
-	'Profondeur' => 'Profondeur',
+	'Depth' => 'Profondeur',
 	'Development' => 'Développement',
 	'search' => 'Chercher',
 	'Location Comment' => 'Commentaires',

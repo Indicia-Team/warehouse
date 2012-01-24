@@ -365,8 +365,6 @@ hook_mnhnl_parent_changed = function(){
    * Get the year names control
    */
   protected static function get_control_year($auth, $args, $tabalias, $options) {
-    if($args['language'] != 'en')
-      data_entry_helper::add_resource('jquery_ui_'.$args['language']); // this will autoload the jquery_ui resource. The date_picker does not have access to the args.
     if (isset(data_entry_helper::$entity_to_load['sample:date']))
       $year=substr(data_entry_helper::$entity_to_load['sample:date'],0,4);
     else $year = date('Y');
@@ -466,12 +464,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
     /* We will make the assumption that only one of these will be put onto a form.
      * A lot of this is copied from the species control and has the same features. */
     $extraParams = $auth['read'] + array('view' => 'detail', 'reset_timeout' => 'true');
-    if ($args['species_names_filter']=='preferred') {
-      $extraParams += array('preferred' => 't');
-    }
-    if ($args['species_names_filter']=='language') {
-      $extraParams += array('language_iso' => iform_lang_iso_639_2($user->lang));
-    }  
+    // no name filtering
     // A single species entry control of some kind
     if ($args['extra_list_id']=='')
       $extraParams['taxon_list_id'] = $args['list_id'];
@@ -553,7 +546,8 @@ jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('ttlid', ".$ttlid.").d
               array('cellClass' => 'smp-'.($key+1),
                 'class' => 'cgAttr',
                 'extraParams' => array_merge($auth['read'], array('view'=>'detail')),
-                'language' => iform_lang_iso_639_2($args['language'])),$options);
+                'language' => 'eng'), //force english
+              $options);
         if(isset($entity['sample_id'])) $attrArgs['id'] = $entity['sample_id'];
         $attrArgs['fieldprefix']='CG:'.($key+1).':'.(isset($entity['sample_id']) ? $entity['sample_id'] : '').':smpAttr';
         $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
@@ -650,7 +644,8 @@ jQuery('.remove-sgnewrow').live('click', function() {
     $defAttrOptions = array_merge(
               array('class' => 'cgAttr',
                 'extraParams' => array_merge($auth['read'], array('view'=>'detail')),
-                'language' => iform_lang_iso_639_2($args['language'])),$options);
+                'language' => 'eng'), //force english
+              $options);
     $tabName = (isset($options['tabNameFilter']) ? $options['tabNameFilter'] : null);
     $ret = '<p>'.lang::get("LANG_ConditionsGridInstructions").'</p><table style="display:none">';
     $cloneprefix='CG:--rownum--:--sampleid--:';
@@ -664,7 +659,6 @@ jQuery('.remove-sgnewrow').live('click', function() {
     $attrArgs['fieldprefix']=$cloneprefix.'smpAttr';
     $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $ret .= self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName)."<td><input name=\"".$cloneprefix."comment\" class=\"cggrid-comment\" ></td></tr>";
-//    throw(1);
     $ret .= '</table><table id ="conditions-grid"><tr><th colSpan=2>'.lang::get("Site").'</th><th>'.lang::get('Date').'</th>';
     foreach($sampleAttributes as $attr){
       if ((!isset($options['tabNameFilter']) || strcasecmp($options['tabNameFilter'],$attr['inner_structure_block'])==0))
@@ -921,17 +915,15 @@ jQuery('#dummy-name').change(function() {
     iform_mnhnl_addCancelButton();
   	data_entry_helper::$javascript .= "
 hook_new_site_added = function(feature) {
+  if(!feature) return;
   var name=createGridEntries(feature, true);
   feature.attributes.cgRowNum=cgRowNum;
   var centreGeom;
   var centrefeature;
-  if(feature.geometry.CLASS_NAME == \"OpenLayers.Geometry.Point\"){
-    centreGeom = feature.geometry;
-  }else{
-    centreGeom = feature.geometry.getCentroid();}
+  centreGeom = getCentroid(feature.geometry);
   centrefeature = new OpenLayers.Feature.Vector(centreGeom);
   centrefeature.attributes.new=true;
-  centrefeature.attributes.highlighted=false;
+  centrefeature.attributes.highlighted=true;
   centrefeature.attributes.SiteNum=feature.attributes.SiteNum;
   centrefeature.attributes.cgRowNum=cgRowNum;
   centrefeature.style = jQuery.extend({}, SiteListPrimaryLabelStyleHash);
@@ -1039,8 +1031,8 @@ hook_new_site_added = function(feature) {
   
   protected function getReportActions() {
     return array(array('display' => '', 'actions' => 
-            array(array('caption' => 'Edit', 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
+            array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
         array('display' => '', 'actions' => 
-            array(array('caption' => 'Delete', 'javascript'=>'deleteSurvey({sample_id})'))));
+            array(array('caption' => lang::get('Delete'), 'javascript'=>'deleteSurvey({sample_id})'))));
   } 
 }

@@ -39,20 +39,21 @@ $custom_terms = array(
 	'LANG_Programme'=> 'Programme',
 
 	'LANG_Edit' => 'Edit',
-	'LANG_Add_Sample' => 'Add New Sample',
-	'LANG_Add_Sample_Single' => 'Add Single Occurrence',
-	'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
+	'LANG_Add_Sample' => 'Add new sample',
+	'LANG_Add_Sample_Single' => 'Add single occurrence',
+	'LANG_Add_Sample_Grid' => 'Add list of occurrences',
 
 	'LANG_Tab_site' => 'Site',
 	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',
 	'LANG_CommonParentLabel'=>'Square (5x5km)',
 	'LANG_CommonParentBlank'=>'Choose a square',
 	'LANG_LocModTool_Instructions2'=>"Either click on the map (ensuring that the select tool on the map is active) to select the site you wish to modify, or choose from the drop down list. You may then change its name, or modify or add Points, Lines, or Polygons to define the site shape. You must choose the correct draw tool on the map for each of these. You may drag the highlighted vertices. To delete a vertex, place the mouse over the vertex and press the 'd' or 'Delete' buttons.<br />You can't create a new site using this tool - that has to be done within the survey data entry itself.",
-	'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list.<br />You may add a new site: ensure a square has been selected, click the 'Create a new site' button on the map, select the map tool for the type of item you wish to draw, and draw on the map, clicking on each point. Double click on the final point of a line or polygon to complete it. At this point you will notice some small red circles appear around the newly drawn feature: you can change the boundary by dragging these circles. To delete a point, place the mouse over the red circle, and press the 'd' or 'Delete' buttons on the keyboard.<br />Selecting an existing site will remove any new site.<br />It is not possible to change a site name or boundary on this form once it has been saved - this can be done by an Admin user using their special tool.",
+	'LANG_DE_Instructions2'=>"To choose a site, either click the relevant site on the map (ensuring that the select tool on the map is active) or pick it from the drop down list.<br />You may add a new site: ensure a square has been selected, click the 'Start a new site' button on the map, select the map tool for the type of item you wish to draw, and draw on the map, clicking on each point. Double click on the final point of a line or polygon to complete it. At this point you will notice some small red circles appear around the newly drawn feature: you can change the boundary by dragging these circles. To delete a point, place the mouse over the red circle, and press the 'd' or 'Delete' buttons on the keyboard.<br />Selecting an existing site will remove any new site.<br />It is not possible to change a site name or boundary on this form once it has been saved - this can be done by an Admin user using their special tool.",
 	'LANG_LocModTool_IDLabel'=>'Old site name',
 	'LANG_DE_LocationIDLabel'=>'Site',
 	'LANG_CommonChooseParentFirst'=>'Choose a square first, before picking a site.',
 	'LANG_NoSitesInSquare'=>'There are no sites currently associated with this square',
+	'LANG_NoSites'=>'There are currently no sites defined: please create a new one.',
 	'LANG_CommonEmptyLocationID'=>'Choose an existing site',
 	'LANG_Location_X_Label' => 'Site centre coordinates : X ',
 	'LANG_Location_Y_Label' => 'Y ',
@@ -86,6 +87,7 @@ $custom_terms = array(
 	'LANG_Save' => 'Save',
 	'LANG_Cancel' => 'Cancel',
 	"LANG_Submit" => 'Save',
+	'LANG_DuplicateName'=>'Warning: there is another location with this name.',
 
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',
@@ -117,5 +119,8 @@ $custom_terms = array(
 	
 	'validation_required' => 'Please enter a value for this field',
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid.",
-	'validation_prog-presence'=>'At least one programme must be selected.'
+	'validation_prog-presence'=>'At least one programme must be selected.',
+	'next step'=>'Next step',
+	'prev step'=>'Previous step'
+	
 );

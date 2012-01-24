@@ -29,7 +29,6 @@
  * TBD switch in WMS layer to select if present
  * TBD extend sref_system so can choose from drop down if > 1, else set to configured value.
  * TBD Convert locModTool to AJAX: return to locations page after saving
- * TBD allow direct entry of X,Y when just a point geometry.
  * TBD put in check to enforce ParentLocationType and LocationType in options, loctools set?
  * TBD put in check to prevent/confirm selecting something else when existing selection is modified (will lose changes?).
  * TBD attributes to handle checkboxes, inc booleans.
@@ -222,7 +221,10 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
        ));
   // location comments are included as a separate control on the main form.
   if(isset($args['includeLocationComment']) && $args['includeLocationComment'])
-  	$retVal .= "<label for=\"location-comment\">".lang::get("LANG_LocationModTool_CommentLabel")." : </label><input id=\"location-comment\" name=\"location:comment\"><br />";
+    $retVal .= data_entry_helper::textarea(array(
+      'ide'=>'location-comment',
+      'fieldname'=>'location:comment',
+      'label'=>lang::get("LANG_LocationModTool_CommentLabel")))."<br />";
   $retVal .= iform_mnhnl_locationattributes($auth, $args, '', array("lookUpKey"=>"meaning_id", "sep"=>" ", "class"=>"wide"));
   $retVal .= "<label for=\"location-delete\">".lang::get("LANG_LocModTool_DeleteLabel")." : </label><input type=checkbox id=\"location-delete\" name=\"location:deleted\" value='t'><br />
   <p>".lang::get("LANG_LocModTool_DeleteInstructions")."</p>";
@@ -237,6 +239,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
   $mapOptions['editLayer']=false;
   $mapOptions['maxZoom']=$args['zoomLevel'];
   $retVal .= data_entry_helper::map_panel($mapOptions, $olOptions);
+  $retVal .= iform_mnhnl_PointGrid($auth, $args, array('srefs'=>'2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS'));
   $retVal .= '<input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Submit').'">
   </form></div>';
   data_entry_helper::$javascript .= "
@@ -325,17 +328,23 @@ ParentLocStyleMap = new OpenLayers.StyleMap({\"default\": new OpenLayers.Style({
 ParentLocationLayer = new OpenLayers.Layer.Vector('Parents',{styleMap: ParentLocStyleMap,displayInLayerSwitcher: false});
 
 defaultPointStyle = new OpenLayers.Style({pointRadius: 6,fillColor: \"Red\",fillOpacity: 0.3,strokeColor: \"Yellow\",strokeWidth: 1});
-// selectPointStyle = new OpenLayers.Style({pointRadius: 8,fillColor: \"Blue\",fillOpacity: 0.2,strokeColor: \"Yellow\",strokeWidth: 2});
-defaultLineStyle = new OpenLayers.Style({pointRadius: 6, fillColor: \"Red\",fillOpacity: 0.3,strokeColor: \"Red\",strokeWidth: 1});
-selectLineStyle = new OpenLayers.Style({fillColor: \"Blue\",fillOpacity: 0.2,strokeColor: \"Blue\",strokeWidth: 2});
-defaultPolygonStyle = new OpenLayers.Style({pointRadius: 6, fillColor: \"Red\",fillOpacity: 0.3,strokeColor: \"Red\",strokeWidth: 1});
-selectPolygonStyle = new OpenLayers.Style({fillColor: \"Blue\",fillOpacity: 0.2,strokeColor: \"Blue\",strokeWidth: 2});
-defaultLabelStyle = new OpenLayers.Style({fontColor: \"Yellow\", labelAlign: \"".$args['labelAlign']."\", labelXOffset: ".$args['labelXOffset'].", labelSelect: true});
+selectPointStyle = new OpenLayers.Style({pointRadius: 6,fillColor: \"Blue\",fillOpacity: 0.3,strokeColor: \"Yellow\",strokeWidth: 2});
+defaultStyle = new OpenLayers.Style({pointRadius: 6, fillColor: \"Red\",fillOpacity: 0.3,strokeColor: \"Red\",strokeWidth: 1});
+selectStyle = new OpenLayers.Style({fillColor: \"Blue\",fillOpacity: 0.3,strokeColor: \"Blue\",strokeWidth: 2});
+//defaultLabelStyle = new OpenLayers.Style({fontColor: \"Yellow\", labelAlign: \"".$args['labelAlign']."\", labelXOffset: ".$args['labelXOffset'].", labelSelect: true});
+dragPointStyleHash={pointRadius: 6,fillColor: \"Fuchsia\",fillOpacity: 0.3,strokeColor: \"Fuchsia\",strokeWidth: 1};
+// Interesting behaviour of the Points: when any mod control is active it creates a set of vertices which can be 
+// dragged, allowing the existing geometry to be modified. All fine for Lines and polygons, but for points
+// the vertices are generated in the default style, and appear over the top of our existing geometry, so
+// effectively making it appear unselected! 
+// We want consistent colouring, so
+// 1) normal=red, yellow surrounds points
+// 2) highlighted=blue, yellow surrounds points
+// 3) Drag points=purple.
 
-SitePointStyleMap = new OpenLayers.StyleMap({\"default\": defaultPointStyle});
-SiteLineStyleMap = new OpenLayers.StyleMap({\"default\": defaultLineStyle, \"select\": selectLineStyle});
-SitePolygonStyleMap = new OpenLayers.StyleMap({\"default\": defaultPolygonStyle, \"select\": selectPolygonStyle});
-SiteLabelStyleMap = new OpenLayers.StyleMap({\"default\": defaultLabelStyle});
+SitePointStyleMap = new OpenLayers.StyleMap({\"default\": defaultPointStyle, \"select\": selectPointStyle});
+SiteStyleMap = new OpenLayers.StyleMap({\"default\": defaultStyle, \"select\": selectStyle});
+//SiteLabelStyleMap = new OpenLayers.StyleMap({\"default\": defaultLabelStyle});
 
 ".($args['SecondaryLocationTypeTerm'] != '' ?
 "SiteListPrimaryLabelStyleHash={fontColor: \"Red\", labelAlign: \"".$args['labelAlign']."\", labelXOffset: ".$args['labelXOffset'].", labelSelect: true, fontSize: \"1.2em\", fontWeight: \"bold\"};
@@ -343,10 +352,42 @@ SiteListSecondaryLabelStyleHash" : "
 SiteListSecondaryLabelStyleHash={};
 SiteListPrimaryLabelStyleHash")."={fontColor: \"Yellow\", labelAlign: \"".$args['labelAlign']."\", labelXOffset: ".$args['labelXOffset'].", labelSelect: true};
 
-SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap, displayInLayerSwitcher: false});
-SitePathLayer = new OpenLayers.Layer.Vector('Site Paths',{styleMap: SiteLineStyleMap, displayInLayerSwitcher: false});
-SiteAreaLayer = new OpenLayers.Layer.Vector('Site Areas',{styleMap: SitePolygonStyleMap, displayInLayerSwitcher: false});
-SiteLabelLayer = new OpenLayers.Layer.Vector('Site Labels',{styleMap: SiteLabelStyleMap, displayInLayerSwitcher: false});
+//SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap, displayInLayerSwitcher: false});
+SitePointLayer = new OpenLayers.Layer.Vector('Site Points',{styleMap: SitePointStyleMap});
+SitePathLayer = new OpenLayers.Layer.Vector('Site Paths',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
+SiteAreaLayer = new OpenLayers.Layer.Vector('Site Areas',{styleMap: SiteStyleMap, displayInLayerSwitcher: false});
+SiteLabelLayer = new OpenLayers.Layer.Vector('Site Labels',{//styleMap: SiteLabelStyleMap, 
+displayInLayerSwitcher: false});
+// not happy about centroid calculations: lines and multipoints seem to take first vertex
+_getCentroid = function(geometry){
+  var retVal;
+  retVal = {sumx: 0, sumy: 0, count: 0};
+  switch(geometry.CLASS_NAME){
+    case \"OpenLayers.Geometry.Point\":
+      retVal = {sumx: geometry.x, sumy: geometry.y, count: 1};
+      break;
+    case \"OpenLayers.Geometry.MultiPoint\":
+    case \"OpenLayers.Geometry.MultiLineString\":
+    case \"OpenLayers.Geometry.LineString\":
+    case \"OpenLayers.Geometry.MultiPolygon\":
+    case \"OpenLayers.Geometry.Collection\":
+      var retVal = {sumx: 0, sumy: 0, count: 0};
+      for(var i=0; i< geometry.components.length; i++){
+        var point=_getCentroid(geometry.components[i]);
+        retVal = {sumx: retVal.sumx+point.sumx, sumy: retVal.sumy+point.sumy, count: retVal.count+point.count};
+      }
+      break;
+    case \"OpenLayers.Geometry.Polygon\": // only do outer ring
+      var point=geometry.getCentroid();
+      retVal = {sumx: point.x*geometry.components[0].components.length, sumy: point.y*geometry.components[0].components.length, count: geometry.components[0].components.length};
+      break;
+  }
+  return retVal;
+}
+getCentroid=function(geometry){
+  var oddball=_getCentroid(geometry);
+  return new OpenLayers.Geometry.Point(oddball.sumx/oddball.count, oddball.sumy/oddball.count);
+}
 recalcNumSites = function(){
   var sitearray = {};
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
@@ -360,7 +401,6 @@ recalcNumSites = function(){
   jQuery('#dummy-num-sites').val(count);
 };
 recalcNumSites();
-jQuery(\"#imp-srefX,#imp-srefY\").attr('readonly','readonly');
 clearLocation = function(){ // clears all the data in the fields.
   jQuery('#".$options['mainFieldID'].($args['locationMode']!='multi' ? ",#sample-location-name,#sample-location-id" : "").",#location-name,#centroid_sref,#imp-srefX,#imp-srefY,#centroid_geom,#boundary_geom,[name=location\\:comment],#location-code').val('');
   jQuery('#location_location_type_id').val('$primary');
@@ -551,6 +591,7 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
 ".($args['locationMode']=='multi' ? "  jQuery('#sample-location-name').val(data[0].name);" : "").
 "       }});
   }
+  if(!loadParent) selectFeature.activate();
   if(parent_id != '' || loadParent==false){
     jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/location?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?&orderby=name\"+".$loctypequery."+(loadParent ? '&parent_id='+parent_id : ''),
       function(data) {
@@ -570,9 +611,6 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
               var centre = false;
               if(data[i].centroid_geom) {
                 centreFeature = parser.read(data[i].centroid_geom); // assume map projection=900913
-              } else {
-                centre = feature.geometry.getCentroid();
-                centreFeature = new OpenLayers.Feature.Vector(centre);
               }
               var pointFeature = false;
               var lineFeature = false;
@@ -611,22 +649,17 @@ loadFeatures = function(parent_id, child_id, childArgs, loadParent, setSelectOpt
               if(areaFeature) {
                 areaFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
                 SiteAreaLayer.addFeatures([areaFeature]);
-                if(!centreFeature) centreFeature = areaFeature.geometry.getCentroid();
+                if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(areaFeature.geometry));
               }
               if(lineFeature) {
                 lineFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
                 SitePathLayer.addFeatures([lineFeature]);
-                if(!centreFeature) centreFeature = lineFeature.geometry.getCentroid();
+                if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(lineFeature.geometry));
               }
               if(pointFeature) {
-                if(!centreFeature) {
-                  if(feature.geometry.CLASS_NAME == \"OpenLayers.Geometry.Point\")
-                    centreFeature = pointFeature.clone();
-                  else
-                    centreFeature = new OpenLayers.Feature.Vector(pointFeature.geometry.getCentroid());
-                }
                 pointFeature.attributes = {highlighted: false, new: false, canEdit: checkEditable(false, data[i].id), SiteNum: SiteNum, data: data[i]};
                 SitePointLayer.addFeatures([pointFeature]);
+                if(!centreFeature) centreFeature = new OpenLayers.Feature.Vector(getCentroid(pointFeature.geometry));
               }
             } else {
               // no boundary, only a centre point.
@@ -776,7 +809,7 @@ getwkt = function(geometry, incFront, incBrackets){
 }
 setGeomFields = function(){
   // use centre of Area as centroid
-  // Build the combined Geometry
+  // Build the combined Geometry, ignore label
   var geomstack = [];
   var completeGeom;
   var centreGeom;
@@ -803,11 +836,7 @@ setGeomFields = function(){
     completeGeom = new OpenLayers.Geometry.Collection(geomstack);
   }
   var boundaryWKT = getwkt(completeGeom, true, true);
-  if(completeGeom.CLASS_NAME == \"OpenLayers.Geometry.Point\") {
-    centreGeom = completeGeom;
-  } else {
-    centreGeom = completeGeom.getCentroid();
-  }
+  centreGeom=getCentroid(completeGeom);
   var centreWKT = getwkt(centreGeom, true, true);
 ".($args['locationMode']=='multi' ?
 "  var highlighted = gethighlight();
@@ -843,7 +872,38 @@ removeDrawnGeom = function(SiteNum){
       SitePointLayer.destroyFeatures([SitePointLayer.features[i]]);
   recalcNumSites();
 }
-replaceGeom = function(feature, layer, modControl, geom, highlight){
+resetVertices = function(){
+  var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features);
+  for(var i=allFeatures.length-1; i>=0; i--){
+    if(typeof allFeatures[i].attributes.new == 'undefined'){ // not one of ours, so must be a vertex
+      var layer= allFeatures[i].layer;
+      layer.removeFeatures([allFeatures[i]]);
+      allFeatures[i].style=dragPointStyleHash;
+      layer.addFeatures([allFeatures[i]]);
+    }
+  }
+  // Oddball case is single points: in this case they use the actual point to drag not a proxy vertex.
+  if(modPointFeature.feature){
+    if(modPointFeature.feature.geometry.CLASS_NAME == \"OpenLayers.Geometry.Point\") {
+      var layer= modPointFeature.feature.layer;
+      layer.removeFeatures([modPointFeature.feature]);
+      modPointFeature.feature.style=dragPointStyleHash;
+      layer.addFeatures([modPointFeature.feature]);
+    }
+  } else {
+    for(var i=SitePointLayer.features.length-1; i>=0; i--){
+      if(SitePointLayer.features[i].style != null){
+        var feature = SitePointLayer.features[i];
+        var layer = feature.layer;
+        layer.removeFeatures([feature]);
+        feature.style=null;
+        layer.addFeatures([feature]);
+      }
+    }
+  }
+  SitePointLayer.redraw();
+}
+replaceGeom = function(feature, layer, modControl, geom, highlight, setFields){
   if(modControl.feature)
     modControl.unselectFeature(modControl.feature);
   var newfeature = new OpenLayers.Feature.Vector(geom, {});
@@ -851,9 +911,10 @@ replaceGeom = function(feature, layer, modControl, geom, highlight){
   layer.destroyFeatures([feature]);
   layer.addFeatures([newfeature]);
   modControl.selectFeature(newfeature);
-  if(highlight) selectFeature.highlight(newfeature);
+  selectFeature.highlight(newfeature);
   newfeature.attributes.highlighted=true;
-  setGeomFields();
+  resetVertices();
+  if(setFields) setGeomFields();
 }
 addAndSelectNewGeom = function(layer, modControl, geom, highlight){
   SiteNum++;
@@ -861,7 +922,8 @@ addAndSelectNewGeom = function(layer, modControl, geom, highlight){
   layer.addFeatures([feature]);
   modControl.selectFeature(feature);
   feature.attributes.highlighted=true;
-  if(highlight) selectFeature.highlight(feature);
+  selectFeature.highlight(feature);
+  resetVertices();
   setGeomFields();
   recalcNumSites();
   return feature;
@@ -871,8 +933,9 @@ addToExistingFeatureSet = function(existingFeatures, layer, modControl, geom, hi
   feature.attributes = existingFeatures[0].attributes;
   layer.addFeatures([feature]);
   modControl.selectFeature(feature);
-  if(highlight) selectFeature.highlight(feature);
+  selectFeature.highlight(feature);
   feature.attributes.highlighted=true;
+  resetVertices();
   setGeomFields();
 }
 unhighlightAll = function(){
@@ -882,10 +945,9 @@ unhighlightAll = function(){
   var highlighted = gethighlight();
   for(var i=0; i<highlighted.length; i++) {
     highlighted[i].attributes.highlighted = false;
-    if(highlighted[i].layer != SitePointLayer)
-      selectFeature.unhighlight(highlighted[i]);
+    selectFeature.unhighlight(highlighted[i]);
   }
-  // Points only get flagged, do not get physically highlighted.
+  resetVertices();
 }
 highlightMe = function(id, SiteNum){
   var allFeatures = SiteAreaLayer.features.concat(SitePathLayer.features,SitePointLayer.features,SiteLabelLayer.features);
@@ -896,9 +958,7 @@ highlightMe = function(id, SiteNum){
         (typeof allFeatures[i].attributes.SiteNum != 'undefined' &&
           allFeatures[i].attributes.SiteNum == SiteNum)){
       allFeatures[i].attributes.highlighted = true;
-      if(allFeatures[i].geometry.CLASS_NAME != \"OpenLayers.Geometry.Point\" && 
-          allFeatures[i].geometry.CLASS_NAME != \"OpenLayers.Geometry.MultiPoint\")
-        selectFeature.highlight(allFeatures[i]);
+      selectFeature.highlight(allFeatures[i]);
     }
   }
 }
@@ -911,6 +971,26 @@ gethighlight = function(){
     }}
   return features;
 }
+// default is to add a dummy new empty label
+if (typeof hook_new_site_added == 'undefined')
+ hook_new_site_added = function(feature, SiteNum) {
+  var centreGeom;
+  var centrefeature;
+  if(!feature){
+    var div = jQuery('#map')[0];
+    var mapCentre = div.map.getCenter();
+    centreGeom = new OpenLayers.Geometry.Point(mapCentre.lon, mapCentre.lat);
+  } else {
+    centreGeom = getCentroid(feature.geometry);
+  }
+  centrefeature = new OpenLayers.Feature.Vector(centreGeom);
+  centrefeature.attributes.new=true;
+  centrefeature.attributes.highlighted=true;
+  centrefeature.attributes.SiteNum=SiteNum;
+  centrefeature.style = jQuery.extend({}, SiteListPrimaryLabelStyleHash);
+  SiteLabelLayer.addFeatures([centrefeature]);
+  SitePointLayer.redraw();
+};
 addDrawnPointToSelection = function(geometry) {
   // we assume that we have a point geometry.
 ".($args['locationMode']!='single' ?
@@ -924,8 +1004,8 @@ addDrawnPointToSelection = function(geometry) {
     setDrawnGeom();
     // No currently selected feature. Create a new one.
     feature = addAndSelectNewGeom(SitePointLayer, modPointFeature, geometry, false);
-    if(typeof hook_new_site_added != 'undefined')
-      hook_new_site_added(feature);
+    hook_new_site_added(feature, feature.attributes.SiteNum);
+    if(typeof addPGPoint != 'undefined') addPGPoint(geometry);
     return true;
   }
 " : 
@@ -941,6 +1021,7 @@ addDrawnPointToSelection = function(geometry) {
       }}
     if(!selectedFeature) {
       addToExistingFeatureSet(highlightedFeatures, SitePointLayer, modPointFeature, geometry, false);
+      if(typeof addPGPoint != 'undefined') addPGPoint(geometry);
       return true;
     }
   } else { // highlighted is existing
@@ -953,6 +1034,7 @@ addDrawnPointToSelection = function(geometry) {
       }
       if(!selectedFeature) {
         addToExistingFeatureSet(highlightedFeatures, SitePointLayer, modPointFeature, geometry, false);
+        if(typeof addPGPoint != 'undefined') addPGPoint(geometry);
         return true;
       }
     } else {
@@ -960,17 +1042,20 @@ addDrawnPointToSelection = function(geometry) {
     }
   }
 ".($args['usePoints'] == 'single' ? "
-  replaceGeom(selectedFeature, SitePointLayer, modPointFeature, geometry, false);" : "
+  if(typeof clearPGrid != 'undefined') clearPGrid(geometry);
+  replaceGeom(selectedFeature, SitePointLayer, modPointFeature, geometry, false, true);" : "
+  if(typeof addPGPoint != 'undefined') addPGPoint(geometry);
   if(selectedFeature.geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiPoint\") {
     modPointFeature.unselectFeature(selectedFeature);
     selectedFeature.geometry.addPoint(geometry);
-    SitePointLayer.redraw();
     modPointFeature.selectFeature(selectedFeature);
+    selectFeature.highlight(selectedFeature);
     selectedFeature.attributes.highlighted = true;
+    resetVertices();
     setGeomFields();
   } else { // is OpenLayers.Geometry.Point
     var CompoundGeom = new OpenLayers.Geometry.MultiPoint([selectedFeature.geometry, geometry]);
-    replaceGeom(selectedFeature, SitePointLayer, modPointFeature, CompoundGeom, false);
+    replaceGeom(selectedFeature, SitePointLayer, modPointFeature, CompoundGeom, false, true);
   }")."
   return true;
 }
@@ -984,7 +1069,7 @@ addDrawnLineToSelection = function(geometry) {
     return false;
   }
 ".($args['locationMode']!='single' ?
-"  var centre = geometry.getCentroid();
+"  var centre = getCentroid(geometry);
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
     alert('".lang::get('LANG_LineOutsideParent')."');
 " : "").
@@ -994,8 +1079,7 @@ addDrawnLineToSelection = function(geometry) {
     setDrawnGeom();
     // No currently selected feature. Create a new one.
     feature = addAndSelectNewGeom(SitePathLayer, modPathFeature, geometry, true);
-    if(typeof hook_new_site_added != 'undefined')
-      hook_new_site_added(feature);
+    hook_new_site_added(feature, feature.attributes.SiteNum);
     return true;
   }
 " : 
@@ -1032,17 +1116,18 @@ addDrawnLineToSelection = function(geometry) {
     }
   }
   ".($args['useLines'] == 'single' ? "
-  replaceGeom(selectedFeature, SitePathLayer, modPathFeature, geometry, true);" : "
+  replaceGeom(selectedFeature, SitePathLayer, modPathFeature, geometry, true, true);" : "
   if(selectedFeature.geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiLineString\") {
     modPathFeature.unselectFeature(selectedFeature);
     selectedFeature.geometry.addComponents([geometry]);
     modPathFeature.selectFeature(selectedFeature);
     selectFeature.highlight(selectedFeature);
     selectedFeature.attributes.highlighted = true;
+    resetVertices();
     setGeomFields();
   } else { // is OpenLayers.Geometry.LineString
     var CompoundGeom = new OpenLayers.Geometry.MultiLineString([selectedFeature.geometry, geometry]);
-    replaceGeom(selectedFeature, SitePathLayer, modPathFeature, CompoundGeom, true);
+    replaceGeom(selectedFeature, SitePathLayer, modPathFeature, CompoundGeom, true, true);
   }")."
   return true;
 }
@@ -1056,7 +1141,7 @@ addDrawnPolygonToSelection = function(geometry) {
     return false;
   }
 ".($args['locationMode']!='single' ?
-"  var centre = geometry.getCentroid();
+"  var centre = getCentroid(geometry);
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
     alert('".lang::get('LANG_PolygonOutsideParent')."');
 " : "").
@@ -1066,8 +1151,7 @@ addDrawnPolygonToSelection = function(geometry) {
     setDrawnGeom();
     // No currently selected feature. Create a new one.
     feature = addAndSelectNewGeom(SiteAreaLayer, modAreaFeature, geometry, true);
-    if(typeof hook_new_site_added != 'undefined')
-      hook_new_site_added(feature);
+    hook_new_site_added(feature, feature.attributes.SiteNum);
     return true;
   }
 " : 
@@ -1104,17 +1188,18 @@ addDrawnPolygonToSelection = function(geometry) {
     }
   }
   ".($args['usePolygons'] == 'single' ? "
-  replaceGeom(selectedFeature, SiteAreaLayer, modAreaFeature, geometry, true);" : "
+  replaceGeom(selectedFeature, SiteAreaLayer, modAreaFeature, geometry, true, true);" : "
   if(selectedFeature.geometry.CLASS_NAME == \"OpenLayers.Geometry.MultiPolygon\") {
     modAreaFeature.unselectFeature(selectedFeature);
     selectedFeature.geometry.addComponents([geometry]);
     modAreaFeature.selectFeature(selectedFeature);
     selectFeature.highlight(selectedFeature);
     selectedFeature.attributes.highlighted = true;
+    resetVertices();
     setGeomFields();
   } else { // is OpenLayers.Geometry.Polygon
     var CompoundGeom = new OpenLayers.Geometry.MultiPolygon([selectedFeature.geometry, geometry]);
-    replaceGeom(selectedFeature, SiteAreaLayer, modAreaFeature, CompoundGeom, true);
+    replaceGeom(selectedFeature, SiteAreaLayer, modAreaFeature, CompoundGeom, true, true);
   }")."
   return true;
 }
@@ -1126,18 +1211,20 @@ onFeatureModified = function(evt) {
 "      if(!ParentLocationLayer.features[0].geometry.intersects(feature.geometry))
         alert('".lang::get('LANG_PointOutsideParent')."');
 " : "").
-"      break;
+"      if(typeof modPGPoint != 'undefined') modPGPoint(feature.geometry);
+      break;
     case \"OpenLayers.Geometry.MultiPoint\":
       if(feature.geometry.components.length == 0){
         modPointFeature.unselectFeature(feature);
         SitePointLayer.destroyFeatures([feature]);
       }
 ".($args['locationMode']!='single' ?
-"      var centre = feature.geometry.getCentroid();
+"      var centre = getCentroid(feature.geometry);
       if(!ParentLocationLayer.features[0].geometry.intersects(centre))
         alert('".lang::get('LANG_PointOutsideParent')."');
 " : "").
-"      break;
+"      if(typeof modPGPoint != 'undefined') modPGPoint(feature.geometry);
+      break;
     case \"OpenLayers.Geometry.LineString\":
       points = feature.geometry.getVertices();
       if(points.length < 2){
@@ -1147,7 +1234,7 @@ onFeatureModified = function(evt) {
       }
 ".($args['locationMode']!='single' ?
 "      else {
-        var centre = feature.geometry.getCentroid();
+        var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
           alert('".lang::get('LANG_LineOutsideParent')."');
       }
@@ -1175,7 +1262,7 @@ onFeatureModified = function(evt) {
       }
 ".($args['locationMode']!='single' ?
 "      else {
-        var centre = feature.geometry.getCentroid();
+        var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
           alert('".lang::get('LANG_LineOutsideParent')."');
       }
@@ -1190,7 +1277,7 @@ onFeatureModified = function(evt) {
       }
 ".($args['locationMode']!='single' ?
 "      else {
-        var centre = feature.geometry.getCentroid();
+        var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
           alert('".lang::get('LANG_CentreOutsideParent')."');
       }
@@ -1218,13 +1305,14 @@ onFeatureModified = function(evt) {
       }
 ".($args['locationMode']!='single' ?
 "      else {
-        var centre = feature.geometry.getCentroid();
+        var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
           alert('".lang::get('LANG_CentreOutsideParent')."');
       }
 " : "").
 "      break;
   }
+  resetVertices();
   setGeomFields();
 }
 // TBD should only include next when siteNameTermListID set
@@ -1286,10 +1374,14 @@ StartNewSite = function(){
 "  jQuery('#".$options['mainFieldID']."').val('').change();
 ").
 "  setPermissionsNewSite();
+  // No currently selected feature. Create a dummy label new one.
+  SiteNum++;
+  hook_new_site_added(false, SiteNum);
   for(var i=0; i<editControl.controls.length; i++){
     if(editControl.controls[i].CLASS_NAME == \"OpenLayers.Control.DrawFeature\"){
       selectFeature.deactivate();
       editControl.controls[i].activate();
+      // new site will have no vertices yet...
       return;
     }}
 }
@@ -1341,9 +1433,7 @@ selectFeatureActivate = function(){
     modAreaFeature.deactivate();
     modPathFeature.deactivate();
     modPointFeature.deactivate();
-    SiteAreaLayer.redraw();
-    SitePathLayer.redraw();
-    SitePointLayer.redraw();
+    resetVertices();
 ".($args['locationMode']!='single' ?
 "    if(!ParentLocationLayer.features.length) {
       selectFeature.deactivate();
@@ -1355,14 +1445,13 @@ selectFeatureActivate = function(){
 polygonDrawActivate = function(){
   if(modPointFeature.feature) modPointFeature.unselectFeature(modPointFeature.feature);
   if(modPathFeature.feature) modPathFeature.unselectFeature(modPathFeature.feature);
+  selectFeature.deactivate();
   modPointFeature.deactivate();
   modPathFeature.deactivate();
-  SitePointLayer.redraw();
-  SitePathLayer.redraw();
+  resetVertices();
 ".($args['locationMode']!='single' ?
 "  if(!ParentLocationLayer.features.length) {
     polygonDraw.deactivate();
-    selectFeature.activate();
     return false;
   }
 " : "").
@@ -1376,9 +1465,8 @@ polygonDrawActivate = function(){
     modAreaFeature.activate();
     for(var i=0; i<SiteAreaLayer.features.length; i++){
       if(SiteAreaLayer.features[i].attributes.highlighted == true){
-        modAreaFeature.selectFeature(SiteAreaLayer.features[i]);
-      }
-    }
+        modAreaFeature.selectFeature(SiteAreaLayer.features[i]);}}
+    resetVertices();
     return true;
 " : 
 "    polygonDraw.deactivate();
@@ -1391,6 +1479,7 @@ polygonDrawActivate = function(){
     for(var i=0; i<SiteAreaLayer.features.length; i++){
       if(SiteAreaLayer.features[i].attributes.highlighted == true){
         modAreaFeature.selectFeature(SiteAreaLayer.features[i]);}}
+    resetVertices();
     return true;
   }
   polygonDraw.deactivate();
@@ -1400,14 +1489,13 @@ polygonDrawActivate = function(){
 lineDrawActivate = function(){
   if(modPointFeature.feature) modPointFeature.unselectFeature(modPointFeature.feature);
   if(modAreaFeature.feature) modAreaFeature.unselectFeature(modAreaFeature.feature);
+  selectFeature.deactivate();
   modPointFeature.deactivate();
   modAreaFeature.deactivate();
-  SitePointLayer.redraw();
-  SiteAreaLayer.redraw();
+  resetVertices();
 ".($args['locationMode']!='single' ?
 "  if(!ParentLocationLayer.features.length) {
     lineDraw.deactivate();
-    selectFeature.activate();
     return false;
   }
 " : "").
@@ -1422,6 +1510,7 @@ lineDrawActivate = function(){
     for(var i=0; i<SitePathLayer.features.length; i++){
       if(SitePathLayer.features[i].attributes.highlighted == true){
         modPathFeature.selectFeature(SitePathLayer.features[i]);}}
+    resetVertices();
     return true;
 " : 
 "    lineDraw.deactivate();
@@ -1434,23 +1523,28 @@ lineDrawActivate = function(){
     for(var i=0; i<SitePathLayer.features.length; i++){
       if(SitePathLayer.features[i].attributes.highlighted == true){
         modPathFeature.selectFeature(SitePathLayer.features[i]);}}
+    resetVertices();
     return true;
   }
   lineDraw.deactivate();
   selectFeature.activate();
   return false;
 };
+pointDrawDeactivate = function(){
+  removePopups();
+  jQuery(\"#pointgrid\").hide();
+};
 pointDrawActivate = function(){
+  jQuery(\"#pointgrid\").show();
   if(modAreaFeature.feature) modAreaFeature.unselectFeature(modAreaFeature.feature);
   if(modPathFeature.feature) modPathFeature.unselectFeature(modPathFeature.feature);
+  selectFeature.deactivate();
   modAreaFeature.deactivate();
   modPathFeature.deactivate();
-  SiteAreaLayer.redraw();
-  SitePathLayer.redraw();
+  resetVertices();
 ".($args['locationMode']!='single' ?
 "  if(!ParentLocationLayer.features.length) {
     pointDraw.deactivate();
-    selectFeature.activate();
     return false;
   }
 " : "").
@@ -1464,7 +1558,9 @@ pointDrawActivate = function(){
     modPointFeature.activate();
     for(var i=0; i<SitePointLayer.features.length; i++){
       if(SitePointLayer.features[i].attributes.highlighted == true){
-        modPointFeature.selectFeature(SitePointLayer.features[i]);}}
+        modPointFeature.selectFeature(SitePointLayer.features[i]);
+        resetVertices();}}
+    if(typeof populatePGrid != 'undefined') populatePGrid();
     return true;
 " : 
 "    pointDraw.deactivate();
@@ -1476,7 +1572,9 @@ pointDrawActivate = function(){
     modPointFeature.activate();
     for(var i=0; i<SitePointLayer.features.length; i++){
       if(SitePointLayer.features[i].attributes.highlighted == true){
-        modPointFeature.selectFeature(SitePointLayer.features[i]);}}
+        modPointFeature.selectFeature(SitePointLayer.features[i]);
+        resetVertices();}}
+    if(typeof populatePGrid != 'undefined') populatePGrid();
     return true;
   }
   pointDraw.deactivate();
@@ -1494,9 +1592,10 @@ MyEditingToolbar=OpenLayers.Class(
 " : '').
 ($args['usePoints'] != 'none' ? "				         ,pointDraw
 " : '').
-"				         ,new OpenLayers.Control.Button({displayClass: \"olControlCancelSketch\", trigger: CancelSketch, title: '".lang::get('LANG_CancelSketchTooltip')."'})
+(($args['usePolygons'] != 'none' || $args['useLines'] != 'none') ? "				         ,new OpenLayers.Control.Button({displayClass: \"olControlCancelSketch\", trigger: CancelSketch, title: '".lang::get('LANG_CancelSketchTooltip')."'})
 				         ,new OpenLayers.Control.Button({displayClass: \"olControlUndoSketchPoint\", trigger: UndoSketchPoint, title: '".lang::get('LANG_UndoSketchPointTooltip')."'})
-".(isset($options['canCreate']) && $options['canCreate'] ? "				         ,new OpenLayers.Control.Button({displayClass: \"olControlRemoveNewSite\", trigger: RemoveNewSite, title: '".lang::get('LANG_RemoveNewSite')."'})
+" : '').
+(isset($options['canCreate']) && $options['canCreate'] ? "				         ,new OpenLayers.Control.Button({displayClass: \"olControlRemoveNewSite\", trigger: RemoveNewSite, title: '".lang::get('LANG_RemoveNewSite')."'})
 				         ,new OpenLayers.Control.Button({displayClass: \"olControlStartNewSite\", trigger: StartNewSite, title: '".lang::get('LANG_StartNewSite')."'})
 " : '').
 "				         ,new OpenLayers.Control.Button({displayClass: \"olControlZoomToSite\", trigger: ZoomToSite, title: '".lang::get('LANG_ZoomToSite')."'})
@@ -1547,32 +1646,8 @@ onFeatureSelect = function(evt) {
   // now highlight the new ones
   highlightMe(false, feature.attributes.SiteNum); // need to fetch SiteNum in case highlight new.
   loadLocation(feature);
-  pickControl();
   return false;
 }
-pickControl = function() {
-  var highlighted = gethighlight();
-  if(highlighted.length==0) return;
-  if(checkEditable(highlighted[0].attributes.new, (typeof highlighted[0].attributes.data != 'undefined' ? highlighted[0].attributes.data.id : 0))){
-    selectFeature.deactivate();
-    switch(highlighted[0].geometry.CLASS_NAME){
-      case \"OpenLayers.Geometry.Point\":
-      case \"OpenLayers.Geometry.MultiPoint\":
-        pointDraw.activate();
-        modPointFeature.selectFeature(highlighted[0]);
-        break;
-      case \"OpenLayers.Geometry.LineString\":
-      case \"OpenLayers.Geometry.MultiLineString\":
-        lineDraw.activate();
-        modPathFeature.selectFeature(highlighted[0]);
-        break;
-      default:
-        polygonDraw.activate();
-        modAreaFeature.selectFeature(highlighted[0]);
-        break;
-    }
-  }
-};
 modAreaFeature = new OpenLayers.Control.ModifyFeature(SiteAreaLayer,{standalone: true});
 modPathFeature = new OpenLayers.Control.ModifyFeature(SitePathLayer,{standalone: true});
 modPointFeature = new OpenLayers.Control.ModifyFeature(SitePointLayer,{standalone: true});
@@ -1583,7 +1658,7 @@ polygonDraw.events.on({'activate': polygonDrawActivate});
 lineDraw = new OpenLayers.Control.DrawFeature(SitePathLayer,OpenLayers.Handler.Path,{'displayClass':'olControlDrawFeaturePath', drawFeature: addDrawnLineToSelection, title: '".lang::get('LANG_LineTooltip')."'});
 lineDraw.events.on({'activate': lineDrawActivate});
 pointDraw = new OpenLayers.Control.DrawFeature(SitePointLayer,OpenLayers.Handler.Point,{'displayClass':'olControlDrawFeaturePoint', drawFeature: addDrawnPointToSelection, title: '".lang::get('LANG_PointTooltip')."'});
-pointDraw.events.on({'activate': pointDrawActivate});
+pointDraw.events.on({'activate': pointDrawActivate, 'deactivate': pointDrawDeactivate});
 editControl = new MyEditingToolbar(SiteAreaLayer, {allowDepress: false, 'displayClass':'olControlEditingToolbar'});
 mapInitialisationHooks.push(function(mapdiv) {
 	mapdiv.map.addControl(modAreaFeature);
@@ -1699,13 +1774,21 @@ hook_ChildFeatureLoad = function(feature, data, child_id, childArgs){
   }
   if(pointFeature) {
     pointFeature.attributes.highlighted=true;
+    selectFeature.highlight(pointFeature);
     if(!Zoomed) ZoomToFeature(pointFeature);
   }
 //  setGeomFields();
 };
 jQuery('#location-name').change(function(){
+  for(var i=0; i< SiteLabelLayer.features.length; i++){
+    if(SiteLabelLayer.features[i].attributes.new == false){
+      if(jQuery(this).val() == SiteLabelLayer.features[i].attributes.data.name){
+        alert('".lang::get('LANG_DuplicateName')."');
+      }
+    }
+  }
   jQuery('#sample-location-name').val(jQuery(this).val());
-  });
+});
 jQuery('#location-id').change(function(){
   jQuery('#sample-location-id').val(jQuery(this).val());
   });
@@ -1719,8 +1802,16 @@ jQuery('#location-id').change(function(){
 jQuery('#".$options['mainFieldID']."').change(function(){
   // this is only used when not multisite.
   var highlighted = gethighlight();
-  if(highlighted.length > 0 && highlighted[0].attributes.new==true){
+  var found=false;
+  // only confirm if have something drawn on map: ie ignore label
+  for(i=0; i<highlighted.length; i++){
+    if(highlighted[i].layer != SiteLabelLayer && highlighted[i].attributes.new==true)
+      found=true;
+  }
+  if(found){
     if(!confirm('".lang::get('LANG_ConfirmRemoveDrawnSite')."')) return false;
+  }
+  if(highlighted.length>0 && highlighted[0].attributes.new==true){
     removeDrawnGeom(highlighted[0].attributes.SiteNum);
   }
   jQuery('#sample-location-id').val(jQuery(this).val());
@@ -1743,7 +1834,6 @@ jQuery('#".$options['mainFieldID']."').change(function(){
         typeof allFeatures[i].attributes.data.id != 'undefined' &&
         allFeatures[i].attributes.data.id == jQuery(this).val()){
       loadLocation(allFeatures[i]); // sets permissions.
-      pickControl();
       return;
     }
   }
@@ -1757,7 +1847,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
       // can not change the (parent) location of the main sample, as this will reset all the attached samples and sites, so redering entered data useless. Just delete.
       return $retVal."\n<input type=\"hidden\" name =\"sample:location_id\" value=\"".data_entry_helper::$entity_to_load["sample:location_id"]."\" >
   <p>".$options['parentFieldLabel'].' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
-'.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\">".lang::get('LANG_NumSites')." : </label><input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
+'.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\" class=\"auto-width\">".lang::get('LANG_NumSites')." : </label><input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
 "<p>".$options['Instructions2']."</p>\n".
         ($args['siteNameTermListID']== '' ? "<label for=\"dummy-name\">".$options['NameLabel']." : </label><input id=\"dummy-name\" name=\"dummy:name\" class='mnhnl-site-name required'><br />\n" :
           data_entry_helper::select(array(
@@ -1811,7 +1901,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
       $locOptions['items'] = $opts;
       $retVal .= '<p>'.$options['Instructions1'].'</p>'.
         data_entry_helper::apply_template($locOptions['template'], $locOptions).
-        ($args['includeNumSites'] ? '<label for="dummy-num-sites">'.lang::get('LANG_NumSites').' : </label><input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
+        ($args['includeNumSites'] ? '<label for="dummy-num-sites" class=\"auto-width\">'.lang::get('LANG_NumSites').' : </label><input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
 ' : '').'<p>'.$options['Instructions2'].'</p>';
       if($args['locationMode']=='parent'){
         // choose a single site from a parent, so built site selector drop down.
@@ -1945,7 +2035,7 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
           $NameOpts .= data_entry_helper::mergeParamsIntoTemplate($item, $location_list_args['itemTemplate']);
         }
       }
-      $retVal .= '<p>'.$options['Instructions2'].'</p><fieldset><legend>'.lang::get('Existing Locations').'</legend>';
+      $retVal .= '<p>'.$options['Instructions2'].'</p><fieldset><legend>'.lang::get('Existing locations').'</legend>';
       if($NameOpts != ''){
 //        $location_list_args['label']=$location_list_args['NameLabel'];
 //        $location_list_args['fieldname']=$location_list_args['NameFieldName'];
@@ -1954,7 +2044,9 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
           array('', htmlentities($location_list_args['NameBlankText']), ''),
           $indicia_templates[$location_list_args['itemTemplate']]).$NameOpts;
         $retVal .= data_entry_helper::apply_template($location_list_args['template'], $location_list_args);
-      }
+      } else
+        $retVal .= '<p>'.lang::get("LANG_NoSites").'</p>';
+      
       $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel']." : </label><input id=\"location-name\" name=\"location:name\" class='mnhnl-site-name required' value='".data_entry_helper::$entity_to_load['location:name']."'><span class=\"deh-required\">*</span><br />
       <input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
     }
@@ -1962,7 +2054,210 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       $retVal .= "<label for=\"location-code\">".$options['CodeLabel']." : </label><input id=\"location-code\" name=\"location:code\" value='".data_entry_helper::$entity_to_load['location:code']."'><br />";
     return $retVal;
 }
-    
+
+function iform_mnhnl_PointGrid($auth, $args, $options) {
+  data_entry_helper::$javascript .= "
+// functions for iform_mnhnl_PointGrid
+jQuery('#pointgrid').hide();
+";
+  $retVal="<fieldset id=\"pointgrid\">\n<legend>".lang::get('LANG_PointsLegend')."</legend>";
+  $retVal.="<table ><tbody id=\"pointgridtable\"><tr class=\"pgAddRow\">
+  <td><label class=\"auto-width X\" >".lang::get('LANG_Grid_X_Label')." :</label><input type=\"text\" id=\"new-srefX\" name=\"new:srefX\" value=\"\" /></td>
+  <td><label class=\"auto-width Y\" >".lang::get('LANG_Grid_Y_Label')." :</label><input type=\"text\" id=\"new-srefY\" name=\"new:srefY\" value=\"\" /></td>";
+  $systemCtrl="<td style=\"display: none;\"><input class=\"pgSrefSystem\" value=\"2169\"></td>"; //TBD should come from $arg
+  if(isset($options['srefs'])){
+    $systemCtrl="<td><select class=\"pgSrefSystem\" >";
+    $srefs = explode(';',$options['srefs']);
+    data_entry_helper::$javascript .= "
+setMySref = function(myRow){
+  jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/wkt_to_sref?wkt=\"+myRow.data('WKT')+\"&system=\"+myRow.data('system')+\"&output=\"+myRow.data('output')+\"&precision=8&callback=?\",
+      function(data){
+        if(typeof data.error != 'undefined')
+          alert(data.error);
+        else {
+          var parts=data.sref.split(' ');
+          parts[0]=parts[0].split(',')[0]; // part 1 may have a comma at the end, so remove
+          myRow.find('[name=pg\\:srefX]').val(parts[0]);
+          myRow.find('[name=pg\\:srefY]').val(parts[1]);
+        }
+      });
+}
+jQuery('.pgSrefSystem').live('change', function(){
+  var myRow=jQuery(this).closest('tr');
+  switch(jQuery(this).val()){";
+    $j=0;
+    foreach($srefs as $sref){
+      $parts=explode(',',$sref);
+      $systemCtrl.="<option value=\"".$j."\">".$parts[1]."</option>";
+      data_entry_helper::$javascript .= "
+    case \"".$j."\":
+      myRow.find('.X').empty().append(\"".$parts[2]." : \");
+      myRow.find('.Y').empty().append(\"".$parts[3]." : \");
+      myRow.data('system',\"".$parts[0]."\");
+      myRow.data('output',\"".$parts[4]."\");
+      break;";
+      $j++;
+    }
+    $systemCtrl.="</select></td>";
+    data_entry_helper::$javascript .= "
+  }
+  if(myRow.data('WKT')) setMySref(myRow);
+});
+jQuery('[name=pg\\:srefX],[name=pg\\:srefY]').live('change', function(){
+  if(!modPointFeature.feature) return;
+  var myRow=jQuery(this).closest('tr');
+  if(myRow.find('[name=pg\\:srefX]').val()=='' || myRow.find('[name=pg\\:srefY]').val()=='') return;
+  $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
+            \"?sref=\" + myRow.find('[name=pg\\:srefX]').val() + ', ' + myRow.find('[name=pg\\:srefY]').val() +
+            \"&system=\" + myRow.data('system') +
+            \"&callback=?\", function(data) {
+      if(typeof data.error != 'undefined')
+        alert(data.error);
+      else {
+        var parser = new OpenLayers.Format.WKT();
+        var feature = parser.read(data.wkt);
+        myRow.data('geometry',feature.geometry).data('oldGeometry',feature.geometry.clone()).data('WKT',data.wkt);
+        var replace;
+        if(jQuery('.pgDataRow').length>1){
+          var geom=[];
+          jQuery('.pgDataRow').each(function(idx,elem){geom.push(jQuery(this).data('geometry'));});
+          replace = new OpenLayers.Geometry.MultiPoint(geom);
+        } else {
+          replace=feature.geometry;
+        }
+        replaceGeom(modPointFeature.feature, SitePointLayer, modPointFeature, replace, true, true);
+      }
+    });
+});
+";
+  }
+  $retVal.=$systemCtrl;
+  $retVal.="  <td><input id=\"pgNewPoint\" type=\"button\" value=\"".lang::get('LANG_AddPoint')."\"></td><td></td></tr>";
+  $retVal.="</tbody></table>";
+  $retVal.="</fieldset>";
+  data_entry_helper::$javascript .= "
+jQuery('.pgSrefSystem').change();
+jQuery('.pgDeletePoint').live('click', function(){
+  if(!modPointFeature.feature) return;
+  var myRow=jQuery(this).closest('tr').remove();
+  switch(jQuery('.pgDataRow').length){
+    case 0:
+      var feature = modPointFeature.feature;
+      modPointFeature.unselectFeature(feature);
+      SitePointLayer.destroyFeatures([feature]);
+      break;
+    case 1:
+      replaceGeom(modPointFeature.feature, SitePointLayer, modPointFeature,
+          new OpenLayers.Geometry.Point(jQuery('.pgDataRow').data('geometry')), true, true);
+      break;
+    default:
+      var geom=[];
+      jQuery('.pgDataRow').each(function(idx,elem){geom.push(jQuery(this).data('geometry'));});
+      replaceGeom(modPointFeature.feature, SitePointLayer, modPointFeature,
+          new OpenLayers.Geometry.MultiPoint(geom), true, true);
+      break;
+  }
+});
+function onPopupClose(evt) {
+  // 'this' is the popup.
+  this.row.data('popup',null);
+  SiteLabelLayer.map.removePopup(this);
+  this.row=null;
+  this.destroy();
+}
+function removePopups() {
+  jQuery('.pgDataRow').each(function(idx,elem){
+    var popup = jQuery(this).data('popup');
+    if(popup){
+      jQuery(this).data('popup',null);
+      SiteLabelLayer.map.removePopup(popup);
+      popup.row=null;
+      popup.destroy();
+    }
+  });
+}
+jQuery('.pgHighlightPoint').live('click', function(){
+  if(!modPointFeature.feature) return;
+  var myRow=jQuery(this).closest('tr');
+  removePopups();
+  popup = new OpenLayers.Popup.FramedCloud(\"featurePopup\",
+               myRow.data('geometry').getBounds().getCenterLonLat(),
+               new OpenLayers.Size(100,100),
+               \"(\" + myRow.find('[name=pg\\:srefX]').val() + ', ' + myRow.find('[name=pg\\:srefY]').val() + \")\",
+               null, true, onPopupClose);
+  myRow.data('popup',popup);
+  popup.row = myRow;
+  SiteLabelLayer.map.addPopup(popup);
+});
+addPGPoint = function(geometry){
+  removePopups();
+  var wkt= getwkt(geometry, true, true);
+  var newRow=jQuery('<tr class=\"pgDataRow\">');
+  newRow.append('<td><label class=\"auto-width X\" >".lang::get('LANG_Grid_X_Label')." :</label><input type=\"text\" name=\"pg:srefX\" value=\"\" /></td>');
+  newRow.append('<td><label class=\"auto-width Y\" >".lang::get('LANG_Grid_Y_Label')." :</label><input type=\"text\" name=\"pg:srefY\" value=\"\" /></td>');
+  newRow.append('".$systemCtrl."');
+  newRow.append('<td><input class=\"pgDeletePoint\" type=\"button\" value=\"".lang::get('LANG_DeletePoint')."\"></td>');
+  newRow.append('<td><input class=\"pgHighlightPoint\" type=\"button\" value=\"".lang::get('LANG_HighlightPoint')."\"></td>');
+  newRow.data('WKT',wkt).data('geometry',geometry).data('oldGeometry',geometry.clone()).data('popup',null);
+  jQuery('#pointgridtable').append(newRow);
+  newRow.find('.pgSrefSystem').val(jQuery('.pgAddRow').find('.pgSrefSystem').val()).change();
+};
+modPGPoint = function(geometry){
+  removePopups();
+  if(geometry==null) geomList=[];
+  else if(geometry.CLASS_NAME == \"OpenLayers.Geometry.Point\") geomList=[geometry];
+  else geomList=geometry.components;
+  jQuery('.pgDataRow').each(function(idx,elem){
+    if(jQuery(this).data('geometry').x != jQuery(this).data('oldGeometry').x || 
+        jQuery(this).data('geometry').y != jQuery(this).data('oldGeometry').y){
+      // the geometry, which is the same object as the feature, has moved
+      var wkt= getwkt(jQuery(this).data('geometry'), true, true);
+      jQuery(this).data('WKT',wkt).data('oldGeometry',jQuery(this).data('geometry').clone());
+      jQuery(this).find('.pgSrefSystem').change();
+    }
+    var found=false;
+    for(var i=0; i< geomList.length; i++){
+      if(geomList[i]==jQuery(this).data('geometry')) found=true;
+    }
+    if(!found) jQuery(this).remove();
+  });
+}
+jQuery('#pgNewPoint').click(function(){
+  // only add if the modPointFeature is active.
+  if(!modPointFeature.active) return;
+  if($('#new-srefX').val()=='' || $('#new-srefY').val()=='') return;
+  $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
+            \"?sref=\" + $('#new-srefX').val() + ', ' + $('#new-srefY').val() +
+            \"&system=\" + jQuery('.pgAddRow').data('system') +
+            \"&callback=?\", function(data) {
+      if(typeof data.error != 'undefined') alert(data.error);
+      else {
+        var parser = new OpenLayers.Format.WKT();
+        var feature = parser.read(data.wkt);
+        addDrawnPointToSelection(feature.geometry);
+        $('#new-srefX').val('');
+        $('#new-srefY').val('');
+      }
+    });
+});
+populatePGrid= function(){
+  clearPGrid();
+  if(modPointFeature.feature){
+    if(modPointFeature.feature.geometry.CLASS_NAME == \"OpenLayers.Geometry.Point\"){
+      addPGPoint(modPointFeature.feature.geometry);
+    } else { // multipoint
+      for(var i=0; i< modPointFeature.feature.geometry.components.length; i++){
+        addPGPoint(modPointFeature.feature.geometry.components[i]);
+      }
+    }
+  }
+  jQuery('.pgSrefSystem').change(); // triggers the population of the X/Y for all rows
+};
+clearPGrid= function(){jQuery('.pgDataRow').remove();}
+";
+  return $retVal;
+}
+
 function iform_mnhnl_SrefFields($auth, $args, $incLocTypeDropDown=false) {
   if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
   $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);	
@@ -1977,11 +2272,7 @@ _setSref = function(sref){
     $('#imp-srefY').val(parts[1]);
 }};
 setSref = function(geometry, sref){
-  var centre;
-  if(geometry.CLASS_NAME == \"OpenLayers.Geometry.Point\") 
-    centre = geometry;
-  else
-    centre = geometry.getCentroid();
+  var centre = getCentroid(geometry);
   if(typeof hook_setSref != 'undefined')
     hook_setSref(centre);
   if(sref=='TBC'){
@@ -1996,6 +2287,33 @@ setSref = function(geometry, sref){
     _setSref(sref);
   }
 };
+$('#imp-srefX,#imp-srefY').change(function() {
+  if($('#imp-srefX').val()!='' && $('#imp-srefY').val()!='') {
+    $('#imp-sref').val($('#imp-srefX').val() + ', ' + $('#imp-srefY').val());
+    handleEnteredSref($('#imp-sref').val());
+  }
+});
+function handleEnteredSref(value) {
+  if (value!='') {
+    $.getJSON(\"".data_entry_helper::$base_url."/index.php/services/spatial/sref_to_wkt\"+
+            \"?sref=\" + value +
+            \"&system=2169\" +
+            \"&callback=?\", function(data) {
+      if(typeof data.error != 'undefined')
+        alert(data.error);
+      else {
+        $('#centroid_geom').val(data.wkt);
+        var parser = new OpenLayers.Format.WKT();
+        var feature = parser.read(data.wkt);
+        for(var i=0; i<SitePointLayer.features.length; i++){
+          if(SitePointLayer.features[i].attributes.highlighted == true){
+            replaceGeom(SitePointLayer.features[i], SitePointLayer, modPointFeature, feature.geometry, false, false);
+          }
+        }
+      }
+    });
+  }
+}
 ";
 	$retVal = "<input type=\"hidden\" id=\"imp-sref\" name=\"location:centroid_sref\" value=\"".data_entry_helper::$entity_to_load['location:centroid_sref']."\" />
 <input type=\"hidden\" id=\"imp-geom\" name=\"location:centroid_geom\" value=\"".data_entry_helper::$entity_to_load['location:centroid_geom']."\" />
@@ -2019,9 +2337,9 @@ setSref = function(geometry, sref){
         $dummy = explode(',',data_entry_helper::$entity_to_load["location:centroid_sref"]);
     }
 	$retVal .= "<label for=\"imp-srefX\" class=\"auto-width\" >".lang::get('LANG_Location_X_Label').":</label>
-  <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" value=\"".trim($dummy[0])."\" disabled=\"disabled\"/>
-<label for=\"imp-srefX\" class=\"auto-width prepad\" >".lang::get('LANG_Location_Y_Label').":</label>
-  <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" value=\"".trim($dummy[1])."\" disabled=\"disabled\"/>
+  <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" value=\"".trim($dummy[0])."\" readonly=\"readonly\"/>
+<label for=\"imp-srefY\" class=\"auto-width prepad\" >".lang::get('LANG_Location_Y_Label').":</label>
+  <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" value=\"".trim($dummy[1])."\" readonly=\"readonly\"/>
 <span id=\"coords-text\" class=\"coords-text\">".lang::get('LANG_LatLong_Bumpf')."</span><br />
 ";
 	return $retVal;

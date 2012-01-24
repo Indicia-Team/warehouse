@@ -5,6 +5,7 @@
   <query>
   SELECT s.id as sample_id,
   		sav1.text_value as creator,
+  		s.recorder_names as recorder_names,
   		tpassage.term as passage,
   		s.location_name,
   		s.date_start,
@@ -40,6 +41,7 @@
     <column name='sample_id' display='ID' />
     <column name='location_name' display='Square (5x5km)' />
     <column name='creator' display='Entered By' />
+    <column name='recorder_names' display='Observer(s)' />
     <column name='date' display='Year' />
     <column name='passage' display='Passage' />
   </columns>

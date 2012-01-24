@@ -165,10 +165,11 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@tabNameFilter=SpatialRef\r\n".
               "[place search]\r\n".
               "[map]\r\n".
-              "@layers=['SiteAreaLayer','SitePathLayer','SitePointLayer','SiteLabelLayer']\r\n".
+              "@layers=[\"SiteAreaLayer\",\"SitePathLayer\",\"SitePointLayer\",\"SiteLabelLayer\"]\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
               "@maxZoom=13\r\n".
+              "[point grid]\r\n".
               "[location comment]\r\n".
               "[*]\r\n".
              "=Other Information=\r\n".
@@ -220,12 +221,26 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-        <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_species_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batspeciesreport">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_species_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batspeciesreport">
       <p>'.lang::get('LANG_Species_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
   </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
+    iform_mnhnl_addCancelButton();
+    data_entry_helper::$javascript .= "
+checkRadioStatus = function(){
+  jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
+    if(this.checked)
+      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').addClass('required').removeAttr('readonly');
+    else
+      jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]').removeClass('required').val('').attr('readonly',true);
+  });
+};
+jQuery('[name^=locAttr]').filter(':radio').change(checkRadioStatus);
+checkRadioStatus();
+// we arent going to move the 'if others' field.
+";
     self::communeJS(self::$auth, $args);
     return $r;
   }
@@ -325,8 +340,8 @@ $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digit
 $.validator.messages.integer = $.validator.format(\"".lang::get('validation_integer')."\");";
       data_entry_helper::$late_javascript .= "
 $.validator.addMethod('fillgroup', function(value, element){
-	return jQuery(element).closest('table').find('input').not('[value=]').length > 0 ||
-	       jQuery(element).closest('table').parent().next().find(':checkbox').filter('[checked]').length > 0;
+	return jQuery(element).closest('tr').find(':text').not('[value=]').length > 0 ||
+	       jQuery(element).closest('tr').find(':checkbox').filter('[checked]').length > 0;
 },
   \"".lang::get('validation_fillgroup')."\");";
       
@@ -380,67 +395,6 @@ checkCheckStatus = function(){
   };
 jQuery('[name^=smpAttr]').filter(':checkbox').change(checkCheckStatus);
 checkCheckStatus();
-
-// Two aspects: need to find scClonableRow, and then do existing rows in grid, and clear row being added.
-var occAttrs = jQuery('.scClonableRow').find('.scOccAttrCell');
-var newTable = jQuery('<table class=\"fullWidth\">');
-var newElem = jQuery('<td class=\"noPadding\" colspan=".($numCols+1).">').append(newTable).insertBefore(occAttrs.filter(':first'));
-for (var i=0;i<$numRows;i++){
-	switch(i){";
-    for($i=0; $i<$numRows; $i++){
-    	data_entry_helper::$javascript .= "
-		case($i): newRow = jQuery(\"<tr><td class='ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
-    }
-    data_entry_helper::$javascript .= "
-	}
-	for (var j=0;j<$numCols;j++){
-		newRow.append(occAttrs[i+(j*$numRows)]);
-	}
-}
-var CRgroup = jQuery('.scClonableRow').find('table').find('td');
-// Do main table header
-occAttrs = jQuery('.species-grid > thead').find('th');
-var newElem = jQuery('<th>').insertBefore(occAttrs.filter(':eq($startPos)'));
-for (var i=0;i<$numRows*$numCols;i++){
-	jQuery(occAttrs[i+$startPos]).remove();
-}
-for (var i=0;i<$numCols;i++){
-	switch(i){";
-    for($i=0; $i<$numCols; $i++){
-    	data_entry_helper::$javascript .= "
-		case($i): newElem = jQuery(\"<th>".lang::get('SCLabel_Col'.($i+1))."</th>\").insertAfter(newElem); break;";
-    }
-    data_entry_helper::$javascript .= "
-	}
-}
-// Main table existing entries
-speciesRows = jQuery('.species-grid > tbody').find('tr');
-for(var j=0; j<speciesRows.length; j++){
-	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
-	occAttrs.find('input').eq(0).addClass('fillgroup');
-	newTable = jQuery('<table class=\"fullWidth\">');
-	newElem = jQuery('<td class=\"noPadding\" colspan=".($numCols+1).">').append(newTable).insertBefore(occAttrs.filter(':first'));
-	for (var i=0;i<$numRows;i++){
-		switch(i){";
-    for($i=0; $i<$numRows; $i++){
-    	data_entry_helper::$javascript .= "
-			case($i): newRow = jQuery(\"<tr><td class='ui-widget-content' width='".(100/($numCols+1))."%'>".lang::get('SCLabel_Row'.($i+1))."</td></tr>\").appendTo(newTable); break;";
-    }
-    data_entry_helper::$javascript .= "
-		}
-		for (var k=0;k<$numCols;k++){
-			newRow.append(occAttrs[i+(k*$numRows)]);
-		}
-	}
-	occAttrs.find('select').addClass('required').width('85%').after('<span class=\"deh-required\">*</span>');
-	var group = jQuery(speciesRows[j]).find('table').find('td');
-	var tallest = 0;
-	group.each(function(){ tallest = Math.max($(this).outerHeight(), tallest); });
-	group.each(function(){ 
-		$(this).height(tallest); });
-	CRgroup.each(function(){ 
-		$(this).height(tallest); });
-}
 ";
     if (isset($args['col_widths']) && $args['col_widths']){
        $colWidths=explode(',', $args['col_widths']);
@@ -519,7 +473,7 @@ hook_species_checklist_new_row=function(rowData) {
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').remove();
           } else {
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('input').eq(0).addClass('fillgroup');
-            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('select').addClass('required').width('85%').after('<span class=\"deh-required\">*</span>');
+            jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').closest('tr').find('.scOccAttrCell').find('select').addClass('required').after('<span class=\"deh-required\">*</span>');
             jQuery('.extraCommonNames').filter('[tID='+mdata[0].id+']').append(' - '+taxaList).removeClass('extraCommonNames');
           }
         }
@@ -602,7 +556,11 @@ jQuery('#smpAttr\\\\:$attrId').next().after(\"<span class='extra-text'>".lang::g
       'label'=>lang::get('Location Comment')
     ), $options)); 
   }
-  
+
+  protected static function get_control_pointgrid($auth, $args, $tabalias, $options) {
+    return iform_mnhnl_PointGrid($auth, $args, $options); 
+  }
+
   /**
    * Get the location module control
    */
@@ -671,7 +629,7 @@ hook_set_defaults=function(){
       		  ,propertyNames: [\"".$parts[6]."\"]
 });
 fillCommune = function(a1){
-  if(typeof a1.error.success == 'undefined' || a1.error.success == false){
+  if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
     alert('".lang::get('LANG_CommuneLookUpFailed')."');
     return;
   }
@@ -786,6 +744,338 @@ hook_setSref = function(geom){
     // Set it into the indicia templates
     $indicia_templates['taxon_label'] = $php;
   }
+
+    /**
+   * Get the control for species input, either a grid or a single species input control.
+   */
+  protected static function get_control_species($auth, $args, $tabalias, $options) {
+    data_entry_helper::$javascript .= "
+// Main table existing entries
+jQuery('.scCommentLabelCell').each(function(idx,elem){
+  jQuery(this).css('width',jQuery(this).find('label').css('width'));
+});
+speciesRows = jQuery('.species-grid > tbody').find('tr');
+for(var j=0; j<speciesRows.length; j++){
+	occAttrs = jQuery(speciesRows[j]).find('.scOccAttrCell');
+	occAttrs.find('input').not(':hidden').addClass('fillgroup');
+	occAttrs.find('select').addClass('required').after('<span class=\"deh-required\">*</span>');
+}
+hook_species_checklist_pre_delete_row=function(e) {
+    return confirm(\"".lang::get('Are you sure you want to delete this row?')."\");
+};
+";
+  	$extraParams = $auth['read'];
+    // we want all languages, so dont filter
+    // multiple species being input via a grid      
+    $species_ctrl_opts=array_merge(array(
+          "extra_list_id"=>$args["extra_list_id"],
+          'listId'=>$args['list_id'],
+          'label'=>lang::get('occurrence:taxa_taxon_list_id'),
+          'columns'=>1,          
+          'extraParams'=>$extraParams,
+          'survey_id'=>$args['survey_id'],
+          'occurrenceComment'=>$args['occurrence_comment'],
+          'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
+          'occurrenceImages'=>$args['occurrence_images'],
+          'PHPtaxonLabel' => true,
+          'language' => 'eng' // forced, used for termlists in attributes
+    ), $options);
+    if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
+    if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
+    call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
+    // Start by outputting a hidden value that tells us we are using a grid when the data is posted,
+    // then output the grid control
+    return '<input type="hidden" value="true" name="gridmode" />'.
+          self::mnhnl_bats_species_checklist($species_ctrl_opts);
+  }
+  
+
+  public static function mnhnl_bats_species_checklist()
+  {
+  	global $indicia_templates;
+    $options = data_entry_helper::check_arguments(func_get_args(), array('listId', 'occAttrs', 'readAuth', 'extraParams', 'lookupListId'));
+    $options = data_entry_helper::get_species_checklist_options($options);
+    data_entry_helper::add_resource('json');
+    data_entry_helper::add_resource('autocomplete');
+    $occAttrControls = array();
+    $occAttrs = array();
+    // Load any existing sample's occurrence data into $entity_to_load
+    if (isset(data_entry_helper::$entity_to_load['sample:id']))
+      data_entry_helper::preload_species_checklist_occurrences(data_entry_helper::$entity_to_load['sample:id'], $options['readAuth'], false);
+    // load the full list of species for the grid, including the main checklist plus any additional species in the reloaded occurrences.
+    $options['extraParams']['view'] = 'detail';
+    $occList = self::get_species_checklist_occ_list($options);
+    // If we managed to read the species list data we can proceed
+    if (! array_key_exists('error', $occList)) {
+      $attributes = data_entry_helper::getAttributes(array(
+          'id' => null
+           ,'valuetable'=>'occurrence_attribute_value'
+           ,'attrtable'=>'occurrence_attribute'
+           ,'key'=>'occurrence_id'
+           ,'fieldprefix'=>"{fieldname}"
+           ,'extraParams'=>$options['readAuth']
+           ,'survey_id'=>array_key_exists('survey_id', $options) ? $options['survey_id'] : null
+      ));
+      // Get the attribute and control information required to build the custom occurrence attribute columns
+      self::species_checklist_prepare_attributes($options, $attributes, $occAttrControls, $occAttrs);
+      $grid = "<p>".lang::get('LANG_SpeciesInstructions')."</p>\n";
+      if (isset($options['lookupListId'])) {
+        $grid .= self::get_species_checklist_clonable_row($options, $occAttrControls, $attributes);
+      }
+      $grid .= '<table class="ui-widget ui-widget-content species-grid '.$options['class'].'" id="'.$options['id'].'">';
+      // No header for this one.
+      $rows = array();
+      $rowIdx = 0;
+      foreach ($occList as $occ) {
+        $ttlid = $occ['taxon']['id'];
+        $firstCell = data_entry_helper::mergeParamsIntoTemplate($occ['taxon'], 'taxon_label');
+        if ($options['PHPtaxonLabel']) $firstCell=eval($firstCell);
+        $colspan = ' colspan="'.count($attributes).'"';
+        // assume always removeable and presence is hidden.
+        $firstrow = '<td class="ui-state-default remove-row" style="width: 1%" rowspan="'.($options['occurrenceComment']?"3":"2").'" >X</td>';
+        $firstrow .= str_replace('{content}', $firstCell, str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']));
+        $existing_record_id = $occ['id'];
+        $hidden = ($options['rowInclusionCheck']=='checkbox' ? '' : ' style="display:none"');
+        if ($options['rowInclusionCheck']=='alwaysFixed' || $options['rowInclusionCheck']=='alwaysRemovable' ||
+            (data_entry_helper::$entity_to_load!=null && array_key_exists("sc:$ttlid:$existing_record_id:present", data_entry_helper::$entity_to_load))) {
+          $checked = ' checked="checked"';
+        } else {
+          $checked='';
+        }
+        $firstrow .= "<td class=\"scPresenceCell\"$hidden>".($options['rowInclusionCheck']!='hasData' ? "<input type=\"hidden\" class=\"scPresence\" name=\"sc:$ttlid:$existing_record_id:present\" value=\"0\"/><input type=\"checkbox\" class=\"scPresence\" name=\"sc:$ttlid:$existing_record_id:present\" $checked />" : '')."</td>";
+        $secondrow = "";
+        foreach ($occAttrControls as $attrId => $control) {
+          if ($existing_record_id) {
+            $search = preg_grep("/^sc:$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
+            $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid:$existing_record_id:occAttr:$attrId";
+          } else {
+            $ctrlId = "sc:$ttlid:x$rowIdx:occAttr:$attrId";
+          }
+          if (isset(data_entry_helper::$entity_to_load[$ctrlId])) {
+            $existing_value = data_entry_helper::$entity_to_load[$ctrlId];
+          } elseif (array_key_exists('default', $attributes[$attrId])) {
+            $existing_value = $attributes[$attrId]['default'];
+          } else
+            $existing_value = '';
+          $oc = str_replace('{fieldname}', $ctrlId, $control);
+          if (!empty($existing_value)) {
+            // For select controls, specify which option is selected from the existing value
+            if (substr($oc, 0, 7)=='<select') {
+              $oc = str_replace('value="'.$existing_value.'"',
+                  'value="'.$existing_value.'" selected="selected"', $oc);
+            } else if(strpos($oc, 'checkbox') !== false) {
+              if($existing_value=="1")
+                $oc = str_replace('type="checkbox"', 'type="checkbox" checked="checked"', $oc);
+            } else {
+              $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+            }
+            // assume all error handling/validation done client side
+          }
+          $secondrow .= str_replace(array('{label}', '{content}'), array(lang::get($attributes[$attrId]['caption']), $oc), $indicia_templates[$options['attrCellTemplate']]);
+        }
+        // no confidential checkbox.
+        $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].'">'.$firstrow.'</tr>';
+        $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.$secondrow.'</tr>'; // no images.
+        $thirdrow = "";
+        if ($options['occurrenceComment']) {
+          $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.
+"<td class=\"ui-widget-content scCommentCell\" $colspan>
+  <table class=\"scCommentTable\">
+    <tbody class=\"scCommentTableBody\" ><tr>
+      <td class=\"scCommentLabelCell\">
+        <label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment")." : </label>
+      </td>
+      <td>
+        <input type=\"text\" class=\"scComment\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]."\">
+      </td>
+    </tr></tbody>
+  </table>
+</td></tr>";
+        }
+        $rowIdx++;
+      }
+      $grid .= "\n<tbody>\n";
+      if (count($rows)>0) $grid .= implode("\n", $rows)."\n";
+      else $grid .= "<tr style=\"display: none\"><td></td></tr>\n";
+      $grid .= "</tbody>\n</table>\n";
+      if ($options['rowInclusionCheck']=='hasData') $grid .= '<input name="rowInclusionCheck" value="hasData" type="hidden" />';
+      // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
+      // selecting the species from this list. Add the required controls for this.
+      if (isset($options['lookupListId'])) {
+        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species to list')." : </label><input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
+        // Javascript to add further rows to the grid
+        data_entry_helper::$javascript .= "var formatter = function(rowData,taxonCell) {
+  taxonCell.html(\"".lang::get('loading')."\");
+  jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/' + rowData.id +
+            '?mode=json&view=detail&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']["nonce"]."&callback=?', function(mdata) {
+    if(mdata instanceof Array && mdata.length>0){
+      jQuery.getJSON('".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list' +
+            '?mode=json&view=detail&auth_token=".$options['readAuth']['auth_token']."&nonce=".$options['readAuth']["nonce"]."&taxon_meaning_id='+mdata[0].taxon_meaning_id+'&taxon_list_id=".$options["extra_list_id"]."&callback=?', function(data) {
+        var taxaList = '';
+         if(data instanceof Array && data.length>0){
+          for (var i=0;i<data.length;i++){
+            if(data[i].preferred == 'f')
+              taxaList += (taxaList == '' ? '' : ', ')+data[i].taxon;
+            else
+              taxaList = '<em>'+data[i].taxon+'</em>'+(taxaList == '' ? '' : ', '+taxaList);
+            }
+          }
+          taxonCell.html(taxaList).removeClass('extraCommonNames');
+        });
+    }})
+}  
+bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$options['id']."\", \"".$options['lookupListId']."\", {\"auth_token\" : \"".
+            $options['readAuth']['auth_token']."\", \"nonce\" : \"".$options['readAuth']['nonce']."\"}, formatter, \"".lang::get('LANG_Duplicate_Taxon')."\");
+";
+      }
+      // No help text
+      return $grid;
+    } else {
+      return $taxalist['error'];
+    }
+  }
+
+  public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
+    $reliabilityAttr=iform_mnhnl_getAttrID(self::$auth, array('survey_id'=>$options['survey_id']), 'occurrence', 'Occurrence Reliability');
+    $idx=0;
+    if (array_key_exists('occAttrs', $options))
+      $attrs = $options['occAttrs'];
+    else
+      // There is no specified list of occurrence attributes, so use all available for the survey
+      $attrs = array_keys($attributes);
+    foreach ($attrs as $occAttrId) {
+      // test that this occurrence attribute is linked to the survey
+      if (!isset($attributes[$occAttrId]))
+        throw new Exception("The occurrence attribute $occAttrId requested for the grid is not linked with the survey.");
+      $attrDef = array_merge($attributes[$occAttrId]);
+      $occAttrs[$occAttrId] = $attrDef['caption'];
+      // Get the control class if available. If the class array is too short, the last entry gets reused for all remaining.
+      $ctrlOptions = array(
+        'class'=>self::species_checklist_occ_attr_class($options, $idx, $attrDef['untranslatedCaption']) .
+            (isset($attrDef['class']) ? ' '.$attrDef['class'] : ''),
+        'extraParams' => $options['readAuth'],
+        'suffixTemplate' => 'nosuffix',
+        'language' => $options['language'] // required for lists eg radio boxes: kept separate from options extra params as that is used to indicate filtering of species list by language
+      );
+      if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
+      if(isset($options['blankText'])) $ctrlOptions['blankText']=$options['blankText'];
+      if($occAttrId==$reliabilityAttr) unset($attrDef['caption']);
+      $attrDef['fieldname'] = '{fieldname}';
+      $attrDef['id'] = '{fieldname}';
+      $occAttrControls[$occAttrId] = data_entry_helper::outputAttribute($attrDef, $ctrlOptions);
+      $idx++;
+    }
+  }
+  
+  /**
+   * When the species checklist grid has a lookup list associated with it, this is a
+   * secondary checklist which you can pick species from to add to the grid. As this happens,
+   * a hidden table is used to store a clonable row which provides the template for new rows
+   * to be added to the grid.
+   */
+  private static function get_species_checklist_clonable_row($options, $occAttrControls, $attributes) {
+    global $indicia_templates;
+    // assume always removeable and presence is hidden.
+//    $r = '<table border=3 id="'.$options['id'].'-scClonable">';
+    $r = '<table style="display: none" id="'.$options['id'].'-scClonable">';
+    $r .= '<tbody><tr class="scClonableRow" id="'.$options['id'].'-scClonableRow1"><td class="ui-state-default remove-row" style="width: 1%" rowspan="'.($options['occurrenceComment']?"3":"2").'">X</td>';
+    $colspan = ' colspan="'.count($attributes).'"';
+    $r .= str_replace('{colspan}', $colspan, $indicia_templates['taxon_label_cell']).
+        '<td class="scPresenceCell" style="display:none"><input type="checkbox" class="scPresence" name="" value="" /></td>'.
+        '</tr><tr class="scClonableRow scDataRow" id="'.$options['id'].'-scClonableRow2">';
+    $idx = 0;
+    foreach ($occAttrControls as $attrId=>$oc) {
+      $class = self::species_checklist_occ_attr_class($options, $idx, $attributes[$attrId]['caption']);
+      if (isset($attributes[$attrId]['default']) && !empty($attributes[$attrId]['default'])) {
+        $existing_value=$attributes[$attrId]['default'];
+        // For select controls, specify which option is selected from the existing value
+        if (substr($oc, 0, 7)=='<select') {
+          $oc = str_replace('value="'.$existing_value.'"',
+              'value="'.$existing_value.'" selected="selected"', $oc);
+        } else {
+          $oc = str_replace('value=""', 'value="'.$existing_value.'"', $oc);
+        }
+      }
+      $r .= str_replace(array('{content}', '{class}'),
+          array(str_replace('{fieldname}', "sc:-ttlId-::occAttr:$attrId", $oc), $class.'Cell'),
+          $indicia_templates['attribute_cell']
+      );
+      $idx++;
+    }
+    if ($options['occurrenceComment']) {
+      $r .= "</tr><tr class=\"scClonableRow scDataRow\" id=\"".$options['id']."-scClonableRow3\">
+<td class=\"ui-widget-content scCommentCell\" ".$colspan.">
+  <table class=\"scCommentTable\">
+    <tbody class=\"scCommentTableBody\" ><tr>
+      <td class=\"scCommentLabelCell\">
+        <label for=\"sc:-ttlId-::occurrence:comment\" class=\"auto-width\">".lang::get("Comment")." : </label>
+      </td>
+      <td>
+        <input type=\"text\" class=\"scComment\" name=\"sc:-ttlId-::occurrence:comment\" id=\"sc:-ttlId-::occurrence:comment\" value=\"\">
+      </td>
+    </tr></tbody>
+  </table>
+</td>";
+    }
+    $r .= "</tr></tbody></table>\n";
+    return $r;
+  }
+  /**
+   * Returns the class to apply to a control for an occurrence attribute, identified by an index.
+   * @access private
+   */
+  private static function species_checklist_occ_attr_class($options, $idx, $caption) {
+    return (array_key_exists('occAttrClasses', $options) && $idx<count($options['occAttrClasses'])) ?
+          $options['occAttrClasses'][$idx] :
+          'sc'.str_replace(' ', '', ucWords($caption)); // provide a default class based on the control caption
+  }
+  
+  
+  public static function get_species_checklist_occ_list($options) {
+    // at this point the data_entry_helper::$entity_to_load has been preloaded with the occurrence data.
+  	// Get the list of species that are always added to the grid
+    if (isset($options['listId']) && !empty($options['listId'])) {
+      $taxalist = data_entry_helper::get_population_data($options);
+    } else
+      $taxalist = array();
+    // copy the options array so we can modify it
+    $extraTaxonOptions = array_merge(array(), $options);
+    // We don't want to filter the taxa to be added, because if they are in the sample, then they must be included whatever.
+    unset($extraTaxonOptions['extraParams']['taxon_list_id']);
+    unset($extraTaxonOptions['extraParams']['preferred']);
+    unset($extraTaxonOptions['extraParams']['language_iso']);
+     // append the taxa to the list to load into the grid
+    $fullTaxalist = data_entry_helper::get_population_data($extraTaxonOptions);
+    $taxaLoaded = array();
+    $occList = array();
+    $maxgensequence = 0;
+    foreach(data_entry_helper::$entity_to_load as $key => $value) {
+      $parts = explode(':', $key,4);
+      // Is this taxon attribute data?
+      if (count($parts) > 2 && $parts[0] == 'sc' && $parts[1]!='-ttlId-') {
+        if($parts[2]=='') $occList['error'] = 'ERROR PROCESSING entity_to_load: found name '.$key.' with no sequence/id number in part 2';
+        else if(!isset($occList[$parts[2]])){
+          $occ['id'] = $parts[2];
+          foreach($fullTaxalist as $taxon){
+            if($parts[1] == $taxon['id']) $occ['taxon'] = $taxon;
+            $taxaLoaded[] = $parts[1];
+          }
+          $occList[$parts[2]] = $occ;
+          if(!is_numeric($parts[2])) $maxgensequence = intval(max(substr($parts[2],1),$maxgensequence));
+        }
+      }
+    }
+    if (!isset(data_entry_helper::$entity_to_load['sample:id']))
+      foreach ($taxalist as $taxon){
+        if(!in_array($taxon['id'], $taxaLoaded)) {
+          $maxgensequence++;
+          $occ['id'] = 'x'.$maxgensequence;
+          $occ['taxon'] = $taxon;
+          $occList[] = $occ;
+        }
+      }
+  	return $occList;
+  }
   
   /**
    * Handles the construction of a submission array from a set of form values.
@@ -850,7 +1140,7 @@ hook_setSref = function(geom){
       array(array('display' => lang::get('Actions'),
                   'actions' => array(array('caption' => lang::get('Edit'), 'url'=>'{currentUrl}', 'urlParams'=>array('sample_id'=>'{sample_id}')))),
             array('display' => '', 'actions' => 
-                  array(array('caption' => 'Delete', 'javascript'=>'deleteSurvey({sample_id})'))));
+                  array(array('caption' => lang::get('Delete'), 'javascript'=>'deleteSurvey({sample_id})'))));
   }
   
 } 
