@@ -5,7 +5,7 @@ function selectRow(tr) {
   // The row ID is row1234 where 1234 is the occurrence ID. 
   occurrence_id = tr.id.substr(3);
   $.getJSON(
-    indiciaData.ajaxUrl + '/details' + urlSep + 'occurrence_id=' + occurrence_id,
+    indiciaData.ajaxUrl + '/details/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
     null,
     function (data) {
       current_record = data;

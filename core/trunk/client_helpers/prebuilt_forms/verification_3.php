@@ -438,6 +438,7 @@ rule=all'
       $r = str_replace(array('{grid}'), array($grid), self::get_template_grid_left($args, $auth));
     $link = data_entry_helper::get_reload_link_parts();
     global $user;
+    data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.rootUrl = "'.$link['path']."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";
