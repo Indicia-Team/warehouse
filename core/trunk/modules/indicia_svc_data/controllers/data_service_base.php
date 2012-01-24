@@ -152,9 +152,9 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
   protected function csv_encode($array)
   {
     // Get the column titles in the first row
-    if(!is_array($array) || count($array) == 0)
+    if(!is_array($array) || !isset($array['records']) || !is_array($array['records']) || count($array['records']) == 0)
       return '';
-    $headers = array_keys($array[0]);
+    $headers = array_keys($array['records'][0]);
     if(isset($this->view_columns)){
       $newheaders = array();
       foreach ($headers as $header) {
@@ -174,7 +174,7 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
       $headers = $newheaders;
     }
     $result = $this->get_csv($headers);
-    foreach ($array as $row) {
+    foreach ($array['records'] as $row) {
       if(isset($this->view_columns)){
         $newrow = array();
         foreach ($row as $key => $value) {
