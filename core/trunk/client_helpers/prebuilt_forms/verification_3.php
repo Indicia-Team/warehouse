@@ -91,7 +91,8 @@ occattrs='
           'default'=>'id=
 taxon_group_id=
 record_status=C
-rule=all'
+rule=all
+searchArea='
         ), array(
           'name' => 'items_per_page',
           'caption' => 'Items per page',
@@ -273,7 +274,7 @@ rule=all'
       $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
-    $r .= '<div id="click-record-notice">'.t('Click on a record to view the details').'</div>';
+    $r .= self::instructions('grid on the left');    
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
@@ -310,6 +311,7 @@ rule=all'
   
   private static function get_template_with_map($args, $auth, $extraParams, $paramDefaults) {
     $r .= '<div id="outer-with-map" class="ui-helper-clearfix">';
+    $r .= '{paramsForm}';
     $r .= '<div id="map-and-record" style="clear: both;"><div id="summary-map" class="left">';
     $options = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
@@ -335,7 +337,7 @@ rule=all'
     ));
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
-    $r .= '<div id="click-record-notice">'.t('Click on a record to view the details').'</div>';
+    $r .= self::instructions('grid below');    
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
@@ -363,6 +365,24 @@ rule=all'
     if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
       $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
     $r .= '</div></div>';
+    return $r;
+  }
+  
+  /**
+   * Constructs HTML for a block of instructions. 
+   * @param string $gridPos Pass in a description of where the records grid is relative to the instruction  block, e.g. 'grid below' or 'grid on the left'
+   * @return string HTML for the instruction div
+   */
+  private static function instructions($gridpos) {
+    $r = '<div id="click-record-notice">'.lang::get('You can').":\n<ul>\n";
+    $r .= '<li>'.lang::get("Click on a record in the $gridpos to view the details.")."</li>\n";
+    $r .= '<li>'.lang::get('When viewing the record details, verify, reject or email the record to someone for checking.')."</li>\n";
+    $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";    
+    $r .= '<li>'.lang::get('Use the <strong>Report Parameters</strong> box to filter the list of records to verify.')."</li>\n";
+    $r .= '<li>'.lang::get('When viewing a list of clean records with no verification rule violations, click the <strong>Verify all visible</strong> button to quickly verify records.')."</li>\n";
+    $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Run Report</strong> button in the <strong>Report Parameters</strong> box.')."</li>\n";
+    $r .= '<li>'.lang::get('Use the <strong>Buffer (m)</strong> input box to buffer your lines, polygons or points to search against.')."</li>\n";
+    $r .= '</ul></div>';
     return $r;
   }
  
@@ -422,20 +442,26 @@ rule=all'
       'mode' => 'report',
       'readAuth' => $auth,
       'rowId' => 'occurrence_id',
-      'itemsPerPage' =>isset($args['items_per_page']) ? $args['items_per_page'] : 20,
-      'autoParamsForm' => true,
+      'itemsPerPage' =>isset($args['items_per_page']) ? $args['items_per_page'] : 20,      
       'extraParams' => $extraParams,
       'paramDefaults' => $paramDefaults,
       'fieldsetClass' => 'collapsible collapsed',
       'reportGroup' => 'verification'
     );
-    if (!empty($args['columns_config']))
+    if (!empty($args['columns_config'])) {
+      $opts['autoParamsForm'] = true;
       $opts['columns'] = json_decode($args['columns_config'], true);
-    $grid = data_entry_helper::report_grid($opts);
-    if (isset($args['show_map']) && $args['show_map'])
-      $r = str_replace(array('{grid}'), array($grid), self::get_template_with_map($args, $auth, $extraParams, $paramDefaults));
-    else
+    } if (isset($args['show_map']) && $args['show_map']) {
+      $opts['paramsOnly']=true;
+      $paramsForm = data_entry_helper::report_grid($opts);
+      $opts['paramsOnly']=false;
+      $opts['autoParamsForm']=false;
+      $grid = data_entry_helper::report_grid($opts);
+      $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $paramsForm), self::get_template_with_map($args, $auth, $extraParams, $paramDefaults));
+    } else {
+      $grid = data_entry_helper::report_grid($opts);
       $r = str_replace(array('{grid}'), array($grid), self::get_template_grid_left($args, $auth));
+    }
     $link = data_entry_helper::get_reload_link_parts();
     global $user;
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
