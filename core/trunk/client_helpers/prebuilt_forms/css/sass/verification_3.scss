@@ -125,7 +125,13 @@ button.default-button {
   }
 }
 
-#click-record-notice {
+#instructions {
   padding: 1em;
   @include background(linear-gradient(top, lighten($default-color, 60%), lighten($default-color, 30%)));
+  li {
+    background-image: none;
+    list-style-type: circle;
+    list-style-position:inside;
+    padding-top: 0.1em;
+  }
 }

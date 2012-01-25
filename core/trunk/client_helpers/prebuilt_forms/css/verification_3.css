@@ -305,7 +305,7 @@ button.default-button:hover {
 }
 
 /* line 128, sass/verification_3.scss */
-#click-record-notice {
+#instructions {
   padding: 1em;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #c2e0ee));
   background: -webkit-linear-gradient(top, #ffffff, #c2e0ee);
@@ -313,4 +313,11 @@ button.default-button:hover {
   background: -o-linear-gradient(top, #ffffff, #c2e0ee);
   background: -ms-linear-gradient(top, #ffffff, #c2e0ee);
   background: linear-gradient(top, #ffffff, #c2e0ee);
+}
+/* line 131, sass/verification_3.scss */
+#instructions li {
+  background-image: none;
+  list-style-type: circle;
+  list-style-position: inside;
+  padding-top: 0.1em;
 }
