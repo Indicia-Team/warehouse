@@ -121,4 +121,8 @@ class Forgotten_Password_Controller extends Indicia_Controller {
     url::redirect('user');
   }
 
+  protected function page_authorised()
+  {
+    return true;
+  }
 }

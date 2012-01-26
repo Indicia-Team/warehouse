@@ -172,4 +172,9 @@ class New_Password_Controller extends Indicia_Controller {
 
     }
   }
+  
+  protected function page_authorised()
+  {
+    return true;
+  }
 }
