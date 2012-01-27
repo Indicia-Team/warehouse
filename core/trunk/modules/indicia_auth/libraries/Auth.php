@@ -294,7 +294,8 @@ class Auth_Core {
     $user = ORM::factory('user')->like(array('username' => $username_or_email))->find();
     if ( ! $user->loaded )
     {
-      $person = ORM::factory('person', array('email_address' => $username_or_email));
+      // Use like for case insensitive comparison. Setting $auto = false forces exact match
+      $person = ORM::factory('person')->like('email_address', $username_or_email, false)->find();
       if ( ! $person->loaded )
       {
         return array('error_message' => 'Not a valid Username or Email address');
