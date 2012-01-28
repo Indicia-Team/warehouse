@@ -47,7 +47,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
   }
   
   /**
-  * Override the default index functionality to filter by termlist.
+  * Override the default index functionality to filter by website.
   */
   public function index()
   {
@@ -71,7 +71,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
   protected function getDefaults() {
     $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
-      // List id is passed as first argument in URL when creating
+      // Website id is passed as first argument in URL when creating
       $r['websites_website_agreement:website_id'] = $this->uri->argument(1);
     }
     return $r;
@@ -103,7 +103,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
   }
   
   /**
-   * Define non-standard behaviuor for the breadcrumbs, since this is accessed via a website list
+   * Define non-standard behaviour for the breadcrumbs, since this is accessed via a website list
    */
   protected function defineEditBreadcrumbs() {
     $this->page_breadcrumbs[] = html::anchor('website', 'Websites');

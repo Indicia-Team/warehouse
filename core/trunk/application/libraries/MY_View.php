@@ -38,6 +38,7 @@ class View extends View_Core {
    * for the other tabs.
    */
   public function render($print = FALSE, $renderer = FALSE) {
+    
     $output = parent::render($print, $renderer);
     $tabs = $this->get_tabs();
     // If only one tab, that is the current view, so don't bother tabifying it.
@@ -100,7 +101,7 @@ jQuery(document).ready(function() {
       if ($tabs = $cache->get($cacheId)) { 
         return $tabs;
       } else {
-        // $this->tabs is set to the default tabs for the view - excluding module extensions.
+        // $this->tabs is set by the controller to the default tabs for the view - excluding module extensions.
         $tabs = array();
         if (isset($this->tabs)) {
           $this->extend_tabs($tabs, $this->tabs);
@@ -130,7 +131,7 @@ jQuery(document).ready(function() {
     $uri = URI::instance();
     foreach ($extends as $extend) {
       // if on a new record, skip tabs that are disallowed for new.
-      if (isset($extend['actions']) && !in_array($uri->segment(2), $extend['actions'])) 
+      if (isset($extend['actions']) && !in_array($uri->segment(2), $extend['actions']))
         continue;
       if ((!isset($extend['type']) || $extend['type']=='tab') && (!isset($extend['view']) || $extend['view']==$this->viewname))
         $tabs[$extend['title']]=$extend['controller'];

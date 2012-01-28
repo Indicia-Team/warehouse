@@ -345,6 +345,15 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('user');
   }
+  
+  /**
+  * Provides the /services/data/user service.
+  * Retrieves details of a single user.
+  */
+  public function user_identifier()
+  {
+    $this->handle_call('user_identifier');
+  }
 
   /**
   * Provides the /services/data/website service.

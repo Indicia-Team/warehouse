@@ -524,7 +524,12 @@ class Indicia_Controller extends Template_Controller {
           ->from('termlists')
           ->where('external_key', $termlist)
           ->get()->as_array();
-      $row=$query[0];
+      if (count($query)>0)
+        $row=$query[0];
+      elseif (count($query)>1)
+        throw new exception("Duplicate termlist $termlist.");
+      else
+        throw new exception("Termlist $termlist not found.");
       $termlist = $row->id;
     }
     $terms = $this->db

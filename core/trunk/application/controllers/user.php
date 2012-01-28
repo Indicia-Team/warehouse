@@ -231,6 +231,24 @@ class User_Controller extends Gridview_Base_Controller {
   {
     return $this->auth->logged_in('CoreAdmin') || $this->auth->has_any_website_access('admin');
   }
+  
+  /**
+   * Return a list of the tabs to display for this controller's actions.
+   */
+  protected function getTabs($name) {
+    return array(array(
+      'controller' => 'user_identifier',
+      'title' => 'Identifiers',
+      'views'=>'user_identifier/user_identifier_edit',
+      'actions'=>array('edit')
+    ), array(
+      'controller' => 'user_identifier/index_from_person',
+      'title' => 'Identifiers',
+      'views'=>'user_identifier/user_identifier_edit',
+      'actions'=>array('edit_from_person')
+    ));
+  }
+  
 }
 
 ?>
