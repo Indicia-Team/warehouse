@@ -18,6 +18,9 @@
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_user_identifiers_updater FOREIGN KEY (updated_by_id)
       REFERENCES users (id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_user_identifiers_user FOREIGN KEY (user_id) 
+      REFERENCES indicia.users (id)
       ON UPDATE NO ACTION ON DELETE NO ACTION
 )
 WITH (
@@ -39,6 +42,8 @@ CREATE INDEX fki_user_identifiers_type_termlists_terms
   ON user_identifiers
   USING btree
   (type_id);
+  
+CREATE INDEX fki_user_identifiers_user ON indicia.user_identifiers(user_id);
 
 INSERT INTO termlists (title, description, created_on, created_by_id, updated_on, updated_by_id, external_key)
 VALUES ('User Identifier Types', 'Types of user identifier, such as twitter and openid.', now(), 1, now(), 1, 'indicia:user_identifier_types');
@@ -46,4 +51,5 @@ VALUES ('User Identifier Types', 'Types of user identifier, such as twitter and 
 SELECT insert_term('openid', 'eng', null, 'indicia:user_identifier_types');
 SELECT insert_term('facebook', 'eng', null, 'indicia:user_identifier_types');
 SELECT insert_term('twitter', 'eng', null, 'indicia:user_identifier_types');
+SELECT insert_term('email', 'eng', null, 'indicia:user_identifier_types');
 

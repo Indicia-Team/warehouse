@@ -33,10 +33,8 @@ class User_Model extends ORM {
 
   protected $belongs_to = array('person', 'core_role',
     'created_by'=>'user', 'updated_by'=>'user');
-  protected $has_many = array(
-    'termlist'=>'created_by','termlist'=>'updated_by',
-    'website'=>'created_by','website'=>'updated_by',
-    'location'=>'created_by','location'=>'updated_by',
+  protected $has_and_belongs_to_many = array(
+    'websites'
   );
 
   protected $droppedFields;

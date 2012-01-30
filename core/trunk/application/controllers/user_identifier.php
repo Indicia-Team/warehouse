@@ -63,14 +63,12 @@ class User_identifier_Controller extends Gridview_Base_Controller
   public function index_from_person()
   {
     $person_id = $this->uri->argument(1);
-    echo "This should convert person to user ID!";
     $this->base_filter['person_id'] = $person_id;
     parent::index();
     $r = $this->db->select('id')
         ->from('users')
         ->where(array('person_id'=>$person_id))
         ->get()->result_array(false);
-    echo $this->db->last_query();
     $this->view->user_id = $r[0]['id'];
   }
 
