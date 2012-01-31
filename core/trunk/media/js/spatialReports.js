@@ -35,6 +35,9 @@ function storeGeomsInHiddenInput(layer, inputId) {
     } else if (geoms[0].CLASS_NAME === 'OpenLayers.Geometry.Point') {
       geom = new OpenLayers.Geometry.MultiPoint(geoms);
     }
+    if (layer.map.projection.getCode() != 'EPSG:3857') {
+      geom.transform(layer.map.projection, new OpenLayers.Projection('EPSG:3857'));
+    }
     $('#'+inputId).val(geom.toString());
   }
 }
