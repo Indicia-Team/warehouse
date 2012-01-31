@@ -375,10 +375,10 @@ searchArea='
    */
   private static function instructions($gridpos) {
     $r = '<div id="instructions">'.lang::get('You can').":\n<ul>\n";
+    $r .= '<li>'.lang::get('Use the <strong>Report Parameters</strong> box to filter the list of records to verify.')."</li>\n";
     $r .= '<li>'.lang::get("Click on a record in the $gridpos to view the details.")."</li>\n";
     $r .= '<li>'.lang::get('When viewing the record details, verify, reject or email the record to someone for checking.')."</li>\n";
     $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";    
-    $r .= '<li>'.lang::get('Use the <strong>Report Parameters</strong> box to filter the list of records to verify.')."</li>\n";
     $r .= '<li>'.lang::get('When viewing a list of clean records with no verification rule violations, click the <strong>Verify all visible</strong> button to quickly verify records.')."</li>\n";
     $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Run Report</strong> button in the <strong>Report Parameters</strong> box.')."</li>\n";
     $r .= '<li>'.lang::get('Use the <strong>Buffer (m)</strong> input box to buffer your lines, polygons or points to search against.')."</li>\n";

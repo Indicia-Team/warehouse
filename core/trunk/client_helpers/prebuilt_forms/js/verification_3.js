@@ -9,7 +9,7 @@ function selectRow(tr) {
     null,
     function (data) {
       current_record = data;
-      $('#click-record-notice').hide();
+      $('#instructions').hide();
       $('#record-details-content').show();
       if ($(tr).parents('tbody').length !== 0) {
         $(tr).parents('tbody').children('tr').removeClass('selected');

@@ -691,8 +691,13 @@ $('.ui-state-default').live('mouseout', function() {
         else
           $origWkt = empty($_POST[$fieldname]) ? '' : $_POST[$fieldname];
 
-        if (!empty($origWkt))
-          data_entry_helper::$javascript .= "  mapDiv.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(OpenLayers.Geometry.fromWKT('$origWkt'))]);\n";
+        if (!empty($origWkt)) {
+          data_entry_helper::$javascript .= "  var geom=OpenLayers.Geometry.fromWKT('$origWkt');\n";
+          data_entry_helper::$javascript .= "  if (mapDiv.map.projection.getCode() !== mapDiv.indiciaProjection.getCode()) {\n";
+          data_entry_helper::$javascript .= "    geom.transform(mapDiv.indiciaProjection, mapDiv.map.projection);\n";
+          data_entry_helper::$javascript .= "  }\n";
+          data_entry_helper::$javascript .= "  mapDiv.map.editLayer.addFeatures([new OpenLayers.Feature.Vector(geom)]);\n";
+        }
         data_entry_helper::$javascript .= "
   });
   var add_map_tools = function(opts) {\n";
