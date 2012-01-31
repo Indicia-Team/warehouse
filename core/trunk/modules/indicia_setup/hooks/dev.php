@@ -27,6 +27,11 @@ class Dev
     if($uri->segment(1) == 'setup_check' || $uri->segment(2) == 'upgrade') {
       return;
     }
+    // also do not proceed when responding to a web service call 
+    // as we may not have update permission on the database    
+    if($uri->segment(1) == 'services') {
+      return;
+    }
     // Invoke the upgrader
     $upgrader = new Upgrade_Model();
     $upgrader->run();
