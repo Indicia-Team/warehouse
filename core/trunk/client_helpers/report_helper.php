@@ -1272,7 +1272,7 @@ mapSettingsHooks.push(function(opts) {
       }
       if ($options['paramsInMapToolbar'])
         $options['helpText']=false;
-      $r .= self::build_params_form(array_merge(array('form'=>$response['parameterRequest'], 'fieldPamePrefix'=>'param', 'defaults'=>$params), $options));
+      $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'fieldNamePrefix'=>'param', 'defaults'=>$params)));
       if ($options['completeParamsForm']==true) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
             '</fieldset></form>';
