@@ -83,7 +83,7 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
       };
     } 
     // get a copy of the new row template
-    var newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
+    var extraParams, newRow =$('tr#'+gridId + '-scClonableRow').clone(true);
     // build an auto-complete control for selecting the species to add to the bottom of the grid. 
     // The next line gets a unique id for the autocomplete.
     selectorId = gridId + '-' + $('#' + gridId +' tbody')[0].childElementCount;
@@ -92,17 +92,20 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     $(newRow).html($(newRow.html().replace('{content}', speciesSelector)));
     // add the row to the bottom of the grid
     newRow.appendTo('table#' + gridId +' > tbody').removeAttr('id');
-  
+    extraParams = {
+      orderby : 'taxon',
+      mode : 'json',
+      qfield : 'taxon',
+      auth_token: readAuth.auth_token,
+      nonce: readAuth.nonce,
+      taxon_list_id: lookupListId
+    };
+    if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
+      $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
+    }
     // Attach auto-complete code to the input
     ctrl = $('#' + selectorId).autocomplete(url+'/taxa_taxon_list', {
-      extraParams : {
-        orderby : 'taxon',
-        mode : 'json',
-        qfield : 'taxon',
-        auth_token: readAuth.auth_token,
-        nonce: readAuth.nonce,
-        taxon_list_id: lookupListId
-      },
+      extraParams : extraParams,
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {
