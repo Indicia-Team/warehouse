@@ -1466,6 +1466,15 @@ class data_entry_helper extends helper_base {
   * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
   * rows to the grid. If specified, then an autocomplete text box and Add Row button are generated
   * automatically allowing the user to pick a species to add as an extra row.</li>
+  * <li><b>taxonFilterField</b><br/>
+  * If the list of species to be made available for recording is to be limited (either by species or taxon group), allows selection of 
+  * the field to filter against. Options are none (default), preferred_name, taxon_meaning_id, taxon_group. If filtering for a large list
+  * of taxa then taxon_meaning_id is more efficient.
+  * </li>
+  * <li><b>taxonFilter</b><br/>
+  * If taxonFilterField is not set to none, then pass an array of values to filter against, i.e. an array of
+  * taxon preferred names, taxon meaning ids or taxon group titles.
+  * </li>
   * <li><b>header</b><br/>
   * Include a header row in the grid? Defaults to true.</li>
   * <li><b>columns</b><br/>
@@ -1529,6 +1538,10 @@ class data_entry_helper extends helper_base {
           'at the same time has having the occurrenceImages option enabled.');
     self::add_resource('json');
     self::add_resource('autocomplete');
+    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))  {
+      $qryJson = json_encode(array('in'=>array($options['taxonFilterField'], $options['taxonFilter'])));
+      self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = {query:'$qryJson'};\n";
+    }
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
       // store some globals that we need later when creating uploaders
@@ -1846,6 +1859,10 @@ class data_entry_helper extends helper_base {
    */
   private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
     // Get the list of species that are always added to the grid
+    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))  {
+      $qryJson = json_encode(array('in'=>array($options['taxonFilterField'], $options['taxonFilter'])));
+      $options['extraParams']['query']=$qryJson;
+    }
     if (isset($options['listId']) && !empty($options['listId'])) {
       $taxalist = self::get_population_data($options);
     } else
@@ -1915,7 +1932,8 @@ class data_entry_helper extends helper_base {
         'occurrenceConfidential' => false,
         'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000),
-        'colWidths' => array()
+        'colWidths' => array(),
+        'taxonFilterField' => 'none'
     ), $options);
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))

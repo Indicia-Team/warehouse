@@ -353,6 +353,29 @@ class iform_mnhnl_dynamic_1 {
           'siteSpecific'=>true
         ),
         array(
+          'name'=>'taxon_filter_field',
+          'caption'=>'Field used to filter taxa',
+          'description'=>'If you want to allow recording for just part of the selected list(s), then select which field you will '.
+              'use to specify the filter by.',
+          'type'=>'select',
+          'options' => array(
+            'preferred_name' => 'Preferred name of the taxa',
+            'taxon_meaning_id' => 'Taxon Meaning ID',
+            'taxon_group' => 'Taxon group title'
+          ),
+          'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
+          'name'=>'taxon_filter',
+          'caption'=>'Taxon filter items',
+          'description'=>'When filtering the list of available taxa, taxa will not be available for recording unless they match one of the '.
+              'values you input in this box. Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group.',
+          'type' => 'textarea',
+          'required'=>false,
+          'group'=>'Species'
+        ),
+        array(
           'name'=>'species_names_filter',
           'caption'=>'Species Names Filter',
           'description'=>'Select the filter to apply to the species names which are available to choose from.',
@@ -861,8 +884,11 @@ class iform_mnhnl_dynamic_1 {
           'language' => iform_lang_iso_639_2($user->lang) // used for termlists in attributes
       ), $options);
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
+      if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {        
+        $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];
+        $species_ctrl_opts['taxonFilter']=helper_base::explode_lines($args['taxon_filter']);
+      }
       if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
-      
       call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
       call_user_func(array(get_called_class(), 'build_grid_autocomplete_function'), $args);
       
@@ -881,6 +907,9 @@ class iform_mnhnl_dynamic_1 {
         $extraParams['taxon_list_id'] = empty($args['extra_list_id']) ? $args['list_id'] : $args['extra_list_id'];
       else
         $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
+      if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter']))
+        // filter the taxa available to record
+        $extraParams['query'] = json_encode(array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter']))));
       $species_ctrl_opts=array_merge(array(
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'fieldname'=>'occurrence:taxa_taxon_list_id',
