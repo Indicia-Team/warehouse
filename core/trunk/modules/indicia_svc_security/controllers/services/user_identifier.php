@@ -180,9 +180,13 @@ class User_Identifier_Controller extends Service_Base_Controller {
           ->where(array(
               't.term'=>$identifier->type, 
               'ui.user_id' => $userId,
-              'ui.identifier' => "'".$identifier->identifier."'"))
+              'ui.identifier' => "'".$identifier->identifier."'",
+              't.deleted' => 'f',
+              'tlt1.deleted' => 'f',
+              'tlt2.deleted' => 'f',
+              'ui.deleted' => 'f'))
           ->get()->result_array(false);
-      if (count($r)===0) {
+      if (!count($r)) {
         // identifier does not yet exist so create it
         $this->loadIdentifierTypes();
         $new=ORM::factory('user_identifier');
