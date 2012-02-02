@@ -196,10 +196,17 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         }
         $desId = $r[0]['id'];
         // Third step - find the pre-existing taxon/taxa
+        $where = array();
+        if (!empty($taxon))
+          $where['taxon']=$taxon;
+        if (!empty($taxon))
+          $where['external_key']=$taxonExternalKey;
+        if (count($where)===0)
+          throw new exception('Missing taxon or external key - cannot link to a taxon');
         $r = $this->db
             ->select('id')
             ->from('taxa')
-            ->where(array('external_key'=>$taxonExternalKey, 'taxon'=>$taxon))
+            ->where($where)
             ->get()->result_array(false);
         // convert years to a date
         if (preg_match('/\d\d\d\d/', $startDate))
