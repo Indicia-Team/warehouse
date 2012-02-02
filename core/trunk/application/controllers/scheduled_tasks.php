@@ -73,10 +73,9 @@ class Scheduled_Tasks_Controller extends Controller {
       $params['date'] = $this->last_run_date;
       $reportEngine = new ReportEngine();
       $data=$reportEngine->requestReport($trigger->trigger_template_file.'.xml', 'local', 'xml', $params);
-
-      if (count($data['content']['data']>0)) {
+      if (count($data['content']['records']>0)) {
         $parsedData = $this->parseData($data);
-        echo $trigger->name . ": " . count($data['content']['data']) . " records found<br/>";
+        echo $trigger->name . ": " . count($data['content']['records']) . " records found<br/>";
         //Note escaping disabled in where clause to permit use of CAST expression
         $actions = $this->db
             ->select('trigger_actions.type, trigger_actions.param1, trigger_actions.param2, trigger_actions.param3, users.default_digest_mode, people.email_address, users.core_role_id')
@@ -257,7 +256,7 @@ class Scheduled_Tasks_Controller extends Controller {
     }
     // build the blocks of data, one per website, so we can tailor the output table to each recipient.
     $websiteRecordData = array();
-    foreach ($data['content']['data'] as $idx => $record) {
+    foreach ($data['content']['records'] as $idx => $record) {
       $recordAsArray = array();
       foreach ($data['content']['columns'] as $column=>$cfg) {
         if ($cfg['visible']!=='false') {
