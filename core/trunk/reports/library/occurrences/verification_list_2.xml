@@ -51,7 +51,7 @@
     <param name='record_status' display='Record Status' description='Select the record status to view data for' datatype='lookup'
         lookup_values='all:All,C:Complete,R:Rejected,S:Sent for verification,V:Verified' />
     <param name='rule' display='Verification Rules' description='Select the rules to view records for' datatype='lookup'
-        lookup_values='all:All violations,none:Clean records,period_within_year:Period within year,period:Period' emptyvalue='all' />
+        lookup_values='all:All violations,none:Clean records,period_within_year:Period within year,period:Period,species_designation:Designated species' emptyvalue='all' />
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
   </params>
