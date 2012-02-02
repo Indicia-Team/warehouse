@@ -436,8 +436,8 @@ class data_entry_helper extends helper_base {
   * </li>
   * <li><b>runtimes</b><br/>
   * Array of runtimes that the file upload component will use in order of priority. Defaults to
-  * array('silverlight','flash','html5','gears','browserplus','html4'), though flash is removed for
-  * Internet Explorer 6 and html5 is removed for Chrome. You should not normally need to change this.
+  * array('html5','silverlight','flash','gears','browserplus','html4'), though flash is removed for
+  * Internet Explorer 6. You should not normally need to change this.
   * </li>
   * <li><b>destinationFolder</b><br/>
   * Override the destination folder for uploaded files. You should not normally need to change this.
@@ -501,8 +501,6 @@ class data_entry_helper extends helper_base {
     // Flash doesn't seem to work on IE6.
     if ($browser['name']=='msie' && $browser['version']<7)
       $defaults['runtimes'] = array_diff($defaults['runtimes'], array('flash'));
-    if ($browser['name']=='chrome')
-      $defaults['runtimes'] = array_diff($defaults['runtimes'], array('html5'));
     if ($indicia_templates['file_box']!='')
       $defaults['file_boxTemplate'] = $indicia_templates['file_box'];
     if ($indicia_templates['file_box_initial_file_info']!='')
