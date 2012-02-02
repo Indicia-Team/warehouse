@@ -198,9 +198,9 @@ class Taxon_designation_Controller extends Gridview_Base_Controller {
         // Third step - find the pre-existing taxon/taxa
         $where = array();
         if (!empty($taxon))
-          $where['taxon']=$taxon;
-        if (!empty($taxon))
-          $where['external_key']=$taxonExternalKey;
+          $where['taxon']=trim($taxon);
+        if (!empty($taxonExternalKey))
+          $where['external_key']=trim($taxonExternalKey);
         if (count($where)===0)
           throw new exception('Missing taxon or external key - cannot link to a taxon');
         $r = $this->db
