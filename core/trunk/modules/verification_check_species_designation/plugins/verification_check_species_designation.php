@@ -34,7 +34,9 @@ function verification_check_species_designation_verification_rules() {
           'message'=>'This species is designated \' || td.title || \'.',
           'query' => array(
             'joins' =>
-                "join taxa_taxon_designations ttd on ttd.taxon_id=occlist.taxon_id and ttd.deleted=false ".
+                "join taxa_taxon_lists ttl1 on ttl1.id=occlist.taxa_taxon_list_id and ttl1.deleted=false ".
+                "join taxa_taxon_lists ttl2 on ttl2.taxon_meaning_id=ttl1.taxon_meaning_id and ttl2.deleted=false ".
+                "join taxa_taxon_designations ttd on ttd.taxon_id=ttl2.taxon_id and ttd.deleted=false ".
                 "join taxon_designations td on td.id=ttd.taxon_designation_id and td.deleted=false "
           )
         )
