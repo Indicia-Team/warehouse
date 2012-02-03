@@ -1825,7 +1825,7 @@ class data_entry_helper extends helper_base {
         $r .= self::get_species_checklist_col_header(lang::get('species_checklist.present'), $visibleColIdx, $options['colWidths'], $hidden);
 
         foreach ($occAttrs as $a) {
-          $r .= self::get_species_checklist_col_header($a, $visibleColIdx, $options['colWidths']) ;
+          $r .= self::get_species_checklist_col_header(lang::get($a), $visibleColIdx, $options['colWidths']) ;
         }
         if ($options['occurrenceComment']) {
           $r .= self::get_species_checklist_col_header(lang::get('Comment'), $visibleColIdx, $options['colWidths']) ;
