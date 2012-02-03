@@ -43,7 +43,9 @@ function iform_report_get_report_parameters() {
       'caption' => 'Preset Parameter Values',
       'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
-          'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Preset Parameter Values can\'t be overridden by the user.',
+          'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
+          'use {profile_*} to refer to the value of a field in the user\'s profile (replace the asterisk to make the field name match the field created in the profile). '.
+          'Parameters with preset values are not shown in the parameters form and therefore can\'t be overridden by the user.',
       'type' => 'textarea',
       'required' => false,
       'group'=>'Report Settings'
@@ -52,8 +54,9 @@ function iform_report_get_report_parameters() {
       'caption' => 'Default Parameter Values',
       'description' => 'To provide default values for any report parameter which allow the report to run initially but can be overridden, enter each parameter into this '.
           'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
-          'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Unlike preset parameter values, parameters referred '.
-          'to by default parameter values are displayed in the parameters form and can therefore be changed by the user.',
+          'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. If you have installed the Profile module then you can also '.
+          'use {profile_*} to refer to the value of a field in the user\'s profile (replace the asterisk to make the field name match the field created in the profile). '.
+          'Unlike preset parameter values, parameters referred to by default parameter values are displayed in the parameters form and can therefore be changed by the user.',
       'type' => 'textarea',
       'required' => false,
       'group'=>'Report Settings'
@@ -192,6 +195,9 @@ function iform_report_get_report_options($args, $auth) {
 function _get_initial_vals($type, $args) {
   global $user;
   $r = array();
+  $replace=array('{user_id}', '{username}');
+  $replaceWith=array($user->uid, $user->name);
+  $profileLoaded = false;
   if ($args[$type] != ''){
     $params = explode("\n", $args[$type]);
     foreach ($params as $param) {
@@ -199,7 +205,18 @@ function _get_initial_vals($type, $args) {
         $tokens = explode('=', $param);
         if (count($tokens)==2) {
           // perform any replacements on the initial values and copy to the output array
-          $r[$tokens[0]]=trim(str_replace(array('{user_id}', '{username}'), array($user->uid, $user->name), $tokens[1]));
+          if (preg_match('/^\{(?P<field>profile_(.)+)\}$/', $tokens[1], $matches)) {
+            $profileField=$matches['field'];
+            // got a request for a user profile field, so copy it's value across into the report parameters
+            if (!$profileLoaded) {
+              profile_load_profile($user);
+              $profileLoaded = true;
+            }
+            $r[$tokens[0]]=$user->$profileField;
+          } else {
+            // this handles the user id and username replacements
+            $r[$tokens[0]]=trim(str_replace($replace, $replaceWith, $tokens[1]));
+          }
         } else {
           throw new Exception('Some of the preset or default parameters defined for this page are not of the form param=value.');
         }
