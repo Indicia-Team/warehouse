@@ -17,6 +17,6 @@ CREATE OR REPLACE VIEW detail_website_agreements AS
      w.provide_for_moderation, w.receive_for_moderation,
      w.created_by_id, c.username AS created_by, w.updated_by_id, u.username AS updated_by
    FROM website_agreements w
-   JOIN indicia.users c ON c.id = w.created_by_id
-   JOIN indicia.users u ON u.id = w.updated_by_id
+   JOIN users c ON c.id = w.created_by_id
+   JOIN users u ON u.id = w.updated_by_id
   WHERE w.deleted = false;
