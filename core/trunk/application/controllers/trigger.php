@@ -34,7 +34,7 @@ class Trigger_Controller extends Gridview_Base_Controller {
    */
   public function __construct()
   {
-    parent::__construct('trigger', 'trigger/index');
+    parent::__construct('trigger');
     $this->columns = array(
       'name'=>'',
       'description'=>'',

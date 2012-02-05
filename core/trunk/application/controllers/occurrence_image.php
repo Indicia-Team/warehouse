@@ -31,7 +31,7 @@ class Occurrence_image_Controller extends Gridview_Base_Controller
 {
   public function __construct()
   {
-    parent::__construct('occurrence_image', 'occurrence_image/index');
+    parent::__construct('occurrence_image');
     $this->columns = array(
       'caption'=>'',
       'path'=>'Image'

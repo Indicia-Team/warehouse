@@ -34,7 +34,7 @@ class Websites_website_agreement_Controller extends Gridview_Base_Controller
    */
   public function __construct()
   {
-    parent::__construct('websites_website_agreement', 'websites_website_agreement/index');
+    parent::__construct('websites_website_agreement');
 
     $this->columns = array(
         'id'          => 'ID',

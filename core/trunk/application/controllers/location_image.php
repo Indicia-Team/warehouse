@@ -31,7 +31,7 @@ class location_image_Controller extends Gridview_Base_Controller
 {
   public function __construct()
   {
-    parent::__construct('location_image', 'location_image/index');
+    parent::__construct('location_image');
     $this->columns = array(
       'caption'=>'',
       'path'=>'Image'    

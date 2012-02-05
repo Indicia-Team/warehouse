@@ -34,12 +34,12 @@ class Language_Controller extends Gridview_Base_Controller {
    */
   public function __construct()
   {
-    parent::__construct('language', 'language/index');
+    parent::__construct('language');
     $this->columns = array(
       'iso'=>'',
       'language'=>'');
     $this->pagetitle = "Languages";
-  }  
+  }
 
   public function page_authorised()
   {

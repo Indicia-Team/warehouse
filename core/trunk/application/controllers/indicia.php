@@ -320,7 +320,7 @@ class Indicia_Controller extends Template_Controller {
   * Retrieve a suitable title for the edit page, depending on whether it is a new record
   * or an existing one.
   */
-  protected function GetEditPageTitle($model, $name)
+  protected function getEditPageTitle($model, $name)
   {  
     if ($model->id)
       return "Edit ".$model->caption();
@@ -357,7 +357,7 @@ class Indicia_Controller extends Template_Controller {
       // errors are now embedded in the model
       $view                    = new View( $name );
       $view->metadata          = $this->GetMetadataView(  $this->model );
-      $this->template->title   = $this->GetEditPageTitle( $this->model, $pagetitle );
+      $this->template->title   = $this->getEditPageTitle( $this->model, $pagetitle );
       $view->model             = $this->model;
       $view->tabs              = $this->getTabs($name);
 

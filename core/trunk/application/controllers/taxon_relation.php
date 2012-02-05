@@ -31,7 +31,7 @@ class Taxon_relation_Controller extends Gridview_Base_Controller
 {
   public function __construct()
   {
-    parent::__construct('taxon_relation', 'taxon_relation/index');
+    parent::__construct('taxon_relation');
     $this->columns = array(
       'my_taxon'=>'',
       'term'=>'',

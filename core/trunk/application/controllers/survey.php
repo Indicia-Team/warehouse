@@ -30,7 +30,7 @@
 class Survey_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-    parent::__construct('survey', 'survey/index');
+    parent::__construct('survey');
     $this->columns = array(
       'id'          => '',
       'title'       => '',

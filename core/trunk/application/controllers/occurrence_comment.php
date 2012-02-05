@@ -31,7 +31,7 @@ class Occurrence_comment_Controller extends Gridview_Base_Controller
 {
   public function __construct()
   {
-    parent::__construct('occurrence_comment', 'occurrence_comment/index');
+    parent::__construct('occurrence_comment');
     $this->columns = array(
       'comment' => '', 'updated_on' => 'Updated on'
     );

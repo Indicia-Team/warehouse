@@ -34,7 +34,7 @@ class Title_Controller extends Gridview_Base_Controller {
      */
   public function __construct()
   {
-    parent::__construct('title', 'title/index');
+    parent::__construct('title');
     $this->columns = array(
       'title'=>''
       );

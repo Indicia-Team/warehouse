@@ -30,7 +30,7 @@
 class Person_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-    parent::__construct('person', 'person/index');
+    parent::__construct('person');
     $this->columns = array(
       'first_name'=>''
       ,'surname'=>''

@@ -31,7 +31,7 @@ class Taxon_image_Controller extends Gridview_Base_Controller
 {
 	public function __construct()
   {
-    parent::__construct('taxon_image', 'taxon_image/index');
+    parent::__construct('taxon_image');
     $this->columns = array(
       'caption'=>'',
       'path'=>'Image'    

@@ -31,7 +31,7 @@ class sample_image_Controller extends Gridview_Base_Controller
 {
 	public function __construct()
   {
-    parent::__construct('sample_image', 'sample_image/index');
+    parent::__construct('sample_image');
     $this->columns = array(
       'caption'=>'',
       'path'=>'Image'    

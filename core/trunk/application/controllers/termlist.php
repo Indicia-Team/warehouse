@@ -30,7 +30,7 @@
 class Termlist_Controller extends Gridview_Base_Controller {
   
   public function __construct() {
-    parent::__construct('termlist', 'termlist/index');
+    parent::__construct('termlist');
     $this->columns = array(
       'id'=>'',
       'title'=>'',

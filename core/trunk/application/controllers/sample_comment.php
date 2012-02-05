@@ -31,7 +31,7 @@ class Sample_comment_Controller extends Gridview_Base_Controller
 {
   public function __construct()
   {
-    parent::__construct('sample_comment', 'sample_comment/index');
+    parent::__construct('sample_comment');
     $this->columns = array(
       'comment' => '', 'updated_on' => 'Updated on'
     );

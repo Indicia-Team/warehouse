@@ -34,7 +34,7 @@ class User_identifier_Controller extends Gridview_Base_Controller
    */
   public function __construct()
   {
-    parent::__construct('user_identifier', 'user_identifier/index');
+    parent::__construct('user_identifier');
 
     $this->columns = array(
         'identifier'=> 'Identifier',

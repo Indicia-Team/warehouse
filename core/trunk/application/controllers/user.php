@@ -30,7 +30,7 @@
 class User_Controller extends Gridview_Base_Controller {
 
   public function __construct() {
-  	parent::__construct('user','user/index');
+  	parent::__construct('user');
     $this->columns = array(
       'name'=>'',
       'username'=>'',

@@ -35,14 +35,14 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   private $gridId = null;
 
   /* Constructor. $modelname = name of the model for the grid.
-   * $viewname = name of the view which contains the grid.
+   * $viewname = name of the view which contains the grid. Defaults to the model name + /index.
    * $controllerpath = path the controller from the controllers folder
    * $viewname and $controllerpath can be ommitted if the names are all the same.
    */
   public function __construct($modelname, $viewname=NULL, $controllerpath=NULL, $gridId=NULL) {
     $this->model=ORM::factory($modelname);
     $this->modelname = $modelname;
-    $this->viewname=is_null($viewname) ? $modelname : $viewname;
+    $this->viewname=is_null($viewname) ? "$modelname/index" : $viewname;
     $this->controllerpath=is_null($controllerpath) ? $modelname : $controllerpath;
     $this->gridId = $gridId;
     $this->base_filter = array();
