@@ -129,12 +129,10 @@ class Termlist_Controller extends Gridview_Base_Controller {
     return array(array(
       'controller' => 'termlists_term',
       'title' => 'Terms',
-      'views'=>'termlist',
       'actions'=>array('edit')
     ), array(
       'controller' => 'termlist',
       'title' => 'Child lists',
-      'views'=>'termlist',
       'actions'=>array('edit')
     ));
   }

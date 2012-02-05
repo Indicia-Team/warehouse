@@ -66,8 +66,8 @@ class Occurrence_controller extends Gridview_Base_Controller {
   
   /**
    * Returns an array of all values from this model and its super models ready to be 
-   * loaded into a form. For this controller, we need to also setup the grid of comments and
-   * list of images.
+   * loaded into a form. For this controller, we need to also setup the custom attributes
+   * available to display on the form.
    */
   protected function getModelValues() {
     $r = parent::getModelValues();
@@ -110,12 +110,10 @@ class Occurrence_controller extends Gridview_Base_Controller {
       array(
         'controller' => 'occurrence_comment',
         'title' => 'Comments',
-        'views'=>'occurrence',
         'actions'=>array('edit')
       ), array(
         'controller' => 'occurrence_image',
         'title' => 'Images',
-        'views'=>'occurrence',
         'actions'=>array('edit')
       )
     );

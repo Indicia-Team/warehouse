@@ -142,12 +142,10 @@ class Taxon_list_Controller extends Gridview_Base_Controller {
     return array(array(
       'controller' => 'taxa_taxon_list',
       'title' => 'Taxa',
-      'views'=>'taxon_list',
       'actions'=>array('edit')
     ), array(
       'controller' => 'taxon_list',
       'title' => 'Child lists',
-      'views'=>'taxon_list',
       'actions'=>array('edit')
     ));
   }

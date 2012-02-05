@@ -266,20 +266,16 @@ class Taxa_taxon_list_Controller extends Gridview_Base_Controller
     return array(array(
       'controller' => 'taxon_image',
       'title' => 'Images',
-      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
       'actions'=>array('edit')
     ), array(
-      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
       'controller' => 'taxa_taxon_list/children',
       'title' => 'Child Taxa',
       'actions'=>array('edit')
     ), array(
-      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
       'controller' => 'taxon_relation',
       'title' => 'Relations',
       'actions'=>array('edit')
     ), array(
-      'views'=>'taxa_taxon_list/taxa_taxon_list_edit',
       'controller' => 'taxa_taxon_list/lumping_splitting',
       'title' => 'Lumping & Splitting',
       'actions'=>array('edit')

@@ -208,7 +208,6 @@ class Termlists_term_Controller extends Gridview_Base_Controller {
    */
   protected function getTabs($name) {
     return array(array(
-      'views'=>'termlists_term/termlists_term_edit',
       'controller' => 'termlists_term/children',
       'title' => 'Child Terms',
       'actions'=>array('edit')

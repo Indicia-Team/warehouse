@@ -60,8 +60,7 @@ class Occurrence_comment_Controller extends Gridview_Base_Controller
   protected function getDefaults() {
     $r = parent::getDefaults();
     if ($this->uri->method(false)=='create') {
-      // occurrence id is passed as first argument in URL when creating. But the image
-      // gets linked by meaning, so fetch the meaning_id.
+      // occurrence id is passed as first argument in URL when creating. 
       $r['occurrence:id'] = $this->uri->argument(1);
       $r['occurrence_comment:occurrence_id'] = $this->uri->argument(1);
     }

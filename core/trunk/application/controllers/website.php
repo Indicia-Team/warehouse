@@ -84,7 +84,6 @@ class Website_Controller extends Gridview_Base_Controller
     return array(array(
       'controller' => 'websites_website_agreement',
       'title' => 'Agreements',
-      'views'=>'websites_website_agreement/websites_website_agreement_edit',
       'actions'=>array('edit')
     ));
   }

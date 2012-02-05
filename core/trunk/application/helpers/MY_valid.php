@@ -22,6 +22,12 @@
 
 defined('SYSPATH') or die('No direct script access.');
 
+/**
+ * Extension class for the kohana core validation class. Provides additional Indicia specific
+ * validation methods. 
+ * @link http://code.google.com/p/indicia/wiki/WarehouseCodeValidation 
+ */
+
 class Valid extends valid_Core {
 
   /**
