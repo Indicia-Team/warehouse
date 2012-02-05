@@ -92,12 +92,9 @@ class Occurrence_Model extends ORM
       'last_verification_check_version'
     );
     if(array_key_exists('id', $fieldlist)) {
-      $existingRecord = ORM::factory('occurrence', $fieldlist['id']);
-      if($existingRecord->downloaded_flag == 'F'){
-        // downloaded_flag set to 'F' - this record has been downloaded out of the system, so now read only.
-        $this->errors['downloaded_flag']='Download flag set: record is now read only';
-        $save = false;
-      }
+      // existing data must not be set to download_flag=F (final download) otherwise it 
+      // is read only
+      $array->add_rules('downloaded_flag', 'chars[N,I]');
     }
     return parent::validate($array, $save);
   }
