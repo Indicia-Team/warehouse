@@ -14,9 +14,6 @@ p.inline-error {
 .remove-row {
   color:red !important;
 }
-input.mnhnl-site-name {
-	width: 300px;
-}
 label.auto-width {
 	width: auto;
 }

@@ -37,7 +37,8 @@ $custom_terms = array(
 	'LANG_Data_Download' => 'This Report provides details of the data entered in the surveys which are tagged for a particular programme.',
 	'LANG_Download_Button' => 'Download',
 	'LANG_Programme'=> 'Programme',
-
+	'LANG_SHP_Download_Legend'=> 'SHP File Downloads',
+	'LANG_Shapefile_Download'=> 'These downloads provide zipped up shape files for the locations; due to the restrictions of the SHP file format, there are separate downloads for each of points, lines and polygons. Click to select:',
 	'LANG_Edit' => 'Edit',
 	'LANG_Add_Sample' => 'Add new sample',
 	'LANG_Add_Sample_Single' => 'Add single occurrence',
@@ -88,6 +89,12 @@ $custom_terms = array(
 	'LANG_Cancel' => 'Cancel',
 	"LANG_Submit" => 'Save',
 	'LANG_DuplicateName'=>'Warning: there is another location with this name.',
+	'LANG_PointsLegend'=>'Coordinates of individual points',
+	'LANG_Grid_X_Label'=>'X',
+	'LANG_Grid_Y_Label'=>'Y',
+	'LANG_DeletePoint'=>'Delete this point',
+	'LANG_AddPoint'=>'Add this point',
+	'LANG_HighlightPoint'=>'Highlight this point',
 
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Date' => 'Date',

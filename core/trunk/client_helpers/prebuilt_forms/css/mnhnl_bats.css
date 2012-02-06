@@ -55,6 +55,9 @@ span.extra-text {
 .species-grid td.noPadding {
   padding: 0;
 }
+#pointgridtable input[type='text'] {
+  width: 100px;
+}
 
 .fullWidth {
   width: 100%;
@@ -86,9 +89,6 @@ span.extra-text {
 }
 .control-box {
   display:inline  !important;
-}
-input.mnhnl-site-name {
-	width: 500px;
 }
 label.auto-width {
 	width: auto;

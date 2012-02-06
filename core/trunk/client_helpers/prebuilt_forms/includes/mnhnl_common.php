@@ -198,6 +198,22 @@ function iform_mnhnl_getParameters() {
           'type'=>'int',
           'default' => '0',
           'group' => 'Locations'
+        ),
+        array(
+          'name'=>'shpFileDownloadURL',
+          'caption'=>'Shape File Download URL',
+          'description'=>'Proxied URL to use to access the geoserver to allow the download of the shape files.',
+          'type'=>'string',
+          'required' => false,
+          'group' => 'Locations'
+        ),
+        array(
+          'name'=>'shpFileFeaturePrefix',
+          'caption'=>'Shape File Feature Prefix',
+          'description'=>'Feature Prefix to use to access the geoserver to allow the download of the shape files.',
+          'type'=>'string',
+          'required' => false,
+          'group' => 'Locations'
         )
         );
 }
@@ -207,7 +223,27 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       data_entry_helper::enable_validation('entry_form');
   if($args['locationMode']=='multi') $args['locationMode']='parent';
   data_entry_helper::$entity_to_load=array();
-  $retVal .= "<div id=\"locations\" ><form method=\"post\" id=\"entry_form\">".
+  if($args['shpFileDownloadURL']==""){
+    $retVal = "<div id=\"locations\">";
+  } else {
+    $request= $args['shpFileDownloadURL']."/geoserver/wfs?request=GetFeature&service=wfs&version=1.0.0&outputformat=SHAPE-ZIP&srsName=EPSG:2169";
+    if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
+    $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    if($args['SecondaryLocationTypeTerm'] != ''){
+      $secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
+      $request.="&cql_filter= location_type_id=".$primary."OR location_type_id=".$secondary;
+    } else {
+      $request.="&cql_filter=location_type_id=".$primary;
+    }
+    $request .= "&typename=".$args['shpFileFeaturePrefix'].':';
+    if($args['usePoints']!='none')   $retVal = "<a href=\"".$request."point_locations\">".lang::get('Points')."</a>";
+    if($args['useLines']!='none')    $retVal .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."line_locations\">".lang::get('Lines')."</a>";
+    if($args['usePolygons']!='none') $retVal .= ($retVal == "" ? "" : " : ")."<a href=\"".$request."polygon_locations\">".lang::get('Polygons')."</a>";
+    $retVal = "<div id=\"locations\" >
+      <fieldset><legend>".lang::get('LANG_SHP_Download_Legend')."</legend>
+      <p>".lang::get('LANG_Shapefile_Download')." ".$retVal."</p></fieldset>";
+  }
+  $retVal .= "<form method=\"post\" id=\"entry_form\">".
           $auth['write'].
           "<input type=\"hidden\" id=\"source\" name=\"source\" value=\"iform_mnhnl_locModTool\" />".
           "<input type=\"hidden\" id=\"website_id\" name=\"website_id\" value=\"".$args['website_id']."\" />".
@@ -996,7 +1032,7 @@ addDrawnPointToSelection = function(geometry) {
 ".($args['locationMode']!='single' ?
 "  if(ParentLocationLayer.features.length == 0) return;
   if(!ParentLocationLayer.features[0].geometry.intersects(geometry))
-    alert('".lang::get('LANG_PointOutsideParent')."');
+    alert(\"".lang::get('LANG_PointOutsideParent')."\");
 " : "").
 "  var highlightedFeatures = gethighlight();
 ".(isset($options['canCreate']) && $options['canCreate'] ? 
@@ -1065,13 +1101,13 @@ addDrawnLineToSelection = function(geometry) {
 " : "").
 "  var points = geometry.getVertices();
   if(points.length < 2){
-    alert('".lang::get('LANG_TooFewLinePoints')."');
+    alert(\"".lang::get('LANG_TooFewLinePoints')."\");
     return false;
   }
 ".($args['locationMode']!='single' ?
 "  var centre = getCentroid(geometry);
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-    alert('".lang::get('LANG_LineOutsideParent')."');
+    alert(\"".lang::get('LANG_LineOutsideParent')."\");
 " : "").
 "  var highlightedFeatures = gethighlight();
 ".(isset($options['canCreate']) && $options['canCreate'] ? 
@@ -1137,13 +1173,13 @@ addDrawnPolygonToSelection = function(geometry) {
 " : "").
 "  var points = geometry.components[0].getVertices();
   if(points.length < 3){
-    alert('".lang::get('LANG_TooFewPoints')."');
+    alert(\"".lang::get('LANG_TooFewPoints')."\");
     return false;
   }
 ".($args['locationMode']!='single' ?
 "  var centre = getCentroid(geometry);
   if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-    alert('".lang::get('LANG_PolygonOutsideParent')."');
+    alert(\"".lang::get('LANG_PolygonOutsideParent')."\");
 " : "").
 "  var highlightedFeatures = gethighlight();
 ".(isset($options['canCreate']) && $options['canCreate'] ? 
@@ -1209,7 +1245,7 @@ onFeatureModified = function(evt) {
     case \"OpenLayers.Geometry.Point\":
 ".($args['locationMode']!='single' ?
 "      if(!ParentLocationLayer.features[0].geometry.intersects(feature.geometry))
-        alert('".lang::get('LANG_PointOutsideParent')."');
+        alert(\"".lang::get('LANG_PointOutsideParent')."\");
 " : "").
 "      if(typeof modPGPoint != 'undefined') modPGPoint(feature.geometry);
       break;
@@ -1221,14 +1257,14 @@ onFeatureModified = function(evt) {
 ".($args['locationMode']!='single' ?
 "      var centre = getCentroid(feature.geometry);
       if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-        alert('".lang::get('LANG_PointOutsideParent')."');
+        alert(\"".lang::get('LANG_PointOutsideParent')."\");
 " : "").
 "      if(typeof modPGPoint != 'undefined') modPGPoint(feature.geometry);
       break;
     case \"OpenLayers.Geometry.LineString\":
       points = feature.geometry.getVertices();
       if(points.length < 2){
-        alert('".lang::get('LANG_TooFewLinePoints')."');
+        alert(\"".lang::get('LANG_TooFewLinePoints')."\");
         modPathFeature.unselectFeature(feature);
         SitePathLayer.destroyFeatures([feature]);
       }
@@ -1236,7 +1272,7 @@ onFeatureModified = function(evt) {
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-          alert('".lang::get('LANG_LineOutsideParent')."');
+          alert(\"".lang::get('LANG_LineOutsideParent')."\");
       }
 " : "").
 "      break;
@@ -1244,7 +1280,7 @@ onFeatureModified = function(evt) {
       for(i=feature.geometry.components.length-1; i>=0; i--) {
         points = feature.geometry.components[i].getVertices();
         if(points.length < 2){
-          alert('".lang::get('LANG_TooFewLinePoints')."');
+          alert(\"".lang::get('LANG_TooFewLinePoints')."\");
           var selectedFeature = modPathFeature.feature;
           modPathFeature.unselectFeature(selectedFeature);
           selectFeature.unhighlight(selectedFeature);
@@ -1264,14 +1300,14 @@ onFeatureModified = function(evt) {
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-          alert('".lang::get('LANG_LineOutsideParent')."');
+          alert(\"".lang::get('LANG_LineOutsideParent')."\");
       }
 " : "").
 "      break;
     case \"OpenLayers.Geometry.Polygon\": // only do outer ring
       points = feature.geometry.components[0].getVertices();
       if(points.length < 3){
-        alert('".lang::get('LANG_TooFewPoints')."');
+        alert(\"".lang::get('LANG_TooFewPoints')."\");
         modAreaFeature.unselectFeature(feature);
         SiteAreaLayer.destroyFeatures([feature]);
       }
@@ -1279,7 +1315,7 @@ onFeatureModified = function(evt) {
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-          alert('".lang::get('LANG_CentreOutsideParent')."');
+          alert(\"".lang::get('LANG_CentreOutsideParent')."\");
       }
 " : "").
 "      break;
@@ -1287,7 +1323,7 @@ onFeatureModified = function(evt) {
       for(i=feature.geometry.components.length-1; i>=0; i--) {
         points = feature.geometry.components[i].components[0].getVertices();
         if(points.length < 3){
-          alert('".lang::get('LANG_TooFewPoints')."');
+          alert(\"".lang::get('LANG_TooFewPoints')."\");
           var selectedFeature = modAreaFeature.feature;
           modAreaFeature.unselectFeature(selectedFeature);
           selectFeature.unhighlight(selectedFeature);
@@ -1307,7 +1343,7 @@ onFeatureModified = function(evt) {
 "      else {
         var centre = getCentroid(feature.geometry);
         if(!ParentLocationLayer.features[0].geometry.intersects(centre))
-          alert('".lang::get('LANG_CentreOutsideParent')."');
+          alert(\"".lang::get('LANG_CentreOutsideParent')."\");
       }
 " : "").
 "      break;
@@ -1531,7 +1567,7 @@ lineDrawActivate = function(){
   return false;
 };
 pointDrawDeactivate = function(){
-  removePopups();
+  if(typeof removePopups != 'undefined') removePopups();
   jQuery(\"#pointgrid\").hide();
 };
 pointDrawActivate = function(){
@@ -1783,7 +1819,7 @@ jQuery('#location-name').change(function(){
   for(var i=0; i< SiteLabelLayer.features.length; i++){
     if(SiteLabelLayer.features[i].attributes.new == false){
       if(jQuery(this).val() == SiteLabelLayer.features[i].attributes.data.name){
-        alert('".lang::get('LANG_DuplicateName')."');
+        alert(\"".lang::get('LANG_DuplicateName')."\");
       }
     }
   }
@@ -1849,7 +1885,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
   <p>".$options['parentFieldLabel'].' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
 '.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\" class=\"auto-width\">".lang::get('LANG_NumSites')." : </label><input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
 "<p>".$options['Instructions2']."</p>\n".
-        ($args['siteNameTermListID']== '' ? "<label for=\"dummy-name\">".$options['NameLabel']." : </label><input id=\"dummy-name\" name=\"dummy:name\" class='mnhnl-site-name required'><br />\n" :
+        ($args['siteNameTermListID']== '' ? "<label for=\"dummy-name\">".$options['NameLabel']." : </label><input id=\"dummy-name\" name=\"dummy:name\" class='wide required'><br />\n" :
           data_entry_helper::select(array(
             'label'=>$options['NameLabel'],
             'id'=>'dummy-name',
@@ -1941,7 +1977,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
         // single site requires all location data in main form. Mult site must have array: depends on implementation so left to actual form.
         $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions)."<br />";
         if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"location-name\">".$options['NameLabel']." : </label><input type='text' id=\"location-name\" name=\"location:name\" class='required mnhnl-site-name' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
+          $retVal .= "<label for=\"location-name\">".$options['NameLabel']." : </label><input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
         } else {
           $retVal .= data_entry_helper::select(array(
             'label'=>$options['NameLabel'], 
@@ -1965,7 +2001,7 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       } else {
       	// multiSite needs the location name.
         if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"dummy-name\">".$options['NameLabel']." : </label><input type='text' id=\"dummy-name\" name=\"dummy:name\" class='mnhnl-site-name' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
+          $retVal .= "<label for=\"dummy-name\">".$options['NameLabel']." : </label><input type='text' id=\"dummy-name\" name=\"dummy:name\" class='wide' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
         } else {
           $retVal .= data_entry_helper::select(array(
             'label'=>$options['NameLabel'], 
@@ -2047,15 +2083,18 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       } else
         $retVal .= '<p>'.lang::get("LANG_NoSites").'</p>';
       
-      $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel']." : </label><input id=\"location-name\" name=\"location:name\" class='mnhnl-site-name required' value='".data_entry_helper::$entity_to_load['location:name']."'><span class=\"deh-required\">*</span><br />
+      $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel']." : </label> <input id=\"location-name\" name=\"location:name\" class='wide required' value='".data_entry_helper::$entity_to_load['location:name']."'><span class=\"deh-required\">*</span><br />
       <input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
     }
     if(isset($args['includeLocationCode']) && $args['includeLocationCode'])
-      $retVal .= "<label for=\"location-code\">".$options['CodeLabel']." : </label><input id=\"location-code\" name=\"location:code\" value='".data_entry_helper::$entity_to_load['location:code']."'><br />";
+      $retVal .= "<label for=\"location-code\">".$options['CodeLabel']." : </label> <input id=\"location-code\" name=\"location:code\" value='".data_entry_helper::$entity_to_load['location:code']."'><br />";
     return $retVal;
 }
 
 function iform_mnhnl_PointGrid($auth, $args, $options) {
+  if($args['usePoints']=='single' && $args['useLines']=='none' && $args['usePolygons']=='none'){
+    return "";
+  }
   data_entry_helper::$javascript .= "
 // functions for iform_mnhnl_PointGrid
 jQuery('#pointgrid').hide();
@@ -2165,7 +2204,7 @@ function onPopupClose(evt) {
   this.row=null;
   this.destroy();
 }
-function removePopups() {
+removePopups = function() {
   jQuery('.pgDataRow').each(function(idx,elem){
     var popup = jQuery(this).data('popup');
     if(popup){
@@ -2305,6 +2344,8 @@ function handleEnteredSref(value) {
         $('#centroid_geom').val(data.wkt);
         var parser = new OpenLayers.Format.WKT();
         var feature = parser.read(data.wkt);
+        if(typeof hook_setSref != 'undefined')
+          hook_setSref(feature.geometry);
         for(var i=0; i<SitePointLayer.features.length; i++){
           if(SitePointLayer.features[i].attributes.highlighted == true){
             replaceGeom(SitePointLayer.features[i], SitePointLayer, modPointFeature, feature.geometry, false, false);
@@ -2336,10 +2377,13 @@ function handleEnteredSref(value) {
       if(isset(data_entry_helper::$entity_to_load["location:centroid_sref"]))
         $dummy = explode(',',data_entry_helper::$entity_to_load["location:centroid_sref"]);
     }
+    if($args['usePoints']=='single' && $args['useLines']=='none' && $args['usePolygons']=='none'){
+    	$readOnly="";
+    } else $readOnly=" readonly=\"readonly\" ";
 	$retVal .= "<label for=\"imp-srefX\" class=\"auto-width\" >".lang::get('LANG_Location_X_Label').":</label>
-  <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" value=\"".trim($dummy[0])."\" readonly=\"readonly\"/>
+  <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" value=\"".trim($dummy[0])."\" ".$readOnly."/>
 <label for=\"imp-srefY\" class=\"auto-width prepad\" >".lang::get('LANG_Location_Y_Label').":</label>
-  <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" value=\"".trim($dummy[1])."\" readonly=\"readonly\"/>
+  <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" value=\"".trim($dummy[1])."\" ".$readOnly."/>
 <span id=\"coords-text\" class=\"coords-text\">".lang::get('LANG_LatLong_Bumpf')."</span><br />
 ";
 	return $retVal;

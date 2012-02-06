@@ -27,52 +27,45 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
-	// 'Edit' is left unchanged
+// Tab Titles
 	'LANG_Main_Samples_Tab' => 'Surveys',
 	'LANG_Download' => 'Reports',
-	'LANG_Locations' => 'Locations',
+	'LANG_Locations' => 'Sites',
+	'LANG_Tab_otherinformation' => 'Conditions',
+	'LANG_Tab_species' => 'Species',
+// Navigation
+	'LANG_Edit' => 'Edit',
+	// Edit is unchanged in English
+	'LANG_Add_Sample' => 'Add new sample',
+	'LANG_Add_Sample_Single' => 'Add single occurrence',
+	'LANG_Add_Sample_Grid' => 'Add list of occurrences',
+	'LANG_Save' => 'Save',
+	'save' => 'Save',
+	'LANG_Cancel' => 'Cancel',
+	'LANG_Submit' => 'Save',
+	'next step'=>'Next step',
+	'prev step'=>'Previous step',
+// Main grid Selection
+	// 'Site name' is unchanged in English
+	// 'Actions' is unchanged in English
+// Reports
 	'LANG_Sites_Download' => 'Run a report to provide information on all the sites used for these surveys, plus their attributes. (CSV Format)',
 	'LANG_Conditions_Download' => 'Run a report to provide information on all these surveys, including the conditions and the associated sites. This returns one row per survey, and excludes any species data. (CSV Format)',
 	'LANG_Species_Download' => 'Run a report to provide information on species entered for these surveys. It includes the data for the surveys, conditions and the associated sites. This returns one row per occurrence. (CSV Format)',
 	'LANG_Download_Button' => 'Download report',
-	'LANG_Edit' => 'Edit',
-	'LANG_Add_Sample' => 'Add new sample',
-	'LANG_Add_Sample_Single' => 'Add single occurrence',
-	'LANG_Add_Sample_Grid' => 'Add list of occurrences',
-
+// Locations
+	// 'Existing locations' is unchanged in English
 	'LANG_Location_Label' => 'Location',
 	'LANG_Location_Name' => 'Site name',
+	// 'Create New Location' is unchanged in English
+	'LANG_Location_Name_Blank_Text' => 'Choose a location using its name',
+	'SRef' => 'Coordinates',
+	'LANG_SRef_Label' => 'Coordinates',
 	'LANG_Location_X_Label' => 'Site centre coordinates : X ',
 	'LANG_Location_Y_Label' => 'Y ',
 	'LANG_LatLong_Bumpf' => '(LUREF geographical system, in metres)',
-	'Code GSL' => 'GSL code',
-	'Profondeur' => 'Depth',
-	'LANG_PositionOutsideCommune' => 'The position you have choosen is outside the set of allowable Communes. You will not be able to save this position.',
-	'LANG_CommuneLookUpFailed' => 'Commune Lookup Failed',
-	'LANG_Save' => 'Save',
-	'LANG_Cancel' => 'Cancel',
-	'LANG_Submit' => 'Save',
-
-	'validation_required' => 'Please enter a value for this field',
-
 	'LANG_Location_Code_Label' => 'Code',
-	'LANG_Location_Name_Label' => 'Name of the site',
-	'LANG_Location_Name_Blank_Text' => 'Choose a location using its name',
-	'Village' => 'Village / Locality',
-	'Site type other' => 'If Others',
-	'Site followup' => 'Pertinence of site for a regular followup',
-	'LANG_SRef_Label' => 'Coordinates',
-	'LANG_Georef_Label'=>'Search for place on map',
-	'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
-	'LANG_Georef_NothingFound' => 'No place found with that name. Try a nearby town name.',
-	'search' => 'Search',
 	'Location Comment' => 'Comment',
-	'Recorder names' => 'Observer(s)',
-	'Accompanied By' => 'Accompanying people',
-	'LANG_RecorderInstructions'=>"To select more than one observer, keep the CTRL button down.",
-	'Visit' => 'Visit',
-	'Bat visit' => 'Visit',
-
 	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',
 	'LANG_CommonParentLabel'=>'Square (5x5km)',
 	'LANG_CommonParentBlank'=>'Choose a square',
@@ -87,7 +80,7 @@ $custom_terms = array(
 	'LANG_CommonLocationNameLabel' => 'Site name',
 	'LANG_LocModTool_NameLabel'=>'New site name',
 	'LANG_LocModTool_DeleteLabel'=>'Delete site',
-	'LANG_LocModTool_DeleteInstructions'=>'When a site is deleted, any existing visit data will still be available in the reports. New surveys for this square will not feature the site.',
+	'LANG_LocModTool_DeleteInstructions'=>'When a site is deleted, any existing visit data will still be available in the reports.',
 	'LANG_TooFewPoints' => 'There are too few points in this polygon - there must be at least 3.',
 	'LANG_TooFewLinePoints' => 'There are too few points in this line - there must be at least 2.',
 	'LANG_CentreOutsideParent'=>'Warning: the centre of your new site is outside the square.',
@@ -115,17 +108,51 @@ $custom_terms = array(
 	'LANG_PointsLegend'=>'Coordinates of individual points',
 	'LANG_Grid_X_Label'=>'X',
 	'LANG_Grid_Y_Label'=>'Y',
+	'Latitude' => 'Coordinates : X ',
+	'Longitude' => 'Y ',
 	'LANG_DeletePoint'=>'Delete this point',
 	'LANG_AddPoint'=>'Add this point',
 	'LANG_HighlightPoint'=>'Highlight this point',
-
-	'LANG_Tab_otherinformation' => 'Conditions',
+	'LANG_SHP_Download_Legend'=> 'SHP File Downloads',
+	'LANG_Shapefile_Download'=> 'This download provide a zipped up shape files for the points in the locations. Click to select:',
+// Georeferencing
+	'search' => 'Search',
+	'LANG_Georef_Label'=>'Search for place on map',
+	'LANG_Georef_SelectPlace' => 'Select the correct one from the following places that were found matching your search. (Click on the list items to see them on the map.)',
+	'LANG_Georef_NothingFound' => 'No place found with that name. Try a nearby town name.',
+	'LANG_PositionOutsideCommune' => 'The position you have choosen is outside the set of allowable Communes. You will not be able to save this position.',
+	'LANG_CommuneLookUpFailed' => 'Commune Lookup Failed',
+// Conditions
+	// 'General'  is unchanged in English
+	'Physical' => 'Physical characteristics of the cavity',
+	// 'Microclimate' is unchanged in English
 	'LANG_Date' => 'Date',
+	'Recorder names' => 'Observer(s)',
+	'LANG_RecorderInstructions'=>"To select more than one observer, keep the CTRL button down.",
 	'LANG_Site_Extra' => "(Visit number / Number of visits during winter)",
+	'Overall Comment' => 'Comment',
+// Species
+	'species_checklist.species'=>'Species',
+	'LANG_Duplicate_Taxon' => 'You have chosen a taxon for which there is already an entry.',
+	'LANG_SpeciesInstructions'=>"Additional species may be added using the control under the grid. Only one row may be added per taxon.<br />Click the red 'X' to delete the relevant row.",
+	//'Comment' is unchanged in English
+// Attributes
+	'Village' => 'Village / Locality',
+	// 'Site type' is unchanged in English
+	'Site type other' => 'If Others',
+	'Code GSL' => 'GSL code',
+	// 'Depth' is unchanged in English
+	// 'Precision' is unchanged in English
+	// 'Development' is unchanged in English
+	'Site followup' => 'Pertinence of site for a regular followup',
+	'Accompanied By' => 'Accompanying people',
+	'Visit' => 'Visit',
+	'Bat visit' => 'Visit',
 	'Cavity entrance' => 'Cavity entrance',
 	'Cavity entrance comment' => 'If the closure system is defective',
 	'Disturbances' => 'Disturbances',
 	'Disturbances other comment' => 'If Others',
+	// 'Human frequentation' is unchanged in English
 	'Temp Exterior' => "Temperature outside cavity (Celcius)",
 	'Humid Exterior' => "Relative humidity outside cavity (%)",
 	'Temp Int 1' => "Temperature inside cavity - A (Celcius)",
@@ -136,22 +163,13 @@ $custom_terms = array(
 	'Humid Int 3' => "Relative humidity inside cavity - C (%)",
 	'Positions marked' => 'Measurement location(s) indicated on map',
 	'Reliability' => "Reliability (completeness) of the inventory",
-	'Overall Comment' => 'Comment',
-
-	'LANG_Tab_species' => 'Species',
-	'species_checklist.species'=>'Species',
-	'Bats Obs Type' => "Observation type",
-	'SCLabel_Col1' => "Number of individuals",
-	'SCLabel_Row1' => 'Alive',
-	'SCLabel_Row2' => 'Dead',
-	'LANG_Duplicate_Taxon' => 'You have chosen a taxon for which there is already an entry.',
-	'LANG_SpeciesInstructions'=>"Additional species may be added using the control under the grid. Only one row may be added per taxon.<br />Click the red 'X' to delete the relevant row.",
-
+	'Num alive' => 'Number alive',
+	'Num dead' => 'Number dead',
+	// 'Excrement' is unchanged in English
+	'Occurrence reliability' => "Reliability",
+	// 'No observation' is unchanged in English
+// Validation
+	'validation_required' => 'Please enter a value for this field',
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid.",
-	'validation_fillgroup'=>'Please enter one of these three fields.',
-	'next step'=>'Next step',
-	'prev step'=>'Previous step'
-
-	
-	
+	'validation_fillgroup'=>'Please enter one of these three fields.'
 );

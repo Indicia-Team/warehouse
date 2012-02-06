@@ -229,6 +229,11 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
   </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
     iform_mnhnl_addCancelButton();
     data_entry_helper::$javascript .= "
+var other = jQuery('[name=locAttr\\:".$args['siteTypeOtherAttrID']."],[name^=locAttr\\:".$args['siteTypeOtherAttrID']."\\:]');
+other.next().remove(); // remove break
+other.prev().remove(); // remove legend
+other.removeClass('wide').remove(); // remove Other field, then bolt in after the other radio button.
+jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').parent().append(other);
 checkRadioStatus = function(){
   jQuery('[name^=locAttr]').filter(':radio').filter('[value=".$args['siteTypeOtherTermID']."]').each(function(){
     if(this.checked)
@@ -630,13 +635,13 @@ hook_set_defaults=function(){
 });
 fillCommune = function(a1){
   if(a1.error && (typeof a1.error.success == 'undefined' || a1.error.success == false)){
-    alert('".lang::get('LANG_CommuneLookUpFailed')."');
+    alert(\"".lang::get('LANG_CommuneLookUpFailed')."\");
     return;
   }
   if(a1.features.length > 0)
     jQuery('[name=locAttr\\:$communeAttr],[name^=locAttr\\:$communeAttr\\:]').val(a1.features[0].attributes[\"".$parts[6]."\"]).attr('readonly','readonly');
   else {
-    alert('".lang::get('LANG_PositionOutsideCommune')."');
+    alert(\"".lang::get('LANG_PositionOutsideCommune')."\");
   }
 }
 hook_setSref = function(geom){
@@ -766,7 +771,9 @@ hook_species_checklist_pre_delete_row=function(e) {
 ";
   	$extraParams = $auth['read'];
     // we want all languages, so dont filter
-    // multiple species being input via a grid      
+    // multiple species being input via a grid
+    $myLanguage = iform_lang_iso_639_2($args['language']);
+    if($myLanguage!='fra') $myLanguage=  'eng'; // forced, used for termlists in attributes
     $species_ctrl_opts=array_merge(array(
           "extra_list_id"=>$args["extra_list_id"],
           'listId'=>$args['list_id'],
@@ -778,7 +785,7 @@ hook_species_checklist_pre_delete_row=function(e) {
           'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true,
-          'language' => 'eng' // forced, used for termlists in attributes
+          'language' => $myLanguage
     ), $options);
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
@@ -860,7 +867,8 @@ hook_species_checklist_pre_delete_row=function(e) {
           $oc = str_replace('{fieldname}', $ctrlId, $control);
           if (!empty($existing_value)) {
             // For select controls, specify which option is selected from the existing value
-            if (substr($oc, 0, 7)=='<select') {
+            // May have a label in front of it
+            if (strpos($oc, '<select') !== false) {
               $oc = str_replace('value="'.$existing_value.'"',
                   'value="'.$existing_value.'" selected="selected"', $oc);
             } else if(strpos($oc, 'checkbox') !== false) {
@@ -876,7 +884,6 @@ hook_species_checklist_pre_delete_row=function(e) {
         // no confidential checkbox.
         $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].'">'.$firstrow.'</tr>';
         $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.$secondrow.'</tr>'; // no images.
-        $thirdrow = "";
         if ($options['occurrenceComment']) {
           $rows[]='<tr class="scMeaning-'.$occ['taxon']['taxon_meaning_id'].' scDataRow">'.
 "<td class=\"ui-widget-content scCommentCell\" $colspan>
@@ -936,7 +943,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   }
 
   public static function species_checklist_prepare_attributes($options, $attributes, &$occAttrControls, &$occAttrs) {
-    $reliabilityAttr=iform_mnhnl_getAttrID(self::$auth, array('survey_id'=>$options['survey_id']), 'occurrence', 'Occurrence Reliability');
     $idx=0;
     if (array_key_exists('occAttrs', $options))
       $attrs = $options['occAttrs'];
@@ -959,7 +965,6 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
       );
       if(isset($options['lookUpKey'])) $ctrlOptions['lookUpKey']=$options['lookUpKey'];
       if(isset($options['blankText'])) $ctrlOptions['blankText']=$options['blankText'];
-      if($occAttrId==$reliabilityAttr) unset($attrDef['caption']);
       $attrDef['fieldname'] = '{fieldname}';
       $attrDef['id'] = '{fieldname}';
       $occAttrControls[$occAttrId] = data_entry_helper::outputAttribute($attrDef, $ctrlOptions);

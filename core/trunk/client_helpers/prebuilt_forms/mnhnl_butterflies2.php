@@ -89,6 +89,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
               "@editLayer=false\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
+              "[point grid]\r\n".
               "[sample comment]\r\n".
              "=Conditions=\r\n".
               "[recorder names]\r\n".
@@ -353,7 +354,10 @@ hook_mnhnl_parent_changed = function(){
        ), $options));
     return $retVal;
   }
-
+  protected static function get_control_get_control_pointgrid($auth, $args, $tabalias, $options) {
+    return iform_mnhnl_PointGrid($auth, $args, $options); 
+  }
+  
  /**
    * Get the recorder names control
    */

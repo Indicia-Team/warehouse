@@ -90,6 +90,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
               "@editLayer=false\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
+              "[point grid]\r\n".
              "=Conditions=\r\n".
               "[programme grid]\r\n".
               "@programmeTermList=reptile:programme\r\n".
@@ -157,13 +158,13 @@ jQuery('[name=programme]').change(function(){
 jQuery('[name=programme]').change();
 ";
     return  '<div id="downloads" >
-      <p>'.lang::get('LANG_Data_Download').'</p>
-      '.$control.'
-      <form id="reportRequestForm" method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=reptilereport">
-      <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "taxon_list_id":'.$args['extra_list_id'].'}\' />
-      <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
-    </form>
-  </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
+  <p>'.lang::get('LANG_Data_Download').'</p>
+  '.$control.'
+  <form id="reportRequestForm" method="post" action="">
+    <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "taxon_list_id":'.$args['extra_list_id'].'}\' />
+    <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+  </form>
+</div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
 	
   }
   /**
@@ -256,6 +257,9 @@ deleteSurvey = function(sampleID){
   protected static function get_control_locationattributes($auth, $args, $tabalias, $options) {
     return iform_mnhnl_locationattributes($auth, $args, $tabalias, $options);
   }
+  protected static function get_control_pointgrid($auth, $args, $tabalias, $options) {
+    return iform_mnhnl_PointGrid($auth, $args, $options); 
+  }
   
   /**
    * Get the recorder names control
@@ -281,7 +285,7 @@ $.validator.messages.number = $.validator.format(\"".lang::get('validation_numbe
       data_entry_helper::$late_javascript .= "
 $.validator.messages.digits = $.validator.format(\"".lang::get('validation_digits')."\");";
   	// possible clash with link_species_popups, so latter disabled.
-  	iform_mnhnl_addCancelButton();
+    iform_mnhnl_addCancelButton();
     data_entry_helper::$javascript .= "
 resetChildValue = function(child){
   var options = child.find('option').not('[value=]').not('[disabled]');
