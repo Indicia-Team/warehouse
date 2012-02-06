@@ -179,9 +179,11 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
  *   copyFromProfile - boolean indicating if values should be copied from the profile when the names match
  *   nameShow - boolean, if true then name values should be displayed rather than hidden
  *   emailShow - boolean, if true then email values should be displayed rather than hidden.
+ * @param string $mode Pass MODE_EXISTING for existing data, to avoid overwriting the creator of the record's details
+ * @param array $readAuth Read authorisation tokens.
  * @return string HTML for the hidden inputs.
  */
-function get_user_profile_hidden_inputs(&$attributes, $args, $mode) {
+function get_user_profile_hidden_inputs(&$attributes, $args, $mode, $readAuth) {
   $hiddens = '';
   global $user;
   $logged_in = $user->uid>0;
@@ -192,12 +194,21 @@ function get_user_profile_hidden_inputs(&$attributes, $args, $mode) {
   foreach($attributes as &$attribute) {
     $attrPropName = 'profile_'.strtolower(str_replace(' ','_',$attribute['caption']));
     if (isset($args['copyFromProfile']) && $args['copyFromProfile']==true && isset($user->$attrPropName)) {
+      // lookups need to be translated to the termlist_term_id, unless they are already IDs
+      if ($attribute['data_type']==='L' && !preg_match('/^[\d]+$/', $user->$attrPropName)) {
+        $terms = data_entry_helper::get_population_data(array(
+          'table' => 'termlists_term',
+          'extraParams' => $readAuth + array('termlist_id'=>$attribute['termlist_id'], 'term'=>$user->$attrPropName)
+        ));
+        $value = (count($terms)>0) ? $terms[0]['id'] : '';
+      } else
+        $value = $user->$attrPropName;
       if (isset($args['nameShow']) && $args['nameShow'] == true) 
-        $attribute['default'] = $user->$attrPropName;
+        $attribute['default'] = $value;
       else {
         // profile attributes are not displayed as the user is logged in
         $attribute['handled']=true;
-        $attribute['value'] = $user->$attrPropName;
+        $attribute['value'] = $value;
       }
     }
     elseif (strcasecmp($attribute['caption'], 'cms user id')==0) {

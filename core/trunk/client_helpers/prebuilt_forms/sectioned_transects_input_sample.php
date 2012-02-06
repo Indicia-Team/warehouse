@@ -219,7 +219,7 @@ class iform_sectioned_transects_input_sample {
       'survey_id'=>$args['survey_id'],
       'sample_method_id'=>$sampleMethods[0]['id']
     ));
-    $r .= get_user_profile_hidden_inputs($attributes, $args);
+    $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']);
     $r .= data_entry_helper::date_picker(array(
       'label' => lang::get('Date'),
       'fieldname' => 'sample:date',

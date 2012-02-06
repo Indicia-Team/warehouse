@@ -34,7 +34,7 @@ require_once('includes/form_generation.php');
 
 class iform_mnhnl_dynamic_1 {
 
-  // A list of the taxon ids we are loading
+  // A list of the occurrence ids we are loading if editing existing data
   protected static $occurrenceIds = array();
 
   protected static $auth = array();
@@ -370,7 +370,12 @@ class iform_mnhnl_dynamic_1 {
           'name'=>'taxon_filter',
           'caption'=>'Taxon filter items',
           'description'=>'When filtering the list of available taxa, taxa will not be available for recording unless they match one of the '.
-              'values you input in this box. Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group.',
+              'values you input in this box. Enter one value per line. E.g. enter a list of taxon group titles if you are filtering by taxon group. '.
+              'If you provide a single taxon preferred name or taxon meaning ID in this box, then the form is set up for recording just this single '.
+              'species. Therefore there will be no species picker control, and the form will always operate in the single record, non-grid mode. '.
+              'As there is no visual indicator which species is recorded you may like to include information about what is being recorded in the '.
+              'header. You may also want to configure the User Interface section of the form\'s Form Structure to move the [species] and [species] controls '.
+              'to a different tab and remove the =species= tab, especially if there are no other occurrence attributes on the form.',
           'type' => 'textarea',
           'required'=>false,
           'group'=>'Species'
@@ -637,7 +642,7 @@ class iform_mnhnl_dynamic_1 {
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
       
-    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode);
+    $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode, $auth['read']);
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
     $r .= "<div id=\"controls\">\n";
@@ -868,7 +873,33 @@ class iform_mnhnl_dynamic_1 {
     }
     if ($args['species_names_filter']=='language') {
       $extraParams += array('language' => iform_lang_iso_639_2($user->lang));
-    }  
+    }
+    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
+      $filterLines = helper_base::explode_lines($args['taxon_filter']);
+      if ($args['multiple_occurrence_mode'] !== 'single' && $args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
+        // The form is configured for filtering by taxon name or meaning id. If there is only one specified then the form
+        // cannot display a species checklist, as there is no point. So, convert our preferred taxon name or meaning ID to find the 
+        // preferred taxa_taxon_list_id from the selected checklist, and then output a hidden ID.
+        if (empty($args['list_id']))
+          throw new exception(lang::get('Please configure the Initial Species List parameter to define which list the species to record is selected from.'));
+        $filter = array(
+          'preferred'=>'t',
+          'taxon_list_id'=>$args['list_id']
+        );
+        if ($args['taxon_filter_field']=='preferred_name')
+          $filter['taxon']=$filterLines[0];
+        else
+          $filter[$args['taxon_filter_field']]=$filterLines[0];
+        $options = array(
+          'table' => 'taxa_taxon_list',
+          'extraParams' => $auth['read'] + $filter
+        );
+        $response =data_entry_helper::get_population_data($options);
+        if (count($response)!==1)
+          throw new exception(lang::get('Failed to find the single species that this form is setup to record in the defined list.'));
+        return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
+      }
+    }
     if (call_user_func(array(get_called_class(), 'getGridMode'), $args)) {      
       // multiple species being input via a grid      
       $species_ctrl_opts=array_merge(array(
@@ -884,9 +915,9 @@ class iform_mnhnl_dynamic_1 {
           'language' => iform_lang_iso_639_2($user->lang) // used for termlists in attributes
       ), $options);
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
-      if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {        
+      if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
         $species_ctrl_opts['taxonFilterField']=$args['taxon_filter_field'];
-        $species_ctrl_opts['taxonFilter']=helper_base::explode_lines($args['taxon_filter']);
+        $species_ctrl_opts['taxonFilter']=$filterLines;
       }
       if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
       call_user_func(array(get_called_class(), 'build_grid_taxon_label_function'), $args);
@@ -1318,8 +1349,8 @@ class iform_mnhnl_dynamic_1 {
       $args['occurrence_comment'] == false; 
     if (!isset($args['occurrence_images']))
       $args['occurrence_images'] == false; 
-	if (!isset($args['attribute_termlist_language_filter']))
-	  $args['attribute_termlist_language_filter'] == false; 
+	  if (!isset($args['attribute_termlist_language_filter']))
+	    $args['attribute_termlist_language_filter'] == false;
   }
 
   protected function getReportActions() {

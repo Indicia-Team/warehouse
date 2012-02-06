@@ -3721,7 +3721,7 @@ if (errors.length>0) {
   *
   * @param array $options Options array with the following possibilities:<ul>
   * <li><b>survey_id</b><br/>
-  * Optional. The survey that custom attributes are to tbe loaded for.</li>
+  * Optional. The survey that custom attributes are to be loaded for.</li>
   * <li><b>website_ids</b><br/>
   * Optional. Used instead of survey_id, allows retrieval of all possible custom attributes
   * for a set of websites.</li>
