@@ -63,6 +63,10 @@ OpenLayers.Control.ClearLayer = OpenLayers.Class(OpenLayers.Control, {
       } else {
         $.each(this.layers, function(idx, layer) {
           layer.removeAllFeatures();
+          if (layer.map.editLayer===layer) {
+            // if clearing the edit layer, clear the imp-geom field
+            $('#imp-geom').val('');
+          }
         });
       }
     },

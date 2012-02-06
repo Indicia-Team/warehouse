@@ -240,7 +240,7 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
         'initial_zoom'=>4,
         'width'=>870,
         'height'=>400,
-        'standardControls' => array('panZoomBar','layerSwitcher','hoverFeatureHighlight','drawPolygon','modifyFeature')
+        'standardControls' => array('panZoomBar','layerSwitcher','hoverFeatureHighlight','drawPolygon','modifyFeature','clearEditLayer')
     ));
   }
 	
