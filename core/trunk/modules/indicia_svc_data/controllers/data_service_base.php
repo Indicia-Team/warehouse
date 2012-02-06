@@ -118,7 +118,8 @@ class Data_Service_Base_Controller extends Service_Base_Controller {
     $wantRecords = !isset($_REQUEST['wantRecords']) || $_REQUEST['wantRecords']==='0';
     $wantColumns = isset($_REQUEST['wantColumns']) && $_REQUEST['wantColumns']==='1';
     $wantCount = isset($_REQUEST['wantCount']) && $_REQUEST['wantCount']==='1';
-    $wantParameters = isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters']==='1';
+    $wantParameters = (isset($_REQUEST['wantParameters']) && $_REQUEST['wantParameters']==='1')
+      || (isset($_REQUEST['wantRecords']) && $_REQUEST['wantRecords']==='1' && !isset($data['records']));
     $array = array();
     if ($wantRecords && isset($data['records'])) 
       $array['records'] = $data['records'];
