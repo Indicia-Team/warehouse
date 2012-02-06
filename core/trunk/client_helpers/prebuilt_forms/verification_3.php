@@ -565,6 +565,17 @@ searchArea='
         'extraParams'=>$auth,
         'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
     ));
+    if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) {
+      $parentAttrs = data_entry_helper::getAttributes(array(
+        'id' => data_entry_helper::$entity_to_load['sample:parent_id'],
+        'valuetable'=>'sample_attribute_value',
+        'attrtable'=>'sample_attribute',
+        'key'=>'sample_id',
+        'extraParams'=>$auth,
+        'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
+      ));
+    } else
+      $parentAttrs = array();
     $occAttrs = data_entry_helper::getAttributes(array(
         'id' => $_GET['occurrence_id'],
         'valuetable'=>'occurrence_attribute_value',
@@ -573,7 +584,7 @@ searchArea='
         'extraParams'=>$auth,
         'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
     ));
-    $attributes = array_merge($smpAttrs, $occAttrs);
+    $attributes = array_merge($parentAttrs, $smpAttrs, $occAttrs);
     foreach($attributes as $attr) {
       $data[] = array('caption'=>lang::get($attr['caption']), 'value'=>$attr['displayValue']);
     }
