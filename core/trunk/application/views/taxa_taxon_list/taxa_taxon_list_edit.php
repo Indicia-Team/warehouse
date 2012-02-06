@@ -231,7 +231,7 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
       echo '<input type="hidden" name="'.$name.'" value="'.$attr['value'].'" id="imp-geom"/>';
       echo '<label>'.$attr['caption'].':</label>';
       echo map_helper::map_panel(array(
-        'presetLayers' => array('virtual_earth'),
+        'presetLayers' => array('osm_th','osm'),
         'editLayer' => true,
         'clickForSpatialRef'=>false,
         'layers' => array(),
@@ -240,7 +240,7 @@ echo ($parent_id != null) ? html::specialchars(ORM::factory('taxa_taxon_list', $
         'initial_zoom'=>4,
         'width'=>870,
         'height'=>400,
-        'standardControls' => array('panZoom','hoverFeatureHighlight','drawPolygon','modifyFeature')
+        'standardControls' => array('panZoomBar','layerSwitcher','hoverFeatureHighlight','drawPolygon','modifyFeature')
     ));
   }
 	
