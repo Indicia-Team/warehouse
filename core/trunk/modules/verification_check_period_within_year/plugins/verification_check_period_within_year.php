@@ -26,24 +26,20 @@
  */
 function verification_check_period_within_year_verification_rules() {
   return array(
+    // slightly convoluted logic required in this test to get it to work with ranges in middle of year as well as ranges that span the end of the year
     array(
-      'message'=>'This record was before the expected time of year for observations of this species.',
+      'message'=>'This record was outside the expected time of year for observations of this species.',
       'query' => array(
         'joins' => 
             "join samples s on s.id=occlist.sample_id ".
-            "join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=occlist.taxa_taxon_list_id\n" .
-            "join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttla.deleted=false and ttla.caption='Period within year start date'",
-        'where'=>'where extract(doy from ttlav.date_start_value) > extract(doy from s.date_start)'
-      )
-    ),
-    array(
-      'message'=>'This record was after the expected time of year for observations of this species.',
-      'query' => array(
-        'joins' =>
-            "join samples s on s.id=occlist.sample_id ".
-            "join taxa_taxon_list_attribute_values ttlav on ttlav.taxa_taxon_list_id=occlist.taxa_taxon_list_id\n" .
-            "join taxa_taxon_list_attributes ttla on ttla.id=ttlav.taxa_taxon_list_attribute_id and ttla.deleted=false and ttla.caption='Period within year end date'",
-        'where'=>'where extract(doy from ttlav.date_start_value) < extract(doy from s.date_start)'
+            "join taxa_taxon_list_attribute_values avstart on avstart.taxa_taxon_list_id=occlist.taxa_taxon_list_id and avstart.deleted=false\n".
+            "join taxa_taxon_list_attributes astart on astart.id=avstart.taxa_taxon_list_attribute_id and astart.deleted=false and astart.caption='Period within year start date'\n".
+            "join taxa_taxon_list_attribute_values avend on avend.taxa_taxon_list_id=occlist.taxa_taxon_list_id and avend.deleted=false\n".
+            "join taxa_taxon_list_attributes aend on aend.id=avend.taxa_taxon_list_attribute_id and aend.deleted=false and aend.caption='Period within year end date'",
+        'where'=>"where (extract(doy from avstart.date_start_value)<=extract(doy from avend.date_start_value) \n".
+            "and (extract(doy from avstart.date_start_value) >= extract(doy from s.date_start) or extract(doy from avend.date_start_value) <= extract(doy from s.date_start))) \n".
+            "or (extract(doy from avstart.date_start_value)>extract(doy from avend.date_start_value) \n".
+            "and extract(doy from avstart.date_start_value) >= extract(doy from s.date_start) and extract(doy from avend.date_start_value) <= extract(doy from s.date_start))"
       )
     )
   );
