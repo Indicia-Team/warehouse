@@ -123,9 +123,14 @@ abstract class Attribute_Value_ORM extends ORM {
   protected function delete_if_empty() {
     $arr = $this->as_array();
     foreach ($arr as $field => $content) {
-      if (substr($field, -6)=='_value' && $content!=="" && $content!==null) 
-        // not empty, so can exit
-        return false;
+      if (substr($field, -6)=='_value') { 
+        if ($content!=="" && $content!==null) 
+          // not empty, so can exit
+          return false;
+        else
+          // empty values should be null, especially if we empty something other than a string. 
+          $this->$field=null;
+      }
     }
     // delete if it exists
     if ($this->id!==0) {
@@ -158,7 +163,7 @@ abstract class Attribute_Value_ORM extends ORM {
   {
     $value = parent::__get($column);
 
-    if ($column === 'geom_value' && $value!==null)
+    if ($column === 'geom_value' && !empty($value))
     {
       $row = $this->db->query("SELECT ST_asText('$value') AS wkt")->current();
       $value = $row->wkt;
