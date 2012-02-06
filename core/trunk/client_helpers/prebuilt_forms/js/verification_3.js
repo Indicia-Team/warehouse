@@ -16,8 +16,8 @@ function selectRow(tr) {
         $(tr).addClass('selected');
         // point the image and comments tabs to the correct AJAX call for the selected occurrence.
         var tabcount = $('#record-details-tabs').tabs('length');
-        $('#record-details-tabs').tabs('url', tabcount-2, indiciaData.ajaxUrl + '/images' + urlSep + 'occurrence_id=' + occurrence_id);
-        $('#record-details-tabs').tabs('url', tabcount-1, indiciaData.ajaxUrl + '/comments' + urlSep + 'occurrence_id=' + occurrence_id);
+        $('#record-details-tabs').tabs('url', tabcount-2, indiciaData.ajaxUrl + '/images/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
+        $('#record-details-tabs').tabs('url', tabcount-1, indiciaData.ajaxUrl + '/comments/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id);
         // reload current tabs
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
         $('#record-details-toolbar *').attr('disabled', '');
