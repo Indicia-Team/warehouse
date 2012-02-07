@@ -268,11 +268,27 @@ function showTab() {
       $('#details-tab').html(current_record.content);
     }
     if (mapDiv !== null) {
+      // Ensure the current record is centred and highlighted on the map.
       var parser = new OpenLayers.Format.WKT(),
         feature = parser.read(current_record.additional.wkt),
-        c = feature.geometry.getCentroid();
-      mapDiv.map.editLayer.removeAllFeatures();
+        c,
+        lastFeature;
+      if (mapDiv.map.projection.getCode() != 'EPSG:3857') {
+        feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
+      }
+      // Make the current record marker obvious
+      var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default']['defaultStyle'], {fillOpacity: 0.8, fillColor: '#0000FF'});
+      feature.style=style;
+      feature.tag='currentRecord';
+      var toRemove=[];
+      $.each(mapDiv.map.editLayer.features, function(idx, feature) {
+        if (feature.tag==='currentRecord') {
+          toRemove.push(feature);
+        }
+      });
+      mapDiv.map.editLayer.removeFeatures(toRemove, {});
       mapDiv.map.editLayer.addFeatures([feature]);
+      c = feature.geometry.getCentroid();
       mapDiv.map.setCenter(new OpenLayers.LonLat(c.x, c.y));
     }
   }
