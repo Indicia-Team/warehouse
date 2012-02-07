@@ -25,8 +25,8 @@
  * There should be a checkbox/boolean attribute to identify breeding records, whose attribute ID is defined in the config file. 
  * @return type array of rules.
  */
-function verification_check_period_within_year_verification_rules() {
-  $breedingAttrId = kohana::config('verification_check_period_within_year.breeding_attribute_id', false, false);
+function verification_check_period_within_year_breeding_verification_rules() {
+  $breedingAttrId = kohana::config('verification_check_period_within_year_breeding.breeding_attribute_id', false, false);
   if ($breedingAttrId) {
     return array(
       // slightly convoluted logic required in this test to get it to work with ranges in middle of year as well as ranges that span the end of the year
