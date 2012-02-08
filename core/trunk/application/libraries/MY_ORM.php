@@ -754,14 +754,12 @@ class ORM extends ORM_Core {
       $key = implode('-', $keyArr);
       $result = $this->cache->get($key);
       if ($result===null) {
-        // setup basic query to get custom attrs
-        $this->setupDbToQueryAttributes(false, $typeFilter);
-        $attr_entity = $this->object_name.'_attribute';
-        // We only want globally or locally required ones
-        if ($this->identifiers['website_id'] || $this->identifiers['survey_id']) 
-          $this->db->where('('.$attr_entity."s_websites.validation_rules like '%required%' or ".$attr_entity."s.validation_rules like '%required%')");
-        else 
-          $this->db->like($attr_entity.'s.validation_rules','%required%');
+        // setup basic query to get custom attrs. Ask for required ones only as long as we know the website/survey
+        $this->setupDbToQueryAttributes($this->identifiers['website_id'] || $this->identifiers['survey_id'], $typeFilter);
+        // If we don't know the website or survey, then the setupDbToQueryAttributes code will not have filtered for required fields.
+        // So do it here.
+        if (!($this->identifiers['website_id'] || $this->identifiers['survey_id'])) 
+          $this->db->like($this->object_name.'s.validation_rules','%required%');
         $result=$this->db->get()->result_array(true);
         $this->cache->set($key, $result, array('required-fields'));
       }
@@ -805,7 +803,7 @@ class ORM extends ORM_Core {
         $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       // note we concatenate the validation rules to check both global and website specific rules for requiredness. 
       if ($required) {
-        $this->db->like($attr_entity.'s_websites.validation_rules || '.$attr_entity.'.validation_rules', '%required%');
+        $this->db->where('('.$attr_entity."s_websites.validation_rules like '%required%' or ".$attr_entity."s.validation_rules like '%required%')");
       }
       // ensure that only attrs for the record's sample method or location type, or unrestricted attrs,
       // are returned
