@@ -3,23 +3,23 @@
 <report title="Summary species counts by location" description="Lists locations with mappable boundary output and the number of species within them. ">
       <query>
       SELECT #columns#
-      FROM websites w
-      JOIN surveys su on su.website_id=w.id
-      JOIN locations_websites lw ON lw.website_id=w.id and lw.deleted=false
-      JOIN locations l ON (l.id=lw.location_id or l.public=true) and l.deleted=false
+      FROM locations l
+      LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN (samples s
-        JOIN occurrences o on o.sample_id=s.id AND o.deleted='f'
+        JOIN occurrences o ON o.sample_id=s.id AND o.deleted='f'
         JOIN taxa_taxon_lists ttl ON ttl.id=o.taxa_taxon_list_id
         JOIN taxa tx ON tx.id=ttl.taxon_id AND tx.deleted=false
         JOIN taxon_meanings tm on tm.id=ttl.taxon_meaning_id
-      ) on s.survey_id=su.id AND st_intersects(s.geom, coalesce(l.boundary_geom, l.centroid_geom))
-      LEFT JOIN (occurrence_attribute_values oav
+        JOIN index_websites_website_agreements iwwa ON iwwa.to_website_id=o.website_id and iwwa.receive_for_#sharing#=true AND iwwa.from_website_id in (#website_ids#)
+        JOIN surveys su ON su.id=s.survey_id AND su.deleted='f'
+        LEFT JOIN (occurrence_attribute_values oav
           JOIN termlists_terms certainty ON certainty.id=oav.int_value
-      ) ON oav.occurrence_id=o.id AND oav.deleted='f' AND oav.occurrence_attribute_id=#certainattr#   
+        ) ON oav.occurrence_id=o.id AND oav.deleted='f' AND oav.occurrence_attribute_id=#certainattr#   
+      ) on s.deleted='f' AND st_intersects(s.geom, coalesce(l.boundary_geom, l.centroid_geom))
       #joins#
-      WHERE w.deleted=false
-      AND #website_filter#
-      AND (o.zero_abundance='f' OR o.id IS NULL)
+      WHERE l.deleted=false
+      AND (lw.website_id in (#website_ids#) OR l.public=true)
+      AND (o.id IS NULL or ((o.zero_abundance='f')
       AND (CAST(su.id AS character varying)='#survey_id#' OR '#survey_id#'='')
       AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
@@ -30,7 +30,8 @@
           ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
           ('#quality#'='!R')
       )
-      AND o.record_status&lt;&gt;'R'
+      AND o.record_status&lt;&gt;'R'))
+      
       </query>
       <order_bys>
             <order_by>value DESC</order_by>
@@ -62,6 +63,6 @@
             <column name="boundary" display="Boundary" sql="st_astext(COALESCE(l.boundary_geom, l.centroid_geom))" visible="false" mappable="true"/>
             <column name="value" display="No. of Taxa" distincton="true" aggregate="true" sql="count(distinct tm.id)" in_count="false"/>
             <column name="minvalue" visible="false" aggregate="true" sql="0" />
-            <column name="maxvalue" visible="false" aggregate="true" sql="max(count(distinct o.id)) OVER ()" />
+            <column name="maxvalue" visible="false" aggregate="true" sql="max(count(distinct tm.id)) OVER ()" />
       </columns>
 </report>

@@ -184,7 +184,7 @@ class ReportEngine {
     switch ($this->reportFormat)
     {
       case 'xml':
-        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds);
+        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, isset($this->providedParams['sharing']) ? $this->providedParams['sharing'] : 'reporting');
         break;
       default:
         return array('error' => 'Unknown report format specified: '. $this->reportFormat);

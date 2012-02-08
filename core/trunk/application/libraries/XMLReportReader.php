@@ -21,7 +21,7 @@
  */
 
 /**
-* The report reader encapsulates logic for reading reports from a number of sources, and opens up * report 
+* The report reader encapsulates logic for reading reports from a number of sources, and opens up * report
 * methods in a transparent way to the report controller.
 */
 class XMLReportReader_Core implements ReportReader
@@ -42,20 +42,20 @@ class XMLReportReader_Core implements ReportReader
   private $automagic = false;
   private $vagueDateProcessing = 'true';
   private $download = 'OFF';
-  
+
   /**
-   * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the 
+   * @var boolean Identify if we have got SQL defined in the columns array. If so we are able to auto-generate the
    * sql for the columns list.
    */
   private $hasColumnsSql = false;
-  
+
   /**
    * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
    * the other fields.
    */
   private $hasAggregates = false;
-  
-  /** 
+
+  /**
    * Returns a simple array containing the title and description of a report. Static so you don't have to load the full report object to get this
    * information.
    */
@@ -76,9 +76,13 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
-  * <p> Constructs a reader for the specified report. </p>
+  * Constructs a reader for the specified report.
+  * @param string $report Report file path
+  * @param array $websiteIds List of websites to include data for
+  * @param string $sharing Set to reporting, verification, moderation, peer_review or data_flow
+  * depending on the type of data from other websites to include in this report.
   */
-  public function __construct($report, $websiteIds)
+  public function __construct($report, $websiteIds, $sharing='reporting')
   {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
@@ -120,14 +124,17 @@ class XMLReportReader_Core implements ReportReader
                     foreach($websiteIds as $key=>$value) {
                       if (empty($value))
                         unset($websiteIds[$key]);
-                    }  
+                    }
                   }
                   $idList = implode($websiteIds, ',');
+                  // query can either pull in the filter or just the list of website ids.
                   $filter = "($websiteFilterField in ($idList) or $websiteFilterField is null)";
-                  $this->query = str_replace('#website_filter#', $filter, $this->query);
+                  $this->query = str_replace(array('#website_filter#', '#website_ids#'), array($filter, $idList), $this->query);
                 } else
                   // use a dummy filter to return all websites if core admin
                   $this->query = str_replace('#website_filter#', '1=1', $this->query);
+                // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
+                $this->query = str_replace('#sharing#', $sharing, $this->query);
                 break;
               case 'field_sql':
                 $reader->read();
@@ -213,13 +220,13 @@ class XMLReportReader_Core implements ReportReader
         else
             $this->query .= '#filters#';
       }
-      
+
       if ($this->hasColumnsSql) {
         // column sql is defined in the list of column elements, so autogenerate the query.
         $this->autogenColumns();
         if ($this->hasAggregates) {
           $this->buildGroupBy();
-        } 
+        }
       } elseif ($this->query) {
         // sort out the field list or use count(*) for the count query. Do this at the end so the queries are
         // otherwise the same.
@@ -237,7 +244,7 @@ class XMLReportReader_Core implements ReportReader
       throw new Exception("Report: $report\n".$e->getMessage());
     }
   }
-  
+
   /**
    * Use the sql attributes from the list of columns to auto generate the columns SQL.
    */
@@ -252,9 +259,9 @@ class XMLReportReader_Core implements ReportReader
           $distinctSql[] = $def['sql'];
           // in_count lets the xml file exclude distinct on columns from the count query
           if (!isset($def['in_count']) || $def['in_count']=='true') {
-            $countSql[] = $def['sql'];  
+            $countSql[] = $def['sql'];
           }
-        }          
+        }
       }
     }
     if (count($distinctSql)>0) {
@@ -267,15 +274,15 @@ class XMLReportReader_Core implements ReportReader
     } else {
       $this->countQuery = str_replace('#columns#', ' count(*) ', $this->query);
     }
-    // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to 
+    // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
     // add custom attribute fields.
     $this->query = str_replace('#columns#', $distincton . implode(', ', $sql) . '#fields#', $this->query);
     kohana::log('debug', 'count : '.$this->countQuery);
   }
-  
+
   /**
    * If there are columns marked with the aggregate attribute, then we can build a group by clause
-   * using all the non-aggregate column sql. 
+   * using all the non-aggregate column sql.
    * This is done dynamically leaving us with the ability to automatically extend the group by field list,
    * e.g. if some custom attribute columns have been added to the report.
    */
@@ -289,7 +296,7 @@ class XMLReportReader_Core implements ReportReader
     // Add the non-aggregated fields to the end of the query. Leave a token so that the query processor
     // can add more, e.g. if there are custom attribute columns, and also has a suitable place for a HAVING clause.
     if (count($sql)>0)
-      $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys#';    
+      $this->query .= "\nGROUP BY " . implode(', ', $sql) . '#group_bys#';
   }
 
   /**
@@ -371,7 +378,7 @@ class XMLReportReader_Core implements ReportReader
   }
   return $query;
   }
-  
+
   public function getCountQuery()
   {
     return $this->countQuery;
@@ -527,7 +534,7 @@ class XMLReportReader_Core implements ReportReader
   }
 
   /**
-   * Merges a parameter into the list of parameters read for the report. Updates existing 
+   * Merges a parameter into the list of parameters read for the report. Updates existing
    * ones if there is a name match.
    */
   private function mergeParam($name, $reader=null) {
@@ -562,9 +569,9 @@ class XMLReportReader_Core implements ReportReader
         'fieldname'=>$fieldname,
         'alias'=>$alias,
         'emptyvalue'=>$emptyvalue,
-        'display'=>$display, 
-        'description'=>$description, 
-        'query' => $query, 
+        'display'=>$display,
+        'description'=>$description,
+        'query' => $query,
         'lookup_values' => $lookup_values,
         'population_call' => $population_call
       );
@@ -587,12 +594,12 @@ class XMLReportReader_Core implements ReportReader
           }
         }
       }
-      
+
     }
   }
-  
+
   /**
-   * Merges a column definition pointed to by an XML reader into the list of columns.  
+   * Merges a column definition pointed to by an XML reader into the list of columns.
    */
   private function mergeXmlColumn($reader) {
     $name = $reader->getAttribute('name');
@@ -617,8 +624,8 @@ class XMLReportReader_Core implements ReportReader
     $reader->moveToElement();
     $this->columns[$name] = array_merge($this->columns[$name], $def);
     // remember if we have info required to auto-build the column SQL, plus aggregate fields
-    $this->hasColumnsSql = $this->hasColumnsSql || isset($this->columns[$name]['sql']); 
-    $this->hasAggregates = $this->hasAggregates || (isset($this->columns[$name]['aggregate']) && $this->columns[$name]['aggregate']=='true'); 
+    $this->hasColumnsSql = $this->hasColumnsSql || isset($this->columns[$name]['sql']);
+    $this->hasAggregates = $this->hasAggregates || (isset($this->columns[$name]['aggregate']) && $this->columns[$name]['aggregate']=='true');
   }
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='', $autodef=true)
@@ -631,7 +638,7 @@ class XMLReportReader_Core implements ReportReader
       if ($class != '') $this->columns[$name]['class'] = $class;
       if ($visible === 'false') {
         if($this->columns[$name]['visible'] !== 'true') // allows a false to override a provisional_true, but not a true.
-          $this->columns[$name]['visible'] = 'false'; 
+          $this->columns[$name]['visible'] = 'false';
       } elseif ($visible === 'true') // don't make any change if $visible is not set
         $this->columns[$name]['visible'] = 'true';
       if ($img == 'true' || $this->columns[$name]['img'] == 'true') $this->columns[$name]['img'] = 'true';
@@ -640,7 +647,7 @@ class XMLReportReader_Core implements ReportReader
       if ($autodef != '') $this->columns[$name]['autodef'] = $autodef;
     }
     else
-    {    
+    {
       $this->columns[$name] = array(
           'display' => $display,
           'style' => $style,
@@ -834,14 +841,14 @@ class XMLReportReader_Core implements ReportReader
     }
     //extract final column
     $cols[] = substr($colString, $colStart);
-    
-    // We have cols, which may either be of the form 'x', 'table.x' or 'x as y'. Either way the column name is the part after the last 
+
+    // We have cols, which may either be of the form 'x', 'table.x' or 'x as y'. Either way the column name is the part after the last
     // space and full stop.
     foreach ($cols as $col)
     {
       // break down by spaces
       $b = explode(' ' , trim($col));
-      // break down the part after the last space, by 
+      // break down the part after the last space, by
       $c = explode('.' , array_pop($b));
       $d = array_pop($c);
       $this->mergeColumn(trim($d));
