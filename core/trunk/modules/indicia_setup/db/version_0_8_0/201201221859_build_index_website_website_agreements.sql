@@ -136,8 +136,12 @@ select wwafrom.website_id as from_website_id, wwato.website_id as to_website_id,
   end as receive_for_moderation
 from websites_website_agreements wwafrom
 join website_agreements wa on wa.id=wwafrom.website_agreement_id and wa.deleted=false
-join websites_website_agreements wwato on wwato.website_agreement_id=wa.id and wwato.deleted=false
-where wwafrom.deleted=false;
+join websites_website_agreements wwato on wwato.website_agreement_id=wa.id and wwato.deleted=false and wwato.website_id<>wwafrom.website_id
+where wwafrom.deleted=false
+union
+select id, id, true, true, true, true, true, true, true, true, true, true
+from websites
+where deleted=false;
 
 COMMENT ON VIEW build_index_websites_website_agreements IS 'A view which lists every website in the from_website_id, plus every website they have an agreement with in the to_website_id, plus flags indicating what type of data they must share according to the agreement.';
 
@@ -221,3 +225,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION refresh_index_websites_website_agreements() IS 'A Function containing a script to refresh the contents of index_websites_website_agreements from the view build_index_websites_website_agreements.';
+
+SELECT refresh_index_websites_website_agreements();
