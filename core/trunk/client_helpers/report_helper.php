@@ -240,6 +240,10 @@ class report_helper extends helper_base {
   * </li>
   * <li><b>downloadLink</b>
   * Should a download link be included in the report footer? Defaults to false.</li>
+  * <li><b>sharing</b>
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * verification, moderation, peer_review or data_flow.</li>  
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -387,7 +391,7 @@ class report_helper extends helper_base {
       self::add_resource('reportgrid');
       $uniqueName = 'grid_' . preg_replace( "/[^a-z0-9]+/", "_", $options['id']);
       $group = preg_replace( "/[^a-zA-Z0-9]+/", "_", $options['reportGroup']);
-      global $indicia_templates;      
+      global $indicia_templates;
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
@@ -620,6 +624,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * When the x-axis shows arbitrary category names (e.g. a bar chart), then this indicates the report or view/table
   * field(s) which contains the labels. Also used for pie chart segment names. Can be an array for multi-series
   * charts.</li>
+  * <li><b>sharing</b>
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * verification, moderation, peer_review or data_flow.</li>  
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Series
@@ -812,6 +820,11 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * The band will then only be output once at the beginning of the report, then once
   * each time one of the named trigger fields' values change. Therefore when using
   * trigger fields the band acts as a group header band.</li>
+  * <li><b>sharing</b>
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * verification, moderation, peer_review or data_flow.</li>  
+  * </ul>
   */
   public static function freeform_report($options) {
     $options = self::get_report_grid_options($options);    
@@ -827,7 +840,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       'footer' => '',
       'bands' => array(),
       'class' => 'banded-report'
-    ), $options);    
+    ), $options);
 
     if (!isset($records))
       return $r;
@@ -953,13 +966,50 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li>clickableLayersOutputColumns<br/>
   * An associated array of column field names with column titles as the values which defines the columns that are output when clicking on a data point. 
   * If ommitted, then all available columns are output using their original field names.</li>
+  * <li>displaySymbol</li>
+  * Symbol to display instead of the actual polygon. The symbol is displayed at the centre of the polygon.
+  * If not set then defaults to output the original polygon. Allowed values are circle, 
+  * square, star, x, cross, triangle.</li>
+  * <li>valueOutput
+  * Allows definition of how a data value in the report output is used to change the output of each symbol.
+  * This allows symbol size, colour and/or opacity to be used to provide an indication of data values.
+  * Provide an array of entries. The key of the entries should match the style parameter you want to 
+  * control which should be one of fillOpacity, fillColor, strokeOpacity, strokeWidth or strokeColor. If using
+  * displaySymbol to render symbols rather than polygons then pointRadius (the symbol size) and rotation are also
+  * available. If the report defines labels (using the feature_style attribute of a column to define a
+  * column that outputs labels), then fontSize, fontColor and fontOpacity are also available.
+  * Each array entry is a sub-array with associative array values set for the following:
+  *   "from" is the start value of the range of output values (e.g. the minimum opacity or first colour in a range).
+  *   "to" is the end value of the range of output values (e.g. the maximum opacity or last colour in a range).
+  *   "valueField" is the name of the numeric field in the report output to be used to control display. 
+  *   "minValue" is the data value that equates to the output value specified by "from". This can be a 
+  *     fieldname if wrapped in braces.
+  *   "maxValue" is the data value that equates to the output value specified by "from". This can be a 
+  *     fieldname if wrapped in braces.
+  * The following example maps a field called value (with minvalue and maxvalue also output by the report)
+  * to a range of colours from blue to red.
+  * array(
+  *   'fillColor'=>array(
+  *     'from'=>'#00FF00',
+  *     'to' => '#ff0000',
+  *     'valueField' => 'value',
+  *     'minValue'=> '{minvalue}',
+  *     'maxValue'=> '{maxvalue}'
+  *   )
+  * )
+  * </li>
+  * <li><b>sharing</b>
+  * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+  * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+  * verification, moderation, peer_review or data_flow.</li>  
   * </ul>
-   */
+  */
   public static function report_map($options) {
     $options = array_merge(array(
       'clickable' => true,
       'clickableLayersOutputMode' => 'popup',
       'clickableLayersOutputDiv' => '',
+      'displaySymbol'=>'vector'
     ), $options);
     $options = self::get_report_grid_options($options);
     if (empty($options['geoserverLayer'])) {
@@ -993,38 +1043,96 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         foreach($response['columns'] as $col=>$def) {
           if (!empty($def['feature_style'])) {
             // found a column that outputs data to input into a feature style parameter. ${} syntax is explained at http://docs.openlayers.org/library/feature_styling.html.
-            $settings[$def['feature_style']] = "'\$\{$col\}'";
+            $settings[$def['feature_style']] = "\$\{$col\}";
           }
         }
         // default features are color red by default
         $defsettings = array_merge(array(
-          'fillColor'=> "'#ff0000'",
-          'strokeColor'=> "'#ff0000'",
+          'fillColor'=> '#ff0000',
+          'strokeColor'=> '#ff0000',
+          'strokeWidth'=>1,
+          'fillOpacity'=>0.5,
+          'pointRadius'=>10
         ), $settings);
+        if ($options['displaySymbol']!=='vector')
+          $defsettings['graphicName']=$options['displaySymbol'];
+        $styleFns = array();
+        foreach($options['valueOutput'] as $type => $outputdef) {
+          $value = $outputdef['valueField'];
+          if (preg_match('/{(?P<name>.+)}/', $outputdef['minValue'], $matches))
+            $minvalue = 'feature.data.'.$matches['name'];
+          else
+            $minvalue = $outputdef['minValue'];
+          if (preg_match('/{(?P<name>.+)}/', $outputdef['maxValue'], $matches))
+            $maxvalue = 'feature.data.'.$matches['name'];
+          else
+            $maxvalue = $outputdef['maxValue'];
+          $from = $outputdef['from'];
+          $to = $outputdef['to'];
+          if (substr($type, -5)==='Color') 
+            $styleFns[] = "get$type: function(feature) { \n".
+                "var from_r, from_g, from_b, to_r, to_g, to_b, ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
+                "from_r = parseInt('$from'.substring(1,3),16);\n".
+                "from_g = parseInt('$from'.substring(3,5),16);\n".
+                "from_b = parseInt('$from'.substring(5,7),16);\n".
+                "to_r = parseInt('$to'.substring(1,3),16);\n".
+                "to_g = parseInt('$to'.substring(3,5),16);\n".
+                "to_b = parseInt('$to'.substring(5,7),16);\n".
+                
+                "return 'rgb('+(from_r + (to_r-from_r)*ratio) + ', '+".
+                   "(from_g + (to_g-from_g)*ratio) + ', '+".
+                   "(from_b + (to_b-from_b)*ratio) + ')'; \n".
+                '}';
+          else
+            $styleFns[] = "get$type: function(feature) { \n".
+                "var ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
+                "return $from + ($to-$from)*ratio; \n".
+                '}';
+          $defsettings[$type]="\${get$type}";
+        }
+        $styleFns = implode(",\n", $styleFns);
+        
         // selected features are color blue by default
-        $selsettings = array_merge(array(
-          'fillColor'=> "'#0000ff'",
-          'strokeColor'=> "'#0000ff'",
-        ), $settings);
+        $selsettings = array_merge($defsettings, array(
+          'fillColor'=> '#0000ff',
+          'strokeColor'=> '#0000ff',
+        ));
         // convert these styles into a JSON definition ready to feed into JS.
-        $defsettings = '{'.implode(',', array_map(create_function('$key, $value', 'return $key.":".$value;'), array_keys($defsettings), array_values($defsettings))).'}';
-        $selsettings = '{'.implode(',', array_map(create_function('$key, $value', 'return $key.":".$value;'), array_keys($selsettings), array_values($selsettings))).'}';
-        $addFeaturesJs = "
-       
-function addDistPoint(features, record, wktCol) {
-  var geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
-  if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-    geom.transform(div.indiciaProjection, div.map.projection);
-  }
-  delete record[wktCol];
-  features.push(new OpenLayers.Feature.Vector(geom, record));
-}
-features = [];\n";
-        foreach ($records as $record)
-          $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '".$wktCol."');\n";
-        $addFeaturesJs.= "  
-indiciaData.reportlayer.addFeatures(features);
-div.map.addLayer(indiciaData.reportlayer);\n";
+        $defsettings = json_encode($defsettings);
+        $selsettings = json_encode($selsettings);
+        $addFeaturesJs = "";
+        $opts = json_encode(array('type'=>$options['displaySymbol']));
+        foreach ($records as $record) {
+          $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts);\n";
+        }
+        report_helper::$javascript.= "
+var defaultStyle = new OpenLayers.Style($defsettings, {context: { 
+  $styleFns
+}});
+var selectStyle = new OpenLayers.Style($selsettings, {context: { 
+  $styleFns
+}});
+var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
+indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
+mapInitialisationHooks.push(function(div) {
+  function addDistPoint(features, record, wktCol, opts) {
+    var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+    if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+      geom.transform(div.indiciaProjection, div.map.projection);
+    }
+    delete record[wktCol];
+    if (opts.type!=='vector') {
+      // render a point for symbols
+      geom = geom.getCentroid();
+    }
+    feature = new OpenLayers.Feature.Vector(geom, record);
+    features.push(feature);
+  } 
+  features = [];
+  $addFeaturesJs
+  indiciaData.reportlayer.addFeatures(features);
+  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
+});\n";
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1044,22 +1152,13 @@ div.map.addLayer(indiciaData.reportlayer);\n";
           $proxy = '';
         }
         $layerUrl = $proxy . self::$geoserver_url . 'wms';
-        map_helper::$javascript .= "  indiciaData.reportlayer = new OpenLayers.Layer.WMS('Report output',
+        report_helper::$javascript .= "  indiciaData.reportlayer = new OpenLayers.Layer.WMS('Report output',
       '$layerUrl', { layers: '".$options['geoserverLayer']."', transparent: true,
           $filter, $style},
       {singleTile: true, isBaseLayer: false, sphericalMercator: true});\n";
       }
-      if (isset($addFeaturesJs))
+      
       report_helper::$javascript.= "
-var defaultStyle = OpenLayers.Util.applyDefaults($defsettings, OpenLayers.Feature.Vector.style['default']);
-var selectStyle = OpenLayers.Util.applyDefaults($selsettings, OpenLayers.Feature.Vector.style['select']);
-var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap});
-
-mapInitialisationHooks.push(function(div) {
-  $addFeaturesJs
-  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
-});
 mapSettingsHooks.push(function(opts) {
   opts.reportGroup = '".$options['reportGroup']."';
   if (typeof indiciaData.reportlayer!=='undefined') {
@@ -1074,7 +1173,6 @@ mapSettingsHooks.push(function(opts) {
         report_helper::$javascript .= "  opts.clickableLayersOutputColumns=".json_encode($options['clickableLayersOutputColumns']).";\n";
       report_helper::$javascript .= "});\n";
     }
-  
     return $r;
   }
   
@@ -1102,6 +1200,10 @@ mapSettingsHooks.push(function(opts) {
    * <li><b>linkOnly</b><br/>
    * Pass true to return a link to the report data request rather than the data itself. Default false.
    * </li>
+   * <li><b>sharing</b>
+   * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
+   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
+   * verification, moderation, peer_review or data_flow.</li>     
    * </ul>
    
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
@@ -1148,6 +1250,9 @@ mapSettingsHooks.push(function(opts) {
         // Must urlencode the keys and parameters, as things like spaces cause curl to hang.
         $request .= '&'.urlencode($key).'='.urlencode($value);
     }
+    // Pass through the type of data sharing
+    if (isset($options['sharing']))
+      $request .= '&sharing='.$options['sharing'];
     if (isset($options['linkOnly']) && $options['linkOnly']) {
       return $request;
     }
