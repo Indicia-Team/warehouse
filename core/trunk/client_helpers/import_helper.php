@@ -102,7 +102,8 @@ class import_helper extends helper_base {
         return self::upload_mappings_form($options);
       $formOptions = array(
         'form' => $formArray,
-        'readAuth' => $options['auth']['read']
+        'readAuth' => $options['auth']['read'],
+        'nocache'=>true
       );
       if (isset($options['presetSettings'])) {
         // skip parts of the form we have a preset value for

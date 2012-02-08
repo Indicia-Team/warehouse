@@ -623,6 +623,9 @@ $('.ui-state-default').live('mouseout', function() {
    * Defaults to true. Set to false to disable helpText being displayed alongside controls, useful for building compact versions of 
    * simple parameter forms.
    * </li>
+   * <li><b>nocache</b><br/>
+   * Set to true to disable caching of lookups.
+   * </li>
    * </ul>
    */
   public static function build_params_form($options) {
@@ -719,7 +722,8 @@ $('.ui-state-default').live('mouseout', function() {
     $ctrlOptions = array(
       'label' => $info['display'],
       'helpText' => $options['helpText'] ? $info['description'] : '', // note we can't fit help text in the toolbar versions of a params form
-      'fieldname' => $fieldPrefix.$key
+      'fieldname' => $fieldPrefix.$key,
+      'nocache' => isset($options['nocache']) && $options['nocache']      
     );
     // If this parameter is in the URL or post data, put it in the control instead of the original default
     if (isset($options['defaults'][$key]))
