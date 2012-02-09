@@ -30,7 +30,7 @@ global $custom_terms;
 // TBD translations for report grid headings.
 $custom_terms = array(
 // Tab Titles
-	'LANG_Main_Samples_Tab' => 'Les échantillons',
+	'LANG_Main_Samples_Tab' => 'Echantillons',
 	'LANG_Download' => 'Reports',
 	'LANG_Locations' => 'Sites',
 	'LANG_Tab_otherinformation' => 'Conditions',
@@ -49,7 +49,7 @@ $custom_terms = array(
 	'prev step'=>'Précédent',
 // Main grid Selection
 	'Site name' => 'Nom du site',
-	'Actions' => 'Actes',
+	'Actions' => 'Actions',
 	'Delete'=>'Supprimer',
 // Reports
 	'LANG_Sites_Download' => 'Run a report to provide information on all the sites used for these surveys, plus their attributes. (CSV Format)',
@@ -81,7 +81,7 @@ $custom_terms = array(
 	'LANG_NoSites'=>"Il n'y a actuellement aucune sites définis: s'il vous plaît créer un nouveau.",
 	'LANG_CommonEmptyLocationID'=>'Choose an existing site',
 	'LANG_CommonLocationNameLabel' => 'Nom du site',
-	'LANG_LocModTool_NameLabel'=>'Nouveau nom du site',
+	'LANG_LocModTool_NameLabel'=>'Nouveau nom',
 	'LANG_LocModTool_DeleteLabel'=>'Supprimer',
 	'LANG_LocModTool_DeleteInstructions'=>'Quand un site est supprimé, toutes les données relatives à ce site seront maintenues dans les rapports.',
 	'LANG_TooFewPoints' => 'Il ya trop peu de points dans ce polygone - il doit y avoir au moins 3.',
@@ -102,7 +102,7 @@ $custom_terms = array(
 	'LANG_ZoomToSite'=>'Zoomer sur le site',
 	'LANG_ZoomToParent'=>'Zoom to square (5x5km)',
 	'LANG_ZoomToCountry'=>'Voir tout le Luxembourg',
-	'LANG_Location_Type_Label'=>'Site type',
+	'LANG_Location_Type_Label'=>'Statut du site',
 	'LANG_Location_Type_Primary'=>'Submitted',
 	'LANG_Location_Type_Secondary'=>'Confirmed',
 	'LANG_CommonLocationCodeLabel'=>'Code',

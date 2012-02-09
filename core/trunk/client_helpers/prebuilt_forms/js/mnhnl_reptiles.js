@@ -113,7 +113,7 @@ $('.remove-row').live('click', function(e) {
     nextRow.find('.scPresence').css('display','none');
     // disable or remove all other active controls from the row.
     // Do NOT disable the presence checkbox or the container td, otherwise it is not submitted.
-    nextRow.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled').removeClass('required').filter('input,select').val('').width('');
+    nextRow.find('*:not(.scPresence,.scPresenceCell)').attr('disabled','disabled').removeClass('required').filter('input,select').val('');
     nextRow.find('a').remove();
     nextRow.find('.deh-required').remove();
     if($(e.target).attr('rowspan') > 2) {

@@ -144,7 +144,16 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'description'=>'Comma separated: proxiedurl,layer',
           'type'=>'string',
           'group'=>'Locations',
+        ),
+        array(
+          'name'=>'max_species_ids',
+          'caption'=>'max number of species to be returned by a search',
+          'description'=>'The maximum number of species to be returned by the drop downs at any one time.',
+          'default'=>25,
+          'type'=>'int',
+          'group'=>'Species'
         )
+        
       )
     );
   	
@@ -170,6 +179,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@searchUpdatesSref=true\r\n".
               "@maxZoom=13\r\n".
               "[point grid]\r\n".
+              "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
               "[location comment]\r\n".
               "[*]\r\n".
              "=Other Information=\r\n".
@@ -785,7 +795,8 @@ hook_species_checklist_pre_delete_row=function(e) {
           'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true,
-          'language' => $myLanguage
+          'language' => $myLanguage,
+          "max_species_ids"=>$args["max_species_ids"]
     ), $options);
     if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
     if (isset($args['col_widths']) && $args['col_widths']) $species_ctrl_opts['colWidths']=explode(',', $args['col_widths']);
@@ -856,7 +867,7 @@ hook_species_checklist_pre_delete_row=function(e) {
             $search = preg_grep("/^sc:$ttlid:$existing_record_id:occAttr:$attrId".'[:[0-9]*]?$/', array_keys(data_entry_helper::$entity_to_load));
             $ctrlId = (count($search)===1) ? implode('', $search) : "sc:$ttlid:$existing_record_id:occAttr:$attrId";
           } else {
-            $ctrlId = "sc:$ttlid:x$rowIdx:occAttr:$attrId";
+            $ctrlId = "sc:$ttlid::occAttr:$attrId";
           }
           if (isset(data_entry_helper::$entity_to_load[$ctrlId])) {
             $existing_value = data_entry_helper::$entity_to_load[$ctrlId];
@@ -890,7 +901,7 @@ hook_species_checklist_pre_delete_row=function(e) {
   <table class=\"scCommentTable\">
     <tbody class=\"scCommentTableBody\" ><tr>
       <td class=\"scCommentLabelCell\">
-        <label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment")." : </label>
+        <label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
       </td>
       <td>
         <input type=\"text\" class=\"scComment\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]."\">
@@ -909,7 +920,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
-        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species to list')." : </label><input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
+        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species to list').":</label> <input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
         // Javascript to add further rows to the grid
         data_entry_helper::$javascript .= "var formatter = function(rowData,taxonCell) {
   taxonCell.html(\"".lang::get('loading')."\");
@@ -932,7 +943,7 @@ hook_species_checklist_pre_delete_row=function(e) {
     }})
 }  
 bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url."index.php/services/data\", \"".$options['id']."\", \"".$options['lookupListId']."\", {\"auth_token\" : \"".
-            $options['readAuth']['auth_token']."\", \"nonce\" : \"".$options['readAuth']['nonce']."\"}, formatter, \"".lang::get('LANG_Duplicate_Taxon')."\");
+            $options['readAuth']['auth_token']."\", \"nonce\" : \"".$options['readAuth']['nonce']."\"}, formatter, \"".lang::get('LANG_Duplicate_Taxon')."\", ".$options['max_species_ids'].");
 ";
       }
       // No help text
@@ -1013,7 +1024,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   <table class=\"scCommentTable\">
     <tbody class=\"scCommentTableBody\" ><tr>
       <td class=\"scCommentLabelCell\">
-        <label for=\"sc:-ttlId-::occurrence:comment\" class=\"auto-width\">".lang::get("Comment")." : </label>
+        <label for=\"sc:-ttlId-::occurrence:comment\" class=\"auto-width\">".lang::get("Comment").":</label>
       </td>
       <td>
         <input type=\"text\" class=\"scComment\" name=\"sc:-ttlId-::occurrence:comment\" id=\"sc:-ttlId-::occurrence:comment\" value=\"\">

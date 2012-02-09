@@ -91,6 +91,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
               "[point grid]\r\n".
+              "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
              "=Conditions=\r\n".
               "[programme grid]\r\n".
               "@programmeTermList=reptile:programme\r\n".
@@ -127,7 +128,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
   }
 
   public static function get_css() {
-    return array('mnhnl_butterflies.css');
+    return array('mnhnl_reptiles.css');
   }
 
   public static function get_perms($nid) {
@@ -749,7 +750,7 @@ hook_species_checklist_pre_delete_row=function(e) {
       // If the lookupListId parameter is specified then the user is able to add extra rows to the grid,
       // selecting the species from this list. Add the required controls for this.
       if (isset($options['lookupListId'])) {
-        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species to list')." : </label><input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
+        $grid .= "<label for=\"taxonLookupControl\" class=\"auto-width\">".lang::get('Add species to list')." : </label> <input id=\"taxonLookupControl\" name=\"taxonLookupControl\" >";
         // Javascript to add further rows to the grid
         data_entry_helper::$javascript .= "var formatter = function(rowData,taxonCell) {
   taxonCell.html(\"".lang::get('loading')."\");
@@ -922,7 +923,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
   public static function get_submission($values, $args) {
     if (isset($values['source']))
       return submission_builder::wrap_with_images($values, 'location');
-    if (isset($values['sample:location_id']) && $values['sample:location_id']=='') unset($values['sample:location_id']);
+  	if (isset($values['sample:location_id']) && $values['sample:location_id']=='') unset($values['sample:location_id']);
   	if (isset($values['sample:recorder_names'])){
       if(is_array($values['sample:recorder_names'])){
         $values['sample:recorder_names'] = implode("\r\n", $values['sample:recorder_names']);

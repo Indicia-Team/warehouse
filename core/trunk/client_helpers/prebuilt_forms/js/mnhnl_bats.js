@@ -20,8 +20,7 @@
  * template and controls the appearance of the species name both in the autocomplete for adding new rows, plus for 
   the newly added rows.
  */
-var addRowToGridSequence = 1000; // this should be more than the length of the initial taxon list
-function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg) {
+function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth, formatter, duplicateMsg, max) {
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     var myClass='scMeaning-'+data.taxon_meaning_id;
@@ -30,7 +29,6 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
       $(event.target).val('');
       return;
     }
-    addRowToGridSequence++;
     var rows=$('#'+gridId + '-scClonable > tbody > tr');
     var newRows=[];
     rows.each(function(){newRows.push($(this).clone(true))})
@@ -39,7 +37,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
     $.each(newRows, function(i, row) {
       row.addClass('added-row').addClass(myClass).removeClass('scClonableRow').attr('id','');
       $.each(row.children(), function(j, cell) {
-        cell.innerHTML = cell.innerHTML.replace(/-ttlId-:/g, data.id+':y'+addRowToGridSequence);
+        cell.innerHTML = cell.innerHTML.replace(/-ttlId-/g, data.id);
       }); 
       row.appendTo('#'+gridId);
       row.find('.scOccAttrCell').find('select').addClass('required').after('<span class=\"deh-required\">*</span>');
@@ -48,7 +46,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
           jQuery(this).css('width',jQuery(this).find('label').css('width'));
       });
     }); 
-    newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + data.id + ':y'+addRowToGridSequence+':present').attr('checked', 'checked');
+    newRows[0].find('.scPresenceCell input').attr('name', 'sc:' + data.id + '::present').attr('checked', 'checked');
     // Allow forms to hook into the event of a new row being added
     if (typeof hook_check_no_obs !== "undefined") {
   	  hook_check_no_obs();
@@ -68,6 +66,7 @@ function bindSpeciesAutocomplete(selectorID, url, gridId, lookupListId, readAuth
         nonce: readAuth.nonce,
         taxon_list_id: lookupListId
       },
+      max : max,
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {

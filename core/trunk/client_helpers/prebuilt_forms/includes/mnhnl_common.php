@@ -262,7 +262,7 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
       'fieldname'=>'location:comment',
       'label'=>lang::get("LANG_LocationModTool_CommentLabel")))."<br />";
   $retVal .= iform_mnhnl_locationattributes($auth, $args, '', array("lookUpKey"=>"meaning_id", "sep"=>" ", "class"=>"wide"));
-  $retVal .= "<label for=\"location-delete\">".lang::get("LANG_LocModTool_DeleteLabel")." : </label><input type=checkbox id=\"location-delete\" name=\"location:deleted\" value='t'><br />
+  $retVal .= "<label for=\"location-delete\">".lang::get("LANG_LocModTool_DeleteLabel").":</label> <input type=checkbox id=\"location-delete\" name=\"location:deleted\" value='t'><br />
   <p>".lang::get("LANG_LocModTool_DeleteInstructions")."</p>";
   $retVal .= iform_mnhnl_SrefFields($auth, $args, true);
   // For main page we force to Tabs to ensure map drawn correctly
@@ -1883,9 +1883,9 @@ jQuery('#".$options['mainFieldID']."').change(function(){
       // can not change the (parent) location of the main sample, as this will reset all the attached samples and sites, so redering entered data useless. Just delete.
       return $retVal."\n<input type=\"hidden\" name =\"sample:location_id\" value=\"".data_entry_helper::$entity_to_load["sample:location_id"]."\" >
   <p>".$options['parentFieldLabel'].' : '.data_entry_helper::$entity_to_load["location:name"].'</p>
-'.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\" class=\"auto-width\">".lang::get('LANG_NumSites')." : </label><input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
+'.($args['includeNumSites'] ? "<label for=\"dummy-num-sites\" class=\"auto-width\">".lang::get('LANG_NumSites').":</label> <input id=\"dummy-num-sites\" name=\"dummy:num-sites\" class=\"checkNumSites narrow\" readonly=\"readonly\"><br />\n" : '').
 "<p>".$options['Instructions2']."</p>\n".
-        ($args['siteNameTermListID']== '' ? "<label for=\"dummy-name\">".$options['NameLabel']." : </label><input id=\"dummy-name\" name=\"dummy:name\" class='wide required'><br />\n" :
+        ($args['siteNameTermListID']== '' ? "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input id=\"dummy-name\" name=\"dummy:name\" class='wide required'><br />\n" :
           data_entry_helper::select(array(
             'label'=>$options['NameLabel'],
             'id'=>'dummy-name',
@@ -1937,7 +1937,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
       $locOptions['items'] = $opts;
       $retVal .= '<p>'.$options['Instructions1'].'</p>'.
         data_entry_helper::apply_template($locOptions['template'], $locOptions).
-        ($args['includeNumSites'] ? '<label for="dummy-num-sites" class=\"auto-width\">'.lang::get('LANG_NumSites').' : </label><input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
+        ($args['includeNumSites'] ? '<label for="dummy-num-sites" class=\"auto-width\">'.lang::get('LANG_NumSites').':</label> <input id="dummy-num-sites" name="dummy:num-sites" class="checkNumSites narrow" readonly="readonly"><br />
 ' : '').'<p>'.$options['Instructions2'].'</p>';
       if($args['locationMode']=='parent'){
         // choose a single site from a parent, so built site selector drop down.
@@ -1977,7 +1977,7 @@ jQuery('#".$options['mainFieldID']."').change(function(){
         // single site requires all location data in main form. Mult site must have array: depends on implementation so left to actual form.
         $retVal .= data_entry_helper::apply_template($locOptions['template'], $locOptions)."<br />";
         if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"location-name\">".$options['NameLabel']." : </label><input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
+          $retVal .= "<label for=\"location-name\">".$options['NameLabel'].":</label> <input type='text' id=\"location-name\" name=\"location:name\" class='required wide' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
         } else {
           $retVal .= data_entry_helper::select(array(
             'label'=>$options['NameLabel'], 
@@ -2001,7 +2001,7 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       } else {
       	// multiSite needs the location name.
         if($args['siteNameTermListID']== '') {
-          $retVal .= "<label for=\"dummy-name\">".$options['NameLabel']." : </label><input type='text' id=\"dummy-name\" name=\"dummy:name\" class='wide' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
+          $retVal .= "<label for=\"dummy-name\">".$options['NameLabel'].":</label> <input type='text' id=\"dummy-name\" name=\"dummy:name\" class='wide' value='".data_entry_helper::$entity_to_load['location:name']."' /><span class='deh-required'>*</span><br/>";
         } else {
           $retVal .= data_entry_helper::select(array(
             'label'=>$options['NameLabel'], 
@@ -2083,11 +2083,11 @@ jQuery(\"#".$options['parentFieldID']."\").change(function(){
       } else
         $retVal .= '<p>'.lang::get("LANG_NoSites").'</p>';
       
-      $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel']." : </label> <input id=\"location-name\" name=\"location:name\" class='wide required' value='".data_entry_helper::$entity_to_load['location:name']."'><span class=\"deh-required\">*</span><br />
+      $retVal .= "</fieldset><label for=\"location-name\">".$options['NameLabel'].":</label> <input id=\"location-name\" name=\"location:name\" class='wide required' value='".data_entry_helper::$entity_to_load['location:name']."'><span class=\"deh-required\">*</span><br />
       <input type='hidden' id=\"sample-location-id\" name=\"sample:location_id\" value='".data_entry_helper::$entity_to_load['sample:location_id']."' />";
     }
     if(isset($args['includeLocationCode']) && $args['includeLocationCode'])
-      $retVal .= "<label for=\"location-code\">".$options['CodeLabel']." : </label> <input id=\"location-code\" name=\"location:code\" value='".data_entry_helper::$entity_to_load['location:code']."'><br />";
+      $retVal .= "<label for=\"location-code\">".$options['CodeLabel'].":</label> <input id=\"location-code\" name=\"location:code\" value='".data_entry_helper::$entity_to_load['location:code']."'><br />";
     return $retVal;
 }
 
@@ -2101,8 +2101,8 @@ jQuery('#pointgrid').hide();
 ";
   $retVal="<fieldset id=\"pointgrid\">\n<legend>".lang::get('LANG_PointsLegend')."</legend>";
   $retVal.="<table ><tbody id=\"pointgridtable\"><tr class=\"pgAddRow\">
-  <td><label class=\"auto-width X\" >".lang::get('LANG_Grid_X_Label')." :</label><input type=\"text\" id=\"new-srefX\" name=\"new:srefX\" value=\"\" /></td>
-  <td><label class=\"auto-width Y\" >".lang::get('LANG_Grid_Y_Label')." :</label><input type=\"text\" id=\"new-srefY\" name=\"new:srefY\" value=\"\" /></td>";
+  <td><label class=\"auto-width X\" >".lang::get('LANG_Grid_X_Label').":</label> <input type=\"text\" id=\"new-srefX\" name=\"new:srefX\" value=\"\" /></td>
+  <td><label class=\"auto-width Y\" >".lang::get('LANG_Grid_Y_Label').":</label> <input type=\"text\" id=\"new-srefY\" name=\"new:srefY\" value=\"\" /></td>";
   $systemCtrl="<td style=\"display: none;\"><input class=\"pgSrefSystem\" value=\"2169\"></td>"; //TBD should come from $arg
   if(isset($options['srefs'])){
     $systemCtrl="<td><select class=\"pgSrefSystem\" >";
@@ -2187,7 +2187,7 @@ jQuery('.pgDeletePoint').live('click', function(){
       break;
     case 1:
       replaceGeom(modPointFeature.feature, SitePointLayer, modPointFeature,
-          new OpenLayers.Geometry.Point(jQuery('.pgDataRow').data('geometry')), true, true);
+          jQuery('.pgDataRow').data('geometry'), true, true);
       break;
     default:
       var geom=[];
@@ -2232,8 +2232,8 @@ addPGPoint = function(geometry){
   removePopups();
   var wkt= getwkt(geometry, true, true);
   var newRow=jQuery('<tr class=\"pgDataRow\">');
-  newRow.append('<td><label class=\"auto-width X\" >".lang::get('LANG_Grid_X_Label')." :</label><input type=\"text\" name=\"pg:srefX\" value=\"\" /></td>');
-  newRow.append('<td><label class=\"auto-width Y\" >".lang::get('LANG_Grid_Y_Label')." :</label><input type=\"text\" name=\"pg:srefY\" value=\"\" /></td>');
+  newRow.append('<td><label class=\"auto-width X\" >".lang::get('LANG_Grid_X_Label').":</label> <input type=\"text\" name=\"pg:srefX\" value=\"\" /></td>');
+  newRow.append('<td><label class=\"auto-width Y\" >".lang::get('LANG_Grid_Y_Label').":</label> <input type=\"text\" name=\"pg:srefY\" value=\"\" /></td>');
   newRow.append('".$systemCtrl."');
   newRow.append('<td><input class=\"pgDeletePoint\" type=\"button\" value=\"".lang::get('LANG_DeletePoint')."\"></td>');
   newRow.append('<td><input class=\"pgHighlightPoint\" type=\"button\" value=\"".lang::get('LANG_HighlightPoint')."\"></td>');
@@ -2363,8 +2363,7 @@ function handleEnteredSref(value) {
 ";
 	if($args['SecondaryLocationTypeTerm']!='' && $incLocTypeDropDown) {
 		$secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);	
-		$retVal .= "<label for=\"location_location_type_id\">".lang::get('LANG_Location_Type_Label').":</label>
-  <select id=\"location_location_type_id\" name=\"location:location_type_id\">
+		$retVal .= "<label for=\"location_location_type_id\">".lang::get('LANG_Location_Type_Label').":</label> <select id=\"location_location_type_id\" name=\"location:location_type_id\">
     <option value=\"\"></option>
     <option value=\"$primary\">".lang::get('LANG_Location_Type_Primary')."</option>
     <option value=\"$secondary\">".lang::get('LANG_Location_Type_Secondary')."</option>
@@ -2380,14 +2379,13 @@ function handleEnteredSref(value) {
     if($args['usePoints']=='single' && $args['useLines']=='none' && $args['usePolygons']=='none'){
     	$readOnly="";
     } else $readOnly=" readonly=\"readonly\" ";
-	$retVal .= "<label for=\"imp-srefX\" class=\"auto-width\" >".lang::get('LANG_Location_X_Label').":</label>
-  <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" value=\"".trim($dummy[0])."\" ".$readOnly."/>
-<label for=\"imp-srefY\" class=\"auto-width prepad\" >".lang::get('LANG_Location_Y_Label').":</label>
-  <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" value=\"".trim($dummy[1])."\" ".$readOnly."/>
+	$retVal .= "<label for=\"imp-srefX\" class=\"auto-width\" >".lang::get('LANG_Location_X_Label').":</label> <input type=\"text\" id=\"imp-srefX\" name=\"dummy:srefX\" value=\"".trim($dummy[0])."\" ".$readOnly."/>
+<label for=\"imp-srefY\" class=\"auto-width prepad\" >".lang::get('LANG_Location_Y_Label').":</label> <input type=\"text\" id=\"imp-srefY\" name=\"dummy:srefY\" value=\"".trim($dummy[1])."\" ".$readOnly."/>
 <span id=\"coords-text\" class=\"coords-text\">".lang::get('LANG_LatLong_Bumpf')."</span><br />
 ";
 	return $retVal;
 }
+
 function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force){
   global $user;
   if($force === true || $force === false){

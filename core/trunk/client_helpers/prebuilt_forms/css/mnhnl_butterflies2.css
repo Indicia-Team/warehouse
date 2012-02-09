@@ -3,15 +3,19 @@
 }
 .remove-cgnewrow {
   color:red !important;
+  cursor: pointer;
 }
 .clear-cgrow {
   color:red !important;
+  cursor: pointer;
 }
 .remove-sgnewrow {
   color:red !important;
+  cursor: pointer;
 }
 .clear-sgrow {
   color:red !important;
+  cursor: pointer;
 }
 .narrow {
   width: 30px;

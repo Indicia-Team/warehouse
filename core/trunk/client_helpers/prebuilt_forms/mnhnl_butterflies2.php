@@ -90,6 +90,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
               "[point grid]\r\n".
+              "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
               "[sample comment]\r\n".
              "=Conditions=\r\n".
               "[recorder names]\r\n".
@@ -373,7 +374,7 @@ hook_mnhnl_parent_changed = function(){
       $year=substr(data_entry_helper::$entity_to_load['sample:date'],0,4);
     else $year = date('Y');
     $startYear = isset($options['startYear']) ? $options['startYear'] : 2009;
-    $retVal = "<label for='sample:date'>".lang::get('Year').":</label><select id='sample:date' name='sample:date' class='required' >";
+    $retVal = "<label for='sample:date'>".lang::get('Year').":</label> <select id='sample:date' name='sample:date' class='required' >";
     //    <input type='text' size='4' class='required digits' min='2000' id='sample:date' name='sample:date' value='".$year."' /><span class='deh-required'>*</span><br/>";
     while($startYear <= date('Y')){
 	    $retVal .= '<option '.($startYear == $year ? 'selected=\\"selected\\"' : '').'>'.$startYear.'</option>';
