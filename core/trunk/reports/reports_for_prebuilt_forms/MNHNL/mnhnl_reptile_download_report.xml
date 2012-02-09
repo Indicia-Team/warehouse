@@ -21,6 +21,7 @@
       <subTable tablename="locations" parentKey="parent_id" where="#this#.deleted = FALSE" >
         <tabColumn name='name' display='Square (5x5km)'/>
       </subTable>
+      <tabColumn name='id' visible='true' display='Location ID' />
       <tabColumn name='name' display='Site'/>
       <tabColumn name='x' display='X' func="(split_part(#this#.centroid_sref, ', ', 1))" />
       <tabColumn name='y' display='Y' func="(split_part(#this#.centroid_sref, ', ', 2))" />
