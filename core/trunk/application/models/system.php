@@ -84,13 +84,17 @@ class System_Model extends ORM
     public function forceSystemEntry($name) {
       $this->getSystemData($name);
       if (!isset($this->system_data[$name])) {
-        $this->db->insert('system', array(
+        $data=array(
             'version'=>'',
             'name'=>$name,
             'repository'=>'Not specified',
-            'release_date'=>'now()',
-            'last_scheduled_task_check'=>'now()'
-        ));
+            'release_date'=>'now()'
+        );
+        if ($name==='Indicia')
+          // We don't want to create notifications for the entire database when the notifications
+          // system is enabled via upgrade - just new records.
+          $data['last_scheduled_task_check']=now();
+        $this->db->insert('system', $data);
       }
     }
 

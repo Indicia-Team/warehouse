@@ -33,10 +33,14 @@ function verification_check_scheduled_task() {
   $db = new Database();
   $rules = verification_check_get_rules();
   verification_check_get_occurrence_list($db);
-  verification_check_cleanout_old_messages($rules, $db);
-  verification_check_run_rules($rules, $db);
-  verification_check_update_occurrence_metadata($db);
-  $db->query('drop table occlist');
+  try {
+    verification_check_cleanout_old_messages($rules, $db);
+    verification_check_run_rules($rules, $db);
+    verification_check_update_occurrence_metadata($db);
+    $db->query('drop table occlist');
+  } catch (Exception $e) {
+    $db->query('drop table occlist');
+  }
 }
 
 /**

@@ -48,7 +48,7 @@ class Scheduled_Tasks_Controller extends Controller {
     // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
     $currentTime = time();
     $this->checkTriggers();
-    $this->runScheduledPlugins();
+    $this->runScheduledPlugins($system);
     $swift = email::connect();
     $this->doRecordOwnerNotifications($swift);
     $this->doDigestNotifications($swift);
@@ -392,8 +392,9 @@ class Scheduled_Tasks_Controller extends Controller {
   
   /**
    * Loop through any plugin modules which declare scheduled tasks and run them.
+   * @param object $system System model instance.
    */
-  private function runScheduledPlugins() {
+  private function runScheduledPlugins($system) {
     $cacheId = 'indicia-scheduled-plugins';
     $cache = Cache::instance();
     if (!($plugins = $cache->get($cacheId))) {
@@ -413,7 +414,12 @@ class Scheduled_Tasks_Controller extends Controller {
     foreach ($plugins as $path) {
       $plugin = basename($path);
       require_once("$path/plugins/$plugin.php");
-      call_user_func($plugin.'_scheduled_task');
+      $last_run_date = $system->getLastScheduledTaskCheck($plugin);
+      // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
+      $currentTime = time();
+      call_user_func($plugin.'_scheduled_task', $last_run_date);
+      // mark the time of the last scheduled task check, so we can get diffs next time
+      $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('name' => $plugin));
     }
   }
 

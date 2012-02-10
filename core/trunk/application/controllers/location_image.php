@@ -72,7 +72,7 @@ class location_image_Controller extends Gridview_Base_Controller
   
   /**
    * Override the default return page behaviour so that after saving an image you
-   * are returned to the occurence entry which has the image.
+   * are returned to the location entry which has the image.
    */
   protected function get_return_page() {
     if (array_key_exists('location_image:location_id', $_POST)) {
