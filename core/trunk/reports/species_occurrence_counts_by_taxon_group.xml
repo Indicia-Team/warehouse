@@ -15,8 +15,6 @@
     SELECT 'Total' as taxongroup, count(DISTINCT ttl.taxon_meaning_id) as species_count, count(DISTINCT o.id) as occurrences_count
     FROM occurrences o
     JOIN taxa_taxon_lists ttl ON o.taxa_taxon_list_id = ttl.id AND ttl.deleted=false
-    JOIN taxa_taxon_lists ttl2 ON ttl2.taxon_meaning_id=ttl.taxon_meaning_id and ttl2.preferred='t' AND ttl2.deleted=false
-    JOIN taxa t ON ttl2.taxon_id = t.id AND t.deleted=false
     WHERE #website_filter# AND o.deleted=false
     AND o.deleted=false
   </query>
