@@ -90,6 +90,7 @@ $default_terms = array(
   'occAttr' => 'Occurrence Custom Attributes',
   'locAttr' => 'Location Custom Attributes',
   'taxAttr' => 'Taxon Custom Attributes',
+  'psnAttr' => 'Person Custom Attributes',
   'fkFilter' => 'Lookup Filters'
 );
 

@@ -71,6 +71,46 @@ class Person_Controller extends Gridview_Base_Controller {
     }
 
   }
+  
+  protected function getModelValues() {
+    $r = parent::getModelValues();
+    $websiteIds = $this->getWebsiteIds($r['person:id']);
+    $this->loadAttributes($r, array(
+        'website_id'=>$websiteIds
+    ));
+    return $r;      
+  }
+  
+  /**
+   * Load default values either when creating a sample new or reloading after a validation failure.
+   * This adds the custome attributes list to the data available for the view. 
+   */
+  protected function getDefaults() {
+    $r = parent::getDefaults();
+    if (array_key_exists('person:id', $_POST)) {
+      $websiteIds = $this->getWebsiteIds($_POST['person:id']);
+      $this->loadAttributes($r, array(
+        'website_id'=>$websiteIds
+      ));
+    }
+    return $r;
+  }
+  
+  protected function getWebsiteIds($personId) {
+    $person = ORM::Factory('person', $personId);
+    $websiteIds = array();
+    $r = $this->db->select('users_websites.website_id')
+        ->from('people')
+        ->join('users','users.person_id','people.id')
+        ->join('users_websites', 'users_websites.user_id', 'users.id')
+        ->where(array('people.id'=>$personId, 'users.deleted'=>'f'))
+        ->where('users_websites.site_role_id is not null')
+        ->get()->result_array(false);
+    foreach($r as $website) {
+      $websiteIds[] = $website['website_id'];
+    }
+    return $websiteIds;
+  }
 
   protected function return_url($return_url)
   {

@@ -51,6 +51,7 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
    * Returns the shared view for all custom attribute edits.
    */
   protected function editViewName() {
+    $this->associationsView=new View('templates/attribute_associations_website_survey');
     return 'custom_attribute/custom_attribute_edit';
   }
 
@@ -64,7 +65,8 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
       'name' => ucfirst($this->prefix),
       'controllerpath' => $this->controllerpath,
       'webrec_entity' => $this->prefix.'_attributes_website',
-      'webrec_key' => $this->prefix.'_attribute_id'
+      'webrec_key' => $this->prefix.'_attribute_id',
+      'publicFieldName' => 'Available to other Websites'
     );
   }
 

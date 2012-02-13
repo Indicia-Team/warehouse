@@ -24,6 +24,12 @@
 abstract class ATTR_ORM extends Valid_ORM {
 
   public $search_field='caption';
+  
+  /**
+   * Defines if the available attributes for a submission are filtered by survey_id.
+   * @var boolean
+   */
+  protected $has_survey_restriction = true;
 
   public function validate(Validation $array, $save = FALSE) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
@@ -100,12 +106,13 @@ abstract class ATTR_ORM extends Valid_ORM {
    * @param integer $survey_id ID of the survey.
    * @param boolean $checked True if there should be a link, false if not. 
    */
-  private function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
+  protected function set_attribute_website_record($attr_id, $website_id, $survey_id, $checked)
   {
-    $attributes_website = ORM::factory(inflector::plural($this->object_name).'_website',
-            array($this->object_name.'_id' => $attr_id
-                , 'website_id' => $website_id
-                , 'restrict_to_survey_id' => $survey_id));
+    $filter = array($this->object_name.'_id' => $attr_id
+                , 'website_id' => $website_id);
+    if ($this->has_survey_restriction)
+      $filter['restrict_to_survey_id'] = $survey_id;
+    $attributes_website = ORM::factory(inflector::plural($this->object_name).'_website', $filter);
     if($attributes_website->loaded) {
       // existing record
       if($checked == true and $attributes_website->deleted == 't') {
@@ -116,12 +123,14 @@ abstract class ATTR_ORM extends Valid_ORM {
         $attributes_website->save();
       }
     } else if ($checked == true) {
-           $save_array = array(
+      $fields = array($this->object_name.'_id' => array('value' => $attr_id),
+          'website_id' => array('value' => $website_id),
+          'deleted' => array('value' => 'f'));
+      if ($this->has_survey_restriction)
+        $fields['restrict_to_survey_id'] = array('value' => $survey_id);
+      $save_array = array(
                 'id' => $attributes_website->object_name
-                ,'fields' => array($this->object_name.'_id' => array('value' => $attr_id)
-                          ,'website_id' => array('value' => $website_id)
-                           ,'restrict_to_survey_id' => array('value' => $survey_id)
-                          ,'deleted' => array('value' => 'f'))
+                ,'fields' => $fields
                 ,'fkFields' => array()
                 ,'superModels' => array());
       $attributes_website->submission = $save_array;

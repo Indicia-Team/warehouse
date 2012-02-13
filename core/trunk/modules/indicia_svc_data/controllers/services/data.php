@@ -190,6 +190,26 @@ class Data_Controller extends Data_Service_Base_Controller {
   {
     $this->handle_call('person');
   }
+  
+  
+  /**
+  * Provides the /service/data/person_attribute service.
+  * Retrieves details of person attributes.
+  */
+  public function person_attribute()
+  {
+  $this->handle_call('person_attribute');
+  }
+  
+  
+  /**
+  * Provides the /service/data/person_attribute_value service.
+  * Retrieves details of occurrence attributes.
+  */
+  public function person_attribute_value()
+  {
+  $this->handle_call('person_attribute_value');
+  }
 
   /**
   * Provides the /services/data/sample service.

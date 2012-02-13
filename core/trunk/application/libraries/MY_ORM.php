@@ -73,6 +73,12 @@ class ORM extends ORM_Core {
   protected $has_attributes = false;
   
   /**
+   * @var boolean If the model has custom attributes, are public ones always available across the warehouse, or 
+   * does it require a link to a website to include the attribute in the submissable data? Defaults to false.
+   */
+  public $include_public_attributes = false;
+  
+  /**
    * @var boolean Is this model for an existing record that is being saved over?
    */
   protected $existing = false;
@@ -708,7 +714,7 @@ class ORM extends ORM_Core {
     $typeFilter = null;
     // Test if this model has an attributes sub-table. Also to have required attributes, we must be posting into a
     // specified survey or website at least.
-    if ($this->has_attributes && ($this->identifiers['website_id'] || $this->identifiers['survey_id'])) {
+    if ($this->has_attributes) {
       $got_values=array();
       $empties = array();
       if (isset($this->submission['metaFields'][$this->attrs_submission_name]))
@@ -728,7 +734,7 @@ class ORM extends ORM_Core {
       } else {
         // New way of submitting attributes embeds attr values direct in the main table submission values.
         foreach($this->submission['fields'] as $field => $content) {
-          // look for pattern smpAttr:nn (or occAttr, taxAttr or locAttr)
+          // look for pattern smpAttr:nn (or occAttr, taxAttr, locAttr or psnAttr)
           $isAttribute = preg_match('/^'.$this->attrs_field_prefix.'\:[0-9]+/', $field, $baseAttrName);   
           if ($isAttribute) {
             // extract the nn, this is the attribute id
@@ -749,17 +755,11 @@ class ORM extends ORM_Core {
       $fieldPrefix = (array_key_exists('field_prefix',$this->submission)) ? $this->submission['field_prefix'].':' : '';
       // as the required fields list is relatively static, we use the cache. This cache entry gets cleared when 
       // a custom attribute is saved so it should always be up to date.
-      $keyArr = array_merge(array('required', $this->object_name), $this->identifiers);
-      if ($typeFilter) $keyArr[] = $typeFilter;
-      $key = implode('-', $keyArr);
+      $key = $this->getRequiredFieldsCacheKey($typeFilter);
       $result = $this->cache->get($key);
       if ($result===null) {
-        // setup basic query to get custom attrs. Ask for required ones only as long as we know the website/survey
-        $this->setupDbToQueryAttributes($this->identifiers['website_id'] || $this->identifiers['survey_id'], $typeFilter);
-        // If we don't know the website or survey, then the setupDbToQueryAttributes code will not have filtered for required fields.
-        // So do it here.
-        if (!($this->identifiers['website_id'] || $this->identifiers['survey_id'])) 
-          $this->db->like($this->object_name.'s.validation_rules','%required%');
+        // setup basic query to get custom attrs.
+        $this->setupDbToQueryAttributes(true, $typeFilter);
         $result=$this->db->get()->result_array(true);
         $this->cache->set($key, $result, array('required-fields'));
       }
@@ -772,7 +772,7 @@ class ORM extends ORM_Core {
           if (empty($this->submission['fields']['id']['value']) || isset($empties[$fieldname])) {            
             // map to the exact name of the field if it is available
             if (isset($empties[$fieldname])) $fieldname = $empties[$fieldname];
-            $this->errors[$fieldname]='Please specify a value for the '.$row->caption;
+            $this->errors[$fieldname]='Please specify a value for the '.$row->caption .'.';
             kohana::log('debug', 'No value for '.$row->caption . ' in '.print_r($got_values, true));
             $r=false;
           }
@@ -782,8 +782,22 @@ class ORM extends ORM_Core {
     return $r;
   }
   
+  /**
+   * Default implementation of a method which retrieves the cache key required to store the list
+   * of required fields. Override when there are other values which define the required fields
+   * in the cache, e.g. for people each combination of website IDs defines a cache entry.
+   * @param type $typeFilter 
+   */
+  protected function getRequiredFieldsCacheKey($typeFilter) {
+    $keyArr = array_merge(array('required', $this->object_name), $this->identifiers);
+    if ($typeFilter) $keyArr[] = $typeFilter;
+    return implode('-', $keyArr);
+  }
+  
   /** 
    * Prepares the db object query builder to query the list of custom attributes for this model.
+   * This is just a default implementation for occurrence & sample attributes which can be 
+   * overridden if required. 
    * @param boolean $required Optional. Set to true to only return required attributes (requires 
    * the website and survey identifier to be set).
    * @param int @typeFilter Specify a location type meaning id or a sample method meaning id to

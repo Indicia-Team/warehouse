@@ -122,7 +122,7 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
   }
   
   /**
-   * Loads the custom attributes for a taxon, sample, location or occurrence into the load array. 
+   * Loads the custom attributes for a taxon, sample, location, person or occurrence into the load array. 
    * Also sets up any lookup lists required.
    * This is only called by sub-classes for entities that have associated attributes.
    */
@@ -130,7 +130,11 @@ abstract class Gridview_Base_Controller extends Indicia_Controller {
     // First load up the possible attribute list
     $this->db->from('list_'.$this->model->object_name.'_attributes');
     foreach($in as $field=>$values)
-      $this->db->in($field, $values);
+      if (count($values))
+        $this->db->in($field, $values);
+    if ($this->model->include_public_attributes) {
+      $this->db->orwhere('public','t');
+    }
     $result = $this->db->get()->as_array(true);
     $attrs = array();
     foreach($result as $attr) {
