@@ -28,6 +28,9 @@ CREATE TABLE cache_occurrences
   default_common_name character varying,
   search_name character varying,
   taxa_taxon_list_external_key character varying(50),
+  taxon_meaning_id integer,
+  taxon_group_id integer,
+  taxon_group character varying(100),
   created_by_id integer,
   cache_created_on timestamp without time zone NOT NULL,
   cache_updated_on timestamp without time zone NOT NULL,
@@ -108,4 +111,13 @@ CREATE INDEX ix_occurrences_search_name
   ON cache_occurrences
   USING btree
   (search_name);
+  
+-- Index: ix_occurrences_taxon_meaning_id
+
+-- DROP INDEX ix_occurrences_taxon_meaning_id;
+
+CREATE INDEX ix_occurrences_taxon_meaning_id
+  ON cache_occurrences
+  USING btree
+  (taxon_meaning_id);
 

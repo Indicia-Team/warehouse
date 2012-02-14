@@ -23,6 +23,9 @@ CREATE TABLE cache_taxa_taxon_lists
   default_common_name character varying,
   search_name character varying, -- simplified version of the taxon for searching. No punctuation, spaces.
   external_key character varying(50),
+  taxon_meaning_id integer,
+  taxon_group_id integer,
+  taxon_group character varying(100),
   cache_created_on timestamp without time zone NOT NULL,
   cache_updated_on timestamp without time zone NOT NULL,
   CONSTRAINT pk_cache_taxa_taxon_lists PRIMARY KEY (id)
@@ -85,4 +88,22 @@ CREATE INDEX ix_cache_taxa_taxon_lists_search_name
   ON cache_taxa_taxon_lists
   USING btree
   (search_name);
+  
+-- Index: ix_cache_taxa_taxon_lists_taxon_meaning_id
+
+-- DROP INDEX ix_cache_taxa_taxon_lists_taxon_meaning_id;
+
+CREATE INDEX ix_cache_taxa_taxon_lists_taxon_meaning_id
+  ON cache_taxa_taxon_lists
+  USING btree
+  (taxon_meaning_id);
+  
+-- Index: ix_cache_taxa_taxon_lists_taxon_group_id
+
+-- DROP INDEX ix_cache_taxa_taxon_lists_taxon_group_id;
+
+CREATE INDEX ix_cache_taxa_taxon_lists_taxon_group_id
+  ON cache_taxa_taxon_lists
+  USING btree
+  (taxon_group_id);
 

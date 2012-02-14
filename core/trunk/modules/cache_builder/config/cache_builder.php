@@ -39,6 +39,7 @@ $config['termlists_terms']['update'] = "update cache_termlists_terms ctlt
       preferred_term=tpref.term,
       preferred_language_iso=lpref.iso,
       preferred_language=lpref.language,
+      meaning_id=tltpref.meaning_id,
       cache_updated_on=now()
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id 
@@ -53,7 +54,7 @@ $config['termlists_terms']['update'] = "update cache_termlists_terms ctlt
 $config['termlists_terms']['insert']="insert into cache_termlists_terms (
       id, preferred, termlist_id, termlist_title, website_id,
       preferred_termlists_term_id, parent_id, sort_order,
-      term, language_iso, language, preferred_term, preferred_language_iso, preferred_language,
+      term, language_iso, language, preferred_term, preferred_language_iso, preferred_language, meaning_id,
       cache_created_on, cache_updated_on
     )
     select distinct on (tlt.id) tlt.id, tlt.preferred, 
@@ -61,8 +62,8 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
       tltpref.id as preferred_termlists_term_id, tltpref.parent_id, tltpref.sort_order,
       t.term,
       l.iso as language_iso, l.language,
-      tpref.term as preferred_term,
-      lpref.iso as preferred_language_iso, lpref.language as preferred_language,
+      tpref.term as preferred_term, 
+      lpref.iso as preferred_language_iso, lpref.language as preferred_language, tltpref.meaning_id,
       now(), now()
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id 
@@ -78,13 +79,14 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
 
 $config['taxa_taxon_lists']['get_changelist_query']="
     select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
-        or l.deleted or tpref.deleted or lpref.deleted as deleted
+        or l.deleted or tpref.deleted or tg.deleted or lpref.deleted as deleted
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
       join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
       join taxa t on t.id=ttl.taxon_id 
       join languages l on l.id=t.language_id 
       join taxa tpref on tpref.id=ttlpref.taxon_id 
+      join taxon_groups tg on tg.id=tpref.taxon_group_id
       join languages lpref on lpref.id=tpref.language_id";
       
 $config['taxa_taxon_lists']['exclude_existing'] = "
@@ -101,6 +103,7 @@ $config['taxa_taxon_lists']['filter_on_date'] = "
       or t.created_on>'#date#' or t.updated_on>'#date#' 
       or l.created_on>'#date#' or l.updated_on>'#date#' 
       or tpref.created_on>'#date#' or tpref.updated_on>'#date#' 
+      or tg.created_on>'#date#' or tg.updated_on>'#date#' 
       or lpref.created_on>'#date#' or lpref.updated_on>'#date#' ";
 
 $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
@@ -122,6 +125,9 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
       default_common_name=tcommon.taxon,
       search_name=regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[ \'\-_]', '', 'g'),
       external_key=tpref.external_key,
+      taxon_meaning_id=ttlpref.taxon_meaning_id,
+      taxon_group_id = tpref.taxon_group_id,
+      taxon_group = tg.title,
       cache_updated_on=now()
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
@@ -130,6 +136,7 @@ $config['taxa_taxon_lists']['update'] = "update cache_taxa_taxon_lists cttl
     join taxa t on t.id=ttl.taxon_id 
     join languages l on l.id=t.language_id 
     join taxa tpref on tpref.id=ttlpref.taxon_id 
+    join taxon_groups tg on tg.id=tpref.taxon_group_id
     join languages lpref on lpref.id=tpref.language_id
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
     where cttl.id=ttl.id";
@@ -138,7 +145,8 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       id, preferred, taxon_list_id, taxon_list_title, website_id,
       preferred_taxa_taxon_list_id, parent_id, taxonomic_sort_order,
       taxon, authority, language_iso, language, preferred_taxon, preferred_authority, 
-      preferred_language_iso, preferred_language, default_common_name, search_name, external_key,
+      preferred_language_iso, preferred_language, default_common_name, search_name, external_key, 
+      taxon_meaning_id, taxon_group_id, taxon_group,
       cache_created_on, cache_updated_on
     )
     select distinct on (ttl.id) ttl.id, ttl.preferred, 
@@ -149,8 +157,8 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       tpref.taxon as preferred_taxon, tpref.authority as preferred_authority, 
       lpref.iso as preferred_language_iso, lpref.language as preferred_language,
       tcommon.taxon as default_common_name,
-      regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[ \'\-_]', '', 'g'),
-      tpref.external_key,
+      regexp_replace(regexp_replace(lower(t.taxon), 'ae', 'e', 'g'), '[ \'\-_]', '', 'g'), tpref.external_key, 
+      ttlpref.taxon_meaning_id, tpref.taxon_group_id, tg.title,
       now(), now()
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
@@ -160,6 +168,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
     join languages l on l.id=t.language_id and l.deleted=false
     join taxa tpref on tpref.id=ttlpref.taxon_id 
+    join taxon_groups tg on tg.id=tpref.taxon_group_id
     join languages lpref on lpref.id=tpref.language_id
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
     where cttl.id is null";
@@ -210,6 +219,9 @@ $config['occurrences']['update'] = "update cache_occurrences co
       default_common_name=cttl.default_common_name, 
       search_name=cttl.search_name, 
       taxa_taxon_list_external_key=cttl.external_key,
+      taxon_meaning_id=cttl.taxon_meaning_id,
+      taxon_group_id = cttl.taxon_group_id,
+      taxon_group = cttl.taxon_group,
       cache_updated_on=now()
     from occurrences o
     join needs_update_occurrences nuo on nuo.id=o.id
@@ -226,7 +238,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       public_entered_sref, entered_sref_system, public_geom,
       sample_method, taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order, 
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
-      search_name, taxa_taxon_list_external_key,
+      search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
       cache_created_on, cache_updated_on
     )
   select o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
@@ -238,8 +250,8 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     tmethod.term as sample_method,
     cttl.id as taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id, cttl.taxonomic_sort_order, 
     cttl.taxon, cttl.authority, cttl.preferred_taxon, cttl.preferred_authority, cttl.default_common_name, 
-    cttl.search_name, cttl.external_key as taxa_taxon_list_external_key,
-    now(), now()
+    cttl.search_name, cttl.external_key as taxa_taxon_list_external_key, cttl.taxon_meaning_id,
+    cttl.taxon_group_id, cttl.taxon_group, now(), now()
   from occurrences o
   join needs_update_occurrences nuo on nuo.id=o.id and nuo.deleted=false
   left join cache_occurrences co on co.id=o.id

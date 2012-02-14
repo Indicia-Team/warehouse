@@ -18,6 +18,7 @@ CREATE TABLE cache_termlists_terms
   preferred_term character varying,
   preferred_language_iso character varying(3),
   preferred_language character varying(50),
+  meaning_id integer,
   cache_created_on timestamp without time zone NOT NULL,
   cache_updated_on timestamp without time zone NOT NULL,
   CONSTRAINT pk_cache_termlists_terms PRIMARY KEY (id)
@@ -71,4 +72,14 @@ CREATE INDEX ix_cache_termlists_terms_termlist_id
   ON cache_termlists_terms
   USING btree
   (termlist_id);
+
+  -- Index: ix_cache_termlists_terms_meaning_id
+
+-- DROP INDEX ix_cache_termlists_terms_meaning_id;
+
+CREATE INDEX ix_cache_termlists_terms_meaning_id
+  ON cache_termlists_terms
+  USING btree
+  (meaning_id);
+
 
