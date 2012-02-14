@@ -41,7 +41,7 @@ class Home_Controller extends Indicia_Controller {
     // only get notifications if the database is up to date for v0.4. Otherwise you can't get to the upgrade page!
     // checking a table exists, we need a schema prefix on the table name to work.
     $dbConfig = kohana::config('database.default');
-    $prefix = (isset($dbConfig['schema']) && !empty($dbConfig['schema'])) ? $dbConfig['schema'].'.' : '';    
+    $prefix = (isset($dbConfig['schema']) && !empty($dbConfig['schema'])) ? $dbConfig['schema'].'.' : '';
     if ($this->db->table_exists($prefix.'notifications')) {
       $view->notifications = $this->db
           ->select('source, source_type, data')
@@ -53,27 +53,27 @@ class Home_Controller extends Indicia_Controller {
     }
     $this->template->content=$view;
   }
-  
+
   /**
-   * Action called when an formal upgrade is required.      
+   * Action called when an formal upgrade is required.
    */
-  public function upgrade() 
+  public function upgrade()
   {
     $upgrader = new Upgrade_Model();
     try {
       $view = new View('upgrade');
       $this->template->title='Indicia Upgrade';
-      $upgrader->run();      
+      $upgrader->run();
     } catch (Exception $e) {
       $view->error = $e->getMessage();
-    }      
+    }
     $system = new System_Model;
     $view->db_version=$system->getVersion();
-    $view->app_version=kohana::config('version.version');    
-    
+    $view->app_version=kohana::config('version.version');
+
     $this->template->content=$view;
   }
- 
+
 }
 
 ?>

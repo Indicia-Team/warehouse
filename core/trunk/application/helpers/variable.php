@@ -62,7 +62,8 @@ class variable {
           ->where('name', $name)
           ->get()->result_array(false);
       if (count($r)) {
-        $value = array_pop(json_decode($r[0]['value']));
+        $array = json_decode($r[0]['value']);
+        $value = $array[0];
         if ($caching)
           $cache->set("variable-$name", $value, array('variables'));
       }

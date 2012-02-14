@@ -49,6 +49,7 @@ function verification_check_period_within_year_breeding_verification_rules() {
       )
     );
   } else {
+    echo "<br/>Could not find config entry for verification_check_period_within_year_breeding.breeding_attribute_id.<br/>";
     return array();
   }
 }

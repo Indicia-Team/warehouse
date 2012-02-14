@@ -1,26 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Record counts by taxon group" description="Lists taxon groups and the number of species within them. ">
+<report title="Record counts by taxon group" description="Lists taxon groups and the number of records within them. ">
       <query>
       SELECT #columns#
-      FROM websites w
-      JOIN surveys su on su.website_id=w.id
-      LEFT JOIN (samples s
-        JOIN occurrences o on o.sample_id=s.id AND o.deleted='f'
-        JOIN taxa_taxon_lists ttl on ttl.id=o.taxa_taxon_list_id and ttl.deleted=false
-        JOIN taxa t on t.id=ttl.taxon_id and t.deleted=false
-        JOIN taxon_groups tg on tg.id=t.taxon_group_id and tg.deleted=false
-      ) on s.survey_id=su.id 
+      FROM taxon_groups tg
+      LEFT JOIN cache_occurrences o on o.taxon_group_id=tg.id
+      #agreements_join#
       LEFT JOIN (occurrence_attribute_values oav
           JOIN termlists_terms certainty ON certainty.id=oav.int_value
       ) ON oav.occurrence_id=o.id AND oav.deleted='f' AND oav.occurrence_attribute_id=#certainattr#   
       #joins#
-      WHERE w.deleted=false
-      AND #website_filter#
+      WHERE tg.deleted=false
+      AND  #sharing_filter# 
       AND (o.zero_abundance='f' OR o.id IS NULL)
-      AND (CAST(su.id AS character varying)='#survey_id#' OR '#survey_id#'='')
-      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       AND ( 
           (o.record_status='V') OR
           ('#quality#'='C' AND certainty.sort_order&lt;=#maxcertain#) OR
@@ -49,7 +44,7 @@
       <columns>
             <column name="id" visible="false" sql="tg.id" unique="true" distincton="true" />
             <column name="name" display="Group Name" style="background-color: #e7e7e7;" sql="tg.title" />
-            <column name="value" display="No. of Records" sql="count(distinct o.id)" distincton="true" aggregate="true" in_count="false"/>
+            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false"/>
             <column name="minvalue" visible="false" sql="0" aggregate="true" />
             <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" aggregate="true"/>
       </columns>

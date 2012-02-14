@@ -45,7 +45,8 @@ echo data_entry_helper::select(array(
 echo data_entry_helper::date_picker(array(
   'label'=>'Start Date',
   'fieldname'=>'taxa_taxon_designation:start_date',
-  'default'=> html::initial_value($values, 'taxa_taxon_designation:start_date')
+  'default'=> html::initial_value($values, 'taxa_taxon_designation:start_date'),
+  'helpText' => 'Date this designation applies from for this species.'
 ));
 echo data_entry_helper::textarea(array(
   'label'=>'Source',

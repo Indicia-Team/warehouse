@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<report title="Occurrence record counts by year" description="Lists years and the number of records for each. ">
+<report title="Record counts by year" description="Lists years and the number of records for each. ">
       <query>
-      SELECT #columns#
-      FROM websites w
-      JOIN surveys su on su.website_id=w.id
-      LEFT JOIN (samples s
-        JOIN occurrences o on o.sample_id=s.id AND o.deleted='f'
-      ) on s.survey_id=su.id 
-      LEFT JOIN (occurrence_attribute_values oav
-          JOIN termlists_terms certainty ON certainty.id=oav.int_value
-      ) ON oav.occurrence_id=o.id AND oav.deleted='f' AND oav.occurrence_attribute_id=#certainattr#   
-      #joins#
-      WHERE w.deleted=false
-      AND #website_filter#
-      AND (o.zero_abundance='f' OR o.id IS NULL)
-      AND (CAST(su.id AS character varying)='#survey_id#' OR '#survey_id#'='')
-      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR s.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR s.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-      AND ( 
-          (o.record_status='V') OR
-          ('#quality#'='C' AND certainty.sort_order&lt;=#maxcertain#) OR
-          ('#quality#'='L' AND certainty.sort_order&lt;=#maxlikely#) OR
-          ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
-          ('#quality#'='!R')
-      )
-      AND o.record_status&lt;&gt;'R'
+      SELECT * FROM (
+        SELECT #columns#
+        FROM cache_occurrences o
+        #agreements_join#
+        LEFT JOIN (occurrence_attribute_values oav
+            JOIN termlists_terms certainty ON certainty.id=oav.int_value
+        ) ON oav.occurrence_id=o.id AND oav.deleted='f' AND oav.occurrence_attribute_id=#certainattr#   
+        #joins#
+        WHERE #sharing_filter#
+        AND o.zero_abundance='f'
+        AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+        AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+        AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+        AND ( 
+            (o.record_status='V') OR
+            ('#quality#'='C' AND certainty.sort_order&lt;=#maxcertain#) OR
+            ('#quality#'='L' AND certainty.sort_order&lt;=#maxlikely#) OR
+            ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
+            ('#quality#'='!R')
+        )
+        AND o.record_status&lt;&gt;'R'
+        AND extract(year from coalesce(o.date_start, o.date_end))&lt;&gt;9999
+        GROUP BY extract(year from coalesce(o.date_start, o.date_end)) 
+      ) AS data
       </query>
       <order_bys>
-            <order_by>value DESC</order_by>
+            <order_by>data.name DESC</order_by>
       </order_bys>
       <params>
         <param name='date_from' display='Date From' datatype='date' />
@@ -44,9 +44,9 @@
         <param name='maxlikely' display='Likely sort order' description='Maximum sort order for for certainty attribute terms that counts as likely' datatype='text' emptyvalue='0' />
       </params>
       <columns>
-            <column name="name" display="Year" style="background-color: #e7e7e7;" sql="extract(year from s.date_start)" />
-            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false"/>
-            <column name="minvalue" visible="false" sql="0" aggregate="true" />
-            <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" aggregate="true"/>
+            <column name="name" display="Year" style="background-color: #e7e7e7;" sql="extract(year from coalesce(o.date_start, o.date_end))" />
+            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" in_count="false"/>
+            <column name="minvalue" visible="false" sql="0" />
+            <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" />
       </columns>
 </report>

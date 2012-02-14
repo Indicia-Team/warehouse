@@ -112,10 +112,13 @@ class User_Identifier_Controller extends Service_Base_Controller {
    */
   private function createUser($email) {
     $person = ORM::factory('person')->where(array('email_address'=>$email))->find();
-    if ($person->loaded 
-        && ($person->first_name != (isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '?')
-            || $person->surname != $_REQUEST['surname']))
-      throw new exception("A different person with email address $email already exists. ".print_r($person->as_array(), true));
+    if ($person->loaded
+        && ((!empty($person->first_name) && $person->first_name != '?'
+        && !empty($_REQUEST['first_name']) && $_REQUEST['first_name']!==$person->first_name)
+        || $person->surname !== $_REQUEST['surname']))
+      throw new exception("The system attempted to use your user account details to register you as a user of the ".
+          "central records database, but a different person with email address $email already exists. Please contact your ".
+          "site administrator who may be able to help resolve this issue." . print_r($_REQUEST, true));
     $data = array(
       'first_name' => isset($_REQUEST['first_name']) ? $_REQUEST['first_name'] : '?',
       'surname' => $_REQUEST['surname'],
