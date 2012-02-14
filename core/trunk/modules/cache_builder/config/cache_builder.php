@@ -1,14 +1,22 @@
 <?php
 
 $config['termlists_terms']['get_changelist_query']="
-    select tlt.id, tl.deleted or tlt.deleted or tltpref.deleted or t.deleted or l.deleted or tpref.deleted or lpref.deleted as deleted
+    select distinct on (tlt.id) tlt.id, tl.deleted or tlt.deleted or tltpref.deleted or t.deleted or l.deleted or tpref.deleted or lpref.deleted as deleted
       from termlists tl
       join termlists_terms tlt on tlt.termlist_id=tl.id 
       join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t' 
       join terms t on t.id=tlt.term_id 
       join languages l on l.id=t.language_id 
       join terms tpref on tpref.id=tltpref.term_id 
-      join languages lpref on lpref.id=tpref.language_id 
+      join languages lpref on lpref.id=tpref.language_id";
+      
+$config['termlists_terms']['exclude_existing'] = "
+      left join cache_termlists_terms ctlt on ctlt.id=tlt.id 
+      left join needs_update_termlists_terms nutlt on nutlt.id=tlt.id 
+      where ctlt.id is null and nutlt.id is null
+      and (tl.deleted or tlt.deleted or tltpref.deleted or t.deleted or l.deleted or tpref.deleted or lpref.deleted) = false";
+
+$config['termlists_terms']['filter_on_date'] = "
       where tl.created_on>'#date#' or tl.updated_on>'#date#' 
       or tlt.created_on>'#date#' or tlt.updated_on>'#date#' 
       or tltpref.created_on>'#date#' or tltpref.updated_on>'#date#' 
@@ -48,7 +56,7 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
       term, language_iso, language, preferred_term, preferred_language_iso, preferred_language,
       cache_created_on, cache_updated_on
     )
-    select tlt.id, tlt.preferred, 
+    select distinct on (tlt.id) tlt.id, tlt.preferred, 
       tl.id as termlist_id, tl.title as termlist_title, tl.website_id,
       tltpref.id as preferred_termlists_term_id, tltpref.parent_id, tltpref.sort_order,
       t.term,
@@ -58,7 +66,7 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
       now(), now()
     from termlists tl
     join termlists_terms tlt on tlt.termlist_id=tl.id 
-    join needs_update_termlists_terms nutlt on nutlt.id=tlt.id
+    join needs_update_termlists_terms nutlt on nutlt.id=tlt.id and nutlt.deleted=false
     left join cache_termlists_terms ctlt on ctlt.id=tlt.id
     join termlists_terms tltpref on tltpref.meaning_id=tlt.meaning_id and tltpref.preferred='t' 
     join terms t on t.id=tlt.term_id and t.deleted=false
@@ -66,9 +74,10 @@ $config['termlists_terms']['insert']="insert into cache_termlists_terms (
     join terms tpref on tpref.id=tltpref.term_id 
     join languages lpref on lpref.id=tpref.language_id
     where ctlt.id is null";
+    
 
 $config['taxa_taxon_lists']['get_changelist_query']="
-    select ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
+    select distinct on (ttl.id) ttl.id, tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
         or l.deleted or tpref.deleted or lpref.deleted as deleted
       from taxon_lists tl
       join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
@@ -76,7 +85,16 @@ $config['taxa_taxon_lists']['get_changelist_query']="
       join taxa t on t.id=ttl.taxon_id 
       join languages l on l.id=t.language_id 
       join taxa tpref on tpref.id=ttlpref.taxon_id 
-      join languages lpref on lpref.id=tpref.language_id
+      join languages lpref on lpref.id=tpref.language_id";
+      
+$config['taxa_taxon_lists']['exclude_existing'] = "
+      left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id 
+      left join needs_update_taxa_taxon_lists nuttl on nuttl.id=ttl.id 
+      where cttl.id is null and nuttl.id is null 
+      and (tl.deleted or ttl.deleted or ttlpref.deleted or t.deleted 
+        or l.deleted or tpref.deleted or lpref.deleted) = false";
+
+$config['taxa_taxon_lists']['filter_on_date'] = "
       where tl.created_on>'#date#' or tl.updated_on>'#date#' 
       or ttl.created_on>'#date#' or ttl.updated_on>'#date#' 
       or ttlpref.created_on>'#date#' or ttlpref.updated_on>'#date#' 
@@ -123,7 +141,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       preferred_language_iso, preferred_language, default_common_name, search_name, external_key,
       cache_created_on, cache_updated_on
     )
-    select ttl.id, ttl.preferred, 
+    select distinct on (ttl.id) ttl.id, ttl.preferred, 
       tl.id as taxon_list_id, tl.title as taxon_list_title, tl.website_id,
       ttlpref.id as preferred_taxa_taxon_list_id, ttlpref.parent_id, ttlpref.taxonomic_sort_order,
       t.taxon, t.authority,
@@ -136,7 +154,7 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
       now(), now()
     from taxon_lists tl
     join taxa_taxon_lists ttl on ttl.taxon_list_id=tl.id 
-    join needs_update_taxa_taxon_lists nuttl on nuttl.id=ttl.id
+    join needs_update_taxa_taxon_lists nuttl on nuttl.id=ttl.id and nuttl.deleted=false
     left join cache_taxa_taxon_lists cttl on cttl.id=ttl.id
     join taxa_taxon_lists ttlpref on ttlpref.taxon_meaning_id=ttl.taxon_meaning_id and ttlpref.preferred='t' 
     join taxa t on t.id=ttl.taxon_id and t.deleted=false
@@ -146,18 +164,27 @@ $config['taxa_taxon_lists']['insert']="insert into cache_taxa_taxon_lists (
     left join taxa tcommon on tcommon.id=ttlpref.common_taxon_id
     where cttl.id is null";
 
+
 $config['occurrences']['get_changelist_query'] = "
   select o.id, o.deleted or s.deleted or su.deleted or (cttl.id is null) as deleted
     from occurrences o
-    join samples s on s.id=o.sample_id and s.deleted=false
-    join surveys su on su.id=s.survey_id and su.deleted=false
+    join samples s on s.id=o.sample_id 
+    join surveys su on su.id=s.survey_id 
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
-    left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
-  where o.created_on>'#date#' or o.updated_on>'#date#' 
-  or s.created_on>'#date#' or s.updated_on>'#date#' 
-  or su.created_on>'#date#' or su.updated_on>'#date#'
-  or cttl.cache_updated_on>'#date#'
-  or tmethod.cache_updated_on>'#date#'";
+    left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id";
+  
+$config['occurrences']['exclude_existing'] = "
+      left join cache_occurrences co on co.id=o.id 
+      left join needs_update_occurrences nuo on nuo.id=o.id 
+      where co.id is null and nuo.id is null
+      and (o.deleted or s.deleted or su.deleted or (cttl.id is null)) = false";
+
+$config['occurrences']['filter_on_date'] = "
+    where o.created_on>'#date#' or o.updated_on>'#date#' 
+      or s.created_on>'#date#' or s.updated_on>'#date#' 
+      or su.created_on>'#date#' or su.updated_on>'#date#'
+      or cttl.cache_updated_on>'#date#'
+      or tmethod.cache_updated_on>'#date#' ";
 
 $config['occurrences']['update'] = "update cache_occurrences co
     set record_status=o.record_status, 
@@ -214,7 +241,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     cttl.search_name, cttl.external_key as taxa_taxon_list_external_key,
     now(), now()
   from occurrences o
-  join needs_update_occurrences nuo on nuo.id=o.id
+  join needs_update_occurrences nuo on nuo.id=o.id and nuo.deleted=false
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
   join surveys su on su.id=s.survey_id 
