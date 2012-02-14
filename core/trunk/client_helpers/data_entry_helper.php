@@ -1026,6 +1026,7 @@ class data_entry_helper extends helper_base {
   */
   public static function password_input() {
     $options = self::check_arguments(func_get_args(), array('fieldname'));
+    $options['lockable']=false;
     $options = array_merge(array(
       'default'=>''
     ), $options);

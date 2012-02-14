@@ -39,6 +39,77 @@ $indicia_templates = array(
   'nosuffix' => " \n",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
+  'lock_icon' => '<span id="{id}_lock" class="{lock_class}">&nbsp;</span>',
+  'lock_javascript' => "$('.locked_icon, .unlocked_icon').click(function (event) {
+      var id = this.id.replace(':', '\\\\\:');
+      var unescapedControlId = this.id.replace('_lock', '');
+      $('#'+id).toggleClass('locked_icon');
+      $('#'+id).toggleClass('unlocked_icon');
+      if ($('#'+id).hasClass('locked_icon')) {
+        lockControl(unescapedControlId);
+      } else {
+        unlockControl(unescapedControlId);
+      }
+      setWriteStatus(id);
+      setLockToolTip(id);
+    });
+    var lockControl = function (controlId) {
+      // create or update lock cookie for supplied control
+      var lockedArray = getOtherLocks(controlId);
+      var locked = {};
+      locked.ctl_id = controlId;
+      locked.ctl_value = document.getElementById(controlId).value;
+      lockedArray.push(locked);
+      jQuery.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
+    };
+    var unlockControl = function (controlId) {
+      // update or delete lock cookie to reflect removing this control
+      var lockedArray = getOtherLocks(controlId);
+      if (lockedArray.length > 0) {
+        jQuery.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
+      } else {
+        jQuery.cookie('indicia_locked_controls', null);
+      }
+    };
+    var getOtherLocks = function (controlId) {
+      // gets an array of locks for all locked controls other than the one supplied 
+      var lockedArray = [];
+      if (jQuery.cookie('indicia_locked_controls')) {
+        lockedArray = JSON.parse(jQuery.cookie('indicia_locked_controls'));
+      }
+      var i;
+      for (i=0; i<lockedArray.length; i++) {
+        if (lockedArray[i].ctl_id && lockedArray[i].ctl_id===controlId) {
+          lockedArray.splice(i, 1);
+          break;
+        }
+      }
+      return lockedArray;
+    };
+    var setWriteStatus = function (id) {
+      var controlId = id.replace('_lock', '');
+      if ($('#'+id).hasClass('locked_icon')) {
+        $('#'+controlId).attr('readonly','readonly');
+      } else {
+        $('#'+controlId).removeAttr('readonly');
+      }
+    }
+    var setLockToolTip = function (id) {
+      var lockedTip = '".lang::get('locked tool-tip')."';
+      var unlockedTip = '".lang::get('unlocked tool-tip')."';
+      if ($('#'+id).hasClass('locked_icon')) {
+        $('#'+id).attr('title',lockedTip);
+        $('#'+id).attr('alt',lockedTip);
+      } else {
+        $('#'+id).attr('title',unlockedTip);
+        $('#'+id).attr('alt',unlockedTip);
+      }
+    }
+    $('.locked_icon, .unlocked_icon').each(function(n) {
+      var id = this.id.replace(':', '\\\\\:');
+      setWriteStatus(id);
+      setLockToolTip(id);
+    });",
   'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
@@ -301,6 +372,12 @@ class helper_base extends helper_config {
    * @var array List of messages defined to pass to the validation plugin.
    */
   public static $validation_messages = array();
+
+  /**
+   * @var Boolean indicates if any form controls have specified the lockable option.
+   * If so, we will need to output some javascript.
+   */
+  protected static $using_locking = false;
 
   /**
    * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the
@@ -1214,6 +1291,16 @@ indiciaData.windowLoaded=false;
       $validationClasses = self::build_validation_class($options);
       $options['class'] .= ' '.$validationClasses;
     }
+
+    // If the control is locked, set locked value, make read-only on page display via javascript
+    if (array_key_exists('lockable', $options) && $options['lockable']===true
+      && self::is_control_locked($options['id'])) {
+      // set lock state
+      $options['locked'] = true;
+      // set locked value
+      $options['default'] = self::locked_value($options['id']);
+    }
+
     // replace html attributes with their wrapped versions, e.g. a class becomes class="..."
     foreach (self::$html_attributes as $name => $attr) {
       if (!empty($options[$name])) {
@@ -1241,6 +1328,20 @@ indiciaData.windowLoaded=false;
     }
     // Output the main control
     $r .= self::apply_replacements_to_template($indicia_templates[$template], $options);
+
+    // Add a lock icon to the control if the lockable option is set to true
+    if (array_key_exists('lockable', $options) && $options['lockable']===true) {
+      if (array_key_exists('locked', $options) && $options['locked']===true) {
+        $options['lock_class'] = 'locked_icon';
+      } else {
+        $options['lock_class'] = 'unlocked_icon';
+      }
+      $r .= self::apply_replacements_to_template($indicia_templates['lock_icon'], $options);
+      if (!self::$using_locking) {
+        self::$using_locking = true;
+        self::$javascript .= $indicia_templates['lock_javascript'];
+      }
+    }
 
     // Add an error icon to the control if there is an error and this option is set
     if ($error && in_array('icon', $options['validation_mode'])) {
@@ -1467,6 +1568,31 @@ indiciaData.windowLoaded=false;
     $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
     $template = str_replace('{for}', $fieldname, $template);
     return str_replace('{error}', lang::get($error), $template);
+  }
+
+  /**
+   * Method to check if the lock has been set on a control to reuse its value.
+   * @param string $id the id of the control to check.
+   * @return boolean, true if lock exists, else false.
+   */
+  private static function is_control_locked($id) {
+    return !self::locked_value($id)===false;
+  }
+  
+  /**
+   * Method to get the locked value of a control.
+   * @param string $id the id of the control to check.
+   * @return string, the locked value for the supplied id or false if lock not found.
+   */
+  private static function locked_value($id) {
+    $result = false;
+    if (array_key_exists('indicia_locked_controls', $_COOKIE)){
+      $lockedArray = json_decode($_COOKIE['indicia_locked_controls'], true);
+      foreach ($lockedArray as $lock) {
+        if (array_key_exists('ctl_id', $lock) && $lock['ctl_id']===$id) $result = $lock['ctl_value'];
+      }
+    }
+    return $result;
   }
 
 }

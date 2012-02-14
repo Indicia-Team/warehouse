@@ -549,3 +549,23 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
 .delete-file {
   float: right;
 }
+
+/* padlock_open.png and padlock_closed.png are sourced from gentleface.com
+ * under the creative commons attibution non-commercial licence.
+ * Do not remove this comment as it constitutes the required attribution.
+ */
+.unlocked_icon {
+	background-image: url(../images/padlock_open.png);
+}
+
+.locked_icon {
+	background-image: url(../images/padlock_closed.png);
+}
+
+.locked_icon, .unlocked_icon {
+	background-repeat: no-repeat;
+	display: inline-block;
+	width: 16px;
+	margin: 0 0.25em;
+	cursor: pointer;
+}
