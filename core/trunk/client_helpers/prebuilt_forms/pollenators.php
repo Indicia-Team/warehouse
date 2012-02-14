@@ -1278,7 +1278,7 @@ toolPoller = function(toolStruct){
 	  pollReset(this.toolStruct);
 	  var da = data.split('\\n');
       jQuery(this.toolStruct.selector+' [name='+this.toolStruct.type+'\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
-	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '').replace(/\\\\/g, '');
+	  da[1] = da[1].replace(/\\\\i\{\}/g, '').replace(/\\\\i0\{\}/g, '').replace(/\\\\/g, '');
 	  var items = da[1].split(':');
 	  var count = items.length;
 	  if(items[count-1] == '') count--;

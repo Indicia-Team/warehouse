@@ -2131,7 +2131,7 @@ toolPoller = function(toolStruct){
 	  pollReset(this.toolStruct);
 	  var da = data.split('\\n');
       jQuery(this.toolStruct.mainForm+' [name=determination\\:taxon_details]').val(da[2]); // Stores the state of identification, which details how the identification was arrived at within the tool.
-	  da[1] = da[1].replace(/\\\\\\\\i\{\}/g, '').replace(/\\\\\\\\i0\{\}/g, '').replace(/\\\\/g, '');
+	  da[1] = da[1].replace(/\\\\i\{\}/g, '').replace(/\\\\i0\{\}/g, '').replace(/\\\\/g, '');
 	  var items = da[1].split(':');
 	  var count = items.length;
 	  if(items[count-1] == '') count--;
@@ -3306,6 +3306,8 @@ loadDeterminations = function(keyValue, historyID, currentID, lookup, callback, 
     jQuery(historyID).empty().append('<strong>".lang::get('LANG_History_Title')."</strong>');
 	jQuery(currentID).empty();
 	jQuery('#poll-banner').empty();
+	if(can_doubt || expert) {jQuery('#fo-id-buttons').show();
+	} else {jQuery('#fo-id-buttons').hide();}
 	jQuery('#fo-doubt-button').hide();
 	jQuery('#fo-express-doubt-form').find('[name=determination:taxon_extra_info]').val('');
 	jQuery('#fo-express-doubt-form').find('[name=determination:taxa_taxon_list_id]').val('');
