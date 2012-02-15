@@ -74,6 +74,7 @@ class ReportEngine {
   private $cache;
   const rowsPerUpdate = 50;
   private $websiteIds = null;
+  private $userId = null;
 
   /**
    * @var array A list of additional columns identified from custom attribute parameters.
@@ -90,9 +91,10 @@ class ReportEngine {
    */
   private $customAttributeCaptions = array();
 
-  public function __construct($websiteIds = null)
+  public function __construct($websiteIds = null, $userId = null)
   {
     $this->websiteIds = $websiteIds;
+    $this->userId = $userId;
     $this->localReportDir = Kohana::config('indicia.localReportDir');
     $this->reportDb = new Database('report');
   }
@@ -184,7 +186,7 @@ class ReportEngine {
     switch ($this->reportFormat)
     {
       case 'xml':
-        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, isset($this->providedParams['sharing']) ? $this->providedParams['sharing'] : 'reporting');
+        $this->reportReader = new XMLReportReader($this->report, $this->websiteIds, $this->userId, isset($this->providedParams['sharing']) ? $this->providedParams['sharing'] : 'reporting');
         break;
       default:
         return array('error' => 'Unknown report format specified: '. $this->reportFormat);

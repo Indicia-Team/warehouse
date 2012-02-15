@@ -79,10 +79,11 @@ class XMLReportReader_Core implements ReportReader
   * Constructs a reader for the specified report.
   * @param string $report Report file path
   * @param array $websiteIds List of websites to include data for
-  * @param string $sharing Set to reporting, verification, moderation, peer_review or data_flow
+  * @param integer $userId Id of the user requesting the report, if known. Used when $sharing=me.
+  * @param string $sharing Set to reporting, verification, moderation, peer_review, data_flow or me (=user's data)
   * depending on the type of data from other websites to include in this report.
   */
-  public function __construct($report, $websiteIds, $sharing='reporting')
+  public function __construct($report, $websiteIds, $userId=null, $sharing='reporting')
   {
     Kohana::log('debug', "Constructing XMLReportReader for report $report.");
     try
@@ -108,6 +109,9 @@ class XMLReportReader_Core implements ReportReader
                 if (!$websiteFilterField = $reader->getAttribute('website_filter_field'))
                   // default field name for filtering against websites
                   $websiteFilterField = 'w.id';
+                if (!$createdByField = $reader->getAttribute('created_by_field'))
+                  // default field name for filtering the user ID that created the record
+                  $createdByField = 'o.created_by_id';
                 if (!$this->samples_id_field = $reader->getAttribute('samples_id_field'))
                   // default table alias for the samples table, so we can join to the id
                   $this->samples_id_field = 's.id';
@@ -134,6 +138,22 @@ class XMLReportReader_Core implements ReportReader
                   // use a dummy filter to return all websites if core admin
                   $this->query = str_replace('#website_filter#', '1=1', $this->query);
                 // select the appropriate type of sharing arrangement (i.e. are we reporting, verifying, moderating etc?)
+                if ($sharing==='me' && $userId===null)
+                  // revert to website type sharing if we have no known user Id.
+                  $sharing==='website';
+                if ($sharing==='me')
+                  // my data only so use the UserId if we have it                  
+                  $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "$createdByField=".$userId), $this->query);
+                elseif (isset($idList)) {
+                  if ($sharing==='website') 
+                    // this website only
+                    $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "$websiteFilterField in ($idList)"), $this->query);
+                  else
+                    // implement the appropriate sharing agreement across websites
+                    $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), 
+                        array("JOIN index_websites_website_agreements iwwa ON iwwa.to_website_id=o.website_id and iwwa.receive_for_$sharing=true", 
+                        "iwwa.from_website_id in ($idList)"), $this->query);
+                }
                 $this->query = str_replace('#sharing#', $sharing, $this->query);
                 break;
               case 'field_sql':

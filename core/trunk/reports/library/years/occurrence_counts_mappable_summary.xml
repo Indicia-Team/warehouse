@@ -2,7 +2,6 @@
 
 <report title="Record counts by year" description="Lists years and the number of records for each. ">
       <query>
-      SELECT * FROM (
         SELECT #columns#
         FROM cache_occurrences o
         #agreements_join#
@@ -24,11 +23,9 @@
         )
         AND o.record_status&lt;&gt;'R'
         AND extract(year from coalesce(o.date_start, o.date_end))&lt;&gt;9999
-        GROUP BY extract(year from coalesce(o.date_start, o.date_end)) 
-      ) AS data
       </query>
       <order_bys>
-            <order_by>data.name DESC</order_by>
+            <order_by>extract(year from coalesce(o.date_start, o.date_end)) DESC</order_by>
       </order_bys>
       <params>
         <param name='date_from' display='Date From' datatype='date' />
@@ -44,9 +41,9 @@
         <param name='maxlikely' display='Likely sort order' description='Maximum sort order for for certainty attribute terms that counts as likely' datatype='text' emptyvalue='0' />
       </params>
       <columns>
-            <column name="name" display="Year" style="background-color: #e7e7e7;" sql="extract(year from coalesce(o.date_start, o.date_end))" />
-            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" in_count="false"/>
-            <column name="minvalue" visible="false" sql="0" />
-            <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" />
+            <column name="name" display="Year" style="background-color: #e7e7e7;" distincton="true" sql="extract(year from coalesce(o.date_start, o.date_end))" />
+            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" in_count="false" aggregate="true" />
+            <column name="minvalue" visible="false" sql="0" aggregate="true" />
+            <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" aggregate="true" />
       </columns>
 </report>

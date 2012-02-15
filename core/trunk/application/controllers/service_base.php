@@ -72,6 +72,12 @@ class Service_Base_Controller extends Controller {
    * to filter the response. A value of 0 indicates the warehouse.
    */
   protected $website_id = null;
+  
+  /**
+   * @var int Id of the indicia user ID calling the service. Obtained when performing read authentication and can be used
+   * to filter the response. Null if not provided in the report call.
+   */
+  protected $user_id = null;
 
   /**
    * @var boolean Flag set to true when user has core admin rights. Only applies when the request originates from the warehouse.
@@ -118,9 +124,11 @@ class Service_Base_Controller extends Controller {
             $authentic=true;            
           }
           if ($authentic) {
-            if ($id>0) 
+            if ($id>0) {
               $this->website_id = $id;
-            else {
+              if (isset($_REQUEST['user_id']))
+                $this->user_id=$_REQUEST['user_id'];
+            } else {
               $this->in_warehouse = true;
               $this->website_id = 0; // the Warehouse
               $this->user_id = 0 - $id; // user id was passed as a negative number to differentiate from a website id

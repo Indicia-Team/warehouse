@@ -57,7 +57,7 @@ class Report_Controller extends Data_Service_Base_Controller {
   {
     $this->authenticate('read');
     $websites = $this->website_id ? array($this->website_id) : null;
-    $this->reportEngine = new ReportEngine($websites);
+    $this->reportEngine = new ReportEngine($websites, $this->user_id);
     parent::__construct();
   }
 
