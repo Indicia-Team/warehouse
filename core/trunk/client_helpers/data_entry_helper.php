@@ -57,8 +57,12 @@ require_once('submission_builder.php');
  * <li><b>afterControl</b>
  * Allows a piece of HTML to be specified which is inserted immediately after the control, before the suffix and
  * helpText. Ideal for inserting buttons that are to be displayed alongside a control such as a Go button
- * for a search box.
- * </li>
+ * for a search box.</li>
+ * <li><b>lockable</b>
+ * Adds a padlock icon after the control which can be used to lock the control's value. 
+ * The value will then be remembered and redisplayed in the control each time the form is 
+ * shown until the control is unlocked or the end of the browser session. This option will not
+ * work for password controls.</li>
  * </ul>
  *
  * @package	Client

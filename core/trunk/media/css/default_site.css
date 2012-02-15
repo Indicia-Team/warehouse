@@ -550,16 +550,16 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
   float: right;
 }
 
-/* padlock_open.png and padlock_closed.png are sourced from gentleface.com
- * under the creative commons attibution non-commercial licence.
+/* lock_open.png and lock.png are sourced from http://www.famfamfam.com/lab/icons/silk/
+ * by Mark James under the creative commons attibution 2.5 licence.
  * Do not remove this comment as it constitutes the required attribution.
  */
 .unlocked_icon {
-	background-image: url(../images/padlock_open.png);
+	background-image: url(../images/lock_open.png);
 }
 
 .locked_icon {
-	background-image: url(../images/padlock_closed.png);
+	background-image: url(../images/lock.png);
 }
 
 .locked_icon, .unlocked_icon {

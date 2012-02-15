@@ -40,76 +40,11 @@ $indicia_templates = array(
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
   'lock_icon' => '<span id="{id}_lock" class="{lock_class}">&nbsp;</span>',
-  'lock_javascript' => "$('.locked_icon, .unlocked_icon').click(function (event) {
-      var id = this.id.replace(':', '\\\\\:');
-      var unescapedControlId = this.id.replace('_lock', '');
-      $('#'+id).toggleClass('locked_icon');
-      $('#'+id).toggleClass('unlocked_icon');
-      if ($('#'+id).hasClass('locked_icon')) {
-        lockControl(unescapedControlId);
-      } else {
-        unlockControl(unescapedControlId);
-      }
-      setWriteStatus(id);
-      setLockToolTip(id);
-    });
-    var lockControl = function (controlId) {
-      // create or update lock cookie for supplied control
-      var lockedArray = getOtherLocks(controlId);
-      var locked = {};
-      locked.ctl_id = controlId;
-      locked.ctl_value = document.getElementById(controlId).value;
-      lockedArray.push(locked);
-      jQuery.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
-    };
-    var unlockControl = function (controlId) {
-      // update or delete lock cookie to reflect removing this control
-      var lockedArray = getOtherLocks(controlId);
-      if (lockedArray.length > 0) {
-        jQuery.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
-      } else {
-        jQuery.cookie('indicia_locked_controls', null);
-      }
-    };
-    var getOtherLocks = function (controlId) {
-      // gets an array of locks for all locked controls other than the one supplied 
-      var lockedArray = [];
-      if (jQuery.cookie('indicia_locked_controls')) {
-        lockedArray = JSON.parse(jQuery.cookie('indicia_locked_controls'));
-      }
-      var i;
-      for (i=0; i<lockedArray.length; i++) {
-        if (lockedArray[i].ctl_id && lockedArray[i].ctl_id===controlId) {
-          lockedArray.splice(i, 1);
-          break;
-        }
-      }
-      return lockedArray;
-    };
-    var setWriteStatus = function (id) {
-      var controlId = id.replace('_lock', '');
-      if ($('#'+id).hasClass('locked_icon')) {
-        $('#'+controlId).attr('readonly','readonly');
-      } else {
-        $('#'+controlId).removeAttr('readonly');
-      }
-    }
-    var setLockToolTip = function (id) {
-      var lockedTip = '".lang::get('locked tool-tip')."';
-      var unlockedTip = '".lang::get('unlocked tool-tip')."';
-      if ($('#'+id).hasClass('locked_icon')) {
-        $('#'+id).attr('title',lockedTip);
-        $('#'+id).attr('alt',lockedTip);
-      } else {
-        $('#'+id).attr('title',unlockedTip);
-        $('#'+id).attr('alt',unlockedTip);
-      }
-    }
-    $('.locked_icon, .unlocked_icon').each(function(n) {
-      var id = this.id.replace(':', '\\\\\:');
-      setWriteStatus(id);
-      setLockToolTip(id);
-    });",
+  'lock_javascript' => "indicia.locks.initToolTips (
+      \"".lang::get('locked tool-tip')."\", 
+      \"".lang::get('unlocked tool-tip')."\"
+      );
+    indicia.locks.initControls();\n",
   'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
@@ -420,6 +355,7 @@ class helper_base extends helper_config {
    * <li>georeference_google_search_api</li>
    * <li>locationFinder</li>
    * <li>autocomplete</li>
+   * <li>indicia_locks</li>
    * <li>jquery_cookie</li>
    * <li>jquery_ui</li>
    * <li>jquery_ui_fr</li>
@@ -507,6 +443,7 @@ class helper_base extends helper_config {
         'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
+        'indicia_locks' => array('deps' =>array('jquery_cookie', 'json'), 'javascript' => array(self::$js_path."indicia.locks.js")),
         'jquery_cookie' => array('deps' =>array('jquery'), 'javascript' => array(self::$js_path."jquery.cookie.js")),
         'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
         'jquery_ui_fr' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path."jquery.ui.datepicker-fr.js")),
@@ -1363,8 +1300,7 @@ indiciaData.windowLoaded=false;
       if (!self::$using_locking) {
         self::$using_locking = true;
         self::$javascript .= $indicia_templates['lock_javascript'];
-        self::add_resource('jquery_cookie');
-        self::add_resource('json');
+        self::add_resource('indicia_locks');
       }
     }
 
