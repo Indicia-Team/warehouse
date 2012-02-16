@@ -81,6 +81,7 @@ $lang = array (
     'maximum' => 'The value specified for this number is too high',
     'minimum' => 'The value specified for this number is too low',
     'required' => 'The value is required.',
+    'regex' => 'The value is not of the correct format.',
     'default' => 'The value must be a valid whole number.',
   ),
   'iso' => Array (
