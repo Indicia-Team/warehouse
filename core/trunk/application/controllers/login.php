@@ -102,7 +102,7 @@ class Login_Controller extends Indicia_Controller {
     {
       # this is name complete as needs to convert from email address to username
       # or to extend auth model
-      $person = ORM::factory('person', array('email_address' => $_POST['Email']));
+      $person = ORM::factory('person')->like('email_address', $_POST['Email'], false)->find();
 
       if ($this->auth->login(array('person_id' => $person->id), $_POST['Password'], isset($_POST['remember_me'])))
       {
