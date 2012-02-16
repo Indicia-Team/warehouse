@@ -465,7 +465,7 @@ class helper_base extends helper_config {
         'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
         'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
         'defaultStylesheet' => array('deps' => array(''), 'stylesheets' => array(self::$css_path."default_site.css"), 'javascript' => array()),
-        'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.validate.js')),
+        'validation' => array('deps' => array('jquery'), 'javascript' => array(self::$js_path.'jquery.metadata.js', self::$js_path.'jquery.validate.js', self::$js_path.'additional-methods.js')),
         'plupload' => array('deps' => array('jquery_ui','fancybox'), 'javascript' => array(
             self::$js_path.'jquery.uploader.js', self::$js_path.'/plupload/js/plupload.full.js')),
         'jqplot' => array('stylesheets' => array(self::$js_path.'jqplot/jquery.jqplot.css'), 'javascript' => array(                
@@ -1461,7 +1461,6 @@ indiciaData.windowLoaded=false;
   * @param array $rules List of validation rules to be converted.
   * @return string Validation metadata classes to add to the input element.
   * @todo Implement a more complete list of validation rules.
-  * @todo Suspect there is a versioning issue, because the minimum/maximum rule classes don't work.
   */
   protected static function convert_to_jquery_val_metadata($rules) {
     $converted = array();
@@ -1474,21 +1473,29 @@ indiciaData.windowLoaded=false;
           || $rule=='url'
           || $rule=='time'
           || $rule=='integer') {
-        $converted[] = $rule;
+        $converted[] = $rule.':true';
       // Now any rules which need parsing or conversion
       } else if ($rule=='date') {
-        $converted[] = 'customDate';
+        $converted[] = 'customDate:true';
       } else if ($rule=='digit') {
-        $converted[] = 'digits';
+        $converted[] = 'digits:true';
+      } else if ($rule=='numeric') {
+        $converted[] = 'number:true';
       // the next test uses a regexp named expression to find the digit in a maximum rule (maximum[10])
       } elseif (preg_match('/maximum\[(?P<val>\d+)\]/', $rule, $matches)) {
-        $converted[] = '{maxValue:'.$matches['val'].'}';
+        $converted[] = 'max:'.$matches['val'];
       // and again for minimum rules
       } elseif (preg_match('/minimum\[(?P<val>\d+)\]/', $rule, $matches)) {
-        $converted[] = '{minValue:'.$matches['val'].'}';
+        $converted[] = 'min:'.$matches['val'];
+      } elseif (preg_match('/regex\[(?P<val>.+)\]/', $rule, $matches)) {
+        $converted[] = 'pattern:'. $matches['val'];
       }
     }
-    return implode(' ', $converted);
+    if (count($converted) == 0) {
+      return '';
+    } else {
+      return '{'. implode(', ', $converted) .'}';
+    }
   }
 
    /**
