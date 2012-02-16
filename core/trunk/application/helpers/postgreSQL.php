@@ -39,18 +39,21 @@ class postgreSQL {
   }
   
   
-  public static function setOccurrenceCreatorByCmsUser($db, $websiteId, $userId, $cmsUserId) {
+  public static function setOccurrenceCreatorByCmsUser($websiteId, $userId, $cmsUserId, $db=null) {
+    if (!$db)
+      $db = new Database();
     $db->query("update occurrences as o ".
       "set created_by_id=$userId ".
-      "from occurrence_attribute_values oav ".
-      "join occurrence_attributes oa ".
-      "    on oa.id=oav.occurrence_attribute_id ".
-      "    and oa.caption='CMS User ID' ".
-      "    and oa.deleted=false ".
-      "where oav.deleted=false ".
+      "from sample_attribute_values sav ".
+      "join sample_attributes sa ".
+      "    on sa.id=sav.sample_attribute_id ".
+      "    and sa.caption='CMS User ID' ".
+      "    and sa.deleted=false ".
+      "where o.sample_id = sav.sample_id ".
+      "and sav.deleted=false ".
       "and o.deleted=false ".
       "and o.website_id=$websiteId ".
-      "and oav.int_value=$cmsUserId");
+      "and sav.int_value=$cmsUserId");
   }
   
 }

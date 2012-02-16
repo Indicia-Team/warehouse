@@ -30,18 +30,33 @@ class User_Identifier_Controller extends Service_Base_Controller {
   
   /**
    * Service method that takes list of user identifiers and returns the appropriate user ID
-   * from the warehouse, which can then be used in subsequent calls to save the data.
-   * Takes a GET or POST parameter called identifiers, with a JSON encoded array of identifiers
-   * known for the user. Each array entry is an object with a type (e.g. twitter, openid) and
-   * identifier (e.g. twitter account). There should also be a surname parameter
-   * enabling the new user account to be created, plus an optional first_name, and
-   * a cms_user_id that can be used to identify previously existing records for the user.
-   * @return integer The user ID for the existing or newly created account. Alternatively
+   * from the warehouse, which can then be used in subsequent calls to save the data. Takes the 
+   * following parameters in the $_GET or $_POST data:<ul>
+   * <li><strong>identifiers</strong/><br/>
+   * Required. A JSON encoded array of identifiers known for the user. Each array entry is an object 
+   * with a type (e.g. twitter, openid) and identifier (e.g. twitter account). An identifier of type
+   * email must be provided in case a new user account has to be created on the warehouse.</li>
+   * <li><strong>surname</strong/><br/>
+   * Required. Surname of the user, enabling a new user account to be created on the warehouse.</li>
+   * <li><strong>first_name</strong/><br/>
+   * Optional. First name of the user, enabling a new user account to be created on the warehouse.</li>
+   * <li><strong>cms_user_id</strong/><br/>
+   * Required. User ID from the client website's login system.</li>
+   * <li><strong>force</strong/><br/>
+   * Optional. Only relevant after a request has returned an array of several possible matches. Set to 
+   * merge or split to define the action.</li>
+   * <li><strong>users_to_merge</strong/><br/>
+   * If force=merge, then this parameter can be optionally used to limit the list of users in the merge operation.
+   * Pass a JSON encoded array of user IDs.</li>
+   * </ul>
+   * @return mixed The user ID for the existing or newly created account. Alternatively
    * if more than one match is found, then returns a JSON encoded lists of people that 
-   * match from the warehouse - each with the first name, surname and list of known
-   * identifiers. If this happens then the client must ask the user to confirm that they 
-   * are the same person and if so, the response is sent back with a forcemerge=true
-   * parameter to force the merge of the people. 
+   * match from the warehouse - each with the user ID, website ID and website title they are
+   * members of. If this happens then the client must ask the user to confirm that they 
+   * are the same person as the users of this website and if so, the response is sent back with a force=merge
+   * parameter to force the merge of the people. If they are the same person as only some of the other users,
+   * then use users_to_merge to supply an array of the user IDs that should be merged. Alternatively, if 
+   * force=split is passed through then the best fit user ID is returned and no merge operation occurs.
    */
   public function get_user_id() {
     if (!array_key_exists('identifiers', $_REQUEST))
@@ -55,7 +70,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
     // we do need to know the cms_user_id so that we can ensure any previously recorded data for
     // this user is attributed correctly to the warehouse user.
     if (!isset($_REQUEST['cms_user_id']))
-      throw new exception('Call to get_user_id requires a cmsa_user_id in the GET or POST data.');
+      throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
     try {
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
@@ -68,13 +83,17 @@ class User_Identifier_Controller extends Service_Base_Controller {
       // email is a special identifier used to create person.
       $email = null;
       foreach ($identifiers as $identifier) {
-        $r = $this->db->select('user_id')
+        $this->db->select('user_id')
             ->from('user_identifiers as um')
             ->join('termlists_terms as tlt1', array('tlt1.id'=>'um.type_id'))
             ->join('termlists_terms as tlt2', array('tlt2.meaning_id'=>'tlt1.meaning_id'))
             ->join('terms as t', array('t.id'=>'tlt2.term_id'))
-            ->where(array('um.identifier'=>$identifier->identifier, 't.term'=>$identifier->type))
-            ->get()->result_array(true);
+            ->where(array('um.identifier'=>$identifier->identifier, 't.term'=>$identifier->type));
+        if (isset($_REQUEST['users_to_merge'])) {
+          $usersToMerge = json_decode($_REQUEST['users_to_merge']);
+          $this->db->in('user_id', $usersToMerge);
+        }
+        $r = $this->db->get()->result_array(true);
         foreach($r as $existingUser) {
           // create a placeholder for the known user we just found
           if (!isset($existingUsers[$existingUser->user_id]))
@@ -86,6 +105,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
         if ($identifier->type==='email')
           $email=$identifier->identifier;
       }
+      if ($email === null)
+        throw new exception('Call to get_user_id requires an email address in the list of provided identifiers.');
       // Now we have a list of the existing users that match this identifier. If there are none, we 
       // can create a new user and attach to the current website. If there is one, then we can
       // just return it. If more than one, then we have a resolution task since it probably
@@ -102,7 +123,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
         $this->storeIdentifiers($userId, $identifiers);
         $this->associateWebsite($userId);
       } else {
-        $userId = $this->resolveMultipleUsers($identifiers, $existingUsers);
+        $this->resolveMultipleUsers($identifiers, $existingUsers);
+        return;
       }
       echo $userId;
       // Update the created_by_id for all records that were created by this cms_user_id. This 
@@ -183,6 +205,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
         $this->db->query("SELECT insert_term('$term', '$defaultLang', null, 'indicia:user_identifier_types');");
       }
     }
+    // Check each identifier to see if it already exists for the user.
     foreach ($identifiers as $identifier) {
       $r = $this->db->select('ui.user_id')
           ->from('terms as t')
@@ -268,16 +291,54 @@ class User_Identifier_Controller extends Service_Base_Controller {
   }
   
   /**
+   * Handle the case when multiple possible users are found for a list of identifiers. 
+   * Outcome depends on the settings in $_REQUEST, with options to set force=merge or force=split. If not
+   * forced, then the list of possible user IDs along with the websites they belong to are returned so the user
+   * can consider the best action. If force=merge then users_to_merge can be set to an array of user IDs that the
+   * merge applies to.
+   */
+  private function resolveMultipleUsers($identifiers, $existingUsers) {
+    if (isset($_REQUEST['force'])) {
+      if ($_REQUEST['force']==='split') {
+        echo $this->findBestFit($identifiers, $existingUsers);
+        return;
+      } elseif ($_REQUEST['force']==='merge') {
+        $uid = $this->findBestFit($identifiers, $existingUsers);
+        // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be used to limit which are merged.
+        $this->mergeUsers($uid, $existingUsers);
+        echo $uid;
+      }
+    } else {
+      // we need to propose that there are several possible existing users which match the supplied identifiers
+      // to the client website
+      $users = array_keys($existingUsers);
+      $this->db->select('users_websites.user_id, users_websites.website_id, websites.title')
+        ->from('websites')
+        ->join('users_websites', 'users_websites.website_id', 'websites.id')
+        ->where(array('websites.deleted'=>'f'))
+        ->where('users_websites.site_role_id is not null')
+        ->in('users_websites.user_id', $users);
+      if (isset($_REQUEST['users_to_merge'])) {
+        $usersToMerge = json_decode($_REQUEST['users_to_merge']);
+        $this->db->in('users_websites.user_id', $usersToMerge);
+      }
+      $websites = $this->db->get()->result_array(false);
+      echo json_encode($websites);
+    }
+  }
+  
+  /**
    * In the case where there are 2 users identified by a single list of identifiers, 
    * resolve the situation. Returns the best matching user (based on first_name and surname match then
-   * number of matching identifiers). 
+   * number of matching identifiers)
    * @todo Note that in conjunction with this, a tool must be provided in the warehouse for admin to 
    * check for and merge potential duplicate users.
    */
-  private function resolveMultipleUsers($identifiers, $existingUsers) {
+  private function findBestFit($identifiers, $existingUsers) {
+    $nameMatches = array();    
     foreach ($identifiers as $identifier) {
       // find all the existing users which match this identifier.
-      $qry=$this->db->select('ui.user_id, p.first_name, p.surname')
+      $this->db->select('ui.user_id, p.first_name, p.surname')
           ->from('users as u')
           ->join('people as p', 'p.id', 'u.person_id')
           ->join('user_identifiers as ui', 'ui.user_id', 'u.id')
@@ -285,10 +346,13 @@ class User_Identifier_Controller extends Service_Base_Controller {
           ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id')
           ->join('terms as t', 't.id', 'tlt2.term_id')
           ->where(array('t.term'=>$identifier->type,
-              'u.deleted'=>'f', 'p.deleted'=>'f', 'ui.deleted'=>'f', 'tlt1.deleted'=>'f', 'tlt2.deleted'=>'f', 't.deleted'=>'f'))
-          ->get()->result();
-      $nameMatches = array();
-      
+              'ui.identifier'=>$identifier->identifier,
+              'u.deleted'=>'f', 'p.deleted'=>'f', 'ui.deleted'=>'f', 'tlt1.deleted'=>'f', 'tlt2.deleted'=>'f', 't.deleted'=>'f'));
+      if (isset($_REQUEST['users_to_merge'])) {
+        $usersToMerge = json_decode($_REQUEST['users_to_merge']);
+        $this->db->in('ui.user_id', $usersToMerge);
+      }
+      $qry = $this->db->get()->result();
       foreach($qry as $match) {
         if (!isset($existingUsers[$match->user_id]['matches']))
           $existingUsers[$match->user_id]['matches']=1;
@@ -299,27 +363,42 @@ class User_Identifier_Controller extends Service_Base_Controller {
             && $match->surname==$_REQUEST['surname'] && !in_array($match->user_id, $nameMatches))
           $nameMatches[] = $match->user_id;
       }
-      
-      // Skim through the list of users to find the one that has the best fit. We try any with a name match
-      // first.
-      $bestFitUid = 0;
-      $bestFitMatchCount = 0;
-      foreach ($nameMatches as $uid) {
-        if ($existingUsers[$uid]['matches']>$bestFitMatchCount) {
-          $bestFitUid=$uid;
-          $bestFitMatchCount=$existingUsers[$uid]['matches'];
-        }
+    }
+    // Skim through the list of users to find the one that has the best fit. We try any with a name match
+    // first.
+    $bestFitUid = 0;
+    $bestFitMatchCount = 0;
+    foreach ($nameMatches as $uid) {
+      if ($existingUsers[$uid]['matches']>$bestFitMatchCount) {
+        $bestFitUid=$uid;
+        $bestFitMatchCount=$existingUsers[$uid]['matches'];
       }
-      // No need to check non-name matches if we've got something.
-      if ($bestFitUid!==0)
-        return $bestFitUid;
-      foreach ($existingUsers as $uid=>$user) {
-        if ($user['matches']>$bestFitMatchCount) {
-          $bestFitUid=$uid;
-          $bestFitMatchCount=$user['matches'];
-        }
-      }
+    }
+    // No need to check non-name matches if we've got something.
+    if ($bestFitUid!==0)
       return $bestFitUid;
+    foreach ($existingUsers as $uid=>$user) {
+      if ($user['matches']>$bestFitMatchCount) {
+        $bestFitUid=$uid;
+        $bestFitMatchCount=$user['matches'];
+      }
+    }
+    // Now we know the user ID to keep
+    return $bestFitUid;
+  }
+  
+  /**
+   * If a request is received with the force parameter set to merge, this means we can merge the detected users into one.
+   */
+  private function mergeUsers($uid, $existingUsers) {
+    foreach($existingUsers as $userIdToMerge=>$websites) {
+      if ($userIdToMerge!==$uid && !isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge'])) {
+        // Own the occurrences
+        $this->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
+        $this->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
+        // delete the old user
+        $this->db->update('users', array('deleted'=>'f'), array('id'=>$userIdToMerge));
+      }
     }
   }
 
