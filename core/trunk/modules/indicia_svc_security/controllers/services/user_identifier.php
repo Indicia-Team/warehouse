@@ -34,7 +34,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
    * Takes a GET or POST parameter called identifiers, with a JSON encoded array of identifiers
    * known for the user. Each array entry is an object with a type (e.g. twitter, openid) and
    * identifier (e.g. twitter account). There should also be a surname parameter
-   * enabling the new user account to be created, plus an optional first_name.
+   * enabling the new user account to be created, plus an optional first_name, and
+   * a cms_user_id that can be used to identify previously existing records for the user.
    * @return integer The user ID for the existing or newly created account. Alternatively
    * if more than one match is found, then returns a JSON encoded lists of people that 
    * match from the warehouse - each with the first name, surname and list of known
@@ -49,7 +50,12 @@ class User_Identifier_Controller extends Service_Base_Controller {
     if (!is_array($identifiers))
       throw new Exception('Error: identifiers parameter not of correct format');
     if (!isset($_REQUEST['surname']))
-      throw new exception('Call to get_user_id requires a surname in the GET or POST data.'); 
+      throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
+    // We don't need a website_id in the request as the authentication data contains it, but
+    // we do need to know the cms_user_id so that we can ensure any previously recorded data for
+    // this user is attributed correctly to the warehouse user.
+    if (!isset($_REQUEST['cms_user_id']))
+      throw new exception('Call to get_user_id requires a cmsa_user_id in the GET or POST data.');
     try {
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
@@ -95,10 +101,13 @@ class User_Identifier_Controller extends Service_Base_Controller {
       if (isset($userId)) {
         $this->storeIdentifiers($userId, $identifiers);
         $this->associateWebsite($userId);
-        echo $userId;
       } else {
-        echo $this->resolveMultipleUsers($identifiers, $existingUsers);
+        $userId = $this->resolveMultipleUsers($identifiers, $existingUsers);
       }
+      echo $userId;
+      // Update the created_by_id for all records that were created by this cms_user_id. This 
+      // takes ownership of the records.
+      postgreSQL::setOccurrenceCreatorByCmsUser($this->db, $this->website_id, $userId, $_REQUEST['cms_user_id']);
     
     }
     catch (Exception $e) {

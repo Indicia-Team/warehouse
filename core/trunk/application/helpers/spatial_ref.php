@@ -119,14 +119,7 @@ class spatial_ref {
    */
   protected static function wkt_to_internal_wkt($wkt, $srid)
   {
-    // WGS84 = same as internally stored values, so don't bother transforming if already there.
-    if ($srid!=kohana::config('sref_notations.internal_srid')) {
-      $db = new Database;
-      $result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText('$wkt',$srid),".
-              kohana::config('sref_notations.internal_srid').")) AS wkt;")->current();
-      return $result->wkt;
-    } else
-    return $wkt;
+    return postgreSQL::transformWkt($wkt, $srid, kohana::config('sref_notations.internal_srid'));
   }
 
   /*
@@ -147,17 +140,16 @@ class spatial_ref {
       self::validateSystemClass($system);
       $srid = call_user_func("$system::get_srid");
 	}
-    $db = new Database;
-    $result = $db->query("SELECT ST_asText(ST_Transform(ST_GeomFromText(" .
-        "'$wkt',".kohana::config('sref_notations.internal_srid')."),$srid)) AS wkt;")->current();
+    
+    $transformedWkt = postgreSQL::transformWkt($wkt, kohana::config('sref_notations.internal_srid'), $srid);
     if (is_numeric($system)) {
       // NB the handed in precision is ignored, and the rounding is determined by the system in use
       if(array_key_exists($system, kohana::config('sref_notations.lat_long_systems')))
-        return self::point_to_lat_long($result->wkt, $system, $output);
+        return self::point_to_lat_long($transformedWkt, $system, $output);
       else
-        return self::point_to_x_y($result->wkt, $system);
+        return self::point_to_x_y($transformedWkt, $system);
     } else
-      return call_user_func("$system::wkt_to_sref", $result->wkt, $precision, $output, $metresAccuracy);
+      return call_user_func("$system::wkt_to_sref", $transformedWkt, $precision, $output, $metresAccuracy);
   }
 
   /**
