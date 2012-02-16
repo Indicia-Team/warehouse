@@ -1,3 +1,15 @@
+.government-logo,.naturemwelt-logo,#iform-header {
+  height: 100px;
+}
+.gabriel-lippmann-logo {
+  height: 80px;
+}
+#iform-logo-left,#iform-logo-centre {
+	float: left;
+}
+#iform-logo-right {
+	float: right;
+}
 .deh-required {
   color:red;
 }

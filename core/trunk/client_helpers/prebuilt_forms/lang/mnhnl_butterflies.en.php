@@ -30,14 +30,15 @@ $custom_terms = array(
 	'LANG_Edit' => 'Edit',
 	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
 	'LANG_All_Users' => 'all users',
-	'LANG_Add_Sample' => 'Add New Sample',
-	'LANG_Add_Sample_Single' => 'Add Single Occurrence',
-	'LANG_Add_Sample_Grid' => 'Add List of Occurrences',
+	'LANG_Add_Sample' => 'Add new sample',
+	'LANG_Add_Sample_Single' => 'Add single occurrence',
+	'LANG_Add_Sample_Grid' => 'Add list of occurrences',
 	'LANG_Download' => 'Reports',
 	'LANG_Grid_Based_Data_Download' => 'The Grid Report provides details of the data entered in the Grids.',
 	'LANG_Grid_Download_Button' => 'Download Grid report',
 	'LANG_Section_Based_Data_Download' => 'The Section Report provides details of the data entered in the Section based tab.',
 	'LANG_Section_Download_Button' => 'Download Section report',
+	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 
 	'LANG_Tab_aboutyou' => 'About You',      
 	'LANG_Tab_Instructions_aboutyou' => '<strong>About You</strong><br/>Please tell us about yourself first.',
@@ -91,6 +92,9 @@ $custom_terms = array(
 	'transectgrid:rowexists' => 'A grid for this species already exists. It is present under the preferred name of ',
 	'sectionlist:rowexists' => 'A row for this species already exists. It is present under the preferred name of ',
 	'transectgrid:bumpf1' => 'Observations along the transect and inside the vitual box ("X"), observations along the transect and outside the vitual box ("/") and casual observations ("O").',
-	'transectgrid:bumpf2' => 'Note: when a species record is associated with multiple codes for the same grid, please consider this order of priority (1) "X", (2) "/" and (3) "O".'
+	'transectgrid:bumpf2' => 'Note: when a species record is associated with multiple codes for the same grid, please consider this order of priority (1) "X", (2) "/" and (3) "O".',
+	'next step'=>'Next step',
+	'prev step'=>'Previous step'
+	
 
 );

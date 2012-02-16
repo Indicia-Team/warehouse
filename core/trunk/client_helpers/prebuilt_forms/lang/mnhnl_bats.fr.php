@@ -35,6 +35,7 @@ $custom_terms = array(
 	'LANG_Locations' => 'Sites',
 	'LANG_Tab_otherinformation' => 'Conditions',
 	'LANG_Tab_species' => 'Espèces',
+	'LANG_Trailer_Text' => "Coordination du programme de monitoring de la biodiversité au Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 // Navigation
 	'LANG_Edit' => 'Éditer',
 	'Edit' => 'Éditer',

@@ -366,6 +366,18 @@ deleteSurvey = function(sampleID){
   </div>';
 	
   }
+  protected static function getHeaderHTML($args) {
+    $r = '<div id="iform-header">
+    <div id="iform-logo-left"><a href="http://www.environnement.public.lu" target="_blank"><img border="0" class="government-logo" alt="'.lang::get('Gouvernement').'" src="'.base_path().'/sites/all/files/gouv.png"></a></div>
+    <div id="iform-logo-right"><a href="http://www.crpgl.lu" target="_blank"><img border="0" class="gabriel-lippmann-logo" alt="'.lang::get('Gabriel Lippmann').'" src="'.base_path().'/'.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/mnhnl-gabriel-lippmann-logo.jpg"></a></div>
+    </div>';
+    return $r;
+  }
+  protected static function getTrailerHTML($args) {
+    $r = '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>';
+    return $r;
+  }
+  
   /**
    * When viewing the list of samples for this user, get the grid to insert into the page.
    */

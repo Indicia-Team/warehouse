@@ -456,7 +456,7 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
 ";
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/hasharray.js', 'module');
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.datagrid.js', 'module');
-
+    if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
     // Work out list of locations this user can see.
     $locations = iform_loctools_listlocations($node);
     ///////////////////////////////////////////////////////////////////
@@ -464,7 +464,6 @@ occListLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Occurrence_List_L
     // locations allocator and reports (last two require permissions)
     ///////////////////////////////////////////////////////////////////
     if($mode == 0){
-
       // If the user has permissions, add tabs so can choose to see
       // locations allocator
       $tabs = array('#surveyList'=>lang::get('LANG_Surveys'));
@@ -585,6 +584,7 @@ $('#controls').bind('tabsshow', function(event, ui) {
       if(count($tabs)>1){ // close tabs div if present
         $r .= "</div>";
       }
+      if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
       return $r;
     }
     ///////////////////////////////////////////////////////////////////
@@ -770,6 +770,13 @@ $('#controls').bind('tabsshow', function(event, ui) {
     $r .= data_entry_helper::outputAttribute($attributes[$args['sample_walk_direction_id']], $languageFilteredAttrOptions).
           data_entry_helper::outputAttribute($attributes[$args['sample_reliability_id']], $languageFilteredAttrOptions).
           data_entry_helper::outputAttribute($attributes[$args['sample_visit_number_id']], array_merge($languageFilteredAttrOptions, array('default'=>1, 'noBlankText'=>true)));
+    if (isset(data_entry_helper::$entity_to_load['sample:date']) && preg_match('/^(\d{4})/', data_entry_helper::$entity_to_load['sample:date'])) {
+      // Date has 4 digit year first (ISO style) - convert date to expected output format
+      $d = new DateTime(data_entry_helper::$entity_to_load['sample:date']);
+      data_entry_helper::$entity_to_load['sample:date'] = $d->format('d/m/Y');
+    }
+    if($args['language'] != 'en')
+      data_entry_helper::add_resource('jquery_ui_'.$args['language']); // this will autoload the jquery_ui resource. The date_picker does not have access to the args.
     if($surveyReadOnly) {
       $r .= data_entry_helper::text_input(array_merge($defAttrOptions, array('label' => lang::get('LANG_Date'), 'fieldname' => 'sample:date', 'disabled'=>$disabledText )));
     } else {
@@ -1412,7 +1419,7 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
 ";
     };
     $r .= "</div><div><form><input id=\"return-to-main\" type=\"button\" value=\"".lang::get('LANG_Return')."\" onclick=\"window.location.href='".url('node/'.($node->nid), array('query' => 'Main'))."'\"></form></div></div>\n";
-
+    if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
     return $r;
   }
 
@@ -1437,6 +1444,19 @@ $('div#occ_grid').indiciaDataGrid('rpt:mnhnl_btw_list_occurrences', {
     return array('mnhnl_bird_transect_walks.css');
   }
 
+  protected static function getHeaderHTML($args) {
+    $r = '<div id="iform-header">
+    <div id="iform-logo-left"><a href="http://www.environnement.public.lu" target="_blank"><img border="0" class="government-logo" alt="'.lang::get('Gouvernement').'" src="'.base_path().'/sites/all/files/gouv.png"></a></div>
+    <div id="iform-logo-right"><a href="http://www.crpgl.lu" target="_blank"><img border="0" class="gabriel-lippmann-logo" alt="'.lang::get('Gabriel Lippmann').'" src="'.base_path().'/'.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/mnhnl-gabriel-lippmann-logo.jpg"></a></div>
+    <div id="iform-logo-centre"><a href="http://www.naturemwelt.lu" target="_blank"><img border="0" class="naturemwelt-logo" alt="'.lang::get('naturemwelt').'" src="'.base_path().'/'.drupal_get_path('module', 'iform').'/client_helpers/prebuilt_forms/images/mnhnl-naturemwelt-logo.png"></a></div>
+    </div>';
+    return $r;
+  }
+  protected static function getTrailerHTML($args) {
+    $r = '<p id="iform-trailer">'.lang::get('LANG_Trailer_Text').'</p>';
+    return $r;
+  }
+  
   /**
    * Construct JavaScript to read and transform a boundary from the supplied
    * object name.

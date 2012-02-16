@@ -43,6 +43,7 @@ $custom_terms = array(
 	'LANG_Add_Sample' => 'Add new sample',
 	'LANG_Add_Sample_Single' => 'Add single occurrence',
 	'LANG_Add_Sample_Grid' => 'Add list of occurrences',
+	'LANG_Trailer_Text' => "Coordination of the biodiversity monitoring programme in Luxembourg: <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 
 	'LANG_Tab_site' => 'Site',
 	'LANG_CommonInstructions1'=>'Choose a square (5x5km). This square will then be displayed on the map, along with all existing sites associated with that square.',

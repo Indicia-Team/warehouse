@@ -519,6 +519,7 @@ class iform_mnhnl_dynamic_1 {
     // or edit an existing one.
     if($mode ==  MODE_GRID) {
       $r = '';
+      if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
       $attributes = data_entry_helper::getAttributes(array(
         'valuetable'=>'sample_attribute_value'
        ,'attrtable'=>'sample_attribute'
@@ -578,6 +579,7 @@ class iform_mnhnl_dynamic_1 {
       if(count($tabs)>1){ // close tabs div if present
         $r .= "</div>";
       }
+      if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
       return $r;
     }
     if ($mode == MODE_EXISTING && is_null(data_entry_helper::$entity_to_load)) { // only load if not in error situation
@@ -641,7 +643,7 @@ class iform_mnhnl_dynamic_1 {
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
       data_entry_helper::enable_validation('entry_form');
-      
+    if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
     $hiddens .= get_user_profile_hidden_inputs($attributes, $args, $mode, $auth['read']);
     $customAttributeTabs = get_attribute_tabs($attributes);
     $tabs = self::get_all_tabs($args['structure'], $customAttributeTabs);
@@ -701,6 +703,7 @@ class iform_mnhnl_dynamic_1 {
     $r .= "</form>";
     
     $r .= self::link_species_popups($args);
+    if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
     return $r;
   }
   

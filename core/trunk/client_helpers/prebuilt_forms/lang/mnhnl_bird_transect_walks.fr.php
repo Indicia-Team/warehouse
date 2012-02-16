@@ -27,6 +27,7 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
+	'LANG_Trailer_Text' => "Coordination du programme de monitoring des oiseaux nicheurs communs CoBiMo au Luxembourg: <a href='http://www.naturemwelt.lu/' target='_blank'>natur&ëmwelt</a> (Centrale ornithologique Luxembourg), <a href='http://www.crpgl.lu' target='_blank'>Centre de Recherche Public - Gabriel Lippmann</a> (Département Environnement et Agro-biotechnologies) & <a href='http://www.environnement.public.lu' target='_blank'>Ministère du Développement durable et des Infrastructures</a> (Département de l'environnement)",
 	'LANG_not_logged_in' => 'Vous devez vous inscrire pour voir ce contenu.',
 	'LANG_Location_Layer' => 'Couche des transects',
 	'LANG_Occurrence_List_Layer'=> 'Couche des contacts',

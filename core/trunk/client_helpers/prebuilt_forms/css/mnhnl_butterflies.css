@@ -1,3 +1,15 @@
+.government-logo,#iform-header {
+  height: 100px;
+}
+.gabriel-lippmann-logo {
+  height: 80px;
+}
+#iform-logo-left {
+	float: left;
+}
+#iform-logo-right {
+	float: right;
+}
 
 label.narrow {
   width: 30px;
