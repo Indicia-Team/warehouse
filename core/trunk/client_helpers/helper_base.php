@@ -39,12 +39,12 @@ $indicia_templates = array(
   'nosuffix' => " \n",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
-  'lock_icon' => '<span id="{id}_lock" class="{lock_class}">&nbsp;</span>',
-  'lock_javascript' => "indicia.locks.initToolTips (
+  'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
+  'lock_javascript' => "indicia.locks.initControls (
       \"".lang::get('locked tool-tip')."\", 
-      \"".lang::get('unlocked tool-tip')."\"
-      );
-    indicia.locks.initControls();\n",
+      \"".lang::get('unlocked tool-tip')."\",
+      \"{lock_form_mode}\"
+      );\n",
   'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
@@ -284,6 +284,11 @@ class helper_base extends helper_config {
    * Options are before, after.
    */
   public static $helpTextPos='after';
+
+  /**
+   * @var string Form Mode. Initially unset indicating new input, but can be set to ERRORS or RELOAD.
+   */
+  public static $form_mode=null;
 
   /**
    * @var array List of all error messages returned from an attempt to save.
@@ -1252,15 +1257,6 @@ indiciaData.windowLoaded=false;
       $options['class'] .= ' '.$validationClasses;
     }
 
-    // If the control is locked, set locked value, make read-only on page display via javascript
-    if (array_key_exists('lockable', $options) && $options['lockable']===true
-      && self::is_control_locked($options['id'])) {
-      // set lock state
-      $options['locked'] = true;
-      // set locked value
-      $options['default'] = self::locked_value($options['id']);
-    }
-
     // replace html attributes with their wrapped versions, e.g. a class becomes class="..."
     foreach (self::$html_attributes as $name => $attr) {
       if (!empty($options[$name])) {
@@ -1291,15 +1287,11 @@ indiciaData.windowLoaded=false;
 
     // Add a lock icon to the control if the lockable option is set to true
     if (array_key_exists('lockable', $options) && $options['lockable']===true) {
-      if (array_key_exists('locked', $options) && $options['locked']===true) {
-        $options['lock_class'] = 'locked_icon';
-      } else {
-        $options['lock_class'] = 'unlocked_icon';
-      }
       $r .= self::apply_replacements_to_template($indicia_templates['lock_icon'], $options);
       if (!self::$using_locking) {
         self::$using_locking = true;
-        self::$javascript .= $indicia_templates['lock_javascript'];
+        $options['lock_form_mode'] = self::$form_mode ? self::$form_mode : 'NEW';
+        self::$javascript .= self::apply_replacements_to_template($indicia_templates['lock_javascript'], $options);
         self::add_resource('indicia_locks');
       }
     }
@@ -1536,31 +1528,6 @@ indiciaData.windowLoaded=false;
     $template = str_replace('{class}', $indicia_templates['error_class'], $indicia_templates['validation_message']);
     $template = str_replace('{for}', $fieldname, $template);
     return str_replace('{error}', lang::get($error), $template);
-  }
-
-  /**
-   * Method to check if the lock has been set on a control to reuse its value.
-   * @param string $id the id of the control to check.
-   * @return boolean, true if lock exists, else false.
-   */
-  private static function is_control_locked($id) {
-    return !self::locked_value($id)===false;
-  }
-  
-  /**
-   * Method to get the locked value of a control.
-   * @param string $id the id of the control to check.
-   * @return string, the locked value for the supplied id or false if lock not found.
-   */
-  private static function locked_value($id) {
-    $result = false;
-    if (array_key_exists('indicia_locked_controls', $_COOKIE)){
-      $lockedArray = json_decode($_COOKIE['indicia_locked_controls'], true);
-      foreach ($lockedArray as $lock) {
-        if (array_key_exists('ctl_id', $lock) && $lock['ctl_id']===$id) $result = $lock['ctl_value'];
-      }
-    }
-    return $result;
   }
 
 }

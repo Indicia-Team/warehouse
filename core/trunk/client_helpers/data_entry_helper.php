@@ -2641,6 +2641,8 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $entity = json_decode(curl_exec($session), true);
     if (isset($entity['error'])) throw new Exception($entity['error']);
+    // set form mode
+    if (self::$form_mode===null) self::$form_mode = 'RELOAD';
     // populate the entity to load with the record data
     foreach($entity[0] as $key => $value) {
       self::$entity_to_load["$model:$key"] = $value;
@@ -3513,6 +3515,8 @@ if (errors.length>0) {
   {
     $r = "";
     if (is_array($response)) {
+      // set form mode
+      self::$form_mode = 'ERRORS';
       if (array_key_exists('error',$response) || array_key_exists('errors',$response)) {
         if ($inline && array_key_exists('errors',$response)) {
           // Setup an errors array that the data_entry_helper can output alongside the controls

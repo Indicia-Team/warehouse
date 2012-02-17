@@ -554,15 +554,15 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
  * by Mark James under the creative commons attibution 2.5 licence.
  * Do not remove this comment as it constitutes the required attribution.
  */
-.unlocked_icon {
+.unlocked-icon {
 	background-image: url(../images/lock_open.png);
 }
 
-.locked_icon {
+.locked-icon {
 	background-image: url(../images/lock.png);
 }
 
-.locked_icon, .unlocked_icon {
+.locked-icon, .unlocked-icon {
 	background-repeat: no-repeat;
 	display: inline-block;
 	width: 16px;
