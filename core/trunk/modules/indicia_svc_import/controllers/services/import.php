@@ -200,7 +200,8 @@ class Import_Controller extends Service_Base_Controller {
         // Note, the mappings will always be in the same order as the columns of the CSV file
         foreach ($metadata['mappings'] as $col=>$attr) {
           if (isset($data[$index])) {
-            if ($attr!='<please select>') {
+            // '<Please select>' is a value fixed in import_helper::model_field_options
+            if ($attr != '<Please select>') {
               // Add the data to the record save array
               $saveArray[$attr] = utf8_encode($data[$index]);
             }

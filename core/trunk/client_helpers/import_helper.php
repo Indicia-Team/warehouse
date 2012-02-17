@@ -412,7 +412,7 @@ class import_helper extends helper_base {
         $r .= $option;
       }
     }
-    $r = '<option>&lt;'.lang::get('Please select').'&gt;</option>'.$r.'</optgroup>';
+    $r = '<option value="&lt;Please select&gt;">&lt;'.lang::get('please select').'&gt;</option>'.$r.'</optgroup>';
     return $r;
   }
 
