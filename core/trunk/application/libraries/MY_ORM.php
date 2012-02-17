@@ -1094,8 +1094,19 @@ class ORM extends ORM_Core {
       case 'G':
         $vf = 'geom_value';
         break;
+      case 'B':
+        // Boolean
+        $vf = 'int_value';
+        if (!empty($value)) {
+          if ($value == 'FALSE' || $value == 'F' || $value == 'false' || $value == 'f' || $value == 'NO' || $value == 'no' || $value == 'n' || $value == 'off') {
+            $value = 0;
+          } elseif ($value == 'TRUE' || $value == 'T' || $value == 'true' || $value == 't' || $value == 'YES' || $value == 'yes' || $value == 'y' || $value == 'on') {
+            $value = 1;
+          }
+        }
+        break;
       default:
-        // Lookup in list, int or boolean
+        // Lookup in list, int
         $vf = 'int_value';
         break;
     }    
