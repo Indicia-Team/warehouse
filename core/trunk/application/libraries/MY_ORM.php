@@ -477,11 +477,11 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Remove any fields from the submission that are not in the model or are custom attributes.
+   * Remove any fields from the submission that are not in the model and are not custom attributes of the model.
    */
   private function removeUnwantedFields() {
     foreach($this->submission['fields'] as $field => $content) {
-      if (!array_key_exists($field, $this->table_columns) && (!isset($this->attrs_field_prefix) || !preg_match('/^'.$this->attrs_field_prefix.'\:/', $field))) 
+      if ( !array_key_exists($field, $this->table_columns) && !(isset($this->attrs_field_prefix) && preg_match('/^'.$this->attrs_field_prefix.'\:/', $field)) ) 
         unset($this->submission['fields'][$field]);
     }
   }
