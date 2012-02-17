@@ -23,8 +23,8 @@
 require_once 'includes/map.php';
 require_once 'includes/form_generation.php';
 
-/** 
- * A custom function for usort which sorts by the location code of a list of sections. 
+/**
+ * A custom function for usort which sorts by the location code of a list of sections.
  */
 function sectionSort($a, $b)
 {
@@ -36,17 +36,17 @@ function sectionSort($a, $b)
   watchdog('compare', "$aCode = $bCode - ".((int)$aCode < (int)$bCode ? '-1' : '1'));
   return ((int)$aCode < (int)$bCode) ? -1 : 1;
 }
- 
+
 /**
- * 
- * 
+ *
+ *
  * @package Client
  * @subpackage PrebuiltForms
  * A form for data entry of transect data by entering counts of each for sections along the transect.
  */
 class iform_sectioned_transects_input_sample {
-  
-  /** 
+
+  /**
    * Return the form metadata. Note the title of this method includes the name of the form file. This ensures
    * that if inheritance is used in the forms, subclassed forms don't return their parent's form definition.
    * @return array The definition of the form.
@@ -59,13 +59,13 @@ class iform_sectioned_transects_input_sample {
           'selection of a fixed site, or sample=<id> to edit an existing sample.'
     );
   }
-  
+
   /**
    * Get the list of parameters for this form.
    * @return array List of parameters that this form requires.
    * @todo: Implement this method
    */
-  public static function get_parameters() {   
+  public static function get_parameters() {
     return array_merge(
       array(
         array(
@@ -110,7 +110,7 @@ class iform_sectioned_transects_input_sample {
       )
     );
   }
-  
+
   /**
    * Return the generated form output.
    * @param array $args List of parameter values passed through to the form depending on how the form has been configured.
@@ -119,7 +119,7 @@ class iform_sectioned_transects_input_sample {
    * @param array $response When this form is reloading after saving a submission, contains the response from the service call.
    * Note this does not apply when redirecting (in this case the details of the saved object are in the $_GET data).
    * @return Form HTML.
-   * @todo: Implement this method 
+   * @todo: Implement this method
    */
   public static function get_form($args, $node, $response=null) {
     if (isset($response['error']))
@@ -131,8 +131,8 @@ class iform_sectioned_transects_input_sample {
       return self::get_sample_form($args, $node, $response);
     }
   }
-  
-  public static function get_sample_form($args, $node, $response) {  
+
+  public static function get_sample_form($args, $node, $response) {
     global $user;
     if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
@@ -147,7 +147,7 @@ class iform_sectioned_transects_input_sample {
       // location ID also might be in the $_POST data after a validation save of a new record
       if (!$locationId && isset($_POST['sample:location_id']))
         $locationId = $_POST['sample:location_id'];
-        
+
     }
     $r .= '<form method="post" id="sample">';
     $r .= $auth['write'];
@@ -176,12 +176,12 @@ class iform_sectioned_transects_input_sample {
       // for reload of existing, don't let the user switch the transect as that would mess everything up.
       $r .= '<label>'.lang::get('Transect').':</label><span>'.$site['name'].'</span><br/>';
     } else {
-      // Output only the locations for this website and transect type. Note we load both transects and sections, just so that 
+      // Output only the locations for this website and transect type. Note we load both transects and sections, just so that
       // we always use the same warehouse call and therefore it uses the cache.
       $locationTypes = helper_base::get_termlist_terms($auth, 'indicia:location_types', array('Transect', 'Transect Section'));
       $availableSites = data_entry_helper::get_population_data(array(
         'report'=>'library/locations/locations_list',
-        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id'], 
+        'extraParams' => $auth['read'] + array('website_id' => $args['website_id'], 'location_type_id'=>$locationTypes[0]['id'],
             'locattrs'=>'CMS User ID', 'attr_location_cms_user_id'=>$user->uid),
         'nocache' => true
       ));
@@ -199,7 +199,7 @@ class iform_sectioned_transects_input_sample {
         'blankText'=>lang::get('please select'),
         'lookupValues' => $sitesLookup,
       );
-      if ($locationId) 
+      if ($locationId)
         $options['default'] = $locationId;
       $r .= data_entry_helper::location_select($options);
     }
@@ -241,12 +241,12 @@ class iform_sectioned_transects_input_sample {
     data_entry_helper::enable_validation('sample');
     return $r;
   }
-  
+
   public static function get_occurrences_form($args, $node, $response) {
     if (!module_exists('iform_ajaxproxy'))
       return 'This form must be used in Drupal with the Indicia AJAX Proxy module enabled.';
     data_entry_helper::add_resource('jquery_form');
-    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);    
+    $auth = data_entry_helper::get_read_write_auth($args['website_id'], $args['password']);
     // did the parent sample previously exist? Default is no.
     $existing=false;
     if (isset($_POST['sample:id'])) {
@@ -291,7 +291,7 @@ class iform_sectioned_transects_input_sample {
         'extraParams' => $auth['read'] + array('sample_id'=>$parentSampleId,'date_from'=>'','date_to'=>'', 'sample_method_id'=>'', 'smpattrs'=>implode(',', array_keys($attributes))),
         'nocache'=>true
       ));
-    
+
       // transcribe the response array into a couple of forms that are useful elsewhere - one for outputting JSON so the JS knows about
       // the samples, and another for lookup of sample data by code later.
       $subSampleJson = array();
@@ -306,10 +306,10 @@ class iform_sectioned_transects_input_sample {
         'extraParams' => $auth['read'] + array('view'=>'detail','sample_id'=>$parentSampleId,'survey_id'=>'','date_from'=>'','date_to'=>'','taxon_group_id'=>'',
             'smpattrs'=>'', 'occattrs'=>$args['occurrence_attribute_id']),
         // don't cache as this is live data
-        'nocache' => true 
+        'nocache' => true
       ));
       // build an array keyed for easy lookup
-      $occurrences = array();      
+      $occurrences = array();
       foreach($o as $occurrence) {
         $occurrences[$occurrence['sample_id'].':'.$occurrence['taxa_taxon_list_id']] = array(
           'value'=>$occurrence['attr_occurrence_'.$args['occurrence_attribute_id']],
@@ -359,7 +359,7 @@ class iform_sectioned_transects_input_sample {
       foreach ($sections as $idx=>$section) {
         // output a cell with the attribute - tag it with a class & id to make it easy to find from JS.
         $attrOpts = array(
-            'class' => 'smp-input smpAttr-'.$section['code'], 
+            'class' => 'smp-input smpAttr-'.$section['code'],
             'id' => $attr['fieldname'].':'.$section['code'],
             'extraParams'=>$auth['read']
         );
@@ -427,20 +427,20 @@ class iform_sectioned_transects_input_sample {
     data_entry_helper::$javascript .= "indiciaData.parentSample = ".$parentSampleId.";\n";
     data_entry_helper::$javascript .= "indiciaData.sections = ".json_encode($sections).";\n";
     data_entry_helper::$javascript .= "indiciaData.occAttrId = ".$args['occurrence_attribute_id'] .";\n";
-    
+
     // Do an AJAX population of the grid rows.
     data_entry_helper::$javascript .= "loadSpeciesList();\n";
     data_entry_helper::add_resource('jquery_ui');
     return $r;
   }
-  
+
   /**
    * Handles the construction of a submission array from a set of form values.
    * For example, the following represents a submission structure for a simple
    * sample and 1 occurrence submission
    * return data_entry_helper::build_sample_occurrence_submission($values);
-   * @param array $values Associative array of form data values. 
-   * @param array $args iform parameters. 
+   * @param array $values Associative array of form data values.
+   * @param array $args iform parameters.
    * @return array Submission structure.
    * @todo: Implement this method
    */
@@ -448,7 +448,7 @@ class iform_sectioned_transects_input_sample {
     if (!isset($values['page']) || $values['page']!='grid') {
       // submitting the first page, with top level sample details
       if (!isset($values['sample:entered_sref'])) {
-        // the sample does not have sref data, as the user has just picked a transect site at this point. Copy the 
+        // the sample does not have sref data, as the user has just picked a transect site at this point. Copy the
         // site's centroid across to the sample.
         $read = array(
           'nonce' => $values['read_nonce'],
@@ -461,7 +461,7 @@ class iform_sectioned_transects_input_sample {
         $site = $site[0];
         $values['sample:entered_sref'] = $site['centroid_sref'];
         $values['sample:entered_sref_system'] = $site['centroid_sref_system'];
-        
+
       }
     }
     $submission = submission_builder::build_submission($values, array('model' => 'sample'));

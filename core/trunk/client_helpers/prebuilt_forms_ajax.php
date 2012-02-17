@@ -25,6 +25,8 @@
  
 // Use iform to load the helpers, so it can set the configuration variables if running in Drupal
 require_once "form_helper.php";
+// Let params forms internationalise.
+require_once "lang.php";
 
 // set the path to JS and CSS files. This script runs standalone, so has to do this itself.
 $link = form_helper::get_reload_link_parts();

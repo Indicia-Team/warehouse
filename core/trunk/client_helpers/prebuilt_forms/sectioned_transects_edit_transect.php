@@ -60,8 +60,6 @@ class iform_sectioned_transects_edit_transect {
    * @todo: Implement this method
    */
   public static function get_parameters() {
-    // ensure that the lang class loads
-    iform_load_helpers(array('data_entry_helper'));  
     return array_merge(
         iform_map_get_map_parameters(),
         iform_map_get_georef_parameters(),
