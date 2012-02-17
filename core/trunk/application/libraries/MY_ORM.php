@@ -1076,9 +1076,13 @@ class ORM extends ORM_Core {
             $attrValueModel->date_start_value = $vd[0];
             $attrValueModel->date_end_value = $vd[1];
             $attrValueModel->date_type_value = $vd[2];
+            kohana::log('debug', "Accepted value $value for attribute $fieldId");
+            kohana::log('debug', "  date_start_value=".$attrValueModel->date_start_value);
+            kohana::log('debug', "  date_end_value=".$attrValueModel->date_end_value);
+            kohana::log('debug', "  date_type_value=".$attrValueModel->date_type_value);
           } else {
             $this->errors[$fieldId] = "Invalid value $value for attribute";
-            kohana::log('debug', "Could not accept value $value into field $vf for attribute $fieldId.");
+            kohana::log('debug', "Could not accept value $value into date fields for attribute $fieldId.");
             return false;
           }
         } else {
