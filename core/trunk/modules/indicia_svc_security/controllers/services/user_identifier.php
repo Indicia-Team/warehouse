@@ -129,7 +129,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       echo $userId;
       // Update the created_by_id for all records that were created by this cms_user_id. This 
       // takes ownership of the records.
-      postgreSQL::setOccurrenceCreatorByCmsUser($this->db, $this->website_id, $userId, $_REQUEST['cms_user_id']);
+      postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $_REQUEST['cms_user_id'], $this->db);
     
     }
     catch (Exception $e) {
