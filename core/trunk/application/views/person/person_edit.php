@@ -87,7 +87,7 @@ if (isset($_POST))
 </li>
 </ol>
 </fieldset>
-<?php if (count($values['attributes'])>0) : ?>
+<?php if (array_key_exists('attributes', $values) && count($values['attributes'])>0) : ?>
  <fieldset>
  <legend>Custom Attributes</legend>
  <ol>
