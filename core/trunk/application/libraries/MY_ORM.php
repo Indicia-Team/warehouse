@@ -859,7 +859,7 @@ class ORM extends ORM_Core {
   public function getSubmittableFields($fk = false, $website_id=null, $survey_id=null, $attrTypeFilter=null) {
     if ($website_id!==null) 
       $this->identifiers['website_id']=$website_id;
-    if ($website_id!==null) 
+    if ($survey_id!==null) 
       $this->identifiers['survey_id']=$survey_id;
     $fields = $this->getPrefixedColumnsArray($fk);
     $struct = $this->get_submission_structure();
