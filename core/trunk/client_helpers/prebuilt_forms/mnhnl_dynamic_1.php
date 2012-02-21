@@ -1173,8 +1173,7 @@ class iform_mnhnl_dynamic_1 {
    */
   private static function get_control_placesearch($auth, $args, $tabalias, $options) {
     $georefOpts = iform_map_get_georef_options($args);
-    if (($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key)) 
-        || ($georefOpts['driver']=='google_search_api' && empty(helper_config::$google_search_api_key)))
+    if ($georefOpts['driver']=='geoplanet' && empty(helper_config::$geoplanet_api_key))
       // can't use place search without the driver API key
       return '';
     return data_entry_helper::georeference_lookup(array_merge(

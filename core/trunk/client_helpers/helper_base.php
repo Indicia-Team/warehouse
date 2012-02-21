@@ -358,6 +358,7 @@ class helper_base extends helper_config {
    * <li>indiciaMapPanel</li>
    * <li>indiciaMapEdit</li>
    * <li>georeference_google_search_api</li>
+   * <li>google_search</li>
    * <li>locationFinder</li>
    * <li>autocomplete</li>
    * <li>indicia_locks</li>
@@ -445,7 +446,10 @@ class helper_base extends helper_config {
         'addrowtogrid' => array('javascript' => array(self::$js_path."addRowToGrid.js")),
         'indiciaMapPanel' => array('deps' =>array('jquery', 'openlayers', 'jquery_ui', 'jquery_cookie'), 'javascript' => array(self::$js_path."jquery.indiciaMapPanel.js")),
         'indiciaMapEdit' => array('deps' =>array('indiciaMap'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.js")),
-        'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi?key=".parent::$google_search_api_key)),
+        // this resource is required for the georeferencer which dynamically constructs the resource name depending on the driver selected.
+        'georeference_google_search_api' => array('javascript' => array("http://www.google.com/jsapi")),
+        // For any other usage of google search, e.g. postcode textbox
+        'google_search' => array('deps' =>array('georeference_google_search_api'), 'javascript' => array(self::$js_path."google_search.js")),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
         'indicia_locks' => array('deps' =>array('jquery_cookie', 'json'), 'javascript' => array(self::$js_path."indicia.locks.js")),
@@ -460,12 +464,6 @@ class helper_base extends helper_config {
         'googlemaps' => array('javascript' => array("http://maps.google.com/maps/api/js?v=3.5&amp;sensor=false")),
         'multimap' => array('javascript' => array("http://developer.multimap.com/API/maps/1.2/".parent::$multimap_api_key)),
         'virtualearth' => array('javascript' => array('http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.1')),
-        'google_search' => array('stylesheets' => array(),
-            'javascript' => array(
-              "http://www.google.com/jsapi?key=".parent::$google_search_api_key,
-              self::$js_path."google_search.js"
-            )
-        ),
         'fancybox' => array('deps' => array('jquery'), 'stylesheets' => array(self::$js_path.'fancybox/jquery.fancybox.css'), 'javascript' => array(self::$js_path.'fancybox/jquery.fancybox.pack.js')),
         'flickr' => array('deps' => array('fancybox'), 'javascript' => array(self::$js_path."jquery.flickr.js")),
         'treeBrowser' => array('deps' => array('jquery','jquery_ui'), 'javascript' => array(self::$js_path."jquery.treebrowser.js")),
