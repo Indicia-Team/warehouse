@@ -88,7 +88,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
           'default' => 12,
           'group' => 'User Interface'
         ),
-              array(
+        array(
           'name'=>'supersample_structure',
           'caption'=>'Form Structure for supersample',
           'description'=>'Define the structure of the supersample form. Each component goes on a new line and is nested inside the previous component where appropriate. The following types of '.
@@ -159,7 +159,21 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
               "[species attributes]\r\n".
               "[*]\r\n",
           'group' => 'User Interface'
-        )		
+        ),
+        array(
+          'name'=>'occurrence_interface',
+          'caption'=>'Interface Style Option for sample/occurrence pair',
+          'description'=>'Choose the style of user interface, either dividing the form up onto separate tabs, '.
+              'wizard pages or having all controls on a single page.',
+          'type'=>'select',
+          'options' => array(
+            'tabs' => 'Tabs',
+            'wizard' => 'Wizard',
+            'one_page' => 'All One Page'
+          ),
+          'group' => 'User Interface'
+        )
+        
       )
     );
     return $retVal;
@@ -502,6 +516,7 @@ SSLayer.addFeatures([SSfeature]);
     $cancelUrl = self::$currentUrl;
     $cancelUrl .= (strpos($cancelUrl, '?')===false) ? '?' : '&';
     $cancelUrl .= "supersample_id=".data_entry_helper::$entity_to_load['sample:parent_id'];
+    $args['interface'] = $args['occurrence_interface'];
     
     $attributes = data_entry_helper::getAttributes(array(
        'id' => data_entry_helper::$entity_to_load['sample:id']
@@ -559,11 +574,11 @@ SSLayer.addFeatures([SSfeature]);
       }
       $headerOptions['tabs']['#'.$alias] = $tabtitle;        
     }
-    if ($args['interface']!='one_page') {
+    if ($args['occurrence_interface']!='one_page') {
       $r .= data_entry_helper::tab_header($headerOptions);
       data_entry_helper::enable_tabs(array(
           'divId'=>'controls',
-          'style'=>$args['interface'],
+          'style'=>$args['occurrence_interface'],
           'progressBar' => isset($args['tabProgress']) && $args['tabProgress']==true
       ));
     }
@@ -575,19 +590,19 @@ SSLayer.addFeatures([SSfeature]);
       $tabalias = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($tab));
       $r .= '<div id="'.$tabalias.'">'."\n";
       // For wizard include the tab title as a header.
-      if ($args['interface']!='tabs') {
+      if ($args['occurrence_interface']!='tabs') {
         $r .= '<h1>'.$headerOptions['tabs']['#'.$tabalias].'</h1>';        
       }
       $r .= $tabContent;    
       // Add any buttons required at the bottom of the tab
-      if ($args['interface']=='wizard') {
+      if ($args['occurrence_interface']=='wizard') {
         $r .= data_entry_helper::wizard_buttons(array(
           'classRedisplay' => 'ui-widget-content ui-state-default ui-corner-all indicia-button tab-submit-redisplay',
           'captionSaveRedisplay' => 'save and redisplay',
           'divId'=>'controls',
           'page'=>$pageIdx===0 ? 'first' : (($pageIdx==count($tabs)-1) ? 'last' : 'middle')
         ));        
-      } elseif ($pageIdx==count($tabs)-1 && !($args['interface']=='tabs' && $args['save_button_below_all_pages'])) {
+      } elseif ($pageIdx==count($tabs)-1 && !($args['occurrence_interface']=='tabs' && $args['save_button_below_all_pages'])) {
         // last part of a non wizard interface must insert a save button, unless it is tabbed interface with save button beneath all pages 
         $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";      
         $r .= "<input type=\"submit\" name=\"navigate:newoccurrence\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_and_New')."\" />\n";
@@ -597,7 +612,7 @@ SSLayer.addFeatures([SSfeature]);
       $r .= "</div>\n";      
     }
     $r .= "</div>\n";
-    if ($args['interface']=='tabs' && $args['save_button_below_all_pages']) {
+    if ($args['occurrence_interface']=='tabs' && $args['save_button_below_all_pages']) {
       $r .= "<input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save')."\" />\n";
       $r .= "<input type=\"submit\" name=\"navigate:newoccurrence\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_and_New')."\" />\n";
       $r .= "<input type=\"button\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Cancel')."\" onclick=\"window.location.href='".$cancelUrl."'\" >\n";
@@ -610,8 +625,18 @@ SSLayer.addFeatures([SSfeature]);
     $url .= "?mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']['nonce'];
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-    $entity = json_decode(curl_exec($session), true);    
+    $entity = json_decode(curl_exec($session), true);
     if (isset($entity['error'])) throw new Exception($entity['error']);
+    if(empty($entity[0]['location_id'])){
+      $wkt = $entity[0]['wkt'];
+    } else {
+      $url = self::$svcUrl."/data/location/".$entity[0]['location_id']."?mode=json&view=detail&auth_token=".self::$auth['read']['auth_token']."&nonce=".self::$auth['read']['nonce'];
+      $session = curl_init($url);
+      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+      $entity = json_decode(curl_exec($session), true);
+      if (isset($entity['error'])) throw new Exception($entity['error']);
+      $wkt = $entity[0]['boundary_geom'];
+    }
     data_entry_helper::$javascript .= "
 // Create a vector layer to display the supersample location
 // the default edit layer is used for the subsamples
@@ -620,17 +645,37 @@ SSStyleMap = new OpenLayers.StyleMap({
                     fillColor: \"Green\",
                     strokeColor: \"Black\",
                     fillOpacity: 0.2,
-                    strokeWidth: 1
+                    strokeWidth: 1,
+                    pointRadius:6
                   })
   });
+ZoomToFeature = function(feature){
+  var div = jQuery('#map')[0];
+  var bounds=feature.geometry.bounds.clone();
+  // extend the boundary to include a buffer, so the map does not zoom too tight.
+  var dy = (bounds.top-bounds.bottom) * div.settings.maxZoomBuffer;
+  var dx = (bounds.right-bounds.left) * div.settings.maxZoomBuffer;
+  bounds.top = bounds.top + dy;
+  bounds.bottom = bounds.bottom - dy;
+  bounds.right = bounds.right + dx;
+  bounds.left = bounds.left - dx;
+  if (div.map.getZoomForExtent(bounds) > div.settings.maxZoom) {
+    // if showing something small, don't zoom in too far
+    div.map.setCenter(bounds.getCenterLonLat(), div.settings.maxZoom);
+  } else {
+    // Set the default view to show something triple the size of the grid square
+    div.map.zoomToExtent(bounds);
+  }
+};
 SSLayer = new OpenLayers.Layer.Vector(\"".lang::get("LANG_Supersample_Layer")."\",
                                     {styleMap: SSStyleMap});
 SSparser = new OpenLayers.Format.WKT();
-SSfeature = SSparser.read('".$entity[0]['wkt']."');
+SSfeature = SSparser.read('".$wkt."');
 SSLayer.addFeatures([SSfeature]);
+mapInitialisationHooks.push(function(mapdiv) {
+  ZoomToFeature(SSfeature);
+});
 ";
-    // The map can get initialised an awful lot later (eg when the tab it is on is displayed).
-    // It is therefore virtually impossible to zoom to this supersample in as the code is not templated      
     return $r;
   }
   
@@ -780,10 +825,10 @@ jQuery('#new-subsample-button-grid').click(function(e) {
         return data_entry_helper::build_sample_occurrences_list_submission($values);
       else
         return data_entry_helper::build_sample_occurrence_submission($values);
-    } else
+    } else {
       //  $mode = MODE_POST_SUPERSAMPLE;
       return submission_builder::build_submission($values, $structure = array('model' => 'sample'));
-
+    }
   }
 
   /**
