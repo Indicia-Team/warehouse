@@ -22,11 +22,6 @@ google.load("search", "1");
 
 function Georeferencer(mapdiv, callback) {
   this.mapdiv = mapdiv;
-  if (this.mapdiv.georefOpts.google_search_api_key==undefined || this.mapdiv.georefOpts.google_search_api_key.length===0) {
-    alert('Incorrect configuration - Google Search API Key not specified.');
-    throw('Incorrect configuration - Google Search API Key not specified.');
-  }
-  
   this.localSearch = new google.search.LocalSearch();
   this.localSearch.setResultSetSize(google.search.Search.LARGE_RESULTSET);
   // make the place search near the chosen location
