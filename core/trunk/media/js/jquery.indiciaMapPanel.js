@@ -32,29 +32,7 @@ mapInitialisationHooks = [];
 
 (function($) {
   $.fn.indiciaMapPanel = function(options, olOptions) {
-    /**
-     * Enable a multimap landranger preference.
-     */
-    function _enableMMLandranger() {
-      // Don't do this if the MM script is not linked up properly, otherwise we get a JS
-      // exception and the other scripts stop running
-      if (typeof MMDataResolver !== "undefined") {
-        var landrangerData = 904;
-        var prefs = MMDataResolver.getDataPreferences(MM_WORLD_MAP);
-
-        // Remove the landranger data where it is present
-        for (i=0; i<prefs.length; i++) {
-          if (landrangerData == prefs[i]) {
-            prefs.splice(i, 1);
-          }
-        }
-        // Add to beginning of array (highest priority)
-        prefs.unshift(landrangerData);
-
-        MMDataResolver.setDataPreferences( MM_WORLD_MAP, prefs );
-      }
-    }
-    
+        
     /**
      * Remove all features except a boundary feature which is not controlled by the click point.
      * This functionality allows a location to havea centroid and separate boundary.
@@ -401,8 +379,9 @@ mapInitialisationHooks = [];
         bing_aerial : function() { return new OpenLayers.Layer.Bing({name: 'Bing Aerial', 'type': 'Aerial', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
         bing_hybrid : function() { return new OpenLayers.Layer.Bing({name: 'Bing Hybrid', 'type': 'AerialWithLabels', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
         bing_shaded : function() { return new OpenLayers.Layer.Bing({name: 'Bing Shaded', 'type': 'road', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
-        multimap_default : function() { return new OpenLayers.Layer.MultiMap('MultiMap', {sphericalMercator: true}); },
-        multimap_landranger : function() { return new OpenLayers.Layer.MultiMap('Multimap OS Landranger', {sphericalMercator: true}); },
+        // multimap layers are no longer provided, so map any requests to OSM for backwards compatibility.
+        multimap_default : function() { return new OpenLayers.Layer.OSM(); },
+        multimap_landranger : function() { return new OpenLayers.Layer.OSM(); },
         osm : function() { return new OpenLayers.Layer.OSM(); }, // default OpenStreetMap Mapnik layer
         osm_th : function() { return new OpenLayers.Layer.OSM("OpenStreetMap Tiles@Home", "http://tah.openstreetmap.org/Tiles/tile/${z}/${x}/${y}.png"); } // OpenStreetMap Tiles@Home
       };
@@ -853,10 +832,6 @@ mapInitialisationHooks = [];
         {
           var layer = presetLayers[item]();
           div.map.addLayer(layer);
-          if (item=='multimap_landranger') {
-            // Landranger is not just a simple layer - need to set a Multimap option
-            _enableMMLandranger();
-          }
         } else {
           alert('Requested preset layer ' + item + ' is not recognised.');
         }
