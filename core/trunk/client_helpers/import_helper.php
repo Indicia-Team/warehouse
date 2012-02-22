@@ -399,6 +399,7 @@ class import_helper extends helper_base {
           $option = self::model_field_option($field, $caption, $selected);
         }
       } else {
+        if (substr($fieldname,0,3)=='fk_') $caption .=' ('.lang::get('lookup existing record').')';
         $option = self::model_field_option($field, $caption, $selected);
       }
       // if we have got an option for this field, add to the list

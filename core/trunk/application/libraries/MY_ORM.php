@@ -552,45 +552,65 @@ class ORM extends ORM_Core {
     $r=true;
     if (array_key_exists('fkFields', $this->submission)) {
       foreach ($this->submission['fkFields'] as $a => $b) {
-        $cache = false;
-        if (ORM::$cacheFkLookups) {
-          $keyArr=array('lookup', $b['fkTable'], $b['fkSearchField'], $b['fkSearchValue']);
-          // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
-          if (isset($b['fkSearchFilterValue']))
-            $keyArr[] = $b['fkSearchFilterValue'];
-          $key = implode('-', $keyArr);
-          $cache = $this->cache->get($key);
-        }
-        if ($cache) {
-          $this->submission['fields'][$b['fkIdField']] = $cache;
+        $fk = $this->fkLookup($b);
+        if ($fk) {
+          $this->submission['fields'][$b['fkIdField']] = $fk;
         } else {
-          $where = array($b['fkSearchField'] => $b['fkSearchValue']);
-          // does the lookup need to be filtered, e.g. to a taxon or term list?
-          if (isset($b['fkSearchFilterField']) && $b['fkSearchFilterField']) {
-            $where[$b['fkSearchFilterField']] = $b['fkSearchFilterValue'];
-          }
-          $matches = $this->db
-              ->select('id')
-              ->from(inflector::plural($b['fkTable']))
-              ->where($where)
-              ->limit(1)
-              ->get();
-          if (count($matches)<1) {
-            $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
+          $this->errors[$a] = 'Could not find a '.$b['readableTableName'].' by looking for "'.$b['fkSearchValue'].
                 '" in the '.ucwords($b['fkSearchField']).' field.';
-            $r=false;
-          } else {
-            $this->submission['fields'][$b['fkIdField']] = $matches[0]->id;
-            if (ORM::$cacheFkLookups) {
-              $this->cache->set($key, $matches[0]->id, array('lookup'));
-            }
-          }
+          $r=false;
         }
       }
     }
     return $r;
   }
 
+  /**Function to return key of item defined in the fkArr parameter
+   * @param array $fkArr Contains definition of item to look up. Contains the following fields
+   *  fkTable => table in which to perform lookup
+   *  fkSearchField => field in table to search
+   *  fkSearchValue => value to find in search field
+   *  fkSearchFilterField => field by which to filter search
+   *  fkSearchFilterValue => filter value
+   * 
+   * @return Foreign key value or false if not found
+   */ 
+  private function fkLookup($fkArr) {
+    $r = false;
+    if (ORM::$cacheFkLookups) {
+      $keyArr=array('lookup', $fkArr['fkTable'], $fkArr['fkSearchField'], $fkArr['fkSearchValue']);
+      // cache must be unique per filtered value (e.g. when lookup up a taxa in a taxon list).
+      if (isset($fkArr['fkSearchFilterValue']))
+        $keyArr[] = $fkArr['fkSearchFilterValue'];
+      $key = implode('-', $keyArr);
+      $r = $this->cache->get($key);
+    }
+    
+    if (!$r) {
+      $where = array($fkArr['fkSearchField'] => $fkArr['fkSearchValue']);
+      // does the lookup need to be filtered, e.g. to a taxon or term list?
+      if (isset($fkArr['fkSearchFilterField']) && $fkArr['fkSearchFilterField']) {
+        $where[$fkArr['fkSearchFilterField']] = $fkArr['fkSearchFilterValue'];
+      }
+      $matches = $this->db
+          ->select('id')
+          ->from(inflector::plural($fkArr['fkTable']))
+          ->where($where)
+          ->limit(1)
+          ->get();
+      if (count($matches) > 0) {
+        $r = $matches[0]->id;
+        if (ORM::$cacheFkLookups) {
+          $this->cache->set($key, $r, array('lookup'));
+        }
+      }      
+    }
+    
+    return $r;
+  }
+ 
+ 
+ 
   /**
    * Generate any records that this model contains an FK reference to in the
    * Supermodels part of the submission.
@@ -805,7 +825,7 @@ class ORM extends ORM_Core {
    */
   protected function setupDbToQueryAttributes($required = false, $typeFilter = null) {
     $attr_entity = $this->object_name.'_attribute';
-    $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption');
+    $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption', $attr_entity.'s.data_type');
     $this->db->from($attr_entity.'s');
     $this->db->where($attr_entity.'s.deleted', 'f');
     if ($this->identifiers['website_id'] || $this->identifiers['survey_id']) {
@@ -877,7 +897,12 @@ class ORM extends ORM_Core {
       $this->setupDbToQueryAttributes(false, $attrTypeFilter);
       $result = $this->db->get();
       foreach($result as $row) {
-        $fieldname = $this->attrs_field_prefix.':'.$row->id;
+        if ($row->data_type == 'L' && $fk) {
+          // Lookup lists store a foreign key
+          $fieldname = $this->attrs_field_prefix.':fk_'.$row->id;
+        } else {
+          $fieldname = $this->attrs_field_prefix.':'.$row->id;
+        }
         $fields[$fieldname] = $row->caption;
       }
     }
@@ -1024,6 +1049,7 @@ class ORM extends ORM_Core {
     // the attribute has yet to be created, as after this point the $valueID is filled in and that specific attribute POST variable
     // is no longer multivalue - only one value is stored per attribute value record, though more than one record may exist
     // for a given attribute. There may be others with th same <n> without a $valueID.
+    // If attrId = fk_* (e.g. when importing data) then the value is a term whose id needs to be looked up.
     if (is_array($value)){
       if (is_null($valueId)) {
         $retVal = true;
@@ -1036,8 +1062,16 @@ class ORM extends ORM_Core {
         return false;
       }
     }
+    
+    $fk = false;
+    if (substr($attrId, 0, 3) == 'fk_') {
+      // value is a term that needs looking up
+      $fk = true;
+      $attrId = substr($attrId, 3);
+    }
+    
     $attr = $this->db
-        ->select('data_type','multi_value')
+        ->select('data_type','multi_value','termlist_id')
         ->from($this->object_name.'_attributes')
         ->where(array('id'=>$attrId))
         ->get()->result_array();
@@ -1105,8 +1139,28 @@ class ORM extends ORM_Core {
           }
         }
         break;
+      case 'L':
+        // Lookup list
+        $vf = 'int_value';
+        if ($fk) {
+          // value must be looked up 
+          $r = $this->fkLookup(array(
+            'fkTable' => 'lookup_term',
+            'fkSearchField' => 'term',
+            'fkSearchValue' => $value,
+            'fkSearchFilterField' => 'termlist_id',
+            'fkSearchFilterValue' => $attr->termlist_id,
+          ));
+          if ($r) {
+            $value = $r;
+          } else {
+            $this->errors[$fieldId] = "Invalid value $value for attribute";
+            kohana::log('debug', "Could not accept value $value into field $vf  for attribute $fieldId.");
+            return false;
+          }
+        }
       default:
-        // Lookup in list, int
+        // Integer
         $vf = 'int_value';
         break;
     }    
@@ -1197,7 +1251,7 @@ class ORM extends ORM_Core {
   {
     // share the wrapping library with the client helpers
     require_once(DOCROOT.'client_helpers/submission_builder.php');
-    $r = submission_builder::build_submission($array, $this->get_submission_structure(), $fkLink);
+    $r = submission_builder::build_submission($array, $this->get_submission_structure());
       // Map fk_* fields to the looked up id
     if ($fkLink) {
       $r = $this->getFkFields($r, $array);
@@ -1214,6 +1268,7 @@ class ORM extends ORM_Core {
 
   /**
    * Converts any fk_* fields in a save array into the fkFields structure ready to be looked up.
+   * [occ|smp|loc|psn]Attr:fk_* are looked up in createAttributeRecord()
    *
    * @param $submission Submission containing the foreign key field definitions to convert
    * @param $saveArray Original form data being wrapped, which can contain filters to operate against the lookup table 
