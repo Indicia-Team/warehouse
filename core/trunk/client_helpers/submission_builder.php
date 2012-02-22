@@ -101,7 +101,7 @@ class submission_builder extends helper_config {
       if(!array_key_exists('subModels', $modelWrapped))
 	      $modelWrapped['subModels']=array();
       foreach ($structure['subModels'] as $name => $struct) {
-        $submodelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $name);
+        $submodelWrapped = self::wrap_with_images($values, array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $name);
         // Join the parent and child models together
         array_push($modelWrapped['subModels'], array('fkId' => $struct['fk'], 'model' => $submodelWrapped));
       }
@@ -111,7 +111,7 @@ class submission_builder extends helper_config {
       foreach ($structure['superModels'] as $name => $struct) {
         // skip the supermodel if the foreign key is already populated in the main table.
         if (!isset($modelWrapped['fields'][$struct['fk']]['value']) || empty($modelWrapped['fields'][$struct['fk']]['value'])) {
-          $supermodelWrapped = self::wrap_with_attrs($values, array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $name);
+          $supermodelWrapped = self::wrap_with_images($values, array_key_exists('fieldPrefix', $struct) ? $struct['fieldPrefix'] : $name);
           // Join the parent and child models together
           array_push($modelWrapped['superModels'], array(
             'fkId' => $struct['fk'],
