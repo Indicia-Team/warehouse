@@ -426,8 +426,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (isset($response['count']))
         self::$javascript .= ",\n  recordCount: ".$response['count'];
       if (isset($options['columns']))
-        self::$javascript .= ",\n  columns: ".json_encode($options['columns'])."
-});\n";
+        self::$javascript .= ",\n  columns: ".json_encode($options['columns']);
+      self::$javascript .= "\n});\n";
     }
     return $r;
   }
@@ -1523,6 +1523,12 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     // use the current report as the params form by default
     if (!isset($options['reportGroup'])) $options['reportGroup'] = $options['id'];
     if (!isset($options['fieldNamePrefix'])) $options['fieldNamePrefix'] = $options['reportGroup'];
+    if (function_exists('hostsite_get_user_field')) {
+      // If the host environment (e.g. Drupal module) can tell us which Indicia user is logged in, pass that 
+      // to the report call as it might be required for filters.
+      if ($indiciaUserId = hostsite_get_user_field('indicia_user_id'))
+        $options['extraParams']['user_id'] = $indiciaUserId;
+    }
     return $options;
   }
 
