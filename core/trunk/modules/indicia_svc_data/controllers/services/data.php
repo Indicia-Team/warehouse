@@ -662,7 +662,7 @@ class Data_Controller extends Data_Service_Base_Controller {
       $prefix = $_REQUEST['view'];
     }
     // Check for allowed view prefixes, and use 'list' as the default
-    if ($prefix!='gv' && $prefix!='detail')
+    if ($prefix!='gv' && $prefix!='detail' && $prefix!='cache')
       $prefix='list';
     return $prefix.'_'.$table;
   }

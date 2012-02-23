@@ -83,12 +83,14 @@ class User_Identifier_Controller extends Service_Base_Controller {
       // email is a special identifier used to create person.
       $email = null;
       foreach ($identifiers as $identifier) {
-        $this->db->select('user_id')
+        $this->db->select('um.user_id')
             ->from('user_identifiers as um')
             ->join('termlists_terms as tlt1', array('tlt1.id'=>'um.type_id'))
             ->join('termlists_terms as tlt2', array('tlt2.meaning_id'=>'tlt1.meaning_id'))
             ->join('terms as t', array('t.id'=>'tlt2.term_id'))
-            ->where(array('um.identifier'=>$identifier->identifier, 't.term'=>$identifier->type));
+            ->join('users as u', array('u.id'=>'um.user_id'))
+            ->join('people as p', 'p.id', 'u.person_id')
+            ->where(array('um.identifier'=>$identifier->identifier, 't.term'=>$identifier->type, 'u.deleted'=>'f', 'p.deleted'=>'f'));
         if (isset($_REQUEST['users_to_merge'])) {
           $usersToMerge = json_decode($_REQUEST['users_to_merge']);
           $this->db->in('user_id', $usersToMerge);
@@ -142,7 +144,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
    * in the $_REQUEST.
    */
   private function createUser($email) {
-    $person = ORM::factory('person')->where(array('email_address'=>$email))->find();
+    $person = ORM::factory('person')->where(array('email_address'=>$email, 'deleted'=>'f'))->find();
     if ($person->loaded
         && ((!empty($person->first_name) && $person->first_name != '?'
         && !empty($_REQUEST['first_name']) && $_REQUEST['first_name']!==$person->first_name)
@@ -315,7 +317,9 @@ class User_Identifier_Controller extends Service_Base_Controller {
       $this->db->select('users_websites.user_id, users_websites.website_id, websites.title')
         ->from('websites')
         ->join('users_websites', 'users_websites.website_id', 'websites.id')
-        ->where(array('websites.deleted'=>'f'))
+        ->join('users', 'users.id', 'users_websites.user_id')
+        ->join('people', 'people.id', 'users.person_id')
+        ->where(array('websites.deleted'=>'f', 'users.deleted'=>'f', 'people.deleted'=>'f'))
         ->where('users_websites.site_role_id is not null')
         ->in('users_websites.user_id', $users);
       if (isset($_REQUEST['users_to_merge'])) {
@@ -392,14 +396,24 @@ class User_Identifier_Controller extends Service_Base_Controller {
    */
   private function mergeUsers($uid, $existingUsers) {
     foreach($existingUsers as $userIdToMerge=>$websites) {
-      if ($userIdToMerge!==$uid && !isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge'])) {
+      if ($userIdToMerge!=$uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
         // Own the occurrences
         $this->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
         $this->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
         // delete the old user
-        $this->db->update('users', array('deleted'=>'f'), array('id'=>$userIdToMerge));
+        $uidsToDelete[] = $userIdToMerge;
+        kohana::log('debug', "User merge operation resulted in deletion of user $userIdToMerge plus the related person");
       }
     }
+    
+    // use the User Ids list to find a list of people to delete.
+    $psnIds = $this->db->select('person_id')->from('users')->in('id', $uidsToDelete)->get()->result_array();
+    $pidsToDelete = array();
+    foreach ($psnIds as $psnId)
+      $pidsToDelete[] = $psnId->person_id;
+    // do the actual deletions
+    $this->db->from('users')->set(array('deleted'=>'t'))->in('id', $uidsToDelete)->update();
+    $this->db->from('people')->set(array('deleted'=>'t'))->in('id', $pidsToDelete)->update();
   }
 
 }
