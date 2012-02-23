@@ -229,11 +229,12 @@ function iform_mnhnl_locModTool($auth, $args, $node) {
     $request= $args['shpFileDownloadURL']."/geoserver/wfs?request=GetFeature&service=wfs&version=1.0.0&outputformat=SHAPE-ZIP&srsName=EPSG:2169";
     if($args['LocationTypeTerm']=='' && isset($args['loctoolsLocTypeID'])) $args['LocationTypeTerm']=$args['loctoolsLocTypeID'];
     $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
+    $request.="&cql_filter=website_id=".$args['website_id']." AND ";
     if($args['SecondaryLocationTypeTerm'] != ''){
       $secondary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['SecondaryLocationTypeTerm']);
-      $request.="&cql_filter= location_type_id=".$primary."OR location_type_id=".$secondary;
+      $request.="(location_type_id=".$primary."OR location_type_id=".$secondary.")";
     } else {
-      $request.="&cql_filter=location_type_id=".$primary;
+      $request.="location_type_id=".$primary;
     }
     $request .= "&typename=".$args['shpFileFeaturePrefix'].':';
     if($args['usePoints']!='none')   $retVal = "<a href=\"".$request."point_locations\">".lang::get('Points')."</a>";
