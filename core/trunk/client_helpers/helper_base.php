@@ -147,6 +147,47 @@ $indicia_templates = array(
       jQuery('input#{escaped_id}').attr('value', data.{valueField});
       jQuery('input#{escaped_id}').change();
     });\r\n",
+  'sub_list' => '<div id="{id}:box" class="control-box wide">'."\n".
+    '<div>'."\n".
+    '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'.
+    '<span class="ind-cancel-icon">&nbsp;</span>'."\n".
+    '</div>'."\n".
+    '<ul id="{id}:sublist" class="ind-sub-list"></ul>'."\n".
+    '</div>'."\n",
+  'sub_list_javascript' => "jQuery('#{escaped_id}\\\\:add').click(function(event){
+    var search$ = $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}');
+    var hiddenSearch$ = $('#{escaped_id}\\\\:search');
+    var value = search$.val().trim();
+    if (value!=='') {
+      var sublist$ = jQuery('#{escaped_id}\\\\:sublist');
+      sublist$.append('<li><span class=\"ind-delete-icon\">&nbsp;</span>'+value+
+        '<input type=\"hidden\" name=\"{id}\" value=\"'+value+'\" /></li>');
+      search$.val('');
+      hiddenSearch$.val('');
+      search$.focus();
+    }
+  });
+  jQuery('#{escaped_id}\\\\:box span.ind-cancel-icon').click(function(event){
+    if ($('#{escaped_id}\\\\:sublist span.ind-delete-icon').length>0) {
+      $('#{escaped_id}\\\\:sublist span.ind-delete-icon').removeClass('ind-delete-icon').addClass('ind-no-icon');
+      $('#{escaped_id}\\\\:sublist span.ind-no-icon:first').removeClass('ind-no-icon').addClass('ind-add-icon');
+      $(this).closest('div').hide('slow');
+    }
+  });
+  jQuery('#{escaped_id}\\\\:sublist span.ind-delete-icon').live('click', function(event){
+    $(this).closest('li').remove();
+  });
+  jQuery('#{escaped_id}\\\\:sublist span.ind-add-icon').live('click', function(event){
+    $('#{escaped_id}\\\\:sublist span.ind-no-icon').removeClass('ind-no-icon').addClass('ind-delete-icon');
+    $('#{escaped_id}\\\\:sublist span.ind-add-icon').removeClass('ind-add-icon').addClass('ind-delete-icon');
+    $('#{escaped_id}\\\\:add').closest('div').show('slow');
+  });
+  jQuery('form:has(#{escaped_id}\\\\:search)').submit(
+    function(event) {
+      // select autocomplete search controls in this form and disable them to prevent submiting values
+      $('#{escaped_id}\\\\:search, #{escaped_id}\\\\:search\\\\:{escaped_captionField}')
+        .attr('disabled', 'disabled');
+    });\n",
   'linked_list_javascript' => "
 {fn} = function() {
   $('#{escapedId}').addClass('ui-state-disabled');
@@ -1487,7 +1528,7 @@ indiciaData.windowLoaded=false;
     }
   }
 
-   /**
+ /**
   * Returns a static template which is either a default template or one
   * specified in the options
   * @param string $name The static template type. e.g. prefix or suffix.
@@ -1512,6 +1553,18 @@ indiciaData.windowLoaded=false;
       $r = $indicia_templates[$name];
     }
     return self::apply_replacements_to_template($r, $options);
+  }
+
+ /**
+  * Returns a string where characters have been escaped for use in jQuery selectors
+  * @param string $name The string to be escaped.
+  * @return string escaped name.
+  */
+  protected static function jq_esc($name) {
+    // not complete, only escapes :[], add other characters as needed.
+    $from = array(':','[',']');
+    $to = array('\\\\:','\\\\[','\\\\]');
+    return $name ? str_replace($from, $to, $name) : $name;
   }
 
   /**

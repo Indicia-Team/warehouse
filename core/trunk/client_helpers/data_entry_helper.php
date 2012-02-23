@@ -185,15 +185,17 @@ class data_entry_helper extends helper_base {
       'url' => parent::$base_url."index.php/services/data",
       'inputId' => $options['id'].':'.$options['captionField'],
       // Escape the ids for jQuery selectors
-      'escaped_input_id' => str_replace(':', '\\\\:', $options['inputId']),
-      'escaped_id' => str_replace(':', '\\\\:', $options['id']),
+      //'escaped_input_id' => str_replace(':', '\\\\:', $options['inputId']),
+      //'escaped_id' => str_replace(':', '\\\\:', $options['id']),
+      'escaped_input_id' => self::jq_esc($options['inputId']),
+      'escaped_id' => self::jq_esc($options['id']),
       'defaultCaption' => self::check_default_value($options['inputId'],
           array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
       'max' => array_key_exists('numValues', $options) ? ', max : '.$options['numValues'] : ''
     ), $options);
     self::add_resource('autocomplete');
     // Escape the id for jQuery selectors
-    $escaped_id=str_replace(':','\\\\:',$options['id']);
+    $escaped_id=self::jq_esc($options['id']);
     // Do stuff with extraParams
     $sParams = '';
     foreach ($options['extraParams'] as $a => $b){
@@ -209,6 +211,76 @@ class data_entry_helper extends helper_base {
     self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['autocomplete_javascript']);
 
     $r = self::apply_template($options['template'], $options);
+    return $r;
+  }
+
+ /**
+  * Helper function to generate a sub list control. This control allows a user to create a new list 
+  * by selecting some items from an existing database table while adding some new items. 
+  * The resulting list is submitted and the new items are added to the existing table.
+  * 
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>fieldname</b><br/>
+  * Required. The name of the database field this control is bound to.</li>
+  * <li><b>id</b><br/>
+  * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
+  * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
+  * <li><b>defaultList</b><br/>
+  * Optional. An array of default values and captions. This is overridden when reloading a
+  * record with existing data for this control.</li>
+  * <li><b>class To Do</b><br/>
+  * Optional. CSS class names to add to the control.</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the autocomplete options.</li>
+  * <li><b>captionField</b><br/>
+  * Required. Field to draw values to show in the control from.</li>
+  * <li><b>valueField</b><br/>
+  * Optional. Field to draw values to return from the control from. Defaults
+  * to the value of captionField.</li>
+  * <li><b>extraParams</b><br/>
+  * Optional. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
+  * <li><b>numValues</b><br/>
+  * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
+  * </ul>
+  *
+  * @return string HTML to insert into the page for the sub_list control.
+  *
+  */
+  public static function sub_list() {
+    global $indicia_templates;
+    $options = self::check_arguments(func_get_args(), array(
+        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default', 'numValues'
+    ));
+    if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
+    
+    // prepare search control for panel
+    $list_options = $options;
+    $list_options['id'] = $list_options['id'].':search';
+    $list_options['suffixTemplate']='nosuffix';
+    $list_options['extraParams'] = $list_options['extraParams'] + 
+      array('website_id' => self::$website_id);
+    $list_options['lockable']=null;
+    $list_options['label'] = null;
+    $options['panel_control'] = self::autocomplete($list_options);
+
+    $options = array_merge(array(
+      'template' => 'sub_list',
+      'inputId' => $options['id'].':'.$options['captionField'],
+      // Escape the ids for jQuery selectors
+      'escaped_input_id' => self::jq_esc($options['inputId']),
+      'escaped_id' => self::jq_esc($options['id']),
+      'escaped_captionField' => self::jq_esc($options['captionField']),
+      'defaultCaption' => self::check_default_value($options['inputId'],
+          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
+    ), $options);
+    $replaceTags=array();
+    foreach(array_keys($options) as $option) {
+      array_push($replaceTags, '{'.$option.'}');
+    }
+    self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['sub_list_javascript']);
+    
+    $r .= self::apply_template($options['template'], $options);
     return $r;
   }
 

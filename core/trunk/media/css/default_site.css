@@ -569,3 +569,41 @@ div.olControlEditingToolbar .olControlClickSrefItemActive {
 	margin: 0 0.25em;
 	cursor: pointer;
 }
+
+/* for sub list control */
+ul.ind-sub-list {
+	margin-left: 0;
+	padding-left: 0;
+	list-style-type: none;
+}
+
+ul.ind-sub-list li {
+	display: inline-block;
+	width: 165px;
+	vertical-align: top;
+	margin-left: 0;
+	padding-left: 0;
+	list-style-type: none;
+}
+
+ul.ind-sub-list .ind-delete-icon, ul.ind-sub-list .ind-add-icon, span.ind-cancel-icon {
+	background-repeat: no-repeat;
+	display: inline-block;
+	width: 16px;
+	margin: 0 0.25em 0 0;
+	cursor: pointer;
+	list-style-type: none;
+}
+
+ul.ind-sub-list .ind-delete-icon {
+	background-image: url(../images/delete.png);
+}
+
+ul.ind-sub-list .ind-add-icon {
+	background-image: url(../images/add.png);
+}
+
+span.ind-cancel-icon {
+	background-image: url(../images/cancel.png);
+	margin: 0.5em;
+}

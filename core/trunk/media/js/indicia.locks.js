@@ -21,8 +21,9 @@
  * 
  * This is a library of support code for the indicia project. It implements the
  * javascript for lockable form controls. These allow users to lock controls so
- * the set values become the default setting when the form is redisplayed. Locks
- * are released either by user action or at the end of the browser session.
+ * the set values are reset as the control value when the form is redisplayed.
+ * Locks are released either by user action or at the end of the browser
+ * session.
  */
 
 (function($) {
@@ -93,15 +94,11 @@
     // create or update lock cookie for supplied control
     var lockedArray = getOtherLocks(controlId);
     var locked = {};
-    var autocomplete;
+    var escControlId = esc4jq(controlId);
     locked.ctl_page = document.title;
     locked.ctl_id = controlId;
-    locked.ctl_value = document.getElementById(controlId).value;
-    var escControlId = esc4jq(controlId);
-    autocomplete = $('input[id*=' + escControlId + '\\:]');
-    if (autocomplete.length > 0) {
-      locked.ctl_caption = autocomplete[0].value;
-    }
+    locked.ctl_value = $('#' + escControlId).val();
+    locked.ctl_caption = $('input[id*=' + escControlId + '\\:]').val();
     lockedArray.push(locked);
     $.cookie('indicia_locked_controls', JSON.stringify(lockedArray));
   };
@@ -138,7 +135,7 @@
   var getLockedCaption = function(controlId) {
     // gets the locked caption for the control id supplied, or returns false if
     // not found. Only used for autocomplete.
-    var value = false;
+    var caption = false;
     if ($.cookie('indicia_locked_controls')) {
       var lockedArray = JSON.parse($.cookie('indicia_locked_controls'));
       var i;
@@ -147,12 +144,12 @@
             && lockedArray[i].ctl_page
             && lockedArray[i].ctl_page === document.title
             && lockedArray[i].ctl_caption) {
-          value = lockedArray[i].ctl_caption;
+          caption = lockedArray[i].ctl_caption;
           break;
         }
       }
     }
-    return value;
+    return caption;
   };
 
   var isControlLocked = function(controlId) {
@@ -175,16 +172,14 @@
   var setControlValue = function(controlId, value) {
     // may need to do something more for certain controls, but this works for
     // text input, and also for textarea and select (I don't know why).
-    // document.getElementById(controlId).value = value;
     var escControlId = esc4jq(controlId);
-    $('#' + escControlId).attr('value', value);
+    $('#' + escControlId).val(value);
     // trigger change and blur events, may have to be selective about this?
     $('#' + escControlId).change().blur();
     // for autocomplete
     if (hasCaption(controlId)) {
-      $('input[id*=' + escControlId + '\\:]').attr('value',
-          getLockedCaption(controlId));
-      $('input[id*=' + escControlId + '\\:]').change().blur();
+      $('input[id*=' + escControlId + '\\:]').val(getLockedCaption(controlId))
+          .change().blur();
     }
   };
 
@@ -284,7 +279,8 @@
             var escFormId = esc4jq(form.id);
             // select all locked controls in this form and enable them
             $('#' + escFormId + ' span.locked-icon').each(
-                function(n) {
+            // $(form + ' span.locked-icon').each(
+                    function(n) {
                   var span = this;
                   var escId = esc4jq(span.id);
                   var escControlId = escId.replace('_lock', '');

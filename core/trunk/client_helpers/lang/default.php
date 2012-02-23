@@ -27,6 +27,7 @@ global $default_terms;
  * @package	Client
  */
 $default_terms = array( 
+  'add'=>'Add',
   'add row'=>'Add Row',
   'back'=>'Back',
   'british national grid'=>'British National Grid',
