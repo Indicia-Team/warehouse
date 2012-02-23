@@ -13,8 +13,14 @@
     <subTable tablename="locations" where="#this#.deleted = FALSE AND #this#.location_type_id IN (#orig_location_type_id#, #new_location_type_id#) " >
       <tabColumn name='name' display='Site'/>
       <tabColumn name='code' display='Code'/>
-      <tabColumn name='x' display='X' func="(split_part(#this#.centroid_sref, ', ', 1))" />
-      <tabColumn name='y' display='Y' func="(split_part(#this#.centroid_sref, ', ', 2))" />
+      <tabColumn name='xy' display='XY centroid' func="(replace(#this#.centroid_sref, ',' , ''))" />
+      <tabColumn name='points' display='XY point coordinates' func="(CASE
+     WHEN #this#.boundary_geom is null THEN (replace(#this#.centroid_sref, ',' , ''))
+     WHEN GeometryType(#this#.boundary_geom) = 'POINT' THEN replace(replace(replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),')',''),'(',''),'POINT','')
+     WHEN GeometryType(#this#.boundary_geom) = 'MULTIPOINT' THEN replace(replace(replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),')',''),'(',''),'MULTIPOINT','')
+     WHEN GeometryType(#this#.boundary_geom) = 'GEOMETRYCOLLECTION' AND NOT ST_IsEmpty(ST_CollectionExtract(#this#.boundary_geom, 1)) THEN replace(replace(replace(ST_AsText(ST_Transform(ST_CollectionExtract(#this#.boundary_geom,1),2169)),')',''),'(',''),'MULTIPOINT','')
+     ELSE ''
+END)" />
       <tabColumn name='comment' display='Comment'/>
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>
