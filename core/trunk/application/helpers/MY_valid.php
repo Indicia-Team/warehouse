@@ -88,9 +88,9 @@ class Valid extends valid_Core {
   public static function unique($column_value, $args){
     $db = new Database();
     if ($args[2] == ''){      
-      $number_of_records = $db->count_records($args[0], array($args[1] => $column_value));
+      $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'deleted'=>'f'));
     } else {      
-      $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'id !=' => $args[2]));
+      $number_of_records = $db->count_records($args[0], array($args[1] => $column_value, 'id !=' => $args[2], 'deleted'=>'f'));
     }
 
     return ($number_of_records == 0);
