@@ -3350,6 +3350,9 @@ if (errors.length>0) {
         if (array_key_exists('nonce', $_POST))
           $postargs .= '&nonce='.$_POST['nonce'];
       }
+      // pass through the user_id if hostsite_get_user_field is implemented
+      if (function_exists('hostsite_get_user_field')) 
+        $postargs .= '&user_id='.hostsite_get_user_field('indicia_user_id');
       // if there are images, we will send them after the main post, so we need to persist the write nonce
       if (count($images)>0)
         $postargs .= '&persist_auth=true';
