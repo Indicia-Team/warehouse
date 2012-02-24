@@ -215,55 +215,67 @@ class data_entry_helper extends helper_base {
   }
 
  /**
-  * Helper function to generate a sub list control. This control allows a user to create a new list 
+  * Helper function to generate a sub list UI control. This control allows a user to create a new list 
   * by selecting some items from an existing database table while adding some new items. 
-  * The resulting list is submitted and the new items are added to the existing table.
+  * The resulting list is submitted and the new items are added to the existing table 
+  * as skeleton entries.
   * 
-  * @param array $options Options array with the following possibilities:<ul>
+  * @param array $options (deprecated argument list not supported). 
+  * Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
   * Required. The name of the database field this control is bound to.</li>
   * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
-  * <li><b>defaultList</b><br/>
-  * Optional. An array of default values and captions. This is overridden when reloading a
+  * <li><b>default</b><br/>
+  * Optional. An array of default captions. This is overridden when reloading a
   * record with existing data for this control.</li>
-  * <li><b>class To Do</b><br/>
+  * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
   * <li><b>table</b><br/>
   * Required. Table name to get data from for the autocomplete options.</li>
   * <li><b>captionField</b><br/>
   * Required. Field to draw values to show in the control from.</li>
-  * <li><b>valueField</b><br/>
-  * Optional. Field to draw values to return from the control from. Defaults
-  * to the value of captionField.</li>
   * <li><b>extraParams</b><br/>
   * Optional. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
   * <li><b>numValues</b><br/>
   * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
+  * <li><b>hide</b><br/>
+  * Optional. Mixed, controls how quickly the add bar is hidden. May be 'slow', 'normal', 
+  * 'fast', a number (in milliseconds) or 'none'. The latter indicates the add bar 
+  * should not be hideable. Defaults to 'normal'.</li>
+  * <li><b>addOnSelect TODO</b><br/>
+  * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
+  * added to the list when selected. Defaults to false.</li>
+  * <li><b>addToTable TODO</b><br/>
+  * Optional. Boolean, if true, unmatched items from the autocomplete control are automatically 
+  * added to the source table on successful submission. Defaults to false.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the sub_list control.
   *
   */
-  public static function sub_list() {
+  public static function sub_list($options) {
     global $indicia_templates;
-    $options = self::check_arguments(func_get_args(), array(
-        'fieldname', 'table', 'captionField', 'valueField', 'extraParams', 'defaultCaption', 'default', 'numValues'
-    ));
-    if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
-    
-    // prepare search control for panel
+    // checks essential options, uses fieldname as id default and 
+    // loads defaults if error or edit
+    $options = self::check_options($options);
+    // our field is a multi-value custom attribute so add [] to fieldname
+    // so PHP puts multiple submitted values in an array
+    if (substr($options['fieldname'],-2) !='[]')
+      $options['fieldname'] .= '[]';
+
+    // prepare embedded search control for add bar panel
     $list_options = $options;
     $list_options['id'] = $list_options['id'].':search';
     $list_options['suffixTemplate']='nosuffix';
-    $list_options['extraParams'] = $list_options['extraParams'] + 
-      array('website_id' => self::$website_id);
     $list_options['lockable']=null;
     $list_options['label'] = null;
+    $list_options['extraParams']['website_id'] = self::$website_id;
     $options['panel_control'] = self::autocomplete($list_options);
 
+    // prepare options for the rest of the control
     $options = array_merge(array(
       'template' => 'sub_list',
       'inputId' => $options['id'].':'.$options['captionField'],
@@ -271,15 +283,36 @@ class data_entry_helper extends helper_base {
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
       'escaped_captionField' => self::jq_esc($options['captionField']),
-      'defaultCaption' => self::check_default_value($options['inputId'],
-          array_key_exists('defaultCaption', $options) ? $options['defaultCaption'] : ''),
+      'hide' => 'normal',
+      'addToTable' => '',
     ), $options);
+    if (!is_numeric($options['hide'])) $options['hide'] = '\''.$options['hide'].'\'';
+    if ($options['addToTable']===true) { 
+      $options['addToTable'] = $indicia_templates['sub_list_add_to_table'];
+      $options['basefieldname'] = substr($options['fieldname'],0,strlen($options['fieldname'])-2);
+    }
+    
+    // set up javascript
+    $options['subListItem'] = str_replace(array('{caption}', '{fieldname}'),  
+      array('\'+caption+\'', $options['fieldname']), 
+      $indicia_templates['sub_list_item']);
     $replaceTags=array();
     foreach(array_keys($options) as $option) {
       array_push($replaceTags, '{'.$option.'}');
     }
     self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['sub_list_javascript']);
     
+    // load any default values for list items into display and hidden lists
+    $items = "";
+    if (array_key_exists('default', $options) && is_array($options['default'])) {
+      foreach ($options['default'] as $value) {
+        $items .= str_replace(array('{caption}', '{fieldname}'), array($value, $options['fieldname']), 
+        $indicia_templates['sub_list_item']);
+      }
+    }
+    $options['items'] = $items;
+    
+    // layout the control
     $r .= self::apply_template($options['template'], $options);
     return $r;
   }

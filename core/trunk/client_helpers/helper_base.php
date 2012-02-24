@@ -147,44 +147,56 @@ $indicia_templates = array(
       jQuery('input#{escaped_id}').attr('value', data.{valueField});
       jQuery('input#{escaped_id}').change();
     });\r\n",
-  'sub_list' => '<div id="{id}:box" class="control-box wide">'."\n".
+  'sub_list' => '<div id="{id}:box" class="control-box wide"><div {class}>'."\n".
     '<div>'."\n".
     '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'.
     '<span class="ind-cancel-icon">&nbsp;</span>'."\n".
     '</div>'."\n".
-    '<ul id="{id}:sublist" class="ind-sub-list"></ul>'."\n".
-    '</div>'."\n",
-  'sub_list_javascript' => "jQuery('#{escaped_id}\\\\:add').click(function(event){
+    '<ul id="{id}:sublist" class="ind-sub-list">{items}</ul>'."\n".
+    '{addToTable}'.
+    '</div></div>'."\n",
+  'sub_list_item' => '<li><span class="ind-delete-icon">&nbsp;</span>{caption}'.
+    '<input type="hidden" name="{fieldname}" value="{caption}" /></li>',
+  'sub_list_add_to_table' => '<input type="hidden" name="createFrom" value="{basefieldname}" />'.
+    '<input type="hidden" name="createTo" value="{table}" />',
+  'sub_list_javascript' => "if ({hide}==='none') {
+    jQuery('#{escaped_id}\\\\:box .ind-cancel-icon').css('display', 'none');
+    }
+  jQuery('#{escaped_id}\\\\:add').click(function(event){
+    // transfer caption and value from search control to the displayed and hidden lists
     var search$ = $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}');
     var hiddenSearch$ = $('#{escaped_id}\\\\:search');
-    var value = search$.val().trim();
-    if (value!=='') {
-      var sublist$ = jQuery('#{escaped_id}\\\\:sublist');
-      sublist$.append('<li><span class=\"ind-delete-icon\">&nbsp;</span>'+value+
-        '<input type=\"hidden\" name=\"{id}\" value=\"'+value+'\" /></li>');
+    var caption = search$.val().trim();
+    if (caption!=='') {
+      var sublist$ = $('#{escaped_id}\\\\:sublist');
+      sublist$.append('{subListItem}');
       search$.val('');
       hiddenSearch$.val('');
       search$.focus();
     }
   });
   jQuery('#{escaped_id}\\\\:box span.ind-cancel-icon').click(function(event){
+    // Hide the delete icons and the add bar. Insert an icon to redisplay add bar
     if ($('#{escaped_id}\\\\:sublist span.ind-delete-icon').length>0) {
       $('#{escaped_id}\\\\:sublist span.ind-delete-icon').removeClass('ind-delete-icon').addClass('ind-no-icon');
       $('#{escaped_id}\\\\:sublist span.ind-no-icon:first').removeClass('ind-no-icon').addClass('ind-add-icon');
-      $(this).closest('div').hide('slow');
+      $(this).closest('div').hide({hide});
     }
   });
   jQuery('#{escaped_id}\\\\:sublist span.ind-delete-icon').live('click', function(event){
-    $(this).closest('li').remove();
+    // remove the value from the displayed list and the hidden list
+    var li$ = $(this).closest('li');
+    li$.remove();
   });
   jQuery('#{escaped_id}\\\\:sublist span.ind-add-icon').live('click', function(event){
+    // restore delete icons on list and show the add bar
     $('#{escaped_id}\\\\:sublist span.ind-no-icon').removeClass('ind-no-icon').addClass('ind-delete-icon');
     $('#{escaped_id}\\\\:sublist span.ind-add-icon').removeClass('ind-add-icon').addClass('ind-delete-icon');
-    $('#{escaped_id}\\\\:add').closest('div').show('slow');
+    $('#{escaped_id}\\\\:add').closest('div').show({hide});
   });
   jQuery('form:has(#{escaped_id}\\\\:search)').submit(
     function(event) {
-      // select autocomplete search controls in this form and disable them to prevent submiting values
+      // select autocomplete search controls in this sub_list and disable them to prevent submiting values
       $('#{escaped_id}\\\\:search, #{escaped_id}\\\\:search\\\\:{escaped_captionField}')
         .attr('disabled', 'disabled');
     });\n",
