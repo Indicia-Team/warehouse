@@ -320,8 +320,13 @@ class ORM extends ORM_Core {
     if (isset($_SESSION['auth_user'])) {
       $force = true;
       $userId = $_SESSION['auth_user']->id;
-    } else
-      $userId = ($defaultUserId ? $defaultUserId : 1);
+    } else {
+      global $remoteUserId;
+      if (isset($remoteUserId))
+        $userId = $remoteUserId;
+      else
+        $userId = ($defaultUserId ? $defaultUserId : 1);
+    }
     // Set up the created and updated metadata for the record
     if (!$obj->id && array_key_exists('created_on', $obj->table_columns)) {
       $obj->created_on = date("Ymd H:i:s");
