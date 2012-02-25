@@ -374,7 +374,93 @@ class ORM extends ORM_Core {
   protected function getNewItemCaption() {
     return ucwords(str_replace('_', ' ', $this->object_name));
   }
+  
+  /**
+   * Indicates if this model type can create new instances from data supplied in its caption format. 
+   * Overrideable as required.
+   * @return boolean, override to true if your model supports this.
+   */
+  protected function canCreateFromCaption() {
+    return false;
+  }
+  
+  /**
+   * Puts each supplied caption in a submission and sends it to the supplied model.
+   * @return array, an array of record id values for the created records.
+   */
+  private function createRecordsFromCaptions() {
+    $r = array();
+  
+    // Establish the right model and check it supports create from captions, 
+    $modelname = $this->submission['fields']['insert_captions_to_create']['value'];
+    $m = ORM::factory($modelname);
+    if ($m->canCreateFromCaption()) {
+      // get the array of captions
+      $fieldname = $this->submission['fields']['insert_captions_use']['value'];
+      if (empty($this->submission['fields'][$fieldname])
+        || empty($this->submission['fields'][$fieldname]['value'])) {
+        return $r;
+      }
+      $captions = $this->submission['fields'][$fieldname]['value'];
+      // build a skeleton submission
+      $sub = array(
+        'id' => $modelname,
+        'fields' => array(
+          'caption' => array()
+        )
+      );
+      // submit each caption to create a record, unless it exists
+      $i=0;
+      foreach ($captions as $value) {
+        // sanitize caption
+        $value = trim(preg_replace('/\s+/',' ', $value));
+        $id = $m->findByCaption($value);
+        if ($id > 0) { // record exists
+          $r[$i] = $id;
+        } else { // create new record
+          $sub['fields']['caption']['value'] = $value;
+          $m = ORM::factory($modelname);
+          $m->submission = $sub;
+          $r[$i] = $m->inner_submit();
+        }
+        $i++;
+      } 
+    }
+    Kohana::log('debug', 'Leaving ORM createRecordsFromCaptions, result is '.print_r($r, true));
+    return $r;
+  }
 
+  /**
+   * Puts each supplied record id into the submission so they get stored.
+   * @return boolean.
+   */
+  private function createIdsFromCaptions($ids) {
+    $keys = array_fill(0, sizeof($ids), 'value');
+    $a = array_fill_keys($keys, $ids);
+    $idfieldname = $this->submission['fields']['insert_captions_id']['value'];
+    $this->submission['fields'][$idfieldname] = $a;
+    Kohana::log('debug', 'Leaving ORM createIdsFromCaptions, model fields are '.
+      print_r($this->submission['fields'], true));
+    return true;
+  }
+  
+  /**
+   * Overridden if this model type can create new instances from data supplied in its caption format. 
+   * @return integer, the id of the first matching record with the supplied caption or 0 if no match.
+   */
+  protected function findByCaption($caption) {
+    return 0;
+  }
+  
+  /**
+   * Overridden if this model type can create new instances from data supplied in its caption format. 
+   * Does nothing if not overridden.
+   * @return boolean, override to true if your model supports this.
+   */
+  protected function handleCaptionSubmission() {
+    return false;
+  }
+  
   /**
    * Ensures that the save array is validated before submission. Classes overriding
    * this method should call this parent method after their changes to perform necessary
@@ -392,6 +478,18 @@ class ORM extends ORM_Core {
             break;
           }
       }
+    }
+    // if the current model supports attributes then 
+    // create records from captions if this has been requested.
+    if ($this->has_attributes 
+      && !empty($this->submission['fields']['insert_captions_to_create'])
+      && !empty($this->submission['fields']['insert_captions_use'])
+      && !empty($this->submission['fields']['insert_captions_to_create']['value'])
+      && !empty($this->submission['fields']['insert_captions_use']['value'])) {
+        $ids = $this->createRecordsFromCaptions();
+        if (!empty($this->submission['fields']['insert_captions_id'])) {
+          $this->createIdsFromCaptions($ids);
+        }
     }
   }
   
@@ -451,6 +549,7 @@ class ORM extends ORM_Core {
    * If not, returns null - errors are embedded in the model.
    */
   public function inner_submit(){
+    $this->handleCaptionSubmission();
     $return = $this->populateFkLookups();
     $this->populateIdentifiers();
     $return = $this->createParentRecords() && $return;

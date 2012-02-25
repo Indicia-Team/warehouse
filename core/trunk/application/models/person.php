@@ -92,6 +92,76 @@ class Person_Model extends ORM {
     return ($this->first_name.' '.$this->surname);
   }
   
+  /**
+   * Indicates if this model type can create new instances from data supplied in its caption format. 
+   * @return boolean, override to true if your model supports this.
+   */
+  protected function canCreateFromCaption() {
+    return true;
+  }
+  
+  /**
+   * Overridden if this model type can create new instances from data supplied in its caption format. 
+   * @return integer, the id of the first matching record with the supplied caption or 0 if no match.
+   */
+  protected function findByCaption($caption) {
+    $id = 0;
+    $caption = trim($caption);
+    $matches = $this->db->from('list_people')->
+      select('caption', 'id')->
+      like('caption', $caption)
+      ->get();
+    foreach ($matches as $row) {
+      if (strtolower($row->caption) === strtolower($caption)) {
+        $id = $row->id;
+        break;
+      }
+    }
+    return $id;
+  }
+  
+  /**
+   * Overridden if this model type can create new instances from data supplied in its caption format. 
+   * Does nothing if not overridden.
+   * @return boolean, override to true if your model supports this.
+   */
+  protected function handleCaptionSubmission() {
+    // create record from caption data
+    if (!empty($this->submission['fields']['caption']))
+      $this->deriveFieldsFromCaption();
+    return true;
+  }
+
+  /**
+   * User the caption value to provide values for all required fields so that a record can be
+   * created from data supplied in its caption format. 
+   * @return boolean, true if able to infer field values, false if not.
+   */
+  protected function deriveFieldsFromCaption() {
+    // todo - improve these rules
+    Kohana::log('debug', 'Commencing person deriveFieldsFromCaption. '.
+      print_r($this->submission['fields'], true));
+      // check we have exactly one caption
+    if (sizeof($this->submission['fields']['caption'])!==1 
+      || empty($this->submission['fields']['caption']['value']))
+      return true;
+    $names = explode(' ', trim($this->submission['fields']['caption']['value']));
+    $count = sizeof($names);
+    if ($count>0 && empty($this->submission['fields']['first_name']) 
+      && empty($this->submission['fields']['surname'])) {
+      $this->submission['fields']['first_name'] = array();
+      $this->submission['fields']['surname'] = array();
+      $this->submission['fields']['first_name']['value'] = '';
+      for ($i = 0; $i < $count-1; $i++) {
+        $this->submission['fields']['first_name']['value'] .= ucfirst(strtolower($names[$i]));
+      }
+      $this->submission['fields']['surname']['value'] = ucfirst($names[$count-1]);
+    }
+    unset($this->submission['fields']['caption']);
+    Kohana::log('debug', 'Leaving person deriveFieldsFromCaption. '.print_r($this->submission['fields'], true));
+    return true;
+  }
+  
   /** 
    * Prepares the db object query builder to query the list of custom attributes for this model.
    * @param boolean $required Optional. Set to true to only return required attributes (requires 

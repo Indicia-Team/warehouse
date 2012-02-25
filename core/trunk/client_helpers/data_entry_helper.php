@@ -248,7 +248,7 @@ class data_entry_helper extends helper_base {
   * <li><b>addOnSelect TODO</b><br/>
   * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
   * added to the list when selected. Defaults to false.</li>
-  * <li><b>addToTable TODO</b><br/>
+  * <li><b>addToTable</b><br/>
   * Optional. Boolean, if true, unmatched items from the autocomplete control are automatically 
   * added to the source table on successful submission. Defaults to false.</li>
   * </ul>
@@ -266,6 +266,35 @@ class data_entry_helper extends helper_base {
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
 
+    // prepare options for updating the source table
+    if ($options['addToTable']===true) { 
+      $options['basefieldname'] = substr($options['fieldname'],0,strlen($options['fieldname'])-2);
+      if (preg_match('/^[a-z]{3}Attr\:[1-9][0-9]*$/', $options['basefieldname'])) {
+        $options['addToTable'] = $indicia_templates['sub_list_add_to_table'];
+        switch (substr($options['basefieldname'],0,3)) {
+          case 'loc':
+            $options['mainEntity'] = 'location';
+            break;
+          case 'occ':
+            $options['mainEntity'] = 'occurrence';
+            break;
+          case 'smp':
+            $options['mainEntity'] = 'sample';
+            break;
+          default:
+            // addToTable only works with custom attributes
+            $options['addToTable'] = '';
+        }
+        if (isset($options['mainEntity'])) {
+          // addToTable requires the source field to be a caption
+          $options['captionField'] = 'caption';
+        }
+      } else {
+        // addToTable only works with custom attributes
+        $options['addToTable'] = '';
+      }
+    }
+    
     // prepare embedded search control for add bar panel
     $list_options = $options;
     $list_options['id'] = $list_options['id'].':search';
@@ -273,9 +302,10 @@ class data_entry_helper extends helper_base {
     $list_options['lockable']=null;
     $list_options['label'] = null;
     $list_options['extraParams']['website_id'] = self::$website_id;
+    // set up add panel
     $options['panel_control'] = self::autocomplete($list_options);
-
-    // prepare options for the rest of the control
+    
+    // prepare other main control options
     $options = array_merge(array(
       'template' => 'sub_list',
       'inputId' => $options['id'].':'.$options['captionField'],
@@ -285,13 +315,10 @@ class data_entry_helper extends helper_base {
       'escaped_captionField' => self::jq_esc($options['captionField']),
       'hide' => 'normal',
       'addToTable' => '',
+      'idfieldname' => '',
     ), $options);
     if (!is_numeric($options['hide'])) $options['hide'] = '\''.$options['hide'].'\'';
-    if ($options['addToTable']===true) { 
-      $options['addToTable'] = $indicia_templates['sub_list_add_to_table'];
-      $options['basefieldname'] = substr($options['fieldname'],0,strlen($options['fieldname'])-2);
-    }
-    
+
     // set up javascript
     $options['subListItem'] = str_replace(array('{caption}', '{fieldname}'),  
       array('\'+caption+\'', $options['fieldname']), 
