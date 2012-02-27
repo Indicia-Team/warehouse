@@ -10,6 +10,7 @@ CREATE TABLE cache_occurrences
   zero_abundance boolean,
   website_id integer,
   survey_id integer,
+  sample_id integer,
   survey_title character varying(100),
   date_start date,
   date_end date,

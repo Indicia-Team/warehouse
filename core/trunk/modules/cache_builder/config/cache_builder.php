@@ -201,6 +201,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
       zero_abundance=o.zero_abundance,
       website_id=su.website_id, 
       survey_id=su.id, 
+      sample_id=s.id,
       survey_title=su.title,
       date_start=s.date_start, 
       date_end=s.date_end, 
@@ -234,7 +235,7 @@ $config['occurrences']['update'] = "update cache_occurrences co
 
 $config['occurrences']['insert']="insert into cache_occurrences (
       id, record_status, downloaded_flag, zero_abundance,
-      website_id, survey_id, survey_title,
+      website_id, survey_id, sample_id, survey_title,
       date_start, date_end, date_type,
       public_entered_sref, entered_sref_system, public_geom,
       sample_method, taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order, 
@@ -243,7 +244,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       created_by_id, cache_created_on, cache_updated_on
     )
   select o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
-    su.website_id as website_id, su.id as survey_id, su.title as survey_title,
+    su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
     s.date_start, s.date_end, s.date_type,
     case when o.confidential=true then null else s.entered_sref end as public_entered_sref,
     s.entered_sref_system,
