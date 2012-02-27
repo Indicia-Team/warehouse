@@ -243,6 +243,7 @@ function saveVerifyComment() {
   data = {
     'website_id': indiciaData.website_id,
     'occurrence:id': occurrence_id,
+    'occurrence:verified_by_id': indiciaData.userId,
     'occurrence:record_status': status,
     'occurrence_comment:comment': comment,
     'occurrence_comment:person_name': indiciaData.username
@@ -290,6 +291,13 @@ function showTab() {
       mapDiv.map.editLayer.addFeatures([feature]);
       c = feature.geometry.getCentroid();
       mapDiv.map.setCenter(new OpenLayers.LonLat(c.x, c.y));
+      // default is to show approx 100m of map
+      var maxDimension=100;
+      if (feature.geometry.CLASS_NAME!=='OpenLayers.Geometry.Point') {
+        var bounds = feature.geometry.bounds;
+        maxDimension = Math.max(bounds.right-bounds.left, bounds.top-bounds.bottom)*4;
+      }
+      mapDiv.map.zoomTo(mapDiv.map.getZoomForExtent(new OpenLayers.Bounds(0, 0, maxDimension, maxDimension)));
     }
   }
 }

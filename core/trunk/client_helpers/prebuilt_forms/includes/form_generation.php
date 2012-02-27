@@ -24,9 +24,9 @@
  * List of methods that can be used for a prebuilt form control generation.
  * @package Client
  * @subpackage PrebuiltForms.
- * @param array $attributes
- * @param array $args
- * @param array $defAttrOptions
+ * @param array $attributes Array of attributes as returned from a call to data_entry_helper::getAttributes.
+ * @param array $args Form argument array.
+ * @param array $defAttrOptions Array of default options to apply to every attribute control.
  * @param array $outerFilter Name of the outer block to get controls for. Leave null for all outer blocks.
  * @param array $blockOptions Associative array of control names that have non-default options. Each entry
  * is keyed by the control name and has an array of the options and values to override.

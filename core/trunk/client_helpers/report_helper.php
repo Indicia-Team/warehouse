@@ -458,7 +458,19 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   
   private static function params_form_if_required($response, $options, $currentParamValues) {
     if (isset($response['parameterRequest'])) {
-      return self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+      // We put report param controls into their own divs, making layout easier. Unless going in the
+      // map toolbar as they will then be inline. 
+      global $indicia_templates;
+      $oldprefix = $indicia_templates['prefix'];
+      $oldsuffix = $indicia_templates['suffix'];
+      if (isset($options['paramPrefix']))
+        $indicia_templates['prefix']=$options['paramPrefix'];
+      if (isset($options['paramSuffix']))
+        $indicia_templates['suffix']=$options['paramSuffix'];
+      $r = self::get_report_grid_parameters_form($response, $options, $currentParamValues);
+      $indicia_templates['prefix'] = $oldprefix;
+      $indicia_templates['suffix'] = $oldsuffix;
+      return $r;
     } elseif ($options['autoParamsForm'] && $options['mode']=='direct') {
       // loading records from a view (not a report), so we can put a simple filter parameter form at the top.
       return self::get_direct_mode_params_form($options);
@@ -1056,42 +1068,43 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         ), $settings);
         if ($options['displaySymbol']!=='vector')
           $defsettings['graphicName']=$options['displaySymbol'];
-        $styleFns = array();
-        foreach($options['valueOutput'] as $type => $outputdef) {
-          $value = $outputdef['valueField'];
-          if (preg_match('/{(?P<name>.+)}/', $outputdef['minValue'], $matches))
-            $minvalue = 'feature.data.'.$matches['name'];
-          else
-            $minvalue = $outputdef['minValue'];
-          if (preg_match('/{(?P<name>.+)}/', $outputdef['maxValue'], $matches))
-            $maxvalue = 'feature.data.'.$matches['name'];
-          else
-            $maxvalue = $outputdef['maxValue'];
-          $from = $outputdef['from'];
-          $to = $outputdef['to'];
-          if (substr($type, -5)==='Color') 
-            $styleFns[] = "get$type: function(feature) { \n".
-                "var from_r, from_g, from_b, to_r, to_g, to_b, ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
-                "from_r = parseInt('$from'.substring(1,3),16);\n".
-                "from_g = parseInt('$from'.substring(3,5),16);\n".
-                "from_b = parseInt('$from'.substring(5,7),16);\n".
-                "to_r = parseInt('$to'.substring(1,3),16);\n".
-                "to_g = parseInt('$to'.substring(3,5),16);\n".
-                "to_b = parseInt('$to'.substring(5,7),16);\n".
-                
-                "return 'rgb('+(from_r + (to_r-from_r)*ratio) + ', '+".
-                   "(from_g + (to_g-from_g)*ratio) + ', '+".
-                   "(from_b + (to_b-from_b)*ratio) + ')'; \n".
-                '}';
-          else
-            $styleFns[] = "get$type: function(feature) { \n".
-                "var ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
-                "return $from + ($to-$from)*ratio; \n".
-                '}';
-          $defsettings[$type]="\${get$type}";
+        if (isset($options['valueOutput'])) {
+          $styleFns = array();
+          foreach($options['valueOutput'] as $type => $outputdef) {
+            $value = $outputdef['valueField'];
+            if (preg_match('/{(?P<name>.+)}/', $outputdef['minValue'], $matches))
+              $minvalue = 'feature.data.'.$matches['name'];
+            else
+              $minvalue = $outputdef['minValue'];
+            if (preg_match('/{(?P<name>.+)}/', $outputdef['maxValue'], $matches))
+              $maxvalue = 'feature.data.'.$matches['name'];
+            else
+              $maxvalue = $outputdef['maxValue'];
+            $from = $outputdef['from'];
+            $to = $outputdef['to'];
+            if (substr($type, -5)==='Color') 
+              $styleFns[] = "get$type: function(feature) { \n".
+                  "var from_r, from_g, from_b, to_r, to_g, to_b, ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
+                  "from_r = parseInt('$from'.substring(1,3),16);\n".
+                  "from_g = parseInt('$from'.substring(3,5),16);\n".
+                  "from_b = parseInt('$from'.substring(5,7),16);\n".
+                  "to_r = parseInt('$to'.substring(1,3),16);\n".
+                  "to_g = parseInt('$to'.substring(3,5),16);\n".
+                  "to_b = parseInt('$to'.substring(5,7),16);\n".
+
+                  "return 'rgb('+(from_r + (to_r-from_r)*ratio) + ', '+".
+                     "(from_g + (to_g-from_g)*ratio) + ', '+".
+                     "(from_b + (to_b-from_b)*ratio) + ')'; \n".
+                  '}';
+            else
+              $styleFns[] = "get$type: function(feature) { \n".
+                  "var ratio = (feature.data.$value - $minvalue) / ($maxvalue - $minvalue); \n".
+                  "return $from + ($to-$from)*ratio; \n".
+                  '}';
+            $defsettings[$type]="\${get$type}";
+          }
+          $styleFns = implode(",\n", $styleFns);
         }
-        $styleFns = implode(",\n", $styleFns);
-        
         // selected features are color blue by default
         $selsettings = array_merge($defsettings, array(
           'fillColor'=> '#0000ff',
@@ -1377,7 +1390,7 @@ mapSettingsHooks.push(function(opts) {
       }
       if ($options['paramsInMapToolbar'])
         $options['helpText']=false;
-      $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'fieldNamePrefix'=>'param', 'defaults'=>$params)));
+      $r .= self::build_params_form(array_merge($options, array('form'=>$response['parameterRequest'], 'defaults'=>$params)));
       if ($options['completeParamsForm']==true) {
         $suffix = '<input type="submit" value="'.lang::get($options['paramsFormButtonCaption']).'" id="run-report"/>'.
             '</fieldset></form>';
@@ -1573,7 +1586,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
           $params[$key]=$value;
       }
     }
-    // Are there any parameters embedded in the URL, e.g. after submitting the params form?
+    // Are there any parameters embedded in the post data, e.g. after submitting the params form?
     $paramKey = (isset($options['reportGroup']) ? $options['reportGroup'] : '').'-';
     foreach ($_POST as $key=>$value) {
       if (substr($key, 0, strlen($paramKey))==$paramKey) {

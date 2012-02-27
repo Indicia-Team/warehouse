@@ -148,7 +148,7 @@ class iform_report_grid {
    */
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('report_helper'));
-    $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     // get the grid output before outputting the download link, so we can check if the download link is needed.
     $reportOptions['id']='grid-'.$node->nid;

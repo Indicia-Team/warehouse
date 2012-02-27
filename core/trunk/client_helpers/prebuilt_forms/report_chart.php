@@ -270,7 +270,7 @@ class iform_report_chart {
           "showMark":{"type":"bool"},
           "showGridline":{"type":"bool"},
           "isMinorTick":{"type":"bool"},
-          "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For ‘cross’ style, length will be stoked above and below axis, so total length will be twice this."},
+          "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For ï¿½crossï¿½ style, length will be stoked above and below axis, so total length will be twice this."},
           "show":{"type":"bool"},
           "showLabel":{"type":"bool"},
           "formatString":{"type":"bool","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
@@ -313,7 +313,7 @@ class iform_report_chart {
           "showMark":{"type":"bool"},
           "showGridline":{"type":"bool"},
           "isMinorTick":{"type":"bool"},
-          "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For ‘cross’ style, length will be stoked above and below axis, so total length will be twice this."},
+          "markSize":{"type":"int","desc":"Length of the tick marks in pixels.  For ï¿½crossï¿½ style, length will be stoked above and below axis, so total length will be twice this."},
           "show":{"type":"bool"},
           "showLabel":{"type":"bool"},
           "formatString":{"type":"bool","desc":"Text used to construct the tick labels, with %s being replaced by the label."},
@@ -363,7 +363,7 @@ class iform_report_chart {
    */
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('report_helper', 'map_helper'));
-    $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
     $chartOptions = iform_report_get_report_options($args, $auth);
     $chartOptions = array_merge($chartOptions, array(
       'id' => 'chart-div',

@@ -21,6 +21,7 @@
  */
 
 require_once('includes/map.php');
+require_once('includes/report.php');
 
 /**
  * Prebuilt Indicia data form that lists the output of an occurrences report with an option
@@ -51,57 +52,11 @@ class iform_verification_3 {
    * @return array List of parameters that this form requires.
    */
   public static function get_parameters() {   
-    return array_merge(
+    $r = array_merge(
       iform_map_get_map_parameters(),
+      iform_report_get_minimal_report_parameters(),
       array(
         array(
-          'name'=>'report_name',
-          'caption'=>'Report Name',
-          'description'=>'The report to load into the verification grid, excluding the .xml suffix. This report should have '.
-              'at least the following columns: occurrence_id, taxon and should have an idlist type parameter if you are displaying '.
-              'a map to filter records against polygons. If you don\'t know which report to use, try the Auto-checked verification '.
-              'data report under Library\Occurrences.',
-          'type'=>'report_helper::report_picker',
-          'default'=>'library/occurrences/verification_list_2',
-          'group'=>'Report Settings'
-        ), array(
-          'name' => 'param_presets',
-          'caption' => 'Preset Parameter Values',
-          'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
-              'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
-              'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Preset Parameter Values can\'t be overridden by the user.',
-          'type' => 'textarea',
-          'required' => false,
-          'group'=>'Report Settings',
-          'default'=>'survey_id=
-date_from=
-date_to=
-smpattrs=
-occattrs='
-        ), array(
-          'name' => 'param_defaults',
-          'caption' => 'Default Parameter Values',
-          'description' => 'To provide default values for any report parameter which allow the report to run initially but can be overridden, enter each parameter into this '.
-              'box one per line. Each parameter is followed by an equals then the value, e.g. survey_id=6. You can use {user_id} as a value which will be replaced by the '.
-              'user ID from the CMS logged in user or {username} as a value replaces with the logged in username. Unlike preset parameter values, parameters referred '.
-              'to by default parameter values are displayed in the parameters form and can therefore be changed by the user.',
-          'type' => 'textarea',
-          'required' => false,
-          'group'=>'Report Settings',
-          'default'=>'id=
-taxon_group_id=
-record_status=C
-rule=all
-searchArea='
-        ), array(
-          'name' => 'items_per_page',
-          'caption' => 'Items per page',
-          'description' => 'Maximum number of rows shown on each page of the table',
-          'type' => 'int',
-          'default' => 20,
-          'required' => true,
-          'group'=>'Report Settings'
-        ), array(
             'name' => 'columns_config',
             'caption' => 'Columns Configuration',
             'description' => 'Define a list of columns with various configuration options when you want to override the '.
@@ -113,7 +68,7 @@ searchArea='
               {"fieldname":"record_status","visible":false},
               {"fieldname":"common","visible":false},
               {"fieldname":"zero_abundance","visible":false},
-              {"fieldname":"check","display":"Check"}
+              {"fieldname":"comment","display":"Check"}
             ]',
             'schema' => '{
     "type":"seq",
@@ -170,7 +125,8 @@ searchArea='
           'caption'=>'Verifiers Mapping',
           'description'=>'Provide either the ID of a single Indicia user to act as the verifier, or provide a comma separated list '.
               'of <drupal user id>=<indicia user id> pairs to define the mapping from Drupal to Indicia users. E.g. '.
-              '"1=2,2=3"',
+              '"1=2,2=3. If the Easy Login feature is enabled then this setting is ignored, as every Drupal user has their '.
+              'own warehouse User ID.',
           'type'=>'textarea',
           'default'=>1
         ), array(
@@ -264,6 +220,27 @@ searchArea='
         )
       )
     );
+    // Set default values for the report
+    foreach($r as &$param) {
+      if ($param['name']=='report_name')
+        $param['default']='library/occurrences/verification_list_2';
+      elseif ($param['name']=='param_presets') {
+        $param['default'] = 'survey_id=
+date_from=
+date_to=
+smpattrs=
+occattrs=';
+      }
+      elseif ($param['name']=='param_defaults')
+        $param['default'] = 'id=
+taxon_group_id=
+record_status=C
+rule=all
+searchArea=
+idlist=';
+      
+    }
+    return $r;
   }
   
   private static function get_template_grid_left($args, $auth) {
@@ -420,45 +397,26 @@ searchArea='
     global $user, $indicia_templates;
     $indicia_user_id=self::get_indicia_user_id($args);
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-
-    //extract fixed parameters for report grid.
-    $params = explode( "\n", $args['param_presets']);
-    foreach ($params as $param){
-      $keyvals = explode("=", $param);
-      $key = trim($keyvals[0]);
-      $val = trim($keyvals[1]);
-      $extraParams[$key] = $val;
-    }
-    // plus defaults which are not fixed
-    $params = explode( "\n", $args['param_defaults']);
-    foreach ($params as $param){
-      $keyvals = explode("=", $param);
-      $key = trim($keyvals[0]);
-      $val = trim($keyvals[1]);
-      $paramDefaults[$key] = $val;
-    }
-    $opts = array(
-      'id' => 'verification-grid',
-      'dataSource' => $args['report_name'],
-      'mode' => 'report',
-      'readAuth' => $auth,
-      'rowId' => 'occurrence_id',
-      'itemsPerPage' =>isset($args['items_per_page']) ? $args['items_per_page'] : 20,      
-      'extraParams' => $extraParams,
-      'paramDefaults' => $paramDefaults,
-      'fieldsetClass' => 'collapsible collapsed',
-      'reportGroup' => 'verification'
+    if (function_exists('module_exists') && module_exists('easy_login')
+        && strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
+      $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
+    $opts = array_merge(
+        iform_report_get_report_options($args, $auth),
+        array(
+          'id' => 'verification-grid',
+          'fieldsetClass' => 'collapsible collapsed',
+          'reportGroup' => 'verification',
+          'rowId' => 'occurrence_id',
+        )
     );
-    if (!empty($args['columns_config'])) {
-      $opts['autoParamsForm'] = true;
-      $opts['columns'] = json_decode($args['columns_config'], true);
-    } if (isset($args['show_map']) && $args['show_map']) {
+    if (isset($args['show_map']) && $args['show_map']) {
       $opts['paramsOnly']=true;
       $paramsForm = data_entry_helper::report_grid($opts);
       $opts['paramsOnly']=false;
       $opts['autoParamsForm']=false;
       $grid = data_entry_helper::report_grid($opts);
-      $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $paramsForm), self::get_template_with_map($args, $auth, $extraParams, $paramDefaults));
+      $r = str_replace(array('{grid}','{paramsForm}'), array($grid, $paramsForm), 
+          self::get_template_with_map($args, $auth, $opts['extraParams'], $opts['paramDefaults']));
     } else {
       $grid = data_entry_helper::report_grid($opts);
       $r = str_replace(array('{grid}'), array($grid), self::get_template_grid_left($args, $auth));
@@ -467,9 +425,10 @@ searchArea='
     global $user;
     data_entry_helper::$javascript .= 'indiciaData.nid = "'.$node->nid."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.username = "'.$user->name."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.userId = "'.$indicia_user_id."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.rootUrl = "'.$link['path']."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.website_id = '.$args['website_id'].";\n";
-    data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url($node, 'occurrence')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url($node, 'occurrence')."&user_id=$indicia_user_id\";\n";
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/verification_3')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.autoDiscard = '.$args['auto_discard_rows'].";\n";
     // output some translations for JS to use
@@ -513,9 +472,14 @@ searchArea='
   
   /**
    * Use the mapping from Drupal to Indicia users to get the Indicia user ID for the current logged in Drupal user.
+   * If there is a user profile field called profile_indicia_user_id then this value is used instead, for 
+   * example when the Easy Login feature is installed.
    */
   private static function get_indicia_user_id($args) {
-    $userId = '';
+    // Does the host site provide a warehouse user ID?
+    if (function_exists('hostsite_get_user_field') && $userId = hostsite_get_user_field('indicia_user_id'))
+      return $userId;
+    // Use the configured mapping from local user ID to warehouse ID.
     global $user;
     if (substr(',', $args['verifiers_mapping'])!==false) {
       $arr = explode(',', $args['verifiers_mapping']);

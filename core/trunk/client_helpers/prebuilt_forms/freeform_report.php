@@ -116,7 +116,7 @@ class iform_freeform_report {
    */
   public static function get_form($args, $node, $response=null) {
     iform_load_helpers(array('report_helper'));
-    $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     $reportOptions['header'] = $args['header'];
     $reportOptions['footer'] = $args['footer'];

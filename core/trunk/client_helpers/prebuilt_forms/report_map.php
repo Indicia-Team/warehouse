@@ -175,7 +175,7 @@ class iform_report_map {
    */
   public static function get_form($args, $node, $response) {
     iform_load_helpers(array('report_helper', 'map_helper'));
-    $auth = report_helper::get_read_write_auth($args['website_id'], $args['password']);
+    $auth = report_helper::get_read_auth($args['website_id'], $args['password']);
     $reportOptions = iform_report_get_report_options($args, $auth);
     $r = '<div class="ui-helper-clearfix">';
     $reportOptions['geoserverLayer'] = $args['geoserver_layer'];
