@@ -193,7 +193,6 @@ class ReportEngine {
         // No known report specified - return some error
         // TODO
     }
-
     // What parameters do we expect?
     $this->expectedParams = $this->reportReader->getParams();
     // Pull out special case params for limit and offset
@@ -706,7 +705,7 @@ class ReportEngine {
     {
       if (isset($paramDefs[$name])) {
         if (array_key_exists('joins', $paramDefs[$name]))
-          $query = $this->addParamJoins($query, $paramDefs[$name], $value);
+          $query = $this->addParamJoins($query, $name, $paramDefs[$name], $value);
       }
     }
     // Now loop through the joins to insert the values into the query
@@ -892,12 +891,14 @@ class ReportEngine {
     return $query;
   }
   
-  private function addParamJoins($query, $paramDef, $value) {
+  private function addParamJoins($query, $paramName, $paramDef, $value) {
     foreach($paramDef['joins'] as $joinDef) {
-      if (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
-          ($joinDef['operator']==='notequal' && $joinDef['value']!==$value)) {
+      if ((!empty($joinDef['operator']) && (($joinDef['operator']==='equal' && $joinDef['value']===$value) ||
+          ($joinDef['operator']==='notequal' && $joinDef['value']!==$value)))
+          // operator not provided, so default is to join if param not empty
+          || !empty($value)) {
         // Join SQL can contain the parameter value as well.
-        $join = str_replace('', $value, $joinDef['sql']);
+        $join = str_replace("#$paramName#", $value, $joinDef['sql']);
         $query = str_replace('#joins#', $join."\n #joins#", $query);
       }
     }

@@ -297,7 +297,6 @@ class XMLReportReader_Core implements ReportReader
     // merge this back into the query. Note we drop in a #fields# tag so that the query processor knows where to
     // add custom attribute fields.
     $this->query = str_replace('#columns#', $distincton . implode(', ', $sql) . '#fields#', $this->query);
-    kohana::log('debug', 'count : '.$this->countQuery);
   }
 
   /**

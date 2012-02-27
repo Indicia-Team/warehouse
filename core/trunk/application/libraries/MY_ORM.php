@@ -313,19 +313,22 @@ class ORM extends ORM_Core {
    */
   public function set_metadata($obj=null) {
     if ($obj==null) $obj=$this;
-    $defaultUserId = Kohana::config('indicia.defaultPersonId');
-    $force=false;
+    $force=true;
     // At this point we determine the id of the logged in user,
     // and use this in preference to the default id if possible.
-    if (isset($_SESSION['auth_user'])) {
-      $force = true;
+    if (isset($_SESSION['auth_user'])) 
       $userId = $_SESSION['auth_user']->id;
-    } else {
+    else {
       global $remoteUserId;
       if (isset($remoteUserId))
         $userId = $remoteUserId;
-      else
+      else {
+        // Don't force overwrite of user IDs that already exist in the record, since
+        // we are just using a default.
+        $force=false;
+        $defaultUserId = Kohana::config('indicia.defaultPersonId');
         $userId = ($defaultUserId ? $defaultUserId : 1);
+      }
     }
     // Set up the created and updated metadata for the record
     if (!$obj->id && array_key_exists('created_on', $obj->table_columns)) {
