@@ -1055,14 +1055,14 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         foreach($response['columns'] as $col=>$def) {
           if (!empty($def['feature_style'])) {
             // found a column that outputs data to input into a feature style parameter. ${} syntax is explained at http://docs.openlayers.org/library/feature_styling.html.
-            $settings[$def['feature_style']] = "\$\{$col\}";
+            $settings[$def['feature_style']] = '${'.$col.'}';
           }
         }
         // default features are color red by default
         $defsettings = array_merge(array(
           'fillColor'=> '#ff0000',
           'strokeColor'=> '#ff0000',
-          'strokeWidth'=>1,
+          'strokeWidth'=>3,
           'fillOpacity'=>0.5,
           'pointRadius'=>10
         ), $settings);
@@ -1118,13 +1118,14 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         foreach ($records as $record) {
           $addFeaturesJs.= "addDistPoint(features, ".json_encode($record).", '$wktCol', $opts);\n";
         }
+        if (!empty($styleFns)) {
+          $styleFns = ", {context: { 
+  $styleFns
+}}";
+        }
         report_helper::$javascript.= "
-var defaultStyle = new OpenLayers.Style($defsettings, {context: { 
-  $styleFns
-}});
-var selectStyle = new OpenLayers.Style($selsettings, {context: { 
-  $styleFns
-}});
+var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
+var selectStyle = new OpenLayers.Style($selsettings$styleFns);
 var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
 indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
 mapInitialisationHooks.push(function(div) {

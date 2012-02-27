@@ -41,8 +41,10 @@ class iform_verification_3 {
       'title'=>'Verification 3',
       'category' => 'Verification',
       'description'=>'An advanced verification form with built in review of the record, images and comments. For full functionality, ensure that the report this loads '.
-          'data from returns a field called occurrence_id and has a parameter called rule for filtering by verification rule. See the "Auto-checked verification data" '.
-          'report for an example.',
+          'data from returns a field called occurrence_id and has a parameter called rule for filtering by verification rule. Also if their are fields in the '.
+          'user\'s profile which match input parameters for the report then these are passed through. For example if you enable the Easy Login '.
+          'feature then the expert\'s location of expertise (e.g. vice county) and taxon groups they have expertise in can be passed into the '.
+          'report to filter the data. See the "Auto-checked verification data" report for an example.',
       'helpLink' => 'http://code.google.com/p/indicia/wiki/PrebuiltFormVerification3'      
     );
   }
@@ -226,6 +228,7 @@ class iform_verification_3 {
         $param['default']='library/occurrences/verification_list_2';
       elseif ($param['name']=='param_presets') {
         $param['default'] = 'survey_id=
+taxon_group_id=
 date_from=
 date_to=
 smpattrs=
@@ -233,7 +236,6 @@ occattrs=';
       }
       elseif ($param['name']=='param_defaults')
         $param['default'] = 'id=
-taxon_group_id=
 record_status=C
 rule=all
 searchArea=
@@ -397,9 +399,12 @@ idlist=';
     global $user, $indicia_templates;
     $indicia_user_id=self::get_indicia_user_id($args);
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
-    if (function_exists('module_exists') && module_exists('easy_login')
-        && strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
-      $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
+    if (function_exists('module_exists') && module_exists('easy_login')) {
+      if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
+        $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
+      if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_taxon_groups')===false)
+        $args['param_presets'].="\nexpertise_taxon_groups={profile_taxon_groups_expertise}";
+    }
     $opts = array_merge(
         iform_report_get_report_options($args, $auth),
         array(
@@ -407,6 +412,7 @@ idlist=';
           'fieldsetClass' => 'collapsible collapsed',
           'reportGroup' => 'verification',
           'rowId' => 'occurrence_id',
+          'paramsFormButtonCaption' => lang::get('Load Records')
         )
     );
     if (isset($args['show_map']) && $args['show_map']) {

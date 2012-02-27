@@ -278,7 +278,7 @@ function showTab() {
         feature.geometry = feature.geometry.transform(new OpenLayers.Projection('EPSG:3857'), mapDiv.map.projection);
       }
       // Make the current record marker obvious
-      var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default']['defaultStyle'], {fillOpacity: 0.8, fillColor: '#0000FF'});
+      var style = $.extend({}, mapDiv.map.editLayer.styleMap.styles['default']['defaultStyle'], {fillOpacity: 0.5, fillColor: '#0000FF'});
       feature.style=style;
       feature.tag='currentRecord';
       var toRemove=[];

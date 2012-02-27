@@ -222,7 +222,12 @@ function _get_initial_vals($type, $args) {
               profile_load_profile($user);
               $profileLoaded = true;
             }
-            $r[$tokens[0]]=$user->$profileField;
+            // unserialise the data if it is serialised, e.g. using profile checkboxes to store a list of values
+            $value = @unserialize($user->$profileField);
+            // arrays of values must be returned as comma separated lists
+            if (is_array($value))
+              $value=implode(',', $value);
+            $r[$tokens[0]]=$value ? $value : $user->$profileField;
           } else {
             // this handles the user id and username replacements
             $r[$tokens[0]]=trim(str_replace($replace, $replaceWith, $tokens[1]));
