@@ -145,18 +145,22 @@ class Person_Model extends ORM {
     if (sizeof($this->submission['fields']['caption'])!==1 
       || empty($this->submission['fields']['caption']['value']))
       return true;
+    // set model fields
     $names = explode(' ', trim($this->submission['fields']['caption']['value']));
     $count = sizeof($names);
     if ($count>0 && empty($this->submission['fields']['first_name']) 
       && empty($this->submission['fields']['surname'])) {
       $this->submission['fields']['first_name'] = array();
       $this->submission['fields']['surname'] = array();
-      $this->submission['fields']['first_name']['value'] = '';
+      $first_name = '';
       for ($i = 0; $i < $count-1; $i++) {
-        $this->submission['fields']['first_name']['value'] .= ucfirst(strtolower($names[$i]));
+        $first_name .= ucfirst(strtolower($names[$i]));
       }
-      $this->submission['fields']['surname']['value'] = ucfirst($names[$count-1]);
+      $surname = ucfirst($names[$count-1]);
+      $this->submission['fields']['first_name']['value'] = $first_name;
+      $this->submission['fields']['surname']['value'] = $surname;
     }
+    
     unset($this->submission['fields']['caption']);
     Kohana::log('debug', 'Leaving person deriveFieldsFromCaption. '.print_r($this->submission['fields'], true));
     return true;

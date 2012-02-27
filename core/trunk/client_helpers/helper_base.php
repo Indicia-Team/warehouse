@@ -153,13 +153,11 @@ $indicia_templates = array(
     '<span class="ind-cancel-icon">&nbsp;</span>'."\n".
     '</div>'."\n".
     '<ul id="{id}:sublist" class="ind-sub-list">{items}</ul>'."\n".
-    '{addToTable}'.
+    '<input type="hidden" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
+    '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />'.
     '</div></div>'."\n",
   'sub_list_item' => '<li><span class="ind-delete-icon">&nbsp;</span>{caption}'.
     '<input type="hidden" name="{fieldname}" value="{caption}" /></li>',
-  'sub_list_add_to_table' => '<input type="hidden" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
-    '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />'.
-    '<input type="hidden" name="{mainEntity}:insert_captions_id" value="{idfieldname}" />',
   'sub_list_javascript' => "if ({hide}==='none') {
     jQuery('#{escaped_id}\\\\:box .ind-cancel-icon').css('display', 'none');
     }

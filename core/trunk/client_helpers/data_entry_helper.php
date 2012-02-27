@@ -216,14 +216,24 @@ class data_entry_helper extends helper_base {
 
  /**
   * Helper function to generate a sub list UI control. This control allows a user to create a new list 
-  * by selecting some items from an existing database table while adding some new items. 
+  * by selecting some items from the caption 'field' of an existing database table while 
+  * adding some new items. 
   * The resulting list is submitted and the new items are added to the existing table 
-  * as skeleton entries.
+  * as skeleton entries while the id values for the items are stored as a custom attribute.
+  * 
+  * An example usage would be to associate a list of people with a sample or location.
   * 
   * @param array $options (deprecated argument list not supported). 
   * Options array with the following possibilities:<ul>
   * <li><b>fieldname</b><br/>
-  * Required. The name of the database field this control is bound to.</li>
+  * Required. The name of the database field this control is bound to. This must be a custom attributes 
+  * field of type integer which supports multiple values</li>
+  * <li><b>table</b><br/>
+  * Required. Table name to get data from for the autocomplete options. The control will 
+  * use the 'caption' from this table</li>
+  * <li><b>extraParams</b><br/>
+  * Required. Associative array of items to pass via the query string to the service. This
+  * should at least contain the read authorisation array.</li>
   * <li><b>id</b><br/>
   * Optional. The id to assign to the HTML control. Base value defaults to fieldname, but 
   * this is a compound control and the many sub-controls have id values with additiobnal suffixes.</li>
@@ -232,13 +242,6 @@ class data_entry_helper extends helper_base {
   * record with existing data for this control.</li>
   * <li><b>class</b><br/>
   * Optional. CSS class names to add to the control.</li>
-  * <li><b>table</b><br/>
-  * Required. Table name to get data from for the autocomplete options.</li>
-  * <li><b>captionField</b><br/>
-  * Required. Field to draw values to show in the control from.</li>
-  * <li><b>extraParams</b><br/>
-  * Optional. Associative array of items to pass via the query string to the service. This
-  * should at least contain the read authorisation array.</li>
   * <li><b>numValues</b><br/>
   * Optional. Number of returned values in the drop down list. Defaults to 10.</li>
   * <li><b>hide</b><br/>
@@ -248,9 +251,6 @@ class data_entry_helper extends helper_base {
   * <li><b>addOnSelect TODO</b><br/>
   * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
   * added to the list when selected. Defaults to false.</li>
-  * <li><b>addToTable</b><br/>
-  * Optional. Boolean, if true, unmatched items from the autocomplete control are automatically 
-  * added to the source table on successful submission. Defaults to false.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the sub_list control.
@@ -261,38 +261,36 @@ class data_entry_helper extends helper_base {
     // checks essential options, uses fieldname as id default and 
     // loads defaults if error or edit
     $options = self::check_options($options);
+    // we can only work with the caption field
+    $options['captionField'] = 'caption';
     // our field is a multi-value custom attribute so add [] to fieldname
     // so PHP puts multiple submitted values in an array
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
 
     // prepare options for updating the source table
-    if ($options['addToTable']===true) { 
-      $options['basefieldname'] = substr($options['fieldname'],0,strlen($options['fieldname'])-2);
-      if (preg_match('/^[a-z]{3}Attr\:[1-9][0-9]*$/', $options['basefieldname'])) {
-        $options['addToTable'] = $indicia_templates['sub_list_add_to_table'];
-        switch (substr($options['basefieldname'],0,3)) {
-          case 'loc':
-            $options['mainEntity'] = 'location';
-            break;
-          case 'occ':
-            $options['mainEntity'] = 'occurrence';
-            break;
-          case 'smp':
-            $options['mainEntity'] = 'sample';
-            break;
-          default:
-            // addToTable only works with custom attributes
-            $options['addToTable'] = '';
-        }
-        if (isset($options['mainEntity'])) {
-          // addToTable requires the source field to be a caption
-          $options['captionField'] = 'caption';
-        }
-      } else {
-        // addToTable only works with custom attributes
-        $options['addToTable'] = '';
+    $options['basefieldname'] = substr($options['fieldname'],0,strlen($options['fieldname'])-2);
+    if (preg_match('/^[a-z]{3}Attr\:[1-9][0-9]*$/', $options['basefieldname'])) {
+      switch (substr($options['basefieldname'],0,3)) {
+        case 'loc':
+          $options['mainEntity'] = 'location';
+          break;
+        case 'occ':
+          $options['mainEntity'] = 'occurrence';
+          break;
+        case 'smp':
+          $options['mainEntity'] = 'sample';
+          break;
+        case 'psn':
+          $options['mainEntity'] = 'person';
+          break;
+        default:
+          $options['mainEntity'] = '';
       }
+    }
+    if (empty($options['mainEntity'])) {
+      // addToTable only works with custom attributes
+      // TODO, raise an error to developer
     }
     
     // prepare embedded search control for add bar panel
@@ -301,7 +299,6 @@ class data_entry_helper extends helper_base {
     $list_options['suffixTemplate']='nosuffix';
     $list_options['lockable']=null;
     $list_options['label'] = null;
-    $list_options['extraParams']['website_id'] = self::$website_id;
     // set up add panel
     $options['panel_control'] = self::autocomplete($list_options);
     
@@ -314,8 +311,6 @@ class data_entry_helper extends helper_base {
       'escaped_id' => self::jq_esc($options['id']),
       'escaped_captionField' => self::jq_esc($options['captionField']),
       'hide' => 'normal',
-      'addToTable' => '',
-      'idfieldname' => '',
     ), $options);
     if (!is_numeric($options['hide'])) $options['hide'] = '\''.$options['hide'].'\'';
 

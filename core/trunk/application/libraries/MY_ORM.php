@@ -424,6 +424,8 @@ class ORM extends ORM_Core {
           $sub['fields']['caption']['value'] = $value;
           $m = ORM::factory($modelname);
           $m->submission = $sub;
+          // copy down the website id and survey id
+          $m->identifiers = array_merge($this->identifiers);
           $r[$i] = $m->inner_submit();
         }
         $i++;
@@ -434,14 +436,15 @@ class ORM extends ORM_Core {
   }
 
   /**
-   * Puts each supplied record id into the submission so they get stored.
+   * Puts each supplied record id into the submission to replace the captions 
+   * so we store IDs instead.
    * @return boolean.
    */
   private function createIdsFromCaptions($ids) {
     $keys = array_fill(0, sizeof($ids), 'value');
     $a = array_fill_keys($keys, $ids);
-    $idfieldname = $this->submission['fields']['insert_captions_id']['value'];
-    $this->submission['fields'][$idfieldname] = $a;
+    $fieldname = $this->submission['fields']['insert_captions_use']['value'];
+    $this->submission['fields'][$fieldname] = $a;
     Kohana::log('debug', 'Leaving ORM createIdsFromCaptions, model fields are '.
       print_r($this->submission['fields'], true));
     return true;
@@ -486,13 +489,13 @@ class ORM extends ORM_Core {
     // create records from captions if this has been requested.
     if ($this->has_attributes 
       && !empty($this->submission['fields']['insert_captions_to_create'])
-      && !empty($this->submission['fields']['insert_captions_use'])
       && !empty($this->submission['fields']['insert_captions_to_create']['value'])
+      && !empty($this->submission['fields']['insert_captions_use'])
       && !empty($this->submission['fields']['insert_captions_use']['value'])) {
-        $ids = $this->createRecordsFromCaptions();
-        if (!empty($this->submission['fields']['insert_captions_id'])) {
-          $this->createIdsFromCaptions($ids);
-        }
+      $ids = $this->createRecordsFromCaptions();
+      $this->createIdsFromCaptions($ids);
+      unset($this->submission['fields']['insert_captions_to_create']['value']);
+      unset($this->submission['fields']['insert_captions_use']['value']);
     }
   }
   
