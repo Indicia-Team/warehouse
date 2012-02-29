@@ -32,7 +32,7 @@ defined('SYSPATH') or die('No direct script access.');
 class Import_Controller extends Service_Base_Controller {
 
   /**
-   * Controller function that provides a web service services/import/get_import/settings/model.
+   * Controller function that provides a web service services/import/get_import_settings/model.
    * @return string JSON Parameters form details for this model, or empty string if no parameters form required.
    */
   public function get_import_settings($model) {
