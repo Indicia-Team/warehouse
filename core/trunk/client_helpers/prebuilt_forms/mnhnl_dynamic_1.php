@@ -242,11 +242,12 @@ class iform_mnhnl_dynamic_1 {
           'default' => false,
           'required' => false,
           'group' => 'User Interface'
-        ),        
+        ),
         array(
           'name'=>'multiple_occurrence_mode',
-          'caption'=>'Single or multiple occurrences per sample',
-          'description'=>'Method of data entry, via a grid of occurrences, one occurrence at a time, or allow the user to choose.',
+          'caption'=>'Allow a single ad-hoc record or a list of records',
+          'description'=>'Method of data entry, one occurrence at a time, via a grid allowing '.
+              'entry of multiple occurrences at the same place and date, or allow the user to choose.',
           'type'=>'select',
           'options' => array(
             'single' => 'Only allow entry of one occurrence at a time',
@@ -255,6 +256,47 @@ class iform_mnhnl_dynamic_1 {
           ),
           'default' => 'multi',
           'group' => 'Species'
+        ),
+        array(
+          'fieldname'=>'list_id',
+          'label'=>'Species List ',
+          'helpText'=>'The species list that species can be selected from. This list is pre-populated '.
+              'into the grid when doing grid based data entry, or provides the list which a species '.
+              'can be picked from when doing single occurrence data entry.',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title',
+          'required'=>false,
+          'group'=>'Species',
+          'siteSpecific'=>true
+        ),
+        array(
+          'fieldname'=>'extra_list_id',
+          'label'=>'Extra Species List',
+          'helpText'=>'The second species list that species can be selected from. This list is available for additional '.
+              'taxa being added to the grid when doing grid based data entry. It is not used when the form is configured '.
+              'to allow a single occurrence to be input at a time.',
+          'type'=>'select',
+          'table'=>'taxon_list',
+          'valueField'=>'id',
+          'captionField'=>'title',
+          'required'=>false,
+          'group'=>'Species',
+          'siteSpecific'=>true
+        ),
+        array(
+          'fieldname'=>'cache_lookup',
+          'label'=>'Cache lookups',
+          'helpText'=>'Tick this box to select to use a cached version of the lookup list when '.
+              'searching for extra species names to add to the grid, or set to false to use the '.
+              'live version (default). The latter is slower and places more load on the warehouse so should only be '.
+              'used during development or when there is a specific need to reflect taxa that have only '.
+              'just been added to the list.',
+          'type'=>'checkbox',
+          'required'=>false,
+          'group'=>'Species',
+          'siteSpecific'=>false
         ),
         array(
           'name'=>'species_ctrl',
@@ -325,32 +367,6 @@ class iform_mnhnl_dynamic_1 {
           'type'=>'string',
           'group'=>'Species',
           'required' => false
-        ),
-        array(
-          'fieldname'=>'list_id',
-          'label'=>'Initial Species List',
-          'helpText'=>'The species list that species can be selected from. This list is pre-populated '.
-              'into the grid when doing grid based data entry.',
-          'type'=>'select',
-          'table'=>'taxon_list',
-          'valueField'=>'id',
-          'captionField'=>'title',
-          'required'=>false,
-          'group'=>'Species',
-          'siteSpecific'=>true
-        ),
-        array(
-          'fieldname'=>'extra_list_id',
-          'label'=>'Extra Species List',
-          'helpText'=>'The second species list that species can be selected from. This list is available for additional '.
-              'taxa being added to the grid when doing grid based data entry.',
-          'type'=>'select',
-          'table'=>'taxon_list',
-          'valueField'=>'id',
-          'captionField'=>'title',
-          'required'=>false,
-          'group'=>'Species',
-          'siteSpecific'=>true
         ),
         array(
           'name'=>'taxon_filter_field',
@@ -915,7 +931,8 @@ class iform_mnhnl_dynamic_1 {
           'occurrenceConfidential'=>(isset($args['occurrence_confidential']) ? $args['occurrence_confidential'] : false),
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true,
-          'language' => iform_lang_iso_639_2($user->lang) // used for termlists in attributes
+          'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
+          'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup']
       ), $options);
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
       if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {

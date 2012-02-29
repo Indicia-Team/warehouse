@@ -21,8 +21,8 @@
   the newly added rows.
  */
  
-function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
-	
+function addRowToGrid(url, gridId, lookupListId, readAuth, formatter, cacheLookup) {
+	cacheLookup = typeof cacheLookup !== 'undefined' ? cacheLookup : false;
   // inner function to handle a selection of a taxon from the autocomplete
   var handleSelectedTaxon = function(event, data) {
     // on picking a result in the autocomplete, ensure we have a spare row
@@ -74,6 +74,16 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
     }
   };
   
+  /**
+   * Ensure field names are consistent independent of whether we are using cached data
+   * or not.
+   */
+  var mapFromCacheTable = function(item) {
+    item.common = item.default_common_name;
+    item.preferred_name = item.preferred_taxon;
+    return item;
+  }
+  
   // Create an inner function for adding blank rows to the bottom of the grid
   var makeSpareRow = function(scroll) {
     if (!$.isFunction(formatter)) {
@@ -100,6 +110,9 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
       nonce: readAuth.nonce,
       taxon_list_id: lookupListId
     };
+    if (cacheLookup) {
+      extraParams.view='cache';
+    }
     if (typeof indiciaData['taxonExtraParams-'+gridId]!=="undefined") {
       $.extend(extraParams, indiciaData['taxonExtraParams-'+gridId]);
     }
@@ -109,6 +122,10 @@ function addRowToGrid(url, gridId, lookupListId, readAuth, formatter) {
       parse: function(data) {
         var results = [];
         jQuery.each(data, function(i, item) {
+          // common name can be supplied in a field called common, or default_common_name
+          if (cacheLookup) {
+            item = mapFromCacheTable(item);
+          }
           results[results.length] =
           {
             'data' : item,

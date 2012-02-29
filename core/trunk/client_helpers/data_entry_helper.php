@@ -1596,6 +1596,12 @@ class data_entry_helper extends helper_base {
   * Optional. The ID of the taxon_lists record which is to be used to select taxa from when adding
   * rows to the grid. If specified, then an autocomplete text box and Add Row button are generated
   * automatically allowing the user to pick a species to add as an extra row.</li>
+  * <li><b>cacheLookup</b></li>
+  * Optional. Set to true to select to use a cached version of the lookup list when
+  * searching for species names using the autocomplete control, or set to false to use the
+  * live version (default). The latter is slower and places more load on the warehouse so should only be
+  * used during development or when there is a specific need to reflect taxa that have only 
+  * just been added to the list.
   * <li><b>taxonFilterField</b><br/>
   * If the list of species to be made available for recording is to be limited (either by species or taxon group), allows selection of 
   * the field to filter against. Options are none (default), preferred_name, taxon_meaning_id, taxon_group. If filtering for a large list
@@ -1867,7 +1873,7 @@ class data_entry_helper extends helper_base {
         self::$javascript .= "addRowToGrid('".parent::$base_url."index.php/services/data"."', '".
             $options['id']."', '".$options['lookupListId']."', {'auth_token' : '".
             $options['readAuth']['auth_token']."', 'nonce' : '".$options['readAuth']['nonce']."'},".
-            " formatter);\r\n";
+            " formatter, ".($options['cacheLookup'] ? 'true' : 'false').");\r\n";
       }
       // If options contain a help text, output it at the end if that is the preferred position
       $options['helpTextClass'] = 'helpTextLeft';
@@ -2063,7 +2069,8 @@ class data_entry_helper extends helper_base {
         'occurrenceImages' => false,
         'id' => 'species-grid-'.rand(0,1000),
         'colWidths' => array(),
-        'taxonFilterField' => 'none'
+        'taxonFilterField' => 'none',
+        'cacheLookup' => false
     ), $options);
     // If filtering for a language, then use any taxa of that language. Otherwise, just pick the preferred names.
     if (!isset($options['extraParams']['language_iso']))
