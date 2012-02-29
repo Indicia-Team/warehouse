@@ -15,7 +15,6 @@
   AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='' OR #id#&lt;&gt;0)
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) OR #id#&lt;&gt;0)
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) OR #id#&lt;&gt;0)
-  AND (CAST(o.taxon_group_id AS character varying)='#taxon_group_id#' OR '#taxon_group_id#'='' OR #id#&lt;&gt;0)
   AND (o.record_status = '#record_status#' OR '#record_status#' = 'all' OR #id#&lt;&gt;0)
   AND (
     ('#rule#'='all' AND oc.id is not null) 
@@ -37,8 +36,6 @@
         population_call='direct:survey:id:title' />
     <param name='date_from' display='Date From' datatype='date' description="Start of the date range to return records for, or leave blank." />
     <param name='date_to' display='Date To' datatype='date' description="End of the date range to return records for, or leave blank." />
-    <param name='taxon_group_id' display='Taxon Group' description='Select the taxon group to return data for, or leave for all groups' datatype='lookup'
-        query='SELECT id, title as caption FROM taxon_groups' population_call='direct:taxon_group:id:title' />
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
     <param name='record_status' display='Record Status' description='Select the record status to view data for' datatype='lookup'
@@ -51,7 +48,7 @@
         population_call='direct:location:id:name'>
         <join>JOIN locations lexpert ON st_intersects(lexpert.boundary_geom, s.geom) AND lexpert.id=#expertise_location#</join>  
     </param>
-    <param name='expertise_taxon_groups' display='Species Group Expertise' description='Provide the groups in which your expertise applies' datatype='idlist'/>    
+    <param name="expertise_taxon_groups" display="Taxon Group Expertise" description="List of taxon group IDs which the user has expertise in" datatype="text" />
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' distincton='true' />
