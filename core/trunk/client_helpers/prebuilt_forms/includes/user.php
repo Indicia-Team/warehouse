@@ -102,9 +102,14 @@ function get_options_array_with_user_data($listData) {
               profile_load_profile($user);
               $profileLoaded = true;
             }
-            $r[$tokens[0]]=$user->$profileField;
+            // unserialise the data if it is serialised, e.g. when using profile_checkboxes to store a list of values.
+            $value = @unserialize($user->$profileField);
+            // arrays are returned as a comma separated list
+            if (is_array($value))
+              $value = implode(',',$value);
+            $r[$tokens[0]]=$value ? $value : $user->$profileField;
           } else {
-            // this handles the user id and username replacements
+            // this handles the user id, email and username replacements
             $r[$tokens[0]]=trim(str_replace($replace, $replaceWith, $tokens[1]));
           }
         } else {
