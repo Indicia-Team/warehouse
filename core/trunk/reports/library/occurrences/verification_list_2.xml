@@ -24,6 +24,7 @@
     OR #id#&lt;&gt;0
   )
   AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
+  AND ('#expertise_taxon_groups#'='' OR o.taxon_group_id IN (#expertise_taxon_groups#))
   #idlist#
   #order_by#
   </query>
@@ -50,6 +51,7 @@
         population_call='direct:location:id:name'>
         <join>JOIN locations lexpert ON st_intersects(lexpert.boundary_geom, s.geom) AND lexpert.id=#expertise_location#</join>  
     </param>
+    <param name='expertise_taxon_groups' display='Species Group Expertise' description='Provide the groups in which your expertise applies' datatype='idlist'/>    
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' distincton='true' />
