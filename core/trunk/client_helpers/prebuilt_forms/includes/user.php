@@ -75,4 +75,45 @@ function iform_user_get_hidden_inputs($args) {
   return $r;
 }
 
+/**
+ * Method to read a parameter from the arguments of a form that contains a list of key=value pairs on separate lines. 
+ * Eavh value is checked for references to the user's data (either {user_id}, {username}, {email} or {profile_*})
+ * and if found these substitutions are replaced.
+ * @param string $listData Form argument data, with each key value pair on a separate line.
+ * @return array Associative array.
+ */
+function get_options_array_with_user_data($listData) {
+  global $user;
+  $r = array();
+  $replace=array('{user_id}', '{username}', '{email}');
+  $replaceWith=array($user->uid, $user->name, $user->mail);
+  $profileLoaded = false;
+  if ($listData != ''){
+    $params = helper_base::explode_lines($listData);
+    foreach ($params as $param) {
+      if (!empty($param)) {
+        $tokens = explode('=', $param);
+        if (count($tokens)==2) {
+          // perform any replacements on the initial values and copy to the output array
+          if (preg_match('/^\{(?P<field>profile_(.)+)\}$/', $tokens[1], $matches)) {
+            $profileField=$matches['field'];
+            // got a request for a user profile field, so copy it's value across into the report parameters
+            if (!$profileLoaded) {
+              profile_load_profile($user);
+              $profileLoaded = true;
+            }
+            $r[$tokens[0]]=$user->$profileField;
+          } else {
+            // this handles the user id and username replacements
+            $r[$tokens[0]]=trim(str_replace($replace, $replaceWith, $tokens[1]));
+          }
+        } else {
+          throw new Exception('Some of the preset or default parameters defined for this page are not of the form param=value.');
+        }
+      }
+    }
+  }
+  return $r;
+}
+
 ?>

@@ -148,8 +148,9 @@ function iform_report_get_report_options($args, $readAuth) {
     // report params cannot go in the map toolbar if displayed as overlay on map
     $args['params_in_map_toolbar']=false;
   $r = '';
-  $presets = _get_initial_vals('param_presets', $args);
-  $defaults = _get_initial_vals('param_defaults', $args);
+  require_once('user.php');
+  $presets = get_options_array_with_user_data($args['param_presets']);
+  $defaults = get_options_array_with_user_data($args['param_defaults']);
   // default columns behaviour is to just include anything returned by the report
   $columns = array();
   // this can be overridden
@@ -196,47 +197,4 @@ function iform_report_get_report_options($args, $readAuth) {
       report_helper::$javascript .= "setTimeout('window.location.reload( false );', ".$args['refresh_timer']."*1000 );\n";
   }
   return $reportOptions;
-}
-
-/**
- * Internal method to read either the preset or default param values from the config form parameters. Returns an associative
- * array.
- */
-function _get_initial_vals($type, $args) {
-  global $user;
-  $r = array();
-  $replace=array('{user_id}', '{username}');
-  $replaceWith=array($user->uid, $user->name);
-  $profileLoaded = false;
-  if ($args[$type] != ''){
-    $params = explode("\n", $args[$type]);
-    foreach ($params as $param) {
-      if (!empty($param)) {
-        $tokens = explode('=', $param);
-        if (count($tokens)==2) {
-          // perform any replacements on the initial values and copy to the output array
-          if (preg_match('/^\{(?P<field>profile_(.)+)\}$/', $tokens[1], $matches)) {
-            $profileField=$matches['field'];
-            // got a request for a user profile field, so copy it's value across into the report parameters
-            if (!$profileLoaded) {
-              profile_load_profile($user);
-              $profileLoaded = true;
-            }
-            // unserialise the data if it is serialised, e.g. using profile checkboxes to store a list of values
-            $value = @unserialize($user->$profileField);
-            // arrays of values must be returned as comma separated lists
-            if (is_array($value))
-              $value=implode(',', $value);
-            $r[$tokens[0]]=$value ? $value : $user->$profileField;
-          } else {
-            // this handles the user id and username replacements
-            $r[$tokens[0]]=trim(str_replace($replace, $replaceWith, $tokens[1]));
-          }
-        } else {
-          throw new Exception('Some of the preset or default parameters defined for this page are not of the form param=value.');
-        }
-      }
-    }
-  }
-  return $r;
 }
