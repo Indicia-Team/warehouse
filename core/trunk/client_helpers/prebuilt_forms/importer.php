@@ -19,6 +19,8 @@
  * @license http://www.gnu.org/licenses/gpl.html GPL 3.0
  * @link  http://code.google.com/p/indicia/
  */
+ 
+require_once('includes/user.php');
 
 /**
  * Prebuilt Indicia data form that provides an import wizard
@@ -50,7 +52,8 @@ class iform_importer {
         'caption'=>'Preset Settings',
         'description'=>'Provide a list of predetermined settings which the user does not need to specify, one on each line in the form name=value. '.
             'The preset settings available are those which are available for input on the first page of the import wizard, depending on the table you '.
-            'are inputting data for.',
+            'are inputting data for. You can use the following replacement tokens in the values: {user_id}, {username}, {email} or {profile_*} (i.e. any '.
+            'field in the user profile data).',
         'type'=>'textarea',
         'required'=>false
       )
@@ -83,14 +86,7 @@ class iform_importer {
     } else
       $model = $args['model'];
     if (isset($args['presetSettings'])) {
-      $presets = array();
-      $presetLines = explode("\n", $args['presetSettings']);
-      foreach ($presetLines as $preset) {
-        $preset = explode('=', $preset);
-        // skip any invalid data for the presets
-        if (count($preset)==2)
-          $presets[$preset[0]]=$preset[1];
-      }
+      $presets = get_options_array_with_user_data($args['presetSettings']);
       $presets = array_merge(array('website_id'=>$args['website_id'], 'password'=>$args['password']), $presets);
     } else {
       $presets = array('website_id'=>$args['website_id'], 'password'=>$args['password']);

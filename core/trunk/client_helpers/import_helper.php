@@ -97,9 +97,6 @@ class import_helper extends helper_base {
       $formArray = json_decode($response['output'], true);
       if (!is_array($formArray))
         return "Could not upload file. Please check that the indicia_svc_import module is enabled on the Warehouse.<br/>".print_r($formArray, true);
-      if (isset($options['presetSettings']) && !count(array_intersect_key($options['presetSettings'], $formArray)))
-        // all settings have a preset value, so no need for the settings form. Skip to the next step
-        return self::upload_mappings_form($options);
       $formOptions = array(
         'form' => $formArray,
         'readAuth' => $options['auth']['read'],
@@ -110,6 +107,10 @@ class import_helper extends helper_base {
         $formOptions['presetParams'] = $options['presetSettings'];
       }
       $r .= self::build_params_form($formOptions);
+      // The presets might contain some extra values to apply to every row - must be output as hiddens
+      $extraHiddens = array_diff_key($options['presetSettings'], $formArray);      
+      foreach ($extraHiddens as $hidden=>$value) 
+        $r .= "<input type=\"hidden\" name=\"$hidden\" value=\"$value\" />\n";
       $r .= '<input type="hidden" name="import_step" value="1" />';
       $r .= '<input type="submit" name="submit" value="'.lang::get('Next').'" class="ui-corner-all ui-state-default button" />';
       // copy any $_POST data into the form, as this would mean preset values that are provided by the form which the uploader
@@ -151,15 +152,23 @@ class import_helper extends helper_base {
     $request .= '?'.self::array_to_query_string($options['auth']['read']);
     // include survey and website information in the request if available, as this limits the availability of custom attributes
     if (!empty($_POST['website_id']))
-      $request .= '&website_id='.$_POST['website_id'];
+      $request .= '&website_id='.trim($_POST['website_id']);
     if (!empty($_POST['survey_id']))
-      $request .= '&survey_id='.$_POST['survey_id'];
+      $request .= '&survey_id='.trim($_POST['survey_id']);
     $response = self::http_post($request, array());
     $fields = json_decode($response['output'], true);
+    if (!is_array($fields))
+      return "curl request to $request failed. Response ".print_r($response, true);
     $request = str_replace('get_import_fields', 'get_required_fields', $request);
-    $response = self::http_post($request, array());
-    $model_required_fields = self::expand_ids_to_fks(json_decode($response['output'], true));
-    $preset_fields = self::expand_ids_to_fks(array_keys($_POST));
+    $response = self::http_post($request);
+    $responseIds = json_decode($response['output'], true);
+    if (!is_array($responseIds))
+      return "curl request to $request failed. Response ".print_r($response, true);
+    $model_required_fields = self::expand_ids_to_fks($responseIds);
+    if (!empty($_POST))
+      $preset_fields = self::expand_ids_to_fks(array_keys($_POST));
+    else 
+      $preset_fields=array();
     if (!empty($preset_fields))
       $unlinked_fields = array_diff_key($fields, array_combine($preset_fields, $preset_fields));
     else
