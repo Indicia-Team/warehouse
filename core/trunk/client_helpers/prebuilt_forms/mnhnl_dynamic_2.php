@@ -44,6 +44,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
   protected static $svcUrl;
   protected static $currentUrl;
   protected static $gridmode;
+  protected static $node;
   
    /** 
    * Return the form metadata.
@@ -74,8 +75,9 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
               'field for linking to the data entry form.';
         $param['default'] = 'reports_for_prebuilt_forms/mnhnl_dynamic_2_supersamples';
       }
-      if($param['name'] != 'structure' && $param['name'] != 'includeLocTools'  && $param['name'] != 'no_grid')
+      if($param['name'] != 'structure' && $param['name'] != 'no_grid')
         $retVal[] = $param;
+      // Note the includeLocTools is left in in case any child forms use it 
     }
     $retVal = array_merge(
       $retVal,
@@ -209,6 +211,7 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
   	self::parse_defaults($args);
     self::getArgDefaults($args);
     self::$gridmode = false;
+    self::$node = $node;
     global $user;
     $logged_in = $user->uid>0;
     $r = '';
@@ -223,7 +226,15 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
     self::$svcUrl = data_entry_helper::$base_url.'/index.php/services';
     $mode = MODE_GRID; // default mode
     if ($_POST) {
-      if(array_key_exists('sample:parent_id', $_POST))
+      if(!array_key_exists('website_id', $_POST)) { // non Indicia POST, in this case must be the location allocations. add check to ensure we don't corrupt the data by accident
+        if(function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin') && array_key_exists('mnhnld2', $_POST)){
+          iform_loctools_deletelocations($node);
+          foreach($_POST as $key => $value){
+            $parts = explode(':', $key);
+            iform_loctools_insertlocation($node, $parts[2], $parts[1]);
+          }
+        }
+      } else if(array_key_exists('sample:parent_id', $_POST))
         $mode = MODE_POST_OCCURRENCE;
       else if(array_key_exists('newsample_parent_id', $_POST))
         $mode = MODE_NEW_OCCURRENCE;
@@ -248,13 +259,12 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
 //    } // else default to mode MODE_GRID
     self::$mode = $mode;
     self::$currentUrl = url('node/'.($node->nid));
-    // default mode  MODE_GRID : display grid of the samples to add a new one 
+    // default mode MODE_GRID : display grid of the samples to add a new one 
     // or edit an existing one.
     return call_user_func(array(get_called_class(), 'get_form_mode_'.$mode),$args, $node);
   }
   
   protected static function get_form_mode_1($args, $node){ // MODE_GRID
-    // no need to include iform_loctools at the moment.
     // TDB
     global $user;
     // get the CMS User ID attribute so we can filter the grid to this user
@@ -276,7 +286,21 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can '.
           'be tagged against the user.');
     }
-    $r = "<div id=\"sampleList\">";
+    $r = '';
+    if (method_exists(get_called_class(), 'getHeaderHTML')) $r .= call_user_func(array(get_called_class(), 'getHeaderHTML'), true, $args);
+    $tabs = array('#sampleList'=>lang::get('LANG_Main_Samples_Tab'));
+    if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
+      $tabs['#setLocations'] = lang::get('LANG_Allocate_Locations');
+    }
+    if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
+      $extraTabs = call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), false, self::$auth['read'], $args, $attributes);
+      if(is_array($extraTabs)) $tabs = $tabs + $extraTabs;
+    }
+    if(count($tabs) > 1){
+      $r .= "<div id=\"controls\">".(data_entry_helper::enable_tabs(array('divId'=>'controls','active'=>'#sampleList')))."<div id=\"temp\"></div>";
+      $r .= data_entry_helper::tab_header(array('tabs'=>$tabs));
+    }
+    $r .= "<div id=\"sampleList\">";
     $r .= data_entry_helper::report_grid(array(
       'id' => 'samples-grid',
       'dataSource' => $args['grid_report'],
@@ -287,8 +311,41 @@ class iform_mnhnl_dynamic_2 extends iform_mnhnl_dynamic_1 {
       'autoParamsForm' => true,
       'extraParams' => array('survey_id'=>$args['survey_id'])
     ));	
-    $r .= '<form><input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSuperSample')).'\'"></form>';
-      $r .= "</div>\n";
+    $r .= '<form><input type="button" value="'.lang::get('LANG_Add_Sample').'" onclick="window.location.href=\''.url('node/'.($node->nid), array('query' => 'newSuperSample')).'\'"></form></div>';
+    if($args['includeLocTools'] && function_exists('iform_loctools_checkaccess') && iform_loctools_checkaccess($node,'admin')){
+      $r .= '
+  <div id="setLocations">
+    <form method="post">
+      <input type="hidden" id="mnhnld2" name="mnhnld2" value="mnhnld2" /><table border="1"><tr><td></td>';
+      $url = self::$svcUrl.'/data/location?mode=json&view=detail&auth_token='.self::$auth['read']['auth_token']."&nonce=".self::$auth['read']["nonce"]."&parent_id=NULL&orderby=name".(isset($args['loctoolsLocTypeID'])&&$args['loctoolsLocTypeID']<>''?'&location_type_id='.$args['loctoolsLocTypeID']:'');
+      $session = curl_init($url);
+      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+      $entities = json_decode(curl_exec($session), true);
+      $userlist = iform_loctools_listusers($node);
+      foreach($userlist as $uid => $a_user){ $r .= '<td>'.$a_user->name.'</td>'; }
+      $r .= "</tr>";
+      if(!empty($entities)){
+        foreach($entities as $entity){
+          if(!$entity["parent_id"]){ // only assign parent locations.
+            $r .= "<tr><td>".$entity["name"]."</td>";
+            $defaultuserids = iform_loctools_getusers($node, $entity["id"]);
+            foreach($userlist as $uid => $a_user){
+                $r .= '<td><input type="checkbox" name="location:'.$entity["id"].':'.$uid.(in_array($uid, $defaultuserids) ? '" checked="checked"' : '"').'></td>';
+            }
+            $r .= "</tr>";
+      }}}
+      $r .= "</table>
+      <input type=\"submit\" class=\"ui-state-default ui-corner-all\" value=\"".lang::get('LANG_Save_Location_Allocations')."\" />
+    </form>
+  </div>";
+    }
+    if (method_exists(get_called_class(), 'getExtraGridModeTabs')) {
+      $r .= call_user_func(array(get_called_class(), 'getExtraGridModeTabs'), true, self::$auth['read'], $args, $attributes);
+    }
+    if(count($tabs)>1){ // close tabs div if present
+      $r .= "</div>";
+    }
+    if (method_exists(get_called_class(), 'getTrailerHTML')) $r .= call_user_func(array(get_called_class(), 'getTrailerHTML'), true, $args);
     return $r;
   }
   
@@ -847,7 +904,8 @@ jQuery('#new-subsample-button-grid').click(function(e) {
    * working.
    */
   protected function getArgDefaults(&$args) {
-    $args['includeLocTools'] == false; 
+    if (!isset($args['includeLocTools']))
+      $args['includeLocTools'] == false; 
   }
   
   protected function getSupersampleReportActions() {

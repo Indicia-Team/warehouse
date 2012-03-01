@@ -27,6 +27,11 @@ global $custom_terms;
  * @package	Client
  */
 $custom_terms = array(
+	'LANG_Main_Samples_Tab' => 'Surveys',
+	'LANG_SampleListGrid_Preamble' => 'Previously encoded survey list for ',
+	'LANG_All_Users' => 'all users',
+	'LANG_Allocate_Locations' => 'Allocate squares',
+	'LANG_Save_Location_Allocations' => 'Save',
 	'LANG_Date' => 'Date',
 	'LANG_Save' => 'Save',
 	'LANG_Save_Redisplay' => 'Save and Redisplay',

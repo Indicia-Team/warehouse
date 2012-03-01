@@ -1899,6 +1899,9 @@ jQuery('#".$options['mainFieldID']."').change(function(){
             'extraParams' => $auth['read'] + array('termlist_id'=>$args['siteNameTermListID'], 'orderby'=>'id'))));
     }
     $retVal .= "<input type='hidden' id=\"sample-location-name\" name=\"sample:location_name\" value='".data_entry_helper::$entity_to_load['sample:location_name']."' />";
+    if($args['includeLocTools'] && function_exists('iform_loctools_listlocations')){
+      $locations = iform_loctools_listlocations($node);
+    } else $locations = 'all';
     $locations = iform_loctools_listlocations($node);
     if($args['locationMode'] == 'parent' || $args['locationMode'] == 'multi'){
       if (!isset($args['loctoolsLocTypeID'])) return "locationMode == parent, loctoolsLocTypeID not set.";
