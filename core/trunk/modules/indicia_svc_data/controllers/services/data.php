@@ -606,28 +606,33 @@ class Data_Controller extends Data_Service_Base_Controller {
       $select = implode(', ', array_keys($this->db->list_fields($this->viewname)));
       $this->db->select($select);
     }
-    if (array_key_exists ('website_id', $this->view_columns)) {
-      if ($this->website_id) {
-        $this->db->in('website_id', array(null, $this->website_id));
-      } elseif ($this->in_warehouse && !$this->user_is_core_admin) {
-        // User is on Warehouse, but not core admin, so do a filter to all their websites.
-        $allowedWebsiteValues = array_merge($this->user_websites);
-        $allowedWebsiteValues[] = null;
-        $this->db->in('website_id', $allowedWebsiteValues);
-      }
-    } elseif (!$this->in_warehouse && !in_array($this->entity, $this->allow_full_access)) {
+    // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
+    if (!$this->in_warehouse && !array_key_exists ('website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
       // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
       Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
       throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
     }
-    // if requesting a single item in the segment, filter for it, otherwise use GET parameters to control the list returned
-    if ($this->uri->total_arguments()==0)
+    if ($this->uri->total_arguments()==0) {
+      // Loading a list of records (no record ID argument)
+      if (array_key_exists ('website_id', $this->view_columns)) {
+        // we have a filter on website_id to apply
+        if ($this->website_id) {
+          $this->db->in('website_id', array(null, $this->website_id));
+        } elseif ($this->in_warehouse && !$this->user_is_core_admin) {
+          // User is on Warehouse, but not core admin, so do a filter to all their websites.
+          $allowedWebsiteValues = array_merge($this->user_websites);
+          $allowedWebsiteValues[] = null;
+          $this->db->in('website_id', $allowedWebsiteValues);
+        }
+      }
+      // filter the list according to the parameters in the call
       $this->apply_get_parameters_to_db($count);
+    }
     else {
-     if (!$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id))
-      {
-      Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-          throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
+      // Loading a single record using an argument to identify the ID, so check we are allowed to
+      if (!$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id)) {
+        Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
+        throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
       }
       $this->db->where($this->viewname.'.id', $this->uri->argument(1));
     }
@@ -932,8 +937,8 @@ class Data_Controller extends Data_Service_Base_Controller {
           // there is an numeric id field so modifying an existing record
           if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id))
           {
-        Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-              throw new ServiceError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
+            Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
+            throw new ServiceError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
           }
     return true;
   }
@@ -944,26 +949,26 @@ class Data_Controller extends Data_Service_Base_Controller {
     if (is_null($id))
       return true;
     $table = inflector::plural($entity);
-      $viewname='list_'.$table;
-      $db = new Database;
-      $fields=$db->list_fields($viewname);
-//      Kohana::log('info', $viewname.' : '.$this->entity.' '.$entity);
-      if(empty($fields)) {
-         Kohana::log('info', $viewname.' not present - access denied');
-         throw new ServiceError('Access to entity '.$entity.' denied.');
-      }
-      $db->from($viewname);
-      $db->where(array('id' => $id));
+    $viewname='list_'.$table;
+    $db = new Database;
+    $fields=$db->list_fields($viewname);
+    if(empty($fields)) {
+      Kohana::log('info', $viewname.' not present - access denied');
+      throw new ServiceError('Access to entity '.$entity.' denied.');
+    }
+    $db->from("$viewname as record");
+    $db->where(array('record.id' => $id));
 
-      if(!in_array ($entity, $this->allow_full_access)) {
-          if(array_key_exists ('website_id', $fields))
-            {
-                $db->in('website_id', array(null, $this->website_id));
-            } elseif (!$this->in_warehouse) {
-                Kohana::log('info', $viewname.' does not have a website_id - access denied');
-                throw new ServiceError('No access to entity '.$entity.' allowed.');
-            }
+    if(!in_array ($entity, $this->allow_full_access)) {
+      if(array_key_exists ('website_id', $fields)) {
+        $db->join('index_websites_website_agreements as iwwa', 'iwwa.from_website_id', 'record.website_id', 'LEFT');
+        $db->where('record.website_id IS NULL');
+        $db->orwhere('iwwa.to_website_id', $this->website_id);
+      } elseif (!$this->in_warehouse) {
+        Kohana::log('info', $viewname.' does not have a website_id - access denied');
+        throw new ServiceError('No access to entity '.$entity.' allowed.');
       }
+    }
     $number_rec = $db->count_records();
     return ($number_rec > 0 ? true : false);
   }

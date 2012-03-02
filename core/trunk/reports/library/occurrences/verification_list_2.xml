@@ -7,19 +7,24 @@
   FROM cache_occurrences o
   JOIN samples s on s.id=o.sample_id
   LEFT JOIN locations l ON l.id=s.location_id
-  LEFT JOIN occurrence_comments oc ON oc.occurrence_id=o.id AND oc.deleted=false
-      AND oc.implies_manual_check_required=true
+  LEFT JOIN (select occurrence_id, generated_by, max(comment) as comment from occurrence_comments 
+      where deleted=false AND implies_manual_check_required=true 
+      group by occurrence_id, generated_by
+      limit 1
+  ) oc ON oc.occurrence_id=o.id 
+  #agreements_join#
   #joins#
-  WHERE #website_filter#
+  WHERE #sharing_filter# 
   AND (o.id=#id# OR #id# = 0)
   AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='' OR #id#&lt;&gt;0)
   AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date) OR #id#&lt;&gt;0)
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date) OR #id#&lt;&gt;0)
   AND (o.record_status = '#record_status#' OR '#record_status#' = 'all' OR #id#&lt;&gt;0)
   AND (
-    ('#rule#'='all' AND oc.id is not null) 
+    ('#rule#'='')
+    OR ('#rule#'='all' AND oc.occurrence_id is not null) 
     OR (oc.generated_by = 'verification_check_#rule#')
-    OR ('#rule#'='none' AND oc.id is null)
+    OR ('#rule#'='none' AND oc.occurrence_id is null)
     OR #id#&lt;&gt;0
   )
   AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
@@ -40,7 +45,7 @@
     <param name='record_status' display='Record Status' description='Select the record status to view data for' datatype='lookup'
         lookup_values='all:All,C:Complete,R:Rejected,S:Sent for verification,V:Verified' />
     <param name='rule' display='Verification Rules' description='Select the rules to view records for' datatype='lookup'
-        lookup_values='all:All violations,none:Clean records,period_within_year:Period within year,period_within_year_breeding:Breeding period,period:Period,species_designation:Designated species' emptyvalue='all' />
+        lookup_values='all:All violations,none:Clean records,period_within_year:Period within year,period_within_year_breeding:Breeding period,period:Period,species_designation:Designated species' />
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
     <param name='expertise_location' display='Location of Expertise' description='Provide the location in which your expertise applies' datatype='lookup' 
@@ -52,7 +57,7 @@
     </param>
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='o.id' distincton='true' />
+    <column name='occurrence_id' display='ID' sql='o.id' />
     <column name='sample_id' visible='false' sql='o.sample_id' />
     <column name='taxon' display='Species' sql='o.taxon' />
     <column name='common' display='Common' sql='o.default_common_name' />
