@@ -1611,6 +1611,12 @@ class data_entry_helper extends helper_base {
   * If taxonFilterField is not set to none, then pass an array of values to filter against, i.e. an array of
   * taxon preferred names, taxon meaning ids or taxon group titles.
   * </li>
+  * <li><b>speciesNameFilterMode</b><br/>
+  * Optional. Method of filtering the available species names (both for initial population into the grid and additional rows). Options are
+  *   preferred - only preferred names
+  *   currentLanguage - only names in the language identified by the language option are included
+  *   excludeSynonyms - all names except synonyms (non-preferred latin names) are included.
+  * </li>
   * <li><b>header</b><br/>
   * Include a header row in the grid? Defaults to true.</li>
   * <li><b>columns</b><br/>
@@ -1658,7 +1664,7 @@ class data_entry_helper extends helper_base {
   * for each cell containing an attribute input control. Valid replacements are {label}, {class} and {content}.
   * Default is attribute_cell.</li>
   * <li><b>language</b><br/>
-  * language used to filter lookup list items in attributes..</li>
+  * Language used to filter lookup list items in attributes. ISO 639:3 format. </li>
   * <li><b>PHPtaxonLabel</b></li>
   * If set to true, then the taxon_label template should contain a PHP statement that returns the HTML to display for each
   * taxon's label. Otherwise the template should be plain HTML. Defaults to false.
@@ -1674,9 +1680,29 @@ class data_entry_helper extends helper_base {
           'at the same time has having the occurrenceImages option enabled.');
     self::add_resource('json');
     self::add_resource('autocomplete');
-    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))  {
-      $qryJson = json_encode(array('in'=>array($options['taxonFilterField'], $options['taxonFilter'])));
-      self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = {query:'$qryJson'};\n";
+    $filterArray = array();
+    $query = array();
+    if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))
+      $query['in'] = array($options['taxonFilterField'], $options['taxonFilter']);
+    if (isset($options['speciesNameFilterMode'])) {
+      switch($options['speciesNameFilterMode']) {
+        case 'preferred' :
+          $filterArray['preferred']='t';
+          break;
+        case 'currentLanguage' :
+          if (isset($options['language']))
+            $filterArray['language']=$options['language'];
+          break;
+        case 'excludeSynonyms':
+          $query['where'] = array("(preferred='t' OR language<>'lat')");
+          break;
+      }
+    }
+    if (count($query))
+      $filterArray['query'] = json_encode($query);
+    if (count($filterArray)) {
+      $filterParam = json_encode($filterArray);
+      self::$javascript .= "indiciaData['taxonExtraParams-".$options['id']."'] = $filterParam;\n";
     }
     if ($options['occurrenceImages']) {
       self::add_resource('plupload');
@@ -1994,10 +2020,10 @@ class data_entry_helper extends helper_base {
    * @return array The taxon list to store in the grid.
    */
   private static function get_species_checklist_taxa_list($options, &$taxaThatExist) {
-    // Get the list of species that are always added to the grid
+    // Get the list of species that are always added to the grid, by first building a filter
     if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))  {
-      $qryJson = json_encode(array('in'=>array($options['taxonFilterField'], $options['taxonFilter'])));
-      $options['extraParams']['query']=$qryJson;
+      $qry = array('in'=>array($options['taxonFilterField'], $options['taxonFilter']));
+      $options['extraParams']['query']=json_encode($qry);
     }
     if (isset($options['listId']) && !empty($options['listId'])) {
       $taxalist = self::get_population_data($options);

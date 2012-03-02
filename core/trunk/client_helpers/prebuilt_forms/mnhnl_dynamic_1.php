@@ -404,7 +404,8 @@ class iform_mnhnl_dynamic_1 {
           'options' => array(
             'all' => 'All names are available',
             'language' => 'Only allow selection of species using common names in the user\'s language',
-            'preferred' => 'Only allow selection of species using names which are flagged as preferred'            
+            'preferred' => 'Only allow selection of species using names which are flagged as preferred',
+            'excludeSynonyms' => 'Allow common names or preferred latin names'
           ),
           'default' => 'all',
           'group'=>'Species'
@@ -887,12 +888,6 @@ class iform_mnhnl_dynamic_1 {
   protected static function get_control_species($auth, $args, $tabalias, $options) {
     global $user;
     $extraParams = $auth['read'];
-    if ($args['species_names_filter']=='preferred') {
-      $extraParams += array('preferred' => 't');
-    }
-    if ($args['species_names_filter']=='language') {
-      $extraParams += array('language' => iform_lang_iso_639_2($user->lang));
-    }
     if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
       $filterLines = helper_base::explode_lines($args['taxon_filter']);
       if ($args['multiple_occurrence_mode'] !== 'single' && $args['taxon_filter_field']!=='taxon_group' && count($filterLines)===1) {
@@ -914,8 +909,10 @@ class iform_mnhnl_dynamic_1 {
           'extraParams' => $auth['read'] + $filter
         );
         $response =data_entry_helper::get_population_data($options);
-        if (count($response)!==1)
+        if (count($response)===0)
           throw new exception(lang::get('Failed to find the single species that this form is setup to record in the defined list.'));
+        if (count($response)>1)
+          throw new exception(lang::get('This form is setup for single species recording, but more than one species with the same name exists in the list.'));          
         return '<input type="hidden" name="occurrence:taxa_taxon_list_id" value="'.$response[0]['id']."\"/>\n";
       }
     }
@@ -932,7 +929,8 @@ class iform_mnhnl_dynamic_1 {
           'occurrenceImages'=>$args['occurrence_images'],
           'PHPtaxonLabel' => true,
           'language' => iform_lang_iso_639_2($user->lang), // used for termlists in attributes
-          'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup']
+          'cacheLookup' => isset($args['cache_lookup']) && $args['cache_lookup'],
+          'speciesNameFilterMode' => self::getSpeciesNameFilterMode($args),          
       ), $options);
       if ($args['extra_list_id']) $species_ctrl_opts['lookupListId']=$args['extra_list_id'];
       if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
@@ -991,6 +989,23 @@ class iform_mnhnl_dynamic_1 {
       // Dynamically generate the species selection control required.
       return call_user_func(array('data_entry_helper', $args['species_ctrl']), $species_ctrl_opts);
     }
+  }
+  
+  /**
+   * Function to map from the species_names_filter argument to the speciesNamesFilterMode required by the 
+   * checklist grid. For legacy reasons they don't quite match.
+   */
+  protected static function getSpeciesNameFilterMode($args) {
+    if (isset($args['species_names_filter'])) {
+      switch ($args['species_names_filter']) {
+        case 'language':
+          return 'currentLanguage';
+        default:
+          return $args['species_names_filter'];
+      }
+    }
+    // default is no species name filter.
+    return false;
   }
   
   /**
