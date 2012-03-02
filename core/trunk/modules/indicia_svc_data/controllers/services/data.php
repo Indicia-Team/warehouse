@@ -856,7 +856,10 @@ class Data_Controller extends Data_Service_Base_Controller {
           if (isset($foundfield) && isset($foundvalue)) {
             // id fields must be queried by Where clause not Like.
             if ($foundfield=='id') $this_cmd = str_replace('like', 'where', $cmd);
-            if ($this_cmd == $cmd || !empty($foundvalue)) $this->db->$this_cmd($infield,$foundvalue);
+            if ($this_cmd == $cmd || !empty($foundvalue)) $this->db->$this_cmd($foundfield,$foundvalue);
+          } elseif (isset($foundfield) && ($cmd==='where' || $cmd==='orwhere')) {
+            // with just 1 parameter passed through, a where can contain something more complex such as an OR in brackets.
+            $this->db->$cmd($foundfield);
           }
           break;
         default:
