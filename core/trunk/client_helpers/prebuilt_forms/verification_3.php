@@ -67,10 +67,14 @@ class iform_verification_3 {
             'default' => '[
               {"fieldname":"occurrence_id","template":"<div class=\'status-{record_status}\'>{occurrence_id}<\/div>","display":"ID"},
               {"fieldname":"taxon","display":"Species","template":"<div class=\'zero-{zero_abundance}\'>{taxon}<br\/>{common}<\/div>"},
+              {"fieldname":"location_name","display":"Site Name"},
+              {"fieldname":"entered_sref","display":"Grid Ref"},
+              {"fieldname":"date","display":"Date"},
+              {"fieldname":"comment","display":"Check"},
               {"fieldname":"record_status","visible":false},
               {"fieldname":"common","visible":false},
               {"fieldname":"zero_abundance","visible":false},
-              {"fieldname":"comment","display":"Check"}
+              {"fieldname":"taxon_group","visible":false}
             ]',
             'schema' => '{
     "type":"seq",
@@ -228,7 +232,6 @@ class iform_verification_3 {
         $param['default']='library/occurrences/verification_list_2';
       elseif ($param['name']=='param_presets') {
         $param['default'] = 'survey_id=
-taxon_group_id=
 date_from=
 date_to=
 smpattrs=
@@ -237,7 +240,7 @@ occattrs=';
       elseif ($param['name']=='param_defaults')
         $param['default'] = 'id=
 record_status=C
-rule=all
+rule=
 searchArea=
 idlist=';
       
