@@ -107,10 +107,12 @@ class import_helper extends helper_base {
         $formOptions['presetParams'] = $options['presetSettings'];
       }
       $r .= self::build_params_form($formOptions);
-      // The presets might contain some extra values to apply to every row - must be output as hiddens
-      $extraHiddens = array_diff_key($options['presetSettings'], $formArray);      
-      foreach ($extraHiddens as $hidden=>$value) 
-        $r .= "<input type=\"hidden\" name=\"$hidden\" value=\"$value\" />\n";
+      if (isset($options['presetSettings'])) {
+        // The presets might contain some extra values to apply to every row - must be output as hiddens
+        $extraHiddens = array_diff_key($options['presetSettings'], $formArray);      
+        foreach ($extraHiddens as $hidden=>$value) 
+          $r .= "<input type=\"hidden\" name=\"$hidden\" value=\"$value\" />\n";
+      }
       $r .= '<input type="hidden" name="import_step" value="1" />';
       $r .= '<input type="submit" name="submit" value="'.lang::get('Next').'" class="ui-corner-all ui-state-default button" />';
       // copy any $_POST data into the form, as this would mean preset values that are provided by the form which the uploader
