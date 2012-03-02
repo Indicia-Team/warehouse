@@ -515,8 +515,8 @@ idlist=';
   public static function ajax_details($website_id, $password) {
     iform_load_helpers(array('data_entry_helper'));
     $auth = data_entry_helper::get_read_auth($website_id, $password);
-    data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id']);
-    data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id']);
+    data_entry_helper::load_existing_record($auth, 'occurrence', $_GET['occurrence_id'], 'detail', 'verification');
+    data_entry_helper::load_existing_record($auth, 'sample', data_entry_helper::$entity_to_load['occurrence:sample_id'], 'detail', 'verification');
     $siteLabels = array();
     if (!empty(data_entry_helper::$entity_to_load['sample:location'])) $siteLabels[] = data_entry_helper::$entity_to_load['sample:location'];
     if (!empty(data_entry_helper::$entity_to_load['sample:location_name'])) $siteLabels[] = data_entry_helper::$entity_to_load['sample:location_name'];
@@ -537,7 +537,7 @@ idlist=';
         'key'=>'sample_id',
         'extraParams'=>$auth,
         'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
-    ));
+    ), true, 'verification');
     if (!empty(data_entry_helper::$entity_to_load['sample:parent_id'])) {
       $parentAttrs = data_entry_helper::getAttributes(array(
         'id' => data_entry_helper::$entity_to_load['sample:parent_id'],
@@ -546,7 +546,7 @@ idlist=';
         'key'=>'sample_id',
         'extraParams'=>$auth,
         'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
-      ));
+      ), true, 'verification');
     } else
       $parentAttrs = array();
     $occAttrs = data_entry_helper::getAttributes(array(
@@ -556,7 +556,7 @@ idlist=';
         'key'=>'occurrence_id',
         'extraParams'=>$auth,
         'survey_id'=>data_entry_helper::$entity_to_load['occurrence:survey_id']
-    ));
+    ), true, 'verification');
     $attributes = array_merge($parentAttrs, $smpAttrs, $occAttrs);
     foreach($attributes as $attr) {
       $data[] = array('caption'=>lang::get($attr['caption']), 'value'=>$attr['displayValue']);
@@ -618,7 +618,8 @@ idlist=';
     $images = data_entry_helper::get_population_data(array(
       'table' => 'occurrence_image',
       'extraParams'=>$auth + array('occurrence_id'=>$_GET['occurrence_id']),
-      'nocache'=>true
+      'nocache'=>true,
+      'sharing'=>'verification'
     ));
     $r = '';
     if (count($images)===0) 
@@ -646,7 +647,8 @@ idlist=';
     $comments = data_entry_helper::get_population_data(array(
       'table' => 'occurrence_comment',
       'extraParams' => $auth + array('occurrence_id'=>$_GET['occurrence_id'], 'sortdir'=>'DESC', 'orderby'=>'updated_on'),
-      'nocache'=>true
+      'nocache'=>true,
+      'sharing'=>'verification'
     ));
     $r = '';
     if (count($comments)===0) 

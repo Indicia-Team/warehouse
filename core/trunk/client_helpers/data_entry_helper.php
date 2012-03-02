@@ -2768,9 +2768,11 @@ $('div#$escaped_divId').indiciaTreeBrowser({
    * Method which populates data_entry_helper::$entity_to_load with the values from an existing
    * record. Useful when reloading data to edit.
    */
-  public static function load_existing_record($readAuth, $model, $id, $view='detail') {
+  public static function load_existing_record($readAuth, $model, $id, $view='detail', $sharing=false) {
     $url = self::$base_url."index.php/services/data/$model/$id";
     $url .= "?mode=json&view=$view&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce'];
+    if ($sharing) 
+      $url .= "&sharing=$sharing";
     $session = curl_init($url);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $entity = json_decode(curl_exec($session), true);
@@ -2794,11 +2796,14 @@ $('div#$escaped_divId').indiciaTreeBrowser({
   /**
    * Issue a post request to get the population data required for a control. Depends on the
    * options' table and extraParams values what is requested. This is now cacheable.
-   * NB that this function only uses the 'table', 'report' and 'extraParams' of $options. If $options
-   * contains a value for nocache=true then caching is skipped as well.
+   * NB that this function only uses the 'table', 'report' and 'extraParams' of $options. $options 
+   * supports the following additional settings: 
+   * nocache - if set to true then caching is skipped.
+   * sharing - set to verification, reporting, peer_review, moderation or data_flow to request
+   * data sharing with other websites for the task.
    * When generating the cache for this data we need to use the table and
    * any extra params, excluding the read_auth and the nonce. The cache should be
-   * used by all accesses to the DB.
+   * used by all accesses to the DB.   
    */
   public static function get_population_data($options) {
     if (isset($options['report']))
@@ -2836,6 +2841,10 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     else
       $cacheOpts['table'] = $options['table'];
     $cacheOpts['indicia_website_id'] = self::$website_id;
+    if (isset($options['sharing'])) {
+      $cacheOpts['sharing']=$options['sharing'];
+      $request .= '&sharing='.$options['sharing'];
+    }
     /* If present 'auth_token' and 'nonce' are ignored as these are session dependant. */
     if (array_key_exists('auth_token', $cacheOpts)) {
       unset($cacheOpts['auth_token']);
@@ -3892,10 +3901,12 @@ if (errors.length>0) {
   * </ul>
   * @param optional boolean $indexedArray default true. Determines whether the return value is an array indexed by PK, or whether it
   * is ordered as it comes from the database (ie block weighting). Needs to be set false if data is to be used by get_attribute_html.
+  * @param string $sharing Set to verification, peer_review, moderation, data_flow or reporting to indicate the task being performed, if
+  * sharing data with other websites. If not set then only data from the current website is available.
   *
   * @return Associative array of attributes, keyed by the attribute ID (multiValue=false) or <attribute ID>:<attribute value ID> if multiValue=true.
   */
-  public static function getAttributes($options, $indexedArray = true) {
+  public static function getAttributes($options, $indexedArray = true, $sharing=false) {
     $attrs = array();
     $query = array();
     self::add_resource('json');
@@ -3934,6 +3945,8 @@ if (errors.length>0) {
              'orderby'=>'weight'
            )
     );
+    if ($sharing)
+      $attrOptions['sharing'] = $sharing;
     $response = self::get_population_data($attrOptions);
     if (array_key_exists('error', $response))
       return $response;
@@ -3943,6 +3956,8 @@ if (errors.length>0) {
         'table'=>$options['valuetable'],
         'cachetimeout' => 0, // can't cache
         'extraParams'=> $options['extraParams']);
+      if ($sharing)
+        $existingValuesOptions['sharing'] = $sharing;
       $valueResponse = self::get_population_data($existingValuesOptions);
       if (array_key_exists('error', $valueResponse))
         return $valueResponse;
