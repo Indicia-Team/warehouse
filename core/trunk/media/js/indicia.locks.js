@@ -187,17 +187,25 @@
     var escId = esc4jq(id);
     var escControlId = escId.replace('_lock', '');
     if ($('#' + escId).hasClass('locked-icon')) {
-      $('#' + escControlId).attr('readonly', 'readonly').attr('disabled',
-          'disabled').filter('.hasDatepicker').datepicker('disable');
-      $('input[id*=' + escControlId + '\\:]').filter(
-          '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr(
-          'disabled', 'disabled').autocomplete('disable');
+      if (typeof $.datepicker!=="undefined") {
+        $('#' + escControlId).attr('readonly', 'readonly').attr('disabled',
+            'disabled').filter('.hasDatepicker').datepicker('disable');
+      }
+      if (typeof $.autocomplete!=="undefined") {
+        $('input[id*=' + escControlId + '\\:]').filter(
+            '.ac_input, .ui-autocomplete').attr('readonly', 'readonly').attr(
+            'disabled', 'disabled').autocomplete('disable');
+      }
     } else {
-      $('#' + escControlId).removeAttr('readonly').removeAttr('disabled')
-          .filter('.hasDatepicker').datepicker('enable');
-      $('input[id*=' + escControlId + '\\:]').filter(
-          '.ac_input, .ui-autocomplete').removeAttr('readonly').removeAttr(
-          'disabled').autocomplete('enable');
+      if (typeof $.datepicker!=="undefined") {
+        $('#' + escControlId).removeAttr('readonly').removeAttr('disabled')
+            .filter('.hasDatepicker').datepicker('enable');
+      }
+      if (typeof $.autocomplete!=="undefined") {
+        $('input[id*=' + escControlId + '\\:]').filter(
+            '.ac_input, .ui-autocomplete').removeAttr('readonly').removeAttr(
+            'disabled').autocomplete('enable');
+      }
     }
   };
 
