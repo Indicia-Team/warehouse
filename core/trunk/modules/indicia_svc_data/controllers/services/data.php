@@ -603,7 +603,10 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->db->from($this->viewname);
     // Select all the table columns from the view
     if (!$count) {
-      $select = implode(', ', array_keys($this->db->list_fields($this->viewname)));
+      $fields = array_keys($this->db->list_fields($this->viewname));
+      foreach($fields as &$field) 
+        $field = $this->viewname.'.'.$field;
+      $select = implode(', ', $fields);
       $this->db->select($select);
     }
     // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
@@ -612,35 +615,49 @@ class Data_Controller extends Data_Service_Base_Controller {
       Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
       throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
     }
-    if ($this->uri->total_arguments()==0) {
-      // Loading a list of records (no record ID argument)
-      if (array_key_exists ('website_id', $this->view_columns)) {
-        // we have a filter on website_id to apply
-        if ($this->website_id) {
-          $this->db->in('website_id', array(null, $this->website_id));
-        } elseif ($this->in_warehouse && !$this->user_is_core_admin) {
-          // User is on Warehouse, but not core admin, so do a filter to all their websites.
-          $allowedWebsiteValues = array_merge($this->user_websites);
-          $allowedWebsiteValues[] = null;
-          $this->db->in('website_id', $allowedWebsiteValues);
+    
+    // Loading a list of records (no record ID argument)
+    if (array_key_exists ('website_id', $this->view_columns)) {      
+    // we have a filter on website_id to apply
+      if ($this->website_id) {
+        // check if a request for shared data is being made. Also check this is valid to prevent injection.
+        if (isset($_REQUEST['sharing']) && preg_match('/[reporting|peer_review|verification|data_flow|moderation]/', $_REQUEST['sharing'])) {
+          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
+          // we can use this to work out access to other website data.
+          $this->db->join('index_websites_website_agreements as iwwa', array(
+              'iwwa.from_website_id'=>$this->viewname.'.website_id',
+              'iwwa.receive_for_'.$_REQUEST['sharing']."='t'"=>''
+          ), NULL, 'LEFT');
+          $this->db->where('(' . $this->viewname.'.website_id IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
+        } else {
+          $this->db->in($this->viewname.'.website_id', array(null, $this->website_id));
         }
+      } elseif ($this->in_warehouse && !$this->user_is_core_admin) {
+        // User is on Warehouse, but not core admin, so do a filter to all their websites.
+        $allowedWebsiteValues = array_merge($this->user_websites);
+        $allowedWebsiteValues[] = null;
+        $this->db->in('website_id', $allowedWebsiteValues);
       }
+    }
+    if ($this->uri->total_arguments()==0) {
       // filter the list according to the parameters in the call
       $this->apply_get_parameters_to_db($count);
     }
     else {
-      // Loading a single record using an argument to identify the ID, so check we are allowed to
-      if (!$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id)) {
-        Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-        throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
-      }
       $this->db->where($this->viewname.'.id', $this->uri->argument(1));
     }
     try {
       if ($count)
         return $this->db->count_records();
-      else
-        return $this->db->get()->result_array(FALSE);
+      else {
+        $r = $this->db->get()->result_array(FALSE);
+        // If we got no record but asked for a specific one, check if this was a permissions issue?
+        if (!count($r) && $this->uri->total_arguments()!==0 && !$this->check_record_access($this->entity, $this->uri->argument(1), $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false)) {
+          Kohana::log('info', 'Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
+          throw new ServiceError('Attempt to access existing record failed - website_id '.$this->website_id.' does not match website for '.$this->entity.' id '.$this->uri->argument(1));
+        }
+        return $r;
+      }
     }
     catch (Exception $e) {
       kohana::log('error', 'Error occurred running the following query from a service request:');
@@ -943,7 +960,7 @@ class Data_Controller extends Data_Service_Base_Controller {
     return true;
   }
 
-  protected function check_record_access($entity, $id, $website_id)
+  protected function check_record_access($entity, $id, $website_id, $sharing=false)
   {
     // if $id is null, then we have a new record, so no need to check if we have access to the record
     if (is_null($id))
@@ -961,9 +978,19 @@ class Data_Controller extends Data_Service_Base_Controller {
 
     if(!in_array ($entity, $this->allow_full_access)) {
       if(array_key_exists ('website_id', $fields)) {
-        $db->join('index_websites_website_agreements as iwwa', 'iwwa.from_website_id', 'record.website_id', 'LEFT');
-        $db->where('record.website_id IS NULL');
-        $db->orwhere('iwwa.to_website_id', $this->website_id);
+        // check if a request for shared data is being made. Also check this is valid to prevent injection.
+        if ($sharing && preg_match('/[reporting|peer_review|verification|data_flow|moderation]/', $sharing)) {
+          // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
+          // we can use this to work out access to other website data.
+          $db->join('index_websites_website_agreements as iwwa', array(
+              'iwwa.from_website_id'=>'record.website_id',
+              'iwwa.receive_for_'.$sharing."='t'"=>''
+          ), NULL, 'LEFT');
+          $db->where('record.website_id IS NULL');
+          $db->orwhere('iwwa.to_website_id', $this->website_id);
+        } else {
+          $db->where('record.website_id', $this->website_id);
+        }
       } elseif (!$this->in_warehouse) {
         Kohana::log('info', $viewname.' does not have a website_id - access denied');
         throw new ServiceError('No access to entity '.$entity.' allowed.');

@@ -10,7 +10,6 @@
   LEFT JOIN (select occurrence_id, generated_by, max(comment) as comment from occurrence_comments 
       where deleted=false AND implies_manual_check_required=true 
       group by occurrence_id, generated_by
-      limit 1
   ) oc ON oc.occurrence_id=o.id 
   #agreements_join#
   #joins#
