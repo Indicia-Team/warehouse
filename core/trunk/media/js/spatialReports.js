@@ -19,10 +19,13 @@ function storeGeomsInHiddenInput(layer, inputId) {
   "use strict";
   var geoms=[], featureClass='', geom;
   $.each(layer.features, function(i, feature) {
-    if (feature.geometry.CLASS_NAME.contains('Multi')) {
-      geoms = geoms.concat(feature.geometry.components);
-    } else {
-      geoms.push(feature.geometry);
+    // ignore features with a special purpose, e.g. the selected record when verifying
+    if (typeof feature.tag==="undefined") {
+      if (feature.geometry.CLASS_NAME.contains('Multi')) {
+        geoms = geoms.concat(feature.geometry.components);
+      } else {
+        geoms.push(feature.geometry);
+      }
     }
   });
   if (geoms.length===0) {
@@ -93,7 +96,10 @@ function enableBuffering() {
     );
     div.map.addLayer(bufferLayer);
     div.map.editLayer.events.register('featureadded', div.map.editLayer, function(evt) {
-      bufferFeature(evt.feature);
+      // don't buffer special polygons
+      if (typeof evt.feature.tag==="undefined") {
+        bufferFeature(evt.feature);
+      }
     });
     div.map.editLayer.events.register('featuresremoved', div.map.editLayer, function(evt) {
       buffers = [];
