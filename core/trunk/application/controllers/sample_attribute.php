@@ -35,7 +35,10 @@ class Sample_attribute_Controller extends Attr_Gridview_Base_Controller {
     parent::__construct();
   }
 
-   public function save() {
+  /** 
+   * Override saave to store the applies_to_location field. 
+   */
+  public function save() {
     if ($_POST['metaFields:disabled_input'] == 'NO') {
       // Make sure checkboxes have a value.
       // @todo: If we use Indicia client helper controls for the attribute edit page, this becomes unnecessary

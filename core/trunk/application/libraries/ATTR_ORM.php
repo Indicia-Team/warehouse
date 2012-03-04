@@ -50,6 +50,13 @@ abstract class ATTR_ORM extends Valid_ORM {
     // clean up cached required fields in case validation rules have changed
     $cache=Cache::instance();
     $cache->delete_tag('required-fields');
+    if ($save && $parent_valid) {
+      // clear the cache used for attribute datatype and validation rules since the attribute has changed
+      $cache = new Cache;
+      // Type is the object name with _attribute stripped from the end
+      $type = substr($this->object_name, 0, strlen($this->object_name)-10);
+      $cache->delete('attrInfo_'.$type.'_'.$this->id);
+    }
     return $save && $parent_valid;
   }
 

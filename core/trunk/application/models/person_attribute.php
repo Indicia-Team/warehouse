@@ -41,6 +41,11 @@ class Person_Attribute_Model extends ATTR_ORM {
 
   protected $has_and_belongs_to_many = array('websites');
   
+  public function validate(Validation $array, $save = FALSE) {
+    $this->unvalidatedFields = array('synchronisable');
+    return parent::validate($array, $save);
+  }
+  
   /**
    * After saving, ensures that the join records linking the attribute to a website are created or deleted.
    * @return boolean Returns true to indicate success. 

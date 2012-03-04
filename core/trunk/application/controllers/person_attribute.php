@@ -35,6 +35,18 @@ class Person_attribute_Controller extends Attr_Gridview_Base_Controller {
     parent::__construct();
   }
   
+  /** 
+   * Override saave to store the synchronisable field. 
+   */
+  public function save() {
+    if ($_POST['metaFields:disabled_input'] == 'NO') {
+      // Make sure checkboxes have a value.
+      // @todo: If we use Indicia client helper controls for the attribute edit page, this becomes unnecessary
+      if (!array_key_exists($this->model->object_name.':synchronisable', $_POST)) $_POST[$this->model->object_name.':synchronisable'] = '0';
+    }
+    parent::save();
+  }
+  
   /**
    * Returns the shared view for all custom attribute edits.
    */

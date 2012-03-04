@@ -155,6 +155,11 @@ $(document).ready(function() {
   <?php echo form::checkbox($model->object_name.':applies_to_location', TRUE, (html::initial_value($values, $model->object_name.':applies_to_location') == 't'), 'class="vnarrow" '.$enabled ) ?>
   </li>
   <?php endif; ?>
+  <?php if ($model->object_name=='person_attribute') : ?>
+  <li><label class="wide" for="public">Synchronisable with client website user profiles:</label>
+  <?php echo form::checkbox($model->object_name.':synchronisable', TRUE, (html::initial_value($values, $model->object_name.':synchronisable') == 't'), 'class="vnarrow" '.$enabled ) ?>
+  </li>
+  <?php endif; ?>
 </ol>
 </fieldset>
 <fieldset

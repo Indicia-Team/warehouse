@@ -44,14 +44,19 @@ abstract class Attribute_Value_ORM extends ORM {
     // table to the value given.
     if (array_key_exists($type.'_attribute_id', $array->as_array())) {
       $id = $values[$type.'_attribute_id'];
-      // Use query builder, a bit faster than ORM
-      $attr = $this->db
-            ->select('data_type, validation_rules')
-            ->from($type.'_attributes')
-            ->where('id',$id)
-            ->get();
+      // Load the attribute datatype and validation rules from the cache to improve save performance.
+      $cache = new Cache;
+      if (!$attr = $cache->get('attrInfo_'.$type.'_'.$id)) {
+        // Use query builder, a bit faster than ORM
+        $attr = $this->db
+              ->select('data_type, validation_rules')
+              ->from($type.'_attributes')
+              ->where('id',$id)
+              ->get()->result_array(false);
+        $cache->set('attrInfo_'.$type.'_'.$id, $attr);
+      }
       $attr = $attr[0];
-      switch ($attr->data_type) {
+      switch ($attr['data_type']) {
       case 'T':
         $vf = 'text_value';
         break;
@@ -84,13 +89,17 @@ abstract class Attribute_Value_ORM extends ORM {
         $vf = 'int_value';
       }
       // Now get the global custom attribute validation rules for the attribute
-      if ($attr->validation_rules != '') {
-        $rules = explode("\n", $attr->validation_rules);
+      if ($attr['validation_rules'] != '') {
+        $rules = explode("\n", $attr['validation_rules']);
         foreach ($rules as $a){
           $array->add_rules($vf, trim($a));
         }
+      } else {
+        $this->unvalidatedFields[] = $vf;
       }
       // Now get the survey specific custom attribute validation rules for the attribute
+      // @todo: Are there opportunities to cache this information as this is called for each
+      // attribute value saved and causes a query to be issued to the db.
       if (method_exists($this, 'get_survey_specific_rules')) {
         $aw = $this->get_survey_specific_rules($values);
         if (count($aw)>0) {
