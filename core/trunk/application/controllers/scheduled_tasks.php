@@ -63,6 +63,7 @@ class Scheduled_Tasks_Controller extends Controller {
   */
   protected function checkTriggers() {
     echo "Checking triggers<br/>";
+    kohana::log('info', "Checking triggers");
     $this->db = new Database();
     // Get a list of all the triggers that have at least one action
     $result = $this->getTriggerQuery();
@@ -133,6 +134,7 @@ class Scheduled_Tasks_Controller extends Controller {
   */
   private function doDigestNotifications($swift) {
     echo "<br/>Checking notifications<br/>";
+    kohana::log('info', "Checking notifications");
     // First, build a list of the notifications we are going to do
     $digestTypes = array('I');
     $date = getdate();
@@ -417,6 +419,7 @@ class Scheduled_Tasks_Controller extends Controller {
       $last_run_date = $system->getLastScheduledTaskCheck($plugin);
       // grab the time before we start, so there is no chance of a record coming in while we run that is missed.
       $currentTime = time();
+      kohana::log('info', "Calling " . $plugin . "_scheduled_task");
       call_user_func($plugin.'_scheduled_task', $last_run_date);
       // mark the time of the last scheduled task check, so we can get diffs next time
       $this->db->update('system', array('last_scheduled_task_check'=>"'" . date('c', $currentTime) . "'"), array('name' => $plugin));
