@@ -243,7 +243,10 @@ class report_helper extends helper_base {
   * <li><b>sharing</b>
   * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
-  * verification, moderation, peer_review or data_flow.</li>  
+  * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
+  * <li><b>UserId</b>
+  * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+  * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -639,7 +642,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li><b>sharing</b>
   * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
-  * verification, moderation, peer_review or data_flow.</li>  
+  * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
+  * <li><b>UserId</b>
+  * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+  * </li>
   * </ul>
   * @todo look at the ReportEngine to check it is not prone to SQL injection (eg. offset, limit).
   * @link http://www.jqplot.com/docs/files/jqplot-core-js.html#Series
@@ -835,7 +841,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li><b>sharing</b>
   * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
-  * verification, moderation, peer_review or data_flow.</li>  
+  * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
+  * <li><b>UserId</b>
+  * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+  * </li>
   * </ul>
   */
   public static function freeform_report($options) {
@@ -1013,7 +1022,10 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   * <li><b>sharing</b>
   * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
   * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
-  * verification, moderation, peer_review or data_flow.</li>  
+  * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
+  * <li><b>UserId</b>
+  * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+  * </li>
   * </ul>
   */
   public static function report_map($options) {
@@ -1217,7 +1229,10 @@ mapSettingsHooks.push(function(opts) {
    * <li><b>sharing</b>
    * Assuming the report has been written to take account of website sharing agreements, set this to define the task 
    * you are performing with the report and therefore the type of sharing to allow. Options are reporting (default), 
-   * verification, moderation, peer_review or data_flow.</li>     
+   * verification, moderation, peer_review, data_flow, website (this website only) or me (my data only).</li>
+   * <li><b>UserId</b>
+   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
+   * </li>
    * </ul>
    
    * @param string $extra Any additional parameters to append to the request URL, for example orderby, limit or offset.
@@ -1267,6 +1282,8 @@ mapSettingsHooks.push(function(opts) {
     // Pass through the type of data sharing
     if (isset($options['sharing']))
       $request .= '&sharing='.$options['sharing'];
+    if (isset($options['userId']))
+      $request .= '&user_id='.$options['userId'];
     if (isset($options['linkOnly']) && $options['linkOnly']) {
       return $request;
     }
