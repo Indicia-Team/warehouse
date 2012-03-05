@@ -21,8 +21,8 @@
       AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
       AND ( 
           (o.record_status='V') OR
-          ('#quality#'='C' AND certainty.sort_order&lt;=#maxcertain#) OR
-          ('#quality#'='L' AND certainty.sort_order&lt;=#maxlikely#) OR
+          ('#quality#'='C' AND (certainty.sort_order&lt;=#maxcertain# OR certainty.id IS NULL)) OR
+          ('#quality#'='L' AND (certainty.sort_order&lt;=#maxlikely# OR certainty.id IS NULL)) OR
           ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
           ('#quality#'='!R')
       )
@@ -56,7 +56,7 @@
       <columns>
             <column name="id" visible="false" distincton="true" sql="l.id" unique="true" />
             <column name="name" display="Site Name" style="background-color: #e7e7e7;" sql="l.name" />
-            <column name="boundary" display="Boundary" sql="st_astext(COALESCE(l.boundary_geom, l.centroid_geom))" visible="false" mappable="true"/>
+            <column name="boundary" display="Boundary" sql="st_astext(ST_SnapToGrid(ST_Simplify(COALESCE(l.boundary_geom, l.centroid_geom), 100), 100, 100))" visible="false" mappable="true"/>
             <column name="value" display="No. of Records" distincton="true" aggregate="true" sql="count(distinct o.id)" in_count="false"/>
             <column name="minvalue" visible="false" aggregate="true" sql="0" />
             <column name="maxvalue" visible="false" aggregate="true" sql="max(count(distinct o.id)) OVER ()" />

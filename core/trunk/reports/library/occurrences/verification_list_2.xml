@@ -6,6 +6,7 @@
   SELECT #columns#
   FROM cache_occurrences o
   JOIN samples s on s.id=o.sample_id
+  JOIN websites w on w.id=o.website_id 
   LEFT JOIN locations l ON l.id=s.location_id
   LEFT JOIN (select occurrence_id, generated_by, max(comment) as comment from occurrence_comments 
       where deleted=false AND implies_manual_check_required=true 
@@ -57,6 +58,7 @@
   </params>
   <columns>
     <column name='occurrence_id' display='ID' sql='o.id' />
+    <column name='website' display='Source' sql='w.title' />
     <column name='sample_id' visible='false' sql='o.sample_id' />
     <column name='taxon' display='Species' sql='o.taxon' />
     <column name='common' display='Common' sql='o.default_common_name' />
