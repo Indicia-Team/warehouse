@@ -1,4 +1,7 @@
-.government-logo,.naturemwelt-logo,#iform-header {
+#iform-header {
+  height: 108px;
+}
+.government-logo,.naturemwelt-logo {
   height: 100px;
 }
 .gabriel-lippmann-logo {
