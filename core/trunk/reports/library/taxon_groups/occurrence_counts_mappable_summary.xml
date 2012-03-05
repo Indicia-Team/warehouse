@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="Record counts by taxon group" description="Lists taxon groups and the number of records within them. ">
-      <query>
+      <query website_filter_field="o.website_id">
       SELECT #columns#
       FROM taxon_groups tg
       LEFT JOIN cache_occurrences o on o.taxon_group_id=tg.id

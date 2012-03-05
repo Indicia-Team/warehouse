@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <report title="Species record counts by year" description="Lists years and the number of species recorded for each. ">
-      <query>
+      <query website_filter_field="o.website_id">
         SELECT #columns#
         FROM cache_occurrences o
         #agreements_join#
