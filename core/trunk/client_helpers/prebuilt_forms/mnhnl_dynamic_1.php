@@ -958,7 +958,27 @@ class iform_mnhnl_dynamic_1 {
         $extraParams['taxon_list_id'] = array($args['list_id'], $args['extra_list_id']);
       if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter']))
         // filter the taxa available to record
-        $extraParams['query'] = json_encode(array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter']))));
+        $query = array('in'=>array($args['taxon_filter_field'], helper_base::explode_lines($args['taxon_filter'])));
+      else 
+        $query = array();
+      // Apply the species names filter to the single species picker control
+      if (isset($args['species_names_filter'])) {
+        $languageFieldName = isset($args['cache_lookup']) && $args['cache_lookup'] ? 'language_iso' : 'language';
+        switch($args['species_names_filter']) {
+          case 'preferred' :
+            $extraParams += array('preferred'=>'t');
+            break;
+          case 'currentLanguage' :
+            if (isset($options['language']))
+              $extraParams += array($languageFieldName=>$options['language']);
+            break;
+          case 'excludeSynonyms':
+            $query['where'] = array("(preferred='t' OR $languageFieldName<>'lat')");
+            break;
+        }
+      }
+      if (count($query)) 
+        $extraParams['query'] = json_encode($query);
       $species_ctrl_opts=array_merge(array(
           'label'=>lang::get('occurrence:taxa_taxon_list_id'),
           'fieldname'=>'occurrence:taxa_taxon_list_id',
@@ -970,6 +990,8 @@ class iform_mnhnl_dynamic_1 {
           'extraParams'=>$extraParams,
           'blankText'=>'Please select'
       ), $options);
+      if (isset($args['cache_lookup']) && $args['cache_lookup'])
+        $species_ctrl_opts['extraParams']['view']='cache';
       global $indicia_templates;
       if (isset($args['species_include_both_names']) && $args['species_include_both_names']) {
         if ($args['species_names_filter']=='all')

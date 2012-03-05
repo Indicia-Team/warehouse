@@ -185,8 +185,6 @@ class data_entry_helper extends helper_base {
       'url' => parent::$base_url."index.php/services/data",
       'inputId' => $options['id'].':'.$options['captionField'],
       // Escape the ids for jQuery selectors
-      //'escaped_input_id' => str_replace(':', '\\\\:', $options['inputId']),
-      //'escaped_id' => str_replace(':', '\\\\:', $options['id']),
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
       'defaultCaption' => self::check_default_value($options['inputId'],
@@ -199,6 +197,8 @@ class data_entry_helper extends helper_base {
     // Do stuff with extraParams
     $sParams = '';
     foreach ($options['extraParams'] as $a => $b){
+      // escape single quotes
+      $b = str_replace("'","\'",$b);
       $sParams .= "$a : '$b',";
     }
     // lop the comma off the end
@@ -1685,16 +1685,17 @@ class data_entry_helper extends helper_base {
     if (preg_match('/^(preferred_name|taxon_meaning_id|taxon_group)$/', $options['taxonFilterField']))
       $query['in'] = array($options['taxonFilterField'], $options['taxonFilter']);
     if (isset($options['speciesNameFilterMode'])) {
+      $languageFieldName = isset($options['cacheLookup']) && $options['cacheLookup'] ? 'language_iso' : 'language';
       switch($options['speciesNameFilterMode']) {
         case 'preferred' :
           $filterArray['preferred']='t';
           break;
         case 'currentLanguage' :
           if (isset($options['language']))
-            $filterArray['language']=$options['language'];
+            $filterArray[$languageFieldName]=$options['language'];
           break;
         case 'excludeSynonyms':
-          $query['where'] = array("(preferred='t' OR language<>'lat')");
+          $query['where'] = array("(preferred='t' OR $languageFieldName<>'lat')");
           break;
       }
     }
