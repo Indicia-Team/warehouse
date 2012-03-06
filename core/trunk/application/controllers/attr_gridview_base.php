@@ -35,7 +35,6 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
   public function __construct()
   {
     parent::__construct($this->prefix.'_attribute', 'custom_attribute/index');
-    // $this->pagetitle = ucfirst($this->prefix).' Attributes';
     $this->pagetitle = ucwords(str_replace('_', ' ', $this->prefix)).' Attributes';
     $this->columns = array
     (
