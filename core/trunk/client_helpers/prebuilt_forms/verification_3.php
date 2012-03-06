@@ -294,6 +294,11 @@ idlist=';
   private static function get_template_with_map($args, $auth, $extraParams, $paramDefaults) {
     $r .= '<div id="outer-with-map" class="ui-helper-clearfix">';
     $r .= '{paramsForm}';
+    $r .= '<div id="grid" style="clear:both;">{grid}';
+    // Insert a button to verify all visible, only available if viewing the clean records.
+    if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
+      $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
+    $r .= '</div>';
     $r .= '<div id="map-and-record" style="clear: both;"><div id="summary-map" class="left">';
     $options = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
@@ -341,12 +346,7 @@ idlist=';
     $r .= '<div id="details-tab"></div>';    
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
-    $r .= '</div></div></div></div>';
-    $r .= '<div id="grid" style="clear:both;">{grid}';
-    // Insert a button to verify all visible, only available if viewing the clean records.
-    if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
-      $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
-    $r .= '</div></div>';
+    $r .= '</div></div></div></div></div>';
     return $r;
   }
   

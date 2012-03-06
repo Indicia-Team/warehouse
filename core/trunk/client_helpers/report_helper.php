@@ -295,7 +295,7 @@ class report_helper extends helper_base {
             if ($sortAndPageUrlParams['orderby']['value']==$field['orderby'] && $sortAndPageUrlParams['sortdir']['value']!='DESC')
               $sortLink .= '&'.$sortAndPageUrlParams['sortdir']['name']."=DESC";
             if (!isset($field['img']) || $field['img']!='true')
-              $caption = "<a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
+              $captionLink = "<a href=\"$sortLink\" rel=\"nofollow\" title=\"Sort by $caption\">$caption</a>";
             // set a style for the sort order
             $orderStyle = ($sortAndPageUrlParams['orderby']['value']==$field['orderby']) ? ' '.$sortdirval : '';
             $orderStyle .= ' sortable';
@@ -304,9 +304,18 @@ class report_helper extends helper_base {
             $orderStyle = '';
             $fieldId = '';
           }
-          $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
+          $r .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
           if (isset($field['datatype'])) {
-            $filterRow .= '<th><input title="test" type="text" class="col-filter" id="col-filter-'.$field['fieldname'].'"/></th>';
+            switch ($field['datatype']) {
+              case 'text': 
+                $title=lang::get("$caption search. Use * as a wildcard.");
+                break;
+              case 'date':
+                $title=lang::get("$caption search. Search for an exact date or use a vague<br/> date such as a year to select a range of dates.");
+                break;
+              default: $title=lang::get("$caption search. Enter an exact number or use > or < as the first character to<br/>filter for greater than or less than a value.");
+            }
+            $filterRow .= "<th><input title=\"$title\" type=\"text\" class=\"col-filter\" id=\"col-filter-".$field['fieldname']."\"/></th>";
             $wantFilterRow = true;
           } else
             $filterRow .= '<th></th>';
@@ -408,6 +417,7 @@ class report_helper extends helper_base {
       self::$javascript .= "
 if (typeof indiciaData.reports==='undefined') { indiciaData.reports={}; }
 if (typeof indiciaData.reports.$group==='undefined') { indiciaData.reports.$group={}; }
+simple_tooltip('input.col-filter','tooltip');
 indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   id: '".$options['id']."',
   mode: '".$options['mode']."',

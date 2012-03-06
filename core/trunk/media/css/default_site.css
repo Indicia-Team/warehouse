@@ -620,3 +620,16 @@ span.ind-cancel-icon {
   margin: 0;
   width: 100%;
 }
+
+/* Tooltips for the report grid */
+.tooltip{
+  position:absolute;
+  left:-2000px;
+  background-color:#fefede;
+  padding:5px;
+  border:1px solid #fff;
+}
+
+.tooltip p {
+  margin: 0;
+}

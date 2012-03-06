@@ -19,6 +19,48 @@
  */
 
 /**
+ *Function to enable tooltips for the filter inputs
+ */
+function simple_tooltip(target_items, name){
+  $(target_items).each(function(i){
+    $("body").append("<div class='"+name+"' id='"+name+i+"'><p>"+$(this).attr('title')+"</p></div>");
+    var my_tooltip = $("#"+name+i);
+    if (my_tooltip.width() > 450) {
+      my_tooltip.css({width:"450px"});
+    }
+
+    if ($(this).attr("title") != "" && $(this).attr("title") != "undefined") {
+
+      $(this).removeAttr("title").mouseover(function(){
+        my_tooltip.css({opacity:0.8, display:"none"}).fadeIn(400);
+      }).mousemove(function(kmouse){
+        var border_top = $(window).scrollTop(); 
+        var border_right = $(window).width();
+        var left_pos;
+        var top_pos;
+        var offset = 20;
+        if(border_right - (offset *2) >= my_tooltip.width() + kmouse.pageX){
+          left_pos = kmouse.pageX+offset;
+        } else {
+          left_pos = border_right-my_tooltip.width()-offset;
+        }
+
+        if(border_top + (offset *2)>= kmouse.pageY - my_tooltip.height()){
+          top_pos = border_top +offset;
+        } else {
+          top_pos = kmouse.pageY-offset;
+        }	
+        my_tooltip.css({left:left_pos, top:top_pos});
+      }).mouseout(function(){
+        my_tooltip.css({left:"-9999px"});				  
+      });
+
+    }
+
+  });
+}
+
+/**
  * JQuery report grid widget for Indicia. Note that this is designed to attach to an already
  * loaded HTML grid (loaded using PHP on page load), and provides AJAX pagination and sorting without
  * page refreshes. It does not do the initial grid load operation.
@@ -455,14 +497,21 @@
         load(div, false);
       });
       
-      $(this).find('th .col-filter').blur(function(e) {
+      var doFilter = function(e) {
         var fieldname = e.target.id.substr(11);
         if ($(e.target).val().trim()==='') {
           delete div.settings.extraParams[fieldname];
         } else {
           div.settings.extraParams[fieldname] = $(e.target).val();
         }
-        load(div, false);
+        load(div, true);
+      };
+      
+      $(this).find('th .col-filter').blur(doFilter);
+      $(this).find('th .col-filter').keypress(function(e) {
+        if (e.keyCode===13) {
+          doFilter(e);
+        }
       });
 
       setupReloadLinks(div);
