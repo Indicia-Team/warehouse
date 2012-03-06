@@ -28,6 +28,7 @@
     s.id as sample_id,
     su.title as survey,
     COALESCE(l.name, s.location_name) as location_name,
+    l.id as location_id,
     l.code,
     s.entered_sref,
     s.date_start,

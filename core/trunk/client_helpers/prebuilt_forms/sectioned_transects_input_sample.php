@@ -172,8 +172,8 @@ class iform_sectioned_transects_input_sample {
       $r .= '<input type="hidden" name="sample:entered_sref" value="'.$site['centroid_sref'].'"/>';
       $r .= '<input type="hidden" name="sample:entered_sref_system" value="'.$site['centroid_sref_system'].'"/>';
     }
-    if ($locationId && isset(data_entry_helper::$entity_to_load['sample:id'])) {
-      // for reload of existing, don't let the user switch the transect as that would mess everything up.
+    if ($locationId && (isset(data_entry_helper::$entity_to_load['sample:id']) || isset($_GET['site']))) {
+      // for reload of existing or the the site is specified in the URL, don't let the user switch the transect as that would mess everything up.
       $r .= '<label>'.lang::get('Transect').':</label><span>'.$site['name'].'</span><br/>';
     } else {
       // Output only the locations for this website and transect type. Note we load both transects and sections, just so that
@@ -220,10 +220,15 @@ class iform_sectioned_transects_input_sample {
       'sample_method_id'=>$sampleMethods[0]['id']
     ));
     $r .= get_user_profile_hidden_inputs($attributes, $args, '', $auth['read']);
-    $r .= data_entry_helper::date_picker(array(
-      'label' => lang::get('Date'),
-      'fieldname' => 'sample:date',
-    ));
+    if(isset($_GET['date'])){
+      $r .= '<input type="hidden" name="sample:date" value="'.$_GET['date'].'"/>';
+      $r .= '<label>'.lang::get('Date').':</label><span>'.$_GET['date'].'</span><br/>';
+    } else {
+      $r .= data_entry_helper::date_picker(array(
+        'label' => lang::get('Date'),
+        'fieldname' => 'sample:date',
+      ));
+    }
     // are there any option overrides for the custom attributes?
     $blockOptions = array();
     if (isset($args['custom_attribute_options']) && $args['custom_attribute_options']) {
