@@ -48,6 +48,11 @@ class XMLReportReader_Core implements ReportReader
    * sql for the columns list.
    */
   private $hasColumnsSql = false;
+  
+  /**
+   * @var array List of column definitions that have data type and sql defined so therefore allow filtering.
+   */
+  public $filterableColumns = array();
 
   /**
    * @var boolean Identify if we have got SQL defined for aggregated fields. If so we need to implement a group by for
@@ -645,6 +650,9 @@ class XMLReportReader_Core implements ReportReader
     // remember if we have info required to auto-build the column SQL, plus aggregate fields
     $this->hasColumnsSql = $this->hasColumnsSql || isset($this->columns[$name]['sql']);
     $this->hasAggregates = $this->hasAggregates || (isset($this->columns[$name]['aggregate']) && $this->columns[$name]['aggregate']=='true');
+    // do we have any datatype attributes, used for column based filtering? Data types can't be used without the SQL
+    if (isset($this->columns[$name]['datatype']) && isset($this->columns[$name]['sql']))
+      $this->filterableColumns[$name] = $this->columns[$name];
   }
 
   private function mergeColumn($name, $display = '', $style = '', $feature_style='', $class='', $visible='', $img='', $orderby='', $mappable='', $autodef=true)

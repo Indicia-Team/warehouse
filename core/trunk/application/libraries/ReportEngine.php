@@ -739,6 +739,25 @@ class ReportEngine {
         $field=$this->customAttributes[$name]['field'];
         $query = str_replace('#filters#', "AND $field=$value\n#filters#", $query);
       }
+      elseif (isset($this->reportReader->filterableColumns[$name])) {
+        $field = $this->reportReader->filterableColumns[$name]['sql'];
+        if ($this->reportReader->filterableColumns[$name]['datatype']=='text') {
+          // quote text values and replace * wildcards with SQL friendly ones.
+          $value="'".str_replace('*','%',$value)."'";
+          $operator='ILIKE';
+        } elseif ($this->reportReader->filterableColumns[$name]['datatype']=='date') {
+          // quote date values 
+          $value="'".str_replace('*','%',$value)."'";
+        } elseif (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>') {
+          // any other data type is not quoted, and supports > or < operators
+          $operator=substr($value, 0, 1);
+          $value = substr($value, 1); 
+        } else 
+          $operator='=';
+        
+         
+        $query = str_replace('#filters#', "AND $field $operator $value\n#filters#", $query);
+      }
     }
     // remove the marker left in the query to show where to insert joins
     $query = str_replace(array('#joins#','#fields#','#group_bys#','#filters#'), array('','','',''), $query);

@@ -57,19 +57,19 @@
     </param>
   </params>
   <columns>
-    <column name='occurrence_id' display='ID' sql='o.id' />
-    <column name='website' display='Source' sql='w.title' />
-    <column name='sample_id' visible='false' sql='o.sample_id' />
-    <column name='taxon' display='Species' sql='o.taxon' />
-    <column name='common' display='Common' sql='o.default_common_name' />
-    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' />   
-    <column name='location_name' display='Site name' sql='COALESCE(l.name, s.location_name)' />
-    <column name='entered_sref' display='SRef' sql='s.entered_sref' />
-    <column name='date' display='Date' sql='o.date_start' />
+    <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' />
+    <column name='website' display='Source' sql='w.title' datatype="text" />
+    <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
+    <column name='taxon' display='Species' sql='o.taxon' datatype='text' />
+    <column name='common' display='Common' sql='o.default_common_name' datatype='text'/>
+    <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
+    <column name='location_name' display='Site name' sql='COALESCE(l.name, s.location_name)' datatype='text' />
+    <column name='entered_sref' display='SRef' sql='s.entered_sref' datatype='text' />
+    <column name='date' display='Date' sql='o.date_start' datatype='date' />
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' />
-    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' />
+    <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
     <column name='record_status' display='State' sql='o.record_status' />
-    <column name='comment' display='Check' sql='oc.comment' />
+    <column name='comment' display='Check' sql='oc.comment' datatype='text' />
     <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
     <column name='strokewidth' visible='false' feature_style="strokeWidth" sql='length(s.entered_sref) / 3' />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(s.entered_sref) / 24.0' />
