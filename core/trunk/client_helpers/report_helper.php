@@ -279,6 +279,8 @@ class report_helper extends helper_base {
           ''
       );
       $sortdirval = $sortAndPageUrlParams['sortdir']['value'] ? strtolower($sortAndPageUrlParams['sortdir']['value']) : 'asc';
+      // Flag if we know any column data types and therefore can display a filter row
+      $wantFilterRow=false;
       // Output the headers. Repeat if galleryColCount>1;
       for ($i=0; $i<$options['galleryColCount']; $i++) {
         foreach ($options['columns'] as $field) {
@@ -303,9 +305,17 @@ class report_helper extends helper_base {
             $fieldId = '';
           }
           $r .= "<th$fieldId class=\"$thClass$orderStyle\">$caption</th>\n";
+          if (isset($field['datatype'])) {
+            $filterRow .= '<th><input title="test" type="text" class="col-filter" id="col-filter-'.$field['fieldname'].'"/></th>';
+            $wantFilterRow = true;
+          } else
+            $filterRow .= '<th></th>';
         }
       }
-      $r .= "</tr></thead>\n";
+      $r .= "</tr>";
+      if ($wantFilterRow)
+        $r .= "<tr class=\"filter-row\">$filterRow</tr>\n";
+      $r .= "</thead>\n";
     }
     $currentUrl = self::get_reload_link_parts();
     // automatic handling for Drupal clean urls.
@@ -1290,6 +1300,7 @@ mapSettingsHooks.push(function(opts) {
     else {
       $response = self::http_post($request, null);
       $decoded = json_decode($response['output'], true);
+      watchdog('debug', print_r($decoded, true));
       if (empty($decoded)) 
         return array('error'=>print_r($response, true));
       else
@@ -1454,7 +1465,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $idx=0;
       if (!isset($options['columns']))
         $options['columns'] = array();
-      foreach ($options['columns'] as $col) {
+      foreach ($options['columns'] as &$col) {
         if (isset($col['fieldname'])) $specifiedCols[] = $col['fieldname'];
         // action columns need to be removed and added to the end
         if (isset($col['actions'])) {
@@ -1463,6 +1474,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
           $actionCols[] = $col;
         }
         $idx++;
+        // datatype of column always defined in the server XML report file. Copy into the col def
+        if (array_key_exists($col['fieldname'], $response['columns'])) {
+          if (isset($response['columns'][$col['fieldname']]['datatype']))
+            $col['datatype']=$response['columns'][$col['fieldname']]['datatype'];
+        }
       }
       foreach ($response['columns'] as $resultField => $value) {
         if (!in_array($resultField, $specifiedCols)) {

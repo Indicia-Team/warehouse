@@ -453,7 +453,17 @@
         // Change sort to this column [DESC?]
         // reload the data
         load(div, false);
-      });    
+      });
+      
+      $(this).find('th .col-filter').blur(function(e) {
+        var fieldname = e.target.id.substr(11);
+        if ($(e.target).val().trim()==='') {
+          delete div.settings.extraParams[fieldname];
+        } else {
+          div.settings.extraParams[fieldname] = $(e.target).val();
+        }
+        load(div, false);
+      });
 
       setupReloadLinks(div);
 
@@ -463,7 +473,7 @@
       }
      
     });
-  };
+  }
 }(jQuery));
 
 /**

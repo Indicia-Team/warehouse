@@ -607,3 +607,16 @@ span.ind-cancel-icon {
 	background-image: url(../images/cancel.png);
 	margin: 0.5em;
 }
+
+.filter-row {
+  background: #ffffff;
+}
+
+.filter-row th {
+  padding: 0;
+}
+
+.filter-row input {
+  margin: 0;
+  width: 100%;
+}
