@@ -741,22 +741,8 @@ class ReportEngine {
       }
       elseif (isset($this->reportReader->filterableColumns[$name])) {
         $field = $this->reportReader->filterableColumns[$name]['sql'];
-        if ($this->reportReader->filterableColumns[$name]['datatype']=='text') {
-          // quote text values and replace * wildcards with SQL friendly ones.
-          $value="'".str_replace('*','%',$value)."'";
-          $operator='ILIKE';
-        } elseif ($this->reportReader->filterableColumns[$name]['datatype']=='date') {
-          // quote date values 
-          $value="'".str_replace('*','%',$value)."'";
-        } elseif (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>') {
-          // any other data type is not quoted, and supports > or < operators
-          $operator=substr($value, 0, 1);
-          $value = substr($value, 1); 
-        } else 
-          $operator='=';
-        
-         
-        $query = str_replace('#filters#', "AND $field $operator $value\n#filters#", $query);
+        $filterClause = $this->getFilterClause($field, $this->reportReader->filterableColumns[$name]['datatype'], $operator, $value);
+        $query = str_replace('#filters#', "AND $filterClause\n#filters#", $query);
       }
     }
     // remove the marker left in the query to show where to insert joins
@@ -786,6 +772,29 @@ class ReportEngine {
       $query = preg_replace("/#order_by#/",  "", $query);
     }
     return $query;
+  }
+  
+  private function getFilterClause($field, $datatype, &$operator, &$value) {
+    if ($datatype=='text') {
+      // quote text values and replace * wildcards with SQL friendly ones.
+      $value=str_replace('*','%',$value);
+      $operator='ILIKE';
+    } else 
+      $operator = '='; 
+    // apart from text and date values we can use > or < to set the filter operator
+      if ($datatype!='text' && $datatype!='date' && (substr($value, 0, 1)=='<' || substr($value, 0, 1)=='>')) {
+      $operator=substr($value, 0, 1);
+      $value = substr($value, 1);
+    }
+    if ($datatype=='text') 
+      // quote text and date values 
+      $value="'".$value."'";
+    if ($datatype != 'date') 
+      return "$field $operator $value";
+    else {
+      $vaguedate = vague_date::string_to_vague_date($value);
+      return "($field >= '".$vaguedate[0]."' AND $field <= '".$vaguedate[1]."')";
+    }
   }
 
   /**
