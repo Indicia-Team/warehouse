@@ -281,6 +281,7 @@ class report_helper extends helper_base {
       $sortdirval = $sortAndPageUrlParams['sortdir']['value'] ? strtolower($sortAndPageUrlParams['sortdir']['value']) : 'asc';
       // Flag if we know any column data types and therefore can display a filter row
       $wantFilterRow=false;
+      $filterRow='';
       // Output the headers. Repeat if galleryColCount>1;
       for ($i=0; $i<$options['galleryColCount']; $i++) {
         foreach ($options['columns'] as $field) {
@@ -1310,7 +1311,6 @@ mapSettingsHooks.push(function(opts) {
     else {
       $response = self::http_post($request, null);
       $decoded = json_decode($response['output'], true);
-      watchdog('debug', print_r($decoded, true));
       if (empty($decoded)) 
         return array('error'=>print_r($response, true));
       else
