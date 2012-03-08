@@ -66,6 +66,7 @@ class iform_verification_3 {
             'type' => 'jsonwidget',
             'default' => '[
               {"fieldname":"occurrence_id","template":"<div class=\'status-{record_status}\'>{occurrence_id}<\/div>","display":"ID"},
+              {"fieldname":"website","display":"Source"},
               {"fieldname":"taxon","display":"Species","template":"<div class=\'zero-{zero_abundance}\'>{taxon}<br\/>{common}<\/div>"},
               {"fieldname":"location_name","display":"Site Name"},
               {"fieldname":"entered_sref","display":"Grid Ref"},
@@ -293,13 +294,12 @@ idlist=';
   
   private static function get_template_with_map($args, $auth, $extraParams, $paramDefaults) {
     $r .= '<div id="outer-with-map" class="ui-helper-clearfix">';
-    $r .= '{paramsForm}';
-    $r .= '<div id="grid" style="clear:both;">{grid}';
+    $r .= '<div id="grid" class="left" style="width:65%">{paramsForm}{grid}';
     // Insert a button to verify all visible, only available if viewing the clean records.
     if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
       $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
     $r .= '</div>';
-    $r .= '<div id="map-and-record" style="clear: both;"><div id="summary-map" class="left">';
+    $r .= '<div id="map-and-record" class="right" style="width: 34%"><div id="summary-map">';
     $options = iform_map_get_map_options($args, $auth);
     $olOptions = iform_map_get_ol_options($args);
     // This is used for drawing, so need an editlayer, but not used for input
@@ -323,7 +323,7 @@ idlist=';
       'clickableLayersOutputMode' => 'report'
     ));
     $r .= '</div>';
-    $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
+    $r .= '<div id="record-details-wrap" class="ui-widget ui-widget-content">';
     $r .= self::instructions('grid below');    
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';

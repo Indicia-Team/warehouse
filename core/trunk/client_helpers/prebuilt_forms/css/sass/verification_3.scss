@@ -17,20 +17,18 @@ $selected-font-color: #ffffff;
 
 #outer-grid-left #grid {
   width: 55%;
-}
-
-#outer-with-map #summary-map {
-  width: 55%;
+  
+  #record-details-wrap {
+    width: 44%;
+    overflow: auto;
+  }
 }
 
 #grid {
   overflow: auto;
 }
 
-#record-details-wrap {
-  width: 44%;
-  overflow: auto;
-}
+
 
 table.report-grid {
   font-size: 80%;  

@@ -184,6 +184,9 @@ function extract_cms_user_attr(&$attributes, $unset=true) {
  * @return string HTML for the hidden inputs.
  */
 function get_user_profile_hidden_inputs(&$attributes, $args, $mode, $readAuth) {
+  // This is Drupal specific code, so degrade gracefully.
+  if (!function_exists('profile_load_all_profile'))
+    return '';
   $hiddens = '';
   global $user;
   $logged_in = $user->uid>0;
