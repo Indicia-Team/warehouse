@@ -31,10 +31,10 @@ class User_Identifier_Controller extends Service_Base_Controller {
   /**
    * Service method that takes list of user identifiers and returns the appropriate user ID
    * from the warehouse, which can then be used in subsequent calls to save the data. Takes the 
-   * following parameters in the $_GET or $_POST data:<ul>
+   * following parameters in the $_GET or $_POST data in addition to a nonce and auth_token for a write operation:<ul>
    * <li><strong>identifiers</strong/><br/>
    * Required. A JSON encoded array of identifiers known for the user. Each array entry is an object 
-   * with a type (e.g. twitter, openid) and identifier (e.g. twitter account). An identifier of type
+   * with a type property (e.g. twitter, openid) and identifier property (e.g. twitter account). An identifier of type
    * email must be provided in case a new user account has to be created on the warehouse.</li>
    * <li><strong>surname</strong/><br/>
    * Required. Surname of the user, enabling a new user account to be created on the warehouse.</li>
@@ -69,6 +69,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
    *     then use users_to_merge to supply an array of the user IDs that should be merged. Alternatively, if 
    *     force=split is passed through then the best fit user ID is returned and no merge operation occurs.
    *   error - Error string if an error occurred.
+   * @link http://code.google.com/p/indicia/wiki/WebServicesUserIdentifiers
    */
   public function get_user_id() {
     try {
