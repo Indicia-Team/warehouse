@@ -48,30 +48,42 @@ class User_Identifier_Controller extends Service_Base_Controller {
    * <li><strong>users_to_merge</strong/><br/>
    * If force=merge, then this parameter can be optionally used to limit the list of users in the merge operation.
    * Pass a JSON encoded array of user IDs.</li>
+   * <li><strong>attribute_values</strong>
+   * Optional list of custom attribute values for the person which have been modified on the client website
+   * and should be synchronised into the warehouse person record. The custom attributes must already exist
+   * on the warehouse and have a matching caption, as well as being marked as synchronisable or the attribute
+   * values will be ignored. Provide this as a JSON object with the properties being the caption of the 
+   * attribute and the values being the values to change.
+   * </li>
    * </ul>
-   * @return mixed The user ID for the existing or newly created account. Alternatively
-   * if more than one match is found, then returns a JSON encoded lists of people that 
-   * match from the warehouse - each with the user ID, website ID and website title they are
-   * members of. If this happens then the client must ask the user to confirm that they 
-   * are the same person as the users of this website and if so, the response is sent back with a force=merge
-   * parameter to force the merge of the people. If they are the same person as only some of the other users,
-   * then use users_to_merge to supply an array of the user IDs that should be merged. Alternatively, if 
-   * force=split is passed through then the best fit user ID is returned and no merge operation occurs.
+   * @return JSON JSON object containing the following properties:
+   *   userId - If a single user account has been identified then returns the Indicia user ID for the existing 
+   *     or newly created account. Otherwise not returned.
+   *   attrs - If a single user account has been identifed then returns a list of captions and values for the 
+   *     attributes to update on the client account.
+   *   possibleMatches - If a list of possible users has been identified then this property includes a list of people that 
+   *     match from the warehouse - each with the user ID, website ID and website title they are
+   *     members of. If this happens then the client must ask the user to confirm that they 
+   *     are the same person as the users of this website and if so, the response is sent back with a force=merge
+   *     parameter to force the merge of the people. If they are the same person as only some of the other users,
+   *     then use users_to_merge to supply an array of the user IDs that should be merged. Alternatively, if 
+   *     force=split is passed through then the best fit user ID is returned and no merge operation occurs.
+   *   error - Error string if an error occurred.
    */
   public function get_user_id() {
-    if (!array_key_exists('identifiers', $_REQUEST))
-      throw new exception('Error: missing identifiers parameter');
-    $identifiers = json_decode($_REQUEST['identifiers']);
-    if (!is_array($identifiers))
-      throw new Exception('Error: identifiers parameter not of correct format');
-    if (!isset($_REQUEST['surname']))
-      throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
-    // We don't need a website_id in the request as the authentication data contains it, but
-    // we do need to know the cms_user_id so that we can ensure any previously recorded data for
-    // this user is attributed correctly to the warehouse user.
-    if (!isset($_REQUEST['cms_user_id']))
-      throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
     try {
+      if (!array_key_exists('identifiers', $_REQUEST))
+        throw new exception('Error: missing identifiers parameter');
+      $identifiers = json_decode($_REQUEST['identifiers']);
+      if (!is_array($identifiers))
+        throw new Exception('Error: identifiers parameter not of correct format');
+      if (!isset($_REQUEST['surname']))
+        throw new exception('Call to get_user_id requires a surname in the GET or POST data.');
+      // We don't need a website_id in the request as the authentication data contains it, but
+      // we do need to know the cms_user_id so that we can ensure any previously recorded data for
+      // this user is attributed correctly to the warehouse user.
+      if (!isset($_REQUEST['cms_user_id']))
+        throw new exception('Call to get_user_id requires a cms_user_id in the GET or POST data.');
       // authenticate requesting website for this service. This can create a user, so need write
       // permission.
       $this->authenticate('write');
@@ -83,14 +95,31 @@ class User_Identifier_Controller extends Service_Base_Controller {
       // email is a special identifier used to create person.
       $email = null;
       foreach ($identifiers as $identifier) {
-        $this->db->select('um.user_id')
-            ->from('user_identifiers as um')
-            ->join('termlists_terms as tlt1', array('tlt1.id'=>'um.type_id'))
-            ->join('termlists_terms as tlt2', array('tlt2.meaning_id'=>'tlt1.meaning_id'))
-            ->join('terms as t', array('t.id'=>'tlt2.term_id'))
-            ->join('users as u', array('u.id'=>'um.user_id'))
+        // store the email address, since this is always required to create a person
+        if ($identifier->type==='email') {
+          $email=$identifier->identifier;
+          // The query to find an existing user is slightly different for emails, since the 
+          // email can be in the user identifier list or the person record
+          $joinType='LEFT';
+        } else
+          $joinType='INNER';
+        $this->db->select('DISTINCT um.user_id, u.person_id')
+            ->from('users as u')
             ->join('people as p', 'p.id', 'u.person_id')
-            ->where(array('um.identifier'=>$identifier->identifier, 't.term'=>$identifier->type, 'u.deleted'=>'f', 'p.deleted'=>'f'));
+            ->join('user_identifiers as um', 'um.user_id', 'u.id', $joinType)
+            ->join('termlists_terms as tlt1', 'tlt1.id', 'um.type_id', $joinType)
+            ->join('termlists_terms as tlt2', 'tlt2.meaning_id', 'tlt1.meaning_id', $joinType)
+            ->join('terms as t', 't.id', 'tlt2.term_id', $joinType)
+            ->where(array('u.deleted'=>'f', 'p.deleted'=>'f'));
+        if ($identifier->type==='email') {
+          // Filter to find either the user identifier or the email in the person record
+          $this->db->where("(um.identifier ='".$identifier->identifier."' OR p.email_address='".$identifier->identifier."')");
+          $this->db->where("(t.term='".$identifier->type."' OR p.email_address='".$identifier->identifier."')");
+        } else {
+          $this->db->where("um.identifier='".$identifier->identifier."'");
+          $this->db->where("t.term IN ('".$identifier->type."')");
+        }
+        
         if (isset($_REQUEST['users_to_merge'])) {
           $usersToMerge = json_decode($_REQUEST['users_to_merge']);
           $this->db->in('user_id', $usersToMerge);
@@ -101,11 +130,12 @@ class User_Identifier_Controller extends Service_Base_Controller {
           if (!isset($existingUsers[$existingUser->user_id]))
             $existingUsers[$existingUser->user_id]=array();
           // add the identifier detail to this known user
-          $existingUsers[$existingUser->user_id][] = array('identifier'=>$identifier->identifier,'type'=>$identifier->type);
+          $existingUsers[$existingUser->user_id][] = array(
+            'identifier'=>$identifier->identifier,
+            'type'=>$identifier->type,
+            'person_id'=>$existingUser->person_id);
         }
-        // store the email address, since this is always required to create a person
-        if ($identifier->type==='email')
-          $email=$identifier->identifier;
+        
       }
       if ($email === null)
         throw new exception('Call to get_user_id requires an email address in the list of provided identifiers.');
@@ -120,15 +150,30 @@ class User_Identifier_Controller extends Service_Base_Controller {
         // single, known user associated with these identifiers
         $keys = array_keys($existingUsers);
         $userId = array_pop($keys);
+        $this->person_id = $existingUsers[$userId][0]['person_id'];
       }
-      if (isset($userId)) {
-        $this->storeIdentifiers($userId, $identifiers);
-        $this->associateWebsite($userId);
-      } else {
-        $this->resolveMultipleUsers($identifiers, $existingUsers);
-        return;
-      }
-      echo $userId;
+      
+      if (!isset($userId)) {
+        $resolution = $this->resolveMultipleUsers($identifiers, $existingUsers);
+        // response could be a list of possible users to match against, or a single user ID.
+        if (isset($resolution['possibleMatches']))
+          return json_encode($resolution);
+        else
+          $userId = $resolution['userId'];
+      }  
+      $this->storeIdentifiers($userId, $identifiers);
+      $this->associateWebsite($userId);
+      $attrs = $this->getAttributes();
+      $this->storeCustomAttributes($userId, $attrs);
+      // Convert the attributes to update in the client website account into an array
+      // of captions & values
+      $attrsToReturn = array();
+      foreach ($attrs as $attr)
+        $attrsToReturn[$attr['caption']]=$attr['value'];
+      echo json_encode(array(
+        'userId'=>$userId,
+        'attrs'=>$attrsToReturn
+      ));
       // Update the created_by_id for all records that were created by this cms_user_id. This 
       // takes ownership of the records.
       postgreSQL::setOccurrenceCreatorByCmsUser($this->website_id, $userId, $_REQUEST['cms_user_id'], $this->db);
@@ -137,6 +182,58 @@ class User_Identifier_Controller extends Service_Base_Controller {
     catch (Exception $e) {
       $this->handle_error($e);
     }
+  }
+  
+  /**
+   * Finds the list of custom attributes associated whith the person and the
+   * associated values.
+   * @return array List of the attributes to synchronise into the client site. 
+   */
+  private function getAttributes() {
+    // find the attribute Ids for the ones we have values for, that are synchronisable 
+    // and associated with the current website. Note we deliberately read deleted
+    // values so that we can return blanks
+    $attrs = $this->db->select('DISTINCT ON (pa.id) pa.id, pav.id as value_id, pa.caption, pa.data_type, '.
+          'pav.text_value, pav.int_value, pav.float_value, pav.date_start_value, pav.deleted')
+        ->from('person_attributes as pa')
+        ->join('person_attributes_websites as paw', 'paw.person_attribute_id', 'pa.id')
+        ->join('person_attribute_values as pav', 'pav.person_attribute_id', 'pa.id', 'LEFT')
+        ->in('pav.person_id',array(null, $this->person_id))
+        ->where(array(
+          'pa.synchronisable'=>'t',
+          'pa.deleted'=>'f',
+          'paw.deleted'=>'f',
+          'paw.website_id'=>$this->website_id
+        ))
+        ->orderby(array('pa.id'=>'ASC', 'pav.deleted'=>'ASC')) // forces the distinct on to prioritise non-deleted records.
+        ->get()->result_array(false);
+    // discard deletions if they are superceded by another non-deleted value
+    // Convert the diff type value fields into a single variant value
+    foreach ($attrs as &$attr) {
+      if ($attr['deleted'])
+        $attr['value']=null;
+      else {
+        switch ($attr['data_type']) {
+          case 'T':
+            $attr['value']=$attr['text_value'];
+            break;
+          case 'F':
+            $attr['value']=$attr['float_value'];
+            break;
+          case 'D':
+          case 'V':
+            $attr['value']=$attr['date_start_value'];
+            break;
+          default:
+            $attr['value']=$attr['int_value'];
+        }
+      }
+      unset($attr['text_value']);
+      unset($attr['float_value']);
+      unset($attr['date_value']);
+      unset($attr['int_value']);
+    }
+    return $attrs;
   }
   
   /**
@@ -178,6 +275,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
     );
     $user->validate(new Validation($data), true);
     $this->checkErrors($user);
+    $this->person_id=$person->id;
     return $user->id;
   }
   
@@ -293,6 +391,45 @@ class User_Identifier_Controller extends Service_Base_Controller {
   }
   
   /**
+   * Stores any changed custom attribute values supplied in the request data against person associated
+   * with the user. 
+   * @param integer $userId User ID,
+   * @param array $attrs Array of attribute & value data.
+   */
+  private function storeCustomAttributes($userId, &$attrs) {
+    if (!empty($_REQUEST['attribute_values'])) {
+      $valueData = json_decode($_REQUEST['attribute_values'], true);
+      if (count($valueData)) {
+        $attrCaptions = array_keys($valueData);
+        $pav = ORM::factory('person_attribute_value');
+        // loop through all the possible attributes to save the changed ones from the client site
+        foreach($attrs as &$attr) {
+          // Ignore any attributes we don't have a change value for
+          if (in_array($attr['caption'], $attrCaptions)) {
+            $data = array(
+                'person_id' => $this->person_id,
+                'person_attribute_id' => $attr['id'],
+                'text_value' => $valueData[$attr['caption']]
+            );
+            // Store the attribute value we are saving in the array of attributes, so the 
+            // full updated list can be returned to the client website
+            $attr['value'] = $valueData[$attr['caption']];
+            kohana::log('debug', 'NEED TO GET CORRECT TYPE OF VALUE ABOVE');
+            if (!empty($attr['value_id'])) {
+              $data['id'] = $attr['value_id'];
+              $pav->find($attr['value_id']);
+            } else
+              $pav->clear();
+            $pav->validate(new Validation($data), true);
+            $this->checkErrors($pav);
+          }
+        }
+        
+      }
+    }
+  }
+  
+  /**
    * Handle the case when multiple possible users are found for a list of identifiers. 
    * Outcome depends on the settings in $_REQUEST, with options to set force=merge or force=split. If not
    * forced, then the list of possible user IDs along with the websites they belong to are returned so the user
@@ -308,7 +445,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
         $uid = $this->findBestFit($identifiers, $existingUsers);
         // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be used to limit which are merged.
         $this->mergeUsers($uid, $existingUsers);
-        echo $uid;
+        return array('userId'=>$uid);
       }
     } else {
       // we need to propose that there are several possible existing users which match the supplied identifiers
@@ -326,8 +463,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
         $usersToMerge = json_decode($_REQUEST['users_to_merge']);
         $this->db->in('users_websites.user_id', $usersToMerge);
       }
-      $websites = $this->db->get()->result_array(false);
-      echo json_encode($websites);
+      return $this->db->get()->result_array(false);
     }
   }
   
