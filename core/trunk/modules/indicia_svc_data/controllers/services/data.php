@@ -626,7 +626,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           // we can use this to work out access to other website data.
           $this->db->join('index_websites_website_agreements as iwwa', array(
               'iwwa.from_website_id'=>$this->viewname.'.website_id',
-              'iwwa.receive_for_'.$_REQUEST['sharing']."='t'"=>''
+              'iwwa.provide_for_'.$_REQUEST['sharing']."='t'"=>''
           ), NULL, 'LEFT');
           $this->db->where('(' . $this->viewname.'.website_id IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
         } else {
