@@ -330,7 +330,7 @@ mapInitialisationHooks.push(function (div) {
 
 $(document).ready(function () {
   
-  $('table.report-grid').click(function (evt) {
+  $('table.report-grid tbody').click(function (evt) {
     // Find the appropriate separator for AJAX url params - depends on clean urls setting.
     urlSep = indiciaData.ajaxUrl.indexOf('?') === -1 ? '?' : '&';
     $('#record-details-toolbar *').attr('disabled', 'disabled');
