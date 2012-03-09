@@ -21,18 +21,16 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
   /**
    * Test the basic functionality of the user_identifier/get_user_id service call.
    */
-  function xtestGetUserID() {
-    $url = data_entry_helper::$base_url.'index.php/services/user_identifier/get_user_id';
-    $identifiers = urlencode(json_encode(array(
+  function testGetUserID() {
+    $response = $this->callGetUserIdService($this->auth, array(
       array('type'=>'email','identifier'=>'test@test.com'),
       array('type'=>'twitter','identifier'=>'dummytwitteraccount')
-    )));
-    $url .= '?nonce='.$this->auth['write_tokens']['nonce'].'&auth_token='.$this->auth['write_tokens']['auth_token'];
-    $response = data_entry_helper::http_post($url, 'surname=autotest&identifiers='.$identifiers);
+    ), 9998, '?', 'autotest');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid1=$response['output'];
-    // response should definitely be a positive whole number
-    $this->assertTrue(preg_match('/^[0-9]+$/', $uid1)===1, 'The response from createUser call was invalid: '.$uid1);
+    $output=json_decode($response['output']);
+    // response should definitely include a user id
+    $this->assertTrue(isset($output->userId), 'The response from createUser call was invalid: '.$response['output']);
+    $uid1 = $output->userId;
     // there should now be a user that matches the response
     $user = ORM::factory('user')->where(array('username'=>'?_autotest'))->find();
     $this->assertNotEquals(0, $user->id, 'A user record was not found in the database');
@@ -43,13 +41,14 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
     $this->assertEquals(1, count($qry), 'The created user must be joined to a single website.');
     $this->assertEquals(1 /* website_id */, $qry[0]['website_id'], 'The user must be joined to the demo website used in the service call.');
     
-    // request for the same twitter account should return the same user id
-    $identifiers = urlencode(json_encode(array(
+    // request for the same twitter account should return the same user id even though email is different
+    $response = $this->callGetUserIdService($this->auth, array(
+      array('type'=>'email','identifier'=>'othertest@test.com'),
       array('type'=>'twitter','identifier'=>'dummytwitteraccount')
-    )));
-    $response = data_entry_helper::http_post($url, 'surname=autotest&identifiers='.$identifiers);
+    ), 9997, '?', 'autotest');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $this->assertTrue($response['output']===$uid1, 'A repeat request for same identifiers did not return the same user ID');
+    $output=json_decode($response['output']);
+    $this->assertEquals($uid1, $output->userId, 'A repeat request for same identifiers did not return the same user ID');
     
     // clean up user identifiers, user websites, person and user records.
     $this->db->query('delete from user_identifiers where user_id='.$user->id);
@@ -63,18 +62,17 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
    * Test the case where an identifier is submitted with an unknown type. The type should get automatically
    * stored in the termlist.
    */
-  function xtestInvalidType() {
-    $url = data_entry_helper::$base_url.'index.php/services/user_identifier/get_user_id';
+  function testInvalidType() {
     $randomType = substr(base64_encode(rand(1000000000,9999999999)),0,10);
-    $identifiers = urlencode(json_encode(array(
+    $response = $this->callGetUserIdService($this->auth, array(
       array('type'=>'email','identifier'=>'test@test.com'),
       array('type'=>$randomType,'identifier'=>'dummylinkedinaccount')
-    )));
-    $url .= '?nonce='.$this->auth['write_tokens']['nonce'].'&auth_token='.$this->auth['write_tokens']['auth_token'];
-    $response = data_entry_helper::http_post($url, 'surname=autotest&identifiers='.$identifiers);    
+    ), 9996, '?', 'autotest');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed when sending a random type string.');
-    $uid1=$response['output'];
-    $this->assertTrue(preg_match('/^[0-9]+$/', $uid1)===1, 'The response from createUser call was invalid when sending a random type string: '.$uid1);
+    $output=json_decode($response['output']);
+    // response should definitely include a user id
+    $this->assertTrue(isset($output->userId), 'The response from createUser call was invalid: '.$response['output']);
+    $uid1 = $output->userId;
     // check the term now exists
     $qry = $this->db->select('id, term_id')
         ->from('list_termlists_terms')
@@ -93,16 +91,14 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
     $this->db->query('delete from terms where id='.$qry[0]['term_id']);
   }
   
-  function xtestFirstNameInsert() {
-    $url = data_entry_helper::$base_url.'index.php/services/user_identifier/get_user_id';
-    $identifiers = urlencode(json_encode(array(
+  function testFirstNameInsert() {
+    $response = $this->callGetUserIdService($this->auth, array(
       array('type'=>'email','identifier'=>'test2@test.com'),
       array('type'=>'twitter','identifier'=>'anothertwitteraccount')
-    )));
-    $url .= '?nonce='.$this->auth['write_tokens']['nonce'].'&auth_token='.$this->auth['write_tokens']['auth_token'];
-    $response = data_entry_helper::http_post($url, 'surname=autotest&first_name=test&identifiers='.$identifiers);
+    ), 9995, 'test', 'autotest');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid1=$response['output'];
+    $output=json_decode($response['output']);
+    $uid1=$output->userId;
     // load the new person and check firstname
     $user = ORM::factory('user')->where(array('username'=>'test_autotest'))->find();
     $this->assertNotEquals(0, $user->id, 'A user record was not found in the database');
@@ -114,63 +110,6 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
     $this->db->query('delete from users_websites where user_id='.$user->id);
     $this->db->query('delete from users where id='.$user->id);
     $this->db->query('delete from people where id='.$person_id);
-  }
-  
-  /**
-   * Test the case where 2 people end up on the system for the same physical person, and then
-   * a list of identifiers causes the system to realise that they should be joined. The warehouse
-   * should return the "best fit" leaving the merging for the warehouse admininstrator.
-   */
-  function xtestFindBestFit() {
-    $url = data_entry_helper::$base_url.'index.php/services/user_identifier/get_user_id';
-    $url .= '?nonce='.$this->auth['write_tokens']['nonce'].'&auth_token='.$this->auth['write_tokens']['auth_token'];
-    $identifiers = urlencode(json_encode(array(
-      array('type'=>'email','identifier'=>'test@test.com'),
-      array('type'=>'twitter','identifier'=>'dummytwitteraccount')
-    )));
-    $response = data_entry_helper::http_post($url, 'first_name=u1&surname=autotest&identifiers='.$identifiers);
-    $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid1=$response['output'];
-    $this->assertTrue(preg_match('/^[0-9]+$/', $uid1)===1, 'The response from createUser call was invalid: '.$uid1);
-    $identifiers = urlencode(json_encode(array(
-      array('type'=>'email','identifier'=>'test2@test.com'),
-      array('type'=>'twitter','identifier'=>'dummytwitteraccount2')
-    )));    
-    $response = data_entry_helper::http_post($url, 'first_name=u2&surname=autotest&identifiers='.$identifiers);
-    $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid2=$response['output'];
-    $this->assertTrue(preg_match('/^[0-9]+$/', $uid1)===1, 'The response from createUser call was invalid: '.$uid1);
-    $this->assertNotEquals($uid1, $uid2, 'Call to create 2 separate people resulted in 1 user ID');
-    // submit information that implies the users are the same. Should match user 2 because it fits
-    // 2/3 of the identifiers.
-    $identifiers = urlencode(json_encode(array(
-      array('type'=>'email','identifier'=>'test2@test.com'),
-      array('type'=>'twitter','identifier'=>'dummytwitteraccount'),
-      array('type'=>'twitter','identifier'=>'dummytwitteraccount2')
-    )));
-    $response = data_entry_helper::http_post($url, 'surname=autotest&identifiers='.$identifiers);
-    $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid3=$response['output'];
-    $this->assertEquals($uid2, $uid3, 'Request to get best fit did not find the best fit user.');
-    // submit information that implies the users are the same. Should match user 1 because it fits
-    // the first and surnames.
-    $identifiers = urlencode(json_encode(array(
-      array('type'=>'email','identifier'=>'test2@test.com'),
-      array('type'=>'twitter','identifier'=>'dummytwitteraccount'),
-      array('type'=>'twitter','identifier'=>'dummytwitteraccount2')
-    )));
-    $response = data_entry_helper::http_post($url, 'first_name=u1&surname=autotest&identifiers='.$identifiers);
-    $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid4=$response['output'];
-    $this->assertEquals($uid1, $uid4, 'Request to get best fit did not find the best fit user.');   
-    $user1 = ORM::factory('user', $uid1);
-    $p1 = $user1->person_id;
-    $user2 = ORM::factory('user', $uid2);
-    $p2 = $user2->person_id;
-    $this->db->query('delete from user_identifiers where user_id in ('.$uid1.','.$uid2.')');
-    $this->db->query('delete from users_websites where user_id in ('.$uid1.','.$uid2.')');
-    $this->db->query('delete from users where id in ('.$uid1.','.$uid2.')');
-    $this->db->query('delete from people where id in ('.$p1.','.$p2.')');
   }
 
   /**
@@ -218,7 +157,10 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
         array('type'=>'twitter','identifier'=>'twittertracking1')
       ), 9999, 'u1', 'autotest');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid1=$response['output'];
+    $output=json_decode($response['output']);
+    // response should definitely include a positive whole number for the user id
+    $this->assertTrue(isset($output->userId), 'The response from createUser call was invalid: '.$response['output']);
+    $uid1 = $output->userId;
     // This user should "own" the record posted earlier, since it was posted with the same CMS User ID to the same website.
     $this->assertEquals(1, $this->db->select('id')->from('occurrences')->where(array('created_by_id'=>$uid1))
         ->get()->count(), 'Occurrence not owned by user');
@@ -235,7 +177,10 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
         array('type'=>'facebook','identifier'=>'fbtracking2')
       ), 9998, 'u1', 'autotest');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $uid2=$response['output'];
+    $output=json_decode($response['output']);
+    // response should definitely include a user id
+    $this->assertTrue(isset($output->userId), 'The response from createUser call was invalid: '.$response['output']);
+    $uid2 = $output->userId;
     // This user should "own" the record posted earlier, since it was posted with the same CMS User ID to the same website.
     $this->assertEquals(1, $this->db->select('id')->from('occurrences')->where(array('created_by_id'=>$uid2))
         ->get()->count(), 'Occurrence not owned by user');
@@ -251,10 +196,10 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
         array('type'=>'twitter','identifier'=>'twittertracking1')
       ), 9998, 'u1', 'autotest');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $this->assertTrue(!is_numeric($response['output']), 'Request should have returned multiple possible users');
-    $users = json_decode($response['output']);
-    $this->assertTrue(is_array($users), 'Request should have returned array of multiple possible users');
-    $this->assertEquals(2, count($users), '2 possible users should have been found');
+    $output = json_decode($response['output']);
+    $this->assertTrue(isset($output->possibleMatches), "Response should include the list of possible users.\n".$response['output']);
+    $this->assertTrue(is_array($output->possibleMatches), "Response should include an array of possible users.\n".$response['output']);
+    $this->assertEquals(2, count($output->possibleMatches), '2 possible users should have been found');
     
     // Can we limit the searched list of users and only find one?
     $response = $this->callGetUserIdService($auth2, array(
@@ -263,7 +208,8 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
         array('type'=>'twitter','identifier'=>'twittertracking1')
       ), 9998, 'u1', 'autotest', 'users_to_merge=['.$uid2.']');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $this->assertEquals($uid2, $response['output'], 'Failed to limit users to check using users_to_merge');
+    $output = json_decode($response['output']);
+    $this->assertEquals($uid2, $output->userId, 'Failed to limit users to check using users_to_merge');
     
     // Can we split the searched list of users and only find one?
     $response = $this->callGetUserIdService($auth2, array(
@@ -272,7 +218,8 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
         array('type'=>'twitter','identifier'=>'twittertracking1')
       ), 9998, 'u1', 'autotest', 'force=split');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id service failed.');
-    $this->assertEquals($uid2, $response['output'], 'Failed to split users and retreive the correct user ID');
+    $output = json_decode($response['output']);
+    $this->assertEquals($uid2, $output->userId, 'Failed to split users and retreive the correct user ID');
     
     // Recall the service, this time forcing a merge of the 2 possible users.
     $response = $this->callGetUserIdService($auth2, array(
@@ -281,7 +228,8 @@ class Controllers_Services_Identifier_Test extends PHPUnit_Framework_TestCase {
         array('type'=>'twitter','identifier'=>'twittertracking1')
       ), 9998, 'u1', 'autotest', 'force=merge');
     $this->assertTrue($response['result']==1, 'The request to the user_identifier/get_user_id merge service failed.');
-    $uid3=$response['output'];
+    $output = json_decode($response['output']);
+    $uid3=$output->userId;
     $this->assertEquals($uid2, $uid3, 'Merge request did not return the correct user');
     // This user should "own" both the records posted earlier
     $this->assertEquals(2, $this->db->select('id')->from('occurrences')->where(array('created_by_id'=>$uid3))

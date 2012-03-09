@@ -153,15 +153,17 @@ class User_Identifier_Controller extends Service_Base_Controller {
         $userId = array_pop($keys);
         $this->person_id = $existingUsers[$userId][0]['person_id'];
       }
-      
       if (!isset($userId)) {
-        $resolution = $this->resolveMultipleUsers($identifiers, $existingUsers);
+        $resolution = $this->resolveMultipleUsers($identifiers, $existingUsers);        
         // response could be a list of possible users to match against, or a single user ID.
-        if (isset($resolution['possibleMatches']))
-          return json_encode($resolution);
-        else
+        if (isset($resolution['possibleMatches'])) {
+          echo json_encode($resolution);
+          return;
+        } else {
           $userId = $resolution['userId'];
-      }  
+          $this->person_id = $existingUsers[$userId][0]['person_id'];
+        }
+      }
       $this->storeIdentifiers($userId, $identifiers);
       $this->associateWebsite($userId);
       $attrs = $this->getAttributes();
@@ -440,8 +442,8 @@ class User_Identifier_Controller extends Service_Base_Controller {
   private function resolveMultipleUsers($identifiers, $existingUsers) {
     if (isset($_REQUEST['force'])) {
       if ($_REQUEST['force']==='split') {
-        echo $this->findBestFit($identifiers, $existingUsers);
-        return;
+        $uid = $this->findBestFit($identifiers, $existingUsers);
+        return array('userId'=>$uid);
       } elseif ($_REQUEST['force']==='merge') {
         $uid = $this->findBestFit($identifiers, $existingUsers);
         // Merge the users into 1. A $_REQUEST['users_to_merge'] array can be used to limit which are merged.
@@ -464,7 +466,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
         $usersToMerge = json_decode($_REQUEST['users_to_merge']);
         $this->db->in('users_websites.user_id', $usersToMerge);
       }
-      return $this->db->get()->result_array(false);
+      return array('possibleMatches'=>$this->db->get()->result_array(false));
     }
   }
   
