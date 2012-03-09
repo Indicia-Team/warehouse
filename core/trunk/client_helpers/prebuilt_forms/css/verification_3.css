@@ -3,6 +3,33 @@
   margin-bottom: 0;
 }
 /* line 19, sass/verification_3.scss */
+#verification-grid .pass-icon {
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border: solid green 1px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -o-border-radius: 4px;
+  -ms-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  -moz-box-shadow: green 1px 1px 3px;
+  -webkit-box-shadow: green 1px 1px 3px;
+  -o-box-shadow: green 1px 1px 3px;
+  box-shadow: green 1px 1px 3px;
+  display: -moz-inline-box;
+  -moz-box-orient: vertical;
+  display: inline-block;
+  vertical-align: middle;
+  *vertical-align: auto;
+  background: url("../images/nuvola/ok-16px.png") no-repeat 2px 2px;
+}
+/* line 7, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/compass-0.11.5/frameworks/compass/stylesheets/compass/css3/_inline-block.scss */
+#verification-grid .pass-icon {
+  *display: inline;
+}
+/* line 30, sass/verification_3.scss */
 #verification-grid .fail-icon {
   width: 16px;
   height: 16px;
@@ -29,58 +56,58 @@
 #verification-grid .fail-icon {
   *display: inline;
 }
-/* line 30, sass/verification_3.scss */
+/* line 41, sass/verification_3.scss */
 #verification-grid div.verification_check_identification_difficulty {
   background: url("../images/nuvola/xmag-16px.png") no-repeat 2px 2px;
 }
-/* line 34, sass/verification_3.scss */
+/* line 45, sass/verification_3.scss */
 #verification-grid div.verification_check_period {
   background: url("../images/nuvola/history-16px.png") no-repeat 2px 2px;
 }
-/* line 38, sass/verification_3.scss */
+/* line 49, sass/verification_3.scss */
 #verification-grid div.verification_check_period_within_year {
   background: url("../images/nuvola/date-16px.png") no-repeat 2px 2px;
 }
-/* line 42, sass/verification_3.scss */
+/* line 53, sass/verification_3.scss */
 #verification-grid div.verification_check_polygon {
   background: url("../images/nuvola/browser-16px.png") no-repeat 2px 2px;
 }
-/* line 46, sass/verification_3.scss */
+/* line 57, sass/verification_3.scss */
 #verification-grid div.verification_check_species_designation {
   background: url("../images/nuvola/bottom-16px.png") no-repeat 2px 2px;
 }
 
-/* line 51, sass/verification_3.scss */
+/* line 62, sass/verification_3.scss */
 #outer-grid-left #grid {
   width: 55%;
 }
-/* line 54, sass/verification_3.scss */
+/* line 65, sass/verification_3.scss */
 #outer-grid-left #grid #record-details-wrap {
   width: 44%;
   overflow: auto;
 }
 
-/* line 60, sass/verification_3.scss */
+/* line 71, sass/verification_3.scss */
 #grid {
   overflow: auto;
 }
 
-/* line 64, sass/verification_3.scss */
+/* line 75, sass/verification_3.scss */
 table.report-grid {
   font-size: 80%;
   width: 100%;
 }
-/* line 67, sass/verification_3.scss */
+/* line 78, sass/verification_3.scss */
 table.report-grid tr:hover, table.report-grid table.report-grid tr.odd:hover {
   background-color: #ffffcc;
 }
-/* line 70, sass/verification_3.scss */
+/* line 81, sass/verification_3.scss */
 table.report-grid tr.selected, table.report-grid tr.selected td {
   background-color: #027ac6;
   color: white;
 }
 
-/* line 76, sass/verification_3.scss */
+/* line 87, sass/verification_3.scss */
 ul.gallery li {
   display: -moz-inline-box;
   -moz-box-orient: vertical;
@@ -96,7 +123,7 @@ ul.gallery li {
   *display: inline;
 }
 
-/* line 83, sass/verification_3.scss */
+/* line 94, sass/verification_3.scss */
 .status-V {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #000700), color-stop(100%, #00a000));
   background: -webkit-linear-gradient(top, #000700, #00a000);
@@ -113,7 +140,7 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 89, sass/verification_3.scss */
+/* line 100, sass/verification_3.scss */
 .status-R {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #070000), color-stop(100%, #a00000));
   background: -webkit-linear-gradient(top, #070000, #a00000);
@@ -130,7 +157,7 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 95, sass/verification_3.scss */
+/* line 106, sass/verification_3.scss */
 .status-S {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #1c4c62), color-stop(100%, #4ba3cc));
   background: -webkit-linear-gradient(top, #1c4c62, #4ba3cc);
@@ -147,13 +174,13 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 101, sass/verification_3.scss */
+/* line 112, sass/verification_3.scss */
 .zero-t {
   font-style: italic;
   text-decoration: line-through;
 }
 
-/* line 106, sass/verification_3.scss */
+/* line 117, sass/verification_3.scss */
 button {
   margin: 0.25em;
   display: inline-block;
@@ -174,7 +201,7 @@ button {
   font-weight: bold;
 }
 
-/* line 112, sass/verification_3.scss */
+/* line 123, sass/verification_3.scss */
 #btn-verify, #btn-verify-all {
   background-color: #00a000;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00a000), color-stop(100%, #003a00));
@@ -197,7 +224,7 @@ button {
   background: linear-gradient(#00ba00, #005300);
 }
 
-/* line 116, sass/verification_3.scss */
+/* line 127, sass/verification_3.scss */
 #btn-reject {
   background-color: #a00000;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #a00000), color-stop(100%, #3a0000));
@@ -220,7 +247,7 @@ button {
   background: linear-gradient(#ba0000, #530000);
 }
 
-/* line 120, sass/verification_3.scss */
+/* line 131, sass/verification_3.scss */
 button.default-button {
   background-color: #4ba3cc;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #4ba3cc), color-stop(100%, #276b8a));
@@ -243,13 +270,13 @@ button.default-button:hover {
   background: linear-gradient(#5fadd2, #2d7a9e);
 }
 
-/* line 124, sass/verification_3.scss */
+/* line 135, sass/verification_3.scss */
 #comment-text {
   display: block;
   width: 100%;
 }
 
-/* line 129, sass/verification_3.scss */
+/* line 140, sass/verification_3.scss */
 .popup-form {
   width: 500px;
   line-height: 3;
@@ -321,31 +348,31 @@ button.default-button:hover {
 .popup-form p {
   margin-bottom: 0;
 }
-/* line 136, sass/verification_3.scss */
+/* line 147, sass/verification_3.scss */
 .popup-form label {
   width: 120px;
 }
-/* line 138, sass/verification_3.scss */
+/* line 149, sass/verification_3.scss */
 .popup-form label.error {
   width: auto;
   margin: 0 0 0 120px;
   line-height: 1em;
 }
 
-/* line 146, sass/verification_3.scss */
+/* line 157, sass/verification_3.scss */
 .manual-email {
   width: 600px;
 }
-/* line 149, sass/verification_3.scss */
+/* line 160, sass/verification_3.scss */
 .manual-email .left {
   width: 120px;
 }
-/* line 152, sass/verification_3.scss */
+/* line 163, sass/verification_3.scss */
 .manual-email .right {
   width: 450px;
 }
 
-/* line 157, sass/verification_3.scss */
+/* line 168, sass/verification_3.scss */
 #instructions {
   padding: 1em;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #c2e0ee));
@@ -355,7 +382,7 @@ button.default-button:hover {
   background: -ms-linear-gradient(top, #ffffff, #c2e0ee);
   background: linear-gradient(top, #ffffff, #c2e0ee);
 }
-/* line 160, sass/verification_3.scss */
+/* line 171, sass/verification_3.scss */
 #instructions li {
   background-image: none;
   list-style-type: circle;

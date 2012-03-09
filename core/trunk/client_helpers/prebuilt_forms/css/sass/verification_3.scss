@@ -16,6 +16,17 @@ $selected-font-color: #ffffff;
     margin-bottom: 0;
   }
   
+  .pass-icon {
+    width: 16px;
+    height: 16px;
+    padding: 2px;
+    border: solid green 1px;
+    @include border-radius(4px);
+    @include box-shadow(green 1px 1px 3px);
+    @include inline-block;
+    background: url("../images/nuvola/ok-16px.png") no-repeat 2px 2px;
+  }
+  
   .fail-icon {
     width: 16px;
     height: 16px;
