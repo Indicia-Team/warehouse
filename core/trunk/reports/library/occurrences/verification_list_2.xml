@@ -8,10 +8,10 @@
   JOIN samples s on s.id=o.sample_id
   JOIN websites w on w.id=o.website_id 
   LEFT JOIN locations l ON l.id=s.location_id
-  LEFT JOIN (select occurrence_id, generated_by, max(comment) as comment from occurrence_comments 
-      where deleted=false AND implies_manual_check_required=true 
-      group by occurrence_id, generated_by
-  ) oc ON oc.occurrence_id=o.id 
+  LEFT JOIN occurrence_comments oc 
+      ON oc.occurrence_id=o.id 
+      AND oc.implies_manual_check_required=true 
+      AND oc.deleted=false
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
@@ -24,7 +24,6 @@
   )
   AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
   #idlist#
-  #order_by#
   </query>
   <order_bys>
     <order_by>o.id DESC</order_by>
@@ -60,9 +59,9 @@
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' />
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' />
     <column name='record_status' display='State' sql='o.record_status' />
-    <column name='comment' display='Check' sql='oc.comment' datatype='text' />
     <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
     <column name='strokewidth' visible='false' feature_style="strokeWidth" sql='length(s.entered_sref) / 3' />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(s.entered_sref) / 24.0' />
+    <column name='comment' display='Check' sql="array_to_string(array_agg('&lt;div class=&quot;fail-icon ' || oc.generated_by || '&quot; title=&quot;' || oc.comment || '&quot;&gt;&lt;/div&gt;'),' ')" datatype='text' aggregate='true' />
   </columns>
 </report>
