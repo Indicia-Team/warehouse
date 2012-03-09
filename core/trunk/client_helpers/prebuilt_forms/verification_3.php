@@ -64,19 +64,7 @@ class iform_verification_3 {
             'description' => 'Define a list of columns with various configuration options when you want to override the '.
                 'default output of the report.',
             'type' => 'jsonwidget',
-            'default' => '[
-              {"fieldname":"occurrence_id","template":"<div class=\'status-{record_status}\'>{occurrence_id}<\/div>","display":"ID"},
-              {"fieldname":"website","display":"Source"},
-              {"fieldname":"taxon","display":"Species","template":"<div class=\'zero-{zero_abundance}\'>{taxon}<br\/>{common}<\/div>"},
-              {"fieldname":"location_name","display":"Site Name"},
-              {"fieldname":"entered_sref","display":"Grid Ref"},
-              {"fieldname":"date","display":"Date"},
-              {"fieldname":"comment","display":"Check"},
-              {"fieldname":"record_status","visible":false},
-              {"fieldname":"common","visible":false},
-              {"fieldname":"zero_abundance","visible":false},
-              {"fieldname":"taxon_group","visible":false}
-            ]',
+            'default' => '[]',
             'schema' => '{
     "type":"seq",
     "title":"Columns List",
