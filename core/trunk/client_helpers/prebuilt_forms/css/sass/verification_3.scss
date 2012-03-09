@@ -1,3 +1,5 @@
+
+
 @import "sassy-buttons";
 @import "compass/css3";
 @import "blueprint/form";
@@ -13,6 +15,37 @@ $selected-font-color: #ffffff;
   form#verification-grid-params {
     margin-bottom: 0;
   }
+  
+  .fail-icon {
+    width: 16px;
+    height: 16px;
+    padding: 2px;
+    border: solid red 1px;
+    @include border-radius(4px);
+    @include box-shadow(red 1px 1px 3px);
+    @include inline-block;
+    background: url("../images/nuvola/help-16px.png") no-repeat 2px 2px;
+  }
+  
+  div.verification_check_identification_difficulty {
+    background: url("../images/nuvola/xmag-16px.png") no-repeat 2px 2px;
+  }
+  
+  div.verification_check_period {
+    background: url("../images/nuvola/history-16px.png") no-repeat 2px 2px;
+  }
+  
+  div.verification_check_period_within_year {
+    background: url("../images/nuvola/date-16px.png") no-repeat 2px 2px;
+  }
+  
+  div.verification_check_polygon {
+    background: url("../images/nuvola/browser-16px.png") no-repeat 2px 2px;
+  }
+  
+  div.verification_check_species_designation {
+    background: url("../images/nuvola/bottom-16px.png") no-repeat 2px 2px;
+  }
 }
 
 #outer-grid-left #grid {
@@ -27,8 +60,6 @@ $selected-font-color: #ffffff;
 #grid {
   overflow: auto;
 }
-
-
 
 table.report-grid {
   font-size: 80%;  
