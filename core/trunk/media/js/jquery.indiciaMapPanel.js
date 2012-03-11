@@ -634,40 +634,93 @@ mapInitialisationHooks = [];
     }
     
     /**
-     * Function which takes a Wkt value and converts to a display spatial ref in the current system, then calls
-     * a callback function (e.g. to put the sref into a form control).
-     * Callback is a function that accepts a data structure as returned by the warehouse conversion from Wkt to Sref.
+     * Converts a point to the required lat long notation.
      */
-    function wktToSref(div, wkt, callback) {
-      var outputSystem = _getSystem();
-      // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
-      var precision, metres = div.map.getScale()/200;
-      // now round to find appropriate square size
-      if (metres<30) {
-        precision=8;
-      } else if (metres<300) {
-        precision=6;
-      } else if (metres<3000) {
-        precision=4;
+    function pointToLatLong(div, point) {
+      var long_deg, long_min, long_sec, long_res, lat_deg, lat_min, lat_sec, lat_res, lat=Math.abs(point.y), lon=Math.abs(point.x);
+      var TenToTheTwo=Math.pow(10,2), TenToTheFour=Math.pow(10,4), TenToTheFive=Math.pow(10,5);
+      if (div.settings.latLongFormat == 'DMS') {
+        long_deg = Math.floor(lon);
+        long_min = Math.floor((lon-long_deg)*60);
+        long_sec = Math.round((3600*(lon-long_deg)-long_min*60)*TenToTheTwo)/TenToTheTwo;
+        long_res = long_deg+':'+long_min+':'+long_sec;
+        lat_deg = Math.floor(lat);
+        lat_min = Math.floor((lat-lat_deg)*60);
+        lat_sec = Math.round((3600*(lat-lat_deg)-lat_min*60)*TenToTheTwo)/TenToTheTwo;
+        lat_res = lat_deg+':'+lat_min+':'+lat_sec;
+      } else if (div.settings.latLongFormat == 'DM') {
+        long_deg = Math.floor(lon);    
+        long_min = Math.round((lon-long_deg)*60*TenToTheFour)/TenToTheFour;
+        long_res = long_deg+':'+long_min;
+        lat_deg = Math.floor(lat);    
+        lat_min = Math.round((lat-lat_deg)*60*TenToTheFour)/TenToTheFour;
+        lat_res = lat_deg+':'+lat_min;
+      }else {
+        long_res = Math.round(lon*TenToTheFive)/TenToTheFive;
+        lat_res = Math.round(lat*TenToTheFive)/TenToTheFive;
+      }
+      long_res += (point.x < 0 ? 'W' : 'E');
+      lat_res += (point.y < 0 ? 'S' : 'N');
+      return lat_res+' '+long_res;
+    }
+    
+    /**
+     * Converts a point to a spatial reference.
+     */
+    function pointToSref(div, point, system, callback) {
+      var wkt, transformed;
+      if (!isNaN(system)&&parseInt(system)==system) {
+        if ('EPSG:' + system == div.map.projection.getCode())
+          transformed = point;
+        else 
+          // numerical code, so we can transform it
+          transformed = point.transform(div.map.projection, new OpenLayers.Projection('EPSG:' + system));
+        if (system==='4326') {
+          sref = pointToLatLong(div, point);
+        } else {
+          // in metres, so we can round (no need for sub-metre precision)
+          sref = Math.round(transformed.x) + ', ' + Math.round(transformed.y);
+        }
+        // Geto point in projection required for indicia DB.
+        if ('EPSG:' + system === div.indiciaProjection ||
+            // following are also equivalent
+            (system == 3857 && div.indiciaProjection==='EPSG:900913') ||
+            (system == 900913 && div.indiciaProjection==='EPSG:3857'))            
+          internalPoint=point;
+        else
+          internalPoint=point.transform(new OpenLayers.Projection('EPSG:' + system), div.indiciaProjection);
+        wkt = 'POINT(' + internalPoint.x + ' ' + internalPoint.y + ')';
+        callback({sref: sref, wkt: wkt});
       } else {
-        precision=2;
+        // get approx metres accuracy we can expect from the mouse click - about 5mm accuracy.
+        var precision, metres = div.map.getScale()/200;
+        // now round to find appropriate square size
+        if (metres<30) {
+          precision=8;
+        } else if (metres<300) {
+          precision=6;
+        } else if (metres<3000) {
+          precision=4;
+        } else {
+          precision=2;
+        }
+        // enforce precision limits if specified in the settings
+        if (div.settings.clickedSrefPrecisionMin!=='') {
+          precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
+        }
+        if (div.settings.clickedSrefPrecisionMax!=='') {
+          precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
+        }
+        
+        $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
+                "?wkt=" + point +
+                "&system=" + system +
+                "&precision=" + precision +
+                "&metresAccuracy=" + metres +
+                "&output=" + div.settings.latLongFormat +
+                "&callback=?", callback
+        );
       }
-      // enforce precision limits if specified in the settings
-      if (div.settings.clickedSrefPrecisionMin!=='') {
-        precision=Math.max(div.settings.clickedSrefPrecisionMin, precision);
-      }
-      if (div.settings.clickedSrefPrecisionMax!=='') {
-        precision=Math.min(div.settings.clickedSrefPrecisionMax, precision);
-      }
-      
-      $.getJSON(opts.indiciaSvc + "index.php/services/spatial/wkt_to_sref"+
-              "?wkt=" + wkt +
-              "&system=" + outputSystem +
-              "&precision=" + precision +
-              "&metresAccuracy=" + metres +
-              "&output=" + div.settings.latLongFormat +
-              "&callback=?", callback
-      );
     }
     
     /**
@@ -696,7 +749,7 @@ mapInitialisationHooks = [];
         }
       }
       $('#imp-geom').val(evt.feature.geometry.toString());
-      wktToSref(this.map.div, evt.feature.geometry.getCentroid(), function(data) {
+      pointToSref(this.map.div, evt.feature.geometry.getCentroid(), _getSystem(), function(data) {
         if (typeof data.sref !== "undefined") {
           $('#imp-sref').val(data.sref);
         }
@@ -712,28 +765,7 @@ mapInitialisationHooks = [];
     function clickOnMap(xy, div, callback)
     {
       var lonlat = div.map.getLonLatFromPixel(xy);
-      var sref, wkt, outputSystem = _getSystem();
-      if ('EPSG:' + outputSystem == div.map.projection.getCode()) {
-        // no transform required
-        if (div.map.getUnits()=='m') {
-        // in metres, so we can round (no need for sub-metre precision)
-          sref = Math.round(lonlat.lon) + ', ' + Math.round(lonlat.lat);
-        } else {
-          sref = lonlat.lat + ', ' + lonlat.lon;
-        }
-        if (outputSystem != '900913' && outputSystem != '3857') {
-          lonlat.transform(div.map.projection, div.indiciaProjection);
-        }
-        wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-        callback({sref: sref, wkt: wkt});
-      } else {
-        if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-          // Indicia expects the WKT in 900913 (it's internal format)
-          lonlat.transform(div.map.projection, div.indiciaProjection);
-        }
-        wkt = "POINT(" + lonlat.lon + "  " + lonlat.lat + ")";
-        wktToSref(div, wkt, callback);        
-      }
+      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), _getSystem(), callback);        
     }
 
     // Extend our default options with those provided, basing this on an empty object
@@ -996,9 +1028,19 @@ mapInitialisationHooks = [];
             clickOnMap(e.xy, div, function(data)
               {
                 if(typeof data.error != 'undefined')
-                  if(data.error == 'wkt_to_sref translation is outside range of grid.')
-                    alert(div.settings.msgSrefOutsideGrid);
-                  else
+                  if(data.error == 'wkt_to_sref translation is outside range of grid.') {
+                    // We can switch to lat long if the system is available for selection
+                    var system=$('#'+opts.srefSystemId+' option[value=4326]');
+                    if (system.length===1) {
+                      var lonlat=div.map.getLonLatFromPixel(e.xy);
+                      $('#'+opts.srefSystemId).val('4326');
+                      pointToSref(div, new OpenLayers.Geometry.Point(lonlat.lon, lonlat.lat), '4326', function(data) {
+                        _setClickPoint(data, div);
+                      });
+                    } else {
+                      alert(div.settings.msgSrefOutsideGrid);
+                    }
+                  } else
                     alert(data.error);
                 else
                   _setClickPoint(data, div);
@@ -1014,7 +1056,7 @@ mapInitialisationHooks = [];
         });
       }
       if (div.settings.editLayer && div.settings.allowPolygonRecording) {
-        div.map.editLayer.events.on({/*'featureadded': recordPolygon, */'afterfeaturemodified': recordPolygon});     
+        div.map.editLayer.events.on({'afterfeaturemodified': recordPolygon});     
       }
       var ctrl, pushDrawCtrl = function(c) {
         toolbarControls.push(c);
