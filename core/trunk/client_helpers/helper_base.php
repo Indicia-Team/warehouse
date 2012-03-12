@@ -152,13 +152,13 @@ $indicia_templates = array(
     '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'.
     '<span class="ind-cancel-icon">&nbsp;</span>'."\n".
     '</div>'."\n".
-    '<ul id="{id}:sublist" class="ind-sub-list">{items}</ul>'."\n".
-    '<input type="hidden" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
-    '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />'.
+    '<ul id="{id}:sublist" class="ind-sub-list">{items}</ul>{subListAdd}'."\n".
     '</div></div>'."\n",
+  'sub_list_add' => "\n".'<input type="hidden"  id="{id}:addToTable" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
+    '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />',
   'sub_list_item' => '<li><span class="ind-delete-icon">&nbsp;</span>{caption}'.
-    '<input type="hidden" name="{fieldname}" value="{caption}" /></li>',
-  'sub_list_javascript' => "if ({hide}==='none') {
+    '<input type="hidden" name="{fieldname}" value="{value}" /></li>',
+  'sub_list_javascript' => "  if ({hide}==='none') {
     jQuery('#{escaped_id}\\\\:box .ind-cancel-icon').css('display', 'none');
     }
   jQuery('#{escaped_id}\\\\:add').click(function(event){
@@ -166,6 +166,13 @@ $indicia_templates = array(
     var search$ = $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}');
     var hiddenSearch$ = $('#{escaped_id}\\\\:search');
     var caption = search$.val().trim();
+    if (jQuery('#{escaped_id}\\\\:addToTable').length==0) {
+      // not addToTable mode, so pass IDs
+      var value = hiddenSearch$.val().trim();
+    } else {
+      // addToTable mode, so pass text captions
+      var value = caption;
+    }
     if (caption!=='') {
       var sublist$ = $('#{escaped_id}\\\\:sublist');
       sublist$.append('{subListItem}');

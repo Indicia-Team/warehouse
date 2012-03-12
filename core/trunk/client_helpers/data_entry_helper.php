@@ -230,7 +230,10 @@ class data_entry_helper extends helper_base {
   * field of type integer which supports multiple values</li>
   * <li><b>table</b><br/>
   * Required. Table name to get data from for the autocomplete options. The control will 
-  * use the 'caption' from this table</li>
+  * use the captionField from this table</li>
+  * <li><b>captionField</b><br/>
+  * Required if addToTable is false. Field to draw values from to show in the control from. 
+  * If addToTable is true, this setting will be ignored and 'caption' will always be used.</li>
   * <li><b>extraParams</b><br/>
   * Required. Associative array of items to pass via the query string to the service. This
   * should at least contain the read authorisation array.</li>
@@ -251,6 +254,11 @@ class data_entry_helper extends helper_base {
   * <li><b>addOnSelect TODO</b><br/>
   * Optional. Boolean, if true, matched items from the autocomplete control are automatically 
   * added to the list when selected. Defaults to false.</li>
+  * <li><b>addToTable</b><br/>
+  * Optional. Boolean, if false, only existing items from the table can be selected, and no rows can be added. 
+  * The control then acts like a multi-value autocomplete and submits a list of ID values for the chosen items. 
+  * If true, the control allows new values to be added and inserts them into the source table.
+  * Defaults to true.</li>
   * </ul>
   *
   * @return string HTML to insert into the page for the sub_list control.
@@ -261,51 +269,61 @@ class data_entry_helper extends helper_base {
     // checks essential options, uses fieldname as id default and 
     // loads defaults if error or edit
     $options = self::check_options($options);
-    // we can only work with the caption field
-    $options['captionField'] = 'caption';
-    // our field is a multi-value custom attribute so add [] to fieldname
+    if (empty($options['addToTable'])) $options['addToTable']===true;
+    if ($options['addToTable']===true) {
+      // we can only work with the caption field
+      $options['captionField'] = 'caption';
+    }
+    // this control submits many values with the same control name so add [] to fieldname
     // so PHP puts multiple submitted values in an array
     if (substr($options['fieldname'],-2) !='[]')
       $options['fieldname'] .= '[]';
-
-    // prepare options for updating the source table
-    $options['basefieldname'] = substr($options['fieldname'],0,strlen($options['fieldname'])-2);
-    if (preg_match('/^[a-z]{3}Attr\:[1-9][0-9]*$/', $options['basefieldname'])) {
-      switch (substr($options['basefieldname'],0,3)) {
-        case 'loc':
-          $options['mainEntity'] = 'location';
-          break;
-        case 'occ':
-          $options['mainEntity'] = 'occurrence';
-          break;
-        case 'smp':
-          $options['mainEntity'] = 'sample';
-          break;
-        case 'psn':
-          $options['mainEntity'] = 'person';
-          break;
-        default:
-          $options['mainEntity'] = '';
+      
+    if ($options['addToTable']===true) {
+      // prepare options for updating the source table
+      $options['basefieldname'] = substr($options['fieldname'], 0, strlen($options['fieldname'])-2);
+      if (preg_match('/^[a-z]{3}Attr\:[1-9][0-9]*$/', $options['basefieldname'])) {
+        switch (substr($options['basefieldname'],0,3)) {
+          case 'loc':
+            $options['mainEntity'] = 'location';
+            break;
+          case 'occ':
+            $options['mainEntity'] = 'occurrence';
+            break;
+          case 'smp':
+            $options['mainEntity'] = 'sample';
+            break;
+          case 'psn':
+            $options['mainEntity'] = 'person';
+            break;
+          default:
+            $options['mainEntity'] = '';
+        }
       }
-    }
-    if (empty($options['mainEntity'])) {
-      // addToTable only works with custom attributes
-      // TODO, raise an error to developer
+      if (empty($options['mainEntity'])) {
+        // addToTable only works with custom attributes
+        // TODO, raise an error to developer
+      }
+      $options['subListAdd'] = self::mergeParamsIntoTemplate($options, 'sub_list_add');
+    } else {
+      $options['subListAdd'] = '';
     }
     
     // prepare embedded search control for add bar panel
     $list_options = $options;
     $list_options['id'] = $list_options['id'].':search';
+    $list_options['fieldname'] = $list_options['id'];
     $list_options['suffixTemplate']='nosuffix';
+    $list_options['default']='';
     $list_options['lockable']=null;
     $list_options['label'] = null;
     // set up add panel
     $options['panel_control'] = self::autocomplete($list_options);
     
     // prepare other main control options
+    $options['inputId'] = $options['id'].':'.$options['captionField'];
     $options = array_merge(array(
       'template' => 'sub_list',
-      'inputId' => $options['id'].':'.$options['captionField'],
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
       'escaped_id' => self::jq_esc($options['id']),
@@ -315,27 +333,32 @@ class data_entry_helper extends helper_base {
     if (!is_numeric($options['hide'])) $options['hide'] = '\''.$options['hide'].'\'';
 
     // set up javascript
-    $options['subListItem'] = str_replace(array('{caption}', '{fieldname}'),  
-      array('\'+caption+\'', $options['fieldname']), 
+    $options['subListItem'] = str_replace(array('{caption}', '{value}', '{fieldname}'),  
+      array('\'+caption+\'', '\'+value+\'', $options['fieldname']), 
       $indicia_templates['sub_list_item']);
     $replaceTags=array();
-    foreach(array_keys($options) as $option) {
-      array_push($replaceTags, '{'.$option.'}');
+    $replaceValues=array();
+    foreach ($options as $option=>$value) {
+      if (!is_array($value) && !is_object($value)) {
+        array_push($replaceTags, '{'.$option.'}');
+        array_push($replaceValues, $value);
+      }
     }
-    self::$javascript .= str_replace($replaceTags, $options, $indicia_templates['sub_list_javascript']);
+    self::$javascript .= str_replace($replaceTags, $replaceValues, $indicia_templates['sub_list_javascript']);
     
     // load any default values for list items into display and hidden lists
     $items = "";
     if (array_key_exists('default', $options) && is_array($options['default'])) {
-      foreach ($options['default'] as $value) {
-        $items .= str_replace(array('{caption}', '{fieldname}'), array($value, $options['fieldname']), 
+      foreach ($options['default'] as $value=>$caption) {
+        $items .= str_replace(array('{caption}', '{value}', '{fieldname}'), 
+          array($caption, $value, $options['fieldname']), 
         $indicia_templates['sub_list_item']);
       }
     }
     $options['items'] = $items;
     
     // layout the control
-    $r .= self::apply_template($options['template'], $options);
+    $r = self::apply_template($options['template'], $options);
     return $r;
   }
 
