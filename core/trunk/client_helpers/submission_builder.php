@@ -75,7 +75,19 @@ class submission_builder extends helper_config {
         $joinsTo[$joinModel]=array();
         $joinsToModel = preg_grep('/^joinsTo:'.$joinModel.':.+$/', array_keys($values) );
         foreach($joinsToModel as $key=>$value) {
-          array_push($joinsTo[$joinModel], substr($value, strlen("joinsTo:$joinModel:")));
+          $joinId = substr($value, strlen("joinsTo:$joinModel:"));
+          if (is_numeric($joinId)) {
+            array_push($joinsTo[$joinModel], $joinId);
+          } elseif ($joinId==='id' || $joinId==='id[]') {
+            if (is_array($values[$value])) {
+              foreach ($values[$value] as $innerValue) {
+                if (is_numeric($innerValue)) array_push($joinsTo[$joinModel], $innerValue);
+              }
+            } else {
+              if (is_numeric($values[$value])) array_push($joinsTo[$joinModel], $values[$value]);
+            }
+          }
+          // array_push($joinsTo[$joinModel], substr($value, strlen("joinsTo:$joinModel:")));
           // Remove the handled joinFields so they don't clutter the rest of the submission
           unset($values[$value]);
         }
@@ -274,7 +286,8 @@ class submission_builder extends helper_config {
   /**
    * Returns a 3 character prefix representing an entity name that can have
    * custom attributes attached.
-   * @param string $entity Entity name (location, sample or occurrence).
+   * @param string $entity Entity name (location, sample, occurrence, taxa_taxon_list or person).
+   * Also 3 entities from the Individuals and Associations module (known_subject, subject_observation and mark).
    * @param boolean $except If true, raises an exception if the entity name does not have custom attributes. 
    * Otherwise returns false. Default true.
    * @access private
@@ -295,6 +308,15 @@ class submission_builder extends helper_config {
         break;
       case 'person':
         $prefix = 'psn';
+        break;
+      case 'known_subject':
+        $prefix = 'ksj';
+        break;
+      case 'subject_observation':
+        $prefix = 'sjo';
+        break;
+      case 'mark':
+        $prefix = 'mrk';
         break;
       default:
         if ($except) 
