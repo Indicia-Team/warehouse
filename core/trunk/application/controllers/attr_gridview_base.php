@@ -62,7 +62,7 @@ abstract class Attr_Gridview_Base_Controller extends Gridview_Base_Controller {
   protected function prepareOtherViewData($values)
   {
     return array(
-      'name' => ucfirst($this->prefix),
+      'name' => ucwords(str_replace('_', ' ', $this->prefix)),
       'controllerpath' => $this->controllerpath,
       'webrec_entity' => $this->prefix.'_attributes_website',
       'webrec_key' => $this->prefix.'_attribute_id',
