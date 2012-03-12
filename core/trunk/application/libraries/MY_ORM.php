@@ -824,8 +824,8 @@ class ORM extends ORM_Core {
         }
         // And add any new joins
         foreach ($to_add as $id) {
-          $joinModel = ORM::factory($joinModel);
-          $joinModel->validate(new Validation(array(
+          $addModel = ORM::factory($joinModel);
+          $addModel->validate(new Validation(array(
               $this->object_name.'_id' => $this->id, $model.'_id' => $id
           )), true);
         }
