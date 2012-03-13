@@ -491,7 +491,9 @@ idlist=';
           'id' => 'verification-grid',
           'reportGroup' => 'verification',
           'rowId' => 'occurrence_id',
-          'paramsFormButtonCaption' => lang::get('Reload Records')
+          'paramsFormButtonCaption' => lang::get('Reload Records'),
+          'paramPrefix'=>'<div class="report-param">',
+          'paramSuffix'=>'</div>'
         )
     );
     if (isset($args['show_map']) && $args['show_map']) {

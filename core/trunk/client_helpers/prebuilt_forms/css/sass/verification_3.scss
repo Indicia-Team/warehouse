@@ -12,6 +12,27 @@ $hover-color: #ffffcc;
 $selected-color: #027AC6;
 $selected-font-color: #ffffff;
 
+#verification-params {
+  .report-param {
+    @include inline-block;
+    vertical-align: middle;
+  }
+  
+  #run-report {
+    vertical-align: middle;
+  } 
+  
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+    legend {
+      display: none;
+    }
+  }
+  
+}
+
 #verification-grid {
   form#verification-grid-params {
     margin-bottom: 0;
