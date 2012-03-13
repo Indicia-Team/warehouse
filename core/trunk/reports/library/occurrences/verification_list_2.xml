@@ -27,7 +27,7 @@
   <params>
     <param name='smpattrs' display='Sample attribute list' description='Comma separated list of sample attribute IDs to include' datatype='smpattrs' />
     <param name='occattrs' display='Occurrence attribute list' description='Comma separated list of occurrence attribute IDs to include' datatype='occattrs' />
-    <param name='records' display='Records' description='Select the records to include in the grid' datatype='lookup'
+    <param name='records' display='Records to include' datatype='lookup'
         lookup_values='unverified:All unverified records,fail:Records failing automated checks,all:All records' />
     <param name='searchArea' display='Report Search Area' datatype='geometry' allow_buffer='true' />
     <param name='idlist' display='List of IDs' description='Comma separated list of occurrence IDs to filter to.' datatype='idlist' fieldname='o.id' alias='occurrence_id' />
