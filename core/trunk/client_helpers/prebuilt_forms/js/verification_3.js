@@ -22,6 +22,34 @@ function selectRow(tr) {
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
         $('#record-details-toolbar *').attr('disabled', '');
         showTab();
+        // remove any wms layers for species or the gateway data
+        $.each(mapDiv.map.layers, function(idx, layer) {
+          if (layer.CLASS_NAME==='OpenLayers.Layer.WMS') {
+            mapDiv.map.removeLayer(layer);
+          }
+        });
+        var layer, thisSpSettings, filter;
+        if (typeof indiciaData.wmsSpeciesLayers!=="undefined") {
+          $.each(indiciaData.wmsSpeciesLayers, function(idx, layerDef) {
+            thisSpLyrSettings = $.extend({}, layerDef.settings);
+            // replace values with the extrnal key if the token is used
+            $.each(thisSpLyrSettings, function(prop, value) {
+              if (typeof(value)=='string' && $.trim(value)==='{external_key}') {
+                thisSpLyrSettings[prop]=data.taxon_external_key;
+              }
+            });
+            layer = new OpenLayers.Layer.WMS(layerDef.title, layerDef.url.replace('{external_key}', data.taxon_external_key), 
+                thisSpLyrSettings, layerDef.olSettings);
+            mapDiv.map.addLayer(layer);
+          });
+        }
+        if (typeof indiciaData.indiciaSpeciesLayer!=="undefined") {
+          filter='website_id IN (1) AND '+indiciaData.indiciaSpeciesLayer.cqlFilter.replace('{filterValue}',data[indiciaData.indiciaSpeciesLayer.filterField]);
+          layer = new OpenLayers.Layer.WMS(indiciaData.indiciaSpeciesLayer.title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
+              {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter},
+              {isBaseLayer: false, sphericalMercator: true, singleTile: true});
+          mapDiv.map.addLayer(layer);
+        }
       }
     }
   );

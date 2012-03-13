@@ -201,7 +201,7 @@ class iform_verification_3 {
           'description'=>'If checked, then when changing the status of a record the record is removed from the grid if it no '.
               'longer matches the grid filter.',
           'type'=>'checkbox',
-          'default'=>'on',
+          'default'=>'true',
           'required'=>false
         ),
         array(
@@ -209,10 +209,71 @@ class iform_verification_3 {
           'caption'=>'Show map of the currently selected records',
           'description'=>'If checked, then a map of currently selected records is shown. This lets the verifier do things like visually spot outliers to check.',
           'type'=>'checkbox',
-          'default'=>'on',
+          'default'=>'true',
           'required'=>false,
-          'Group'=>'Other Map Settings'
-        )
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'indicia_species_layer_feature_type',
+          'caption'=>'Feature type for Indicia species layer',
+          'description'=>'Set to the name of a feature type on GeoServer that will be loaded to display the Indicia species data for the selected record. '.
+              'Leave empty for no layer. Normally this should be set to a feature type that exposes the cache_occurrences view.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'indicia_species_layer_ds_filter_field',
+          'caption'=>'Filter method',
+          'description'=>'Method of filtering taxa to display the species layer.',
+          'type'=>'select',
+          'options'=>array(
+            'taxon_meaning_id'=>'Meaning ID',
+            'taxon_external_key'=>'External Key',
+          ),
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ), array(
+          'name'=>'indicia_species_layer_filter_field',
+          'caption'=>'Field to filter on',
+          'description'=>'Set to the name of a field exposed by the feature type which can be used to filter for the species data to display. Examples include '.
+              'taxon_external_key, taxon_meaning_id.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'additional_wms_species_layer_title',
+          'caption'=>'Additional WMS layer title',
+          'description'=>'Title of an additional species layer to load from a WMS service',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'additional_wms_species_layer_url',
+          'caption'=>'Additional WMS layer URL',
+          'description'=>'URL of an additional species layer to load from a WMS service. {external_key} is replaced by the species external key.',
+          'type'=>'text_input',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'additional_wms_species_layer_settings',
+          'caption'=>'Additional WMS layer settings',
+          'description'=>'JSON settings object for an additional species layer to load from a WMS service. {external_key} is replaced by the species external key.',
+          'type'=>'textarea',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
+        array(
+          'name'=>'additional_wms_species_layer_ol_settings',
+          'caption'=>'Additional WMS layer OpenLayers settings',
+          'description'=>'JSON settings object for the Open Layers settings object for an additional species layer to load from a WMS service.',
+          'type'=>'textarea',
+          'required'=>false,
+          'group'=>'Other Map Settings'
+        ),
       )
     );
     // Set default values for the report
@@ -428,6 +489,22 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.ajaxFormPostUrl="'.iform_ajaxproxy_url($node, 'occurrence')."&user_id=$indicia_user_id\";\n";
     data_entry_helper::$javascript .= 'indiciaData.ajaxUrl="'.url('iform/ajax/verification_3')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.autoDiscard = '.$args['auto_discard_rows'].";\n";
+    if (!empty($args['indicia_species_layer_feature_type']) && !empty(data_entry_helper::$geoserver_url)) {
+      data_entry_helper::$javascript .= "indiciaData.indiciaSpeciesLayer = {\n".
+          '  "title":"'.lang::get('Online recording data for this species')."\",\n".
+          '  "featureType":"'.$args['indicia_species_layer_feature_type']."\",\n".
+          '  "wmsUrl":"'.data_entry_helper::$geoserver_url."wms\",\n".
+          '  "cqlFilter":"'.$args['indicia_species_layer_filter_field']."={filterValue}\",\n".
+          '  "filterField":"'.$args['indicia_species_layer_ds_filter_field']."\",\n".
+          "};\n";
+    }
+    if (!empty($args['additional_wms_species_layer_title'])) {
+      data_entry_helper::$javascript .= 'indiciaData.wmsSpeciesLayers = [{"title":"'.$args['additional_wms_species_layer_title'].'",'.
+          '"url":"'.$args['additional_wms_species_layer_url'].'",'.
+          '"settings":'.$args['additional_wms_species_layer_settings'].','.
+          '"olSettings":'.$args['additional_wms_species_layer_ol_settings'].
+          "}];\n";
+    }
     // output some translations for JS to use
     data_entry_helper::$javascript .= "indiciaData.popupTranslations = {};\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.title="'.lang::get('Add {1} comment')."\";\n";
@@ -516,7 +593,7 @@ idlist=';
       array('caption'=>lang::get('Grid Ref.'), 'value'=>data_entry_helper::$entity_to_load['sample:entered_sref']),
       array('caption'=>lang::get('Site'), 'value'=>implode(' | ', $siteLabels)),
       array('caption'=>lang::get('Comment'), 'value'=>data_entry_helper::$entity_to_load['sample:comment']),
-      array('caption'=>lang::get('Comment'), 'value'=>data_entry_helper::$entity_to_load['occurrence:comment'])
+      array('caption'=>lang::get('Record Comment'), 'value'=>data_entry_helper::$entity_to_load['occurrence:comment'])
     );
     $smpAttrs = data_entry_helper::getAttributes(array(
         'id' => data_entry_helper::$entity_to_load['sample:id'],
@@ -572,7 +649,9 @@ idlist=';
     echo json_encode(array(
       'content' => $r,
       'data' => $data,
-      'additional' => $additional
+      'additional' => $additional,
+      'taxon_external_key' => data_entry_helper::$entity_to_load['occurrence:taxon_external_key'],
+      'taxon_meaning_id' => data_entry_helper::$entity_to_load['occurrence:taxon_meaning_id']
     ));
   }
   
