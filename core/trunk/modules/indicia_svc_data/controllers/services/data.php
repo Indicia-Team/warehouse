@@ -1012,7 +1012,7 @@ class Data_Controller extends Data_Service_Base_Controller {
           $db->where('record.website_id IS NULL');
           $db->orwhere('iwwa.to_website_id', $this->website_id);
         } else {
-          $db->where('record.website_id', $this->website_id);
+          $db->in('record.website_id', array(null, $this->website_id));
         }
       } elseif (!$this->in_warehouse) {
         Kohana::log('info', $viewname.' does not have a website_id - access denied');
