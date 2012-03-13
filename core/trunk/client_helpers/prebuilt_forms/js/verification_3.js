@@ -44,7 +44,7 @@ function selectRow(tr) {
           });
         }
         if (typeof indiciaData.indiciaSpeciesLayer!=="undefined") {
-          filter='website_id IN (1) AND '+indiciaData.indiciaSpeciesLayer.cqlFilter.replace('{filterValue}',data[indiciaData.indiciaSpeciesLayer.filterField]);
+          filter=indiciaData.indiciaSpeciesLayer.cqlFilter.replace('{filterValue}',data[indiciaData.indiciaSpeciesLayer.filterField]);
           layer = new OpenLayers.Layer.WMS(indiciaData.indiciaSpeciesLayer.title, indiciaData.indiciaSpeciesLayer.wmsUrl, 
               {layers: indiciaData.indiciaSpeciesLayer.featureType, transparent: true, CQL_FILTER: filter},
               {isBaseLayer: false, sphericalMercator: true, singleTile: true});

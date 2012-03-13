@@ -451,6 +451,14 @@ idlist=';
     global $user, $indicia_templates;
     $indicia_user_id=self::get_indicia_user_id($args);
     $auth = data_entry_helper::get_read_auth($args['website_id'], $args['password']);
+    // Find a list of websites we are allowed verify
+    $websites = data_entry_helper::get_population_data(array(
+      'table'=>'index_websites_website_agreement',
+      'extraParams'=>$auth+array('receive_for_reporting'=>'t'),
+    ));
+    $websiteIds = array();
+    foreach ($websites as $website) 
+      $websiteIds[] = $website['to_website_id'];
     if (function_exists('module_exists') && module_exists('easy_login')) {
       if (strpos($args['param_presets'].$args['param_defaults'], 'expertise_location')===false)
         $args['param_presets'].="\nexpertise_location={profile_location_expertise}";
@@ -494,7 +502,7 @@ idlist=';
           '  "title":"'.lang::get('Online recording data for this species')."\",\n".
           '  "featureType":"'.$args['indicia_species_layer_feature_type']."\",\n".
           '  "wmsUrl":"'.data_entry_helper::$geoserver_url."wms\",\n".
-          '  "cqlFilter":"'.$args['indicia_species_layer_filter_field']."={filterValue}\",\n".
+          '  "cqlFilter":"website_id IN ('.implode(',',$websiteIds).') AND '.$args['indicia_species_layer_filter_field']."='{filterValue}'\",\n".
           '  "filterField":"'.$args['indicia_species_layer_ds_filter_field']."\",\n".
           "};\n";
     }
