@@ -96,9 +96,12 @@ abstract class ATTR_ORM extends Valid_ORM {
     foreach ($websites as $website) {
       // First check for non survey specific checkbox
       $this->set_attribute_website_record($this->id, $website->id, null, isset($_POST['website_'.$website->id]));
-      $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
-      foreach ($surveys as $survey) {
-        $this->set_attribute_website_record($this->id, $website->id, $survey->id, isset($_POST['website_'.$website->id.'_'.$survey->id]));
+      // then if attributes on this model are restricted by survey, check the survey checkboxes
+      if ($this->has_survey_restriction) {
+        $surveys = ORM::factory('survey')->where('website_id', $website->id)->find_all();
+        foreach ($surveys as $survey) {
+          $this->set_attribute_website_record($this->id, $website->id, $survey->id, isset($_POST['website_'.$website->id.'_'.$survey->id]));
+        }
       }
     }
     return true;
