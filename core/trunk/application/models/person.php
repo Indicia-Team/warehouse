@@ -167,12 +167,12 @@ class Person_Model extends ORM {
   }
   
   /** 
-   * Prepares the db object query builder to query the list of custom attributes for this model.
+   * Gets the list of custom attributes for this model.
    * @param boolean $required Optional. Set to true to only return required attributes (requires 
    * the website and survey identifier to be set).
    * @param int @typeFilter Not used
    */
-  protected function setupDbToQueryAttributes($required = false, $typeFilter = null) {
+  protected function getAttributes($required = false, $typeFilter = null) {
     $this->db->select('person_attributes.id', 'person_attributes.caption');
     $this->db->from('person_attributes');
     
@@ -196,6 +196,7 @@ class Person_Model extends ORM {
       $this->db->in('users.deleted', array('f', null)); 
       $this->db->where('users_websites.site_role_id is not null');
     }
+    return $this->db->get()->result_array(true);
   }
   
   /**

@@ -889,10 +889,10 @@ class ORM extends ORM_Core {
       $result = $this->cache->get($key);
       if ($result===null) {
         // setup basic query to get custom attrs.
-        $this->setupDbToQueryAttributes(true, $typeFilter);
-        $result=$this->db->get()->result_array(true);
+        $result=$this->getAttributes(true, $typeFilter);
         $this->cache->set($key, $result, array('required-fields'));
       }
+      
       foreach($result as $row) {
         if (!in_array($row->id, $got_values)) {
           // There is a required attr which we don't have a value for the submission for. But if posting an existing occurrence, the
@@ -925,7 +925,7 @@ class ORM extends ORM_Core {
   }
   
   /** 
-   * Prepares the db object query builder to query the list of custom attributes for this model.
+   * Gets the list of custom attributes for this model.
    * This is just a default implementation for occurrence & sample attributes which can be 
    * overridden if required. 
    * @param boolean $required Optional. Set to true to only return required attributes (requires 
@@ -933,7 +933,9 @@ class ORM extends ORM_Core {
    * @param int @typeFilter Specify a location type meaning id or a sample method meaning id to
    * filter the returned attributes to those which apply to the given type or method.
    */
-  protected function setupDbToQueryAttributes($required = false, $typeFilter = null) {
+  protected function getAttributes($required = false, $typeFilter = null) {
+    if (empty($this->identifiers['website_id']))
+      return array();
     $attr_entity = $this->object_name.'_attribute';
     $this->db->select($attr_entity.'s.id', $attr_entity.'s.caption', $attr_entity.'s.data_type');
     $this->db->from($attr_entity.'s');
@@ -968,6 +970,7 @@ class ORM extends ORM_Core {
     } elseif ($required) {
       $this->db->like($attr_entity.'s.validation_rules', '%required%');
     }
+    return $this->db->get()->result_array(true);
   }
 
   /**
@@ -1004,8 +1007,7 @@ class ORM extends ORM_Core {
       }
     }    
     if ($this->has_attributes) {
-      $this->setupDbToQueryAttributes(false, $attrTypeFilter);
-      $result = $this->db->get();
+      $result = $this->getAttributes(false, $attrTypeFilter);
       foreach($result as $row) {
         if ($row->data_type == 'L' && $fk) {
           // Lookup lists store a foreign key
@@ -1050,8 +1052,7 @@ class ORM extends ORM_Core {
       }
     }
     if ($this->has_attributes) {    
-      $this->setupDbToQueryAttributes(true);
-      $result = $this->db->get();
+      $result = $this->getAttributes(true);
       foreach($result as $row) {
         $fields[] = $this->attrs_field_prefix.':'.$row->id;
       }
