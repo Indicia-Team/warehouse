@@ -142,6 +142,10 @@ function buildRecorderEmail(status, comment)
     email.subject = indiciaData.email_subject_rejected;
     email.body = indiciaData.email_body_rejected;
   }
+  else if (status == 'D') {
+    email.subject = indiciaData.email_subject_dubious;
+    email.body = indiciaData.email_body_dubious;
+  }
 
   email.to = getAttributeValue(indiciaData.email_address_attribute);
   email.subject = email.subject
@@ -375,6 +379,10 @@ $(document).ready(function () {
 
   $('#btn-reject').click(function () {
     setStatus('R');
+  });
+  
+  $('#btn-dubious').click(function () {
+    setStatus('D');
   });
 
   $('#btn-email').click(function () {

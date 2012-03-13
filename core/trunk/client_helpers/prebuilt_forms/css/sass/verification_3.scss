@@ -6,6 +6,7 @@
 
 $verify-color: #00a000;
 $reject-color: #a00000;
+$dubious-color: #c08000;
 $default-color: #4ba3cc;
 $hover-color: #ffffcc;
 $selected-color: #027AC6;
@@ -109,6 +110,12 @@ ul.gallery li {
   color: #ffffff;
 }
 
+.status-D {
+  @include background(linear-gradient(top, darken($dubious-color, 30%), $dubious-color));
+  @include border-radius(4px, 4px);
+  color: #ffffff;
+}
+
 .zero-t {
   font-style: italic;
   text-decoration: line-through;
@@ -126,6 +133,10 @@ button {
 
 #btn-reject {
   @include sassy-button-colors("simple", $reject-color, darken($reject-color, 20%), true, #ffffff, raised);
+}
+
+#btn-dubious {
+  @include sassy-button-colors("simple", $dubious-color, darken($dubious-color, 20%), true, #ffffff, raised);
 }
 
 button.default-button {

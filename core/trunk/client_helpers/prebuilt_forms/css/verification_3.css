@@ -1,8 +1,8 @@
-/* line 15, sass/verification_3.scss */
+/* line 16, sass/verification_3.scss */
 #verification-grid form#verification-grid-params {
   margin-bottom: 0;
 }
-/* line 19, sass/verification_3.scss */
+/* line 20, sass/verification_3.scss */
 #verification-grid .pass-icon {
   width: 16px;
   height: 16px;
@@ -29,7 +29,7 @@
 #verification-grid .pass-icon {
   *display: inline;
 }
-/* line 30, sass/verification_3.scss */
+/* line 31, sass/verification_3.scss */
 #verification-grid .fail-icon {
   width: 16px;
   height: 16px;
@@ -56,58 +56,58 @@
 #verification-grid .fail-icon {
   *display: inline;
 }
-/* line 41, sass/verification_3.scss */
+/* line 42, sass/verification_3.scss */
 #verification-grid div.verification_check_identification_difficulty {
   background: url("../images/nuvola/xmag-16px.png") no-repeat 2px 2px;
 }
-/* line 45, sass/verification_3.scss */
+/* line 46, sass/verification_3.scss */
 #verification-grid div.verification_check_period {
   background: url("../images/nuvola/history-16px.png") no-repeat 2px 2px;
 }
-/* line 49, sass/verification_3.scss */
+/* line 50, sass/verification_3.scss */
 #verification-grid div.verification_check_period_within_year {
   background: url("../images/nuvola/date-16px.png") no-repeat 2px 2px;
 }
-/* line 53, sass/verification_3.scss */
+/* line 54, sass/verification_3.scss */
 #verification-grid div.verification_check_polygon {
   background: url("../images/nuvola/browser-16px.png") no-repeat 2px 2px;
 }
-/* line 57, sass/verification_3.scss */
+/* line 58, sass/verification_3.scss */
 #verification-grid div.verification_check_species_designation {
   background: url("../images/nuvola/bottom-16px.png") no-repeat 2px 2px;
 }
 
-/* line 62, sass/verification_3.scss */
+/* line 63, sass/verification_3.scss */
 #outer-grid-left #grid {
   width: 55%;
 }
-/* line 65, sass/verification_3.scss */
+/* line 66, sass/verification_3.scss */
 #outer-grid-left #grid #record-details-wrap {
   width: 44%;
   overflow: auto;
 }
 
-/* line 71, sass/verification_3.scss */
+/* line 72, sass/verification_3.scss */
 #grid {
   overflow: auto;
 }
 
-/* line 75, sass/verification_3.scss */
+/* line 76, sass/verification_3.scss */
 table.report-grid {
   font-size: 80%;
   width: 100%;
 }
-/* line 78, sass/verification_3.scss */
+/* line 79, sass/verification_3.scss */
 table.report-grid tr:hover, table.report-grid table.report-grid tr.odd:hover {
   background-color: #ffffcc;
 }
-/* line 81, sass/verification_3.scss */
+/* line 82, sass/verification_3.scss */
 table.report-grid tr.selected, table.report-grid tr.selected td {
   background-color: #027ac6;
   color: white;
 }
 
-/* line 87, sass/verification_3.scss */
+/* line 88, sass/verification_3.scss */
 ul.gallery li {
   display: -moz-inline-box;
   -moz-box-orient: vertical;
@@ -123,7 +123,7 @@ ul.gallery li {
   *display: inline;
 }
 
-/* line 94, sass/verification_3.scss */
+/* line 95, sass/verification_3.scss */
 .status-V {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #000700), color-stop(100%, #00a000));
   background: -webkit-linear-gradient(top, #000700, #00a000);
@@ -140,7 +140,7 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 100, sass/verification_3.scss */
+/* line 101, sass/verification_3.scss */
 .status-R {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #070000), color-stop(100%, #a00000));
   background: -webkit-linear-gradient(top, #070000, #a00000);
@@ -157,7 +157,7 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 106, sass/verification_3.scss */
+/* line 107, sass/verification_3.scss */
 .status-S {
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #1c4c62), color-stop(100%, #4ba3cc));
   background: -webkit-linear-gradient(top, #1c4c62, #4ba3cc);
@@ -174,13 +174,30 @@ ul.gallery li {
   color: #ffffff;
 }
 
-/* line 112, sass/verification_3.scss */
+/* line 113, sass/verification_3.scss */
+.status-D {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #271a00), color-stop(100%, #c08000));
+  background: -webkit-linear-gradient(top, #271a00, #c08000);
+  background: -moz-linear-gradient(top, #271a00, #c08000);
+  background: -o-linear-gradient(top, #271a00, #c08000);
+  background: -ms-linear-gradient(top, #271a00, #c08000);
+  background: linear-gradient(top, #271a00, #c08000);
+  -webkit-border-radius: 4px 4px;
+  -moz-border-radius: 4px / 4px;
+  -o-border-radius: 4px / 4px;
+  -ms-border-radius: 4px / 4px;
+  -khtml-border-radius: 4px / 4px;
+  border-radius: 4px / 4px;
+  color: #ffffff;
+}
+
+/* line 119, sass/verification_3.scss */
 .zero-t {
   font-style: italic;
   text-decoration: line-through;
 }
 
-/* line 117, sass/verification_3.scss */
+/* line 124, sass/verification_3.scss */
 button {
   margin: 0.25em;
   display: inline-block;
@@ -201,7 +218,7 @@ button {
   font-weight: bold;
 }
 
-/* line 123, sass/verification_3.scss */
+/* line 130, sass/verification_3.scss */
 #btn-verify, #btn-verify-all {
   background-color: #00a000;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #00a000), color-stop(100%, #003a00));
@@ -224,7 +241,7 @@ button {
   background: linear-gradient(#00ba00, #005300);
 }
 
-/* line 127, sass/verification_3.scss */
+/* line 134, sass/verification_3.scss */
 #btn-reject {
   background-color: #a00000;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #a00000), color-stop(100%, #3a0000));
@@ -247,7 +264,30 @@ button {
   background: linear-gradient(#ba0000, #530000);
 }
 
-/* line 131, sass/verification_3.scss */
+/* line 138, sass/verification_3.scss */
+#btn-dubious {
+  background-color: #c08000;
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #c08000), color-stop(100%, #5a3c00));
+  background: -webkit-linear-gradient(#c08000, #5a3c00);
+  background: -moz-linear-gradient(#c08000, #5a3c00);
+  background: -o-linear-gradient(#c08000, #5a3c00);
+  background: -ms-linear-gradient(#c08000, #5a3c00);
+  background: linear-gradient(#c08000, #5a3c00);
+  border-color: #5a3c00;
+  color: white;
+  text-shadow: #503500, 0 1px 0;
+}
+/* line 23, ../../../../../../../../../../Ruby192/lib/ruby/gems/1.9.1/gems/sassy-buttons-0.0.5/stylesheets/sassy-buttons/_sassy-button-pseudo-states.sass */
+#btn-dubious:hover {
+  background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #da9100), color-stop(100%, #744d00));
+  background: -webkit-linear-gradient(#da9100, #744d00);
+  background: -moz-linear-gradient(#da9100, #744d00);
+  background: -o-linear-gradient(#da9100, #744d00);
+  background: -ms-linear-gradient(#da9100, #744d00);
+  background: linear-gradient(#da9100, #744d00);
+}
+
+/* line 142, sass/verification_3.scss */
 button.default-button {
   background-color: #4ba3cc;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #4ba3cc), color-stop(100%, #276b8a));
@@ -270,13 +310,13 @@ button.default-button:hover {
   background: linear-gradient(#5fadd2, #2d7a9e);
 }
 
-/* line 135, sass/verification_3.scss */
+/* line 146, sass/verification_3.scss */
 #comment-text {
   display: block;
   width: 100%;
 }
 
-/* line 140, sass/verification_3.scss */
+/* line 151, sass/verification_3.scss */
 .popup-form {
   width: 500px;
   line-height: 3;
@@ -348,31 +388,31 @@ button.default-button:hover {
 .popup-form p {
   margin-bottom: 0;
 }
-/* line 147, sass/verification_3.scss */
+/* line 158, sass/verification_3.scss */
 .popup-form label {
   width: 120px;
 }
-/* line 149, sass/verification_3.scss */
+/* line 160, sass/verification_3.scss */
 .popup-form label.error {
   width: auto;
   margin: 0 0 0 120px;
   line-height: 1em;
 }
 
-/* line 157, sass/verification_3.scss */
+/* line 168, sass/verification_3.scss */
 .manual-email {
   width: 600px;
 }
-/* line 160, sass/verification_3.scss */
+/* line 171, sass/verification_3.scss */
 .manual-email .left {
   width: 120px;
 }
-/* line 163, sass/verification_3.scss */
+/* line 174, sass/verification_3.scss */
 .manual-email .right {
   width: 450px;
 }
 
-/* line 168, sass/verification_3.scss */
+/* line 179, sass/verification_3.scss */
 #instructions {
   padding: 1em;
   background: -webkit-gradient(linear, 50% 0%, 50% 100%, color-stop(0%, #ffffff), color-stop(100%, #c2e0ee));
@@ -382,7 +422,7 @@ button.default-button:hover {
   background: -ms-linear-gradient(top, #ffffff, #c2e0ee);
   background: linear-gradient(top, #ffffff, #c2e0ee);
 }
-/* line 171, sass/verification_3.scss */
+/* line 182, sass/verification_3.scss */
 #instructions li {
   background-image: none;
   list-style-type: circle;

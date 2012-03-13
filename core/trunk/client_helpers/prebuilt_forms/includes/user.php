@@ -107,7 +107,10 @@ function get_options_array_with_user_data($listData) {
             // arrays are returned as a comma separated list
             if (is_array($value))
               $value = implode(',',$value);
-            $r[$tokens[0]]=$value ? $value : $user->$profileField;
+            $value = $value ? $value : $user->$profileField;
+            // nulls must be passed as empty string params.
+            $value = ($value===null ? '' : $value);
+            $r[$tokens[0]]=$value;
           } else {
             // this handles the user id, email and username replacements
             $r[$tokens[0]]=trim(str_replace($replace, $replaceWith, $tokens[1]));

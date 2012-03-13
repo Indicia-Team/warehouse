@@ -25,7 +25,7 @@ require_once('includes/report.php');
 
 /**
  * Prebuilt Indicia data form that lists the output of an occurrences report with an option
- * to verify or reject each record.
+ * to verify, reject or flag dubious each record.
  * 
  * @package Client
  * @subpackage PrebuiltForms
@@ -41,7 +41,7 @@ class iform_verification_3 {
       'title'=>'Verification 3',
       'category' => 'Verification',
       'description'=>'An advanced verification form with built in review of the record, images and comments. For full functionality, ensure that the report this loads '.
-          'data from returns a field called occurrence_id and has a parameter called rule for filtering by verification rule. Also if their are fields in the '.
+          'data from returns a field called occurrence_id and has a parameter called records for filtering by verification rule. Also if their are fields in the '.
           'user\'s profile which match input parameters for the report then these are passed through. For example if you enable the Easy Login '.
           'feature then the expert\'s location of expertise (e.g. vice county) and taxon groups they have expertise in can be passed into the '.
           'report to filter the data. See the "Auto-checked verification data" report for an example.',
@@ -136,7 +136,7 @@ class iform_verification_3 {
           'caption'=>'Send to Verifier Email Body',
           'description'=>'Default body for the acceptance email. Replacements allowed include %taxon%, %id% and %record% which is replaced to give details of the record.',
           'type'=>'textarea',
-          'default' => 'The following record requires verification. Please reply to this mail with the word Verified or Rejected '.
+          'default' => 'The following record requires verification. Please reply to this mail with the word Verified, Rejected or Dubious '.
               'in the email body, followed by any comments you have including the proposed re-identification if relevant on the next line.'.
               "\n\n%record%",
           'group' => 'Verifier emails'
@@ -192,6 +192,24 @@ class iform_verification_3 {
           'type'=>'textarea',
           'default' => "Your record of %taxon%, recorded on %date% at grid reference %entered_sref% has been checked by ".
             "an expert but unfortunately it could not be verified because there was a problem with your photo.\n".
+            "Nonetheless we are grateful for your contribution and hope you will be able to send us further records.\n\n%verifier%",
+          'required'=>false,
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'email_subject_dubious',
+          'caption'=>'Dubious Email Subject',
+          'description'=>'Default subject for the dubious email. Replacements as for acceptance.',
+          'type'=>'string',
+          'default' => 'Record of %taxon% marked as dubious',
+          'required'=>false,
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'email_body_rejected',
+          'caption'=>'Dubious Email Body',
+          'description'=>'Default body for the dubious email. Replacements as for acceptance.',
+          'type'=>'textarea',
+          'default' => "Your record of %taxon%, recorded on %date% at grid reference %entered_sref% has been checked by ".
+            "an expert but unfortunately it has been marked as dubious as they are not sure if the record is correct.\n".
             "Nonetheless we are grateful for your contribution and hope you will be able to send us further records.\n\n%verifier%",
           'required'=>false,
           'group' => 'Recorder emails'
@@ -290,7 +308,7 @@ occattrs=';
       elseif ($param['name']=='param_defaults')
         $param['default'] = 'id=
 record_status=C
-rule=
+records=unverified
 searchArea=
 idlist=';
       
@@ -311,6 +329,7 @@ idlist=';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
     $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
+    $r .= '<button type="button" id="btn-dubious">'.lang::get('Dubious').'</button>';
     $r .= '<button type="button" id="btn-email" class="default-button">'.lang::get('Email').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-tabs">';
@@ -378,6 +397,7 @@ idlist=';
     $r .= '<div id="record-details-toolbar">';
     $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
     $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
+    $r .= '<button type="button" id="btn-dubious">'.lang::get('Dubious').'</button>';
     $r .= '<button type="button" id="btn-email" class="default-button">'.lang::get('Email').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-tabs">';
@@ -408,7 +428,7 @@ idlist=';
     $r = '<div id="instructions">'.lang::get('You can').":\n<ul>\n";
     $r .= '<li>'.lang::get('Use the <strong>Report Parameters</strong> box to filter the list of records to verify.')."</li>\n";
     $r .= '<li>'.lang::get("Click on a record in the $gridpos to view the details.")."</li>\n";
-    $r .= '<li>'.lang::get('When viewing the record details, verify, reject or email the record to someone for checking.')."</li>\n";
+    $r .= '<li>'.lang::get('When viewing the record details, verify, reject, mark as dubious or email the record to someone for checking.')."</li>\n";
     $r .= '<li>'.lang::get('When viewing the record details, view and add comments on the record.')."</li>\n";    
     $r .= '<li>'.lang::get('When viewing a list of clean records with no verification rule violations, click the <strong>Verify all visible</strong> button to quickly verify records.')."</li>\n";
     $r .= '<li>'.lang::get('Use the map tool buttons to draw lines, polygons or points then reload the report using the <strong>Run Report</strong> button in the <strong>Report Parameters</strong> box.')."</li>\n";
@@ -469,10 +489,9 @@ idlist=';
         iform_report_get_report_options($args, $auth),
         array(
           'id' => 'verification-grid',
-          'fieldsetClass' => 'collapsible collapsed',
           'reportGroup' => 'verification',
           'rowId' => 'occurrence_id',
-          'paramsFormButtonCaption' => lang::get('Load Records')
+          'paramsFormButtonCaption' => lang::get('Reload Records')
         )
     );
     if (isset($args['show_map']) && $args['show_map']) {
@@ -519,8 +538,10 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.save="'.lang::get('Save and {1}')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbV="'.lang::get('verify')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbR="'.lang::get('reject')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.verbD="'.lang::get('mark dubious')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.V="'.lang::get('Verification')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.R="'.lang::get('Rejection')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.popupTranslations.D="'.lang::get('Mark Dubious')."\";\n";    
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.emailTitle="'.lang::get('Email record details for checking')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.sendEmail="'.lang::get('Send Email')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.popupTranslations.emailSent="'.lang::get('The email was sent successfully.')."\";\n";
@@ -529,6 +550,7 @@ idlist=';
     data_entry_helper::$javascript .= "indiciaData.statusTranslations = {};\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.V = "'.lang::get('Verified')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.R = "'.lang::get('Rejected')."\";\n";
+    data_entry_helper::$javascript .= 'indiciaData.statusTranslations.D = "'.lang::get('Dubious')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.I = "'.lang::get('In progress')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.T = "'.lang::get('Test record')."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.statusTranslations.S = "'.lang::get('Sent for verification')."\";\n";
@@ -548,6 +570,10 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.email_subject_rejected = "'.$args['email_subject_rejected']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_rejected']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_rejected = "'.$body."\";\n";
+    
+    data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$args['email_subject_dubious']."\";\n";
+    $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_subject_dubious']);
+    data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$body."\";\n";
     return $r;
     
   }
@@ -669,6 +695,8 @@ idlist=';
         return lang::get('Verified');
       case 'R' :
         return lang::get('Rejected');
+      case 'D' :
+        return lang::get('Dubious');
       case 'I' :
         return lang::get('In progress');
       case 'T' :
