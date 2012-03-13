@@ -304,6 +304,7 @@ class report_helper extends helper_base {
           } else {
             $orderStyle = '';
             $fieldId = '';
+            $captionLink=$caption;
           }
           $r .= "<th$fieldId class=\"$thClass$orderStyle\">$captionLink</th>\n";
           if (isset($field['datatype'])) {
