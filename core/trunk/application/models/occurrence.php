@@ -116,9 +116,19 @@ class Occurrence_Model extends ORM
         if (!array_key_exists('verified_by_id', $this->submission['fields']))
           $this->submission['fields']['verified_by_id']['value'] = isset($_SESSION['auth_user']) ? $_SESSION['auth_user'] : $defaultUserId;
         // and store the date of the verification event if not specified.
-         if (!array_key_exists('verified_on', $this->submission['fields']))
+        if (!array_key_exists('verified_on', $this->submission['fields']))
           $this->submission['fields']['verified_on']['value'] = date("Ymd H:i:s");
+      } elseif ($rs=='C' || $rs=='I') {
+        // Completed or in progress data not verified
+        $this->submission['fields']['verified_by_id']['value']='';
+        $this->submission['fields']['verified_on']['value']='';
       }
+    } else {
+      // If we update an occurrence but don't set the verification state, revert it to 
+      // completed/awaiting verification.
+      $this->submission['fields']['verified_by_id']['value']='';
+      $this->submission['fields']['verified_on']['value']='';
+      $this->submission['fields']['record_status']['value']='C';
     }
     parent::preSubmit();
   }
