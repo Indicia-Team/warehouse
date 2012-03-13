@@ -82,6 +82,20 @@ class Data_Controller extends Data_Service_Base_Controller {
       'taxon_relation',
       'taxon_group'
   );
+  
+  // List of tables that do not use views to expose their data.
+  protected $tables_without_views = array(
+    'index_websites_website_agreements'
+  );
+  
+  /**
+  * Provides the /services/data/index_websites_website_agreements service.
+  * Retrieves details of a single language.
+  */
+  public function index_websites_website_agreement()
+  {
+    $this->handle_call('index_websites_website_agreement');
+  }
 
   /**
   * Provides the /services/data/language service.
@@ -610,27 +624,31 @@ class Data_Controller extends Data_Service_Base_Controller {
       $this->db->select($select);
     }
     // If not in the warehouse, then the entity must explicitly allow full access, or contain a website ID to filter on.
-    if (!$this->in_warehouse && !array_key_exists ('website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
+    if (!$this->in_warehouse && !array_key_exists ('website_id', $this->view_columns) && 
+        !array_key_exists ('from_website_id', $this->view_columns) && !in_array($this->entity, $this->allow_full_access)) {
       // If access is from remote website, then either table allows full access or exposes a website ID to filter on.
       Kohana::log('info', $this->viewname.' does not have a website_id - access denied');
       throw new ServiceError('No access to entity '.$this->entity.' allowed through view '.$this->viewname);
     }
-    
+    if (array_key_exists ('website_id', $this->view_columns))
+      $websiteFilterField = 'website_id';
+    elseif (array_key_exists ('from_website_id', $this->view_columns))
+      $websiteFilterField = 'from_website_id';
     // Loading a list of records (no record ID argument)
-    if (array_key_exists ('website_id', $this->view_columns)) {      
-    // we have a filter on website_id to apply
+    if (isset($websiteFilterField)) {
+      // we have a filter on website_id to apply
       if ($this->website_id) {
         // check if a request for shared data is being made. Also check this is valid to prevent injection.
         if (isset($_REQUEST['sharing']) && preg_match('/[reporting|peer_review|verification|data_flow|moderation]/', $_REQUEST['sharing'])) {
           // request specifies the sharing mode (i.e. the task being performed, such as verification, moderation). So 
           // we can use this to work out access to other website data.
           $this->db->join('index_websites_website_agreements as iwwa', array(
-              'iwwa.from_website_id'=>$this->viewname.'.website_id',
+              'iwwa.from_website_id'=>$this->viewname.'.'.$websiteFilterField,
               'iwwa.provide_for_'.$_REQUEST['sharing']."='t'"=>''
           ), NULL, 'LEFT');
-          $this->db->where('(' . $this->viewname.'.website_id IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
+          $this->db->where('(' . $this->viewname.'.'.$websiteFilterField.' IS NULL OR iwwa.to_website_id=' . $this->website_id . ')');
         } else {
-          $this->db->in($this->viewname.'.website_id', array(null, $this->website_id));
+          $this->db->in($this->viewname.'.'.$websiteFilterField, array(null, $this->website_id));
         }
       } elseif ($this->in_warehouse && !$this->user_is_core_admin) {
         // User is on Warehouse, but not core admin, so do a filter to all their websites.
@@ -673,11 +691,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   /**
   * Returns the name of the view for the request. This is a view
   * associated with the entity, but prefixed by either list, gv or max depending
-  * on the GET view parameter.
+  * on the GET view parameter, or as is if the table has no views.
   */
   protected function get_view_name()
   {
     $table = inflector::plural($this->entity);
+    if (in_array($table, $this->tables_without_views)) {
+      return $table;
+    }
     $prefix='';
     if (array_key_exists('view', $_REQUEST))
     {
