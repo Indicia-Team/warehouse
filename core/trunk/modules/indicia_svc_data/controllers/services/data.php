@@ -972,15 +972,14 @@ class Data_Controller extends Data_Service_Base_Controller {
       Kohana::log('info', 'Attempt to write to entity '.$entity.' by website '.$this->website_id.': no write access allowed through services.');
       throw new ServiceError('Attempt to write to entity '.$entity.' failed: no write access allowed through services.');
     }
-
-      if(array_key_exists('id', $s['fields']))
-        if (is_numeric($s['fields']['id']['value']))
-          // there is an numeric id field so modifying an existing record
-          if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id))
-          {
-            Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-            throw new ServiceError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
-          }
+    if(array_key_exists('id', $s['fields']))
+      if (is_numeric($s['fields']['id']['value']))
+        // there is an numeric id field so modifying an existing record
+        if (!$this->check_record_access($entity, $s['fields']['id']['value'], $this->website_id, isset($_REQUEST['sharing']) ? $_REQUEST['sharing'] : false))
+        {
+          Kohana::log('info', 'Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
+          throw new ServiceError('Attempt to update existing record failed - website_id '.$this->website_id.' does not match website for '.$entity.' id '.$s['fields']['id']['value']);
+        }
     return true;
   }
 
