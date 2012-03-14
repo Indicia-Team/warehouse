@@ -259,7 +259,9 @@ function simple_tooltip(target_items, name){
       $.getJSON(request,
           null,
           function(response) {
-            var tbody = $(div).find('tbody'), row, rows, rowclass='', hasMore=false, value, rowInProgress=false, rowOutput, rowId;
+            var tbody = $(div).find('tbody'), row, rows, rowclass='', hasMore=false, 
+                value, rowInProgress=false, rowOutput, rowId, features=[],
+                feature, geom, map;
             // if we get a count back, then update the stored count
             if (typeof response.count !== "undefined") {
               div.settings.recordCount = response.count;
@@ -270,6 +272,10 @@ function simple_tooltip(target_items, name){
             // clear current grid rows
             if (clearExistingRows) {
               tbody.children().remove();
+            }
+            if (div.settings.sendOutputToMap) {
+              indiciaData.reportlayer.removeAllFeatures();
+              map=indiciaData.reportlayer.map;
             }
             $.each(rows, function(rowidx, row) {
               // We asked for one too many rows. If we got it, then we can add a next page button
@@ -283,6 +289,15 @@ function simple_tooltip(target_items, name){
                   rowInProgress=true;
                 }
                 $.each(div.settings.columns, function(idx, col) {
+                  if (div.settings.sendOutputToMap && typeof col.mappable!=="undefined" && col.mappable==="true") {
+                    geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
+                    if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
+                      geom.transform(map.div.indiciaProjection, map.projection);
+                    }
+                    geom = geom.getCentroid();
+                    feature = new OpenLayers.Feature.Vector(geom, {});
+                    features.push(feature);
+                  }
                   if (col.visible!==false && col.visible!=='false') {
                     // either template the output, or just use the content according to the fieldname
                     if (typeof col.template !== "undefined") {
@@ -313,6 +328,9 @@ function simple_tooltip(target_items, name){
               tbody.append(rowOutput);
             }
             tbody.find('a.fancybox').fancybox();
+            if (features.length>0) {
+              indiciaData.reportlayer.addFeatures(features);
+            }
             
             // Set a class to indicate the sorted column
             $('#' + div.id + ' th').removeClass('asc');
@@ -551,5 +569,6 @@ $.fn.reportgrid.defaults = {
   langPrev: 'previous',
   langNext: 'next',
   langLast: 'last',
-  langShowing: 'Showing records {1} to {2} of {3}'
+  langShowing: 'Showing records {1} to {2} of {3}',
+  sendOutputToMap: false
 };
