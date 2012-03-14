@@ -247,6 +247,11 @@ class report_helper extends helper_base {
   * <li><b>UserId</b>
   * If sharing=me, then this must contain the Indicia user ID of the user to return data for.
   * </li>
+  * <li><b>sendOutputToMap</b>
+  * Default false. If set to true, then the records visible on the current page are drawn onto a map. This is different to the 
+  * report_map method when linked to a report_grid, which loads its own report data for display on a map, just using the same input parameters
+  * as other reports. In this case the report_grid's report data is used to draw the features on the map, so only 1 report request is made.
+  * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -349,6 +354,7 @@ class report_helper extends helper_base {
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
     $relpath = self::relative_client_helper_path();
+    $addFeaturesJs = '';
     if (count($records)>0) {
       $rowInProgress=false;
       foreach ($records as $rowIdx => $row) {
@@ -371,6 +377,9 @@ class report_helper extends helper_base {
         }
         foreach ($options['columns'] as $field) {
           $classes=array();
+          if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && $field['mappable']==='true') {
+            $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {});\n";
+          }          
           if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
           if (isset($field['actions'])) {
@@ -406,6 +415,7 @@ class report_helper extends helper_base {
         $r .= '</tr>';
     }
     $r .= "</tbody></table>\n";
+    self::addFeaturesLoadingJs($addFeaturesJs);
     // $r may be empty if a spatial report has put all its controls on the map toolbar, when using params form only mode.
     // In which case we don't need to output anything.
     if (!empty($r)) {
@@ -439,6 +449,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   galleryColCount: ".$options['galleryColCount'].",
   pagingTemplate: '".$indicia_templates['paging']."',
   pathParam: '".$pathParam."',
+  sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['extraParams']))
         self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
@@ -1157,30 +1168,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   $styleFns
 }}";
         }
-        report_helper::$javascript.= "
-var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
-var selectStyle = new OpenLayers.Style($selsettings$styleFns);
-var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
-mapInitialisationHooks.push(function(div) {
-  function addDistPoint(features, record, wktCol, opts) {
-    var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
-    if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-      geom.transform(div.indiciaProjection, div.map.projection);
-    }
-    delete record[wktCol];
-    if (opts.type!=='vector') {
-      // render a point for symbols
-      geom = geom.getCentroid();
-    }
-    feature = new OpenLayers.Feature.Vector(geom, record);
-    features.push(feature);
-  } 
-  features = [];
-  $addFeaturesJs
-  indiciaData.reportlayer.addFeatures(features);
-  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());
-});\n";
+        self::addFeaturesLoadingJs($addFeaturesJs);
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1934,6 +1922,40 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       }
     }
     return $reloadUrl['path'];
+  }
+  
+  /** 
+   * Inserts into the page javascript a function for loading features onto the map as a result of report output.
+   */
+  private static function addFeaturesLoadingJs($addFeaturesJs, $zoomToExtent=true) {
+    if (!empty($addFeaturesJs)) {
+      report_helper::$javascript.= "
+  var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
+  var selectStyle = new OpenLayers.Style($selsettings$styleFns);
+  var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
+  indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
+  mapInitialisationHooks.push(function(div) {
+    function addDistPoint(features, record, wktCol, opts) {
+      var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+      if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+        geom.transform(div.indiciaProjection, div.map.projection);
+      }
+      delete record[wktCol];
+      if (opts.type!=='vector') {
+        // render a point for symbols
+        geom = geom.getCentroid();
+      }
+      feature = new OpenLayers.Feature.Vector(geom, record);
+      features.push(feature);
+    } 
+    features = [];
+    $addFeaturesJs
+    indiciaData.reportlayer.addFeatures(features);\n";
+      if ($zoomToExtent) 
+        self::$javascript .= "  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
+      self::$javascript .= "  div.map.addLayer(indiciaData.reportlayer);
+});\n";
+    }
   }
   
 }
