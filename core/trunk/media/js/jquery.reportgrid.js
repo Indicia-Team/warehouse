@@ -273,7 +273,7 @@ function simple_tooltip(target_items, name){
             if (clearExistingRows) {
               tbody.children().remove();
             }
-            if (div.settings.sendOutputToMap) {
+            if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined") {
               indiciaData.reportlayer.removeAllFeatures();
               map=indiciaData.reportlayer.map;
             }
@@ -289,7 +289,7 @@ function simple_tooltip(target_items, name){
                   rowInProgress=true;
                 }
                 $.each(div.settings.columns, function(idx, col) {
-                  if (div.settings.sendOutputToMap && typeof col.mappable!=="undefined" && col.mappable==="true") {
+                  if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" && typeof col.mappable!=="undefined" && col.mappable==="true") {
                     geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
                     if (map.projection.getCode() != map.div.indiciaProjection.getCode()) {
                       geom.transform(map.div.indiciaProjection, map.projection);
