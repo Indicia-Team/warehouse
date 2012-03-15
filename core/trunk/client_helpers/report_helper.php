@@ -1930,31 +1930,33 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   private static function addFeaturesLoadingJs($addFeaturesJs, $zoomToExtent=true) {
     if (!empty($addFeaturesJs)) {
       report_helper::$javascript.= "
-  var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
-  var selectStyle = new OpenLayers.Style($selsettings$styleFns);
-  var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
-  indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
-  mapInitialisationHooks.push(function(div) {
-    function addDistPoint(features, record, wktCol, opts) {
-      var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
-      if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-        geom.transform(div.indiciaProjection, div.map.projection);
-      }
-      delete record[wktCol];
-      if (opts.type!=='vector') {
-        // render a point for symbols
-        geom = geom.getCentroid();
-      }
-      feature = new OpenLayers.Feature.Vector(geom, record);
-      features.push(feature);
-    } 
-    features = [];
-    $addFeaturesJs
-    indiciaData.reportlayer.addFeatures(features);\n";
-      if ($zoomToExtent) 
-        self::$javascript .= "  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
-      self::$javascript .= "  div.map.addLayer(indiciaData.reportlayer);
-});\n";
+  if (typeof OpenLayers !== \"undefined\") {
+    var defaultStyle = new OpenLayers.Style($defsettings$styleFns);
+    var selectStyle = new OpenLayers.Style($selsettings$styleFns);
+    var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
+    indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
+    mapInitialisationHooks.push(function(div) {
+      function addDistPoint(features, record, wktCol, opts) {
+        var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+        if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+          geom.transform(div.indiciaProjection, div.map.projection);
+        }
+        delete record[wktCol];
+        if (opts.type!=='vector') {
+          // render a point for symbols
+          geom = geom.getCentroid();
+        }
+        feature = new OpenLayers.Feature.Vector(geom, record);
+        features.push(feature);
+      } 
+      features = [];
+      $addFeaturesJs
+      indiciaData.reportlayer.addFeatures(features);\n";
+        if ($zoomToExtent) 
+          self::$javascript .= "  div.map.zoomToExtent(indiciaData.reportlayer.getDataExtent());\n";
+        self::$javascript .= "  div.map.addLayer(indiciaData.reportlayer);
+    });
+  }\n";
     }
   }
   
