@@ -93,8 +93,8 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
               "[point grid]\r\n".
               "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
              "=Conditions=\r\n".
-              "[programme grid]\r\n".
-              "@programmeTermList=reptile:programme\r\n".
+              "[target species grid]\r\n".
+              "@targetSpeciesTermList=reptile:targetSpecies\r\n".
               "@defaultAttrs=<TBD>\r\n".
               "@disableOptions=<TBD>\r\n".
               "[date]\r\n".
@@ -137,32 +137,32 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
   
   protected static function getExtraGridModeTabs($retTabs, $readAuth, $args, $attributes) {
     if(!user_access('IForm n'.self::$node->nid.' admin')) return('');
-    $progAttr=iform_mnhnl_getAttr(self::$auth, $args, 'sample', 'Programme');
-    if (!$progAttr) return lang::get('This form must be used with a survey that has the Programme attribute associated with it.');
+    $targetSpeciesAttr=iform_mnhnl_getAttr(self::$auth, $args, 'sample', 'ReptileTargetSpecies');
+    if (!$targetSpeciesAttr) return lang::get('This form must be used with a survey that has the Reptile Target Species attribute associated with it.');
     if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
     $control = data_entry_helper::select(array(
-          'label'=>lang::get("LANG_Programme"),
-          'fieldname'=>'programme',
+          'label'=>lang::get("LANG_TargetSpecies"),
+          'fieldname'=>'targetSpecies',
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'meaning_id',
-          'extraParams' => $readAuth + array('view'=>'detail', 'termlist_id'=>$progAttr['termlist_id'], 'orderby'=>'id')
+          'extraParams' => $readAuth + array('view'=>'detail', 'termlist_id'=>$targetSpeciesAttr['termlist_id'], 'orderby'=>'id')
         ));
     data_entry_helper::$javascript .= "
-jQuery('[name=programme]').change(function(){
-  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"taxon_list_id\":".$args['extra_list_id'].", \"programme\":'+jQuery(this).val()+'}');
+jQuery('[name=targetSpecies]').change(function(){
+  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"taxon_list_id\":".$args['extra_list_id'].", \"targetSpecies\":'+jQuery(this).val()+'}');
   var action='".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=';
   var filename=jQuery(this).find('[selected]')[0].text.replace(/ /g, \"\");
   action=action+filename;
   jQuery('#reportRequestForm').attr('action',action);
 });
-jQuery('[name=programme]').change();
+jQuery('[name=targetSpecies]').change();
 ";
     return  '<div id="downloads" >
   <p>'.lang::get('LANG_Data_Download').'</p>
   '.$control.'
   <form id="reportRequestForm" method="post" action="">
-    <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].', "taxon_list_id":'.$args['extra_list_id'].'}\' />
+    <input type="hidden" id="params" name="params" value="" />
     <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
   </form>
 </div>'.iform_mnhnl_locModTool(self::$auth, $args, self::$node);
@@ -178,8 +178,8 @@ jQuery('[name=programme]').change();
     if (!$userIdAttr) return lang::get('This form must be used with a survey that has the CMS User ID attribute associated with it so records can be tagged against their creator.');
     $userNameAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'CMS Username');
     if (!$userNameAttr) return lang::get('This form must be used with a survey that has the CMS User Name attribute associated with it so records can be tagged against their creator.');
-    $progIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Programme');
-    if (!$progIdAttr) return lang::get('This form must be used with a survey that has the Programme attribute associated with it.');
+    $targetSpeciesIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'ReptileTargetSpecies');
+    if (!$targetSpeciesIdAttr) return lang::get('This form must be used with a survey that has the Reptile Target Species attribute associated with it.');
     
     if ($user->uid===0) {
       // Return a login link that takes you back to this form when done.
@@ -205,7 +205,7 @@ jQuery('[name=programme]').change();
         'userID'=>(iform_loctools_checkaccess($node,'superuser') ? -1 :  $user->uid), // use -1 if superuser - non logged in will not get this far.
         'userName_attr_id'=>$userNameAttr,
         'userName'=>($user->name),
-        'programme_attr_id'=>$progIdAttr
+        'target_species_attr_id'=>$targetSpeciesIdAttr
     )
     ));	
     $r .= '<form>';    
@@ -507,22 +507,20 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
     return $r;
   }
   
-  protected static function get_control_programmegrid($auth, $args, $tabalias, $options) {
-    $progIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'Programme');
-    if (!$progIdAttr) return lang::get('The Programme Grid control must be used with a survey that has the Programme attribute associated with it.');
-    // the programme is a grouping of samples determined by the
-    // 1) the termlist id of the list of programmes: argument programmeTermListID
-    // 2) a default set of attributes to be loaded: survey 2, Suitablity
-    // 3) Overrides for specific programmes: Common wall disabled second survey
-    // Reports: samples grid
-    // report
+  protected static function get_control_targetspeciesgrid($auth, $args, $tabalias, $options) {
+    $targetSpeciesIdAttr=iform_mnhnl_getAttrID($auth, $args, 'sample', 'ReptileTargetSpecies');
+    if (!$targetSpeciesIdAttr) return lang::get('The Target Species Grid control must be used with a survey that has the Reptile Target Species attribute associated with it.');
+    // the target species grid is based on a grouping of samples determined by the
+    // 1) the termlist id of the list of target species: argument targetSpeciesTermList
+    // 2) a default set of attributes to be loaded: visit, Unsuitablity
+    // 3) Overrides for specific target species: Common wall disabled second survey
     $list = data_entry_helper::get_population_data(array('table' => 'termlist',
-        'extraParams' => $auth['read'] + array('external_key' => $options['programmeTermList'])));
-    if (count($list)==0) throw new Exception("Termlist ".$options['programmeTermList']." not available on the Warehouse");
-    if (count($list)>1) throw new Exception("Multiple termlists identified by ".$options['programmeTermList']." found on the Warehouse");
+        'extraParams' => $auth['read'] + array('external_key' => $options['targetSpeciesTermList'])));
+    if (count($list)==0) throw new Exception("Termlist ".$options['targetSpeciesTermList']." not available on the Warehouse");
+    if (count($list)>1) throw new Exception("Multiple termlists identified by ".$options['targetSpeciesTermList']." found on the Warehouse");
     $termlist = $list[0]['id'];
     $extraParams = $auth['read'] + array('termlist_id' => $termlist, 'view'=>'detail');
-    $programmes = data_entry_helper::get_population_data(array('table' => 'termlists_term', 'extraParams' => $extraParams));
+    $targetSpecies = data_entry_helper::get_population_data(array('table' => 'termlists_term', 'extraParams' => $extraParams));
     $smpAttributes = data_entry_helper::getAttributes(array(
        'attrtable'=>'sample_attribute'
        ,'key'=>'sample_id'
@@ -530,19 +528,19 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
        ,'extraParams'=>$auth['read']
        ,'survey_id'=>$args['survey_id']
     ), true);
-    $retval = '<br /><table class="programme-grid"><tr><th>'.lang::get('Programme').'</th><th></th>';
+    $retval = '<br /><table class="target-species-grid"><tr><th>'.lang::get('Target Species').'</th><th></th>';
     $attrList = explode(',', $options['defaultAttrs']);
-    foreach($attrList as $attrID){
+    foreach($attrList as $attr){
       $retval .= '<th></th>'; // blank headings: will put captions in table itself.
       // $retval .= '<th>'.$smpAttributes[$attrID]['caption'].'</th>';
     }
     $retval .= '</tr>';
     $subSamples = array();
     $subSamplesAttrs = array();
-    $suitabilityAttr=iform_mnhnl_getAttrID(self::$auth, $args, 'sample', 'Suitability');
-    if (!$suitabilityAttr) return lang::get('This form must be used with a survey that has the Suitability attribute associated with it.');
-    $surveyAttr=iform_mnhnl_getAttrID(self::$auth, $args, 'sample', 'Survey');
-    if (!$surveyAttr) return lang::get('This form must be used with a survey that has the Survey attribute associated with it.');
+    $unsuitabilityAttr=iform_mnhnl_getAttrID(self::$auth, $args, 'sample', 'Unsuitability');
+    if (!$unsuitabilityAttr) return lang::get('This form must be used with a survey that has the Unsuitability attribute associated with it.');
+    $visitAttr=iform_mnhnl_getAttrID(self::$auth, $args, 'sample', 'Reptile Visit');
+    if (!$visitAttr) return lang::get('This form must be used with a survey that has the Reptile Visit attribute associated with it.');
     if(isset(data_entry_helper::$entity_to_load['sample:id'])){
       $smpOptions = array(
         'table'=>'sample',
@@ -558,21 +556,21 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
             ,'fieldprefix'=>'{MyPrefix}:smpAttr'
             ,'extraParams'=>$auth['read']
             ,'survey_id'=>$args['survey_id']), true);
-        $subSamplesAttrs[$sample['id']][$surveyAttr]['validation_rules']='required';
+        $subSamplesAttrs[$sample['id']][$visitAttr]['validation_rules']='required';
       }
     }
-    // prog:sampleID:termlist_meaning_id:presence|smpAttr:attrdetails.
-    foreach($programmes as $programme){
+    // targ:sampleID:termlist_meaning_id:presence|smpAttr:attrdetails.
+    foreach($targetSpecies as $target){
       $smpID=false;
-      $fieldname = '{MyPrefix}:presence:'.$progIdAttr;
+      $fieldname = '{MyPrefix}:presence:'.$targetSpeciesIdAttr;
       $present='';
       $attrOpts = array('lookUpKey'=>'meaning_id',
                         'extraParams' => $auth['read'],
                         'language' => iform_lang_iso_639_2($args['language']),
                         'disabled'=>'disabled');
-      foreach($subSamples as $subSample){//    $retval .= '<tr><td><em> Checking attributes for subsample '.$subSample['id'].'</em></td></tr>';
+      foreach($subSamples as $subSample){
         foreach($subSamplesAttrs[$subSample['id']] as $attr) {
-          if($attr['attributeId'] == $progIdAttr && $attr['default'] == $programme['meaning_id']) {
+          if($attr['attributeId'] == $targetSpeciesIdAttr && $attr['default'] == $target['meaning_id']) {
             $smpID=$subSample['id'];
             $fieldname = str_replace('smpAttr','presence',$attr["fieldname"]);
             $present=" checked=\"checked\" ";
@@ -580,41 +578,41 @@ jQuery('[name=".str_replace(':','\\:',$rule[0])."],[name^=".str_replace(':','\\:
           }
         }
       }
-      $fieldprefix='prog:'.($smpID ? $smpID : '-').':'.$programme['meaning_id'];
-      $retval .= str_replace('{MyPrefix}',$fieldprefix,'<tr><td>'.$programme['term'].'</td><td><input type="hidden" name="'.$fieldname.'" class="prog-presence" value=0><input type="checkbox" class="prog-presence" name="'.$fieldname.'" value=1 '.$present.'></td>');
+      $fieldprefix='targ:'.($smpID ? $smpID : '-').':'.$target['meaning_id'];
+      $retval .= str_replace('{MyPrefix}',$fieldprefix,'<tr><td>'.$target['term'].'</td><td><input type="hidden" name="'.$fieldname.'" class="targ-presence" value=0><input type="checkbox" class="targ-presence" name="'.$fieldname.'" value=1 '.$present.'></td>');
       foreach($attrList as $attrID){
         $retval .= str_replace('{MyPrefix}',$fieldprefix, 
-              '<td class="prog-grid-cell">'.data_entry_helper::outputAttribute(($smpID ? $subSamplesAttrs[$smpID][$attrID] : $smpAttributes[$attrID]),
+              '<td class="targ-grid-cell">'.data_entry_helper::outputAttribute(($smpID ? $subSamplesAttrs[$smpID][$attrID] : $smpAttributes[$attrID]),
                 $attrOpts).'</td>');
       }
       $retval .= '</tr>';
     }
     $retval .= '</table><br />';
-    data_entry_helper::$javascript .= "// JS for programme grid control.
-jQuery('.prog-presence').change(function(){
+    data_entry_helper::$javascript .= "// JS for target species grid control.
+jQuery('.targ-presence').change(function(){
   var myTR = jQuery(this).closest('tr');
   if(jQuery(this).filter('[checked]').length>0) {
-    myTR.find('[name$=\\:smpAttr\\:".$suitabilityAttr."],[name*=\\:smpAttr\\:".$suitabilityAttr."\\:]').removeAttr('disabled').filter(':checkbox').attr('checked','checked');
-    myTR.find('[name$=\\:smpAttr\\:".$surveyAttr."],[name*=\\:smpAttr\\:".$surveyAttr."\\:]').removeAttr('disabled').addClass('required').after('<span class=\"deh-required\">*</span>');
+    myTR.find('[name$=\\:smpAttr\\:".$unsuitabilityAttr."],[name*=\\:smpAttr\\:".$unsuitabilityAttr."\\:]').removeAttr('disabled');
+    myTR.find('[name$=\\:smpAttr\\:".$visitAttr."],[name*=\\:smpAttr\\:".$visitAttr."\\:]').removeAttr('disabled').addClass('required').after('<span class=\"deh-required\">*</span>');
   } else {
     myTR.find('.deh-required,.inline-error').remove();
     myTR.find('.required').removeClass('ui-state-error required');
-    myTR.find('[name$=\\:smpAttr\\:".$suitabilityAttr."],[name*=\\:smpAttr\\:".$suitabilityAttr."\\:]').attr('disabled','disabled').removeAttr('checked');
-    myTR.find('[name$=\\:smpAttr\\:".$surveyAttr."],[name*=\\:smpAttr\\:".$surveyAttr."\\:]').attr('disabled','disabled').val('');
+    myTR.find('[name$=\\:smpAttr\\:".$unsuitabilityAttr."],[name*=\\:smpAttr\\:".$unsuitabilityAttr."\\:]').attr('disabled','disabled').removeAttr('checked');
+    myTR.find('[name$=\\:smpAttr\\:".$visitAttr."],[name*=\\:smpAttr\\:".$visitAttr."\\:]').attr('disabled','disabled').val('');
   }
 });
-jQuery('.programme-grid').find('label').addClass('auto-width');";
+jQuery('.target-species-grid').find('label').addClass('auto-width');";
     if(isset($options['disableOptions'])){
       $disableList = explode(',', $options['disableOptions']);
       data_entry_helper::$javascript .= "
-jQuery('.programme-grid').find('[name*=\\:".$disableList[0]."\\:smpAttr\\:]').find('option').filter('[value=".$disableList[1]."]').attr('disabled','disabled');
+jQuery('.target-species-grid').find('[name*=\\:".$disableList[0]."\\:smpAttr\\:]').find('option').filter('[value=".$disableList[1]."]').attr('disabled','disabled');
 ";
     }    
-    data_entry_helper::$late_javascript .= "// JS for programme grid control.
-$.validator.addMethod('prog-presence', function(value, element){
-	return jQuery('.prog-presence').filter('[checked]').length > 0;
+    data_entry_helper::$late_javascript .= "// JS for target species grid control.
+$.validator.addMethod('targ-presence', function(value, element){
+	return jQuery('.targ-presence').filter('[checked]').length > 0;
 },
-  \"".lang::get('validation_prog-presence')."\");
+  \"".lang::get('validation_targ-presence')."\");
 ";
     return $retval;
   }
@@ -951,7 +949,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
         $subModels = submission_builder::wrap_with_images($values, 'occurrence');
       foreach($values as $key => $value){
         $parts = explode(':', $key, 5);
-        if ($parts[0] == 'prog' && $parts[3] == 'presence'){
+        if ($parts[0] == 'targ' && $parts[3] == 'presence'){
           $smp = array('fkId' => 'parent_id', 'model' => array('id' => 'sample', 'fields' => array()));
           $smp['model']['fields']['survey_id'] = array('value' => $values['survey_id']);
           $smp['model']['fields']['website_id'] = array('value' => $values['website_id']);
@@ -965,7 +963,7 @@ bindSpeciesAutocomplete(\"taxonLookupControl\",\"".data_entry_helper::$base_url.
           if($parts[1] != '-') $smp['model']['fields']['id'] = array('value' => $parts[1]);
           foreach($values as $key1 => $value1){
             $moreParts = explode(':', $key1, 5);
-            if ($moreParts[0] == 'prog' && $moreParts[1] == $parts[1] && $moreParts[2] == $parts[2] && $moreParts[3]== 'smpAttr'){
+            if ($moreParts[0] == 'targ' && $moreParts[1] == $parts[1] && $moreParts[2] == $parts[2] && $moreParts[3]== 'smpAttr'){
               $smp['model']['fields']['smpAttr:'.$moreParts[4]] = array('value' => $value1);
             }
           }

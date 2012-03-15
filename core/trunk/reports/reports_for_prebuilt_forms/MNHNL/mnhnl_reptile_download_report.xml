@@ -6,7 +6,7 @@
         query='SELECT id, title as caption FROM surveys' />
     <param name='taxon_list_id' display='Taxon_list_id: ' description='Select the taxon_list to look up taxa in:' datatype='lookup'
         query='SELECT id, title as caption FROM taxon_lists' />
-    <param name='programme' display='Programme: ' description='Select the programme to return data for:' datatype='int' />
+    <param name='target_species' display='Target Species: ' description='Select the target species to return data for:' datatype='int' />
   </params>
   <table tablename="samples" where="#this#.deleted = FALSE
       and #this#.parent_id IS NULL
@@ -52,7 +52,7 @@ END)" />
     </subTable>
     <attributes separator='|' meaningIdLanguage='preferred'/>
     <subTable tablename="samples" tableKey="parent_id" parentKey="id" where="#this#.deleted = FALSE" >
-      <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id" where="#this#.deleted = FALSE and #this#.int_value = #programme#" >
+      <subTable tablename="sample_attribute_values" tableKey="sample_id" parentKey="id" where="#this#.deleted = FALSE and #this#.int_value = #target_species# " >
       </subTable>
       <attributes separator='|' meaningIdLanguage='preferred'/>
     </subTable>

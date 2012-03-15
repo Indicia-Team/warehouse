@@ -74,6 +74,14 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
       iform_mnhnl_getParameters(),
       array(
         array(
+          'name' => 'reportFilenamePrefix',
+          'caption' => 'Report Filename Prefix',
+          'description' => 'Prefix to be used at the start of the download report filenames.',
+          'type' => 'string',
+          'default' => 'bathibernation',
+          'group' => 'Reporting'
+        ),
+        array(
           'name' => 'siteTypeOtherTermID',
           'caption' => 'Site Type Attribute, Other Term ID',
           'description' => 'The site type has an Other choice which when selected allows an additional text field to be filled in. This field holds the Indicia term meaning id for the radiobutton.',
@@ -139,13 +147,6 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
           'group'=>'Georeferencing',
         ),
         array(
-          'name'=>'locationWMSLayerLookup',
-          'caption'=>'WMS Layer specification for Location Layer',
-          'description'=>'Comma separated: proxiedurl,layer',
-          'type'=>'string',
-          'group'=>'Locations',
-        ),
-        array(
           'name'=>'max_species_ids',
           'caption'=>'max number of species to be returned by a search',
           'description'=>'The maximum number of species to be returned by the drop downs at any one time.',
@@ -156,7 +157,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
         
       )
     );
-  	
+
     foreach($parentVal as $param){
       if($param['name'] == 'structure'){
         $param['default'] =
@@ -177,7 +178,7 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
               "@layers=[\"SiteAreaLayer\",\"SitePathLayer\",\"SitePointLayer\",\"SiteLabelLayer\"]\r\n".
               "@scroll_wheel_zoom=false\r\n".
               "@searchUpdatesSref=true\r\n".
-              "@maxZoom=13\r\n".
+              "@maxZoom=17\r\n".
               "[point grid]\r\n".
               "@srefs=2169,LUREF (m),X,Y,;4326,Lat/Long Deg,Lat,Long,D;4326,Lat/Long Deg:Min,Lat,Long,DM;4326,Lat/Long Deg:Min:Sec,Lat,Long,DMS\r\n".
               "[location comment]\r\n".
@@ -221,17 +222,17 @@ class iform_mnhnl_bats extends iform_mnhnl_dynamic_1 {
     $submittedLocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     
     $r = '<div id="downloads" >
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_sites_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batsitesreport">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_sites_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'sitesreport">
       <p>'.lang::get('LANG_Sites_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"website_id":'.$args['website_id'].', "survey_id":'.$args['survey_id'].', "orig_location_type_id":'.$confirmedLocationTypeID.', "new_location_type_id":'.$submittedLocationTypeID.'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_conditions_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batconditionsreport">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_conditions_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'conditionsreport">
       <p>'.lang::get('LANG_Conditions_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
     </form>
-    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_species_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=batspeciesreport">
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_bats_species_download_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename='.$args['reportFilenamePrefix'].'speciesreport">
       <p>'.lang::get('LANG_Species_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
       <input type="submit" class=\"ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
@@ -620,23 +621,6 @@ hook_set_defaults=function(){
     }});
 };";
     return $retVal;
-/*
-//    $parts=explode(',',$args['locationWMSLayerLookup']);
-//    data_entry_helper::$onload_javascript .= "
-//locationListLayer = new OpenLayers.Layer.WMS('Sites',
-//        '".str_replace("{HOST}", $_SERVER['HTTP_HOST'], $parts[0])."',
-//        {TRANSPARENT: 'true',
-//          LAYERS: '".$parts[1]."'}, {
-//            isBaseLayer: false, singleTile: true, sphericalMercator: true, displayInLayerSwitcher: false});
-//clickedSite = function(features, div){
-//  if(features.length>0){
-//    var myValue = features[0].attributes.id;
-//    jQuery('#imp-location-name').val(myValue);
-//    loadLocation(myValue);
-//  }
-//};
-//";
-*/
   }
 
   protected static function communeJS($auth, $args) {

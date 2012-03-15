@@ -43,6 +43,7 @@ select.scOccurrenceReliability {
   width: auto;
 }
 .scCommentTable {
+  margin: 0;
   width:100%;
 }
 .scCommentTableBody {

@@ -34,9 +34,9 @@ $custom_terms = array(
 	'LANG_All_Users' => 'all users',
 	'LANG_Allocate_Locations' => 'Allocate squares',
 	'LANG_Save_Location_Allocations' => 'Save',
-	'LANG_Data_Download' => 'This Report provides details of the data entered in the surveys which are tagged for a particular programme.',
+	'LANG_Data_Download' => 'This Report provides details of the data entered in the surveys which are tagged for a particular target species.',
 	'LANG_Download_Button' => 'Download',
-	'LANG_Programme'=> 'Programme',
+	'LANG_TargetSpecies'=> 'Target Species',
 	'LANG_SHP_Download_Legend'=> 'SHP File Downloads',
 	'LANG_Shapefile_Download'=> 'These downloads provide zipped up shape files for the locations; due to the restrictions of the SHP file format, there are separate downloads for each of points, lines and polygons. Click to select:',
 	'LANG_Edit' => 'Edit',
@@ -103,10 +103,9 @@ $custom_terms = array(
 	'Recorder names' => 'Observer(s)',
 	'LANG_RecorderInstructions'=>"To select more than one observer, keep the CTRL button down.",
 
-	'Survey (1)' => 'Survey',
-	'Survey (2)' => 'Survey',
+	'Reptile Visit' => 'Visit',
 	'Duration'=>'Duration (minutes)',
-//	'Suitability' => 'Suitability',
+	'Unsuitability' => 'Unsuitable site for target species',
 	'Picture provided' => 'Picture',
 	'Weather' => 'Weather conditions',
 	'Temperature' => 'Temperature (&deg Celsius)',
@@ -127,7 +126,7 @@ $custom_terms = array(
 	
 	'validation_required' => 'Please enter a value for this field',
 	'validation_no_observation' => "The <strong>No observation</strong> must be checked if and only if there is no data in the species grid.",
-	'validation_prog-presence'=>'At least one programme must be selected.',
+	'validation_targ-presence'=>'At least one target species must be selected.',
 	'next step'=>'Next step',
 	'prev step'=>'Previous step'
 	

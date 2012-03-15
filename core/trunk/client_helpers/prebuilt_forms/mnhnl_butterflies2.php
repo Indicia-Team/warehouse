@@ -103,7 +103,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
               "@sep= \r\n".
               "@lookUpKey=meaning_id\r\n".
               "@tabNameFilter=ConditionsGrid\r\n".
-              "@setColumnsRequired=2:3:4:9\r\n".
+              "@setColumnsRequired=0:1:6\r\n".
              "=Species=\r\n".
               "[species grid]\r\n".
               "[*]\r\n".
@@ -253,8 +253,11 @@ createGridEntries = function(feature, isnew) {
     mySiteNum = feature.attributes.SiteNum;
   }
   var newCGrow = jQuery('.cgCloneableRow').clone().removeClass('cgCloneableRow').addClass(isnew ? 'cgAddedRow':'cggrid-row').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
+  var newCGrow2 = jQuery('.cgCloneableRow2').clone().removeClass('cgCloneableRow').addClass(isnew ? 'cgAddedRow2':'cggrid-row2').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
   newCGrow.find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
-  newCGrow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow)').attr('disabled','disabled');
+  newCGrow2.find('td').css('opacity',0.25);
+  newCGrow.find('*:.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow').removeAttr('disabled');
+  newCGrow2.find('*').attr('disabled','disabled');
   if(!isnew){
     if(typeof(feature)=='object'&&(feature instanceof Array)){
       myID = feature[0].attributes.data.id;
@@ -269,6 +272,7 @@ createGridEntries = function(feature, isnew) {
     newCGrow.find('.remove-cgnewrow').removeClass('remove-cgnewrow').addClass('clear-cgrow');
   }
   jQuery.each(newCGrow.children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownum--/g, cgRowNum);});
+  jQuery.each(newCGrow2.children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownum--/g, cgRowNum);});
   if(isnew){
     jQuery('#dummy-name').find('option').each(function (index, option){
       if(name == '' && jQuery('.cggrid-row,.cgAddedRow').find('.cggrid-name').filter('[value='+jQuery(option).val()+']').length == 0)
@@ -278,14 +282,14 @@ createGridEntries = function(feature, isnew) {
   }
   var insertPoint=false;
   insertCount=0; // we'll assume that the existing entries are in numerical order
-  jQuery('#conditions-grid').find('tr').each(function(index,elem){
-    if(jQuery(elem).find('.cggrid-name').length == 0 || 
-        parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
+  jQuery('#conditions-grid > tbody').find('.cggrid-row,.cgAddedRow').each(function(index,elem){
+    if(parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
       insertCount++;
-      insertPoint = jQuery(elem);
+      insertPoint = jQuery(elem).next();
     }
   });
-  insertCount--;
+//  insertCount--;
+  newCGrow2.insertAfter(insertPoint);
   newCGrow.insertAfter(insertPoint);
   newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
   recalcNumSites();
@@ -310,29 +314,37 @@ createGridEntries = function(feature, isnew) {
   return name;
 };
 moveGridEntries = function(cgRowNum) {
-  var oldPosition=false;
-  var newPosition=false;
+  var oldPosition=-1;
+  var newPosition=-1;
   var name;
-  jQuery('#conditions-grid').find('tr').each(function(index,elem){
+  jQuery('#conditions-grid > tbody').find('tr:.cggrid-row,.cgAddedRow').each(function(index,elem){
     if(jQuery(elem).data('cgRowNum')==cgRowNum){
       name = jQuery(elem).find('.cggrid-name').val(); // has been updated to new value.
       oldPosition=index;
     }});
-  jQuery('#conditions-grid').find('tr').each(function(index,elem){
+  jQuery('#conditions-grid > tbody').find('tr:.cggrid-row,.cgAddedRow').each(function(index,elem){
     if(index != 0 && index != oldPosition && parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
       newPosition=index; // points to row we insert after.
     }});
   if(newPosition==oldPosition-1) return;
-  var insertPoint=jQuery('#conditions-grid').find('tr:eq('+newPosition+')');
-  jQuery('#conditions-grid').find('tr:eq('+oldPosition+')').insertAfter(insertPoint);
+  var row1 = jQuery('#conditions-grid > tbody').find('tr:eq('+(2*oldPosition)+')');
+  var row2 = jQuery('#conditions-grid > tbody').find('tr:eq('+(2*oldPosition+1)+')');
+  if(newPosition < 0){
+    jQuery('#conditions-grid > tbody').prepend(row2);
+    jQuery('#conditions-grid > tbody').prepend(row1);
+  } else {
+    var insertPoint=jQuery('#conditions-grid > tbody').find('tr:eq('+(2*newPosition+1)+')');  // = item after which we insert
+    row2.insertAfter(insertPoint);
+    row1.insertAfter(insertPoint);
+  }
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
   jQuery('#species-grid-header,.sgNoObRow').each(function(i, Row) {
-    insertPoint=jQuery(Row).children(':eq('+newPosition+')');
-    insertPoint=jQuery(Row).children(':eq('+oldPosition+')').insertAfter(insertPoint);
+    insertPoint=jQuery(Row).children(':eq('+(newPosition+1)+')');
+    jQuery(Row).children(':eq('+(oldPosition+1)+')').insertAfter(insertPoint);
   });
   jQuery('.sgCloneableRow,.sgAddedRow,.sgOrigRow').each(function(i, Row) {
-    insertPoint=jQuery(Row).children(':eq('+(newPosition+1)+')');
-    insertPoint=jQuery(Row).children(':eq('+(oldPosition+1)+')').insertAfter(insertPoint);
+    insertPoint=jQuery(Row).children(':eq('+(newPosition+2)+')');
+    jQuery(Row).children(':eq('+(oldPosition+2)+')').insertAfter(insertPoint);
   });
 };
 
@@ -356,7 +368,7 @@ hook_ChildFeatureLoad = function(feature, data, child_id, options){
   setNameDropDowns(false, false);
 }
 hook_mnhnl_parent_changed = function(){
-  jQuery('#conditions-grid').find('tr').not(':eq(0)').remove();
+  jQuery('#conditions-grid > tbody').find('tr').remove();
   jQuery('#species-grid').find('tr').not(':eq(0)').not('.sgNoObRow').remove();
   jQuery('#species-grid').find('th').not(':eq(0)').remove();
   jQuery('#species-grid').find('td').not(':eq(0)').remove();
@@ -368,7 +380,7 @@ hook_mnhnl_parent_changed = function(){
        ), $options));
     return $retVal;
   }
-  protected static function get_control_get_control_pointgrid($auth, $args, $tabalias, $options) {
+  protected static function get_control_pointgrid($auth, $args, $tabalias, $options) {
     return iform_mnhnl_PointGrid($auth, $args, $options); 
   }
   
@@ -643,7 +655,10 @@ jQuery('.remove-sgnewrow').live('click', function() {
   
   protected static function get_control_conditionsgrid($auth, $args, $tabalias, $options) {
   	/* We will make the assumption that only one of these will be put onto a form.
-  	 * A lot of this is copied from the species control and has the same features. */
+  	 * A lot of this is copied from the species control and has the same features.
+  	 * Has been updated to have a target species attribute: this makes it too big to fit onto one line
+  	 * hardcode to 2 lines (could be configurable), first attribute is spread over 2 rows, rest on second row.
+  	 * first row has remove button, name, first attribute, date and comment.*/
     data_entry_helper::$javascript .= "
 ///////////////////////////////////////
 // Functions for the conditions grid //
@@ -665,33 +680,45 @@ jQuery('.remove-sgnewrow').live('click', function() {
                 'language' => 'eng'), //force english
               $options);
     $tabName = (isset($options['tabNameFilter']) ? $options['tabNameFilter'] : null);
-    $ret = '<p>'.lang::get("LANG_ConditionsGridInstructions").'</p><table style="display:none">';
+    $ret = '<p>'.lang::get("LANG_ConditionsGridInstructions")."</p>\n<table id=\"cgCloneableTable\" style='display:none' >";
     $cloneprefix='CG:--rownum--:--sampleid--:';
     $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
-    $ret .= "<tr class=\"cgCloneableRow\">
-<td class=\"ui-state-default remove-cgnewrow\" style=\"width: 1%\">X</td>
-<td class=\"cggrid-namecell\"><input name=\"".$cloneprefix."name\" class=\"cggrid-name narrow\" value=\"\" readonly=\"readonly\" >
-<input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$LocationTypeID."\"></td>
-<td class=\"cggrid-datecell\"><input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>";
     unset($attrArgs['id']);
     $attrArgs['fieldprefix']=$cloneprefix.'smpAttr';
+    // have to disabled averything in the cloneable grid due to validation issues.
+    data_entry_helper::$javascript .= "
+jQuery('#cgCloneableTable').find('td').attr('disabled','disabled').find('input,select').attr('disabled','disabled');";
     $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-    $ret .= self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName)."<td><input name=\"".$cloneprefix."comment\" class=\"cggrid-comment\" ></td></tr>";
-    $ret .= '</table><table id ="conditions-grid"><tr><th colSpan=2>'.lang::get("Site").'</th><th>'.lang::get('Date').'</th>';
+    $attrsHtml = self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName);
+    $pos = strpos($attrsHtml, '</td>');
+    $row1AttrHtml = substr($attrsHtml,0,$pos+5);
+    $row1AttrHtml = preg_replace ( '/>/' , ' rowspan=2>' , $row1AttrHtml, 1);
+    $row2AttrHtml = substr($attrsHtml,$pos+5);
+    $ret .= "  <tr class=\"cgCloneableRow\">
+    <td class=\"ui-state-default remove-cgnewrow\" style=\"width: 1%\" rowspan=2 >X</td>
+    <td class=\"cggrid-namecell\" rowspan=2 ><input name=\"".$cloneprefix."name\" class=\"cggrid-name narrow\" value=\"\" readonly=\"readonly\" >
+      <input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$LocationTypeID."\"></td>
+    ".$row1AttrHtml."
+    <td class=\"cggrid-datecell\" colspan=2><label class=\"auto-width\">".lang::get('Date').":</label><input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>
+    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label class=\"auto-width\">".lang::get('Comment')."</label><input name=\"".$cloneprefix."comment\" class=\"cggrid-comment\" ></td>
+  </tr>
+  <tr class=\"cgCloneableRow2\">\n    ".$row2AttrHtml."\n  </tr>\n</table>
+<table id =\"conditions-grid\"><thead><tr><th colSpan=2>".lang::get("Site").'</th>';
     foreach($sampleAttributes as $attr){
       if ((!isset($options['tabNameFilter']) || strcasecmp($options['tabNameFilter'],$attr['inner_structure_block'])==0))
         $ret .= '<th>'.$attr['caption'].'</th>';
     }
-    $ret .= '<th>'.lang::get('Comment').'</th></tr>';
-    $cgRowNum=0;
+    $ret .= '</tr></thead></tbody>';
+    $cgRowNum=0; // actually equivalent to 2 row group
     if(isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
       $subsamples = self::getLocationsInGrid($auth, $args);
       if (isset($subsamples))
         foreach($subsamples as $entity){
           $cgRowNum++;
           data_entry_helper::$javascript .= "
-jQuery('#conditions-grid').find('tr:eq(".$cgRowNum.")').data('locID', ".$entity['location_id'].").data('cgRowNum', ".$cgRowNum.");
-jQuery('#conditions-grid').find('tr:eq(".$cgRowNum.")').find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
+jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-2).")').data('locID', ".$entity['location_id'].").data('cgRowNum', ".$cgRowNum.");
+jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-2).")').find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
+jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-1).")').data('locID', ".$entity['location_id'].").data('cgRowNum', ".$cgRowNum.");
 ";
           if (isset($entity['sample_id'])){
             $fieldprefix='CG:'.$cgRowNum.':'.$entity['sample_id'].':';
@@ -706,11 +733,22 @@ jQuery('#conditions-grid').find('tr:eq(".$cgRowNum.")').find('.cggrid-date').dat
             $d = new DateTime($entity['date']);
             $entity['date'] = $d->format('d/m/Y');
           }
-          $ret .= "<tr class=\"cggrid-row\"><td class=\"ui-state-default clear-cgrow\" style=\"width: 1%\">X</td><td class=\"cggrid-namecell\"><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".$entity['name']."\" readonly=\"readonly\" ></td><td class=\"cggrid-datecell\"><input type=\"hidden\" name=\"".$fieldprefix."location_id\" value=\"".$entity['location_id']."\" class=\"cggrid-location_id\" ><input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"".$entity['date']."\" ></td>";
           $attrArgs['fieldprefix']=$fieldprefix.'smpAttr';
           $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-          $ret .= self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName);
-          $ret .= "<td><input name=\"".$fieldprefix."comment\" class=\"cggrid-comment\" value=\"".$entity['comment']."\" ></td></tr>";
+          $attrsHtml = self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName);
+          $pos = strpos($attrsHtml, '</td>');
+          $row1AttrHtml = substr($attrsHtml,0,$pos+5);
+          $row1AttrHtml = preg_replace ( '/>/' , ' rowspan=2>' , $row1AttrHtml, 1);
+          $row2AttrHtml = substr($attrsHtml,$pos+5);
+          $ret .= "  <tr class=\"cggrid-row\">
+    <td class=\"ui-state-default clear-cgrow\" style=\"width: 1%\" rowspan=2 >X</td>
+    <td class=\"cggrid-namecell\" rowspan=2 ><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".$entity['name']."\" readonly=\"readonly\" >
+      <input type=\"hidden\" name=\"".$fieldprefix."location_id\" value=\"".$entity['location_id']."\" class=\"cggrid-location_id\" ></td>
+    ".$row1AttrHtml."
+    <td class=\"cggrid-datecell\" colspan=2><label class=\"auto-width\">".lang::get('Date').":</label><input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"".$entity['date']."\"  ></td>
+    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label class=\"auto-width\">".lang::get('Comment').":</label><input name=\"".$fieldprefix."comment\" class=\"cggrid-comment\" value=\"".$entity['comment']."\" ></td>
+  </tr>
+  <tr class=\"cggrid-row2\">\n    ".$row2AttrHtml."\n  </tr>\n";
         }
     }
     $ret .= '</table>';
@@ -746,33 +784,40 @@ if (typeof jQuery.validator !== \"undefined\") {
 jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't need to worry about name drop down.
   if(jQuery(this).find('.cggrid-date').val()==\"\"){ // disable if blank.
     jQuery(this).find('td:not(.cggrid-datecell,.cggrid-namecell)').css('opacity',0.25);
-    // disable all  active controls from the row apart from the date.
-    // Do NOT disable the date or the container td, otherwise it is not submitted.
+    jQuery(this).next().find('td').css('opacity',0.25);
+    // disable all  active controls from the row group apart from the date.
+    // Do NOT disable the date or its container td, otherwise it is not submitted.
     jQuery(this).find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');
+    jQuery(this).next().find('*').attr('disabled','disabled');
     var myRowNum = jQuery(this).closest('tr').data('cgRowNum');
     jQuery('.smp-'+myRowNum).css('opacity','0.25').find(':checkbox').attr('disabled','disabled');
-  } else {";
+  } else { // when filled in, the date is mandatory, plus any specified attributes on the second row
+    jQuery(this).find('.cggrid-datecell').append('<span class=\"deh-required\">*</span>').find('input').addClass('required');";
     if (isset($options['setColumnsRequired'])){
       $columns = explode(':',$options['setColumnsRequired']);
       foreach($columns as $column)
         data_entry_helper::$javascript .= "
-      jQuery(this).closest('tr').find('td').eq(".$column.").append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');";
+      jQuery(this).next().find('td').eq(".$column.").append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');";
     }
     data_entry_helper::$javascript .= "
   }
 });
 jQuery('.cggrid-date').live('change', function() {
-  jQuery(this).closest('tr').find('td:not(.cggrid-datecell,.cggrid-namecell)').css('opacity','');
-  jQuery(this).closest('tr').find('*').removeAttr('disabled');
-  var myRowNum = jQuery(this).closest('tr').data('cgRowNum');
+  var myRow = jQuery(this).closest('tr');
+  var myRowNum = myRow.data('cgRowNum');
   jQuery('.smp-'+myRowNum).css('opacity','').find('input').removeAttr('disabled');
-  jQuery(this).closest('tr').find('.deh-required').remove();
-  jQuery(this).closest('tr').find('*').removeClass('required');";
-  if (isset($options['setColumnsRequired'])){
+  myRow.find('td').css('opacity','');
+  myRow.next().find('td').css('opacity','');
+  myRow.find('*').removeAttr('disabled').removeClass('required ui-state-error');;
+  myRow.next().find('*').removeAttr('disabled').removeClass('required ui-state-error');;
+  myRow.find('.deh-required,.inline-error').remove();
+  myRow.next().find('.deh-required,.inline-error').remove();
+  jQuery(this).addClass('required').parent().append('<span class=\"deh-required\">*</span>');";
+    if (isset($options['setColumnsRequired'])){
     $columns = explode(':',$options['setColumnsRequired']);
     foreach($columns as $column)
       data_entry_helper::$javascript .= "
-  jQuery(this).closest('tr').find('td').eq(".$column.").append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');";
+  myRow.next().find('td').eq(".$column.").append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');";
   }
   data_entry_helper::$javascript .= "
 });
@@ -780,12 +825,18 @@ jQuery('.clear-cgrow').live('click', function() { // existing location - no name
   var thisRow=jQuery(this).closest('tr');
   if(!confirm(\"".lang::get('LANG_conditionsgrid:clearconfirm')."\")) return;
   thisRow.find('td:not(.cggrid-datecell,.cggrid-namecell)').css('opacity',0.25);
-  thisRow.find(':checkbox').attr('checked',false);
-  thisRow.find('*').removeClass('required').removeClass('ui-state-error');
+  thisRow.next().find('td').css('opacity',0.25);
+  thisRow.next().find(':checkbox').attr('checked',false);
+  thisRow.find('*').removeClass('required ui-state-error');
+  thisRow.next().find('*').removeClass('required ui-state-error');
   thisRow.find(':text').filter('*:not(.cggrid-name)').val('');
+  thisRow.next().find(':text').val('');
   thisRow.find('select').val('');
+  thisRow.next().find('select').val('');
   thisRow.find('.inline-error,.deh-required').remove();
+  thisRow.next().find('.inline-error,.deh-required').remove();
   thisRow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');
+  thisRow.next().find('*').attr('disabled','disabled');
   var myRowNum = thisRow.data('cgRowNum');
   jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':text').attr('disabled','disabled').val('');
   jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':checkbox').attr('disabled','disabled').attr('checked','');
@@ -801,6 +852,7 @@ jQuery('.remove-cgnewrow').live('click', function() {
   var myRowNum = thisRow.data('cgRowNum');
   var mySiteNum = thisRow.data('SiteNum');
   jQuery('.smp-'+myRowNum).remove();
+  thisRow.next().remove();
   thisRow.remove();
   recalcNumSites();
   // TBD de highlight, demodify, and remove from map
@@ -851,7 +903,7 @@ hook_RemoveNewSite= function() {
   // assume all checks done by main function, and it will destroy the features after this is called.
   var highlighted = gethighlight();
   var myRowNum = highlighted[0].attributes.cgRowNum;
-  jQuery('.cgAddedRow').each(function(index, elem){
+  jQuery('.cgAddedRow,.cgAddedRow2').each(function(index, elem){
     if(jQuery(elem).data('cgRowNum') == myRowNum)
       jQuery(elem).remove();
   });
