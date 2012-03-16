@@ -3126,7 +3126,7 @@ $('div#$escaped_divId').indiciaTreeBrowser({
     global $indicia_templates;
     $options = array_merge(
       array(
-        'sep' => '',
+        'sep' => ' ', // space allows lines to flow, otherwise all one line.
         'template' => 'check_or_radio_group',
         'itemTemplate' => 'check_or_radio_group_item',
         'id' => $options['fieldname'],
