@@ -4222,7 +4222,20 @@ if (errors.length>0) {
           } else {
             $lookUpKey = 'id';
           }
-          $output = call_user_func(array('data_entry_helper', $ctrl), array_merge($attrOptions, array(
+          $output = "";
+          if($ctrl=='checkbox_group' && isset($attrOptions['default'])){
+            // special case for checkboxes where there are existing values: have to allow them to save unclicked, so need hidden blank field
+            // don't really want to put it in to the main checkbox_group control as don't know what ramifications that would have.
+            if (is_array($attrOptions['default'])) {
+              $checked = false;
+              foreach ($attrOptions['default'] as $defVal) {
+                if(is_array($defVal)){
+                  $output .= '<input type="hidden" value="" name="'.$defVal['fieldname'].'">';
+                } // really need the field name, so ignore when not provided
+              }
+            } 
+          }
+          $output .= call_user_func(array('data_entry_helper', $ctrl), array_merge($attrOptions, array(
                   'table'=>'termlists_term',
                   'captionField'=>'term',
                   'valueField'=>$lookUpKey,
