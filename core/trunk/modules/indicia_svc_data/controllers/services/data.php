@@ -70,7 +70,8 @@ class Data_Controller extends Data_Service_Base_Controller {
       'user',
       'taxa_taxon_list',
       'taxon_relation',
-      'taxon_group'
+      'taxon_group',
+      'notification'
   );
 
   // Standard functionality is to use the list_<plural_entity> views to provide a mapping between entity id
@@ -80,12 +81,14 @@ class Data_Controller extends Data_Service_Base_Controller {
   protected $allow_full_access = array(
       'taxa_taxon_list',
       'taxon_relation',
-      'taxon_group'
+      'taxon_group',
+      'notification'
   );
   
   // List of tables that do not use views to expose their data.
   protected $tables_without_views = array(
-    'index_websites_website_agreements'
+    'index_websites_website_agreements',
+    'notification'
   );
   
   /**
@@ -142,13 +145,22 @@ class Data_Controller extends Data_Service_Base_Controller {
     $this->handle_call('location_image');
   }
 
- /**
+  /**
   * Provides the /service/data/sample_image service.
   * Retrieves details of sample images.
   */
   public function sample_image()
   {
     $this->handle_call('sample_image');
+  }
+  
+  /**
+  * Provides the /services/data/occurrence service.
+  * Retrieves details of occurrences.
+  */
+  public function notification()
+  {
+    $this->handle_call('notification');
   }
 
   /**
@@ -166,7 +178,7 @@ class Data_Controller extends Data_Service_Base_Controller {
   */
   public function occurrence_attribute()
   {
-  $this->handle_call('occurrence_attribute');
+    $this->handle_call('occurrence_attribute');
   }
 
   /**
