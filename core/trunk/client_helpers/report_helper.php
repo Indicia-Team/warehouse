@@ -168,17 +168,24 @@ class report_helper extends helper_base {
   *      even if the field value contains a double quote which would have broken the syntax.
   *  - visible: true or false, defaults to true
   *  - template: allows you to create columns that contain dynamic content using a template, rather than just the output
-  *  of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
-  *  Note that template columns cannot be sorted by clicking grid headers.
-  * An example array for the columns option is:
-  * array(
-  *   array('fieldname' => 'survey', 'display' => 'Survey Title'),
-  *   array('display' => 'action', 'template' => '<a href="www.mysite.com\survey\{id}\edit">Edit</a>'),
-  *   array('display' => 'Actions', 'actions' => array(
-  *     array('caption' => 'edit', 'url'=>'{currentUrl}', 'urlParams'=>array('survey_id'=>'{id}'))
-  *   ))
-  *
-  * )
+  *      of a field. The template text can contain fieldnames in braces, which will be replaced by the respective field values.
+  *      Note that template columns cannot be sorted by clicking grid headers.
+  *     An example array for the columns option is:
+  *     array(
+  *       array('fieldname' => 'survey', 'display' => 'Survey Title'),
+  *       array('display' => 'action', 'template' => '<a href="www.mysite.com\survey\{id}\edit">Edit</a>'),
+  *       array('display' => 'Actions', 'actions' => array(
+  *         array('caption' => 'edit', 'url'=>'{currentUrl}', 'urlParams'=>array('survey_id'=>'{id}'))
+  *       ))
+  *     )
+  *  - json: set to true if the column contains a json string object with properties that can be decoded to give strings that 
+  *      can be used as replacements in a template. For example, a column is returned from a report with fieldname='data', json=true
+  *      and containing a data value '{"species":"Arnica montana","date":"14/04/2004"}'. A second column with fieldname='comment' 
+  *      contains the value 'Growing on a mountain pasture'. A third column is setup in the report with template set to 
+  *      '<div>{species} was recorded on {date}.<br/>{comment}</div>'. The json data and the second column's raw value are all
+  *      available in the template replacements, so the output is set to 
+  *      '<div>Arnice montana was recorded on 14/04/2004.<br/>Growing on a mountain pasture</div>'
+  *      template
   * </li>
   * <li><b>rowId</b>
   * Optional. Names the field in the data that contains the unique identifier for each row. If set, then the &lt;tr&gt; elements have their id attributes
@@ -374,6 +381,11 @@ class report_helper extends helper_base {
         if ($rowIdx % $options['galleryColCount']==0) {
           $r .= "<tr $rowClass$rowId>";
           $rowInProgress=true;
+        }
+        // first decode any json data
+        foreach ($options['columns'] as $field) {
+          if (isset($field['json']) && $field['json'] && isset($row[$field['fieldname']]))
+            $row = array_merge($row, json_decode($row[$field['fieldname']], true));
         }
         foreach ($options['columns'] as $field) {
           $classes=array();
@@ -1937,17 +1949,19 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
     mapInitialisationHooks.push(function(div) {
       function addDistPoint(features, record, wktCol, opts) {
-        var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
-        if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
-          geom.transform(div.indiciaProjection, div.map.projection);
+        if (record[wktCol]!==null) {
+          var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
+          if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
+            geom.transform(div.indiciaProjection, div.map.projection);
+          }
+          delete record[wktCol];
+          if (opts.type!=='vector') {
+            // render a point for symbols
+            geom = geom.getCentroid();
+          }
+          feature = new OpenLayers.Feature.Vector(geom, record);
+          features.push(feature);
         }
-        delete record[wktCol];
-        if (opts.type!=='vector') {
-          // render a point for symbols
-          geom = geom.getCentroid();
-        }
-        feature = new OpenLayers.Feature.Vector(geom, record);
-        features.push(feature);
       } 
       features = [];
       $addFeaturesJs
