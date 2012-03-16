@@ -64,7 +64,7 @@ class postgreSQL {
     if (!$db)
       $db = new Database();
     return $db->query("select 'V' as source_type, co.id, co.created_by_id, co.taxon, co.date_start, co.date_end, co.date_type, 
-        co.public_entered_sref, u.username, 'Status was set to ' || o.record_status as comment, null as auto_generated, o.updated_on
+        co.public_entered_sref, u.username, 'Status was set to ' || o.record_status as comment, null as auto_generated, o.record_status, o.updated_on
 from occurrences o
 join cache_occurrences co on co.id=o.id
 join users u on u.id=o.verified_by_id
@@ -72,7 +72,7 @@ where o.verified_on>'$last_run_date'
 and o.record_status not in ('I','T','C')
 union 
 select 'C' as source_type, co.id, co.created_by_id, co.taxon, co.date_start, co.date_end, co.date_type, co.public_entered_sref, u.username, 
-    oc.comment, oc.auto_generated, oc.updated_on
+    oc.comment, oc.auto_generated, o.record_status, oc.updated_on
 from occurrences o
 join cache_occurrences co on co.id=o.id
 join occurrence_comments oc on oc.occurrence_id=o.id and oc.deleted=false

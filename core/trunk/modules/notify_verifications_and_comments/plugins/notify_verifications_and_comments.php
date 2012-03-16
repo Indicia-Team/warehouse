@@ -38,9 +38,9 @@ function notify_verifications_and_comments_scheduled_task($last_run_date) {
                 'source' => 'Verifications and comments',
                 'source_type' => $notification->source_type,
                 'data' => json_encode(array(
-                    'username'=>$notification->username,'id'=>$notification->id,'comment'=>$notification->comment,
+                    'username'=>$notification->username,'occurrence_id'=>$notification->id,'comment'=>$notification->comment,
                     'taxon'=>$notification->taxon,'date'=>$date,'entered_sref'=>$notification->public_entered_sref,
-                    'auto_generated'=>$notification->auto_generated, 'updated_on'=>$notification->updated_on
+                    'auto_generated'=>$notification->auto_generated, 'record_status'=>$notification->record_status, 'updated_on'=>$notification->updated_on
                 )),
                 'user_id' => $notification->created_by_id,
                 // use digest mode the user selected for this notification, or their default if not specific
