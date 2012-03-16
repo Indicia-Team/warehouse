@@ -619,6 +619,12 @@ span.ind-cancel-icon {
 .filter-row input {
   margin: 0;
   width: 100%;
+  /* Ensure padding of input does not mess up 100% width */
+  box-sizing: border-box; /* css3 rec */
+  -moz-box-sizing: border-box; /* ff2 */
+  -ms-box-sizing: border-box; /* ie8 */
+  -webkit-box-sizing: border-box; /* safari3 */
+  -khtml-box-sizing: border-box; /* konqueror */
 }
 
 /* Tooltips for the report grid */

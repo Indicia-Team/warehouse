@@ -261,7 +261,7 @@ function simple_tooltip(target_items, name){
           function(response) {
             var tbody = $(div).find('tbody'), row, rows, rowclass='', hasMore=false, 
                 value, rowInProgress=false, rowOutput, rowId, features=[],
-                feature, geom, map;
+                feature, geom, map, valueData;
             // if we get a count back, then update the stored count
             if (typeof response.count !== "undefined") {
               div.settings.recordCount = response.count;
@@ -288,6 +288,13 @@ function simple_tooltip(target_items, name){
                   rowOutput = '<tr ' + rowId + rowclass + '>';
                   rowInProgress=true;
                 }
+                // decode any json columns
+                $.each(div.settings.columns, function(idx, col) {
+                  if (typeof col.json!=="undefined" && col.json && typeof row[col.fieldname]!=="undefined") {
+                    valueData = JSON.parse(row[col.fieldname]);
+                    $.extend(row, valueData)
+                  }
+                });
                 $.each(div.settings.columns, function(idx, col) {
                   if (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined" && typeof col.mappable!=="undefined" && col.mappable==="true") {
                     geom=OpenLayers.Geometry.fromWKT(row[col.fieldname]);
