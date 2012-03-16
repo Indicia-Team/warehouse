@@ -125,7 +125,6 @@ function iform_mnhnl_getParameters() {
         ),
         array(
           'name'=>'includeLocationComment',
-          'caption'=>'What to do with Location Comments',
           'caption'=>'Include Location Comment when viewing location data',
           'description'=>'Choose whether to include the location comment in the list of fields which can be set.',
           'type'=>'boolean',
@@ -1410,7 +1409,7 @@ StartNewSite = function(){
 ") : 
 "  jQuery('#".$options['mainFieldID']."').val('').change();
 ").
-"  setPermissionsNewSite();
+"  setDrawnGeom();
   // No currently selected feature. Create a dummy label new one.
   SiteNum++;
   hook_new_site_added(false, SiteNum);
@@ -2373,7 +2372,7 @@ function handleEnteredSref(value) {
     <option value=\"$secondary\">".lang::get('LANG_Location_Type_Secondary')."</option>
   </select><br />";
 	} else
-		$retVal .= "<input type=\"hidden\" name=\"location:location_type_id\" value=\"".$primary."\" />
+		$retVal .= "<input id=\"location_location_type_id\" type=\"hidden\" name=\"location:location_type_id\" value=\"".$primary."\" />
 ";
     $dummy=array('','');
     if($args['locationMode']!='multi'){
@@ -2421,24 +2420,34 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force){
   }
   $primary = iform_mnhnl_getTermID($auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
   data_entry_helper::$javascript .= "SiteEditable = {";
+  $locCheckList = array();
+  $locEditList = array();
   foreach($locList as $location){
-    $canEdit=true;
     if($location['location_type_id']==$primary){
-      $sample_list_args=array(
+      $locCheckList[] = $location['id'];
+      $locEditList[$location['id']]=true;
+    } else {
+      data_entry_helper::$javascript .= "\"".$location['id']."\" : false,
+";
+    }
+  }
+  $sample_list_args=array(
         'nocache'=>true,
         'extraParams'=>array_merge(array(
               'view'=>'detail',
               'website_id'=>$args['website_id'],
-              'location_id'=>$location['id']),
+              'location_id'=>$locCheckList),
             $auth['read']),
         'table'=>'sample');
-      // Idea here is to get a list of all locations in order to build drop downs.
-      $smpList = data_entry_helper::get_population_data($sample_list_args);
-      if (isset($smpList['error'])) return $smpList['error'];
-      $smpIDs = array();
-      foreach($smpList as $sample)
-        $smpIDs[] = $sample['id'];
-      $sample_attr_args=array(
+  $smpList = data_entry_helper::get_population_data($sample_list_args);
+  if (isset($smpList['error'])) return $smpList['error'];
+  $smpIDs = array();
+  $smpLocList = array();
+  foreach($smpList as $sample){
+    $smpIDs[] = $sample['id'];
+    $smpLocList[$sample['id']] = $sample['location_id'];
+  }
+  $sample_attr_args=array(
         'nocache'=>true,
         'extraParams'=>array_merge(array(
               'website_id'=>$args['website_id'],
@@ -2446,17 +2455,16 @@ function iform_mnhnl_set_editable($auth, $args, $node, $locList, $force){
               'sample_id'=>$smpIDs),
             $auth['read']),
         'table'=>'sample_attribute_value');
-      $smpAttr = data_entry_helper::get_population_data($sample_attr_args);
-      $canEdit=true;
-      foreach($smpAttr as $attribute){
-        if(!empty($attribute['id']) &&
-            $attribute['sample_attribute_id'] == $userIdAttr &&
-            $attribute['raw_value'] != $user->uid){
-          $canEdit=false;
-        }
-      }
-    } else $canEdit=false; // confirm location
-    data_entry_helper::$javascript .= "\"".$location['id']."\" : ".($canEdit ? "true" : "false").",
+  $smpAttr = data_entry_helper::get_population_data($sample_attr_args);
+  foreach($smpAttr as $attribute){
+    if(!empty($attribute['id']) &&
+        $attribute['sample_attribute_id'] == $userIdAttr &&
+        $attribute['raw_value'] != $user->uid){
+      $locEditList[$smpLocList[$attribute['sample_id']]]=false;
+    }
+  }
+  foreach($locEditList as $id => $state){
+    data_entry_helper::$javascript .= "\"".$id."\" : ".($state ? "true" : "false").",
 ";
   }
   data_entry_helper::$javascript .= "};

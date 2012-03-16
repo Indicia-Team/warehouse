@@ -48,7 +48,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
     return array(
       'title'=>self::get_title(),
       'category' => 'MNHNL forms',      
-      'description'=>'MNHNL Reptiles form. Inherits from Dynamic 1.'
+      'description'=>'Luxembourg Reptile Biomonitoring form. Inherits from Dynamic 1.'
     );
   }
   /** 
@@ -56,7 +56,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'MNHNL Reptiles';  
+    return 'Luxembourg Reptile Biomonitoring';  
   }
 
   public static function get_parameters() {    
@@ -150,7 +150,7 @@ class iform_mnhnl_reptiles extends iform_mnhnl_dynamic_1 {
         ));
     data_entry_helper::$javascript .= "
 jQuery('[name=targetSpecies]').change(function(){
-  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"taxon_list_id\":".$args['extra_list_id'].", \"targetSpecies\":'+jQuery(this).val()+'}');
+  jQuery('[name=params]').val('{\"survey_id\":".$args['survey_id'].", \"taxon_list_id\":".$args['extra_list_id'].", \"target_species\":'+jQuery(this).val()+'}');
   var action='".data_entry_helper::$base_url."/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_reptile_download_report.xml&reportSource=local&auth_token=".$readAuth['auth_token']."&nonce=".$readAuth['nonce']."&mode=csv&filename=';
   var filename=jQuery(this).find('[selected]')[0].text.replace(/ /g, \"\");
   action=action+filename;

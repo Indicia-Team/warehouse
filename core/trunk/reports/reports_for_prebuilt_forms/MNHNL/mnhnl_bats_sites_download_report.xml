@@ -16,9 +16,9 @@
       <tabColumn name='xy' display='XY centroid' func="(replace(#this#.centroid_sref, ',' , ''))" />
       <tabColumn name='points' display='XY point coordinates' func="(CASE
      WHEN #this#.boundary_geom is null THEN (replace(#this#.centroid_sref, ',' , ''))
-     WHEN GeometryType(#this#.boundary_geom) = 'POINT' THEN replace(replace(replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),')',''),'(',''),'POINT','')
-     WHEN GeometryType(#this#.boundary_geom) = 'MULTIPOINT' THEN replace(replace(replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),')',''),'(',''),'MULTIPOINT','')
-     WHEN GeometryType(#this#.boundary_geom) = 'GEOMETRYCOLLECTION' AND NOT ST_IsEmpty(ST_CollectionExtract(#this#.boundary_geom, 1)) THEN replace(replace(replace(ST_AsText(ST_Transform(ST_CollectionExtract(#this#.boundary_geom,1),2169)),')',''),'(',''),'MULTIPOINT','')
+     WHEN GeometryType(#this#.boundary_geom) = 'POINT' THEN regexp_replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')
+     WHEN GeometryType(#this#.boundary_geom) = 'MULTIPOINT' THEN regexp_replace(ST_AsText(ST_Transform(#this#.boundary_geom,2169)),'[(){}\\x22]|\\.[0-9]*|MULTIPOINT','', 'g')
+     WHEN GeometryType(#this#.boundary_geom) = 'GEOMETRYCOLLECTION' AND NOT ST_IsEmpty(ST_CollectionExtract(#this#.boundary_geom, 1)) THEN regexp_replace(ST_AsText(ST_Transform(ST_CollectionExtract(#this#.boundary_geom,1),2169)),'[(){}\\x22]|\\.[0-9]*|MULTIPOINT','', 'g')
      ELSE ''
 END)" />
       <tabColumn name='comment' display='Comment'/>

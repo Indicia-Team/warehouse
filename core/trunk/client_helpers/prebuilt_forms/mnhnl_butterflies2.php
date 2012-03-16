@@ -45,7 +45,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
     return array(
       'title'=>self::get_title(),
       'category' => 'MNHNL forms',      
-      'description'=>'MNHNL Butterflies de Jour form. Inherits from Dynamic 1.'
+      'description'=>'Luxembourg Butterfly Biomonitoring (site based) form. Inherits from Dynamic 1.'
     );
   }
   /** 
@@ -53,7 +53,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
    * @return string The title of the form.
    */
   public static function get_title() {
-    return 'MNHNL Butterflies de Jour';  
+    return 'Luxembourg Butterfly Biomonitoring (site based)';  
   }
 
   public static function get_parameters() {    
@@ -100,7 +100,7 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
               "[year]\r\n".
               "@boltTo=passage\r\n".
               "[conditions grid]\r\n".
-              "@sep= \r\n".
+              "@sep=<br />\r\n".
               "@lookUpKey=meaning_id\r\n".
               "@tabNameFilter=ConditionsGrid\r\n".
               "@setColumnsRequired=0:1:6\r\n".
@@ -253,7 +253,7 @@ createGridEntries = function(feature, isnew) {
     mySiteNum = feature.attributes.SiteNum;
   }
   var newCGrow = jQuery('.cgCloneableRow').clone().removeClass('cgCloneableRow').addClass(isnew ? 'cgAddedRow':'cggrid-row').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
-  var newCGrow2 = jQuery('.cgCloneableRow2').clone().removeClass('cgCloneableRow').addClass(isnew ? 'cgAddedRow2':'cggrid-row2').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
+  var newCGrow2 = jQuery('.cgCloneableRow2').clone().removeClass('cgCloneableRow2').addClass(isnew ? 'cgAddedRow2':'cggrid-row2').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
   newCGrow.find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
   newCGrow2.find('td').css('opacity',0.25);
   newCGrow.find('*:.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow').removeAttr('disabled');
@@ -289,8 +289,13 @@ createGridEntries = function(feature, isnew) {
     }
   });
 //  insertCount--;
-  newCGrow2.insertAfter(insertPoint);
-  newCGrow.insertAfter(insertPoint);
+  if(!insertPoint){
+    jQuery('#conditions-grid > tbody').prepend(newCGrow2);
+    jQuery('#conditions-grid > tbody').prepend(newCGrow);
+  } else {
+    newCGrow2.insertAfter(insertPoint);
+    newCGrow.insertAfter(insertPoint);
+  }
   newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
   recalcNumSites();
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
@@ -708,7 +713,7 @@ jQuery('#cgCloneableTable').find('td').attr('disabled','disabled').find('input,s
       if ((!isset($options['tabNameFilter']) || strcasecmp($options['tabNameFilter'],$attr['inner_structure_block'])==0))
         $ret .= '<th>'.$attr['caption'].'</th>';
     }
-    $ret .= '</tr></thead></tbody>';
+    $ret .= '</tr></thead><tbody>';
     $cgRowNum=0; // actually equivalent to 2 row group
     if(isset(data_entry_helper::$entity_to_load["sample:updated_by_id"])){ // only set if data loaded from db, not error condition
       $subsamples = self::getLocationsInGrid($auth, $args);
@@ -751,7 +756,7 @@ jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-1).")').data('locI
   <tr class=\"cggrid-row2\">\n    ".$row2AttrHtml."\n  </tr>\n";
         }
     }
-    $ret .= '</table>';
+    $ret .= '</tbody></table>';
     data_entry_helper::$onload_javascript .= "
 cgRowNum=$cgRowNum;";
     data_entry_helper::$javascript .= "
