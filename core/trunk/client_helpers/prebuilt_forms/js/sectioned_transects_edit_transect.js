@@ -23,8 +23,8 @@ function clearSection() {
 function loadSectionDetails(section) {
   clearSection();
   if (typeof indiciaData.sections[section]!=="undefined") {
-    $('#section-location-id').val(indiciaData.sections[section]['id']);
-    $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/location_attribute_value?location_id=" + indiciaData.sections[section]['id'] +
+    $('#section-location-id').val(indiciaData.sections[section].id);
+    $.getJSON(indiciaData.indiciaSvc + "index.php/services/data/location_attribute_value?location_id=" + indiciaData.sections[section].id +
         "&mode=json&view=list&callback=?&auth_token=" + indiciaData.readAuth.auth_token + "&nonce=" + indiciaData.readAuth.nonce, 
         function(data) {
           var attrname;
@@ -44,10 +44,11 @@ function loadSectionDetails(section) {
               radioidx=0;
               // check the correct radio
               while ($('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
-                  $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()!=attr.raw_value)
+                  $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()!==attr.raw_value) {
                 radioidx ++;
+              }
               if ($('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).length>0 && 
-                  $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()==attr.raw_value) {
+                  $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).val()===attr.raw_value) {
                 $('#section-form #locAttr\\:'+attr.location_attribute_id+'\\:'+radioidx).attr('checked', true);
               }
             } else {
@@ -70,7 +71,7 @@ function selectSection(section, doFeature) {
     if (doFeature) {
       indiciaData.selectFeature.unselectAll();
       $.each(indiciaData.mapdiv.map.editLayer.features, function(idx, feature) {
-        if (feature.attributes.section==section && feature.renderIntent != 'select') {
+        if (feature.attributes.section===section && feature.renderIntent !== 'select') {
           indiciaData.selectFeature.select(feature);
           selectedFeature = feature;
         }
@@ -81,7 +82,7 @@ function selectSection(section, doFeature) {
     }
     indiciaData.mapdiv.map.editLayer.redraw();
   }
-  if (indiciaData.currentSection!=section) {
+  if (indiciaData.currentSection!==section) {
     loadSectionDetails(section);
     indiciaData.currentSection=section;
   }
@@ -104,7 +105,7 @@ $(document).ready(function() {
   });  
   
   $('.section-select li').live('click', function(evt) {
-    var parts = evt.target.id.split('-')
+    var parts = evt.target.id.split('-');
     selectSection(parts[parts.length-1], true);
   });
   
@@ -135,11 +136,9 @@ $(document).ready(function() {
       var baseStyle = {        
         strokeWidth: 4,
         strokeDashstyle: "dash"
-      }
-      var defaultRule = new OpenLayers.Rule({
+      }, defaultRule = new OpenLayers.Rule({
         symbolizer: $.extend({strokeColor: "#0000FF"}, baseStyle)
-      });
-      var selectedRule = new OpenLayers.Rule({
+      }), selectedRule = new OpenLayers.Rule({
         symbolizer: $.extend({strokeColor: "#FFFF00"}, baseStyle)
       });
       // restrict the label style to the type boundary lines, as this excludes the virtual edges created during a feature modify
@@ -147,7 +146,7 @@ $(document).ready(function() {
         filter: new OpenLayers.Filter.Comparison({
             type: OpenLayers.Filter.Comparison.EQUAL_TO,
             property: "type",
-            value: "boundary",
+            value: "boundary"
         }),
         symbolizer: {
           label : "${section}",
@@ -158,8 +157,7 @@ $(document).ready(function() {
           labelAlign: "cm"
         }
       });
-      var defaultStyle = new OpenLayers.Style();
-      var selectedStyle = new OpenLayers.Style();
+      var defaultStyle = new OpenLayers.Style(), selectedStyle = new OpenLayers.Style();
 
       defaultStyle.addRules([defaultRule, labelRule]);
       selectedStyle.addRules([selectedRule, labelRule]);
@@ -188,7 +186,7 @@ $(document).ready(function() {
         evt.feature.renderIntent = 'select';        
         div.map.editLayer.redraw();
         $.each(evt.feature.layer.features, function(idx, feature) {
-          if (feature.attributes.section==current && feature != evt.feature) {
+          if (feature.attributes.section===current && feature !== evt.feature) {
             oldSection.push(feature);
           }
         });
@@ -208,9 +206,9 @@ $(document).ready(function() {
           'location:boundary_geom':evt.feature.geometry.toString(),
           'location:location_type_id':indiciaData.sectionTypeId,
           'website_id':indiciaData.website_id
-        }
+        };
         if (typeof indiciaData.sections[current]!=="undefined") {
-          data['location:id']=indiciaData.sections[current]['id'];
+          data['location:id']=indiciaData.sections[current].id;
         } else {
           data['locations_website:website_id']=indiciaData.website_id;
         }
