@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<report title="Record counts by taxon group" description="Lists taxon groups and the number of records within them. ">
+      <query website_filter_field="o.website_id">
+      SELECT #columns#
+      FROM taxon_groups tg
+      LEFT JOIN cache_occurrences o on o.taxon_group_id=tg.id
+      #agreements_join#
+      LEFT JOIN (occurrence_attribute_values oav
+          JOIN termlists_terms certainty ON certainty.id=oav.int_value
+      ) ON oav.occurrence_id=o.id AND oav.deleted='f' AND oav.occurrence_attribute_id=#certainattr#   
+      #joins#
+      WHERE tg.deleted=false
+      AND  #sharing_filter# 
+      AND (o.zero_abundance='f' OR o.id IS NULL)
+      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+      AND ( 
+          (o.record_status='V') OR
+          ('#quality#'='C' AND (certainty.sort_order&lt;=#maxcertain# OR certainty.id IS NULL)) OR
+          ('#quality#'='L' AND (certainty.sort_order&lt;=#maxlikely# OR certainty.id IS NULL)) OR
+          ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
+          ('#quality#'='!R')
+      )
+      AND o.record_status&lt;&gt;'R'
+      </query>
+      <order_bys>
+            <order_by>value DESC</order_by>
+      </order_bys>
+      <params>
+        <param name='date_from' display='Date From' datatype='date' />
+        <param name='date_to' display='Date To' datatype='date' />
+        <param name='survey_id' display='Survey' description='Select the survey to return data for, or leave for all surveys' datatype='lookup'
+            query='SELECT id, title as caption FROM surveys' population_call='direct:survey:id:title' />
+        <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
+            lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
+        <param name='certainattr' display='Certainty attribute' datatype='lookup'
+            description='Select the attribute which defines certainty. This must be a lookup, where the term sort order defines the order of certainty (most certain first).'
+            population_call='direct:occurrence_attribute:id:caption' emptyvalue='0' />
+        <param name='maxcertain' display='Certain sort order' description='Maximum sort order for certainty attribute terms that counts as certain' datatype='text' emptyvalue='0' />
+        <param name='maxlikely' display='Likely sort order' description='Maximum sort order for for certainty attribute terms that counts as likely' datatype='text' emptyvalue='0' />
+      </params>
+      <columns>
+            <column name="id" visible="false" sql="tg.id" unique="true" distincton="true" />
+            <column name="name" display="Group Name" style="background-color: #e7e7e7;" sql="tg.title" />
+            <column name="value" display="No. of Records" distincton="true" sql="count(distinct o.id)" aggregate="true" in_count="false"/>
+            <column name="minvalue" visible="false" sql="0" aggregate="true" />
+            <column name="maxvalue" visible="false" sql="max(count(distinct o.id)) OVER ()" aggregate="true"/>
+      </columns>
+</report>
