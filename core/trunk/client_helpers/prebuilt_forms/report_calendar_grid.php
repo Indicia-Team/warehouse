@@ -57,9 +57,10 @@ class iform_report_calendar_grid {
           'caption'=>'Report Name',
           'description'=>'Select the report to provide the output for this page.',
           'type'=>'report_helper::report_picker',
-          'default'=>'library/samples/samples_list_for_cms_user.xml',
+          'default'=>'library/samples/samples_list_for_cms_user2',
           'group'=>'Report Settings'
-        ), array(
+        ),
+        array(
           'name' => 'param_presets',
           'caption' => 'Preset Parameter Values',
           'description' => 'To provide preset values for any report parameter and avoid the user having to enter them, enter each parameter into this '.
@@ -74,6 +75,19 @@ class iform_report_calendar_grid {
           'caption'=>'Include user specific location filter',
           'description'=>'Choose whether to include a filter on the locations assigned to this user using the CMS User ID location attribute. This alters how the links are highlighted, and provides a default site when creationg a new sample.',
           'type'=>'boolean',
+          'default' => false,
+          'required' => false,
+          'group' => 'Report Settings'
+        ),
+        array(
+          'name'=>'locationTypeFilter',
+          'caption'=>'Restrict locations to type',
+          'description'=>'Retrict the locations in the user specific location filter to a particular location type. The CMS User ID attribute must be defined for this location type or all location types.',
+          'type'=>'select',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams'=>array('termlist_external_key'=>'indicia:location_types'),
           'default' => false,
           'required' => false,
           'group' => 'Report Settings'
@@ -128,7 +142,7 @@ class iform_report_calendar_grid {
           'name'=>'newURL',
           'caption'=>'New Sample URL',
           'description'=>'The URL to invoke when selecting a date which does not have a previous sample associated with it.<br />'.
-                         'To the end of this will be appended "&date=&lt;X&gt;" whose value will be the date selected.',
+                         'To the end of this will be appended "&date=&lt;X&gt;" whose value will be the date selected (see also "New Sample Location Parameter").',
           'type'=>'string',
           'group' => 'Report Settings'
         ),
@@ -156,23 +170,23 @@ class iform_report_calendar_grid {
   public static function build_link($records, $options, $cellContents){
     // siteIDFilter not present if all selected.
     if(count($records)==1){
-      if(isset($options['siteIDFilter']) && $$records[0]['location_id']!=$options['siteIDFilter'])
+      if(isset($options['siteIDFilter']) && $records[0]['location_id']!=$options['siteIDFilter'])
         return array('cellclass'=>'otherSite',
-            'cellContents'=>"<span title=\"This date has a sample for ".$records[0]["location_name"]." already recorded\" >".$cellContents.'</span>');
+            'cellContents'=>"<span title=\"This date has a sample for ".$records[0]["location_name"]." already recorded (ID=".$records[0]["sample_id"].")\" >".$cellContents.'</span>');
       return array('cellclass'=>'existingLink',
-          'cellContents'=>'<a href="'.$options["existingURL"].'sample_id='.$records[0]["sample_id"].'" title="View existing sample for '.$records[0]["location_name"].' on this date" >'.$cellContents.'</a>');
+          'cellContents'=>'<a href="'.$options["existingURL"].'sample_id='.$records[0]["sample_id"].'" title="View existing sample for '.$records[0]["location_name"].' on this date (ID='.$records[0]["sample_id"].')" >'.$cellContents.'</a>');
     } else {
       $retval = array('cellclass'=>(isset($options['siteIDFilter']) ? 'otherSite' : 'existingLink'), 'cellContents'=>$cellContents);
       foreach($records as $record){
         if(isset($options['siteIDFilter'])){
           if($record['location_id']==$options['siteIDFilter']){
             $retval['cellclass']="multiLink";
-            $retval['cellContents'].='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date" >'.$record["location_name"].'</a>';
+            $retval['cellContents'].='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date (ID='.$records[0]["sample_id"].')" >'.$record["location_name"].'</a>';
           } else {
-            $retval['cellContents'].="<br/><span title=\"This date has a sample for ".$record["location_name"]." already recorded\" >".$record["location_name"].'</span>';
+            $retval['cellContents'].="<br/><span title=\"This date has a sample for ".$record["location_name"]." already recorded (ID=".$records[0]["sample_id"].")\" >".$record["location_name"].'</span>';
           }
         } else {
-          $retval['cellContents'].='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date" >'.$record["location_name"].'</a>';
+          $retval['cellContents'].='<br/><a href="'.$options["existingURL"].'sample_id='.$record["sample_id"].'" title="View existing sample for '.$record["location_name"].' on this date (ID='.$records[0]["sample_id"].')" >'.$record["location_name"].'</a>';
         }
       }
       return $retval;
@@ -220,11 +234,12 @@ class iform_report_calendar_grid {
         'fieldprefix'=>'locAttr',
         'extraParams'=>$readAuth,
         'survey_id'=>$presets['survey_id']);
+    if(isset($args['locationTypeFilter']))
+      $attrArgs['location_type_id'] = $args['locationTypeFilter'];
     $locationAttributes = data_entry_helper::getAttributes($attrArgs, false);
     $cmsAttr=extract_cms_user_attr($locationAttributes,false);
-    var_dump($cmsAttr);
     if(!$cmsAttr){
-      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey.').'</p>');
+      return('<p>'.lang::get('The location selection control requires that CMS User ID location attribute is defined for locations in this survey. If restricted to a particular location type, this must be set in the parameters page to this form.').'</p>');
     }
     $attrListArgs=array('nocache'=>true,
         'extraParams'=>array_merge(array('view'=>'list', 'website_id'=>$args['website_id'],

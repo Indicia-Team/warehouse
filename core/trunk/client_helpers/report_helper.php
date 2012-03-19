@@ -1752,11 +1752,11 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     $weekno=0;
     // ISO Date - Mon=1, Sun=7
     // Week 1 = the week with date_from in
-    if(!isset($options['weekstart'])) {
+    if(!isset($options['weekstart']) || $options['weekstart']=='') {
       $options['weekstart']="weekday=7"; // Default Sunday
     }
     $weekstart=explode('=',$options['weekstart']);
-    if(!isset($options['weekNumberFilter'])) {
+    if(!isset($options['weekNumberFilter']) || $options['weekNumberFilter']=='') {
       $options['weekNumberFilter']=":";
     }
     $weeknumberfilter=explode(':',$options['weekNumberFilter']);
@@ -1795,20 +1795,20 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $header_date->modify('+1 day');
     }
     $r .= "</tr>";
-    if(isset($options['weekOneContains'])){
+    if(isset($options['weekOneContains']) && $options['weekOneContains']!=""){
       $weekOne_date = date_create($date_from['year'].'-'.$options['weekOneContains']);
       if(!$weekOne_date){
-        $warnings .= "Week one month-day combination unrecognised {".$weekstart[1]."} defaulting to Jan-01<br />";
-        $weekstart[1]=7;
-      } else {
-        while($weekOne_date->format('N')!=$weekstart[1]){
-          $weekOne_date->modify('-1 day'); // scan back to start of week
-        }
-        while($weekOne_date > $consider_date){
-          $weekOne_date->modify('-7 days');
-          $weekno--;
-        }
+        $warnings .= "Week one month-day combination unrecognised {".$options['weekOneContains']."} defaulting to Jan-01<br />";
+        $weekOne_date = date_create($date_from['year'].'-Jan-01');
       }
+    } else 
+      $weekOne_date = date_create($date_from['year'].'-Jan-01');
+    while($weekOne_date->format('N')!=$weekstart[1]){
+      $weekOne_date->modify('-1 day'); // scan back to start of week
+    }
+    while($weekOne_date > $consider_date){
+      $weekOne_date->modify('-7 days');
+      $weekno--;
     }
     if($weeknumberfilter[0]!=''){
       while($weekno < ($weeknumberfilter[0]-1)){
@@ -1973,7 +1973,303 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   }\n";
     }
   }
+
+ /**
+  * <p>Outputs a calendar grid that loads the content of a report.</p>
+  * <p>The grid supports a pagination header (year by year). If you need 2 grids on one page, then you must
+  * define a different id in the options for each grid.</p>
+  * <p>The grid operation has NOT been AJAXified.</p>
+  *
+  * @param array $options Options array with the following possibilities:<ul>
+  * <li><b>year</b><br/>
+  * The year to output the calendar for. Default is this year.</li>
+  * <li><b>id</b><br/>
+  * Optional unique identifier for the grid's container div. This is required if there is more than
+  * one grid on a single web page to allow separation of the page and sort $_GET parameters in the URLs
+  * generated.</li>
+  * <li><b>mode</b><br/>
+  * Pass report for a report, or direct for an Indicia table or view. Default is report.</li>
+  * <li><b>readAuth</b><br/>
+  * Read authorisation tokens.</li>
+  * <li><b>dataSource</b><br/>
+  * Name of the report file or table/view. when used, any user_id must refer to the CMS user ID, not the Indicia
+  * User.</li>
+  * <li><b>view</b>
+  * When loading from a view, specify list, gv or detail to determine which view variant is loaded. Default is list.
+  * </li>
+  * <li><b>extraParams</b><br/>
+  * Array of additional key value pairs to attach to the request. This should include fixed values which cannot be changed by the 
+  * user and therefore are not needed in the parameters form.
+  * </li>
+  * <li><b>paramDefaults</b>
+  * Optional associative array of parameter default values. Default values appear in the parameter form and can be overridden.</li>
+  * <li><b>includeWeekNumber</b>
+  * Should a Week Number column be included in the grid? Defaults to false.</li>
+  * <li><b>weekstart</b>
+  * Defines the first day of the week. There are 2 options.<br/>'.
+  *  weekday=<n> where <n> is a number between 1 (for Monday) and 7 (for Sunday). Default is 'weekday=7'
+  *  date=MMM-DD where MMM-DD is a month/day combination: e.g. choosing Apr-1 will start each week on the day of the week on which the 1st of April occurs.</li>
+  * <li><b>weekOneContains</b>
+  * Defines week one as the week which contains this date. Format should be MMM-DD, which is a month/day combination: e.g. choosing Apr-1 will define
+  * week one as being the week containing the 1st of April. Defaults to the 1st of January.</li>
+  * <li><b>weekNumberFilter</b>
+  * Restrict displayed weeks to between 2 weeks defined by their week numbers. Colon separated.
+  * Leaving an empty value means the end of the year.
+  * Examples: "1:30" - Weeks one to thirty inclusive.
+  * "4:" - Week four onwards.
+  * ":5" - Upto and including week five.</li>
+  */
+  // Future Enhancements? Allow restriction to month.
+  public static function report_calendar_summary($options) {
+    // I know that there are better ways to approach some of the date manipulation, but they are PHP 5.3+.
+    // We support back to PHP 5.2
+    // TODO : i8n
+    $warnings="";
+    data_entry_helper::add_resource('jquery_ui');
+    // there are some report parameters that we can assume for a calendar based request...
+    // the report must have a date field, a user_id field if set in the configuration, and a location_id.
+    // default is samples_list_for_cms_user.xml
+    $options = self::get_report_calendar_summary_options($options);
+    $extras = '';
+    self::request_report($response, $options, $currentParamValues, false, $extras);
+    if (isset($response['error'])) {
+      return "ERROR RETURNED FROM request_report:".$response['error'];
+    }
+    // We're not even going to bother with asking the user to populate a partially filled in report parameter set.
+    if (isset($response['parameterRequest'])) {
+      return '<p>Internal Error: Report request parameters not set up correctly.<p>';    
+    }
+    // convert records to a date based array so it can be used when generating the grid.
+    $records = $response['records'];
+    $pageUrlParams = self::get_report_calendar_grid_page_url_params($options);
+    $pageUrl = self::report_calendar_grid_get_reload_url($pageUrlParams);
+    $pageUrl .= (strpos($pageUrl , '?')===false) ? '?' : '&';
+    $date_from = array('year'=>$options["year"], 'month'=>1, 'day'=>1);
+    $date_to = array('year'=>$options["year"], 'month'=>12, 'day'=>31);
+    // ISO Date - Mon=1, Sun=7
+    // Week 1 = the week with date_from in
+    if(!isset($options['weekstart']) || $options['weekstart']=="") {
+      $options['weekstart']="weekday=7"; // Default Sunday
+    }
+    if(!isset($options['weekNumberFilter']) ||$options['weekNumberFilter']=="") {
+      $options['weekNumberFilter']=":";
+    }
+    $weeknumberfilter=explode(':',$options['weekNumberFilter']);
+    if(count($weeknumberfilter)!=2){
+      $warnings .= "Week number filter unrecognised {".$options['weekNumberFilter']."} defaulting to all<br />";
+      $weeknumberfilter=array('','');
+    } else {
+      if($weeknumberfilter[0] != '' && (intval($weeknumberfilter[0])!=$weeknumberfilter[0] || $weeknumberfilter[0]>52)){
+        $warnings .= "Week number filter start unrecognised or out of range {".$weeknumberfilter[0]."} defaulting to year start<br />";
+        $weeknumberfilter[0] = '';
+      }
+      if($weeknumberfilter[1] != '' && (intval($weeknumberfilter[1])!=$weeknumberfilter[1] || $weeknumberfilter[1]<$weeknumberfilter[0] || $weeknumberfilter[1]>52)){
+        $warnings .= "Week number filter end unrecognised or out of range {".$weeknumberfilter[1]."} defaulting to year end<br />";
+        $weeknumberfilter[1] = '';
+      }
+    }
+    $weekstart=explode('=',$options['weekstart']);
+    if($weekstart[0]=='date'){
+      $weekstart_date = date_create($date_from['year']."-".$weekstart[1]);
+      if(!$weekstart_date){
+        $warnings .= "Weekstart month-day combination unrecognised {".$weekstart[1]."} defaulting to weekday=7 - Sunday<br />";
+        $weekstart[1]=7;
+      } else $weekstart[1]=$weekstart_date->format('N');
+    }
+    if(intval($weekstart[1])!=$weekstart[1] || $weekstart[1]<1 || $weekstart[1]>7) {
+      $warnings .= "Weekstart unrecognised or out of range {".$weekstart[1]."} defaulting to 7 - Sunday<br />";
+      $weekstart[1]=7;
+    }
+    if(isset($options['weekOneContains']) && $options['weekOneContains']!=""){
+      $weekOne_date = date_create($date_from['year'].'-'.$options['weekOneContains']);
+      if(!$weekOne_date){
+        $warnings .= "Week one month-day combination unrecognised {".$options['weekOneContains']."} defaulting to Jan-01<br />";
+        $weekOne_date = date_create($date_from['year'].'-Jan-01');
+      }
+    } else 
+      $weekOne_date = date_create($date_from['year'].'-Jan-01');
+    while($weekOne_date->format('N')!=$weekstart[1]){
+      $weekOne_date->modify('-1 day'); // scan back to start of week
+    }
+    $summaryArray=array();
+    foreach($records as $record){
+    	// first work out the week number
+      $this_date = date_create(str_replace('/','-',$record['date'])); // prevents day/month orderinfg issues
+      while($this_date->format('N')!=$weekstart[1]){
+        $this_date->modify('-1 day'); // scan back to start of week
+      }
+      $weekno=1;
+      while($this_date>$weekOne_date){
+        $this_date->modify('-7 days');
+        $weekno++;
+      }
+      while($this_date<$weekOne_date){
+        $this_date->modify('+7 days');
+        $weekno--;
+      }
+      if(isset($summaryArray[$record['taxon']])) { //todo
+        if(isset($summaryArray[$record['taxon']][$weekno])){
+          $summaryArray[$record['taxon']][$weekno] += 1; //todo count in report
+        } else {
+          $summaryArray[$record['taxon']][$weekno] = 1;
+        }
+      } else {
+        $summaryArray[$record['taxon']] = array($weekno => 1);
+      }
+    }
+    $year_start = date_create($date_from['year'].'-Jan-01');
+    $year_end = date_create($date_from['year'].'-Dec-12');
+    if($weeknumberfilter[0]!=''){
+      $minWeekNo = 1;
+      $firstWeek_date = clone $weekOne_date;
+      while($firstWeek_date > $year_start && $minWeekNo>$weeknumberfilter[0]){
+        $firstWeek_date->modify('-7 days');
+        $minWeekNo--;
+      }
+      while($firstWeek_date < $year_end && $minWeekNo<$weeknumberfilter[0]){
+        $firstWeek_date->modify('+7 days');
+        $minWeekNo++;
+      }
+    } else {
+      $minWeekNo = 1;
+      $firstWeek_date = clone $weekOne_date;
+      $year_start = date_create($date_from['year'].'-Jan-01');
+      while($firstWeek_date > $year_start){
+        $firstWeek_date->modify('-7 days');
+        $minWeekNo--;
+      }
+    }
+    if($weeknumberfilter[1]!=''){
+      $maxWeekNo = $weeknumberfilter[1];
+    } else {
+      $maxWeekNo = 1;
+      $lastWeek_date = clone $weekOne_date;
+      $year_end = date_create($date_from['year'].'-Dec-12');
+      while($lastWeek_date <= $year_end){
+        $lastWeek_date->modify('+7 days');
+        $maxWeekNo++;
+      }
+    }
+    // will storedata in an array[Y][X]
+    $thClass = $options['thClass'];
+    $r = "\n<table class=\"".$options['class']."\">";
+    $r .= "\n<thead class=\"$thClass\"><tr><td></td><td>
+  <a title=\"".($options["year"]-1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]-1)."\" class=\"ui-datepicker-prev ui-corner-all\">
+    <span class=\"ui-icon ui-icon-circle-triangle-w\">Prev</span></a></td><td></td><td colspan=3><span class=\"thisYear\">".$options["year"]."</span></td><td></td><td>";
+    if($options["year"]<date('Y')){
+      $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
+        <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
+    }
+    // Not implementing a download.
+    $r.= '</td><td colspan='.($maxWeekNo-$minWeekNo-5).'></td></tr><tr><td>Week</td>';
+    for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+      if(isset($args['includeWeekNumber']) && $args['includeWeekNumber']==true)
+        $r.= '<td>'.$i.'</td>';
+      else {
+        $r.= '<td class="vcell"><div ><div class="vertical" >'.$firstWeek_date->format('Y-m-d').'</div></div></td>';
+        $firstWeek_date->modify('+7 days');
+      }
+    }
+    data_entry_helper::$javascript .= "
+jQuery('.vertical').each(function(){
+  var parent = jQuery(this).parent();
+  var h = jQuery(this).height();
+  var w = jQuery(this).width();
+  parent.height(h);
+  parent.width(h);
+  parent.css('padding-top',w-h);
+  });
+";
+    $r.= '<td>Total</td>';
+    $r.= "</tr></thead>\n";
+    $r .= "<tbody>\n";
+    foreach($summaryArray as $label => $summaryRow){
+      $total=0;
+      $r .= "<tr>";
+      $r.= '<td>'.$label.'</td>';
+      for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
+        if(isset($summaryRow[$i])){
+          $r.= '<td>'.$summaryRow[$i].'</td>';
+          $total += $summaryRow[$i];
+        } else {
+          $r.= '<td></td>';
+        }
+      }
+      $r.= '<td>'.$total.'</td>';
+      // TODO total is optional
+      $r .= "</tr>";
+    }
+    $r .= "</tbody></table>\n";
+    return $warnings.$r;
+  }
   
+  private static function get_report_calendar_summary_options($options) {
+    global $user;
+    $options = array_merge(array(
+      'mode' => 'report',
+      'id' => 'calendar-report-output', // this needs to be set explicitly when more than one report on a page
+      'class' => 'ui-widget ui-widget-content report-grid',
+      'thClass' => 'ui-widget-header',
+      'extraParams' => array(),
+      'year' => date('Y'),
+      'viewPreviousIfTooEarly' => true, // if today is before the start of the calendar, display last year.
+        // it is possible to create a partial calendar.
+      'includeWeekNumber' => false,
+      'weekstart' => 'weekday=7', // Default Sunday
+      'weekNumberFilter' => ':'
+    ), $options);
+    $options["extraParams"] = array_merge(array(
+      'date_from' => $options["year"].'-01-01',
+      'date_to' => $options["year"].'-12-31',
+      'user_id' => $user->uid, // CMS User, not Indicia User.
+      'smpattrs' => '',
+      'occattrs' => ''), $options["extraParams"]);
+    // Note for the calendar reports, the user_id is assumed to be the CMS user id as recorded in the CMS User ID attribute,
+    // not the Indicia user id.
+    return $options;
+  }
+
+ /**
+   * Works out the page URL param names for this report calendar grid, and also gets their current values.
+   * Note there is no need to sort for the calender grid.
+   * @param $options Control options array
+   * @return array Contains the page params, as an assoc array. Each array value is an array containing name & value.
+   */
+  private static function get_report_calendar_summary_page_url_params($options) {
+    $yearKey = 'year';
+    return array(
+      'year' => array(
+        'name' => $yearKey,
+        'value' => isset($_GET[$yearKey]) ? $_GET[$yearKey] : null
+      )
+    );
+  }
+  /**
+   * Build a url suitable for inclusion in the links for the report calendar grid column pagination
+   * bar. This effectively re-builds the current page's URL, but drops the query string parameters that
+   * indicate the year and site.
+   * Note there is no need to sort for the calender grid.
+   * @param array $pageUrlParams List pagination parameters which should be excluded.
+   * @return string
+   */
+  private static function report_calendar_summary_get_reload_url($pageUrlParams) {
+    // get the url parameters. Don't use $_GET, because it contains any parameters that are not in the
+    // URL when search friendly URLs are used (e.g. a Drupal path node/123 is mapped to index.php?q=node/123
+    // using Apache mod_alias but we don't want to know about that)
+    $reloadUrl = data_entry_helper::get_reload_link_parts();
+    // find the names of the params we must not include
+    $excludedParams = array();
+    foreach($pageUrlParams as $param) {
+      $excludedParams[] = $param['name'];
+    }
+    foreach ($reloadUrl['params'] as $key => $value) {
+      if (!in_array($key, $excludedParams)){
+        $reloadUrl['path'] .= (strpos($pageUrl,'?')===false ? '?' : '&')."$key=$value";
+      }
+    }
+    return $reloadUrl['path'];
+  }
+
 }
 
 ?>
