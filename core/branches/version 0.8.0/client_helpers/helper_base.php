@@ -39,12 +39,6 @@ $indicia_templates = array(
   'nosuffix' => " \n",
   'requiredsuffix' => '<span class="deh-required">*</span><br/>'."\n",
   'requirednosuffix' => '<span class="deh-required">*</span>'."\n",
-  'lock_icon' => '<span id="{id}_lock" class="unset-lock">&nbsp;</span>',
-  'lock_javascript' => "indicia.locks.initControls (
-      \"".lang::get('locked tool-tip')."\", 
-      \"".lang::get('unlocked tool-tip')."\",
-      \"{lock_form_mode}\"
-      );\n",
   'validation_message' => '<label for="{for}" class="{class}">{error}</label>'."\n",
   'validation_icon' => '<span class="ui-state-error ui-corner-all validation-icon">'.
       '<span class="ui-icon ui-icon-alert"></span></span>',
@@ -147,65 +141,6 @@ $indicia_templates = array(
       jQuery('input#{escaped_id}').attr('value', data.{valueField});
       jQuery('input#{escaped_id}').change();
     });\r\n",
-  'sub_list' => '<div id="{id}:box" class="control-box wide"><div {class}>'."\n".
-    '<div>'."\n".
-    '{panel_control} <input id="{id}:add" type="button" value="'.lang::get('add').'" />'.
-    '<span class="ind-cancel-icon">&nbsp;</span>'."\n".
-    '</div>'."\n".
-    '<ul id="{id}:sublist" class="ind-sub-list">{items}</ul>{subListAdd}'."\n".
-    '</div></div>'."\n",
-  'sub_list_add' => "\n".'<input type="hidden"  id="{id}:addToTable" name="{mainEntity}:insert_captions_use" value="{basefieldname}" />'.
-    '<input type="hidden" name="{mainEntity}:insert_captions_to_create" value="{table}" />',
-  'sub_list_item' => '<li><span class="ind-delete-icon">&nbsp;</span>{caption}'.
-    '<input type="hidden" name="{fieldname}" value="{value}" /></li>',
-  'sub_list_javascript' => "  if ({hide}==='none') {
-    jQuery('#{escaped_id}\\\\:box .ind-cancel-icon').css('display', 'none');
-    }
-  jQuery('#{escaped_id}\\\\:add').click(function(event){
-    // transfer caption and value from search control to the displayed and hidden lists
-    var search$ = $('#{escaped_id}\\\\:search\\\\:{escaped_captionField}');
-    var hiddenSearch$ = $('#{escaped_id}\\\\:search');
-    var caption = search$.val().trim();
-    if (jQuery('#{escaped_id}\\\\:addToTable').length==0) {
-      // not addToTable mode, so pass IDs
-      var value = hiddenSearch$.val().trim();
-    } else {
-      // addToTable mode, so pass text captions
-      var value = caption;
-    }
-    if (caption!=='') {
-      var sublist$ = $('#{escaped_id}\\\\:sublist');
-      sublist$.append('{subListItem}');
-      search$.val('');
-      hiddenSearch$.val('');
-      search$.focus();
-    }
-  });
-  jQuery('#{escaped_id}\\\\:box span.ind-cancel-icon').click(function(event){
-    // Hide the delete icons and the add bar. Insert an icon to redisplay add bar
-    if ($('#{escaped_id}\\\\:sublist span.ind-delete-icon').length>0) {
-      $('#{escaped_id}\\\\:sublist span.ind-delete-icon').removeClass('ind-delete-icon').addClass('ind-no-icon');
-      $('#{escaped_id}\\\\:sublist span.ind-no-icon:first').removeClass('ind-no-icon').addClass('ind-add-icon');
-      $(this).closest('div').hide({hide});
-    }
-  });
-  jQuery('#{escaped_id}\\\\:sublist span.ind-delete-icon').live('click', function(event){
-    // remove the value from the displayed list and the hidden list
-    var li$ = $(this).closest('li');
-    li$.remove();
-  });
-  jQuery('#{escaped_id}\\\\:sublist span.ind-add-icon').live('click', function(event){
-    // restore delete icons on list and show the add bar
-    $('#{escaped_id}\\\\:sublist span.ind-no-icon').removeClass('ind-no-icon').addClass('ind-delete-icon');
-    $('#{escaped_id}\\\\:sublist span.ind-add-icon').removeClass('ind-add-icon').addClass('ind-delete-icon');
-    $('#{escaped_id}\\\\:add').closest('div').show({hide});
-  });
-  jQuery('form:has(#{escaped_id}\\\\:search)').submit(
-    function(event) {
-      // select autocomplete search controls in this sub_list and disable them to prevent submiting values
-      $('#{escaped_id}\\\\:search, #{escaped_id}\\\\:search\\\\:{escaped_captionField}')
-        .attr('disabled', 'disabled');
-    });\n",
   'linked_list_javascript' => "
 {fn} = function() {
   $('#{escapedId}').addClass('ui-state-disabled');
@@ -373,12 +308,6 @@ class helper_base extends helper_config {
   public static $validation_messages = array();
 
   /**
-   * @var Boolean indicates if any form controls have specified the lockable option.
-   * If so, we will need to output some javascript.
-   */
-  protected static $using_locking = false;
-
-  /**
    * @var Boolean Are we linking in the default stylesheet? Handled sligtly different to the others so it can be added to the end of the
    * list, allowing our CSS to override other stuff.
    */
@@ -420,7 +349,6 @@ class helper_base extends helper_config {
    * <li>google_search</li>
    * <li>locationFinder</li>
    * <li>autocomplete</li>
-   * <li>indicia_locks</li>
    * <li>jquery_cookie</li>
    * <li>jquery_ui</li>
    * <li>jquery_ui_fr</li>
@@ -511,7 +439,6 @@ class helper_base extends helper_config {
         'google_search' => array('deps' =>array('georeference_google_search_api'), 'javascript' => array(self::$js_path."google_search.js")),
         'locationFinder' => array('deps' =>array('indiciaMapEdit'), 'javascript' => array(self::$js_path."jquery.indiciaMap.edit.locationFinder.js")),
         'autocomplete' => array('deps' => array('jquery'), 'stylesheets' => array(self::$css_path."jquery.autocomplete.css"), 'javascript' => array(self::$js_path."jquery.autocomplete.js")),
-        'indicia_locks' => array('deps' =>array('jquery_cookie', 'json'), 'javascript' => array(self::$js_path."indicia.locks.js")),
         'jquery_cookie' => array('deps' =>array('jquery'), 'javascript' => array(self::$js_path."jquery.cookie.js")),
         'jquery_ui' => array('deps' => array('jquery'), 'stylesheets' => array("$indicia_theme_path$indicia_theme/jquery-ui.custom.css"), 'javascript' => array(self::$js_path."jquery-ui.custom.min.js", self::$js_path."jquery-ui.effects.js")),
         'jquery_ui_fr' => array('deps' => array('jquery_ui'), 'javascript' => array(self::$js_path."jquery.ui.datepicker-fr.js")),
@@ -1340,17 +1267,6 @@ indiciaData.windowLoaded=false;
     }
     // Output the main control
     $r .= self::apply_replacements_to_template($indicia_templates[$template], $options);
-
-    // Add a lock icon to the control if the lockable option is set to true
-    if (array_key_exists('lockable', $options) && $options['lockable']===true) {
-      $r .= self::apply_replacements_to_template($indicia_templates['lock_icon'], $options);
-      if (!self::$using_locking) {
-        self::$using_locking = true;
-        $options['lock_form_mode'] = self::$form_mode ? self::$form_mode : 'NEW';
-        self::$javascript .= self::apply_replacements_to_template($indicia_templates['lock_javascript'], $options);
-        self::add_resource('indicia_locks');
-      }
-    }
 
     // Add an error icon to the control if there is an error and this option is set
     if ($error && in_array('icon', $options['validation_mode'])) {
