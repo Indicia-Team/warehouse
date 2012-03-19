@@ -171,8 +171,9 @@ class Person_Model extends ORM {
    * @param boolean $required Optional. Set to true to only return required attributes (requires 
    * the website and survey identifier to be set).
    * @param int @typeFilter Not used
+   * @param boolean @hasSurveyRestriction Not used
    */
-  protected function getAttributes($required = false, $typeFilter = null) {
+  protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
     $this->db->select('person_attributes.id', 'person_attributes.caption');
     $this->db->from('person_attributes');
     
