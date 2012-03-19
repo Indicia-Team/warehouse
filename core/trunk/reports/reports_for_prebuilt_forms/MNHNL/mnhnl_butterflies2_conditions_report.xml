@@ -14,7 +14,7 @@
       <subTable tablename="locations" > // allow deleted Sites!
         <tabColumn name='name' display='Site' />
         <tabColumn name='id' visible='true' display='Location ID' />
-      <tabColumn name='xy' display='XY centroid' func="(replace(#this#.centroid_sref, ',' , ''))" />
+      <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
       <tabColumn name='lines' display='XY line coordinates' func="(CASE
      WHEN GeometryType(#this#.boundary_geom) = 'LINESTRING'
        THEN regexp_replace(ST_AsText(ST_Transform(ST_Centroid(#this#.boundary_geom),2169)),'[(){}\\x22]|\\.[0-9]*|POINT','','g')

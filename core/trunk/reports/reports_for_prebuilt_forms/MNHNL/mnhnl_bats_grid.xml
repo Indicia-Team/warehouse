@@ -8,8 +8,7 @@
   		loccommune.text_value as commune,
   		locvillage.text_value as village,
   		username.text_value as username,
-		split_part(l.centroid_sref, ', ', 1) as x,
-		split_part(l.centroid_sref, ', ', 2) as y,
+		regexp_replace(l.centroid_sref, ',|\\.[0-9]*' , '', 'g') as xy,
   		s.date_start,
   		s.date_end,
   		s.date_type
@@ -43,8 +42,7 @@
     <column name='location_name' display='Site name' />
     <column name='commune' display='Commune' />
     <column name='village' display='Village' />
-    <column name='x' display='X' />
-    <column name='y' display='Y' />
+    <column name='xy' display='X Y' />
     <column name='date' display='Date' />
     <column name='username' display='User' />
   </columns>

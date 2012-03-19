@@ -11,7 +11,7 @@
 		  <subTable tablename="locations" where="#this#.deleted = FALSE" >
 			<tabColumn name='name' display='Site'/>
 			<tabColumn name='code' display='Code'/>
-      <tabColumn name='xy' display='XY centroid' func="(replace(#this#.centroid_sref, ',' , ''))" />
+      <tabColumn name='xy' display='XY centroid' func="(regexp_replace(#this#.centroid_sref, ',|\\.[0-9]*' , '','g'))" />
       <tabColumn name='points' display='XY point coordinates' func="(CASE
      WHEN #this#.boundary_geom is null THEN (replace(#this#.centroid_sref, ',' , ''))
      WHEN GeometryType(#this#.boundary_geom) = 'POINT'
