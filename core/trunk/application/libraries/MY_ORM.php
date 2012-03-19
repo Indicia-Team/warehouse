@@ -932,8 +932,10 @@ class ORM extends ORM_Core {
    * the website and survey identifier to be set).
    * @param int @typeFilter Specify a location type meaning id or a sample method meaning id to
    * filter the returned attributes to those which apply to the given type or method.
+   * @param boolean @hasSurveyRestriction true if this objects attributes can be restricted to 
+   * survey scope.
    */
-  protected function getAttributes($required = false, $typeFilter = null) {
+  protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
     if (empty($this->identifiers['website_id']))
       return array();
     $attr_entity = $this->object_name.'_attribute';
@@ -945,7 +947,7 @@ class ORM extends ORM_Core {
       $this->db->where($attr_entity.'s_websites.deleted', 'f');
       if ($this->identifiers['website_id'])
         $this->db->where($attr_entity.'s_websites.website_id', $this->identifiers['website_id']);
-      if ($this->identifiers['survey_id'])
+      if ($this->identifiers['survey_id'] && $hasSurveyRestriction)
         $this->db->in($attr_entity.'s_websites.restrict_to_survey_id', array($this->identifiers['survey_id'], null));
       // note we concatenate the validation rules to check both global and website specific rules for requiredness. 
       if ($required) {
