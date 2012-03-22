@@ -336,12 +336,14 @@ idlist=';
     // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
-        '#details-tab'=>'Details',
-        '#map-tab'=>'Map',
-        '#images-tab'=>'Images',
-        '#comments-tab'=>'Comments'
+        '#details-tab'=>lang::get('Details'),
+        '#map-tab'=>lang::get('Map'),
+        '#phenology-tab'=>lang::get('Phenology'),
+        '#images-tab'=>lang::get('Images'),
+        '#comments-tab'=>lang::get('Comments')
       )
     ));
+    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','map','phenology','images','comments'];\n";
     data_entry_helper::enable_tabs(array(
       'divId'=>'record-details-tabs'
     ));
@@ -354,6 +356,7 @@ idlist=';
       iform_map_get_ol_options($args)
     );
     $r .= '</div>';
+    $r .= '<div id="phenology-tab"><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     $r .= '</div></div></div></div>';
@@ -404,15 +407,18 @@ idlist=';
     // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
     $r .= data_entry_helper::tab_header(array(
       'tabs'=>array(
-        '#details-tab'=>'Details',
-        '#images-tab'=>'Images',
-        '#comments-tab'=>'Comments'
+        '#details-tab'=>lang::get('Details'),     
+        '#phenology-tab'=>lang::get('Phenology'),
+        '#images-tab'=>lang::get('Images'),
+        '#comments-tab'=>lang::get('Comments')
       )
     ));
+    data_entry_helper::$javascript .= "indiciaData.detailsTabs = ['details','phenology','images','comments'];\n";
     data_entry_helper::enable_tabs(array(
       'divId'=>'record-details-tabs'
     ));
     $r .= '<div id="details-tab"></div>';    
+    $r .= '<div id="phenology-tab"><div id="chart-div"></div></div>';
     $r .= '<div id="images-tab"></div>';
     $r .= '<div id="comments-tab"></div>';
     $r .= '</div></div></div></div></div>';
@@ -474,7 +480,7 @@ idlist=';
     // Find a list of websites we are allowed verify
     $websites = data_entry_helper::get_population_data(array(
       'table'=>'index_websites_website_agreement',
-      'extraParams'=>$auth+array('receive_for_reporting'=>'t'),
+      'extraParams'=>$auth+array('receive_for_verification'=>'t'),
     ));
     $websiteIds = array();
     foreach ($websites as $website) 
@@ -493,7 +499,8 @@ idlist=';
           'rowId' => 'occurrence_id',
           'paramsFormButtonCaption' => lang::get('Reload Records'),
           'paramPrefix'=>'<div class="report-param">',
-          'paramSuffix'=>'</div>'
+          'paramSuffix'=>'</div>',
+          'sharing'=>'verification'
         )
     );
     if (isset($args['show_map']) && $args['show_map']) {
@@ -576,6 +583,8 @@ idlist=';
     data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$args['email_subject_dubious']."\";\n";
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_subject_dubious']);
     data_entry_helper::$javascript .= 'indiciaData.email_subject_dubious = "'.$body."\";\n";
+    data_entry_helper::add_resource('jqplot');
+    data_entry_helper::add_resource('jqplot_bar');
     return $r;
     
   }
@@ -681,13 +690,13 @@ idlist=';
     $additional['sample_id'] = data_entry_helper::$entity_to_load['occurrence:sample_id'];
     $additional['date'] = data_entry_helper::$entity_to_load['sample:date'];
     $additional['entered_sref'] = data_entry_helper::$entity_to_load['sample:entered_sref'];
+    $additional['taxon_external_key'] = data_entry_helper::$entity_to_load['occurrence:taxon_external_key'];
+    $additional['taxon_meaning_id'] = data_entry_helper::$entity_to_load['occurrence:taxon_meaning_id'];
     header('Content-type: application/json');
     echo json_encode(array(
       'content' => $r,
       'data' => $data,
-      'additional' => $additional,
-      'taxon_external_key' => data_entry_helper::$entity_to_load['occurrence:taxon_external_key'],
-      'taxon_meaning_id' => data_entry_helper::$entity_to_load['occurrence:taxon_meaning_id']
+      'additional' => $additional
     ));
   }
   
@@ -811,6 +820,33 @@ idlist=';
     else  
       echo 'Fail';
   }
+  
+  /**
+   * Ajax method to retrieve phenology data for a species by external key.
+   */
+  public static function ajax_phenology($website_id, $password) {
+    iform_load_helpers(array('report_helper'));
+    $auth = report_helper::get_read_auth($website_id, $password);
+    $extraParams = array(
+      'external_key'=>(empty($_GET['external_key']) || $_GET['external_key']==='null') ? '' : $_GET['external_key'],
+      'taxon_meaning_id'=>(empty($_GET['external_key']) || $_GET['external_key']==='null') ? $_GET['taxon_meaning_id'] : '',
+      'date_from'=>'',
+      'date_to'=>'',
+      'survey_id'=>'',
+      'quality'=>'!D'
+    );
+    $data = report_helper::get_report_data(array(
+      'dataSource' => 'library/months/phenology',
+      'readAuth' => $auth,
+      'extraParams' => $extraParams,
+      'sharing'=>'reporting'
+    ));
+    // must output all months
+    $output = array(0,0,0,0,0,0,0,0,0,0,0,0);
+    foreach ($data as $month)
+      $output[$month['name']] = intval($month['value']);
+    echo json_encode($output);
+  } 
   
   /** 
    * Convert a timestamp into readable format (... ago) for use on a comment list.

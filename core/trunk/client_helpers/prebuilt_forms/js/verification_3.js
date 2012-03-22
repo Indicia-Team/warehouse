@@ -4,6 +4,8 @@ var email = {to:'', subject:'', body:'', type:''};
 function selectRow(tr) {
   // The row ID is row1234 where 1234 is the occurrence ID. 
   occurrence_id = tr.id.substr(3);
+  // make it clear things are loading
+  $('#chart-div').css('opacity',0.15);
   $.getJSON(
     indiciaData.ajaxUrl + '/details/' + indiciaData.nid + urlSep + 'occurrence_id=' + occurrence_id,
     null,
@@ -87,8 +89,8 @@ function postOccurrence(occ) {
       $('#row' + id + ' td:first div, #details-tab td.status').addClass('status-' + status);
       var text = indiciaData.statusTranslations[status];
       $('#details-tab td.status').html(text);
-      if ($('#record-details-tabs').tabs('option', 'selected') == 0 ||
-          $('#record-details-tabs').tabs('option', 'selected') == 3) {
+      if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] == 'details' ||
+          indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] == 'comments') {
         $('#record-details-tabs').tabs('load', $('#record-details-tabs').tabs('option', 'selected'));
       }
       if (indiciaData.autoDiscard) {
@@ -297,8 +299,23 @@ function saveVerifyComment() {
 
 function showTab() {
   if (current_record !== null) {
-    if ($('#record-details-tabs').tabs('option', 'selected') === 0) {
+    if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'details') {
       $('#details-tab').html(current_record.content);
+    } else if (indiciaData.detailsTabs[$('#record-details-tabs').tabs('option', 'selected')] === 'phenology') {
+      $.getJSON(
+        indiciaData.ajaxUrl + '/phenology/' + indiciaData.nid + urlSep + 
+            'external_key=' + current_record.additional.taxon_external_key +
+            '&taxon_meaning_id=' + current_record.additional.taxon_meaning_id,
+        null,
+        function (data) {
+          $('#chart-div').empty();
+          $.jqplot('chart-div', [data], {
+            seriesDefaults:{renderer:$.jqplot.BarRenderer, rendererOptions:[]}, legend:[], series:[],
+            axes:{"xaxis":{"renderer":$.jqplot.CategoryAxisRenderer,"ticks":["1","2","3","4","5","6","7","8","9","10","11","12"]},"yaxis":{"min":0}}
+          });
+          $('#chart-div').css('opacity',1);
+        }
+      );
     }
     if (mapDiv !== null) {
       // Ensure the current record is centred and highlighted on the map.
