@@ -17,6 +17,7 @@
   #joins#
   WHERE #sharing_filter# 
   AND (xo.record_status = 'C' OR '#records#' = 'all')
+  AND (o.certainty = 'C' or o.certainty is null)
   AND ('#records#'&lt;&gt;'fail' OR oc.occurrence_id is not null)
   AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
   #idlist#
