@@ -117,6 +117,9 @@ $lang = array (
   'survey_id' => Array (
     'required' => 'The survey must be supplied.',
   ),
+  'system_function' => Array (
+    'length' => 'The stored system functin value must be 30 characters or less. Please check the model declaration of system functions.',
+  ),
   'taxon' => array (
     'required' => 'The taxon name is required.',
   ),

@@ -42,5 +42,40 @@ class Sample_Attribute_Model extends ATTR_ORM {
     $this->unvalidatedFields = array('applies_to_location');
     return parent::validate($array, $save);
   }
+  
+  /**
+   * Get the list of known system functions for sample attributes, each with a title and description
+   * of their usage.
+   * @return array List of the system known functions that a sample attribute can have.
+   */
+  public function get_system_functions() {
+    return array(
+      'email' => array(
+        'title'=>'Email address',
+        'description'=>'A text attribute corresponding to an email address.'
+      ),
+      'cms_user_id' => array(
+        'title'=>'CMS User ID',
+        'description'=>'An integer attribute corresponding to the user ID on the client website\'s content management system.'
+      ),
+      'cms_username' => array(
+        'title' => 'CMS Username',
+        'description'=>'A text attribute corresponding to the user login name on the client website\'s content management system'
+      ),
+      'first_name' => array(
+        'title' => 'First name',
+        'description'=>'A text attribute corresponding to the user\'s first name.'
+      ),
+      'last_name' => array(
+        'title' => 'Last name',
+        'description'=>'A text attribute corresponding to the user\'s last name.'
+      ),
+      'biotope' => array(
+        'title' => 'Biotope',
+        'description'=>'A text or lookup attribute where the value describes the biotope (often described as the habitat) of the sample.'
+      )
+      
+    );
+  }
 
 }

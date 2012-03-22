@@ -47,6 +47,19 @@ This page allows you to specify a new or edit an existing custom attribute for <
     value="<?php echo html::initial_value($values, $model->object_name.':caption'); ?>"
     <?php echo $enabled; ?> /> <?php echo html::error_message($model->getError($model->object_name.':caption')); ?>
   </li>
+  
+  
+  <?php if (method_exists($this->model, 'get_system_functions')) : ?>
+  <li><label for="system_function">System function:</label>
+    <select name="<?php echo $model->object_name; ?>:system_function" id="system_function">
+      <option value="">-none-</option>
+      <?php foreach($this->model->get_system_functions() as $function=>$def) {
+        $selected=html::initial_value($values, $model->object_name.':system_function')==$function ? ' selected="selected"' : '';
+        echo '<option title="'.$def['description']."\" value=\"$function\"$selected>".$def['title']."</option>\n";
+      } ?>
+    </select>
+  </li>
+  <?php endif; ?>
   <li><label for="data_type">Data Type</label> <script
     type="text/javascript">
 function toggleOptions(data_type)
