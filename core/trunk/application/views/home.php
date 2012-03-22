@@ -58,27 +58,36 @@ Centre for Ecology and Hydrology.</p>
 <p>You can see Indicia in action on the <a href="<?php echo url::base();?>modules/demo/index.php">website demonstration pages</a>.</p>
 
 <?php 
-if (count($notifications)!==0) : ?>
-<div class="notifications ui-widget-content ui-corner-all">
-<div class="ui-widget-header ui-corner-all">Here are your new notifications:</div>
-<?php
+if (count($notifications)!==0) {
+  /**
+   * @todo. This code should use notifications loaded from report grid, with new capability to 
+   * decode the json into grid columns.
+   */
+  $html = '';
   foreach($notifications as $notification) {
-    echo "<h2>Notifications from $notification->source</h2>";
     $struct = json_decode($notification->data, true);
-    echo "<table><thead>\n<tr><th>";
-    echo implode('</th><th>', $struct['headings']);
-    echo "</th></tr>\n</thead>\n";
-    foreach ($struct['data'] as $recordGroup) {
-      echo "<tbody>\n";
-      foreach ($recordGroup as $record) {
-        echo '<tr><td>';
-        echo implode('</td><td>', $record);
-        echo "</td><td></tr>\n";
+    if (isset($struct['headings'])) {
+      $html .= "<h2>Notifications from $notification->source</h2>";
+      $html .= "<table><thead>\n<tr><th>";
+      $html .= implode('</th><th>', $struct['headings']);
+      $html .= "</th></tr>\n</thead>\n";
+      foreach ($struct['data'] as $recordGroup) {
+        $html .= "<tbody>\n";
+        foreach ($recordGroup as $record) {
+          $html .= '<tr><td>';
+          $html .= implode('</td><td>', $record);
+          $html .= "</td><td></tr>\n";
+        }
+        $html .= "</tbody>\n";
       }
-      echo "</tbody>\n";
+      $html .= "</tbody>\n</table>\n";
     }
-    echo "</tbody>\n</table>\n";
-  }?>
-</div>
-<?php endif; ?>
-
+  }
+  if (!empty($html)) : ?>
+    <div class="notifications ui-widget-content ui-corner-all">
+    <div class="ui-widget-header ui-corner-all">Here are your new notifications:</div>
+<?php 
+    echo $html.'</div>';
+  endif; 
+}
+?>
