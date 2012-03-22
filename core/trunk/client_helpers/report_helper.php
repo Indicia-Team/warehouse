@@ -259,6 +259,10 @@ class report_helper extends helper_base {
   * report_map method when linked to a report_grid, which loads its own report data for display on a map, just using the same input parameters
   * as other reports. In this case the report_grid's report data is used to draw the features on the map, so only 1 report request is made.
   * </li>
+  * <li><b>rowClass</b>
+  * A CSS class to add to each row in the grid. Can include field value replacements in braces, e.g. {certainty} to construct classes from 
+  * field values, e.g. to colour rows in the grid according to the data.
+  * </li>
   * </ul>
   * @todo Allow additional params to filter by table column or report parameters
   * @todo Display a filter form for direct mode
@@ -357,7 +361,7 @@ class report_helper extends helper_base {
       $r .= '<tr><td colspan="'.count($options['columns']).'">'.$extraFooter.'</td></tr>';
     $r .= '</tfoot>';
     $r .= "<tbody>\n";
-    $rowClass = '';
+    $altRowClass = '';
     $outputCount = 0;
     $imagePath = self::get_uploaded_image_folder();
     $relpath = self::relative_client_helper_path();
@@ -379,7 +383,14 @@ class report_helper extends helper_base {
         // set a unique id for the row if we know the identifying field.
         $rowId = isset($options['rowId']) ? ' id="row'.$row[$options['rowId']].'"' : '';
         if ($rowIdx % $options['galleryColCount']==0) {
-          $r .= "<tr $rowClass$rowId>";
+          $classes=array();
+          if ($altRowClass)
+            $classes[]=$altRowClass;
+          if (isset($options['rowClass']))
+            $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);;
+          $classes=implode(' ',$classes);
+          $class = empty($classes) ? '' : "class=\"$classes\" ";
+          $r .= "<tr $class$rowId>";
           $rowInProgress=true;
         }
         // first decode any json data
@@ -420,7 +431,7 @@ class report_helper extends helper_base {
           $rowInProgress=false;
           $r .= '</tr>';
         }
-        $rowClass = empty($rowClass) ? ' class="'.$options['altRowClass'].'"' : '';
+        $altRowClass = empty($altRowClass) ? $options['altRowClass'] : '';
         $outputCount++;
       }
       if ($rowInProgress)
