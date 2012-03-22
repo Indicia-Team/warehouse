@@ -35,7 +35,8 @@ if ($this->model->id) echo "/".$this->model->id;
 echo data_entry_helper::text_input(array(
   'label' => 'Name',
   'fieldname' => 'trigger:name',
-  'default' => html::initial_value($values, 'trigger:name')
+  'default' => html::initial_value($values, 'trigger:name'),
+  'class'=>'control-width-5'
 ));
 echo data_entry_helper::textarea(array(
   'label' => 'Description',
@@ -53,6 +54,12 @@ echo data_entry_helper::checkbox(array(
   'fieldname' => 'trigger:public',
   'default' => html::initial_value($values, 'trigger:public')
 ));
+data_entry_helper::link_default_stylesheet();
+// No need to re-link to jQuery
+data_entry_helper::$dumped_resources[] = 'jquery';
+data_entry_helper::$dumped_resources[] = 'jquery_ui';
+data_entry_helper::$dumped_resources[] = 'fancybox';
+echo data_entry_helper::dump_javascript();
 ?>
 </fieldset>
 <fieldset class="button-set">

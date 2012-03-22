@@ -224,13 +224,22 @@ $config['occurrences']['update'] = "update cache_occurrences co
       taxon_group_id = cttl.taxon_group_id,
       taxon_group = cttl.taxon_group,
       created_by_id=o.created_by_id,
-      cache_updated_on=now()
+      cache_updated_on=now(),
+      certainty=case when certainty.sort_order is null then null
+        when certainty.sort_order <100 then 'C'
+        when certainty.sort_order <200 then 'L'
+        else 'U'
+      end
     from occurrences o
     join needs_update_occurrences nuo on nuo.id=o.id
     join samples s on s.id=o.sample_id and s.deleted=false
     join surveys su on su.id=s.survey_id and su.deleted=false
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+    left join (occurrence_attribute_values oav
+      join termlists_terms certainty on certainty.id=oav.int_value
+      join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
+    ) on oav.occurrence_id=o.id and oav.deleted='f'
     where co.id=o.id";
 
 $config['occurrences']['insert']="insert into cache_occurrences (
@@ -241,7 +250,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       sample_method, taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order, 
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
-      created_by_id, cache_created_on, cache_updated_on
+      created_by_id, cache_created_on, cache_updated_on, certainty
     )
   select o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
@@ -253,7 +262,12 @@ $config['occurrences']['insert']="insert into cache_occurrences (
     cttl.id as taxa_taxon_list_id, cttl.preferred_taxa_taxon_list_id, cttl.taxonomic_sort_order, 
     cttl.taxon, cttl.authority, cttl.preferred_taxon, cttl.preferred_authority, cttl.default_common_name, 
     cttl.search_name, cttl.external_key as taxa_taxon_list_external_key, cttl.taxon_meaning_id,
-    cttl.taxon_group_id, cttl.taxon_group, o.created_by_id, now(), now()
+    cttl.taxon_group_id, cttl.taxon_group, o.created_by_id, now(), now(),
+    case when certainty.sort_order is null then null
+        when certainty.sort_order <100 then 'C'
+        when certainty.sort_order <200 then 'L'
+        else 'U'
+    end
   from occurrences o
   join needs_update_occurrences nuo on nuo.id=o.id and nuo.deleted=false
   left join cache_occurrences co on co.id=o.id
@@ -261,6 +275,10 @@ $config['occurrences']['insert']="insert into cache_occurrences (
   join surveys su on su.id=s.survey_id 
   left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
   join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
+  left join (occurrence_attribute_values oav
+    join termlists_terms certainty on certainty.id=oav.int_value
+    join occurrence_attributes oa on oa.id=oav.occurrence_attribute_id and oa.deleted='f' and oa.system_function='certainty'
+  ) on oav.occurrence_id=o.id and oav.deleted='f'
   where co.id is null";
 
 

@@ -147,12 +147,12 @@ class XMLReportReader_Core implements ReportReader
                   // revert to website type sharing if we have no known user Id.
                   $sharing='website';
                 if ($sharing==='me')
-                  // my data only so use the UserId if we have it                  
-                  $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "$createdByField=".$userId), $this->query);
+                  // my data only so use the UserId if we have it. Note join to system is just a dummy to keep syntax correct.
+                  $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('join system sys on sys.id=1', "$createdByField=".$userId), $this->query);
                 elseif (isset($idList)) {
                   if ($sharing==='website') 
                     // this website only
-                    $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('', "$websiteFilterField in ($idList)"), $this->query);
+                    $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), array('join system sys on sys.id=1', "$websiteFilterField in ($idList)"), $this->query);
                   else
                     // implement the appropriate sharing agreement across websites
                     $this->query = str_replace(array('#agreements_join#','#sharing_filter#'), 

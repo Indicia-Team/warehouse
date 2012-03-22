@@ -6,28 +6,26 @@
       FROM locations l
       LEFT JOIN locations_websites lw ON lw.location_id=l.id AND lw.deleted=false
       LEFT JOIN (cache_occurrences o
-        #agreements_join#
-        LEFT JOIN (occurrence_attribute_values oav
-          JOIN termlists_terms certainty ON certainty.id=oav.int_value
-        ) ON oav.occurrence_id=o.id AND oav.deleted='f' AND oav.occurrence_attribute_id=#certainattr# 
-      ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom))
+        #agreements_join# 
+      ) ON st_intersects(o.public_geom, coalesce(l.boundary_geom, l.centroid_geom)) 
       #joins#
       WHERE l.deleted=false
-      AND #sharing_filter# 
       AND (lw.website_id in (#website_ids#) OR l.public=true)
-      AND (o.id IS NULL or ((o.zero_abundance='f')
-      AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
-      AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
-      AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
-      AND ( 
-          (o.record_status='V') OR
-          ('#quality#'='C' AND (certainty.sort_order&lt;=#maxcertain# OR certainty.id IS NULL)) OR
-          ('#quality#'='L' AND (certainty.sort_order&lt;=#maxlikely# OR certainty.id IS NULL)) OR
-          ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
-          ('#quality#'='!R')
+      AND (o.id IS NULL or (
+        o.zero_abundance='f'
+        AND #sharing_filter# 
+        AND (CAST(o.survey_id AS character varying)='#survey_id#' OR '#survey_id#'='')
+        AND (trim('#date_from#')='' OR '#date_from#'='Click here' OR o.date_end &gt;= CAST(COALESCE('#date_from#','1500-01-01') as date))
+        AND (trim('#date_to#')='' OR '#date_to#'='Click here' OR o.date_start &lt;= CAST(COALESCE('#date_to#','1500-01-01') as date))
+        AND ( 
+            (o.record_status='V') OR
+            ('#quality#'='C' AND o.certainty='C') OR
+            ('#quality#'='L' AND o.certainty in ('C', 'L')) OR
+            ('#quality#'='!D' AND o.record_status&lt;&gt;'D') OR
+            ('#quality#'='!R')
+        )
+        AND o.record_status&lt;&gt;'R')
       )
-      AND o.record_status&lt;&gt;'R'))
-      
       </query>
       <order_bys>
             <order_by>value DESC</order_by>
@@ -47,11 +45,6 @@
         <param name='locattrs' display='Location attribute list' description='Comma separated list of location attribute IDs to include' datatype='locattrs' />
         <param name='quality' display='Data quality' description='Quality level required of data to be included in the map.' datatype='lookup' 
             lookup_values='V:Data must be verified,C:Data must be verified or certain,L:Data must be at least likely,!D:Include anything not dubious or rejected,!R:Include anything not rejected' />
-        <param name='certainattr' display='Certainty attribute' datatype='lookup'
-            description='Select the attribute which defines certainty. This must be a lookup, where the term sort order defines the order of certainty (most certain first).'
-            population_call='direct:occurrence_attribute:id:caption' emptyvalue='0' />
-        <param name='maxcertain' display='Certain sort order' description='Maximum sort order for certainty attribute terms that counts as certain' datatype='text' emptyvalue='0' />
-        <param name='maxlikely' display='Likely sort order' description='Maximum sort order for for certainty attribute terms that counts as likely' datatype='text' emptyvalue='0' />
       </params>
       <columns>
             <column name="id" visible="false" distincton="true" sql="l.id" unique="true" />

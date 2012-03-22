@@ -30,7 +30,9 @@
  * 
  */
 function cache_builder_scheduled_task($last_run_date) {  
-  if ($last_run_date===null)
+  if (isset($_GET['force_cache_rebuild']))
+    $last_run_date=date('Y-m-d', time()-60*60*24*365*200);
+  elseif ($last_run_date===null)
     // first run, so get all records changed in last day. Query will automatically gradually pick up the rest.
     $last_run_date=date('Y-m-d', time()-60*60*24);
   $db = new Database();
