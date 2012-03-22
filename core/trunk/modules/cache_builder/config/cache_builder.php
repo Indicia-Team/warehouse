@@ -229,10 +229,12 @@ $config['occurrences']['update'] = "update cache_occurrences co
         when certainty.sort_order <100 then 'C'
         when certainty.sort_order <200 then 'L'
         else 'U'
-      end
+      end,
+      location_name=COALESCE(l.name, s.location_name)
     from occurrences o
     join needs_update_occurrences nuo on nuo.id=o.id
     join samples s on s.id=o.sample_id and s.deleted=false
+    left join locations l on l.id=s.location_id and l.deleted=false
     join surveys su on su.id=s.survey_id and su.deleted=false
     left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
     join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id
@@ -267,11 +269,13 @@ $config['occurrences']['insert']="insert into cache_occurrences (
         when certainty.sort_order <100 then 'C'
         when certainty.sort_order <200 then 'L'
         else 'U'
-    end
+    end,
+    COALESCE(l.name, s.location_name)
   from occurrences o
   join needs_update_occurrences nuo on nuo.id=o.id and nuo.deleted=false
   left join cache_occurrences co on co.id=o.id
   join samples s on s.id=o.sample_id 
+  left join locations l on l.id=s.location_id and l.deleted=false
   join surveys su on su.id=s.survey_id 
   left join cache_termlists_terms tmethod on tmethod.id=s.sample_method_id
   join cache_taxa_taxon_lists cttl on cttl.id=o.taxa_taxon_list_id

@@ -8,7 +8,6 @@
   JOIN occurrences xo ON xo.id=o.id AND xo.deleted=false
   JOIN samples s on s.id=o.sample_id
   JOIN websites w on w.id=o.website_id 
-  LEFT JOIN locations l ON l.id=s.location_id
   LEFT JOIN occurrence_comments oc 
       ON oc.occurrence_id=o.id 
       AND oc.implies_manual_check_required=true 
@@ -47,7 +46,7 @@
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
     <column name='taxon' display='Species' sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || ' | ' || o.default_common_name END" datatype='text' />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
-    <column name='location_name' display='Site name' sql='COALESCE(l.name, s.location_name)' datatype='text' />
+    <column name='location_name' display='Site name' sql='o.location_name' datatype='text' />
     <column name='entered_sref' display='SRef' sql='s.entered_sref' datatype='text' />
     <column name='date' display='Date' sql='o.date_start' datatype='date' />
     <column name='zero_abundance' display='Zero Abundance' sql='o.zero_abundance' visible="false" />
