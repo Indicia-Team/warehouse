@@ -252,7 +252,7 @@ $config['occurrences']['insert']="insert into cache_occurrences (
       sample_method, taxa_taxon_list_id, preferred_taxa_taxon_list_id, taxonomic_sort_order, 
       taxon, authority, preferred_taxon, preferred_authority, default_common_name, 
       search_name, taxa_taxon_list_external_key, taxon_meaning_id, taxon_group_id, taxon_group,
-      created_by_id, cache_created_on, cache_updated_on, certainty
+      created_by_id, cache_created_on, cache_updated_on, certainty, location_name
     )
   select o.id, o.record_status, o.downloaded_flag, o.zero_abundance,
     su.website_id as website_id, su.id as survey_id, s.id as sample_id, su.title as survey_title,
