@@ -503,9 +503,20 @@ class iform_wwt_colour_marked_report {
           'valueField'=>'id',
           'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_type'),
           'required' => true,
-          'helpText' => 'The helptext. Todo: fix this!!',
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Identifiers',
-        )        
+        ),
+        array(
+          'name'=>'identifier_attributes',
+          'caption'=>'Identifier Attributes',
+          'description'=>'For each identifier type you choose in the above list, you must specify its attributes in this box. '.
+              'Enter one identifier type and its attributes per line. Start with the identifier name from the above list and follow '.
+              'this with a comma-separated list of attribute values. E.g. "Neck Collar, 1, 2, 3" where you want to store attributes with the '.
+              'given identifier attributes id values.',
+          'type' => 'textarea',
+          'required'=>true,
+          'group'=>'Identifiers'
+        ),   
       )
     );
     return $retVal;
@@ -1329,15 +1340,30 @@ class iform_wwt_colour_marked_report {
     if ($identifiers===0) {
       throw new exception(lang::get('Please configure the Identifier Types in the Identifiers section to specify which identifier types to record.'));
     }
+    $identAttrLines = array();
+    if (!empty($args['identifier_attributes'])) {
+      $identAttrLines = helper_base::explode_lines($args['identifier_attributes']);
+    }
+    if (count($identAttrLines)===0) {
+      throw new exception(lang::get('Please configure the Identifier Attributes in the Identifiers section to specify which attributes each identifier type has.'));
+    } elseif (count($identAttrLines)!==$identifiers) {
+      throw new exception(lang::get('Please configure the Identifier Attributes in the Identifiers section with one line for each identifier type you have chosen.'));
+    }
     // get the identifier type data
     $filter = array(
       'termlist_external_key' => 'indicia:assoc:identifier_type',
     );
     $dataOpts = array(
       'table' => 'termlists_term',
-      'extraParams' => $auth['read'] + $filter
+      'extraParams' => $auth['read'] + $filter,
     );
-    $response = data_entry_helper::get_population_data($dataOpts);
+    $typeResponse = data_entry_helper::get_population_data($dataOpts);
+    // get the identifier attribute data
+    $dataOpts = array(
+      'table' => 'identifier_attribute',
+      'extraParams' => $auth['read'],
+    );
+    $attrResponse = data_entry_helper::get_population_data($dataOpts);
     
     $r = '';
     if (empty($options['repeat']) || !is_numeric($options['repeat'])) {
@@ -1346,27 +1372,37 @@ class iform_wwt_colour_marked_report {
     for ($start=$taxIdx; $taxIdx < $options[repeat] + $start; $taxIdx++) {
       $options['fieldprefix'] = 'idn:'.$taxIdx.':0:';
       $r .= self::get_control_species($auth, $args, $tabalias, $options);
-      foreach ($args['identifier_types'] as $identifier_type_id) {
-        $r .= '<fieldset id="idn:'.$taxIdx.':'.$identifier_type_id.':fieldset" class="taxon_identifier">';
+      foreach ($identAttrLines as $identifierLine) {
+        $ident_parts = explode(',', $identifierLine);
+        $iName = str_replace(' ', '', strtolower($ident_parts[0]));
         $identifier_name = '';
-        foreach ($response as $identifier_type) {
-          if ($identifier_type['id']==$identifier_type_id) {
+        foreach ($typeResponse as $identifier_type) {
+          if (str_replace(' ', '', strtolower($identifier_type['term']))==$iName) {
             $identifier_name = $identifier_type['term'];
+            $identifier_type_id = $identifier_type['id'];
             break;
           }
         }
+        $r .= '<fieldset id="idn:'.$taxIdx.':'.$identifier_type_id.':fieldset" class="taxon_identifier">';
         $r .= '<legend>Enter details for the '.strtolower($identifier_name).' if seen</legend>';
         $options['fieldprefix'] = 'idn:'.$taxIdx.':'.$identifier_type_id.':';
         $options['identifierTypeId'] = $identifier_type_id;
         $options['identifierName'] = $identifier_name;
+        array_shift($ident_parts);
+        $options['identifierAttrList'] = $ident_parts;
         $r .= self::get_control_identifier($auth, $args, $tabalias, $options);
         $r .= '</fieldset>';
       }
     }
     return $r;
   }
+  /*
+   * 
+    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
+      $filterLines = helper_base::explode_lines($args['taxon_filter']);
+   */
   
-  /**
+  /*
    * Get the colour identifier control
    */
   
@@ -1375,30 +1411,43 @@ class iform_wwt_colour_marked_report {
     $r = '';
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_type_id" value="'.$options['identifierTypeId'].'" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_name" id="'.$fieldPrefix.'identifier:identifier_name" value="'.$options['identifierName'].'" />'."\n";
-    $r .= data_entry_helper::select(array_merge(array(
-      'fieldname'=>$fieldPrefix.'idnAttr:1', // Todo: set the attr id up in the parameters picked from attr captions
-      'label'=>lang::get('Base colour'),
-      'table'=>'termlists_term',
-      'captionField'=>'term',
-      'valueField'=>'id',
-      'extraParams' => array_merge(array('termlist_external_key'=>'indicia:assoc:ring_colour',
-        ), $auth['read']), // filter terms
-    ), $options));
-    $r .= data_entry_helper::select(array_merge(array(
-      'fieldname'=>$fieldPrefix.'idnAttr:2', // Todo: set the attr id up in the parameters picked from attr captions
-      'label'=>lang::get('Text colour'),
-      'table'=>'termlists_term',
-      'captionField'=>'term',
-      'valueField'=>'id',
-      'extraParams' => array_merge(array('termlist_external_key'=>'indicia:assoc:ring_colour',
-        ), $auth['read']), // filter terms
-    ), $options));
-    $r .= data_entry_helper::text_input(array_merge(array(
-      'fieldname'=>$fieldPrefix.'idnAttr:3', // Todo: set the attr id up in the parameters picked from attr captions
-      'label'=>lang::get('Sequence')
-    ), $options)); 
-    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier:coded_value" value="" />';
-    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_id" id="'.$fieldPrefix.'identifier:identifier_id" class="identifier_id" value="-1" />';
+    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier:coded_value" value="" />'."\n";
+    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_id" id="'.$fieldPrefix.'identifier:identifier_id" class="identifier_id" value="-1" />'."\n";
+    // Todo: make this dynamic driven by attribute data
+    foreach ($options['identifierAttrList'] as $attrId) {
+      switch ($attrId) {
+        case '1':
+          $r .= data_entry_helper::select(array_merge(array(
+            'fieldname'=>$fieldPrefix.'idnAttr:1', // Todo: set the attr id up in the parameters picked from attr captions
+            'label'=>lang::get('Base colour'),
+            'table'=>'termlists_term',
+            'captionField'=>'term',
+            'valueField'=>'id',
+            'extraParams' => array_merge(array('termlist_external_key'=>'indicia:assoc:ring_colour',
+              ), $auth['read']), // filter terms
+          ), $options));
+          break;
+        case '2':
+          $r .= data_entry_helper::select(array_merge(array(
+            'fieldname'=>$fieldPrefix.'idnAttr:2', // Todo: set the attr id up in the parameters picked from attr captions
+            'label'=>lang::get('Text colour'),
+            'table'=>'termlists_term',
+            'captionField'=>'term',
+            'valueField'=>'id',
+            'extraParams' => array_merge(array('termlist_external_key'=>'indicia:assoc:ring_colour',
+              ), $auth['read']), // filter terms
+          ), $options));
+          break;
+        case '3':
+          $r .= data_entry_helper::text_input(array_merge(array(
+            'fieldname'=>$fieldPrefix.'idnAttr:3', // Todo: set the attr id up in the parameters picked from attr captions
+            'label'=>lang::get('Sequence')
+          ), $options)); 
+          break;
+        default:
+          throw new exception(lang::get('Unknown identifier attribute type.'));
+      }
+    }
     return $r;
   }
   
