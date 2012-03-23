@@ -126,20 +126,36 @@ class iform_verification_3 {
           'default'=>1
         ), array(
           'name'=>'email_subject_send_to_verifier',
-          'caption'=>'Send to Verifier Email Subject',
-          'description'=>'Default subject for the send to verifier email. Replacements allowed include %taxon% and %id%.',
+          'caption'=>'Send to Expert Email Subject',
+          'description'=>'Default subject for the send to expert email. Replacements allowed include %taxon% and %id%.',
           'type'=>'string',
           'default' => 'Record of %taxon% requires verification (ID:%id%)',
           'group' => 'Verifier emails'
         ), array(
           'name'=>'email_body_send_to_verifier',
-          'caption'=>'Send to Verifier Email Body',
-          'description'=>'Default body for the acceptance email. Replacements allowed include %taxon%, %id% and %record% which is replaced to give details of the record.',
+          'caption'=>'Send to Expert Email Body',
+          'description'=>'Default body for the send to expert email. Replacements allowed include %taxon%, %id% and %record% which is replaced to give details of the record.',
           'type'=>'textarea',
           'default' => 'The following record requires verification. Please reply to this mail with the word Verified, Rejected or Dubious '.
               'in the email body, followed by any comments you have including the proposed re-identification if relevant on the next line.'.
               "\n\n%record%",
           'group' => 'Verifier emails'
+        ), array(
+          'name'=>'email_subject_send_to_recorder',
+          'caption'=>'Send to Recorder Email Subject',
+          'description'=>'Default subject for the send to recorder email. Replacements allowed include %taxon% and %id%.',
+          'type'=>'string',
+          'default' => 'Record of %taxon% requires confirmation (ID:%id%)',
+          'group' => 'Recorder emails'
+        ), array(
+          'name'=>'email_body_send_to_recorder',
+          'caption'=>'Send to Recorder Email Body',
+          'description'=>'Default body for the send to recorder email. Replacements allowed include %taxon%, %id% and %record% which is replaced to give details of the record.',
+          'type'=>'textarea',
+          'default' => 'The following record requires confirmation. Please could you reply to this email stating how confident you are that the record is correct '.
+              'and any other information you have which may help to confirm this.'.
+              "\n\n%record%",
+          'group' => 'Recorder emails'
         ), array(
           'name'=>'email_request_attribute',
           'caption'=>'Email Request Attribute',
@@ -320,17 +336,19 @@ idlist=';
     $r .= '<div id="outer-grid-left" class="ui-helper-clearfix">';
     $r .= '<div id="grid" class="left">{grid}';
     // Insert a button to verify all visible, only available if viewing the clean records.
-    if (isset($_POST['verification-rule']) && $_POST['verification-rule']==='none' && empty($_POST['verification-id']))
-      $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all visible').'</button>';
+    $r .= '<button type="button" id="btn-verify-all">'.lang::get('Verify all clean records in grid').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-wrap" class="right ui-widget ui-widget-content">';
     $r .= self::instructions('grid on the left');    
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
+    $r .= '<label>Set status:</label>';
     $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
     $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
     $r .= '<button type="button" id="btn-dubious">'.lang::get('Dubious').'</button>';
-    $r .= '<button type="button" id="btn-email" class="default-button">'.lang::get('Email').'</button>';
+    $r .= '<br/><label>Contact:</label>';
+    $r .= '<button type="button" id="btn-email-expert" class="default-button">'.lang::get('Another expert').'</button>';
+    $r .= '<button type="button" id="btn-email-recorder" class="default-button">'.lang::get('Recorder').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-tabs">';
     // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
@@ -398,10 +416,13 @@ idlist=';
     $r .= self::instructions('grid below');    
     $r .= '<div id="record-details-content" style="display: none">';
     $r .= '<div id="record-details-toolbar">';
+    $r .= '<label>Set status:</label>';
     $r .= '<button type="button" id="btn-verify">'.lang::get('Verify').'</button>';
     $r .= '<button type="button" id="btn-reject">'.lang::get('Reject').'</button>';
     $r .= '<button type="button" id="btn-dubious">'.lang::get('Dubious').'</button>';
-    $r .= '<button type="button" id="btn-email" class="default-button">'.lang::get('Email').'</button>';
+    $r .= '<br/><label>Contact:</label>';
+    $r .= '<button type="button" id="btn-email-expert" class="default-button">'.lang::get('Another expert').'</button>';
+    $r .= '<button type="button" id="btn-email-recorder" class="default-button">'.lang::get('Recorder').'</button>';
     $r .= '</div>';
     $r .= '<div id="record-details-tabs">';
     // note - there is a dependency in the JS that comments is the last tab and images the 2nd to last.
@@ -455,6 +476,13 @@ idlist=';
    * @return HTML string
    */
   public static function get_form($args, $node, $response) {
+    // set some defaults, applied when upgrading from a form configured on a previous form version.
+    if (empty($args['email_subject_send_to_recorder']))
+      $args['email_subject_send_to_recorder'] = 'Record of %taxon% requires confirmation (ID:%id%)';
+    if (empty($args['email_body_send_to_recorder']))
+      $args['email_body_send_to_recorder'] = 'The following record requires confirmation. Please could you reply to this email stating how confident you are that the record is correct '.
+              'and any other information you have which may help to confirm this.'.
+              "\n\n%record%";
     if (isset($_POST['enable'])) {
       module_enable(array('iform_ajaxproxy'));
       drupal_set_message(lang::get('The Indicia AJAX Proxy module has been enabled.', 'info'));
@@ -569,6 +597,10 @@ idlist=';
     $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_verifier']);
     data_entry_helper::$javascript .= 'indiciaData.email_body_send_to_verifier = "'.$body."\";\n";
     
+    data_entry_helper::$javascript .= 'indiciaData.email_subject_send_to_recorder = "'.$args['email_subject_send_to_recorder']."\";\n";
+    $body = str_replace(array("\r", "\n"), array('', '\n'), $args['email_body_send_to_recorder']);
+    data_entry_helper::$javascript .= 'indiciaData.email_body_send_to_recorder = "'.$body."\";\n";
+    
     data_entry_helper::$javascript .= 'indiciaData.email_request_attribute = "'.$args['email_request_attribute']."\";\n";
     data_entry_helper::$javascript .= 'indiciaData.email_address_attribute = "'.$args['email_address_attribute']."\";\n";
    
@@ -679,9 +711,13 @@ idlist=';
     if (data_entry_helper::$entity_to_load['occurrence:zero_abundance']==='t')
       $r .= '<br/>' . lang::get('This is a record indicating absence.');
     $r .= "</td></tr>\n";
+    $email='';
     foreach($data as $item) {
-      if (!is_null($item['value']) && $item['value'] != '') 
+      if (!is_null($item['value']) && $item['value'] != '') {
         $r .= "<tr><td><strong>".$item['caption']."</strong></td><td>".$item['value'] ."</td></tr>\n";
+        if (strtolower($item['caption'])==='email' || strtolower($item['caption'])==='email address')
+          $email=$item['value'];
+      }
     }
     $r .= "</table>\n";
     $additional=array();
@@ -692,6 +728,7 @@ idlist=';
     $additional['entered_sref'] = data_entry_helper::$entity_to_load['sample:entered_sref'];
     $additional['taxon_external_key'] = data_entry_helper::$entity_to_load['occurrence:taxon_external_key'];
     $additional['taxon_meaning_id'] = data_entry_helper::$entity_to_load['occurrence:taxon_meaning_id'];
+    $additional['recorder_email'] = $email;
     header('Content-type: application/json');
     echo json_encode(array(
       'content' => $r,

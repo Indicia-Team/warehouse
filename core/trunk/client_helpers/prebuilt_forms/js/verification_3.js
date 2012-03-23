@@ -130,7 +130,30 @@ function buildVerifierEmail() {
       .replace('%record%', record);
   $('#record-details-tabs').tabs('load', 0);
   email.to = '';
-  email.type = 'verifier';
+  email.type = 'recordCheck';
+  popupEmail();
+}
+
+function buildRecorderConfirmationEmail() {
+  //Form to create email of record details
+  var record = '';
+  $.each(current_record.data, function (idx, obj) {
+    if (obj.value !== null && obj.value !=='') {
+      record += obj.caption + ': ' + obj.value + "\n";
+    }
+  });
+
+  record += "\n\n[Photos]\n\n[Comments]";
+  email.subject = indiciaData.email_subject_send_to_recorder
+      .replace('%taxon%', current_record.additional.taxon)
+      .replace('%id%', occurrence_id),
+  email.body = indiciaData.email_body_send_to_recorder
+      .replace('%taxon%', current_record.additional.taxon)
+      .replace('%id%', occurrence_id)
+      .replace('%record%', record);
+  $('#record-details-tabs').tabs('load', 0);
+  email.to=current_record.additional.recorder_email;
+  email.type = 'recordCheck';
   popupEmail();
 }
 
@@ -187,7 +210,7 @@ function processEmail(){
     email.subject = $('#email-subject').val();
     email.body = $('#email-body').val();
 
-    if (email.type == 'verifier') {
+    if (email.type == 'recordCheck') {
     // ensure images are loaded
     $.ajax({
       url: indiciaData.ajaxUrl + '/imagesAndComments' + urlSep + 'occurrence_id=' + occurrence_id,
@@ -218,7 +241,7 @@ function sendEmail() {
     // use an AJAX call to get the server to send the email
     $.post(
       indiciaData.ajaxUrl + '/email',
-    email,
+      email,
       function (response) {
         if (response === 'OK') {
           $.fancybox.close();
@@ -402,8 +425,12 @@ $(document).ready(function () {
     setStatus('D');
   });
 
-  $('#btn-email').click(function () {
+  $('#btn-email-expert').click(function () {
     buildVerifierEmail();
+  });
+  
+  $('#btn-email-recorder').click(function () {
+    buildRecorderConfirmationEmail();
   });
   
   $('#btn-verify-all').click(function () {

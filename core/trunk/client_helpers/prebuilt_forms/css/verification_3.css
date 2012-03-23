@@ -457,3 +457,8 @@ button.default-button:hover {
   list-style-position: inside;
   padding-top: 0.1em;
 }
+
+/* line 212, sass/verification_3.scss */
+#record-details-toolbar label {
+  width: 100px;
+}
