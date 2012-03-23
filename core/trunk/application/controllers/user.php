@@ -120,7 +120,7 @@ class User_Controller extends Gridview_Base_Controller {
       $this->access_denied();
       return;
     }
-    $this->model = new User_Model(array('person_id' => $id));
+    $this->model = new User_Model(array('person_id' => $id, 'deleted'=>'f'));
     $websites = ORM::Factory('website')->in_allowed_websites()->find_all();
     if ( $this->model->loaded ) {
       $this->setView('user/user_edit', 'User', array('password_field' => ''));

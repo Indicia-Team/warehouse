@@ -538,7 +538,7 @@ class User_Identifier_Controller extends Service_Base_Controller {
       if ($userIdToMerge!=$uid && (!isset($_REQUEST['users_to_merge']) || in_array($userIdToMerge, $_REQUEST['users_to_merge']))) {
         // Own the occurrences
         $this->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
-        $this->db->update('occurrences', array('created_by_id'=>$uid), array('created_by_id'=>$userIdToMerge));
+        $this->db->update('occurrences', array('updated_by_id'=>$uid), array('updated_by_id'=>$userIdToMerge));
         // delete the old user
         $uidsToDelete[] = $userIdToMerge;
         kohana::log('debug', "User merge operation resulted in deletion of user $userIdToMerge plus the related person");
