@@ -8,6 +8,9 @@
   JOIN occurrences xo ON xo.id=o.id AND xo.deleted=false
   JOIN samples s on s.id=o.sample_id
   JOIN websites w on w.id=o.website_id 
+  LEFT JOIN (sample_attribute_values vuser
+    JOIN sample_attributes sauser on sauser.id=vuser.sample_attribute_id and sauser.deleted=false and sauser.system_function = 'cms_username'
+  ) on vuser.sample_id=s.id and vuser.deleted=false
   LEFT JOIN occurrence_comments oc 
       ON oc.occurrence_id=o.id 
       AND oc.implies_manual_check_required=true 
@@ -15,7 +18,7 @@
   #agreements_join#
   #joins#
   WHERE #sharing_filter# 
-  AND (xo.record_status = 'C' OR '#records#' = 'all')
+  AND (xo.record_status in ('C','S') OR '#records#' = 'all')
   AND (o.certainty = 'C' or o.certainty is null)
   AND ('#records#'&lt;&gt;'fail' OR oc.occurrence_id is not null)
   AND ('#searchArea#'='' OR st_intersects(s.geom, st_geomfromtext('#searchArea#',900913)))
@@ -43,6 +46,7 @@
     <column name='occurrence_id' display='ID' sql='o.id' datatype='integer' template="&lt;div class='status-{record_status}'&gt;{occurrence_id}&lt;/div&gt;" />
     <column name='website' display='Source' sql='w.title' datatype="text" />
     <column name='survey' display='Survey' sql='o.survey_title' datatype="text" visible="false"/>
+    <column name='user' display='User' sql='vuser.text_value' datatype="text" />
     <column name='sample_id' visible='false' sql='o.sample_id' datatype='integer' />
     <column name='taxon' display='Species' sql="CASE WHEN o.preferred_taxon=o.default_common_name then o.preferred_taxon ELSE o.preferred_taxon || ' | ' || o.default_common_name END" datatype='text' />
     <column name='taxa_taxon_list_id' visible='false' sql='o.taxa_taxon_list_id' datatype='integer' />   
