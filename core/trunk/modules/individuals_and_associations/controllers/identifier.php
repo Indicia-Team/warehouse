@@ -22,26 +22,28 @@
  */
 
 /**
- * Controller for the known_subject page.
+ * Controller for the identifier page.
  *
  * @package Groups and individuals module
  * @subpackage Controllers
  */
-class Known_subject_Controller extends Gridview_Base_Controller {
+class Identifier_Controller extends Gridview_Base_Controller {
 
   /**
    * Constructor
    */
   public function __construct()
   {
-    parent::__construct('known_subject');
+    parent::__construct('identifier');
     $this->columns = array(
       'id'=>'ID',
-      'taxa'=>'',
-      'subject_type'=>'',
-      'short_description'=>'Description',
+      'first_use_date'=>'',
+      'identifier_type'=>'',
+      'code'=>'',
+      'summary'=>'',
+      'short_description'=>'Subject description',
     );
-    $this->pagetitle = "Known Subjects";
+    $this->pagetitle = "Identifiers";
   }
 
   public function page_authorised()
@@ -51,10 +53,8 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   
   protected function getModelValues() {
     $r = parent::getModelValues();
-    $r['joinsTo:taxa_taxon_list:id'] = 
-      $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list', true);
-    // load data for attributes, TODO, fix this
-    $websiteId = $r['known_subject:website_id'];
+    // load data for attributes
+    $websiteId = $r['identifier:website_id'];
     $this->loadAttributes($r, array(
         'website_id'=>$websiteId,
     ));
@@ -67,10 +67,8 @@ class Known_subject_Controller extends Gridview_Base_Controller {
    */
   protected function getDefaults() {
     $r = parent::getDefaults();
-    $r['joinsTo:taxa_taxon_list:id'] = 
-      $this->reformatTaxaJoinsForList($r, 'taxa_taxon_list', true);
-    if (array_key_exists('known_subject:id', $_POST)) {
-      $websiteId = $r['known_subject:website_id'];
+    if (array_key_exists('identifier:id', $_POST)) {
+      $websiteId = $r['identifier:website_id'];
       $this->loadAttributes($r, array(
         'website_id'=>$websiteId,
       ));
@@ -79,31 +77,16 @@ class Known_subject_Controller extends Gridview_Base_Controller {
   }
 
   /**
-   * Get the list of terms ready for the subject type list. 
+   * Get the list of terms ready for the type lists. 
    */
   protected function prepareOtherViewData($values)
   {    
     return array(
-      'subject_type_terms' => $this->get_termlist_terms('indicia:assoc:subject_type')    
+      'issue_authority_terms' => $this->get_termlist_terms('indicia:assoc:issue_authority'), 
+      'issue_scheme_terms' => $this->get_termlist_terms('indicia:assoc:issue_scheme'), 
+      'identifier_type_terms' => $this->get_termlist_terms('indicia:assoc:identifier_type'),  
     );   
   }
 
-  protected function reformatTaxaJoinsForList($values, $singular_table, $id_only=false) {
-    // re-format values for joined taxa. These are returned suitable for checkboxes, 
-    // but we put them in an array suitable for a list type control
-    // as array(id = 'value', ... ) or id $id_only is true, array(id1, id2, ...)
-    $join_ids = array();
-    $join_keys = preg_grep('/^joinsTo:'.$singular_table.':[0-9]+$/', array_keys($values));
-    foreach ($join_keys as $key) {
-      $id = substr($key, strlen('joinsTo:'.$singular_table.':'));
-      if ($id_only) {
-        $join_ids[] = $id;
-      } else {
-        $name = ORM::Factory($singular_table, $id)->taxon->taxon;
-        $join_ids[$id] = $name;
-      }
-    }              
-    return $join_ids;      
-  }
 }
 ?>

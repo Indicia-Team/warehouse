@@ -22,70 +22,75 @@
  */
 
 /**
- * Model class for the Known_subjects table.
+ * Model class for the Identifiers table.
  *
- * @package	Groups and individuals module
+ * @package	Individuals and associations module
  * @subpackage Models
  * @link	http://code.google.com/p/indicia/wiki/DataModel
  */
-class Known_subject_Model extends ORM_Tree
+class Identifier_Model extends ORM
 {
-  protected $ORM_Tree_children = 'known_subjects';
-  
-  public $search_field='description';
+  public $search_field='code';
 
   protected $belongs_to = array(
-    'subject_type'=>'termlists_term',
+    'issue_authority'=>'termlists_term',
+    'issue_scheme'=>'termlists_term',
+    'identifier_type'=>'termlists_term',
+    'known_subject',
     'website',
     'created_by'=>'user',
     'updated_by'=>'user',
   );
 
   protected $has_many = array(
-    'identifiers',
-    'subject_observations',
-    'known_subject_comments',
-    'known_subjects_taxa_taxon_lists',
-    'known_subject_attribute_values',
+    'identifier_attribute_values',
+    'identifiers_subject_observations',
   );
     
   protected $has_and_belongs_to_many = array(
-    'taxa_taxon_lists',
-    'known_subject_attributes',
+    'identifier_attributes',
+    'subject_observations',
   );
     
   // Declare that this model has child attributes, and the name of the node in the submission which contains them
   protected $has_attributes=true;
-  // A public attribute does NOT need to be linked to a website to form part of the submissable data for a known_subject (unlike, say,
+  // A public attribute does NOT need to be linked to a website to form part of the submissable data for a identifier (unlike, say,
   // sample attributes which are not submissable unless linked via a sample_attributes_websites record).
   public $include_public_attributes = true;
-  protected $attrs_submission_name='ksjAttributes';
-  protected $attrs_field_prefix='ksjAttr';
+  protected $attrs_submission_name='idnAttributes';
+  protected $attrs_field_prefix='idnAttr';
   
   public function validate(Validation $array, $save = false) {
     // uses PHP trim() to remove whitespace from beginning and end of all fields before validation
     $array->pre_filter('trim');
-    $array->add_rules('subject_type_id', 'required', 'digit');
+    $array->add_rules('identifier_type_id', 'required', 'digit');
     $array->add_rules('website_id', 'required', 'digit');
     // Explicitly add those fields for which we don't do validation
     $this->unvalidatedFields = array(
-      'parent_id', 
-      'description',
+      'issue_authority_id', 
+      'issue_scheme_id', 
+      'issue_date', 
+      'first_use_date', 
+      'last_observed_date', 
+      'final_date', 
+      'code',
+      'summary',
+      'known_subject_id',
       'deleted',
     );
     return parent::validate($array, $save);
   }
 
   /**
-   * Returns an abbreviated version of the description to act as a caption
+   * Returns an abbreviated version of the summary to act as a caption. Todo, consider if 'code' would be better?
    */
   public function caption()
   {
     if ($this->id) {
-      if (strlen($this->description)>30) {
-        return substr($this->description, 0, 30).'...';
+      if (strlen($this->summary)>30) {
+        return substr($this->summary, 0, 30).'...';
       } else {
-        return $this->description;
+        return $this->summary;
       }
     } else {
       return $this->getNewItemCaption();
@@ -97,7 +102,7 @@ class Known_subject_Model extends ORM_Tree
   */
   protected function preSubmit()
   { 
-    kohana::log('debug', 'In Known_subject_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
+    kohana::log('debug', 'In Identifier_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
     return parent::presubmit();
   }
   
@@ -106,21 +111,9 @@ class Known_subject_Model extends ORM_Tree
   */
   protected function postSubmit()
   { 
-    kohana::log('debug', 'In Known_subject_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
+    kohana::log('debug', 'In Identifier_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
     return parent::postSubmit();
   }
-  
-  /**
-   * Return the submission structure, which includes defining the taxa_taxon_lists table
-   * is a sub-model.
-   * 
-   * @return array Submission structure for a known_subject entry.
-   */
-  public function get_submission_structure() {
-    $r = parent::get_submission_structure();
-    $r['joinsTo'] = array('taxa_taxon_lists');
-    return $r;
-  } 
 
   /** 
    * Gets the list of custom attributes for this model.
@@ -134,5 +127,4 @@ class Known_subject_Model extends ORM_Tree
   protected function getAttributes($required = false, $typeFilter = null, $hasSurveyRestriction = true) {
     return parent::getAttributes($required, $typeFilter, false);
   }
-  
 }

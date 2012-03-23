@@ -42,9 +42,9 @@ echo data_entry_helper::tab_header(array('tabs'=>array(
 <div id="details">
 <?php  endif; ?>
 <form class="iform" action="<?php echo url::site(); ?>known_subject/save" method="post">
-<?php ///echo '$values: '.print_r($values, true).'<br />'; ?>
-<?php //echo '$other_data: '.print_r($other_data, true); ?>
-<?php //echo 'initial taxa: '.print_r(html::initial_value($values, 'joinsTo:taxa_taxon_list:id'), true); ?>
+<?php echo '$values: '.print_r($values, true).'<br />'; ?>
+<?php echo '$other_data: '.print_r($other_data, true).'<br />'; ?>
+<?php echo 'initial taxa: '.print_r(html::initial_value($values, 'joinsTo:taxa_taxon_list:id'), true).'<br />'; ?>
 <?php  
 echo $metadata; 
 if (isset($values['known_subject:id'])) : ?>
@@ -56,25 +56,6 @@ if (isset($values['known_subject:id'])) : ?>
 <?php 
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
 /*
-echo data_entry_helper::autocomplete(array(
-  'label' => 'Taxon',
-  'fieldname' => 'joinsTo:taxa_taxon_list:id[]',
-  'table' => 'taxa_taxon_list',
-  'captionField' => 'taxon',
-  'valueField' => 'id',
-  'default'=>html::initial_value($values, 'known_subjects_taxa_taxon_list:id[0]'),
-  'extraParams' => $readAuth,
-));
-echo data_entry_helper::autocomplete(array(
-  'label' => 'Taxon 2',
-  'fieldname' => 'joinsTo:taxa_taxon_list:id[]',
-  'table' => 'taxa_taxon_list',
-  'captionField' => 'taxon',
-  'valueField' => 'id',
-  'default'=>html::initial_value($values, 'known_subjects_taxa_taxon_list:taxa_taxon_list_id[1]'),
-  'extraParams' => $readAuth,
-));
-*/
 echo data_entry_helper::sub_list(array(
   'label' => 'Taxa',
   'fieldname' => 'joinsTo:taxa_taxon_list:id',
@@ -85,7 +66,33 @@ echo data_entry_helper::sub_list(array(
   'valueField' => 'id',
   'addToTable' => false,
   //'hide' => 'fast',
-  'extraParams' => $readAuth + array('taxon_list_id' => '1'),
+  'extraParams' => $readAuth + array('taxon_list_id' => '3'),
+));
+*/
+echo data_entry_helper::select(array(
+  'label' => 'Taxon List',
+  'fieldname' => 'taxa_taxon_list:taxon_list_id',
+  'table' => 'taxon_list',
+  'captionField' => 'title',
+  'valueField' => 'id',
+  'default'=>html::initial_value($values, 'taxa_taxon_list:taxon_list_id'),
+  //'lookupValues' => $other_data['subject_type_terms'],
+  'blankText' => '<Please select>',
+  'extraParams' => $readAuth,
+));
+echo data_entry_helper::listbox(array(
+  'label' => 'Taxa',
+  'fieldname' => 'joinsTo:taxa_taxon_list:id[]',
+  'id' => 'joinsTo:taxa_taxon_list:id',
+  'table' => 'taxa_taxon_list',
+  'captionField' => 'taxon',
+  'valueField' => 'id',
+  'parentControlId' => 'taxa_taxon_list:taxon_list_id',
+  'filterField' => 'taxon_list_id',
+  'class' => 'control-width-3',
+  'multiselect' => true,
+  'default' => array_key_exists('joinsTo:taxa_taxon_list:id', $values) ? $values['joinsTo:taxa_taxon_list:id'] : '',
+  'extraParams' => $readAuth,
 ));
 echo data_entry_helper::select(array(
   'label' => 'Subject Type',

@@ -41,8 +41,10 @@ function individuals_and_associations_extend_ui() {
 function individuals_and_associations_alter_menu ($menu, $auth) {
   if ($auth->logged_in('CoreAdmin') || $auth->has_any_website_access('editor')) {
     $menu['Entered Data']['Known Subjects'] = 'known_subject';
+    $menu['Entered Data']['Identifiers'] = 'identifier';
     $menu['Entered Data']['Subject Observations'] = 'subject_observation';
     $menu['Custom Attributes']['Known Subject Attributes'] = 'known_subject_attribute';
+    $menu['Custom Attributes']['Identifiers Attributes'] = 'identifier_attribute';
     $menu['Custom Attributes']['Subject Observation Attributes'] = 'subject_observation_attribute';
   }
   return $menu;
@@ -65,7 +67,7 @@ function individuals_and_associations_extend_orm() {
       'has_many'=>array('subject_observations',),
     ),
     'website'=>array(
-      'has_many'=>array('known_subjects', 'subject_observations',),
+      'has_many'=>array('known_subjects', 'identifiers', 'subject_observations',),
     ),
   );
 }
@@ -76,10 +78,13 @@ function individuals_and_associations_extend_orm() {
 function individuals_and_associations_extend_data_services() {
   return array(
     'known_subjects'=>array(),
+    'identifiers'=>array(),
     'subject_observations'=>array(),
     'known_subject_attributes'=>array(),
+    'identifier_attributes'=>array(),
     'subject_observation_attributes'=>array(),
     'known_subject_attribute_values'=>array(),
+    'identifier_attribute_values'=>array(),
     'subject_observation_attribute_values'=>array(),
     'known_subject_comments'=>array(),
   );

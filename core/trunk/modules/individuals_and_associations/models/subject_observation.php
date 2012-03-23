@@ -44,10 +44,12 @@ class Subject_Observation_Model extends ORM_Tree
     'updated_by'=>'user',
   );
   protected $has_many=array(
-    'subject_observation_attribute_values',
+    'identifiers_subject_observations',
     'occurrences_subject_observations',
+    'subject_observation_attribute_values',
   );
   protected $has_and_belongs_to_many = array( // this won't understand join table rows with deleted='t'
+    'identifiers',
     'occurrences',
     'subject_observation_attributes',
   );
@@ -98,8 +100,27 @@ class Subject_Observation_Model extends ORM_Tree
   */
   protected function preSubmit()
   { 
-    kohana::log('debug', 'In Known_subject_Model::preSubmit() $_POST is '.print_r($_POST, true));
-    kohana::log('debug', 'In Known_subject_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
+    kohana::log('debug', 'In Subject_observation_Model::preSubmit() $this->submission is '.print_r($this->submission, true));
+    // if sample_id not set for fkLookup in occurrences_subject_observation, then set it now
+    if (array_key_exists('subModels', $this->submission)) {
+      foreach ($this->submission['subModels'] as &$subModel) {
+        if (array_key_exists('model', $subModel)
+          && array_key_exists('id', $subModel['model'])
+          && $subModel['model']['id'] === 'occurrences_subject_observation'
+          && array_key_exists('fkFields', $subModel['model'])
+          && array_key_exists('fk_occurrence', $subModel['model']['fkFields'])
+          && array_key_exists('fkSearchField', $subModel['model']['fkFields']['fk_occurrence'])
+          && $subModel['model']['fkFields']['fk_occurrence']['fkSearchField'] === 'sample_id'
+          && array_key_exists('fkSearchValue', $subModel['model']['fkFields']['fk_occurrence'])
+          && $subModel['model']['fkFields']['fk_occurrence']['fkSearchValue'] == 0
+          && array_key_exists('fields', $this->submission)
+          && array_key_exists('sample_id', $this->submission['fields'])
+          && array_key_exists('value', $this->submission['fields']['sample_id'])) {
+          $subModel['model']['fkFields']['fk_occurrence']['fkSearchValue'] = 
+            $this->submission['fields']['sample_id']['value'];
+        }
+      }
+    }
     return parent::presubmit();
   }
   
@@ -108,8 +129,7 @@ class Subject_Observation_Model extends ORM_Tree
   */
   protected function postSubmit()
   { 
-    kohana::log('debug', 'In Known_subject_Model::postSubmit() $_POST is '.print_r($_POST, true));
-    kohana::log('debug', 'In Known_subject_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
+    kohana::log('debug', 'In Subject_observation_Model::postSubmit() $this->submission is '.print_r($this->submission, true));
     return parent::postSubmit();
   }
   
@@ -125,38 +145,5 @@ class Subject_Observation_Model extends ORM_Tree
     return $r;
   } 
   
-  /** 
-   * Prepares the db object query builder to query the list of custom attributes for this model.
-   * @param boolean $required Optional. Set to true to only return required attributes (requires 
-   * the website and survey identifier to be set).
-   * @param int @typeFilter Not used
-   */
-  /* TODO is this needed, or is it person attributes specific?
-  protected function setupDbToQueryAttributes($required = false, $typeFilter = null) {
-    $this->db->select('subject_observation_attributes.id', 'subject_observation_attributes.caption');
-    $this->db->from('subject_observation_attributes');
-    
-    if ($required && $this->id!==0) {
-      // extra joins to link to the subject_observation websites so we can find which fields are required
-      $this->db->join('subject_observation_attributes_websites','subject_observation_attributes_websites.subject_observation_attribute_id', 'subject_observation_attributes.id', 'left');
-      $this->db->join('users_websites', 'users_websites.website_id', 'subject_observation_attributes_websites.website_id', 'left');
-      $this->db->join('users', 'users.id', 'users_websites.user_id', 'left');
-      // $this->db->in('users.subject_observation_id', array(null, $this->id));
-      // note we concatenate the validation rules to check both global and website specific rules for requiredness. 
-      $this->db->where("(subject_observation_attributes_websites.validation_rules like '%required%' or subject_observation_attributes.validation_rules like '%required%')");
-    } elseif ($required) {
-      $this->db->like('subject_observation_attributes.validation_rules', '%required%');
-    }
-    $this->db->where('subject_observation_attributes.deleted', 'f');
-    $this->db->orwhere('subject_observation_attributes.public','t');
-    // deliberate repeat of this clause - it needs to be both sides of the orwhere
-    $this->db->where('subject_observation_attributes.deleted', 'f');
-    if ($required && $this->id!==0) {
-      $this->db->in('subject_observation_attributes_websites.deleted', array('f', null));
-      $this->db->in('users.deleted', array('f', null)); 
-      $this->db->where('users_websites.site_role_id is not null');
-    }
-  }
-  */
 }
 ?>

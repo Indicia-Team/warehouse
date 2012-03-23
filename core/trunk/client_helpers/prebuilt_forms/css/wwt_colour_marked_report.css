@@ -1,0 +1,15 @@
+@CHARSET "UTF-8";
+
+.ui-state-highlight,.ui-widget-content .ui-state-highlight {
+	border: 1px solid #008f93;
+	background: #ffffff;
+	color: #008f93;
+}
+
+#tabs-wrapper h2, #tabs-wrapper h3 {
+	color: #008f93;
+}
+
+h2 {
+	color: #008f93;
+}

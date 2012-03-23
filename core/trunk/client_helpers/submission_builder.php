@@ -315,8 +315,8 @@ class submission_builder extends helper_config {
       case 'subject_observation':
         $prefix = 'sjo';
         break;
-      case 'mark':
-        $prefix = 'mrk';
+      case 'identifier':
+        $prefix = 'idn';
         break;
       default:
         if ($except) 
