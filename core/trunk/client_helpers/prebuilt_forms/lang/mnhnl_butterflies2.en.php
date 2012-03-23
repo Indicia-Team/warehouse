@@ -88,6 +88,7 @@ $custom_terms = array(
 //	Passage
 	'speciesgrid:taxa_taxon_list_id'=>'Add species',
 	'LANG_ConfirmSurveyDelete'=>'You are about to flag a survey as deleted. Do you wish to continue and delete survey ',
+	'LANG_Sites_Report_Download' => 'This Report provides details of the <strong>sites</strong>. It does not include any vists specific information, e.g. conditions or species data.',
 	'LANG_Conditions_Report_Download' => 'This Report provides details of the <strong>conditions</strong> recorded on each site for each survey, including if no observations where made. It does not include any species data.',
 	'LANG_Download_Button' => 'Download',
 	'LANG_Occurrence_Report_Download' => 'This Report provides details of the <strong>species</strong> and <strong>conditions</strong> recorded on each site for each survey.',
@@ -98,14 +99,14 @@ $custom_terms = array(
 	'LANG_ConditionsGridInstructions'=>'Before any data can be entered onto a row of the grid below, and entered into the equivalent column in the species grid, the date for the visit to that site must be filled in. Additional sites may be added by drawing on the Map. Clicking on the Red X will either clear the data for that site, if the site was pre-existing, or the site will be deleted if you have added it during this session.',
 	'LANG_SpeciesGridInstructions'=>"Note species observed at each site and estimate their abundance.<br />Before any data can be entered into the grid below, the conditions for the visit to that site must be entered in the Conditions section. Additional sites may be added by drawing on the map in the Sites section. Additional species may be added by entering the name in the box below.  Clicking on the red 'X' will either clear the data for that species (if data has previously been entered for the species), or the species will be removed (if you have added it during this session).",
 // Date
-	'Butterfly2 Target Species'=>'Target Species',
-	'Start time'=>'Start<br />time',
-	'Duration'=>'Duration<br />(minutes)',
-	'Temperature (Celsius)'=>'Temp<br />(C)',
-	'Temperature'=>'Temp<br />(C)',
-	'Windspeed'=>'Wind<br />(Bf)',
+	'Butterfly2 Target Species'=>'Target species',
+//	'Start time'
+	'Duration'=>'Duration (mins)',
+	'Temperature (Celsius)'=>'Temp (C)',
+	'Temperature'=>'Temp (C)',
+	'Windspeed'=>'Wind (Bf)',
 //	'Rain'=>'Rain',
-	'Cloud cover'=>'Cloud<br />cover<br />(%)',
+	'Cloud cover'=>'Cloud cover (%)',
 // 'Reliability'=>'Reliability',
 // No observation
 	'LANG_conditionsgrid:clearconfirm' => 'You are about to clear the data for a site. If you do this any previously saved data (including species data for that site) will be lost. Do you still wish to continue?',
@@ -132,6 +133,7 @@ $custom_terms = array(
 	'LANG_Save_Location_Allocations' => 'Save Location Allocations',
 	'speciesgrid:rowexists' => 'A row for this species already exists.',
 	'next step'=>'Next step',
-	'prev step'=>'Previous step'
+	'prev step'=>'Previous step',
+	'Overall Comment' => 'Overall comment'
 
 );

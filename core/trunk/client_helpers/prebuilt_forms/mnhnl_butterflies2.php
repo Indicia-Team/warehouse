@@ -103,7 +103,9 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
               "@sep=<br />\r\n".
               "@lookUpKey=meaning_id\r\n".
               "@tabNameFilter=ConditionsGrid\r\n".
-              "@setColumnsRequired=0:1:6\r\n".
+              "@setRowRequired=2\r\n".
+              "@NumRows=4\r\n".
+              "@NumAttrCols=3\r\n".
              "=Species=\r\n".
               "[species grid]\r\n".
               "[*]\r\n".
@@ -137,7 +139,13 @@ class iform_mnhnl_butterflies2 extends iform_mnhnl_dynamic_1 {
   	$isAdmin = user_access('IForm n'.self::$node->nid.' admin');
   	if(!$isAdmin) return('');
   	if(!$retTabs) return array('#downloads' => lang::get('LANG_Download'), '#locations' => lang::get('LANG_Locations'));
+    $LocationTypeID = iform_mnhnl_getTermID(self::$auth, $args['locationTypeTermListExtKey'],$args['LocationTypeTerm']);
     $retVal = '<div id="downloads" >
+    <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_sites_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadconditions">
+      <p>'.lang::get('LANG_Sites_Report_Download').'</p>
+      <input type="hidden" id="params" name="params" value=\'{"location_type_id":'.$LocationTypeID.'}\' />
+      <input type="submit" class="ui-state-default ui-corner-all" value="'.lang::get('LANG_Download_Button').'">
+    </form>
     <form method="post" action="'.data_entry_helper::$base_url.'/index.php/services/report/requestReport?report=reports_for_prebuilt_forms/MNHNL/mnhnl_butterflies2_conditions_report.xml&reportSource=local&auth_token='.$readAuth['auth_token'].'&nonce='.$readAuth['nonce'].'&mode=csv&filename=downloadconditions">
       <p>'.lang::get('LANG_Conditions_Report_Download').'</p>
       <input type="hidden" id="params" name="params" value=\'{"survey_id":'.$args['survey_id'].'}\' />
@@ -252,12 +260,18 @@ createGridEntries = function(feature, isnew) {
   } else {
     mySiteNum = feature.attributes.SiteNum;
   }
-  var newCGrow = jQuery('.cgCloneableRow').clone().removeClass('cgCloneableRow').addClass(isnew ? 'cgAddedRow':'cggrid-row').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
-  var newCGrow2 = jQuery('.cgCloneableRow2').clone().removeClass('cgCloneableRow2').addClass(isnew ? 'cgAddedRow2':'cggrid-row2').data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
-  newCGrow.find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
-  newCGrow2.find('td').css('opacity',0.25);
-  newCGrow.find('*:.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow').removeAttr('disabled');
-  newCGrow2.find('*').attr('disabled','disabled');
+  var newCGRows = jQuery('#cgCloneableTable').find('tr').clone();
+  for(var i = 0; i< newCGRows.length; i++){
+    jQuery.each(jQuery(newCGRows[i]).children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownum--/g, cgRowNum);});
+  }
+  for(var i = 0; i< newCGRows.length; i++){
+    jQuery(newCGRows[i]).removeClass('cgCloneableRow'+(i+1)).addClass((isnew ? 'cgAddedRow':'cggrid-row')+(i==0?'':i+1)).data('cgRowNum', cgRowNum).data('SiteNum', mySiteNum);
+  }
+  jQuery(newCGRows[0]).find('td:not(.cggrid-datecell,.cggrid-namecell,.remove-cgnewrow)').css('opacity',0.25);
+  jQuery(newCGRows[0]).find('*:.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell,.remove-cgnewrow').removeAttr('disabled');
+  for(var i = 1; i< newCGRows.length; i++){
+    jQuery(newCGRows[i]).find('*').attr('disabled','disabled').filter('td').css('opacity',0.25);;
+  }
   if(!isnew){
     if(typeof(feature)=='object'&&(feature instanceof Array)){
       myID = feature[0].attributes.data.id;
@@ -266,37 +280,36 @@ createGridEntries = function(feature, isnew) {
       myID = feature.attributes.data.id;
       name = feature.attributes.data.name;
     }
-    var fieldname=newCGrow.find('.cggrid-name').attr('name');
-    newCGrow.find('.cggrid-namecell').empty().append('<input name=\"'+fieldname+'\" class=\"cggrid-name narrow\" value=\"'+name+'\" readonly=\"readonly\" ><input type=\"hidden\" name=\"CG:--rownum--:--sampleid--:location_id\" value=\"'+myID+'\" >');
+    var fieldname=newCGRows[0].find('.cggrid-name').attr('name');
+    jQuery(newCGRows[0]).find('.cggrid-namecell').empty().append('<input name=\"'+fieldname+'\" class=\"cggrid-name narrow\" value=\"'+name+'\" readonly=\"readonly\" ><input type=\"hidden\" name=\"CG:--rownum--:--sampleid--:location_id\" value=\"'+myID+'\" >');
     //  cggrid-centroid_sref,cggrid-centroid_geom,cggrid-boundary_geom,cggrid-location_type_id are all removed by the cggrid-name empty above
-    newCGrow.find('.remove-cgnewrow').removeClass('remove-cgnewrow').addClass('clear-cgrow');
-  }
-  jQuery.each(newCGrow.children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownum--/g, cgRowNum);});
-  jQuery.each(newCGrow2.children(), function(i, cell) {cell.innerHTML = cell.innerHTML.replace(/--rownum--/g, cgRowNum);});
-  if(isnew){
+    jQuery(newCGRows[0]).find('.remove-cgnewrow').removeClass('remove-cgnewrow').addClass('clear-cgrow');
+  } else {
     jQuery('#dummy-name').find('option').each(function (index, option){
       if(name == '' && jQuery('.cggrid-row,.cgAddedRow').find('.cggrid-name').filter('[value='+jQuery(option).val()+']').length == 0)
         name=jQuery(option).val();
     });
-    newCGrow.find('.cggrid-name').val(name);
+    jQuery(newCGRows[0]).find('.cggrid-name').val(name);
   }
   var insertPoint=false;
   insertCount=0; // we'll assume that the existing entries are in numerical order
-  jQuery('#conditions-grid > tbody').find('.cggrid-row,.cgAddedRow').each(function(index,elem){
+  jQuery('#conditions-grid > tbody').find('tr:.cggrid-row,.cgAddedRow').each(function(index,elem){
     if(parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
       insertCount++;
-      insertPoint = jQuery(elem).next();
+      insertPoint = jQuery(elem);
+      for(var i = 1; i< newCGRows.length; i++)
+        insertPoint = insertPoint.next();
     }
   });
 //  insertCount--;
   if(!insertPoint){
-    jQuery('#conditions-grid > tbody').prepend(newCGrow2);
-    jQuery('#conditions-grid > tbody').prepend(newCGrow);
+    for(var i = newCGRows.length-1; i>=0; i--)
+      jQuery('#conditions-grid > tbody').prepend(newCGRows[i]);
   } else {
-    newCGrow2.insertAfter(insertPoint);
-    newCGrow.insertAfter(insertPoint);
+    for(var i = newCGRows.length-1; i>=0; i--)
+      jQuery(newCGRows[i]).insertAfter(insertPoint);
   }
-  newCGrow.find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
+  jQuery(newCGrow[0]).find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
   recalcNumSites();
   // Species grid 1) add to header, 2) add to cloneable row, 3) add to existing rows
   insertPoint=jQuery('#species-grid-header').children(':eq('+insertCount+')');
@@ -314,7 +327,7 @@ createGridEntries = function(feature, isnew) {
   jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRowNum+':--sampleid--:--ttlid--:--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
   jQuery('.sgAddedRow,.sgOrigRow').each(function(i, Row) {
     insertPoint=jQuery(Row).children(':eq('+insertCount+')');
-    jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+cgRowNum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
+    jQuery('<td class=\"smp-'+cgRowNum+'\"><input class=\"digits narrow\" name=\"SG:'+jQuery(Row).data('taxonRow')+':'+cgRowNum+':--sampleid--:'+jQuery(Row).data('ttlid')+':--occid--:occAttr:".$countAttr."\" disabled=\"disabled\" min=\"1\"></td>').css('opacity',0.25).insertAfter(insertPoint);
   });
   return name;
 };
@@ -328,7 +341,7 @@ moveGridEntries = function(cgRowNum) {
       oldPosition=index;
     }});
   jQuery('#conditions-grid > tbody').find('tr:.cggrid-row,.cgAddedRow').each(function(index,elem){
-    if(index != 0 && index != oldPosition && parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
+    if(index != oldPosition && parseInt(jQuery(elem).find('.cggrid-name').val()) < parseInt(name)){
       newPosition=index; // points to row we insert after.
     }});
   if(newPosition==oldPosition-1) return;
@@ -460,16 +473,18 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
     $countAttr = iform_mnhnl_getAttrID($auth, $args, 'occurrence','Count');
     if (!$countAttr) return lang::get('This form must be used with a survey that has the Count Occurrence attribute associated with it.');
     $subsamples = self::getLocationsInGrid($auth, $args);
-    $ret = '<p>'.lang::get("LANG_SpeciesGridInstructions").'</p><table style="display:none">';
-    $cloneprefix='SG:--rownum--:--sampleid--:--ttlid--:--occid--:';
+    $ret = '<p>'.lang::get("LANG_SpeciesGridInstructions").'</p><table id="sgCloneableTable" style="display:none">';
+    $cloneprefix='SG:--sgrownum--:--cgrownum--:--sampleid--:--ttlid--:--occid--:';
     $ret .= "<tr class=\"sgCloneableRow\">
 <td class=\"ui-state-default remove-sgnewrow\" style=\"width: 1%\">X</td><td class=\"sggrid-namecell\"></td>";
-    $taxonList = array();
+    // ordering is the order they are initially created.
+    // need to get a sorted list of occurrence IDs; then generate a list of ttls in order set by occurrences.
+    $fullOccList = array();
     if (isset($subsamples))
       foreach($subsamples as $key => $entity){
-        $ret .= str_replace(array('--rownum--', '--sampleid--'),
+        $ret .= str_replace(array('--cgrownum--', '--sampleid--'),
                          array($key+1, $entity['sample_id']),
-                         '<td class="smp---rownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' min="1" ></td>');
+                         '<td class="smp---cgrownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' min="1" ></td>');
         if(isset($entity['sample_id'])){
           $url = data_entry_helper::$base_url."/index.php/services/data/occurrence?sample_id=".$entity['sample_id']."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
           $session = curl_init($url);
@@ -479,7 +494,7 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
           $subsampleOccs = array();
           foreach($occs as $an_occ) {
             $occList[] = $an_occ['id'];
-            $taxonList[$an_occ['taxa_taxon_list_id']]=true;
+            $fullOccList[intval($an_occ['id'])] = $an_occ['taxa_taxon_list_id'];
             $subsampleOccs[$an_occ['taxa_taxon_list_id']]=$an_occ; // this indexes the occurrences for the subsample by taxa_taxon_list_id
           }
           $subsamples[$key]['occurrences'] = $subsampleOccs;
@@ -530,7 +545,12 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       }
     $ret .= '</tr>';
     $taxonRow=0;
-    foreach($taxonList as $ttlid=>$disgard){
+    ksort($fullOccList);
+    $taxonList=array();
+    foreach($fullOccList as $occ=>$ttlid){
+      if(!in_array($ttlid, $taxonList)) $taxonList[] = $ttlid; // we want the unique entries but keeping order of initial appearance in array
+    }
+    foreach($taxonList as $ttlid){
       $url = data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list?id=".$ttlid."&mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"];
       $session = curl_init($url);
       curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -548,19 +568,19 @@ jQuery("#fieldset-'.$options['boltTo'].'").find("legend").after("'.$retVal.'");'
       }
       $taxonRow++;
       data_entry_helper::$javascript .= "
-jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('ttlid', ".$ttlid.").data('meaning_id', ".$taxon[0]['taxon_meaning_id'].");";
+jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('taxonRow', ".$taxonRow.").data('ttlid', ".$ttlid.").data('meaning_id', ".$taxon[0]['taxon_meaning_id'].");";
       $ret .= '
 <tr class="sgOrigRow"><td class="ui-state-default clear-sgrow" style="width: 1%">X</td><td class="sggrid-namecell">'.$name.'</td>';
       foreach($subsamples as $key => $entity){
-        $template = '<td class="smp---rownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'--attrid--" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' value="--value--" min="1"></td>';
+        $template = '<td class="smp---cgrownum--" '.(isset($entity['date']) ? '' : 'style="opacity: 0.25"').'><input class="digits narrow" name="'.$cloneprefix.'occAttr:'.$countAttr.'--attrid--" '.(isset($entity['date']) ? '' : 'disabled="disabled"').' value="--value--" min="1"></td>';
         if(isset($entity['occurrences'][$ttlid])){
           $occid=$entity['occurrences'][$ttlid]['id'];
-          $ret .= str_replace(array('--rownum--', '--sampleid--','--ttlid--','--occid--','--attrid--','--value--'),
-                         array($key+1, $entity['sample_id'], $ttlid, $occid, isset($entity['occattrs'][$occid]) ? ':'.$entity['occattrs'][$occid]['id'] : '', isset($entity['occattrs'][$occid]) ? $entity['occattrs'][$occid]['value'] : ''),
+          $ret .= str_replace(array('--sgrownum--', '--cgrownum--', '--sampleid--','--ttlid--','--occid--','--attrid--','--value--'),
+                         array($taxonRow, $key+1, $entity['sample_id'], $ttlid, $occid, isset($entity['occattrs'][$occid]) ? ':'.$entity['occattrs'][$occid]['id'] : '', isset($entity['occattrs'][$occid]) ? $entity['occattrs'][$occid]['value'] : ''),
                          $template);
         } else
-          $ret .= str_replace(array('--rownum--', '--sampleid--','--ttlid--','--attrid--','--value--'),
-                         array($key+1, isset($entity['sample_id']) ? $entity['sample_id'] : '', $ttlid, '',''),
+          $ret .= str_replace(array('--sgrownum--', '--cgrownum--', '--sampleid--','--ttlid--','--attrid--','--value--'),
+                         array($taxonRow, $key+1, isset($entity['sample_id']) ? $entity['sample_id'] : '', $ttlid, '',''),
                          $template);
       }
       $ret .= '</tr>';
@@ -586,7 +606,7 @@ jQuery('#species-grid').find('tr:eq(".$taxonRow.")').data('ttlid', ".$ttlid.").d
         if(isset($entity['sample_id'])) $attrArgs['id'] = $entity['sample_id'];
         $attrArgs['fieldprefix']='CG:'.($key+1).':'.(isset($entity['sample_id']) ? $entity['sample_id'] : '').':smpAttr';
         $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-        $ret .= self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, 'Species');
+        $ret .= self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, null, 'Species');
         // validation has to be put on hidden element in the checkbox group/
        data_entry_helper::$late_javascript .= "
 jQuery('.sgNoObRow').find(':checkbox:eq(".$key.")').rules('add', {no_observation: ".($key+1)."});";
@@ -603,8 +623,10 @@ $.validator.addMethod('no_observation', function(value, element, params){
     return(numFilledIn>0);
 }, \"".lang::get('validation_no_observation')."\");
 ";
-
+    // have to disabled averything in the cloneable grid due to validation issues.
   data_entry_helper::$javascript .= "
+jQuery('#sgCloneableTable').find('td').attr('disabled','disabled').find('input,select').attr('disabled','disabled');
+sgRowIndex = ".$taxonRow.";
 jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
   jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list/\" +jQuery('#speciesgrid_taxa_taxon_list_id').val()+
     \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&callback=?\",
@@ -620,12 +642,14 @@ jQuery('#speciesgrid_taxa_taxon_list_id').change(function(){
           alert(\"".lang::get('speciesgrid:rowexists')."\");
           return;
         }
+        sgRowIndex++;
         newSGrow = jQuery('.sgCloneableRow').clone().removeClass('sgCloneableRow').addClass('sgAddedRow');
+        newSGrow.find('*').removeAttr('disabled');
         jQuery.each(newSGrow.children(), function(i, cell) {
-          cell.innerHTML = cell.innerHTML.replace(/--ttlid--/g, tdata[0].id);
+          cell.innerHTML = cell.innerHTML.replace(/--ttlid--/g, tdata[0].id).replace(/--sgrownum--/g, sgRowIndex);
         });
         newSGrow.find('.sggrid-namecell').append(tdata[0].taxon);
-        newSGrow.data('ttlid',tdata[0].id).data('meaning_id',tdata[0].taxon_meaning_id).insertBefore('.sgNoObRow');
+        newSGrow.data('taxonRow', sgRowIndex).data('ttlid',tdata[0].id).data('meaning_id',tdata[0].taxon_meaning_id).insertBefore('.sgNoObRow');
         jQuery.getJSON(\"".data_entry_helper::$base_url."/index.php/services/data/taxa_taxon_list\" +
             \"?mode=json&view=detail&auth_token=".$auth['read']['auth_token']."&nonce=".$auth['read']["nonce"]."&taxon_meaning_id=\" + tdata[0].taxon_meaning_id + \"&callback=?\",
           function(ldata) {
@@ -694,24 +718,31 @@ jQuery('.remove-sgnewrow').live('click', function() {
     data_entry_helper::$javascript .= "
 jQuery('#cgCloneableTable').find('td').attr('disabled','disabled').find('input,select').attr('disabled','disabled');";
     $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-    $attrsHtml = self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName);
-    $pos = strpos($attrsHtml, '</td>');
-    $row1AttrHtml = substr($attrsHtml,0,$pos+5);
-    $row1AttrHtml = preg_replace ( '/>/' , ' rowspan=2>' , $row1AttrHtml, 1);
-    $row2AttrHtml = substr($attrsHtml,$pos+5);
-    $ret .= "  <tr class=\"cgCloneableRow\">
-    <td class=\"ui-state-default remove-cgnewrow\" style=\"width: 1%\" rowspan=2 >X</td>
-    <td class=\"cggrid-namecell\" rowspan=2 ><input name=\"".$cloneprefix."name\" class=\"cggrid-name narrow\" value=\"\" readonly=\"readonly\" >
+    $numRows = (isset($options['NumRows']) ? $options['NumRows'] : 2);
+    $numAttrCols = (isset($options['NumAttrCols']) ? $options['NumAttrCols'] : 3);
+    $attrHtml = array();
+    for($i=0; $i< $numRows; $i++){
+      $attrHtml[$i] = self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName, 'Row'.($i+1), $i!=0);
+    }
+    $attrHtml[0] = preg_replace ( '/>/' , ' rowspan='.$numRows.'>' , $attrHtml[0], 1);
+    $ret .= "  <tr class=\"cgCloneableRow1\">
+    <td class=\"ui-state-default remove-cgnewrow\" style=\"width: 1%\" rowspan=".$numRows." >X</td>
+    <td class=\"cggrid-namecell\" rowspan=".$numRows." ><input name=\"".$cloneprefix."name\" class=\"cggrid-name narrow\" value=\"\" readonly=\"readonly\" >
       <input type=\"hidden\" name=\"".$cloneprefix."location:centroid_sref\" class=\"cggrid-centroid_sref\" ><input type=\"hidden\" name=\"".$cloneprefix."location:centroid_geom\" class=\"cggrid-centroid_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:boundary_geom\" class=\"cggrid-boundary_geom\" ><input type=\"hidden\" name=\"".$cloneprefix."location:location_type_id\" class=\"cggrid-location_type_id\" value=\"".$LocationTypeID."\"></td>
-    ".$row1AttrHtml."
-    <td class=\"cggrid-datecell\" colspan=2><label class=\"auto-width\">".lang::get('Date').":</label><input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>
-    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label class=\"auto-width\">".lang::get('Comment')."</label><input name=\"".$cloneprefix."comment\" class=\"cggrid-comment\" ></td>
-  </tr>
-  <tr class=\"cgCloneableRow2\">\n    ".$row2AttrHtml."\n  </tr>\n</table>
-<table id =\"conditions-grid\"><thead><tr><th colSpan=2>".lang::get("Site").'</th>';
+    ".$attrHtml[0]."
+    <td class=\"cggrid-datecell\"><label>".lang::get('Date').":</label> <input name=\"".$cloneprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"\" ></td>
+    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label>".lang::get('Comment').":</label> <input name=\"".$cloneprefix."comment\" class=\"cggrid-comment\" ></td>
+  </tr>";
+    for($i=1; $i<$numRows; $i++){
+      $ret .= "  <tr class=\"cgCloneableRow".$i."\">\n    ".$attrHtml[$i]."\n  </tr>\n";
+    }
+    $ret .= "</table><table id =\"conditions-grid\"><thead><tr><th colSpan=2>".lang::get("Site").'</th>';
     foreach($sampleAttributes as $attr){
-      if ((!isset($options['tabNameFilter']) || strcasecmp($options['tabNameFilter'],$attr['inner_structure_block'])==0))
+      if (strcasecmp('Row1',$attr['inner_structure_block'])==0)
         $ret .= '<th>'.$attr['caption'].'</th>';
+    }
+    for($i=0; $i<$numAttrCols; $i++){
+      $ret .= '<th></th>';
     }
     $ret .= '</tr></thead><tbody>';
     $cgRowNum=0; // actually equivalent to 2 row group
@@ -721,10 +752,12 @@ jQuery('#cgCloneableTable').find('td').attr('disabled','disabled').find('input,s
         foreach($subsamples as $entity){
           $cgRowNum++;
           data_entry_helper::$javascript .= "
-jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-2).")').data('locID', ".$entity['location_id'].").data('cgRowNum', ".$cgRowNum.");
-jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-2).")').find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
-jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-1).")').data('locID', ".$entity['location_id'].").data('cgRowNum', ".$cgRowNum.");
+jQuery('#conditions-grid > tbody').find('tr:eq(".($numRows*($cgRowNum-1)).")').find('.cggrid-date').datepicker({dateFormat : 'dd/mm/yy', changeMonth: true, changeYear: true, constrainInput: false, maxDate: '0', onClose: function() { $(this).valid(); }});
 ";
+          for($i=0; $i<$numRows; $i++){
+            data_entry_helper::$javascript .= "
+jQuery('#conditions-grid > tbody').find('tr:eq(".($numRows*($cgRowNum-1)+$i).")').data('locID', ".$entity['location_id'].").data('cgRowNum', ".$cgRowNum.");";
+          }
           if (isset($entity['sample_id'])){
             $fieldprefix='CG:'.$cgRowNum.':'.$entity['sample_id'].':';
             $attrArgs['id'] = $entity['sample_id'];
@@ -740,20 +773,22 @@ jQuery('#conditions-grid > tbody').find('tr:eq(".(2*$cgRowNum-1).")').data('locI
           }
           $attrArgs['fieldprefix']=$fieldprefix.'smpAttr';
           $sampleAttributes = data_entry_helper::getAttributes($attrArgs, false);
-          $attrsHtml = self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName);
-          $pos = strpos($attrsHtml, '</td>');
-          $row1AttrHtml = substr($attrsHtml,0,$pos+5);
-          $row1AttrHtml = preg_replace ( '/>/' , ' rowspan=2>' , $row1AttrHtml, 1);
-          $row2AttrHtml = substr($attrsHtml,$pos+5);
+          $attrHtml = array();
+          for($i=0; $i< $numRows; $i++){
+            $attrHtml[$i] = self::get_sample_attribute_html($sampleAttributes, $args, $defAttrOptions, $tabName, 'Row'.($i+1), $i!=0);
+          }
+          $attrHtml[0] = preg_replace ( '/>/' , ' rowspan='.$numRows.'>' , $attrHtml[0], 1);
           $ret .= "  <tr class=\"cggrid-row\">
-    <td class=\"ui-state-default clear-cgrow\" style=\"width: 1%\" rowspan=2 >X</td>
-    <td class=\"cggrid-namecell\" rowspan=2 ><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".$entity['name']."\" readonly=\"readonly\" >
+    <td class=\"ui-state-default clear-cgrow\" style=\"width: 1%\" rowspan=".$numRows." >X</td>
+    <td class=\"cggrid-namecell\" rowspan=".$numRows." ><input name=\"".$fieldprefix."name\" class=\"cggrid-name narrow\" value=\"".htmlspecialchars(utf8_decode($entity['name']))."\" readonly=\"readonly\" >
       <input type=\"hidden\" name=\"".$fieldprefix."location_id\" value=\"".$entity['location_id']."\" class=\"cggrid-location_id\" ></td>
-    ".$row1AttrHtml."
-    <td class=\"cggrid-datecell\" colspan=2><label class=\"auto-width\">".lang::get('Date').":</label><input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"".$entity['date']."\"  ></td>
-    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label class=\"auto-width\">".lang::get('Comment').":</label><input name=\"".$fieldprefix."comment\" class=\"cggrid-comment\" value=\"".$entity['comment']."\" ></td>
-  </tr>
-  <tr class=\"cggrid-row2\">\n    ".$row2AttrHtml."\n  </tr>\n";
+    ".$attrHtml[0]."
+    <td class=\"cggrid-datecell\"><label>".lang::get('Date').":</label> <input name=\"".$fieldprefix."date\" class=\"cggrid-date customDate checkYear checkComplete\" value=\"".$entity['date']."\" ></td>
+    <td class=\"cggrid-commentcell\" colspan=".(count($sampleAttributes)-3)."><label>".lang::get('Comment').":</label> <input name=\"".$fieldprefix."comment\" class=\"cggrid-comment\" value=\"".htmlspecialchars(utf8_decode($entity['comment']))."\" ></td>
+  </tr>";
+          for($i=1; $i<$numRows; $i++){
+            $ret .= "  <tr class=\"cggrid-row".($i+1)."\">\n    ".$attrHtml[$i]."\n  </tr>\n";
+          }
         }
     }
     $ret .= '</tbody></table>';
@@ -789,20 +824,24 @@ if (typeof jQuery.validator !== \"undefined\") {
 jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't need to worry about name drop down.
   if(jQuery(this).find('.cggrid-date').val()==\"\"){ // disable if blank.
     jQuery(this).find('td:not(.cggrid-datecell,.cggrid-namecell)').css('opacity',0.25);
-    jQuery(this).next().find('td').css('opacity',0.25);
+    jQuery(this).find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');";
     // disable all  active controls from the row group apart from the date.
     // Do NOT disable the date or its container td, otherwise it is not submitted.
-    jQuery(this).find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');
-    jQuery(this).next().find('*').attr('disabled','disabled');
+    for($i=1; $i<$numRows; $i++){
+      $query = "jQuery(this)";
+      for($j=0; $j<$i; $j++) $query.=".next()";
+      data_entry_helper::$javascript .= "\n".$query.".find('td').css('opacity',0.25);\n".$query.".find('*').attr('disabled','disabled');";
+    }
+    data_entry_helper::$javascript .= "
     var myRowNum = jQuery(this).closest('tr').data('cgRowNum');
     jQuery('.smp-'+myRowNum).css('opacity','0.25').find(':checkbox').attr('disabled','disabled');
   } else { // when filled in, the date is mandatory, plus any specified attributes on the second row
     jQuery(this).find('.cggrid-datecell').append('<span class=\"deh-required\">*</span>').find('input').addClass('required');";
-    if (isset($options['setColumnsRequired'])){
-      $columns = explode(':',$options['setColumnsRequired']);
-      foreach($columns as $column)
-        data_entry_helper::$javascript .= "
-      jQuery(this).next().find('td').eq(".$column.").append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');";
+    if (isset($options['setRowRequired'])){
+      $query = "jQuery(this)";
+      for($i=1; $i<$options['setRowRequired']; $i++) $query.=".next()";
+      data_entry_helper::$javascript .= "\n".$query.".find('td').each(function(){
+  jQuery(this).append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');});";
     }
     data_entry_helper::$javascript .= "
   }
@@ -810,38 +849,46 @@ jQuery('.cggrid-row').each(function(index, Element) {  // initial rows: don't ne
 jQuery('.cggrid-date').live('change', function() {
   var myRow = jQuery(this).closest('tr');
   var myRowNum = myRow.data('cgRowNum');
-  jQuery('.smp-'+myRowNum).css('opacity','').find('input').removeAttr('disabled');
-  myRow.find('td').css('opacity','');
-  myRow.next().find('td').css('opacity','');
-  myRow.find('*').removeAttr('disabled').removeClass('required ui-state-error');;
-  myRow.next().find('*').removeAttr('disabled').removeClass('required ui-state-error');;
-  myRow.find('.deh-required,.inline-error').remove();
-  myRow.next().find('.deh-required,.inline-error').remove();
-  jQuery(this).addClass('required').parent().append('<span class=\"deh-required\">*</span>');";
-    if (isset($options['setColumnsRequired'])){
-    $columns = explode(':',$options['setColumnsRequired']);
-    foreach($columns as $column)
+  jQuery('.smp-'+myRowNum).css('opacity','').find('input').removeAttr('disabled');";
+    for($i=0; $i<$numRows; $i++){
+      $query = "  myRow";
+      for($j=0; $j<$i; $j++) $query.=".next()";
       data_entry_helper::$javascript .= "
-  myRow.next().find('td').eq(".$column.").append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');";
-  }
-  data_entry_helper::$javascript .= "
+".$query.".find('td').css('opacity','');
+".$query.".find('*').removeAttr('disabled').removeClass('required ui-state-error');
+".$query.".find('.deh-required,.inline-error').remove();
+";
+    }
+    data_entry_helper::$javascript .= "\n  jQuery(this).addClass('required').parent().append('<span class=\"deh-required\">*</span>');";
+    if (isset($options['setRowRequired'])){
+      $query = "  myRow";
+      for($i=1; $i<$options['setRowRequired']; $i++) $query.=".next()";
+      data_entry_helper::$javascript .= "\n".$query.".find('td').each(function(){
+  jQuery(this).append('<span class=\"deh-required\">*</span>').find('input,select').addClass('required');});";
+    }
+    data_entry_helper::$javascript .= "
 });
 jQuery('.clear-cgrow').live('click', function() { // existing location - no name select.
   var thisRow=jQuery(this).closest('tr');
   if(!confirm(\"".lang::get('LANG_conditionsgrid:clearconfirm')."\")) return;
   thisRow.find('td:not(.cggrid-datecell,.cggrid-namecell)').css('opacity',0.25);
-  thisRow.next().find('td').css('opacity',0.25);
-  thisRow.next().find(':checkbox').attr('checked',false);
   thisRow.find('*').removeClass('required ui-state-error');
-  thisRow.next().find('*').removeClass('required ui-state-error');
   thisRow.find(':text').filter('*:not(.cggrid-name)').val('');
-  thisRow.next().find(':text').val('');
   thisRow.find('select').val('');
-  thisRow.next().find('select').val('');
   thisRow.find('.inline-error,.deh-required').remove();
-  thisRow.next().find('.inline-error,.deh-required').remove();
-  thisRow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');
-  thisRow.next().find('*').attr('disabled','disabled');
+  thisRow.find('*:not(.cggrid-date,.cggrid-datecell,.cggrid-name,.cggrid-namecell)').attr('disabled','disabled');";
+    for($i=1; $i<$numRows; $i++){
+      $query = "thisRow";
+      for($j=0; $j<$i; $j++) $query.=".next()";
+      data_entry_helper::$javascript .= "
+  ".$query.".find('td').css('opacity',0.25);
+  ".$query.".find('.inline-error,.deh-required').remove();
+  ".$query.".find(':checkbox').attr('checked',false);
+  ".$query.".find('*').removeClass('required ui-state-error').attr('disabled','disabled');
+  ".$query.".find('select,:text').val('');
+";
+    }
+    data_entry_helper::$javascript .= "
   var myRowNum = thisRow.data('cgRowNum');
   jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':text').attr('disabled','disabled').val('');
   jQuery('.smp-'+myRowNum).css('opacity',0.25).find(':checkbox').attr('disabled','disabled').attr('checked','');
@@ -857,8 +904,10 @@ jQuery('.remove-cgnewrow').live('click', function() {
   var myRowNum = thisRow.data('cgRowNum');
   var mySiteNum = thisRow.data('SiteNum');
   jQuery('.smp-'+myRowNum).remove();
-  thisRow.next().remove();
-  thisRow.remove();
+  jQuery('#conditions-grid > tbody').find('tr').each(function(index, elem){
+    if(jQuery(elem).data('cgRowNum') == myRowNum)
+      jQuery(elem).remove();
+  });
   recalcNumSites();
   // TBD de highlight, demodify, and remove from map
   for(var i=SiteLabelLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
@@ -870,7 +919,7 @@ jQuery('.remove-cgnewrow').live('click', function() {
   for(var i=SiteAreaLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
     if(SiteAreaLayer.features[i].attributes.SiteNum == mySiteNum){
       if(SiteAreaLayer.features[i].attributes.highlighted){
-        modAreaFeature.unselect(SiteAreaLayer.features[i]);
+        modAreaFeature.unselectFeature(SiteAreaLayer.features[i]);
         selectFeature.unhighlight(SiteAreaLayer.features[i]);
       }
       SiteAreaLayer.destroyFeatures([SiteAreaLayer.features[i]]);
@@ -880,7 +929,7 @@ jQuery('.remove-cgnewrow').live('click', function() {
   for(var i=SitePathLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
     if(SitePathLayer.features[i].attributes.SiteNum == mySiteNum){
       if(SitePathLayer.features[i].attributes.highlighted){
-        modPathFeature.unselect(SitePathLayer.features[i]);
+        modPathFeature.unselectFeature(SitePathLayer.features[i]);
         selectFeature.unhighlight(SitePathLayer.features[i]);
       }
       setNameDropDowns(true, false);
@@ -890,7 +939,7 @@ jQuery('.remove-cgnewrow').live('click', function() {
   for(var i=SitePointLayer.features.length-1; i>=0; i--){ // Row may not be selected on map
     if(SitePointLayer.features[i].attributes.SiteNum == mySiteNum){
       if(SitePointLayer.features[i].attributes.highlighted){
-        modPointFeature.unselect(SitePointLayer.features[i]);
+        modPointFeature.unselectFeature(SitePointLayer.features[i]);
       }
       setNameDropDowns(true, false);
       SitePointLayer.destroyFeatures([SitePointLayer.features[i]]);
@@ -908,7 +957,7 @@ hook_RemoveNewSite= function() {
   // assume all checks done by main function, and it will destroy the features after this is called.
   var highlighted = gethighlight();
   var myRowNum = highlighted[0].attributes.cgRowNum;
-  jQuery('.cgAddedRow,.cgAddedRow2').each(function(index, elem){
+  jQuery('#conditions-grid > tbody').find('tr').each(function(index, elem){
     if(jQuery(elem).data('cgRowNum') == myRowNum)
       jQuery(elem).remove();
   });
@@ -961,26 +1010,39 @@ jQuery('#dummy-name').change(function() {
     }
   }
 });
+setCommentWidth = function(){
+  jQuery('.cggrid-comment').width('10px');
+  var myWidth=jQuery('#conditions-grid > tbody').find('.cggrid-commentcell').eq(0).width();
+  var labelWidth=jQuery('#conditions-grid > tbody').find('.cggrid-commentcell').find('label').eq(0).width();
+  jQuery('.cggrid-commentcell').each(function(index){
+    jQuery(this).find('input').width(myWidth-labelWidth-1-6);
+  });
+}
+conditionsTabHandler = function(e, ui){
+  if (ui.panel.id=='conditions') {
+    setCommentWidth();
+    jQuery(jQuery('#conditions').parent()).unbind('tabsshow', conditionsTabHandler);
+  }
+}
+jQuery(jQuery('#conditions').parent()).bind('tabsshow', conditionsTabHandler);
 ";
+    
     return $ret;
   }
 
   // This function pays no attention to the outer block. This is needed when the there is no outer/inner block pair, 
   // if the attribute is put in a single block level, then that block appears in the inner, rather than the outer .
-  private function get_sample_attribute_html($attributes, $args, $defAttrOptions, $blockFilter=null, $blockOptions=null) {
+  private function get_sample_attribute_html($attributes, $args, $defAttrOptions, $outerBlockFilter, $innerBlockFilter, $useCaptions = false) {
    $r = '';
    if(!isset($attributes)) return $r;
    foreach ($attributes as $attribute) {
-    // Apply filter to only output 1 block at a time. Also hide controls that have already been handled.
-    if (($blockFilter===null || strcasecmp($blockFilter,$attribute['inner_structure_block'])==0) && !isset($attribute['handled'])) {
+    // Apply filter to only output 1 block at a time.
+    if (($innerBlockFilter===null || strcasecmp($innerBlockFilter,$attribute['inner_structure_block'])==0) &&
+            ($outerBlockFilter===null || strcasecmp($outerBlockFilter,$attribute['outer_structure_block'])==0)) {
       $options = $defAttrOptions + get_attr_validation($attribute, $args);
-      if (isset($blockOptions[$attribute['fieldname']])) {
-        $options = array_merge($options, $blockOptions[$attribute['fieldname']]);
-      }
+      if(!$useCaptions) unset($attribute['caption']);
       $options['suffixTemplate']='nosuffix';
-      unset($attribute['caption']);
       $r .= '<td '.(isset($defAttrOptions['cellClass'])? 'class="'.$defAttrOptions['cellClass'].'"' : '').'>'.data_entry_helper::outputAttribute($attribute, $options).'</td>';
-      $attribute['handled']=true;
     }
    }
    return $r;
@@ -1055,7 +1117,12 @@ hook_new_site_added = function(feature) {
         }
       }
     }
+    // locations and subsamples arrays are indexed by cgrownum.
+    // next create an array of subsample models with their occurrences attached.
     $subsamples2 = array();
+    $newsgrowContents = array();
+    $oldsgrowContents = array();
+    ksort($subsamples); // by cgrownum
     foreach($subsamples as $sampleIndex => $subsampleFields) {
       if(isset($subsampleFields['date']) && $subsampleFields['date']['value']!=""){
         $subsampleFields['location_name']=$subsampleFields['name'];
@@ -1069,26 +1136,37 @@ hook_new_site_added = function(feature) {
         }
         $occs=array();
         foreach($values as $key => $value){
-          $parts = explode(':', $key, 6);
-          // SG:--rownum--:--sampleid--:--ttlid--:--occid--:occAttr:--attr_id--[:--attr_value_id--]
-          if($parts[0]=='SG' && count($parts)>1 && $parts[3] != '--ttlid--' && $parts[3] != '' && $parts[1] == $sampleIndex && (($parts[4] != "--occid--" && $parts[4] != "")||$value!="")){
+          $parts = explode(':', $key, 7);
+          // SG:--sgrownum--:--cgrownum--:--sampleid--:--ttlid--:--occid--:occAttr:--attr_id--[:--attr_value_id--]
+          if($parts[0]=='SG' && count($parts)>1 && 
+              $parts[4] != '--ttlid--' && $parts[4] != '' && 
+              $parts[2] == $sampleIndex &&
+              (($parts[5] != "--occid--" && $parts[5] != "")||$value!="")){
             $occ = array('fkId' => 'sample_id',
                          'model' => array('id' => 'occurrence',
-                             'fields' => array('taxa_taxon_list_id' => array('value' => $parts[3]),
+                             'fields' => array('taxa_taxon_list_id' => array('value' => $parts[4]),
                                                'website_id'=>array('value' => $values['website_id']),
                                                'survey_id'=>array('value' => $values['survey_id']),
-                                               $parts[5]=>array('value' => $value))));
-            if($parts[4] != "--occid--" && $parts[4] != "")
-              $occ['model']['fields']['id']=array('value' => $parts[4]);
+                                               $parts[6]=>array('value' => $value))));
             if($value==""){
               $occ['model']['fields']['deleted']=array('value' => 't');
-              unset($occ['model']['fields'][$parts[5]]);
+              unset($occ['model']['fields'][$parts[6]]);
             }
-            $occs[] = $occ;
+            if($parts[5] != "--occid--" && $parts[5] != ""){
+              $occ['model']['fields']['id']=array('value' => $parts[5]);
+              $occs[] = $occ;
+              if(!isset($oldsgrowContents[intval($parts[1])]))
+                $oldsgrowContents[intval($parts[1])]=array();
+              $oldsgrowContents[intval($parts[1])][]=$sampleIndex;
+            } else {
+              $occs[] = $occ;
+              if(!isset($newsgrowContents[intval($parts[1])]))
+                $newsgrowContents[intval($parts[1])]=array();
+              $newsgrowContents[intval($parts[1])][]=$sampleIndex;
+            }
           }
         }
         if(count($occs)>0) $subsample['model']['subModels'] = $occs;
-        $subsamples2[] = $subsample;
       } else if(isset($subsampleFields['id']) && $subsampleFields['id']['value']!=""){
         $subsample = array('fkId' => 'parent_id',
           'model' => array('id' => 'sample','fields' => array(
@@ -1096,11 +1174,33 @@ hook_new_site_added = function(feature) {
             'deleted'=>array('value' => 't'),
             'website_id'=>$subsampleFields['website_id'],
             'survey_id'=>$subsampleFields['survey_id'])));
-        $subsamples2[] = $subsample;
+      }
+      $subsamples2[$sampleIndex] = $subsample;
+    }
+    // finally create an unindexed array of subsamples, in the order of sgrownum....
+    // don't care about order of already saved occurrences, only new ones: in fact old ones may mess things up!
+    // The order in which we need to save the occurrences is how they are displayed in the form. This allows us to recreate the form later on.
+    $subsamples3 = array(); // don't want this indexed
+    $subsampleslist = array(); // but need a list of those included so far!
+    // new sgrowContents just has a list of cgrownums for that sgrow
+    ksort($newsgrowContents);
+    foreach($newsgrowContents as $sgrownum => $list){ // this is done in sgrownum order.
+      foreach($list as $cgrow){
+        if(!isset($subsampleslist[$cgrow])){
+          $subsampleslist[$cgrow] = true;
+          $subsamples3[] = $subsamples2[$cgrow];
+        }
       }
     }
-    if(count($subsamples2)>0)
-      $sampleMod['subModels'] = $subsamples2;
+    foreach($oldsgrowContents as $sgrownum => $list){
+      foreach($list as $cgrow){
+        if(!isset($subsampleslist[$cgrow])){
+          $subsampleslist[$cgrow] = true;
+          $subsamples3[] = $subsamples2[$cgrow];
+        }
+      }
+    }
+    if(count($subsamples3)>0) $sampleMod['subModels'] = $subsamples3;
     return($sampleMod);
   }
   

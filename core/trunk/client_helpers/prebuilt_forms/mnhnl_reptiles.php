@@ -744,7 +744,7 @@ hook_species_checklist_pre_delete_row=function(e) {
         $thirdrow = "";
         if ($options['occurrenceComment']) {
           $thirdrow .= "\n<td class=\"ui-widget-content scCommentCell\" $colspan><label for=\"sc:$ttlid:$existing_record_id:occurrence:comment\" class=\"auto-width\" >".lang::get("Comment")." : </label><input class=\"scComment\" type=\"text\" name=\"sc:$ttlid:$existing_record_id:occurrence:comment\" ".
-          "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]."\" /></td>";
+          "id=\"sc:$ttlid:$existing_record_id:occurrence:comment\" value=\"".htmlspecialchars(utf8_decode(data_entry_helper::$entity_to_load["sc:$ttlid:$existing_record_id:occurrence:comment"]))."\" /></td>";
         }
         // no confidential checkbox.
         $rows[]='<tr>'.$firstrow.'</tr>';

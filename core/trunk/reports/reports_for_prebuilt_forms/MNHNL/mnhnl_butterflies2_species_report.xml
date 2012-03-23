@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<report title="MNHNL Butterflies2 Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
+<report title="MNHNL Butterflies2 Species Download Report" description="Lists all occurrences associated with saved samples. Normally invoked from Reports tab on the form.">
   <params>
     <param name='survey_id' display='Survey: ' description='Select the survey to return data for:' datatype='lookup'
         query='SELECT id, title as caption FROM surveys' />
