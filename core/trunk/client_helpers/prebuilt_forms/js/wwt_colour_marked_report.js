@@ -107,7 +107,7 @@
   };
 
   var makeIdentifierCode = function(idx, typeId) {
-    // constructs the unique code from the identifier characteristics
+    // constructs the unique coded_value from the identifier characteristics
     // currently based on BTO coding scheme http://www.btoipmr.f9.co.uk/cm/cm_codes.htm
     var iCode = '';
     var prefix = 'idn\\:'+idx+'\\:'+typeId+'\\:';
@@ -151,18 +151,18 @@
       var codes = [];
       // for each identifier
       $('fieldset.taxon_identifier').each(function() {
-        // set the unique identifier:code
+        // set the unique identifier:coded_value
         var parts = this.id.split(':');
         var idx = parts[1];
         var iType = parts[2];
         var iCode = makeIdentifierCode(idx, iType);
         if (iCode) {
-          $('#idn\\:'+idx+'\\:'+iType+'\\:identifier\\:code').val(iCode);
+          $('#idn\\:'+idx+'\\:'+iType+'\\:identifier\\:coded_value').val(iCode);
           codes[codes.length] = iCode;
         }
       });
       // check if each identifier exists on warehouse and set its id if so.
-      var query = {"in" : ["code", codes ]};
+      var query = {"in" : ["coded_value", codes ]};
       if ($('input.identifier_id').val()=='-1') {
         $.ajax({
           type: 'GET', 
@@ -173,10 +173,10 @@
           success: function(detData) {
             if(detData.length>0) { // we found one or more matches
               var id$ = $('input.identifier_id');
-              var code$ = $('input.identifier\\:code');
+              var code$ = $('input.identifier\\:coded_value');
               for (i=0; i<detData.length; i++) {
                 for (j=0; j<code$.length; j++) {
-                  if (code$[j].value==detData[i].code) {
+                  if (code$[j].value==detData[i].coded_value) {
                     id$[j].value = detData[i].id+'';
                   }
                 }

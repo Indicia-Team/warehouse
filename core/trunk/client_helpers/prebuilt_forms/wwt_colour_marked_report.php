@@ -1397,7 +1397,7 @@ class iform_wwt_colour_marked_report {
       'fieldname'=>$fieldPrefix.'idnAttr:3', // Todo: set the attr id up in the parameters picked from attr captions
       'label'=>lang::get('Sequence')
     ), $options)); 
-    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:code" id="'.$fieldPrefix.'identifier:code" class="identifier:code" value="" />';
+    $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier:coded_value" value="" />';
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_id" id="'.$fieldPrefix.'identifier:identifier_id" class="identifier_id" value="-1" />';
     return $r;
   }
