@@ -54,29 +54,6 @@ if (isset($values['identifier:id'])) : ?>
 <legend>Known subject details</legend>
 <?php 
 $readAuth = data_entry_helper::get_read_auth(0-$_SESSION['auth_user']->id, kohana::config('indicia.private_key'));
-/*
-  issue_authority_id integer, -- Termlist value for the organisation which manages this identifier scheme.
-  issue_scheme_id integer, -- Termlist value for this identifier scheme.
-  issue_date timestamp without time zone, -- Date this identifier was issued for use.
-  first_use_date timestamp without time zone, -- Date this identifier was first used to identify a known subject.
-  last_observed_date timestamp without time zone, -- Date this identifier was most recently recorded.
-  final_date timestamp without time zone, -- Date this identifier was known to be no longer marking a live subject.
-  identifier_type_id integer NOT NULL, -- Termlist value for this type of identifier.
-  code
-  summary character varying(50), -- Brief summary of the unique identifier.
-  known_subject_id integer, -- Foreign key to the known_subjects table. Identifies the known_subject this identifier belongs to if in use.
-  website_id integer NOT NULL, -- Foreign key to the websites table. Identifies the website that this identifiers is recorded on.
-
-echo data_entry_helper::autocomplete(array(
-  'label' => 'Taxon 2',
-  'fieldname' => 'joinsTo:taxa_taxon_list:id[]',
-  'table' => 'taxa_taxon_list',
-  'captionField' => 'taxon',
-  'valueField' => 'id',
-  'default'=>html::initial_value($values, 'identifiers_taxa_taxon_list:taxa_taxon_list_id[1]'),
-  'extraParams' => $readAuth,
-));
-*/
 echo data_entry_helper::select(array(
   'label' => 'Issue Authority',
   'fieldname' => 'identifier:issue_authority_id',
@@ -131,9 +108,9 @@ echo data_entry_helper::select(array(
   'extraParams' => $readAuth,
 ));
 echo data_entry_helper::text_input(array(
-  'label'=>'Code',
-  'fieldname'=>'identifier:code',
-  'default'=>html::initial_value($values, 'identifier:code')
+  'label'=>'Coded Value',
+  'fieldname'=>'identifier:coded_value',
+  'default'=>html::initial_value($values, 'identifier:coded_value')
 ));
 echo data_entry_helper::textarea(array(
   'label'=>'Summary',

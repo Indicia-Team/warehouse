@@ -21,7 +21,7 @@ CREATE TABLE identifiers
   last_observed_date timestamp without time zone, -- Date this identifier was most recently recorded.
   final_date timestamp without time zone, -- Date this identifier was known to be no longer marking a live subject.
   identifier_type_id integer NOT NULL, -- termlist value for this type of identifier.
-  code varchar(50), -- A unique encoding of the identifier characteristics serialised as a string.
+  coded_value varchar(50), -- A unique encoding of the identifier characteristics serialised as a string.
   summary varchar(50), -- Brief summary of the unique identifier.
   status character(1) DEFAULT 'U'::bpchar,
   verified_by_id integer,
@@ -72,7 +72,7 @@ COMMENT ON COLUMN identifiers.first_use_date IS 'Date this identifier was first 
 COMMENT ON COLUMN identifiers.last_observed_date IS 'Date this identifier was most recently recorded.';
 COMMENT ON COLUMN identifiers.final_date IS 'Date this identifier was known to be no longer marking a live subject.';
 COMMENT ON COLUMN identifiers.identifier_type_id IS 'Termlist value for this type of identifier.';
-COMMENT ON COLUMN identifiers.code IS 'A unique encoding of the identifier characteristics serialised as a string.';
+COMMENT ON COLUMN identifiers.coded_value IS 'A unique encoding of the identifier characteristics serialised as a string.';
 COMMENT ON COLUMN identifiers.summary IS 'Brief summary of the unique identifier.';
 COMMENT ON COLUMN identifiers.status IS 'Status of this identifier. M - manufactured, I - issued, A - attached, R - retired, U - unknown.';
 COMMENT ON COLUMN identifiers.verified_by_id IS 'Foreign key to the users table (verifier).';
@@ -112,14 +112,14 @@ CREATE INDEX fki_identifiers_identifier_types
   USING btree
   (identifier_type_id);
 
--- Index: fki_identifiers_codes
+-- Index: fki_identifiers_coded_values
 
--- DROP INDEX fki_identifiers_codes;
+-- DROP INDEX fki_identifiers_coded_values;
 
-CREATE INDEX fki_identifiers_codes
+CREATE INDEX fki_identifiers_coded_values
   ON identifiers
   USING btree
-  (code);
+  (coded_value);
 
 -- Index: fki_identifiers_known_subjects
 
@@ -217,7 +217,7 @@ CREATE INDEX fki_identifiers_subject_observations_subject_observation
 -- DROP VIEW list_identifiers;
 
 CREATE OR REPLACE VIEW list_identifiers AS 
- SELECT i.id, i.first_use_date, t_t.term AS identifier_type, i.status, i.code, i.summary, i.known_subject_id, substring(ks.description from 1 for 30) as short_description, i.website_id, i.deleted
+ SELECT i.id, i.first_use_date, t_t.term AS identifier_type, i.status, i.coded_value, i.summary, i.known_subject_id, substring(ks.description from 1 for 30) as short_description, i.website_id, i.deleted
    FROM identifiers i
    LEFT JOIN known_subjects ks ON i.known_subject_id = ks.id
    LEFT JOIN termlists_terms t_tlt ON i.identifier_type_id = t_tlt.id
@@ -232,7 +232,7 @@ CREATE OR REPLACE VIEW list_identifiers AS
 -- DROP VIEW detail_identifiers;
 
 CREATE OR REPLACE VIEW detail_identifiers AS 
- SELECT i.id, i.issue_authority_id, a_t.term AS issue_authority, i.issue_scheme_id, s_t.term AS issue_scheme, i.issue_date, i.first_use_date,  i.last_observed_date, i.final_date, i.identifier_type_id, t_t.term AS identifier_type, i.status, i.code, i.summary, i.known_subject_id, ks.description, substring(ks.description from 1 for 30) as short_description, i.website_id, w.title AS website, i.created_by_id, c.username AS created_by, i.created_on, i.updated_by_id, u.username AS updated_by, i.updated_on, i.deleted
+ SELECT i.id, i.issue_authority_id, a_t.term AS issue_authority, i.issue_scheme_id, s_t.term AS issue_scheme, i.issue_date, i.first_use_date,  i.last_observed_date, i.final_date, i.identifier_type_id, t_t.term AS identifier_type, i.status, i.coded_value, i.summary, i.known_subject_id, ks.description, substring(ks.description from 1 for 30) as short_description, i.website_id, w.title AS website, i.created_by_id, c.username AS created_by, i.created_on, i.updated_by_id, u.username AS updated_by, i.updated_on, i.deleted
    FROM identifiers i
    LEFT JOIN known_subjects ks ON i.known_subject_id = ks.id
    LEFT JOIN termlists_terms a_tlt ON i.issue_authority_id = a_tlt.id
@@ -253,7 +253,7 @@ CREATE OR REPLACE VIEW detail_identifiers AS
 -- DROP VIEW gv_identifiers;
 
 CREATE OR REPLACE VIEW gv_identifiers AS 
- SELECT i.id, a_t.term AS issue_authority, s_t.term AS issue_scheme, i.issue_date, i.first_use_date,  i.last_observed_date, i.final_date, t_t.term AS identifier_type, i.status, i.code, i.summary, substring(ks.description from 1 for 30) as short_description, i.website_id, w.title AS website, i.deleted
+ SELECT i.id, a_t.term AS issue_authority, s_t.term AS issue_scheme, i.issue_date, i.first_use_date,  i.last_observed_date, i.final_date, t_t.term AS identifier_type, i.status, i.coded_value, i.summary, substring(ks.description from 1 for 30) as short_description, i.website_id, w.title AS website, i.deleted
    FROM identifiers i
    LEFT JOIN known_subjects ks ON i.known_subject_id = ks.id
    LEFT JOIN termlists_terms a_tlt ON i.issue_authority_id = a_tlt.id

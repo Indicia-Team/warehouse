@@ -30,7 +30,7 @@
  */
 class Identifier_Model extends ORM
 {
-  public $search_field='code';
+  public $search_field='coded_value';
 
   protected $belongs_to = array(
     'issue_authority'=>'termlists_term',
@@ -73,7 +73,7 @@ class Identifier_Model extends ORM
       'first_use_date', 
       'last_observed_date', 
       'final_date', 
-      'code',
+      'coded_value',
       'summary',
       'known_subject_id',
       'deleted',
@@ -82,7 +82,7 @@ class Identifier_Model extends ORM
   }
 
   /**
-   * Returns an abbreviated version of the summary to act as a caption. Todo, consider if 'code' would be better?
+   * Returns an abbreviated version of the summary to act as a caption. Todo, consider if 'coded_value' would be better?
    */
   public function caption()
   {

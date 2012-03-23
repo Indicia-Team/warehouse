@@ -39,7 +39,7 @@ class Identifier_Controller extends Gridview_Base_Controller {
       'id'=>'ID',
       'first_use_date'=>'',
       'identifier_type'=>'',
-      'code'=>'',
+      'coded_value'=>'',
       'summary'=>'',
       'short_description'=>'Subject description',
     );
