@@ -45,7 +45,7 @@ CREATE TABLE identifiers
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT identifiers_status_check CHECK (status = ANY (ARRAY['M'::bpchar, 'I'::bpchar, 'A'::bpchar, 'R'::bpchar, 'U'::bpchar])),
   CONSTRAINT fk_identifier_verifier FOREIGN KEY (verified_by_id)
-      REFERENCES ind01.users (id) MATCH SIMPLE
+      REFERENCES users (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT fk_identifier_known_subject FOREIGN KEY (known_subject_id)
       REFERENCES known_subjects (id) MATCH SIMPLE
