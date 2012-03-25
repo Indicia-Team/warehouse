@@ -13,3 +13,110 @@
 h2 {
 	color: #008f93;
 }
+
+.taxon_individual, .taxon_identifier {
+	border:1px solid #008f93;
+}
+
+.taxon_individual legend, .taxon_identifier legend {
+	color: #008f93;
+	border:1px solid #008f93;
+}
+
+.taxon_identifier {
+	display: none;
+}
+
+.indentifier-controls  { 
+	float: left;
+	display: inline-block;
+	max-width: 400px;
+}
+
+.indentifier-colourbox  {
+	float: left;
+	width: 5em;
+	height: 2em;
+	border: 1px solid #3f3f3f; 
+	text-align: center;
+	text-transform: uppercase;
+	font-size: 3em;
+	font-weight: bold;
+	font-family: Verdana, sans-serif;
+	line-height: 2em;
+	margin-left: 0.5em;
+}
+	
+/*
+ *	Ring colours
+ */
+	
+.colour_R {
+	background-color: #ff0000;
+	color: #ffffff;
+}
+
+.colour_P {
+	background-color: #7f7fff;
+	color: #000000;
+}
+
+.colour_W {
+	background-color: #ffffff;
+	color: #000000;
+}
+
+.colour_O {
+	background-color: #ff7f00;
+	color: #000000;
+}
+
+.colour_G {
+	background-color: #007f00;
+	color: #ffffff;
+}
+
+.colour_C {
+	background-color: #bf3f3f;
+	color: #ffffff;
+}
+
+.colour_L {
+	background-color: #bfff7f;
+	color: #000000;
+}
+
+.colour_K {
+	background-color: #ffbfbf;
+	color: #000000;
+}
+
+.colour_N {
+	background-color: #000000;
+	color: #ffffff;
+}
+
+.colour_B {
+	background-color: #00007f;
+	color: #ffffff;
+}
+
+.colour_V {
+	background-color: #7f00ff;
+	color: #ffffff;
+}
+
+.colour_Y {
+	background-color: #ffff00;
+	color: #000000;
+}
+
+.colour_S {
+	background-color: #bfbfbf;
+	color: #000000;
+}
+
+.colour_U {
+	background-color: #3f3f00;
+	color: #ffffff;
+}

@@ -178,8 +178,12 @@ class iform_wwt_colour_marked_report {
           'default' => "=Colour Marks=\r\n".
               "?Please pick the species from the following list and enter the details for the colour identifiers.?\r\n".
               "[species identifier]\r\n".
-              "@identifierRepeat=3\r\n".
+              "@individualRepeat=1\r\n".
               "[species attributes]\r\n".
+              "[*]\r\n".
+              "=Date=\r\n".
+              "?Please tell us when you saw the colour-marked bird.?\r\n".
+              "[date]\r\n".
               "[*]\r\n".
               "=Place=\r\n".
               "?Please tell us where you saw the marked bird. You can do this in any of the following ways:-<ol>".
@@ -190,11 +194,6 @@ class iform_wwt_colour_marked_report {
               "[spatial reference]\r\n".
               "[place search]\r\n".
               "[map]\r\n".
-              "[*]\r\n".
-              "=Date &amp; Other Information=\r\n".
-              "?Please provide the date and any additional information which you think may be useful.?\r\n".
-              "[date]\r\n".
-              "[observation comment]\r\n".
               "[*]\r\n".
               "=*=",
           'group' => 'User Interface'
@@ -516,7 +515,114 @@ class iform_wwt_colour_marked_report {
           'type' => 'textarea',
           'required'=>true,
           'group'=>'Identifiers'
-        ),   
+        ),
+        array(
+          'name'=>'base_colour_type_id',
+          'caption'=>'Base Colour Attribute Type',
+          'description'=>'If you are using an identifier custom attribute for the identifier base colour, please select it from this list.',
+          'type' => 'select',
+          'table'=>'identifier_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'base_colours',
+          'caption'=>'Base Colours',
+          'description'=>'The colours we want to let users record for the background of the coloured identifiers. Tick all that apply.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:ring_colour'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'text_colour_type_id',
+          'caption'=>'Text Colour Attribute Type',
+          'description'=>'If you are using an identifier custom attribute for the identifier text colour, please select it from this list.',
+          'type' => 'select',
+          'table'=>'identifier_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'text_colours',
+          'caption'=>'Text Colours',
+          'description'=>'The colours we want to let users record for the text enscribed on the coloured identifiers. Tick all that apply.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:ring_colour'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'use_colour_picker',
+          'caption'=>'Use Colour Picker',
+          'description'=>'Tick this to use a colour-picker control for choosing colours rather than a select control of colour names.',
+          'type'=>'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Identifiers'
+        ),
+        array(
+          'name'=>'sequence_type_id',
+          'caption'=>'Identifier Sequence Attribute Type',
+          'description'=>'If you are using an identifier custom attribute for the identifier sequence, please select it from this list.',
+          'type' => 'select',
+          'table'=>'identifier_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'other_devices_attr_id',
+          'caption'=>'Other Devices Attribute Type',
+          'description'=>'If you are using a Subject Observation custom attribute for the identifier text colour, '.
+            'please select it from this list. Note, this must be a multi-value attribute using the lookup list which contains the device types.',
+          'type' => 'select',
+          'table'=>'subject_observation_attribute',
+          'captionField'=>'caption',
+          'valueField'=>'id',
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'other_devices',
+          'caption'=>'Other Devices',
+          'description'=>'What other devices (such as transmitters/trackers/loggers do you want to record? Tick all that apply.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_type'),
+          'required' => true,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
+          'name'=>'observation_comment',
+          'caption'=>'Allow Comment For Colour-marked Individual',
+          'description'=>'Tick this to allow a comment to be input for each reported colour-marked individual. '.
+            'This comment is stored on the subject observation record',
+          'type'=>'boolean',
+          'required' => false,
+          'default' => false,
+          'group' => 'Identifiers'
+        ),
       )
     );
     return $retVal;
@@ -543,7 +649,10 @@ class iform_wwt_colour_marked_report {
     data_entry_helper::$javascript .= "indicia.wwt.initForm (
       '".$svcUrl."', 
       '".$auth['read']['nonce']."',
-      '".$auth['read']['auth_token']."'
+      '".$auth['read']['auth_token']."',
+      '".$args['base_colour_type_id']."',
+      '".$args['text_colour_type_id']."',
+      '".$args['sequence_type_id']."'
       );\n";
     
     $mode = (isset($args['no_grid']) && $args['no_grid']) 
@@ -704,9 +813,10 @@ class iform_wwt_colour_marked_report {
       $value = isset($args['defaults']['occurrence:record_status']) ? $args['defaults']['occurrence:record_status'] : 'C'; 
       $hiddens .= "<input type=\"hidden\" id=\"occurrence:record_status\" name=\"occurrence:record_status\" value=\"$value\" />\n";    
     }
-    // add subject type as a hidden
+    // add subject type and count as a hidden
     if (!empty($args['subject_type_id'])) {
       $hiddens .= '<input type="hidden" name="subject_observation:subject_type_id" value="'.$args['subject_type_id'].'"/>';
+      $hiddens .= '<input type="hidden" name="subject_observation:count" value="1"/>';
     }
     // request automatic JS validation
     if (!isset($args['clientSideValidation']) || $args['clientSideValidation'])
@@ -1159,9 +1269,11 @@ class iform_wwt_colour_marked_report {
    * Get the observation comment control
    */
   private static function get_control_observationcomment($auth, $args, $tabalias, $options) {
+    $fieldPrefix = !empty($options['fieldprefix']) ? $options['fieldprefix'] : '';
     return data_entry_helper::textarea(array_merge(array(
-      'fieldname'=>'subject_observation:comment',
-      'label'=>lang::get('Comment on the Observation')
+      'fieldname'=>$fieldPrefix.'subject_observation:comment',
+      'label'=>lang::get('Any information you might like to add'),
+      'class'=>'control-width-5',
     ), $options)); 
   }
   
@@ -1329,7 +1441,7 @@ class iform_wwt_colour_marked_report {
       return $r;
   }   
     
-  /**
+  /*
    * Get the species picker with selected colour identifier controls
    */
   
@@ -1363,17 +1475,26 @@ class iform_wwt_colour_marked_report {
       'table' => 'identifier_attribute',
       'extraParams' => $auth['read'],
     );
-    $attrResponse = data_entry_helper::get_population_data($dataOpts);
+    $options['attributeTypes'] = data_entry_helper::get_population_data($dataOpts);
     
     $r = '';
-    if (empty($options['repeat']) || !is_numeric($options['repeat'])) {
-      $options['repeat'] = 1;
+    if (empty($options['individualRepeat']) || !is_numeric($options['individualRepeat'])) {
+      $options['individualRepeat'] = 1;
     }
-    for ($start=$taxIdx; $taxIdx < $options[repeat] + $start; $taxIdx++) {
+    // loop through each individual
+    for ($start=$taxIdx; $taxIdx < $options[individualRepeat] + $start; $taxIdx++) {
       $options['fieldprefix'] = 'idn:'.$taxIdx.':0:';
+      if ($options['individualRepeat'] > 1) {
+        $r .= '<fieldset id="'.$options['fieldprefix'].'individual:fieldset" class="taxon_individual ui-corner-all">';
+        $r .= '<legend>Colour-marked individual '.($taxIdx+1).'</legend>';
+      }
+      // output the species selection control
+      $options['blankText'] = '<Please select>';
       $r .= self::get_control_species($auth, $args, $tabalias, $options);
+      // loop through each requested identifier
       foreach ($identAttrLines as $identifierLine) {
         $ident_parts = explode(',', $identifierLine);
+        // get the id and correctly formatted name for this type of identifier
         $iName = str_replace(' ', '', strtolower($ident_parts[0]));
         $identifier_name = '';
         foreach ($typeResponse as $identifier_type) {
@@ -1383,9 +1504,15 @@ class iform_wwt_colour_marked_report {
             break;
           }
         }
-        $r .= '<fieldset id="idn:'.$taxIdx.':'.$identifier_type_id.':fieldset" class="taxon_identifier">';
-        $r .= '<legend>Enter details for the '.strtolower($identifier_name).' if seen</legend>';
+        // output the markup with name/id prefix indicating the individual and identifier type
         $options['fieldprefix'] = 'idn:'.$taxIdx.':'.$identifier_type_id.':';
+        $r .= data_entry_helper::checkbox(array_merge(array(
+          'fieldname'=>$options['fieldprefix'].'identifier:checkbox',
+          'label'=>'Was there a '.strtolower($identifier_name).'?',
+          'class'=>'identifier_checkbox',
+        ), $options));
+        $r .= '<fieldset id="'.$options['fieldprefix'].'fieldset" class="taxon_identifier ui-corner-all">';
+        $r .= '<legend>Enter details for the '.strtolower($identifier_name).'</legend>';
         $options['identifierTypeId'] = $identifier_type_id;
         $options['identifierName'] = $identifier_name;
         array_shift($ident_parts);
@@ -1393,14 +1520,35 @@ class iform_wwt_colour_marked_report {
         $r .= self::get_control_identifier($auth, $args, $tabalias, $options);
         $r .= '</fieldset>';
       }
+      // other devices (trackers etc.)
+      if (!empty($args['other_devices_attr_id']) 
+          && $args['other_devices_attr_id'] > 0
+          && !empty($args['other_devices'])) {
+        // reset prefix
+        $options['fieldprefix'] = 'idn:'.$taxIdx.':0:';
+        // filter the devices available
+        $query = array('in'=>array('id', $args['other_devices']));
+        $filter = array('termlist_external_key'=>'indicia:assoc:identifier_type',);
+        $filter = array('query'=>json_encode($query),);
+        $extraParams = array_merge($filter, $auth['read']);
+        $r .= data_entry_helper::checkbox_group(array_merge(array(
+          'label' => lang::get('What other devices did you see on the bird'),
+          'fieldname' => $options['fieldprefix'].'sjoAttr:'.$args['other_devices_attr_id'],
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => $extraParams,
+        ), $options));
+      }
+      if ($args['observation_comment']) {
+        $r .= self::get_control_observationcomment($auth, $args, $tabalias, $options);
+      }
+      if ($options['individualRepeat'] > 1) {
+        $r .= '</fieldset>';
+      }
     }
     return $r;
   }
-  /*
-   * 
-    if (!empty($args['taxon_filter_field']) && !empty($args['taxon_filter'])) {
-      $filterLines = helper_base::explode_lines($args['taxon_filter']);
-   */
   
   /*
    * Get the colour identifier control
@@ -1413,41 +1561,91 @@ class iform_wwt_colour_marked_report {
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_name" id="'.$fieldPrefix.'identifier:identifier_name" value="'.$options['identifierName'].'" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:coded_value" id="'.$fieldPrefix.'identifier:coded_value" class="identifier:coded_value" value="" />'."\n";
     $r .= '<input type="hidden" name="'.$fieldPrefix.'identifier:identifier_id" id="'.$fieldPrefix.'identifier:identifier_id" class="identifier_id" value="-1" />'."\n";
-    // Todo: make this dynamic driven by attribute data
+    $r .= '<div class="indentifier-controls">';
+    // loop through the requested attributes and output an appropriate control
     foreach ($options['identifierAttrList'] as $attrId) {
-      switch ($attrId) {
-        case '1':
+      // find the definition of this attribute
+      $found = false;
+      foreach ($options['attributeTypes'] as $attrType) {
+        if ($attrType['id']===$attrId) {
+          $found = true;
+          break;
+        }
+      }
+      if (!$found) {
+        throw new exception(lang::get('Unknown identifier attribute type id ['.$attrId.'] specified for '.
+          $options['identifierName'].' in Identifier Attributes parameter.'));
+      }
+      // setup any data filters
+      if (!empty($args['base_colour_type_id']) 
+        && $args['base_colour_type_id']==$attrId) {
+        if (!empty($args['base_colours'])) {
+          // filter the colours available
+          $query = array('in'=>array('id', $args['base_colours']));
+        }
+        if (use_colour_picker) {
+          $options['class'] = empty($options['class']) ? 'select_colour' : 
+            (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
+        }
+        $colourIdentifier = true;
+      } elseif (!empty($args['text_colour_type_id']) 
+        && $args['text_colour_type_id']==$attrId) {
+        if (!empty($args['text_colours'])) {
+          // filter the colours available
+          $query = array('in'=>array('id', $args['text_colours']));
+        }
+        if (use_colour_picker) {
+          $options['class'] = empty($options['class']) ? 'select_colour' : 
+            (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
+        }
+        $colourIdentifier = true;
+      }
+            
+      // Todo: do we need to set defaults for reload on error or edit?
+      switch ($attrType['data_type']) {
+        case 'D':
+        case 'V':
+          $r .= data_entry_helper::date_picker(array_merge(array(
+            'label' => lang::get($attrType['caption']),
+            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
+          ), $options));
+          break;
+        case 'L':
+          $filter = array('termlist_id'=>$attrType['termlist_id'],);
+          if (!empty($query)) {
+            $filter += array('query'=>json_encode($query),);
+          }
+          $extraParams = array_merge($filter, $auth['read']);
           $r .= data_entry_helper::select(array_merge(array(
-            'fieldname'=>$fieldPrefix.'idnAttr:1', // Todo: set the attr id up in the parameters picked from attr captions
-            'label'=>lang::get('Base colour'),
+            'label' => lang::get($attrType['caption']),
+            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
             'table'=>'termlists_term',
             'captionField'=>'term',
             'valueField'=>'id',
-            'extraParams' => array_merge(array('termlist_external_key'=>'indicia:assoc:ring_colour',
-              ), $auth['read']), // filter terms
+            'blankText' => '<Please select>',
+            'extraParams' => $extraParams,
           ), $options));
           break;
-        case '2':
-          $r .= data_entry_helper::select(array_merge(array(
-            'fieldname'=>$fieldPrefix.'idnAttr:2', // Todo: set the attr id up in the parameters picked from attr captions
-            'label'=>lang::get('Text colour'),
-            'table'=>'termlists_term',
-            'captionField'=>'term',
-            'valueField'=>'id',
-            'extraParams' => array_merge(array('termlist_external_key'=>'indicia:assoc:ring_colour',
-              ), $auth['read']), // filter terms
+        case 'B':
+          $r .= data_entry_helper::checkbox(array_merge(array(
+            'label' => lang::get($attrType['caption']),
+            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
           ), $options));
-          break;
-        case '3':
-          $r .= data_entry_helper::text_input(array_merge(array(
-            'fieldname'=>$fieldPrefix.'idnAttr:3', // Todo: set the attr id up in the parameters picked from attr captions
-            'label'=>lang::get('Sequence')
-          ), $options)); 
           break;
         default:
-          throw new exception(lang::get('Unknown identifier attribute type.'));
+          $r .= data_entry_helper::text_input(array_merge(array(
+            'label' => lang::get($attrType['caption']),
+            'fieldname' => $fieldPrefix.'idnAttr:'.$attrType['id'],
+          ), $options));
       }
     }
+    $r .= '</div>';
+    // check if this is a coloured identifier
+    if (in_array($args['base_colour_type_id'], $options['identifierAttrList']) || in_array($args['text_colour_type_id'], $options['identifierAttrList'])) {
+      // output markup for colourable box
+      $r .= '<div id="'.$fieldPrefix.'colourbox" class="indentifier-colourbox ui-corner-all">&nbsp;</div>';
+    }
+
     return $r;
   }
   
@@ -1505,22 +1703,30 @@ class iform_wwt_colour_marked_report {
     foreach ( $keys as $key )
     {
       // build the observation submission
+      $key_parts = explode(':', $key);
+      $idx = $key_parts[1];
+      $so_keys = preg_grep('/^idn:'.$idx.':0:(subject_observation|sjoAttr):/', array_keys($values));
+      foreach ($so_keys as $so_key) {
+        $so_key_parts = explode(':', $so_key, 4);
+        $values[$so_key_parts[3]] = $values[$so_key];
+      }
       $so = submission_builder::build_submission($values, array('model'=>'subject_observation',));
       // create submodel for join to occurrence and add it
       $values['occurrence:taxa_taxon_list_id'] = $values[$key];
       $oso = self::build_occurrence_observation_submission($values);
       $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $oso,);
       // create submodel for each join to identifier (plus identifier models if new) and add it
-      $key_parts = explode(':', $key);
-      $idx = $key_parts[1];
       foreach ($args['identifier_types'] as $identifier_type_id) {
         $ident_keys = preg_grep('/^idn:'.$idx.':'.$identifier_type_id.':(identifier|idnAttr):/', array_keys($values));
         foreach ($ident_keys as $i_key) {
-          $i_key_parts = explode(':', $i_key);
-          $values[$i_key_parts[3].':'.$i_key_parts[4]] = $values[$i_key];
+          $i_key_parts = explode(':', $i_key, 4);
+          $values[$i_key_parts[3]] = $values[$i_key];
         }
-        $iso = self::build_identifier_observation_submission($values);
-        $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
+        // if identifier checkbox set, this identifier is being reported
+        if ($values['identifier:checkbox']==1) {
+          $iso = self::build_identifier_observation_submission($values);
+          $so['subModels'][] = array('fkId' => 'subject_observation_id', 'model' => $iso,);
+        }
       }
       // add it all to the main sample submission
       $sample['subModels'][] = array('fkId' => 'sample_id', 'model' => $so,);

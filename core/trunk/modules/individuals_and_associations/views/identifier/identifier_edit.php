@@ -129,7 +129,7 @@ echo data_entry_helper::textarea(array(
 	$name = 'idnAttr:'.$attr['identifier_attribute_id'];
   // if this is an existing attribute, tag it with the attribute value record id so we can re-save it
   if ($attr['id']) $name .= ':'.$attr['id'];
-	switch ($attr['data_type']) :
+  switch ($attr['data_type']) :
     case 'D':
     case 'V':
       echo data_entry_helper::date_picker(array(

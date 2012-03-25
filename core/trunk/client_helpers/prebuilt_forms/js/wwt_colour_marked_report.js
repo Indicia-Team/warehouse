@@ -37,12 +37,15 @@
   var svcUrl = '';
   var readNonce = '';
   var readAuthToken = '';
+  var baseColourId = '';
+  var textColourId = '';
+  var sequenceId = '';
 
   /*
    * Private variables
    */
   var colourTable = [
-    ["R", "Red", "red"],
+    ["R", "Red", "red",],
     ["P", "Pale Blue", "paleblue"],
     ["W", "White", "white"],
     ["O", "Orange", "orange"],
@@ -83,6 +86,24 @@
   ];
   var colourTableLength = colourTable.length;
   
+  var hexColours = [
+    ["R", "ff0000"],
+    ["P", "7f7fff"],
+    ["W", "ffffff"],
+    ["O", "ff7f00"],
+    ["G", "007f00"],
+    ["C", "bf3f3f"],
+    ["L", "bfff7f"],
+    ["K", "ffbfbf"],
+    ["N", "000000"],
+    ["B", "00007f"],
+    ["V", "7f00ff"],
+    ["Y", "ffff00"],
+    ["S", "bfbfbf"],
+    ["U", "3f3f00"]
+  ];
+  var hexColoursLength = hexColours.length;
+
   /*
    * Private helper functions
    */
@@ -104,6 +125,19 @@
       }
     }
     return cCode;
+  };
+
+  var getColourHex = function(cCode) {
+    // finds the hex code for colour character or returns 'ffffff' if not found
+    var cHex = 'ffffff';
+    
+    for (i=0; i<hexColoursLength; i++) {
+      if (hexColours[i][0]===cCode) {
+        cHex = hexColours[i][1];
+        break;
+      }
+    }
+    return cHex;
   };
 
   var makeIdentifierCode = function(idx, typeId) {
@@ -132,6 +166,33 @@
     iCode += getColourCode(iBase)+getColourCode(iText)+'('+iSeq.toUpperCase()+')';
     return iCode;
   };
+  
+  var setIdentifierDisplayState = function(checkboxId) {
+    // make identifier fieldset display state reflect the checkbox setting
+    var fieldsetId = checkboxId.replace('identifier:checkbox', 'fieldset');
+    if ($('#'+esc4jq(checkboxId)+':checked').length===0) {
+      $('#'+esc4jq(fieldsetId)).slideUp();
+    } else {
+      $('#'+esc4jq(fieldsetId)).slideDown();
+    }
+  };
+
+  var setIdentifierVisualisation = function(ctl) {
+    // set the colour identifier visualisation panel to reflect the attributes
+    var parts = ctl.id.split(':');
+    var colourBox$ = $('.indentifier-colourbox', $(ctl).closest('fieldset'));
+    switch (parseInt(parts[parts.length-1])) {
+    case baseColourId :
+      colourBox$.css('background-color', $('#'+esc4jq(ctl.id)+' option:selected').attr('data-colour'));
+      break;
+    case textColourId :
+      colourBox$.css('color', $('#'+esc4jq(ctl.id)+' option:selected').attr('data-colour'));
+      break;
+    case sequenceId :
+      colourBox$.text($(ctl).val());
+      break;
+    }
+  };
 
   /*
    * Public functions
@@ -141,11 +202,14 @@
    * initialises lock settings and set event handlers, called from indicia ready
    * handler.
    */
-  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken) {
+  indicia.wwt.initForm = function(pSvcUrl, pReadNonce, pReadAuthToken, pBaseColourId, pTextColourId, pSequenceId) {
     // set config from PHP.
     svcUrl = pSvcUrl;
     readNonce = pReadNonce;
     readAuthToken = pReadAuthToken;
+    baseColourId = parseInt(pBaseColourId);
+    textColourId = parseInt(pTextColourId);
+    sequenceId = parseInt(pSequenceId);
     // install the submit handler for the form
     $('form#entry_form').submit(function(event) {
       var codes = [];
@@ -177,6 +241,7 @@
               for (i=0; i<detData.length; i++) {
                 for (j=0; j<code$.length; j++) {
                   if (code$[j].value==detData[i].coded_value) {
+                    // set the id
                     id$[j].value = detData[i].id+'';
                   }
                 }
@@ -189,6 +254,33 @@
       }
       // now continue with the submit
       return true;
+    });
+    // set indentifier initial display state to reflect the checkbox setting
+    $('.identifier_checkbox:checked').each(function() {
+      setIdentifierDisplayState(this.id);
+    });
+    // install a click handler for the identifier checkboxes to display the identifier fields
+    $('.identifier_checkbox').click(function(event) {
+      setIdentifierDisplayState(this.id);
+    });
+    // colour any colour selects
+    $('select.select_colour option').each(function() {
+      var hexCode = getColourHex(getColourCode($(this).text()));
+      $(this).css('background-color', '#'+hexCode).attr('data-colour', '#'+hexCode);
+      var color = (parseInt(hexCode.substr(0,2), 16)+parseInt(hexCode.substr(2,2), 16)+parseInt(hexCode.substr(4,2), 16))<384 ? 'ffffff' : '000000';
+      $(this).css('color', '#'+color);
+    });
+    // set the initial state of the identifier visuals
+    $('select.select_colour, input.select_colour').each(function() {
+      setIdentifierVisualisation(this);
+    });
+    // install a change handler for the colour selecters to set the ring colours
+    $('select.select_colour').change(function(event) {
+      setIdentifierVisualisation(this);
+    });
+    // install a keyup handler for the colour selecters to set the ring colours
+    $('input.select_colour').keyup(function(event) {
+      setIdentifierVisualisation(this);
     });
   };
 })(jQuery);
