@@ -57,7 +57,7 @@
     <column name='taxon_group' display='Taxon Group' sql='o.taxon_group' datatype='text' visible="false" />
     <column name='record_status' display='State' sql='xo.record_status' visible="false" />
     <column name='geom' visible='false' mappable="true" sql='st_astext(s.geom)' />
-    <column name='strokewidth' visible='false' feature_style="strokeWidth" sql='length(s.entered_sref) / 3' />
+    <column name='strokewidth' visible='false' feature_style="strokeWidth" sql="CASE WHEN s.entered_sref_system ~ '^[0-9]+$' THEN 1 ELSE length(s.entered_sref) / 3 END" />
     <column name='fillopacity' visible='false' feature_style="fillOpacity" sql='length(s.entered_sref) / 24.0' />
     <column name='pass' visible='false' sql="CASE WHEN oc.id IS NULL THEN '&lt;div class=&quot;pass-icon&quot; title=&quot;This record passes all automated verification checks.&quot;/&gt;&lt;/div&gt;' END" />
     <column name='fails' display='Check' 
