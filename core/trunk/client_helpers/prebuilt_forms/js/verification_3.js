@@ -37,10 +37,10 @@ function selectRow(tr) {
             // replace values with the extrnal key if the token is used
             $.each(thisSpLyrSettings, function(prop, value) {
               if (typeof(value)=='string' && $.trim(value)==='{external_key}') {
-                thisSpLyrSettings[prop]=data.taxon_external_key;
+                thisSpLyrSettings[prop]=data.additional.taxon_external_key;
               }
             });
-            layer = new OpenLayers.Layer.WMS(layerDef.title, layerDef.url.replace('{external_key}', data.taxon_external_key), 
+            layer = new OpenLayers.Layer.WMS(layerDef.title, layerDef.url.replace('{external_key}', data.additional.taxon_external_key), 
                 thisSpLyrSettings, layerDef.olSettings);
             mapDiv.map.addLayer(layer);
           });
