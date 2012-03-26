@@ -41,4 +41,34 @@ class Identifier_attribute_Model extends ATTR_ORM {
 
   protected $has_and_belongs_to_many = array('websites');
 
+  /**
+   * Get the list of known system functions for identifier attributes, each with a title and description
+   * of their usage.
+   * @return array List of the system known functions that an identifier attribute can have.
+   */
+  public function get_system_functions() {
+    return array(
+      // add system function definitions as required in the form
+      'sequence' => array(
+        'title'=>'Unique Sequence/Code',
+        'description'=>'A text attribute to record the sequence associated with the identifier, for example, a ring code.'
+      ),
+      'base_colour' => array(
+        'title'=>'Base/Background Colour',
+        'description'=>'A Lookup attribute referencing a termlist of colours to be recorded as the base or '.
+          'background colour associated with the identifier, for example, the main colour on a coloured ring.'
+      ),
+      'text_colour' => array(
+        'title'=>'Text/Code Colour',
+        'description'=>'A Lookup attribute referencing a termlist of colours to be recorded as the colour of the '.
+          'text/Code/Sequence on the identifier, for example, the colour of any text sequence on a coloured ring.'
+      ),
+      'position' => array(
+        'title'=>'Position on the Organism',
+        'description'=>'A Lookup attribute referencing a termlist of possible positions on the body for '.
+          'identifiers to be placed or occur.'
+      ),
+    );
+  }
+
 }

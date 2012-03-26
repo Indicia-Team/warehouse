@@ -41,4 +41,21 @@ class Known_subject_attribute_Model extends ATTR_ORM {
 
   protected $has_and_belongs_to_many = array('websites');
 
+  /**
+   * Get the list of known system functions for known_subject attributes, each with a title and description
+   * of their usage.
+   * @return array List of the system known functions that an known_subject attribute can have.
+   */
+  public function get_system_functions() {
+    return array(
+      /*
+      // add system function definitions as required in the form
+      'sex_stage' => array(
+        'title'=>'Sex/stage',
+        'description'=>'A text or lookup attribute where the value corresponds to the sex or life stage of the recorded organism(s).'
+      ),
+       */
+    );
+  }
+
 }
