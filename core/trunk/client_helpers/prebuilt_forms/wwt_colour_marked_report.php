@@ -517,18 +517,6 @@ class iform_wwt_colour_marked_report {
           'group'=>'Identifiers'
         ),
         array(
-          'name'=>'base_colour_type_id',
-          'caption'=>'Base Colour Attribute Type',
-          'description'=>'If you are using an identifier custom attribute for the identifier base colour, please select it from this list.',
-          'type' => 'select',
-          'table'=>'identifier_attribute',
-          'captionField'=>'caption',
-          'valueField'=>'id',
-          'required' => false,
-          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
-          'group' => 'Identifiers',
-        ),
-        array(
           'name'=>'base_colours',
           'caption'=>'Base Colours',
           'description'=>'The colours we want to let users record for the background of the coloured identifiers. Tick all that apply.',
@@ -537,18 +525,6 @@ class iform_wwt_colour_marked_report {
           'captionField'=>'term',
           'valueField'=>'id',
           'extraParams' => array('termlist_external_key'=>'indicia:assoc:ring_colour'),
-          'required' => false,
-          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
-          'group' => 'Identifiers',
-        ),
-        array(
-          'name'=>'text_colour_type_id',
-          'caption'=>'Text Colour Attribute Type',
-          'description'=>'If you are using an identifier custom attribute for the identifier text colour, please select it from this list.',
-          'type' => 'select',
-          'table'=>'identifier_attribute',
-          'captionField'=>'caption',
-          'valueField'=>'id',
           'required' => false,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
           'group' => 'Identifiers',
@@ -567,6 +543,19 @@ class iform_wwt_colour_marked_report {
           'group' => 'Identifiers',
         ),
         array(
+          'name'=>'position',
+          'caption'=>'Identifier Position',
+          'description'=>'The positions on the organism we want to let users record for the identifiers. Tick all that apply.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_position'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Identifiers',
+        ),
+        array(
           'name'=>'use_colour_picker',
           'caption'=>'Use Colour Picker',
           'description'=>'Tick this to use a colour-picker control for choosing colours rather than a select control of colour names.',
@@ -576,31 +565,6 @@ class iform_wwt_colour_marked_report {
           'group' => 'Identifiers'
         ),
         array(
-          'name'=>'sequence_type_id',
-          'caption'=>'Identifier Sequence Attribute Type',
-          'description'=>'If you are using an identifier custom attribute for the identifier sequence, please select it from this list.',
-          'type' => 'select',
-          'table'=>'identifier_attribute',
-          'captionField'=>'caption',
-          'valueField'=>'id',
-          'required' => false,
-          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
-          'group' => 'Identifiers',
-        ),
-        array(
-          'name'=>'other_devices_attr_id',
-          'caption'=>'Other Devices Attribute Type',
-          'description'=>'If you are using a Subject Observation custom attribute for the identifier text colour, '.
-            'please select it from this list. Note, this must be a multi-value attribute using the lookup list which contains the device types.',
-          'type' => 'select',
-          'table'=>'subject_observation_attribute',
-          'captionField'=>'caption',
-          'valueField'=>'id',
-          'required' => false,
-          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
-          'group' => 'Identifiers',
-        ),
-        array(
           'name'=>'other_devices',
           'caption'=>'Other Devices',
           'description'=>'What other devices (such as transmitters/trackers/loggers do you want to record? Tick all that apply.',
@@ -608,10 +572,10 @@ class iform_wwt_colour_marked_report {
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'id',
-          'extraParams' => array('termlist_external_key'=>'indicia:assoc:identifier_type'),
-          'required' => true,
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:attachment_type'),
+          'required' => false,
           'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
-          'group' => 'Identifiers',
+          'group' => 'Subject observation',
         ),
         array(
           'name'=>'observation_comment',
@@ -621,7 +585,49 @@ class iform_wwt_colour_marked_report {
           'type'=>'boolean',
           'required' => false,
           'default' => false,
-          'group' => 'Identifiers'
+          'group' => 'Subject observation'
+        ),
+        array(
+          'name'=>'request_gender_values',
+          'caption'=>'Request Gender Values',
+          'description'=>'What (if any) gender options do you want to present for the colour-marked individual? '.
+            'Leave un-ticked to hide all gender options.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:gender'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Subject observation',
+        ),
+        array(
+          'name'=>'request_stage_values',
+          'caption'=>'Request Age Values',
+          'description'=>'What (if any) age/stage options do you want to present for the colour-marked individual? '.
+            'Leave un-ticked to hide all age options.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:stage'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Subject observation',
+        ),
+        array(
+          'name'=>'request_life_status_values',
+          'caption'=>'Request Life Status Values',
+          'description'=>'What (if any) life status options do you want to present for the colour-marked individual? '.
+            'Leave un-ticked to hide all life status options.',
+          'type'=>'checkbox_group',
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => array('termlist_external_key'=>'indicia:assoc:life_status'),
+          'required' => false,
+          'helpText' => 'The helptext. Todo: change this one you see where it shows on screen!!',
+          'group' => 'Subject observation',
         ),
       )
     );
@@ -646,14 +652,6 @@ class iform_wwt_colour_marked_report {
     self::$auth = $auth;
     
     drupal_add_js(drupal_get_path('module', 'iform') .'/media/js/jquery.form.js', 'module');
-    data_entry_helper::$javascript .= "indicia.wwt.initForm (
-      '".$svcUrl."', 
-      '".$auth['read']['nonce']."',
-      '".$auth['read']['auth_token']."',
-      '".$args['base_colour_type_id']."',
-      '".$args['text_colour_type_id']."',
-      '".$args['sequence_type_id']."'
-      );\n";
     
     $mode = (isset($args['no_grid']) && $args['no_grid']) 
         ? MODE_NEW_SAMPLE // default mode when no_grid set to true - display new sample
@@ -1273,7 +1271,7 @@ class iform_wwt_colour_marked_report {
     return data_entry_helper::textarea(array_merge(array(
       'fieldname'=>$fieldPrefix.'subject_observation:comment',
       'label'=>lang::get('Any information you might like to add'),
-      'class'=>'control-width-5',
+      'class'=>'control-width-6',
     ), $options)); 
   }
   
@@ -1461,6 +1459,7 @@ class iform_wwt_colour_marked_report {
     } elseif (count($identAttrLines)!==$identifiers) {
       throw new exception(lang::get('Please configure the Identifier Attributes in the Identifiers section with one line for each identifier type you have chosen.'));
     }
+    $svcUrl = data_entry_helper::$base_url.'index.php/services';
     // get the identifier type data
     $filter = array(
       'termlist_external_key' => 'indicia:assoc:identifier_type',
@@ -1469,13 +1468,74 @@ class iform_wwt_colour_marked_report {
       'table' => 'termlists_term',
       'extraParams' => $auth['read'] + $filter,
     );
-    $typeResponse = data_entry_helper::get_population_data($dataOpts);
+    $options['identifierTypes'] = data_entry_helper::get_population_data($dataOpts);
     // get the identifier attribute data
     $dataOpts = array(
       'table' => 'identifier_attribute',
       'extraParams' => $auth['read'],
     );
-    $options['attributeTypes'] = data_entry_helper::get_population_data($dataOpts);
+    $options['idnAttributeTypes'] = data_entry_helper::get_population_data($dataOpts);
+    // set up the known system types
+    $options['baseColourId'] = -1;
+    $options['textColourId'] = -1;
+    $options['sequenceId'] = -1;
+    $options['positionId'] = -1;
+    foreach ($options['idnAttributeTypes'] as $idnAttributeType) {
+      if (!empty($idnAttributeType['system_function'])) {
+        switch ($idnAttributeType['system_function']) {
+          case 'base_colour' :
+            $options['baseColourId'] = $idnAttributeType['id'];
+            break;
+          case 'text_colour' :
+            $options['textColourId'] = $idnAttributeType['id'];
+            break;
+          case 'sequence' :
+            $options['sequenceId'] = $idnAttributeType['id'];
+            break;
+          case 'position' :
+            $options['positionId'] = $idnAttributeType['id'];
+            break;
+        }
+      }
+    }
+    // get the subject observation attribute data
+    $dataOpts = array(
+      'table' => 'subject_observation_attribute',
+      'extraParams' => $auth['read'],
+    );
+    $options['sjoAttributeTypes'] = data_entry_helper::get_population_data($dataOpts);
+    // set up the known system types
+    $options['attachmentId'] = -1;
+    $options['genderId'] = -1;
+    $options['stageId'] = -1;
+    $options['lifeStatusId'] = -1;
+    foreach ($options['sjoAttributeTypes'] as $sjoAttributeType) {
+      if (!empty($sjoAttributeType['system_function'])) {
+        switch ($sjoAttributeType['system_function']) {
+          case 'attachment' :
+            $options['attachmentId'] = $sjoAttributeType['id'];
+            break;
+          case 'gender' :
+            $options['genderId'] = $sjoAttributeType['id'];
+            break;
+          case 'stage' :
+            $options['stageId'] = $sjoAttributeType['id'];
+            break;
+          case 'life_status' :
+            $options['lifeStatusId'] = $sjoAttributeType['id'];
+            break;
+        }
+      }
+    }
+    
+    data_entry_helper::$javascript .= "indicia.wwt.initForm (
+      '".$svcUrl."', 
+      '".$auth['read']['nonce']."',
+      '".$auth['read']['auth_token']."',
+      '".$options['baseColourId']."',
+      '".$options['textColourId']."',
+      '".$options['sequenceId']."'
+      );\n";
     
     $r = '';
     if (empty($options['individualRepeat']) || !is_numeric($options['individualRepeat'])) {
@@ -1491,13 +1551,64 @@ class iform_wwt_colour_marked_report {
       // output the species selection control
       $options['blankText'] = '<Please select>';
       $r .= self::get_control_species($auth, $args, $tabalias, $options);
+      // gender
+      if ($options['genderId'] > 0
+        && !empty($args['request_gender_values'])
+        && count($args['request_gender_values']) > 0) {
+        // filter the genders available
+        $query = array('in'=>array('id', $args['request_gender_values']));
+        $filter = array('query'=>json_encode($query),);
+        $extraParams = array_merge($filter, $auth['read']);
+        $r .= data_entry_helper::radio_group(array_merge(array(
+          'label' => lang::get('Sex of the bird'),
+          'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['genderId'],
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => $extraParams,
+        ), $options));
+      }
+      // age
+      if ($options['stageId'] > 0
+        && !empty($args['request_stage_values'])
+        && count($args['request_stage_values']) > 0) {
+        // filter the stages available
+        $query = array('in'=>array('id', $args['request_stage_values']));
+        $filter = array('query'=>json_encode($query),);
+        $extraParams = array_merge($filter, $auth['read']);
+        $r .= data_entry_helper::radio_group(array_merge(array(
+          'label' => lang::get('Age of the bird'),
+          'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['stageId'],
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => $extraParams,
+        ), $options));
+      }
+      // alive?
+      if ($options['lifeStatusId'] > 0
+        && !empty($args['request_life_status_values'])
+        && count($args['request_life_status_values']) > 0) {
+        // filter the life status's available
+        $query = array('in'=>array('id', $args['request_life_status_values']));
+        $filter = array('query'=>json_encode($query),);
+        $extraParams = array_merge($filter, $auth['read']);
+        $r .= data_entry_helper::radio_group(array_merge(array(
+          'label' => lang::get('Was the bird alive'),
+          'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['lifeStatusId'],
+          'table'=>'termlists_term',
+          'captionField'=>'term',
+          'valueField'=>'id',
+          'extraParams' => $extraParams,
+        ), $options));
+      }
       // loop through each requested identifier
       foreach ($identAttrLines as $identifierLine) {
-        $ident_parts = explode(',', $identifierLine);
+        $ident_parts = explode(',', str_replace(' ', '', strtolower($identifierLine)));
         // get the id and correctly formatted name for this type of identifier
-        $iName = str_replace(' ', '', strtolower($ident_parts[0]));
+        $iName = $ident_parts[0];
         $identifier_name = '';
-        foreach ($typeResponse as $identifier_type) {
+        foreach ($options['identifierTypes'] as $identifier_type) {
           if (str_replace(' ', '', strtolower($identifier_type['term']))==$iName) {
             $identifier_name = $identifier_type['term'];
             $identifier_type_id = $identifier_type['id'];
@@ -1521,9 +1632,9 @@ class iform_wwt_colour_marked_report {
         $r .= '</fieldset>';
       }
       // other devices (trackers etc.)
-      if (!empty($args['other_devices_attr_id']) 
-          && $args['other_devices_attr_id'] > 0
-          && !empty($args['other_devices'])) {
+      if ($options['attachmentId'] > 0
+          && !empty($args['other_devices'])
+          && count($args['other_devices']) > 0) {
         // reset prefix
         $options['fieldprefix'] = 'idn:'.$taxIdx.':0:';
         // filter the devices available
@@ -1533,7 +1644,7 @@ class iform_wwt_colour_marked_report {
         $extraParams = array_merge($filter, $auth['read']);
         $r .= data_entry_helper::checkbox_group(array_merge(array(
           'label' => lang::get('What other devices did you see on the bird'),
-          'fieldname' => $options['fieldprefix'].'sjoAttr:'.$args['other_devices_attr_id'],
+          'fieldname' => $options['fieldprefix'].'sjoAttr:'.$options['attachmentId'],
           'table'=>'termlists_term',
           'captionField'=>'term',
           'valueField'=>'id',
@@ -1566,7 +1677,7 @@ class iform_wwt_colour_marked_report {
     foreach ($options['identifierAttrList'] as $attrId) {
       // find the definition of this attribute
       $found = false;
-      foreach ($options['attributeTypes'] as $attrType) {
+      foreach ($options['idnAttributeTypes'] as $attrType) {
         if ($attrType['id']===$attrId) {
           $found = true;
           break;
@@ -1577,28 +1688,30 @@ class iform_wwt_colour_marked_report {
           $options['identifierName'].' in Identifier Attributes parameter.'));
       }
       // setup any data filters
-      if (!empty($args['base_colour_type_id']) 
-        && $args['base_colour_type_id']==$attrId) {
+      if ($options['baseColourId']==$attrId) {
         if (!empty($args['base_colours'])) {
           // filter the colours available
           $query = array('in'=>array('id', $args['base_colours']));
         }
-        if (use_colour_picker) {
+        if ($args['use_colour_picker']) {
           $options['class'] = empty($options['class']) ? 'select_colour' : 
             (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
         }
         $colourIdentifier = true;
-      } elseif (!empty($args['text_colour_type_id']) 
-        && $args['text_colour_type_id']==$attrId) {
+      } elseif ($options['textColourId']==$attrId) {
         if (!empty($args['text_colours'])) {
           // filter the colours available
           $query = array('in'=>array('id', $args['text_colours']));
         }
-        if (use_colour_picker) {
+        if ($args['use_colour_picker']) {
           $options['class'] = empty($options['class']) ? 'select_colour' : 
             (strstr($options['class'], 'select_colour') ? $options['class'] : $options['class'].' select_colour');
         }
         $colourIdentifier = true;
+      } elseif ($options['positionId']==$attrId
+        && count($args['position']) > 0) {
+        // filter the identifier position available
+        $query = array('in'=>array('id', $args['position']));
       }
             
       // Todo: do we need to set defaults for reload on error or edit?
@@ -1641,7 +1754,7 @@ class iform_wwt_colour_marked_report {
     }
     $r .= '</div>';
     // check if this is a coloured identifier
-    if (in_array($args['base_colour_type_id'], $options['identifierAttrList']) || in_array($args['text_colour_type_id'], $options['identifierAttrList'])) {
+    if (in_array($options['baseColourId'], $options['identifierAttrList']) || in_array($options['textColourId'], $options['identifierAttrList'])) {
       // output markup for colourable box
       $r .= '<div id="'.$fieldPrefix.'colourbox" class="indentifier-colourbox ui-corner-all">&nbsp;</div>';
     }
