@@ -1141,9 +1141,9 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
         $defsettings = array_merge(array(
           'fillColor'=> '#ff0000',
           'strokeColor'=> '#ff0000',
-          'strokeWidth'=>3,
+          'strokeWidth'=>1,
           'fillOpacity'=>0.5,
-          'pointRadius'=>10
+          'pointRadius'=>5
         ), $settings);
         if ($options['displaySymbol']!=='vector')
           $defsettings['graphicName']=$options['displaySymbol'];
