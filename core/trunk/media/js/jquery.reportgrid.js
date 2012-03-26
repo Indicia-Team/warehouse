@@ -277,6 +277,8 @@ function simple_tooltip(target_items, name){
               indiciaData.reportlayer.removeAllFeatures();
               map=indiciaData.reportlayer.map;
             }
+            rowTitle = (div.settings.sendOutputToMap && typeof indiciaData.reportlayer!=="undefined") ?
+              ' title="'+div.settings.msgRowLinkedToMapHint+'"' : '';
             $.each(rows, function(rowidx, row) {
               // We asked for one too many rows. If we got it, then we can add a next page button
               if (div.settings.itemsPerPage !== null && rowidx>=div.settings.itemsPerPage) {
@@ -285,7 +287,7 @@ function simple_tooltip(target_items, name){
                 rowId = (div.settings.rowId!=='') ? 'id="row'+row[div.settings.rowId]+'" ' : '';
                 // Initialise a new row, unless this is a gallery with multi-columns and not starting a new line
                 if ((rowidx % div.settings.galleryColCount)===0) {
-                  rowOutput = '<tr ' + rowId + rowclass + '>';
+                  rowOutput = '<tr ' + rowId + rowclass + rowTitle + '>';
                   rowInProgress=true;
                 }
                 // decode any json columns
@@ -303,6 +305,9 @@ function simple_tooltip(target_items, name){
                     }
                     geom = geom.getCentroid();
                     feature = new OpenLayers.Feature.Vector(geom, {});
+                    if (typeof div.settings.rowId!=="undefined" && div.settings.rowId!=="") {
+                      feature.id = row[div.settings.rowId];
+                    }
                     features.push(feature);
                   }
                   if (col.visible!==false && col.visible!=='false') {
@@ -540,6 +545,27 @@ function simple_tooltip(target_items, name){
       });
 
       setupReloadLinks(div);
+      
+      if (div.settings.sendOutputToMap && div.settings.linkFeatures && 
+          typeof indiciaData.reportlayer!=="undefined") {
+        // Setup highlighting of features on an associated map when rows are clicked
+        $(div).find('tbody').click(function(evt) {
+          var tr=$(evt.target).parents('tr')[0];
+          var featureId=tr.id.substr(3), feature;
+          feature=indiciaData.reportlayer.getFeatureById(featureId);
+          // deselect any existing selection and select the feature
+          indiciaData.reportlayer.map.setSelection(indiciaData.reportlayer, [feature]);
+          $(div).find('tbody tr').removeClass('selected');
+          // select row
+          $(tr).addClass('selected');
+        });
+        $(div).find('tbody').dblclick(function(evt) {
+          var tr=$(evt.target).parents('tr')[0];
+          var featureId=tr.id.substr(3), feature;
+          feature=indiciaData.reportlayer.getFeatureById(featureId);
+          indiciaData.reportlayer.map.zoomToExtent(feature.geometry.getBounds());
+        });
+      }
 
       // execute callback it there is one
       if (div.settings.callback !== "") {
@@ -577,5 +603,7 @@ $.fn.reportgrid.defaults = {
   langNext: 'next',
   langLast: 'last',
   langShowing: 'Showing records {1} to {2} of {3}',
-  sendOutputToMap: false
+  sendOutputToMap: false, // does the current page of report data get shown on a map?
+  linkFeatures: false, // combined with sendOutputToMap - the selected row's equivalent map feature is highlighted'
+  msgRowLinkedToMapHint: 'Click the row to highlight the record on the map. Double click to zoom in.'
 };

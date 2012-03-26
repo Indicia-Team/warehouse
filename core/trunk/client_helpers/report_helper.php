@@ -368,6 +368,8 @@ class report_helper extends helper_base {
     $addFeaturesJs = '';
     if (count($records)>0) {
       $rowInProgress=false;
+      $rowTitle = (isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ?
+          ' title="'.lang::get('Click the row to highlight the record on the map. Double click to zoom in.').'"' : '';
       foreach ($records as $rowIdx => $row) {
         // Don't output the additional row we requested just to check if the next page link is required.
         if ($outputCount>=$options['itemsPerPage'])
@@ -390,7 +392,7 @@ class report_helper extends helper_base {
             $classes[]=self::mergeParamsIntoTemplate($row, $options['rowClass'], true, true);;
           $classes=implode(' ',$classes);
           $class = empty($classes) ? '' : "class=\"$classes\" ";
-          $r .= "<tr $class$rowId>";
+          $r .= "<tr $class$rowId$rowTitle>";
           $rowInProgress=true;
         }
         // first decode any json data
@@ -401,7 +403,8 @@ class report_helper extends helper_base {
         foreach ($options['columns'] as $field) {
           $classes=array();
           if (isset($options['sendOutputToMap']) && $options['sendOutputToMap'] && isset($field['mappable']) && $field['mappable']==='true') {
-            $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {});\n";
+            $addFeaturesJs.= "  addDistPoint(features, ".json_encode($row).", '".$field['fieldname']."', {}".
+                (empty($rowId) ? '' : ", '".$row[$options['rowId']]."'").");\n";
           }          
           if (isset($field['visible']) && ($field['visible']=='false' || $field['visible']===false))
             continue; // skip this column as marked invisible
@@ -473,6 +476,8 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   pagingTemplate: '".$indicia_templates['paging']."',
   pathParam: '".$pathParam."',
   sendOutputToMap: ".((isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
+  linkFeatures: ".((!empty($options['rowId']) && isset($options['sendOutputToMap']) && $options['sendOutputToMap']) ? 'true' : 'false').",
+  msgRowLinkedToMapHint: '".lang::get('Click the row to highlight the record on the map. Double click to zoom in.')."',
   altRowClass: '".$options['altRowClass']."'";
       if (isset($options['extraParams']))
         self::$javascript .= ",\n  extraParams: ".json_encode($options['extraParams']);
@@ -487,6 +492,12 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
       if (isset($options['columns']))
         self::$javascript .= ",\n  columns: ".json_encode($options['columns']);
       self::$javascript .= "\n});\n";
+    }
+    if (isset($options['sendOutputToMap']) && $options['sendOutputToMap']) {
+      self::$javascript.= "mapSettingsHooks.push(function(opts) {\n";
+      self::$javascript.= "  opts.clickableLayers.push(indiciaData.reportlayer);\n";
+      self::$javascript.= "  opts.clickableLayersOutputMode='reportHighlight';\n";
+      self::$javascript .= "});\n";
     }
     return $r;
   }
@@ -1191,7 +1202,7 @@ indiciaData.reports.$group.$uniqueName = $('#".$options['id']."').reportgrid({
   $styleFns
 }}";
         }
-        self::addFeaturesLoadingJs($addFeaturesJs);
+        self::addFeaturesLoadingJs($addFeaturesJs, $defsettings, $selsettings, $styleFns);
       } else {
         // doing WMS reporting via GeoServer
         $replacements = array();
@@ -1950,7 +1961,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   /** 
    * Inserts into the page javascript a function for loading features onto the map as a result of report output.
    */
-  private static function addFeaturesLoadingJs($addFeaturesJs, $zoomToExtent=true) {
+  private static function addFeaturesLoadingJs($addFeaturesJs, $defsettings='', 
+      $selsettings='{"strokeColor":"#ff0000","fillColor":"#ff0000","strokeWidth":2}', $styleFns='', $zoomToExtent=true) {
     if (!empty($addFeaturesJs)) {
       report_helper::$javascript.= "
   if (typeof OpenLayers !== \"undefined\") {
@@ -1959,7 +1971,7 @@ if (typeof(mapSettingsHooks)!=='undefined') {
     var styleMap = new OpenLayers.StyleMap({'default' : defaultStyle, 'select' : selectStyle});
     indiciaData.reportlayer = new OpenLayers.Layer.Vector('Report output', {styleMap: styleMap}); 
     mapInitialisationHooks.push(function(div) {
-      function addDistPoint(features, record, wktCol, opts) {
+      function addDistPoint(features, record, wktCol, opts, id) {
         if (record[wktCol]!==null) {
           var feature, geom=OpenLayers.Geometry.fromWKT(record[wktCol]);
           if (div.map.projection.getCode() != div.indiciaProjection.getCode()) {
@@ -1971,6 +1983,10 @@ if (typeof(mapSettingsHooks)!=='undefined') {
             geom = geom.getCentroid();
           }
           feature = new OpenLayers.Feature.Vector(geom, record);
+          if (typeof id!=='undefined') {
+            // store a supplied identifier against the feature
+            feature.id=id;
+          }
           features.push(feature);
         }
       } 

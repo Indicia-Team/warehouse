@@ -373,39 +373,39 @@ mapInitialisationHooks = [];
     */
     function _getPresetLayers(settings) {
       var r={
-        openlayers_wms : function() { return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true}); },
-        nasa_mosaic : function() { return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true}); },
-        virtual_earth : function() { return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true}); },
-        bing_aerial : function() { return new OpenLayers.Layer.Bing({name: 'Bing Aerial', 'type': 'Aerial', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
-        bing_hybrid : function() { return new OpenLayers.Layer.Bing({name: 'Bing Hybrid', 'type': 'AerialWithLabels', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
-        bing_shaded : function() { return new OpenLayers.Layer.Bing({name: 'Bing Shaded', 'type': 'road', 'key': settings.bing_api_key, 'sphericalMercator': true}); },
+        openlayers_wms : function() {return new OpenLayers.Layer.WMS('OpenLayers WMS', 'http://labs.metacarta.com/wms/vmap0', {layers: 'basic'}, {'sphericalMercator': true});},
+        nasa_mosaic : function() {return new OpenLayers.Layer.WMS('NASA Global Mosaic', 'http://t1.hypercube.telascience.org/cgi-bin/landsat7', {layers: 'landsat7'}, {'sphericalMercator': true});},
+        virtual_earth : function() {return new OpenLayers.Layer.VirtualEarth('Virtual Earth', {'type': VEMapStyle.Aerial, 'sphericalMercator': true});},
+        bing_aerial : function() {return new OpenLayers.Layer.Bing({name: 'Bing Aerial', 'type': 'Aerial', 'key': settings.bing_api_key, 'sphericalMercator': true});},
+        bing_hybrid : function() {return new OpenLayers.Layer.Bing({name: 'Bing Hybrid', 'type': 'AerialWithLabels', 'key': settings.bing_api_key, 'sphericalMercator': true});},
+        bing_shaded : function() {return new OpenLayers.Layer.Bing({name: 'Bing Shaded', 'type': 'road', 'key': settings.bing_api_key, 'sphericalMercator': true});},
         // multimap layers are no longer provided, so map any requests to OSM for backwards compatibility.
-        multimap_default : function() { return new OpenLayers.Layer.OSM(); },
-        multimap_landranger : function() { return new OpenLayers.Layer.OSM(); },
-        osm : function() { return new OpenLayers.Layer.OSM(); }, // default OpenStreetMap Mapnik layer
-        osm_th : function() { return new OpenLayers.Layer.OSM("OpenStreetMap Tiles@Home", "http://tah.openstreetmap.org/Tiles/tile/${z}/${x}/${y}.png"); } // OpenStreetMap Tiles@Home
+        multimap_default : function() {return new OpenLayers.Layer.OSM();},
+        multimap_landranger : function() {return new OpenLayers.Layer.OSM();},
+        osm : function() {return new OpenLayers.Layer.OSM();}, // default OpenStreetMap Mapnik layer
+        osm_th : function() {return new OpenLayers.Layer.OSM("OpenStreetMap Tiles@Home", "http://tah.openstreetmap.org/Tiles/tile/${z}/${x}/${y}.png");} // OpenStreetMap Tiles@Home
       };
       // To protect ourselves against exceptions because the Google script would not link up, we
       // only enable these layers if the Google constants are available. We separately check for google V2 and V3 layers
       // to maintain backwards compatibility
       if (typeof G_PHYSICAL_MAP != "undefined") {
         r.google_physical =
-            function() { return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Physical', {type: G_PHYSICAL_MAP, 'sphericalMercator': true});};
         r.google_streets =
-            function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true});};
         r.google_hybrid =
-            function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Hybrid', {type: G_HYBRID_MAP, numZoomLevels: 20, 'sphericalMercator': true});};
         r.google_satellite =
-            function() { return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Satellite', {type: G_SATELLITE_MAP, numZoomLevels: 20, 'sphericalMercator': true});};
       } else if (typeof google !== "undefined" && typeof google.maps !== "undefined") {
         r.google_physical =
-            function() { return new OpenLayers.Layer.Google('Google Physical', {type: google.maps.MapTypeId.TERRAIN, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Physical', {type: google.maps.MapTypeId.TERRAIN, 'sphericalMercator': true});};
         r.google_streets =
-            function() { return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Streets', {numZoomLevels : 20, 'sphericalMercator': true});};
         r.google_hybrid =
-            function() { return new OpenLayers.Layer.Google('Google Hybrid', {type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Hybrid', {type: google.maps.MapTypeId.HYBRID, numZoomLevels: 20, 'sphericalMercator': true});};
         r.google_satellite =
-            function() { return new OpenLayers.Layer.Google('Google Satellite', {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 20, 'sphericalMercator': true}); };
+            function() {return new OpenLayers.Layer.Google('Google Satellite', {type: google.maps.MapTypeId.SATELLITE, numZoomLevels: 20, 'sphericalMercator': true});};
       }
       return r;
     }
@@ -414,36 +414,57 @@ mapInitialisationHooks = [];
      * Selects the features in the contents of a bounding box
      */
     function selectBox(position, layers, div) {
+      var testGeom, testPointGeom, layer, bounds, xy, minXY, maxXY, layer;
       if (position instanceof OpenLayers.Bounds) {
-        var minXY = div.map.getLonLatFromPixel(
-            new OpenLayers.Pixel(position.left, position.bottom)
-        );
-        var maxXY = div.map.getLonLatFromPixel(
-            new OpenLayers.Pixel(position.right, position.top)
-        );
-        var bounds = new OpenLayers.Bounds(
-            minXY.lon, minXY.lat, maxXY.lon, maxXY.lat
-        );
-        var layer;
+        if (position.left===position.right && position.top===position.bottom) {
+          // point clicked
+          xy = div.map.getLonLatFromPixel(
+              new OpenLayers.Pixel(position.left, position.bottom)
+          );
+          testGeom = new OpenLayers.Geometry.Point(xy.lon,xy.lat);
+        } else {
+          // bounding box dragged
+          minXY = div.map.getLonLatFromPixel(
+              new OpenLayers.Pixel(position.left, position.bottom)
+          );
+          maxXY = div.map.getLonLatFromPixel(
+              new OpenLayers.Pixel(position.right, position.top)
+          );
+          bounds = new OpenLayers.Bounds(
+              minXY.lon, minXY.lat, maxXY.lon, maxXY.lat
+          );
+          testGeom = bounds.toGeometry();
+        }
+        testPointGeom = testGeom; // default for testing against point features
         for(var l=0; l<layers.length; ++l) {
           layer = layers[l];
-          $.each(layer.selectedFeatures, function(idx, feature) {
-            layer.drawFeature(feature, 'default');
-          });
-          layer.selectedFeatures = [];
+          // when testing against points, use a circle drawn around the click point so the 
+          // click does not have to be exact. Do this once per layer so we can respect the default 
+          // click point size for the layer
+          if (testGeom.CLASS_NAME==='OpenLayers.Geometry.Point' &&
+              typeof layer.styleMap.styles['default'].defaultStyle.pointRadius!=="undefined") {
+            // Convert point to an approx circle so we can test the click using it. We convert the click
+            // point rather than individual tested points, as it has the same effect but only needs to be
+            // done once.
+            var radius = div.map.getResolution() * layer.styleMap.styles['default'].defaultStyle.pointRadius;
+            testPointGeom = OpenLayers.Geometry.Polygon.createRegularPolygon(testGeom, radius, 20, 0);
+          }
+          var featuresToSelect = [];
           for(var i=0, len = layer.features.length; i<len; ++i) {
             var feature = layer.features[i];
             // check if the feature is displayed
             if (!feature.getVisibility()) {
               continue;
             }
-            if (bounds.toGeometry().intersects(feature.geometry)) {
+            var geom = feature.geometry;
+            if (testGeom.intersects(geom) || 
+                (geom.CLASS_NAME==='OpenLayers.Geometry.Point' && testPointGeom.intersects(geom))) {
               if (OpenLayers.Util.indexOf(layer.selectedFeatures, feature) == -1) {
-                layer.selectedFeatures.push(feature);
-                layer.drawFeature(feature, 'select');
+                featuresToSelect.push(feature);
               }
             }
           }
+          layer.map.setSelection(layer, featuresToSelect);
         }
       }
     }
@@ -480,7 +501,7 @@ mapInitialisationHooks = [];
               'stopDouble': true
             };
             if (clickableVectorLayers.length>0) {
-              this.handlers = { box: new OpenLayers.Handler.Box(
+              this.handlers = {box: new OpenLayers.Handler.Box(
                   this, {done: this.onGetInfo},
                   {boxDivClassName: "olHandlerBoxSelectFeature"}
                 )
@@ -489,7 +510,7 @@ mapInitialisationHooks = [];
               this.allowBox = true;
             } else {
               // allow click or bounding box actions
-              this.handlers = { click: new OpenLayers.Handler.Click(this, {
+              this.handlers = {click: new OpenLayers.Handler.Click(this, {
                   'click': this.onGetInfo
                 }, handlerOptions)
               };
@@ -573,7 +594,7 @@ mapInitialisationHooks = [];
               $.each(clickableVectorLayers, function(idx, layer) {
                 features = features.concat(layer.selectedFeatures);
               });
-              // now filter the report, or display output in a popup or div depending on settings.
+              // now filter the report, highlight rows, or display output in a popup or div depending on settings.
               if (div.settings.clickableLayersOutputMode==='report' && div.settings.reportGroup!==null
                   && typeof indiciaData.reports!=="undefined") {
                 // grab the feature ids
@@ -587,6 +608,14 @@ mapInitialisationHooks = [];
                   report[0].settings.recordCount = features.length;
                   report[0].settings.offset=0;
                   report.reload();
+                });
+              } else if (div.settings.clickableLayersOutputMode==='reportHighlight'
+                  && typeof indiciaData.reports!=="undefined") {
+                // deselect existing selection in grid as well as on feature layer
+                $('table.report-grid tr').removeClass('selected');
+                // grab the features which should have an id corresponding to the rows to select
+                $.each(features, function(idx, feature) {
+                  $('table.report-grid tr#row'+feature.id).addClass('selected');
                 });
               } else if (div.settings.clickableLayersOutputMode==='div') {
                 $('#'+div.settings.clickableLayersOutputDiv).html(div.settings.clickableLayersOutputFn(features, div));
@@ -872,11 +901,11 @@ mapInitialisationHooks = [];
       // Convert indicia WMS/WFS layers into js objects
       $.each(this.settings.indiciaWMSLayers, function(key, value)
       {
-        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + 'wms', { layers: value, transparent: true }, { singleTile: true, isBaseLayer: false, sphericalMercator: true}));
+        div.settings.layers.push(new OpenLayers.Layer.WMS(key, div.settings.indiciaGeoSvc + 'wms', {layers: value, transparent: true}, {singleTile: true, isBaseLayer: false, sphericalMercator: true}));
       });
       $.each(this.settings.indiciaWFSLayers, function(key, value)
       {
-        div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + 'wms', { typename: value, request: 'GetFeature' }, { sphericalMercator: true }));
+        div.settings.layers.push(new OpenLayers.Layer.WFS(key, div.settings.indiciaGeoSvc + 'wms', {typename: value, request: 'GetFeature'}, {sphericalMercator: true}));
       });
 
       div.map.addLayers(this.settings.layers);
@@ -904,6 +933,20 @@ mapInitialisationHooks = [];
         }
       }
       div.map.setCenter(center, zoom);
+      
+      /**
+       * Public function to change selection of features on a layer.
+       */
+      div.map.setSelection = function(layer, features) {
+        $.each(layer.selectedFeatures, function(idx, feature) {
+          feature.renderIntent='default';
+        });
+        layer.selectedFeatures = features;
+        $.each(layer.selectedFeatures, function(idx, feature) {
+          feature.renderIntent='select';
+        });
+        layer.redraw();
+      }
 
       // This hack fixes an IE8 bug where it won't display Google layers when switching using the Layer Switcher.
       div.map.events.register('changebaselayer', null, function(e) {
@@ -1023,7 +1066,7 @@ mapInitialisationHooks = [];
       if (div.settings.editLayer && div.settings.clickForSpatialRef) {
         // Setup a click event handler for the map
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
-          defaultHandlerOptions: { 'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false },
+          defaultHandlerOptions: {'single': true, 'double': false, 'pixelTolerance': 0, 'stopSingle': false, 'stopDouble': false},
           trigger: function(e) {
             clickOnMap(e.xy, div, function(data)
               {
@@ -1098,7 +1141,7 @@ mapInitialisationHooks = [];
         } else if (ctrl=='clearEditLayer' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ClearLayer([div.map.editLayer],
               {'displayClass': align + ' olControlClearLayer', 'title':'Clear selection'}));
-        }  else if (ctrl=='modifyFeature' && div.settings.editLayer) {
+        } else if (ctrl=='modifyFeature' && div.settings.editLayer) {
           toolbarControls.push(new OpenLayers.Control.ModifyFeature(div.map.editLayer,
               {'displayClass': align + 'olControlModifyFeature', 'title':'Modify a feature'}));
         } else if (ctrl=='graticule') {
