@@ -226,8 +226,12 @@ class map_helper extends helper_base {
         $presetLayers[] = 'virtual_earth';
         $presetLayers[] = 'osm';
       }
+      if (!empty(parent::$warehouse_proxy))
+        $warehouseUrl = parent::$warehouse_proxy;
+      else
+        $warehouseUrl = parent::$base_url;
       $options = array_merge(array(
-          'indiciaSvc'=>self::$base_url,
+          'indiciaSvc'=>$warehouseUrl,
           'indiciaGeoSvc'=>self::$geoserver_url,
           'divId'=>'map',
           'class'=>'',

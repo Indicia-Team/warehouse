@@ -295,6 +295,12 @@ class helper_base extends helper_config {
    * @var string Path to Indicia Images folder.
    */
   public static $images_path = null;
+  
+  /**
+   * @var string Path to proxy script for calls to the warehouse (optional, allows the warehouse to sit behind a firewall only accessible
+   * from the server).
+   */
+  public static $warehouse_proxy = null;
 
   /**
    * @var array List of resources that have already been dumped out, so we don't duplicate them. For example, if the

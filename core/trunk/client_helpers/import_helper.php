@@ -311,7 +311,10 @@ class import_helper extends helper_base {
       $response = self::http_post($request, $post);
       if (!isset($response['output']) || $response['output'] != 'OK')
         return "Could not upload the mappings metadata. <br/>".print_r($response, true);
-
+      if (!empty(parent::$warehouse_proxy))
+        $warehouseUrl = parent::$warehouse_proxy;
+      else
+        $warehouseUrl = parent::$base_url;
       self::$onload_javascript .= "
     /**
     * Upload a single chunk of a file, by doing an AJAX get. If there is more, then on receiving the response upload the
@@ -320,7 +323,7 @@ class import_helper extends helper_base {
     uploadChunk = function() {
       var limit=50;
       $.ajax({
-        url: '".parent::$base_url."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
+        url: '".$warehouseUrl."index.php/services/import/upload?offset='+total+'&limit='+limit+'&filepos='+filepos+'&uploaded_csv=$filename&model=".$options['model']."',
         dataType: 'jsonp',
         success: function(response) {
           total = total + response.uploaded;

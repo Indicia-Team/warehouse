@@ -180,9 +180,13 @@ class data_entry_helper extends helper_base {
     ));
     if (!array_key_exists('id', $options)) $options['id']=$options['fieldname'];
     $options['inputId'] = $options['id'].':'.$options['captionField'];
+    if (!empty(parent::$warehouse_proxy))
+      $warehouseUrl = parent::$warehouse_proxy;
+    else
+      $warehouseUrl = parent::$base_url;
     $options = array_merge(array(
       'template' => 'autocomplete',
-      'url' => parent::$base_url."index.php/services/data",
+      'url' => $warehouseUrl."index.php/services/data",
       'inputId' => $options['id'].':'.$options['captionField'],
       // Escape the ids for jQuery selectors
       'escaped_input_id' => self::jq_esc($options['inputId']),
@@ -2378,7 +2382,10 @@ class data_entry_helper extends helper_base {
         'topField', 'topValue', 'parentField', 'default', 'extraParams', 'class'));
     self::add_resource('treeview_async');
     // Declare the data service
-    $url = parent::$base_url."index.php/services/data";
+    if (!empty(parent::$warehouse_proxy))
+      $url = parent::$warehouse_proxy."index.php/services/data";
+    else
+      $url = parent::$base_url."index.php/services/data";
     // Setup some default values
     $options = array_merge(array(
       'valueField'=>$options['captionField'],
