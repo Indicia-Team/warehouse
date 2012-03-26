@@ -2030,8 +2030,8 @@ if (typeof(mapSettingsHooks)!=='undefined') {
   * </li>
   * <li><b>paramDefaults</b>
   * Optional associative array of parameter default values. Default values appear in the parameter form and can be overridden.</li>
-  * <li><b>includeWeekNumber</b>
-  * Should a Week Number column be included in the grid? Defaults to false.</li>
+  * <li><b>weekHeaders</b>
+  * Defines which week column headers should be included: date, number or both
   * <li><b>weekstart</b>
   * Defines the first day of the week. There are 2 options.<br/>'.
   *  weekday=<n> where <n> is a number between 1 (for Monday) and 7 (for Sunday). Default is 'weekday=7'
@@ -2187,32 +2187,27 @@ if (typeof(mapSettingsHooks)!=='undefined') {
       $r .= "  <a title=\"".($options["year"]+1)."\" rel=\"\nofollow\" href=\"".$pageUrl.$pageUrlParams['year']['name']."=".($options["year"]+1)."\" class=\"ui-datepicker-next ui-corner-all\">
         <span class=\"ui-icon ui-icon-circle-triangle-e\">Next</span></a>";
     }
+    $dateRow = "";
+    $numberRow = "";
     // Not implementing a download.
-    $r.= '</td><td colspan='.($maxWeekNo-$minWeekNo-5).'></td></tr><tr><td>Week</td>';
+    $r.= '</td><td colspan='.($maxWeekNo-$minWeekNo-5).'></td></tr>';
     for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
-      if(isset($args['includeWeekNumber']) && $args['includeWeekNumber']==true)
-        $r.= '<td>'.$i.'</td>';
-      else {
-        $r.= '<td class="vcell"><div ><div class="vertical" >'.$firstWeek_date->format('Y-m-d').'</div></div></td>';
-        $firstWeek_date->modify('+7 days');
-      }
+      $numberRow.= '<td class="week">'.$i.'</td>';
+      $dateRow.= '<td class="week">'.$firstWeek_date->format('M').'<br/>'.$firstWeek_date->format('d').'</td>';
+      $firstWeek_date->modify('+7 days');
     }
-    data_entry_helper::$javascript .= "
-jQuery('.vertical').each(function(){
-  var parent = jQuery(this).parent();
-  var h = jQuery(this).height();
-  var w = jQuery(this).width();
-  parent.height(h);
-  parent.width(h);
-  parent.css('padding-top',w-h);
-  });
-";
-    $r.= '<td>Total</td>';
-    $r.= "</tr></thead>\n";
+    if(isset($options['weekHeaders']) && ($options['weekHeaders'] == 'both' || $options['weekHeaders'] == 'number')){
+    	$r .= '<tr><td>Week</td>'.$numberRow.'<td>Total</td></tr>';
+    }
+    if(!isset($options['weekHeaders']) || $options['weekHeaders'] != 'number'){
+    	$r .= '<tr><td>Date</td>'.$dateRow.(!isset($options['weekHeaders']) || $options['weekHeaders'] == 'both' || $options['weekHeaders'] == 'number'?'<td></td>':'<td>Total</td>').'</tr>';
+    }
+    $r.= "</thead>\n";
     $r .= "<tbody>\n";
+    $altRow=false;
     foreach($summaryArray as $label => $summaryRow){
       $total=0;
-      $r .= "<tr>";
+      $r .= "<tr class=\"datarow ".($altRow?$options['altRowClass']:'')."\">";
       $r.= '<td>'.$label.'</td>';
       for($i= $minWeekNo; $i <= $maxWeekNo; $i++){
         if(isset($summaryRow[$i])){
@@ -2225,8 +2220,11 @@ jQuery('.vertical').each(function(){
       $r.= '<td>'.$total.'</td>';
       // TODO total is optional
       $r .= "</tr>";
+      $altRow=!$altRow;
     }
     $r .= "</tbody></table>\n";
+    if(count($summaryArray)==0)
+      $r .= '<p>'.lang::get('No data returned for this period.').'</p>';
     return $warnings.$r;
   }
   
@@ -2237,6 +2235,7 @@ jQuery('.vertical').each(function(){
       'id' => 'calendar-report-output', // this needs to be set explicitly when more than one report on a page
       'class' => 'ui-widget ui-widget-content report-grid',
       'thClass' => 'ui-widget-header',
+      'altRowClass' => 'odd',  
       'extraParams' => array(),
       'year' => date('Y'),
       'viewPreviousIfTooEarly' => true, // if today is before the start of the calendar, display last year.
