@@ -76,5 +76,7 @@ $config['irregular'] = array
   'ox' => 'oxen',
   'leaf' => 'leaves',
   'taxon' => 'taxa',
+  'verification_rule_datum' => 'verification_rule_data',
+  'verification_rule_metadatum' => 'verification_rule_metadata',
   'gv_taxon_lists_taxon' => 'gv_taxon_lists_taxa',
 );
