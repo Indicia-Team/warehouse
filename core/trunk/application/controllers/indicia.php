@@ -607,6 +607,29 @@ class Indicia_Controller extends Template_Controller {
       return $ids;
     }
   }
+  
+  /**
+   * Ensures that the extract directory for zip files exists. 
+   * @return string The directory path.
+   */
+  protected function create_zip_extract_dir() {
+    $directory = Kohana::config('upload.zip_extract_directory', TRUE);
+    // Make sure the directory ends with a slash
+    $directory = rtrim($directory, '/').'/';
+    if ( ! is_dir($directory) AND Kohana::config('upload.create_directories') === TRUE) {
+        // Create the extraction directory
+        mkdir($directory, 0777, TRUE);
+    }
+    if ( ! is_dir($directory) ) {
+      $this->setError('Upload file problem', 'Zip extraction directory '.$directory.' does not exist. Please create, or set Indicia upload.create_directories configuration item to true.');
+      return;
+    }
+    if ( ! is_writable($directory)) {
+      $this->setError('Upload file problem', 'Zip extraction directory '.$directory.' is not writable.');
+      return;
+    }
+    return $directory;
+  }
 
 }
 
