@@ -70,53 +70,61 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
    * Controller action for loading rule files from the verification rule server.
    */
   public function load_from_server() {
-    $serverList = $this->get_server_list();
-    $uniqueUploadKey='';
-    $files = array();
-    foreach($_POST as $key=>$value) {
-      $idx = substr($key, 4);
-      $session = curl_init($serverList[$idx]['file']);
-      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-      foreach($this->safe_explode_lines(curl_exec($session)) as $line) {
-        $tokens = explode('#', $line);
-        $files[] = array(
-          'file' => $tokens[0],
-          'title' => $tokens[1],
-          'date' => $tokens[2],
-          'source_url'=>$serverList[$idx]['file']
-        );
-      }
-      // build a string we can use to create an upload identifier
-      $uniqueUploadKey.=$serverList[$idx]['file'];
-    }
-    // extract all the rule files to get a set of temp paths, each of which contains
-    // an extract folder with the files in it
-    $paths = array();
-    foreach($files as $file)
-      $paths[] = array(
-        'file'=>$this->process_rule_zip_file($file['title'], $file['file']),
-        'source_url'=>$file['source_url']
-      );
-    $ruleFiles = array();
-    foreach ($paths as $path) {
-      $dir = opendir($path['file'].'/extract');
-      while (false !== $ruleFile = readdir($dir))
-        if (substr($ruleFile, 0, 1)!=='.')
-          $ruleFiles[] = array(
-            'file'=>$path['file']."/extract/$ruleFile",
-            'source_url'=>$path['source_url']
+    try {
+      $serverList = $this->get_server_list();
+      $uniqueUploadKey='';
+      $files = array();
+      foreach($_POST as $key=>$value) {
+        $idx = substr($key, 4);
+        $session = curl_init($serverList[$idx]['file']);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        foreach($this->safe_explode_lines(curl_exec($session)) as $line) {
+          $tokens = explode('#', $line);
+          $files[] = array(
+            'file' => $tokens[0],
+            'title' => $tokens[1],
+            'date' => $tokens[2],
+            'source_url'=>$serverList[$idx]['file']
           );
+        }
+        // build a string we can use to create an upload identifier
+        $uniqueUploadKey.=$serverList[$idx]['file'];
+      }
+      // extract all the rule files to get a set of temp paths, each of which contains
+      // an extract folder with the files in it
+      $paths = array();
+      foreach($files as $file)
+        $paths[] = array(
+          'file'=>$this->process_rule_zip_file($file['title'], $file['file']),
+          'source_url'=>$file['source_url']
+        );
+      $ruleFiles = array();
+      foreach ($paths as $path) {
+        $dir = opendir($path['file'].'/extract');
+        while (false !== $ruleFile = readdir($dir))
+          if (substr($ruleFile, 0, 1)!=='.')
+            $ruleFiles[] = array(
+              'file'=>$path['file']."/extract/$ruleFile",
+              'source_url'=>$path['source_url']
+            );
+      }
+      // Save the rule file list to a cached list, so we can preserve it across http requests
+      $uploadId = time() . md5($uniqueUploadKey);
+      $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
+      fwrite($cacheHandle, json_encode($ruleFiles));
+      fclose($cacheHandle);
+      //  show a progress view.
+      $view = new View('verification_rule/upload_rule_files');
+      $view->uploadId = $uploadId;
+      $this->template->content = $view;
+      $this->template->title = 'Uploading rule files';
+    } catch (Exception $e) {
+      error::log_error('Error occurred during Record Cleaner rule file upload', $e);
+      $view = new View('templates/error_message');
+      $view->message=$e->getMessage();
+      $this->template->content = $view;
+      $this->template->title = 'Error occurred during upload';
     }
-    // Save the rule file list to a cached list, so we can preserve it across http requests
-    $uploadId = time() . md5($uniqueUploadKey);
-    $cacheHandle = fopen(DOCROOT . "extract/$uploadId.txt", "w");
-    fwrite($cacheHandle, json_encode($ruleFiles));
-    fclose($cacheHandle);
-    //  show a progress view.
-    $view = new View('verification_rule/upload_rule_files');
-    $view->uploadId = $uploadId;
-    $this->template->content = $view;
-    $this->template->title = 'Uploading rule files';
   }
   
   /**
@@ -128,7 +136,11 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
     $session = curl_init($sourcefile);
     curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
     $content = curl_exec($session);
-    $dir = $this->create_zip_extract_dir().'rules-'.time().'-'.rand(0,1000);
+    try {
+      $dir = $this->create_zip_extract_dir().'rules-'.time().'-'.rand(0,1000);
+    } catch (Exception $e) {
+      throw new Exception('Could not create the extract directory on the warehouse');
+    }
     mkdir($dir, 0777, TRUE);
     mkdir("$dir/extract", 0777, TRUE);
     $zipFile = "$dir/".basename($sourcefile);

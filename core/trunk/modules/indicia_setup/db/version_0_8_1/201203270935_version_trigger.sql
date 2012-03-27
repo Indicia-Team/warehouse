@@ -1,7 +1,7 @@
 ﻿-- Trigger on taxon attribute values so that if we change one relating to the auto-verification checks, the version
 -- number on the taxon is incremented. This tags the taxon's occurrences for re-verification.
 
-CREATE FUNCTION taxon_verification_check_versioning() RETURNS trigger AS $taxon_verification_check_versioning$
+CREATE OR REPLACE FUNCTION taxon_verification_check_versioning() RETURNS trigger AS $taxon_verification_check_versioning$
 DECLARE 
 	check_attr boolean := false;
 BEGIN
