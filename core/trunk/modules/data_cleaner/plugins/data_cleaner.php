@@ -25,11 +25,13 @@ function data_cleaner_extend_data_services() {
 function data_cleaner_scheduled_task() {
   $db = new Database();
   $rules = data_cleaner_get_rules();
-  data_cleaner_get_occurrence_list($db);
+  $count = data_cleaner_get_occurrence_list($db);
   try {
-    data_cleaner_cleanout_old_messages($rules, $db);
-    data_cleaner_run_rules($rules, $db);
-    data_cleaner_update_occurrence_metadata($db);
+    if ($count>0) {
+      data_cleaner_cleanout_old_messages($rules, $db);
+      data_cleaner_run_rules($rules, $db);
+      data_cleaner_update_occurrence_metadata($db);
+    }    
     $db->query('drop table occlist');
   } catch (Exception $e) {
     $db->query('drop table occlist');
@@ -80,10 +82,12 @@ function data_cleaner_get_occurrence_list($db) {
   where o.deleted=false and o.record_status not in (\'V\',\'R\',\'D\')
   and (ttl.id <> o.last_verification_check_taxa_taxon_list_id
   or o.updated_on>o.last_verification_check_date
-  or s.updated_on>o.last_verification_check_date) or o.id=5686';
+  or s.updated_on>o.last_verification_check_date
+  or o.last_verification_check_date is null)';
   $db->query($query);
   $r = $db->query('select count(*) as count from occlist')->result_array(false);
   echo "Data cleaning ".$r[0]['count']." record(s).<br/>";
+  return $r[0]['count'];
 }
 
 
@@ -156,8 +160,7 @@ function data_cleaner_update_occurrence_metadata($db) {
   // any changes have happened in the meanwhile which might otherwise be missed.
   $query = 'update occurrences o
 set last_verification_check_date=occlist.timepoint, 
-    last_verification_check_taxa_taxon_list_id=occlist.taxa_taxon_list_id, 
-    last_verification_check_version=occlist.verification_check_version
+    last_verification_check_taxa_taxon_list_id=occlist.taxa_taxon_list_id
 from occlist
 where occlist.occurrence_id=o.id';
   $db->query($query);

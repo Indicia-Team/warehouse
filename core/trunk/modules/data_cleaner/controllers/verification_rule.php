@@ -201,6 +201,7 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       unlink(DOCROOT . "extract/$uploadId.txt");
       // @todo clean up the extract directory
     }
+    $reponse['progress'] = (($_GET['totaldone']+1) * 100) / count($files);
     echo json_encode($response);
   
   }

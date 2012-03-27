@@ -41,7 +41,7 @@ uploadChunk = function() {
       } else {
         $('#messages div').append('File '+response.lastfile+' done.<br/>');
       }
-      $('#progress-bar').progressbar ('option', 'value', (total*10) % 100);
+      $('#progress-bar').progressbar ('option', 'value', response.progress);
       total++;
       if (typeof response.complete!=="undefined") {
         jQuery('#progress-text').html('Upload complete.');
@@ -62,7 +62,8 @@ uploadChunk();
 });
 // ]]>
 </script>
-<label id="progress">Uploader....
+<p>The selected Record Cleaner rule files are being imported. As some of the rule files can be quite large, it may take a few seconds to import each one so please be patient.</p>
+<label id="progress">Please wait....
 <div id="progress-bar"></div></label>
 <div id="link" style="display: none">Import Complete<br/><a href="<?php echo url::base(); ?>index.php/verification_rule">Return to the Verification Rules list</a></div>
 <br/>
