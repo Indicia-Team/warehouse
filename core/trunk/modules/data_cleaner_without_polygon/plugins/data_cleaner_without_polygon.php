@@ -47,22 +47,26 @@ function data_cleaner_without_polygon_data_cleaner_rules() {
  */
 function data_cleaner_without_polygon_data_cleaner_postprocess($id, $db) {
   $db->query('create temporary table geoms_without_polygon (geom geometry)');
-  $r = $db->select('key')
-    ->from('verification_rule_data')
-    ->where(array('verification_rule_id'=>$id, 'header_name'=>'10km_GB'))
-    ->get()->result();
-  foreach($r as $gridSquare) {
-    $wkt = spatial_ref::sref_to_internal_wkt($gridSquare->key, 'osgb');
-    kohana::log('debug', "wkt $wkt");
-    $db->query("insert into geoms_without_polygon values(st_geomfromtext('".$wkt."', ".kohana::config('sref_notations.internal_srid')."))");
+  try {
+    $r = $db->select('key')
+      ->from('verification_rule_data')
+      ->where(array('verification_rule_id'=>$id, 'header_name'=>'10km_GB'))
+      ->get()->result();
+    foreach($r as $gridSquare) {
+      $wkt = spatial_ref::sref_to_internal_wkt($gridSquare->key, 'osgb');
+      kohana::log('debug', "wkt $wkt");
+      $db->query("insert into geoms_without_polygon values(st_geomfromtext('".$wkt."', ".kohana::config('sref_notations.internal_srid')."))");
+    }
+    $date=date("Ymd H:i:s");
+    $uid=$_SESSION['auth_user']->id;
+    $db->query("delete from verification_rule_data where verification_rule_id=$id and header_name='geom'");
+    $db->query('insert into verification_rule_data (verification_rule_id, header_name, data_group, key, value, value_geom, created_on, created_by_id, updated_on, updated_by_id) '.
+        "select $id, 'geom', 1, 'geom', '-', st_union(geom), '$date', $uid, '$date', $uid from geoms_without_polygon");
+    $db->query('drop table geoms_without_polygon');
+  } catch (Exception $e) {
+    $db->query('drop table geoms_without_polygon');
+    throw $e;
   }
-  $date=date("Ymd H:i:s");
-  $uid=$_SESSION['auth_user']->id;
-  $db->query("delete from verification_rule_data where verification_rule_id=$id and header_name='geom'");
-  $db->query('insert into verification_rule_data (verification_rule_id, header_name, data_group, key, value, value_geom, created_on, created_by_id, updated_on, updated_by_id) '.
-      "select $id, 'geom', 1, 'geom', '-', st_union(geom), '$date', $uid, '$date', $uid from geoms_without_polygon");
-  // probably not necessary as it is dropped at end of session
-  $db->query('drop table geoms_without_polygon');
 }
 
 ?>

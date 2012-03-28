@@ -26,6 +26,7 @@
 $(document).ready(function() {
   
 var totaldone=0;
+var totalerrors=0;
 
 /**
 * Upload a single chunk of files, by doing an AJAX get. If there is more, then on receiving the response upload the
@@ -39,6 +40,11 @@ uploadChunk = function() {
       $.each(response.errors, function(idx, error) {
         $('#messages > div').append('<div class="error">' + error + '</div>');
       });
+      totalerrors += response.errors;
+      if (totalerrors>0) {
+        $('#errors-notice span').html(totalerrors);
+        $('#errors-notice').show();
+      }
       $.each(response.files, function(idx, file) {
         $('#messages > div').append('<div class="ok">' + file + ' done</div>');
       });
@@ -65,6 +71,7 @@ uploadChunk();
 // ]]>
 </script>
 <p>The selected Record Cleaner rule files are being imported. As some of the rule files can be quite large, it may take a few seconds to import each one so please be patient.</p>
+<div class="error" style="display: none" id="errors-notice"><span>0</span> error(s) have been reported.</div>
 <label id="progress">Please wait....
 <div id="progress-bar"></div></label>
 <div id="link" style="display: none">Import Complete<br/><a href="<?php echo url::base(); ?>index.php/verification_rule">Return to the Verification Rules list</a></div>

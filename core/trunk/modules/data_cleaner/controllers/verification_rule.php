@@ -399,8 +399,6 @@ class Verification_rule_Controller extends Gridview_Base_Controller {
       $value .= "('".$row['dataSection']."',".$row['dataGroup'].",$vrId,'".strval($row['key'])."','".
           $row['value']."','".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.",'".date("Ymd H:i:s")."',".$_SESSION['auth_user']->id.")";
     }
-    kohana::log('debug', 'bulk inserting '.count($rows));
-    kohana::log('debug', $newRule ? 'new' : 'existing');
     if (count($rows))
       $this->db->query("insert into verification_rule_data(header_name, data_group, verification_rule_id, key, value, ".
           "updated_on, updated_by_id, created_on, created_by_id) values $value");
